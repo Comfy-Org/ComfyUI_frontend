@@ -14,7 +14,8 @@ import urllib.error
 
 COMFY_URL = "http://localhost:8188"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROMPTS_FILE = os.path.join(SCRIPT_DIR, "adventure-icon-prompts.json")
+ARTIFACT_PROMPTS = os.path.join(SCRIPT_DIR, "adventure-icon-prompts.json")
+CHOICE_PROMPTS = os.path.join(SCRIPT_DIR, "adventure-choice-icon-prompts.json")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "icons")
 BASE_SEED = 7777
 WIDTH = 128
@@ -120,20 +121,30 @@ def download_image(filename, subfolder, dest_path):
 
 
 def main():
-    with open(PROMPTS_FILE) as f:
-        data = json.load(f)
-
-    artifacts = data["artifacts"]
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    # Collect all icons from both prompt files
+    all_icons = {}
+
+    with open(ARTIFACT_PROMPTS) as f:
+        data = json.load(f)
+    for icon_id, entry in data["artifacts"].items():
+        all_icons[icon_id] = entry["prompt"]
+
+    if os.path.exists(CHOICE_PROMPTS):
+        with open(CHOICE_PROMPTS) as f:
+            data = json.load(f)
+        for icon_id, entry in data["choices"].items():
+            all_icons[icon_id] = entry["prompt"]
 
     # Filter out already-generated icons
     to_generate = {}
-    for artifact_id, artifact in artifacts.items():
-        dest = os.path.join(OUTPUT_DIR, f"{artifact_id}.png")
+    for icon_id, prompt in all_icons.items():
+        dest = os.path.join(OUTPUT_DIR, f"{icon_id}.png")
         if os.path.exists(dest):
-            print(f"  Skipping {artifact_id}.png (already exists)")
+            print(f"  Skipping {icon_id}.png (already exists)")
         else:
-            to_generate[artifact_id] = artifact
+            to_generate[icon_id] = prompt
 
     if not to_generate:
         print("All icons already generated. Nothing to do.")
@@ -141,20 +152,20 @@ def main():
 
     # Submit jobs
     jobs = []
-    for i, (artifact_id, artifact) in enumerate(to_generate.items()):
-        prefix = f"adventure-icons/{artifact_id}"
-        wf = build_workflow(artifact["prompt"], BASE_SEED + i, prefix)
+    for i, (icon_id, prompt) in enumerate(to_generate.items()):
+        prefix = f"adventure-icons/{icon_id}"
+        wf = build_workflow(prompt, BASE_SEED + i, prefix)
         result = submit_prompt(wf)
         prompt_id = result["prompt_id"]
-        jobs.append((artifact_id, prompt_id))
-        print(f"  Submitted: {artifact_id} -> {prompt_id}")
+        jobs.append((icon_id, prompt_id))
+        print(f"  Submitted: {icon_id} -> {prompt_id}")
 
     print(f"\n{len(jobs)} jobs queued. Polling for completion...\n")
 
     # Poll for completion
     completed = set()
     while len(completed) < len(jobs):
-        for artifact_id, prompt_id in jobs:
+        for icon_id, prompt_id in jobs:
             if prompt_id in completed:
                 continue
             history = poll_history(prompt_id, timeout=5)
@@ -165,9 +176,9 @@ def main():
                     for img in node_out.get("images", []):
                         src_filename = img["filename"]
                         subfolder = img.get("subfolder", "")
-                        dest = os.path.join(OUTPUT_DIR, f"{artifact_id}.png")
+                        dest = os.path.join(OUTPUT_DIR, f"{icon_id}.png")
                         download_image(src_filename, subfolder, dest)
-                        print(f"  [{len(completed)}/{len(jobs)}] {artifact_id}.png downloaded")
+                        print(f"  [{len(completed)}/{len(jobs)}] {icon_id}.png downloaded")
         if len(completed) < len(jobs):
             time.sleep(2)
 

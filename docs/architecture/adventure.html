@@ -313,47 +313,73 @@
     #challenge-choices {
       padding: 8px 16px 16px;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .challenge-choice-btn {
+      flex: 1;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 14px;
+      border-radius: 10px;
+      padding: 0;
       color: var(--text);
       font-family: inherit;
       font-size: 13px;
       cursor: pointer;
-      text-align: left;
+      text-align: center;
       transition: all 0.15s;
       display: flex;
-      align-items: flex-start;
-      gap: 10px;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .challenge-choice-btn:hover {
       border-color: var(--yellow);
       background: rgba(210, 153, 34, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .challenge-choice-btn .choice-icon-wrap {
+      position: relative;
+      background: var(--bg);
+      padding: 12px;
     }
 
     .challenge-choice-btn .choice-key {
+      position: absolute;
+      top: 6px;
+      left: 6px;
       background: var(--yellow);
       color: var(--bg);
-      padding: 2px 8px;
+      padding: 1px 6px;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      min-width: 24px;
-      text-align: center;
-      flex-shrink: 0;
-      margin-top: 1px;
+      line-height: 1.4;
     }
 
-    .challenge-choice-btn .choice-text { flex: 1; }
-    .challenge-choice-btn .choice-label { display: block; }
-    .challenge-choice-btn .choice-hint { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .challenge-choice-btn .choice-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin: 0 auto;
+    }
+
+    .challenge-choice-btn .choice-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .challenge-choice-btn .choice-text {
+      padding: 10px 12px 14px;
+    }
+
+    .challenge-choice-btn .choice-label { display: block; font-weight: 600; font-size: 12px; }
+    .challenge-choice-btn .choice-hint { display: block; font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
     /* --- Result Banner --- */
     #result-banner {
@@ -729,6 +755,57 @@
     .scorecard-row .sc-yours.miss { color: var(--yellow); }
     .scorecard-row .sc-best { color: var(--accent); font-size: 11px; min-width: 60px; }
 
+    /* --- Decisions grid --- */
+    #dec-label {
+      padding: 4px 12px;
+      font-size: 11px;
+      color: var(--accent);
+      min-height: 22px;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+
+    #dec-label .dec-label-type {
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      margin-left: 6px;
+    }
+
+    .dec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+      gap: 6px;
+      padding: 8px;
+    }
+
+    .dec-slot {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      overflow: hidden;
+      cursor: default;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+
+    .dec-slot:hover { border-color: var(--accent); }
+    .dec-slot.good { border-color: var(--green); }
+    .dec-slot.ok { border-color: var(--yellow); }
+    .dec-slot.bad { border-color: var(--red); }
+
+    .dec-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .dec-slot.empty {
+      border-style: dashed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--border);
+    }
+
     /* --- Room transition --- */
     #narrative { transition: opacity 0.15s ease; }
     #narrative.transitioning { opacity: 0.4; }
@@ -841,6 +918,16 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-header">
+          <span>Decisions</span>
+          <span id="dec-count">0/7</span>
+        </div>
+        <div id="dec-label">&nbsp;</div>
+        <div class="sidebar-body" id="decisions">
+          <div class="log-entry" style="color:var(--muted)">No decisions yet.</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-header">
           <span>Log</span>
           <span id="log-count">0</span>
         </div>
@@ -946,21 +1033,21 @@
           `,
           choices: [
             {
-              key: 'A', label: 'Composition over inheritance',
+              key: 'A', label: 'Composition over inheritance', icon: 'components-a',
               hint: 'Subgraph HAS a graph, not IS a graph. ECS eliminates class inheritance entirely.',
               effects: { techDebt: -10, quality: 15, morale: 5, migrationProgress: 1 },
               rating: 'good',
               feedback: 'The circular dependency dissolves. Subgraph becomes a thin wrapper holding a graph reference. Components replace inheritance.',
             },
             {
-              key: 'B', label: 'Barrel file reordering',
+              key: 'B', label: 'Barrel file reordering', icon: 'components-b',
               hint: 'Rearrange exports so the cycle resolves at module load time.',
               effects: { techDebt: 10, quality: -5, morale: -5 },
               rating: 'bad',
               feedback: 'The imports stop crashing... for now. But the underlying coupling remains, and any new file touching both classes risks reviving the cycle.',
             },
             {
-              key: 'C', label: 'Factory injection',
+              key: 'C', label: 'Factory injection', icon: 'components-c',
               hint: 'Pass a graph factory function to break the static import cycle.',
               effects: { techDebt: -5, quality: 10 },
               rating: 'ok',
@@ -1003,21 +1090,21 @@
           `,
           choices: [
             {
-              key: 'A', label: 'Centralize into graph.incrementVersion()',
+              key: 'A', label: 'Centralize into graph.incrementVersion()', icon: 'stores-a',
               hint: 'Route all 19 sites through a single method. Phase 0a of the migration plan.',
               effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
               rating: 'good',
               feedback: 'All 19 scattered increments now flow through one method. Change tracking becomes auditable, and the VersionSystem has a single hook point.',
             },
             {
-              key: 'B', label: 'Add a JavaScript Proxy',
+              key: 'B', label: 'Add a JavaScript Proxy', icon: 'stores-b',
               hint: 'Intercept all writes to _version automatically.',
               effects: { techDebt: 5, quality: 5, morale: -5 },
               rating: 'ok',
               feedback: 'The Proxy catches mutations, but adds runtime overhead and makes debugging opaque. The scattered sites remain in the code.',
             },
             {
-              key: 'C', label: 'Leave it as-is',
+              key: 'C', label: 'Leave it as-is', icon: 'stores-c',
               hint: 'It works. Don\'t touch it.',
               effects: { techDebt: 10, morale: 5 },
               rating: 'bad',
@@ -1058,21 +1145,21 @@
           `,
           choices: [
             {
-              key: 'A', label: '5-phase incremental plan',
+              key: 'A', label: '5-phase incremental plan', icon: 'services-a',
               hint: 'Foundation \u2192 Types \u2192 Bridge \u2192 Systems \u2192 Legacy Removal. Each phase is independently shippable.',
               effects: { quality: 15, morale: 10, migrationProgress: 1 },
               rating: 'good',
               feedback: 'The team maps out five phases, each independently testable and shippable. Old and new coexist during transition. Production never breaks.',
             },
             {
-              key: 'B', label: 'Big bang rewrite',
+              key: 'B', label: 'Big bang rewrite', icon: 'services-b',
               hint: 'Freeze features, rewrite everything in parallel, swap when ready.',
               effects: { techDebt: -10, quality: 5, morale: -20 },
               rating: 'bad',
               feedback: 'Feature freeze begins. Weeks pass. The rewrite grows scope. Morale plummets. The old codebase drifts further from the new one.',
             },
             {
-              key: 'C', label: 'Strangler fig pattern',
+              key: 'C', label: 'Strangler fig pattern', icon: 'services-c',
               hint: 'Build new ECS beside old code, migrate consumers one by one.',
               effects: { quality: 10, morale: 5 },
               rating: 'ok',
@@ -1114,21 +1201,21 @@
           `,
           choices: [
             {
-              key: 'A', label: 'Rewrite from scratch',
+              key: 'A', label: 'Rewrite from scratch', icon: 'litegraph-a',
               hint: 'Tear it all down and rebuild with clean architecture from day one.',
               effects: { techDebt: -20, quality: 5, morale: -25 },
               rating: 'bad',
               feedback: 'The rewrite begins heroically... and stalls at month three. The team burns out reimplementing edge cases the god objects handled implicitly.',
             },
             {
-              key: 'B', label: 'Extract incrementally',
+              key: 'B', label: 'Extract incrementally', icon: 'litegraph-b',
               hint: 'Peel responsibilities into focused modules one at a time. Position first, then connectivity, then rendering.',
               effects: { techDebt: -10, quality: 15, morale: 5, migrationProgress: 1 },
               rating: 'good',
               feedback: 'Position extraction lands first (it\'s already in LayoutStore). Then connectivity. Each extraction is a small, testable PR. The god objects shrink steadily.',
             },
             {
-              key: 'C', label: 'Add a facade layer',
+              key: 'C', label: 'Add a facade layer', icon: 'litegraph-c',
               hint: 'Wrap the god objects with a clean API without changing internals.',
               effects: { techDebt: 5, quality: 5, morale: 10 },
               rating: 'ok',
@@ -1172,21 +1259,21 @@
           `,
           choices: [
             {
-              key: 'A', label: 'Branded types with cast helpers',
+              key: 'A', label: 'Branded types with cast helpers', icon: 'ecs-a',
               hint: 'type NodeEntityId = number & { __brand: \'NodeEntityId\' } — compile-time safety, zero runtime cost.',
               effects: { techDebt: -15, quality: 20, migrationProgress: 1 },
               rating: 'good',
               feedback: 'The compiler now catches cross-kind ID bugs. Cast helpers at system boundaries (asNodeEntityId()) keep the ergonomics clean. Phase 1a complete.',
             },
             {
-              key: 'B', label: 'String prefixes at runtime',
+              key: 'B', label: 'String prefixes at runtime', icon: 'ecs-b',
               hint: '"node:42", "link:7" — parse and validate at every usage site.',
               effects: { techDebt: 5, quality: 5, morale: -5 },
               rating: 'ok',
               feedback: 'Runtime checks catch some bugs, but parsing overhead spreads everywhere. And someone will forget the prefix check in a hot path.',
             },
             {
-              key: 'C', label: 'Keep plain numbers',
+              key: 'C', label: 'Keep plain numbers', icon: 'ecs-c',
               hint: 'Just be careful. Document which IDs are which.',
               effects: { techDebt: 15, quality: -5 },
               rating: 'bad',
@@ -1229,14 +1316,14 @@
           `,
           choices: [
             {
-              key: 'A', label: 'Separate update and render phases',
+              key: 'A', label: 'Separate update and render phases', icon: 'renderer-a',
               hint: 'Compute all layout in an update pass, then render as a pure read-only pass. Matches the ECS system pipeline.',
               effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
               rating: 'good',
               feedback: 'The pipeline becomes: Input \u2192 Update (layout, connectivity) \u2192 Render (read-only). Draw order no longer matters. Bugs vanish.',
             },
             {
-              key: 'B', label: 'Dirty flags and deferred render',
+              key: 'B', label: 'Dirty flags and deferred render', icon: 'renderer-b',
               hint: 'Mark mutated nodes dirty, skip them, re-render next frame.',
               effects: { techDebt: -5, quality: 5, morale: 5 },
               rating: 'ok',
@@ -1275,21 +1362,21 @@
           `,
           choices: [
             {
-              key: 'A', label: 'Y.js CRDTs',
+              key: 'A', label: 'Y.js CRDTs', icon: 'composables-a',
               hint: 'Conflict-free replicated data types. Merge without coordination. Already proven at scale.',
               effects: { techDebt: -10, quality: 15, morale: 10 },
               rating: 'good',
               feedback: 'Y.js CRDT maps back the layout store. Concurrent edits merge automatically. ADR 0003 is realized. The collaboration future is here.',
             },
             {
-              key: 'B', label: 'Polling-based sync',
+              key: 'B', label: 'Polling-based sync', icon: 'composables-b',
               hint: 'Fetch full state every few seconds, merge manually, hope for the best.',
               effects: { techDebt: 10, quality: -5, morale: -5 },
               rating: 'bad',
               feedback: 'Polling creates a flickering, laggy experience. Two users move the same node and one edit is silently lost. Support tickets pile up.',
             },
             {
-              key: 'C', label: 'Skip collaboration for now',
+              key: 'C', label: 'Skip collaboration for now', icon: 'composables-c',
               hint: 'Single-user editing only. Focus on other priorities.',
               effects: { morale: 5 },
               rating: 'ok',
@@ -1392,6 +1479,9 @@
       inventory: $('#inventory'),
       invCount: $('#inv-count'),
       invLabel: $('#inv-label'),
+      decisions: $('#decisions'),
+      decCount: $('#dec-count'),
+      decLabel: $('#dec-label'),
       log: $('#log'),
       logCount: $('#log-count'),
       barDebt: $('#bar-debt'),
@@ -1554,6 +1644,7 @@
       // Update HUD
       renderStats()
       renderInventory()
+      renderDecisions()
       renderMap()
 
       addLog(`Entered: ${room.title}`)
@@ -1564,15 +1655,21 @@
       els.challengeTitle.textContent = challenge.title
       els.challengeDesc.innerHTML = challenge.description.trim()
 
-      els.challengeChoices.innerHTML = challenge.choices.map(c => `
-        <button class="challenge-choice-btn" data-key="${c.key}">
-          <span class="choice-key">${c.key}</span>
+      els.challengeChoices.innerHTML = challenge.choices.map(c => {
+        const iconImg = c.icon
+          ? `<div class="choice-icon"><img src="icons/${c.icon}.png" alt="" onerror="this.parentElement.style.display='none'"></div>`
+          : ''
+        return `<button class="challenge-choice-btn" data-key="${c.key}">
+          <div class="choice-icon-wrap">
+            <span class="choice-key">${c.key}</span>
+            ${iconImg}
+          </div>
           <div class="choice-text">
             <span class="choice-label">${c.label}</span>
             <span class="choice-hint">${c.hint}</span>
           </div>
-        </button>
-      `).join('')
+        </button>`
+      }).join('')
 
       els.challengeChoices.querySelectorAll('.challenge-choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1629,6 +1726,7 @@
 
       // Show navigation choices
       renderChoices(room.choices)
+      renderDecisions()
 
       // Log
       addLog(`Challenge resolved: ${challenge.title}`, choice.rating === 'good' ? 'discovery' : choice.rating === 'bad' ? 'error' : 'warning')
@@ -1682,6 +1780,42 @@
       }
       els.invLabel.innerHTML = '&nbsp;'
       els.invCount.textContent = state.inventory.length
+    }
+
+    function renderDecisions() {
+      const challengeRooms = Object.entries(rooms).filter(([, r]) => r.challenge)
+      const made = Object.keys(state.challengeChoices).length
+
+      if (made > 0) {
+        els.decisions.innerHTML = '<div class="dec-grid">' + challengeRooms.map(([roomId, room]) => {
+          const choiceKey = state.challengeChoices[roomId]
+          if (!choiceKey) {
+            return `<div class="dec-slot empty">?</div>`
+          }
+          const choice = room.challenge.choices.find(c => c.key === choiceKey)
+          const iconImg = choice.icon
+            ? `<img src="icons/${choice.icon}.png" alt="${choice.label}">`
+            : `<span style="font-size:18px;color:var(--text);display:flex;align-items:center;justify-content:center;height:100%">${choiceKey}</span>`
+          return `<div class="dec-slot ${choice.rating}" data-dec-room="${roomId}">${iconImg}</div>`
+        }).join('') + '</div>'
+
+        els.decisions.querySelectorAll('.dec-slot[data-dec-room]').forEach(slot => {
+          const roomId = slot.dataset.decRoom
+          const room = rooms[roomId]
+          const choiceKey = state.challengeChoices[roomId]
+          const choice = room.challenge.choices.find(c => c.key === choiceKey)
+          slot.addEventListener('mouseenter', () => {
+            els.decLabel.innerHTML = `${choice.label}<span class="dec-label-type">${room.challenge.title}</span>`
+          })
+          slot.addEventListener('mouseleave', () => {
+            els.decLabel.innerHTML = '&nbsp;'
+          })
+        })
+      } else {
+        els.decisions.innerHTML = '<div class="log-entry" style="color:var(--muted)">No decisions yet.</div>'
+      }
+      els.decLabel.innerHTML = '&nbsp;'
+      els.decCount.textContent = made + '/' + TOTAL_CHALLENGES
     }
 
     function addLog(message, type = '') {

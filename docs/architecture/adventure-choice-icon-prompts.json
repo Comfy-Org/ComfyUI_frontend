@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "style": "Pixel art icon, 128x128, dark background, game UI button icon style, clean readable silhouette",
+    "usage": "Each key is {room}-{choiceKey lowercase}. Used in challenge choice buttons in adventure.html.",
+    "model": "Z-Image Turbo (no LoRA)",
+    "resolution": "128x128"
+  },
+  "choices": {
+    "components-a": {
+      "label": "Composition over inheritance",
+      "prompt": "Pixel art icon of puzzle pieces snapping together cleanly, green glow, dark background, game UI icon"
+    },
+    "components-b": {
+      "label": "Barrel file reordering",
+      "prompt": "Pixel art icon of a stack of files being shuffled with arrows, amber warning glow, dark background, game UI icon"
+    },
+    "components-c": {
+      "label": "Factory injection",
+      "prompt": "Pixel art icon of a factory building with a syringe injecting into it, blue mechanical glow, dark background, game UI icon"
+    },
+    "stores-a": {
+      "label": "Centralize into graph.incrementVersion()",
+      "prompt": "Pixel art icon of scattered dots converging into a single glowing funnel point, green glow, dark background, game UI icon"
+    },
+    "stores-b": {
+      "label": "Add a JavaScript Proxy",
+      "prompt": "Pixel art icon of a shield proxy intercepting arrows mid-flight, amber translucent glow, dark background, game UI icon"
+    },
+    "stores-c": {
+      "label": "Leave it as-is",
+      "prompt": "Pixel art icon of a shrug gesture with cobwebs on old machinery, grey muted glow, dark background, game UI icon"
+    },
+    "services-a": {
+      "label": "5-phase incremental plan",
+      "prompt": "Pixel art icon of five stepping stones ascending in a staircase with checkmarks, green glow, dark background, game UI icon"
+    },
+    "services-b": {
+      "label": "Big bang rewrite",
+      "prompt": "Pixel art icon of a dynamite stick with lit fuse and explosion sparks, red danger glow, dark background, game UI icon"
+    },
+    "services-c": {
+      "label": "Strangler fig pattern",
+      "prompt": "Pixel art icon of vines growing around and enveloping an old tree trunk, green and brown organic glow, dark background, game UI icon"
+    },
+    "litegraph-a": {
+      "label": "Rewrite from scratch",
+      "prompt": "Pixel art icon of a wrecking ball demolishing a building into rubble, red destructive glow, dark background, game UI icon"
+    },
+    "litegraph-b": {
+      "label": "Extract incrementally",
+      "prompt": "Pixel art icon of surgical tweezers carefully extracting a glowing module from a larger block, green precise glow, dark background, game UI icon"
+    },
+    "litegraph-c": {
+      "label": "Add a facade layer",
+      "prompt": "Pixel art icon of a decorative mask covering a cracked wall, yellow cosmetic glow, dark background, game UI icon"
+    },
+    "ecs-a": {
+      "label": "Branded types with cast helpers",
+      "prompt": "Pixel art icon of ID badges with distinct colored stamps and a compiler checkmark, green type-safe glow, dark background, game UI icon"
+    },
+    "ecs-b": {
+      "label": "String prefixes at runtime",
+      "prompt": "Pixel art icon of text labels being parsed with a magnifying glass at runtime, amber slow glow, dark background, game UI icon"
+    },
+    "ecs-c": {
+      "label": "Keep plain numbers",
+      "prompt": "Pixel art icon of bare numbers floating unprotected with a question mark, red risky glow, dark background, game UI icon"
+    },
+    "renderer-a": {
+      "label": "Separate update and render phases",
+      "prompt": "Pixel art icon of two clean pipeline stages labeled U and R with an arrow between them, green orderly glow, dark background, game UI icon"
+    },
+    "renderer-b": {
+      "label": "Dirty flags and deferred render",
+      "prompt": "Pixel art icon of a flag with a smudge mark and a clock showing delay, amber patch glow, dark background, game UI icon"
+    },
+    "composables-a": {
+      "label": "Y.js CRDTs",
+      "prompt": "Pixel art icon of two documents merging seamlessly with sync arrows and no conflicts, green collaboration glow, dark background, game UI icon"
+    },
+    "composables-b": {
+      "label": "Polling-based sync",
+      "prompt": "Pixel art icon of a clock with circular refresh arrows and flickering signal, red laggy glow, dark background, game UI icon"
+    },
+    "composables-c": {
+      "label": "Skip collaboration for now",
+      "prompt": "Pixel art icon of a single person at a desk with a pause symbol, grey neutral glow, dark background, game UI icon"
+    }
+  }
+}
