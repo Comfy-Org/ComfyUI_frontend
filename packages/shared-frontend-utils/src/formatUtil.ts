@@ -542,7 +542,8 @@ const IMAGE_EXTENSIONS = [
   'bmp',
   'avif',
   'tif',
-  'tiff'
+  'tiff',
+  'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
