@@ -643,11 +643,22 @@ jobs:
       - name: Run video review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
         run: |
           mkdir -p video-reviews
           PR_CTX_FLAG=""
           if [ -f pr-context.txt ]; then
             PR_CTX_FLAG="--pr-context pr-context.txt"
+          fi
+          TARGET_URL_FLAG=""
+          if [ -n "$TARGET_NUM" ]; then
+            if [ "$TARGET_TYPE" = "issue" ]; then
+              TARGET_URL_FLAG="--target-url https://github.com/${REPO}/issues/${TARGET_NUM}"
+            else
+              TARGET_URL_FLAG="--target-url https://github.com/${REPO}/pull/${TARGET_NUM}"
+            fi
           fi
           for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
             [ -f "$vid" ] || continue
@@ -661,7 +672,7 @@ jobs:
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
-              --model gemini-2.5-flash $PR_CTX_FLAG $BEFORE_FLAG || true
+              --model gemini-2.5-flash $PR_CTX_FLAG $BEFORE_FLAG $TARGET_URL_FLAG || true
             echo "::endgroup::"
           done
 
@@ -785,12 +796,19 @@ jobs:
             CARD_COUNT=$((CARD_COUNT + 1))
           done
 
-          # Build commit info for the report header
+          # Build commit info and target link for the report header
           COMMIT_HTML=""
           REPO_URL="https://github.com/${REPO}"
+          if [ -n "$TARGET_NUM" ]; then
+            if [ "$TARGET_TYPE" = "issue" ]; then
+              COMMIT_HTML="<a href=${REPO_URL}/issues/${TARGET_NUM} class=sha title='Issue'>Issue #${TARGET_NUM}</a>"
+            else
+              COMMIT_HTML="<a href=${REPO_URL}/pull/${TARGET_NUM} class=sha title='Pull Request'>PR #${TARGET_NUM}</a>"
+            fi
+          fi
           if [ -n "$BEFORE_SHA" ]; then
             SHORT_BEFORE="${BEFORE_SHA:0:7}"
-            COMMIT_HTML="<a href=${REPO_URL}/commit/${BEFORE_SHA} class=sha title='main branch'>main @ ${SHORT_BEFORE}</a>"
+            COMMIT_HTML="${COMMIT_HTML:+${COMMIT_HTML} &middot; }<a href=${REPO_URL}/commit/${BEFORE_SHA} class=sha title='main branch'>main @ ${SHORT_BEFORE}</a>"
           fi
           if [ -n "$AFTER_SHA" ]; then
             SHORT_AFTER="${AFTER_SHA:0:7}"
