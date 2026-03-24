@@ -145,6 +145,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -164,6 +165,8 @@ import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -276,8 +279,29 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
+const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
+
+const canvasElement = computed(() => canvasStore.canvas?.canvas)
+const { isTransforming } = useTransformSettling(canvasElement, {
+  settleDelay: 256
+})
+
+const nodeLayouts = layoutStore.getAllNodes()
+
+const { mountedNodeIds } = useViewportCulling({
+  rawNodes,
+  nodeLayouts,
+  getViewportSize: () => {
+    const rect = canvasStore.canvas?.canvas?.getBoundingClientRect()
+    return { width: rect?.width ?? 0, height: rect?.height ?? 0 }
+  },
+  isTransforming
+})
+
+const allNodes = computed(() =>
+  rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
 )
 
 function onLinkOverlayReady(el: HTMLCanvasElement) {
