@@ -46,11 +46,11 @@ It is a beautiful vision. It is also, in several respects, a fantasy that has no
 
 The lifecycle scenarios compare current implementations against projected ECS equivalents:
 
-| Operation | Current | Projected ECS |
-|---|---|---|
-| Node removal | ~107 lines | ~30 lines |
-| Pack subgraph | ~200 lines | ~50 lines |
-| Copy/paste | ~300 lines | ~60 lines |
+| Operation     | Current    | Projected ECS |
+| ------------- | ---------- | ------------- |
+| Node removal  | ~107 lines | ~30 lines     |
+| Pack subgraph | ~200 lines | ~50 lines     |
+| Copy/paste    | ~300 lines | ~60 lines     |
 
 These ratios — roughly 4:1 — are the ratios of a daydream. They may prove accurate. But they are estimates for code that does not yet exist, and the unconscious is generous with its projections of future ease. Real implementations accumulate weight as they encounter the particularities that theory elides: validation callbacks, error recovery, extension hooks, the sheer cussedness of edge cases that only reveal themselves in production.
 
@@ -110,13 +110,13 @@ This is sound. The documents would benefit from being equally realistic about th
 
 ### Factual Corrections Required
 
-| Document | Error | Correction |
-|---|---|---|
-| `entity-problems.md` | `toJSON() (line 1033)` | `toString() (line 1033)` |
-| `entity-problems.md` | `execute() (line 1418)` | `doExecute() (line 1411)` |
-| `entity-problems.md` | `~539 method/property definitions` | ~848; methodology should be stated |
-| `entity-problems.md` | `configure()` ~180 lines | ~247 lines |
-| `proto-ecs-stores.md` | `resolveDeepest()` in diagram | `reconcile()` / `getOrCreate()` |
+| Document              | Error                              | Correction                         |
+| --------------------- | ---------------------------------- | ---------------------------------- |
+| `entity-problems.md`  | `toJSON() (line 1033)`             | `toString() (line 1033)`           |
+| `entity-problems.md`  | `execute() (line 1418)`            | `doExecute() (line 1411)`          |
+| `entity-problems.md`  | `~539 method/property definitions` | ~848; methodology should be stated |
+| `entity-problems.md`  | `configure()` ~180 lines           | ~247 lines                         |
+| `proto-ecs-stores.md` | `resolveDeepest()` in diagram      | `reconcile()` / `getOrCreate()`    |
 
 ### Analytical Gaps
 
