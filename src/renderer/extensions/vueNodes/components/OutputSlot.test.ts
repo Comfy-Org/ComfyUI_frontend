@@ -87,6 +87,7 @@ describe('OutputSlot', () => {
     })
 
     expect(wrapper.text()).toContain('Localized Name')
+    expect(wrapper.text()).not.toContain('internal_name')
   })
 
   it('falls back to name when label and localized_name are absent', () => {
