@@ -5,6 +5,7 @@ import {
   createMockCanvasPointerEvent,
   createMockLGraphNode,
   createMockLinkNetwork,
+  createMockNodeInputSlot,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -83,5 +84,74 @@ describe('LinkConnector.dropOnNothing event dispatch', () => {
 
     expect(beforeListener).not.toHaveBeenCalled()
     expect(droppedListener).not.toHaveBeenCalled()
+  })
+})
+
+describe('LinkConnector rewire flows dispatch connecting event', () => {
+  let connector: LinkConnector
+
+  beforeEach(() => {
+    connector = new LinkConnector(mockSetConnectingLinks)
+    vi.clearAllMocks()
+  })
+
+  test('moveInputLink dispatches connecting with connectingTo: input', () => {
+    const connectingListener = vi.fn()
+    connector.events.addEventListener('connecting', connectingListener)
+
+    // Use a floating link path (no link ID, has _floatingLinks) which is
+    // simpler to mock than the full link resolution path.
+    const floatingLink = {
+      id: 1,
+      parentId: 'reroute-1',
+      _dragging: false
+    }
+    const reroute = { id: 'reroute-1' }
+    const reroutes = new Map([['reroute-1', reroute]])
+    const network = createMockLinkNetwork({
+      links: new Map(),
+      reroutes,
+      getReroute: (id: string) => reroutes.get(id)
+    } as never)
+
+    const floatingLinks = new Set([floatingLink])
+    const input = createMockNodeInputSlot({
+      link: null,
+      _floatingLinks: floatingLinks
+    } as never)
+
+    connector.moveInputLink(network, input)
+
+    expect(connectingListener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { connectingTo: 'input' }
+      })
+    )
+  })
+
+  test('moveOutputLink dispatches connecting with connectingTo: output', () => {
+    const connectingListener = vi.fn()
+    connector.events.addEventListener('connecting', connectingListener)
+
+    // Inject a render link directly so moveOutputLink reaches the dispatch
+    // without needing full link resolution mocking.
+    connector.renderLinks.push(createMockRenderLink())
+
+    const network = createMockLinkNetwork({
+      links: new Map(),
+      reroutes: new Map()
+    } as never)
+
+    // Empty output (no links/floating) — the method will find renderLinks
+    // already populated from our injection and proceed to dispatch.
+    const output = createMockNodeOutputSlot({ links: [] })
+
+    connector.moveOutputLink(network, output)
+
+    expect(connectingListener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { connectingTo: 'output' }
+      })
+    )
   })
 })
