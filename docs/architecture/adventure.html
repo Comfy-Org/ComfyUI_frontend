@@ -1649,6 +1649,35 @@
       renderMap()
 
       addLog(`Entered: ${room.title}`)
+      preloadAdjacentImages(room)
+    }
+
+    // --- Image preloading ---
+    const preloaded = new Set()
+
+    function preloadImage(src) {
+      if (preloaded.has(src)) return
+      preloaded.add(src)
+      const img = new Image()
+      img.src = src
+    }
+
+    function preloadAdjacentImages(room) {
+      for (const c of room.choices) {
+        const target = rooms[c.room]
+        if (!target) continue
+        preloadImage(`images/${c.room}.png`)
+        if (target.challenge) {
+          for (const ch of target.challenge.choices) {
+            if (ch.icon) preloadImage(`icons/${ch.icon}.png`)
+          }
+        }
+        if (target.artifacts) {
+          for (const a of target.artifacts) {
+            if (a.icon) preloadImage(`icons/${a.icon}.png`)
+          }
+        }
+      }
     }
 
     function showChallenge(roomId, challenge) {
