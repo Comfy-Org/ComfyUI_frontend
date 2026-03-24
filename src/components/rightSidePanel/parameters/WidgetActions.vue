@@ -15,9 +15,11 @@ import {
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { usePromotionStore } from '@/stores/promotionStore'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -41,7 +43,9 @@ const emit = defineEmits<{
 const label = defineModel<string>('label', { required: true })
 
 const canvasStore = useCanvasStore()
+const settingStore = useSettingStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 const nodeDefStore = useNodeDefStore()
 const promotionStore = usePromotionStore()
 const { t } = useI18n()
@@ -52,6 +56,18 @@ const favoriteNode = computed(() =>
 )
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
+)
+
+const isEffectivelyAdvanced = computed(() =>
+  advancedOverridesStore.getAdvancedState(node, widget)
+)
+
+const backendDefaultAdvanced = computed(() => !!widget.options?.advanced)
+
+const showAdvancedToggle = computed(
+  () =>
+    !hasParents.value &&
+    !settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
 )
 
 const inputSpec = computed(() =>
@@ -103,6 +119,17 @@ function handleShowInput() {
 
 function handleToggleFavorite() {
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
+}
+
+function handleToggleAdvanced() {
+  const newEffective = !isEffectivelyAdvanced.value
+  if (newEffective === backendDefaultAdvanced.value) {
+    advancedOverridesStore.clearOverride(node, widget.name)
+  } else {
+    advancedOverridesStore.setAdvanced(node, widget.name, newEffective)
+  }
+
+  node.expandToFitContent()
 }
 
 function handleResetToDefault() {
@@ -173,6 +200,28 @@ function handleResetToDefault() {
         <template v-else>
           <i class="icon-[lucide--star] size-4" />
           <span>{{ t('rightSidePanel.addFavorite') }}</span>
+        </template>
+      </Button>
+
+      <Button
+        v-if="showAdvancedToggle"
+        variant="textonly"
+        size="unset"
+        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
+        @click="
+          () => {
+            handleToggleAdvanced()
+            close()
+          }
+        "
+      >
+        <template v-if="isEffectivelyAdvanced">
+          <i class="icon-[lucide--eye] size-4" />
+          <span>{{ t('rightSidePanel.showInput') }}</span>
+        </template>
+        <template v-else>
+          <i class="icon-[lucide--eye-off] size-4" />
+          <span>{{ t('rightSidePanel.hideInput') }}</span>
         </template>
       </Button>
 
