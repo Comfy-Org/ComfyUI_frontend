@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
+  getAdditionalUserInfo,
   onAuthStateChanged,
   onIdTokenChanged,
   sendPasswordResetEmail,
@@ -386,9 +387,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user: options?.isNewUser ?? false,
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid
       })
     }
@@ -405,9 +408,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user: options?.isNewUser ?? false,
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid
       })
     }

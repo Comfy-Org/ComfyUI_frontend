@@ -90,6 +90,7 @@
               variant="secondary"
               size="sm"
               class="h-8 w-2/3 justify-center gap-1 rounded-lg text-xs"
+              data-testid="error-card-find-on-github"
               @click="handleCheckGithub(error)"
             >
               {{ t('g.findOnGithub') }}
@@ -99,6 +100,7 @@
               variant="secondary"
               size="sm"
               class="h-8 w-1/3 justify-center gap-1 rounded-lg text-xs"
+              data-testid="error-card-copy"
               @click="handleCopyError(idx)"
             >
               {{ t('g.copy') }}
@@ -125,12 +127,10 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { ErrorCardData, ErrorItem } from './types'
+import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'
 
 const {
@@ -154,10 +154,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const telemetry = useTelemetry()
-const { staticUrls } = useExternalLink()
-const commandStore = useCommandStore()
 const { displayedDetailsMap } = useErrorReport(() => card)
+const { findOnGitHub, contactSupport: handleGetHelp } = useErrorActions()
 
 function handleLocateNode() {
   if (card.nodeId) {
@@ -178,23 +176,6 @@ function handleCopyError(idx: number) {
 }
 
 function handleCheckGithub(error: ErrorItem) {
-  telemetry?.trackUiButtonClicked({
-    button_id: 'error_tab_find_existing_issues_clicked'
-  })
-  const query = encodeURIComponent(error.message + ' is:issue')
-  window.open(
-    `${staticUrls.githubIssues}?q=${query}`,
-    '_blank',
-    'noopener,noreferrer'
-  )
-}
-
-function handleGetHelp() {
-  telemetry?.trackHelpResourceClicked({
-    resource_type: 'help_feedback',
-    is_external: true,
-    source: 'error_dialog'
-  })
-  commandStore.execute('Comfy.ContactSupport')
+  findOnGitHub(error.message)
 }
 </script>
