@@ -39,15 +39,18 @@ RECENTLY_MERGED=$(gh pr list --base TARGET_BRANCH --state merged --limit 50 --js
 
 # For PRs still open, check CI status
 for pr in $STILL_OPEN_PRS; do
-  CI_STATUS=$(gh pr checks $pr --json name,state --jq '[.[] | select(.state != "SUCCESS")] | length')
-  if [ "$CI_STATUS" = "0" ]; then
+  CI_FAILED=$(gh pr checks $pr --json name,state --jq '[.[] | select(.state == "FAILURE")] | length')
+  CI_PENDING=$(gh pr checks $pr --json name,state --jq '[.[] | select(.state == "PENDING" or .state == "QUEUED")] | length')
+  if [ "$CI_FAILED" != "0" ]; then
+    # CI failed — collect details for triage
+    echo "PR #$pr — CI FAILED:"
+    gh pr checks $pr --json name,state,link --jq '.[] | select(.state == "FAILURE") | "\(.name): \(.state)"'
+  elif [ "$CI_PENDING" != "0" ]; then
+    echo "PR #$pr — CI still running ($CI_PENDING checks pending)"
+  else
     # All checks passed but didn't auto-merge (race condition or label issue)
     gh pr merge $pr --squash --admin
     sleep 3
-  else
-    # CI failed — collect details for triage
-    echo "PR #$pr — CI FAILED:"
-    gh pr checks $pr --json name,state,link --jq '.[] | select(.state != "SUCCESS") | "\(.name): \(.state)"'
   fi
 done
 ```
