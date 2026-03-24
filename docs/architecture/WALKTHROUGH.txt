@@ -420,66 +420,58 @@
 
   Endings are checked in order. First match wins.
 
-  .-------------------------------------------------------------------.
+  .--------------------------------------------------------------------.
   |                                                                    |
-  |  +============================================================+   |
-  |  |  ENDING 1: THE ECS ENLIGHTENMENT                    [BEST] |   |
-  |  +============================================================+   |
+  |   ENDING 1: THE ECS ENLIGHTENMENT                          [BEST]  |
   |                                                                    |
-  |  Requirements: Debt < 25 AND Quality >= 75 AND Morale >= 60       |
+  |   Requirements: Debt < 25 AND Quality >= 75 AND Morale >= 60       |
   |                                                                    |
-  |  "The World registry hums with clean data. Node removal:          |
-  |   30 lines instead of 107. Serialization: one system instead      |
-  |   of six scattered methods. Branded IDs catch bugs at compile     |
-  |   time. Y.js CRDTs enable real-time collaboration. The team       |
-  |   ships features faster than ever."                               |
+  |   "The World registry hums with clean data. Node removal:          |
+  |    30 lines instead of 107. Serialization: one system instead      |
+  |    of six scattered methods. Branded IDs catch bugs at compile     |
+  |    time. Y.js CRDTs enable real-time collaboration. The team       |
+  |    ships features faster than ever."                               |
   |                                                                    |
-  |  HOW TO GET IT: Pick ALL good answers. Hard to miss if you        |
-  |  read the hints carefully.                                        |
+  |   HOW TO GET IT: Pick ALL good answers. Hard to miss if you        |
+  |   read the hints carefully.                                        |
   '--------------------------------------------------------------------'
 
-  .-------------------------------------------------------------------.
+  .--------------------------------------------------------------------.
   |                                                                    |
-  |  +============================================================+   |
-  |  |  ENDING 2: THE CLEAN ARCHITECTURE                  [GOOD]  |   |
-  |  +============================================================+   |
+  |   ENDING 2: THE CLEAN ARCHITECTURE                          [GOOD] |
   |                                                                    |
-  |  Requirements: Debt < 40 AND Quality >= 50                        |
+  |   Requirements: Debt < 40 AND Quality >= 50                        |
   |                                                                    |
-  |  "The migration completes on schedule. Systems hum along,         |
-  |   the ECS World holds most entity state, and the worst god        |
-  |   objects have been tamed."                                       |
+  |   "The migration completes on schedule. Systems hum along,         |
+  |    the ECS World holds most entity state, and the worst god        |
+  |    objects have been tamed."                                       |
   |                                                                    |
-  |  HOW TO GET IT: Pick mostly good answers, 1-2 OK answers.        |
+  |   HOW TO GET IT: Pick mostly good answers, 1-2 OK answers.         |
   '--------------------------------------------------------------------'
 
-  .-------------------------------------------------------------------.
+  .--------------------------------------------------------------------.
   |                                                                    |
-  |  +============================================================+   |
-  |  |  ENDING 3: THE ETERNAL REFACTOR                    [MEH]   |   |
-  |  +============================================================+   |
+  |   ENDING 3: THE ETERNAL REFACTOR                            [MEH]  |
   |                                                                    |
-  |  Requirements: Debt < 70                                          |
+  |   Requirements: Debt < 70                                          |
   |                                                                    |
-  |  "The migration... continues. Every sprint has a 'cleanup'        |
-  |   ticket that never quite closes."                                |
+  |   "The migration... continues. Every sprint has a 'cleanup'        |
+  |    ticket that never quite closes."                                |
   |                                                                    |
-  |  HOW TO GET IT: Mix of OK and BAD answers. The "safe" middle.     |
+  |   HOW TO GET IT: Mix of OK and BAD answers. The "safe" middle.     |
   '--------------------------------------------------------------------'
 
-  .-------------------------------------------------------------------.
+  .--------------------------------------------------------------------.
   |                                                                    |
-  |  +============================================================+   |
-  |  |  ENDING 4: THE SPAGHETTI SINGULARITY              [WORST]  |   |
-  |  +============================================================+   |
+  |   ENDING 4: THE SPAGHETTI SINGULARITY                     [WORST]  |
   |                                                                    |
-  |  Requirements: Debt >= 70 (catch-all)                             |
+  |   Requirements: Debt >= 70 (catch-all)                             |
   |                                                                    |
-  |  "The god objects grew sentient. LGraphCanvas hit 12,000 lines    |
-  |   and developed a circular dependency with itself."               |
+  |   "The god objects grew sentient. LGraphCanvas hit 12,000 lines    |
+  |    and developed a circular dependency with itself."               |
   |                                                                    |
-  |  HOW TO GET IT: Pick all BAD answers. You have to try.            |
-  |  Starting debt is 50, so you need +20 from bad choices.           |
+  |   HOW TO GET IT: Pick all BAD answers. You have to try.            |
+  |   Starting debt is 50, so you need +20 from bad choices.           |
   '--------------------------------------------------------------------'
 
 ===============================================================================
