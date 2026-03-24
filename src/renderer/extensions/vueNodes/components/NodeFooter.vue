@@ -28,7 +28,7 @@
           '-z-10 bg-node-component-header-surface'
         )
       "
-      :style="{ backgroundColor: headerColor }"
+      :style="headerColorStyle"
       @click.stop="$emit('enterSubgraph')"
     >
       <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
@@ -73,6 +73,7 @@
           '-z-10 bg-node-component-header-surface'
         )
       "
+      :style="headerColorStyle"
       @click.stop="$emit('toggleAdvanced')"
     >
       <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
@@ -124,7 +125,7 @@
           '-z-10 bg-node-component-header-surface'
         )
       "
-      :style="{ backgroundColor: headerColor }"
+      :style="headerColorStyle"
       @click.stop="$emit('enterSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
@@ -145,6 +146,7 @@
         '-z-10 bg-node-component-header-surface'
       )
     "
+    :style="headerColorStyle"
     @click.stop="$emit('toggleAdvanced')"
   >
     <div class="flex size-full items-center justify-center gap-2">
@@ -232,6 +234,10 @@ const getTabStyles = (isBackground = false) => {
     props.hasAnyError ? '-translate-x-1 translate-y-0.5' : 'translate-y-0.5'
   )
 }
+
+const headerColorStyle = computed(() =>
+  props.headerColor ? { backgroundColor: props.headerColor } : undefined
+)
 
 // Case 1 context: Split widths
 const errorTabWidth = 'w-[calc(50%+4px)]'
