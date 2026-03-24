@@ -70,4 +70,51 @@ describe('findEmptyFileInputNodes', () => {
       { nodeId: '5', classType: 'Load3D', title: 'Load3D' }
     ])
   })
+
+  it('detects null file input values', () => {
+    const output: ComfyApiWorkflow = {
+      '1': makeNode('LoadImage', { image: null })
+    }
+    expect(findEmptyFileInputNodes(output)).toHaveLength(1)
+  })
+
+  it('detects undefined file input values', () => {
+    const output: ComfyApiWorkflow = {
+      '1': makeNode('LoadImage', { image: undefined })
+    }
+    expect(findEmptyFileInputNodes(output)).toHaveLength(1)
+  })
+
+  it('detects whitespace-only file input values', () => {
+    const output: ComfyApiWorkflow = {
+      '1': makeNode('LoadImage', { image: '   ' })
+    }
+    expect(findEmptyFileInputNodes(output)).toHaveLength(1)
+  })
+
+  it('skips linked inputs (array references to other nodes)', () => {
+    const output: ComfyApiWorkflow = {
+      '1': makeNode('LoadImage', { image: ['5', 0] })
+    }
+    expect(findEmptyFileInputNodes(output)).toEqual([])
+  })
+
+  it('filters to only specified node IDs when provided', () => {
+    const output: ComfyApiWorkflow = {
+      '1': makeNode('LoadImage', { image: '' }),
+      '2': makeNode('LoadAudio', { audio: '' }),
+      '3': makeNode('KSampler', { seed: 42 })
+    }
+    const result = findEmptyFileInputNodes(output, new Set(['2', '3']))
+    expect(result).toEqual([
+      { nodeId: '2', classType: 'LoadAudio', title: 'LoadAudio' }
+    ])
+  })
+
+  it('detects missing file input field entirely', () => {
+    const output: ComfyApiWorkflow = {
+      '1': makeNode('LoadImage', {})
+    }
+    expect(findEmptyFileInputNodes(output)).toHaveLength(1)
+  })
 })

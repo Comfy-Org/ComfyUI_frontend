@@ -146,20 +146,29 @@ import {
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-export const FILE_INPUT_FIELDS: Record<string, string> = {
+export const FILE_INPUT_FIELDS = {
   LoadImage: 'image',
   LoadAudio: 'audio',
   Load3D: 'model_file',
   LoadVideo: 'video'
+} as const
+
+function isEmptyFileValue(value: unknown): boolean {
+  if (Array.isArray(value)) return false // linked input from another node
+  if (typeof value === 'string') return value.trim() === ''
+  return value == null
 }
 
 export function findEmptyFileInputNodes(
-  output: ComfyApiWorkflow
+  output: ComfyApiWorkflow,
+  nodeIds?: Set<string>
 ): { nodeId: string; classType: string; title: string }[] {
   const result: { nodeId: string; classType: string; title: string }[] = []
   for (const [nodeId, node] of Object.entries(output)) {
-    const field = FILE_INPUT_FIELDS[node.class_type]
-    if (field && node.inputs[field] === '') {
+    if (nodeIds && !nodeIds.has(nodeId)) continue
+    const field =
+      FILE_INPUT_FIELDS[node.class_type as keyof typeof FILE_INPUT_FIELDS]
+    if (field && isEmptyFileValue(node.inputs[field])) {
       result.push({
         nodeId,
         classType: node.class_type,
@@ -1640,7 +1649,13 @@ export class ComfyApp {
             .activeWorkflow as ComfyWorkflow
           const p = await this.graphToPrompt(this.rootGraph)
 
-          const emptyFileInputNodes = findEmptyFileInputNodes(p.output)
+          const targetNodeIds = isPartialExecution
+            ? new Set(queueNodeIds!)
+            : undefined
+          const emptyFileInputNodes = findEmptyFileInputNodes(
+            p.output,
+            targetNodeIds
+          )
           if (emptyFileInputNodes.length) {
             const nodeList = emptyFileInputNodes
               .map((n) => `#${n.nodeId} ${n.title}`)
