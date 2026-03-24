@@ -383,10 +383,10 @@ catalogs:
       version: 13.6.27
     zod:
       specifier: ^3.23.8
-      version: 3.24.1
+      version: 3.25.76
     zod-to-json-schema:
       specifier: ^3.24.1
-      version: 3.24.1
+      version: 3.25.1
     zod-validation-error:
       specifier: ^3.3.0
       version: 3.3.0
@@ -589,10 +589,10 @@ importers:
         version: 13.6.27
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.25.76
       zod-validation-error:
         specifier: 'catalog:'
-        version: 3.3.0(zod@3.24.1)
+        version: 3.3.0(zod@3.25.76)
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'
@@ -602,7 +602,7 @@ importers:
         version: 4.1.1(eslint@9.39.1(jiti@2.6.1))(jsonc-eslint-parser@2.4.0)(vue-eslint-parser@10.4.0(eslint@9.39.1(jiti@2.6.1)))(yaml-eslint-parser@1.3.0)
       '@lobehub/i18n-cli':
         specifier: 'catalog:'
-        version: 1.26.1(@types/react@19.1.9)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.4))(ws@8.19.0)(zod@3.24.1)
+        version: 1.26.1(@types/react@19.1.9)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.4))(ws@8.19.0)(zod@3.25.76)
       '@nx/eslint':
         specifier: 'catalog:'
         version: 22.6.1(@babel/traverse@7.29.0)(@zkochan/js-yaml@0.0.7)(eslint@9.39.1(jiti@2.6.1))(nx@22.6.1)
@@ -827,7 +827,7 @@ importers:
         version: 2.0.0
       zod-to-json-schema:
         specifier: 'catalog:'
-        version: 3.24.1(zod@3.24.1)
+        version: 3.25.1(zod@3.25.76)
 
   apps/desktop-ui:
     dependencies:
@@ -950,7 +950,7 @@ importers:
     dependencies:
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.25.76
     devDependencies:
       '@hey-api/openapi-ts':
         specifier: 0.93.0
@@ -9138,9 +9138,6 @@ packages:
   uc.micro@2.1.0:
     resolution: {integrity: sha512-ARDJmphmdvUk6Glw7y9DQ2bFkKBHwQHLi2lsaH6PPmz/Ka9sFOBsBluozhDltWmnv9u/cF6Rt87znRTPV+yp/A==}
 
-  ufo@1.6.1:
-    resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
-
   ufo@1.6.3:
     resolution: {integrity: sha512-yDJTmhydvl5lJzBmy/hyOAA0d+aqCBuwl818haVdYCRrWV84o7YyeVm4QlVHStqNrrJSTb6jKuFAVqAFsr+K3Q==}
 
@@ -9882,11 +9879,6 @@ packages:
   zip-dir@2.0.0:
     resolution: {integrity: sha512-uhlsJZWz26FLYXOD6WVuq+fIcZ3aBPGo/cFdiLlv3KNwpa52IF3ISV8fLhQLiqVu5No3VhlqlgthN6gehil1Dg==}
 
-  zod-to-json-schema@3.24.1:
-    resolution: {integrity: sha512-3h08nf3Vw3Wl3PK+q3ow/lIil81IT2Oa7YpQyUUDsEWbXveMesdfK1xBd2RhCkynwZndAxixji/7SYJJowr62w==}
-    peerDependencies:
-      zod: ^3.24.1
-
   zod-to-json-schema@3.25.1:
     resolution: {integrity: sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==}
     peerDependencies:
@@ -9903,9 +9895,6 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.18.0
-
-  zod@3.24.1:
-    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
@@ -11793,7 +11782,7 @@ snapshots:
       - react-devtools-core
       - utf-8-validate
 
-  '@lobehub/i18n-cli@1.26.1(@types/react@19.1.9)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.4))(ws@8.19.0)(zod@3.24.1)':
+  '@lobehub/i18n-cli@1.26.1(@types/react@19.1.9)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.4))(ws@8.19.0)(zod@3.25.76)':
     dependencies:
       '@lobehub/cli-ui': 1.13.0(@types/react@19.1.9)
       '@yutengjing/eld': 0.0.2
@@ -11812,7 +11801,7 @@ snapshots:
       json-stable-stringify: 1.3.0
       just-diff: 6.0.2
       lodash-es: 4.17.23
-      openai: 4.104.0(ws@8.19.0)(zod@3.24.1)
+      openai: 4.104.0(ws@8.19.0)(zod@3.25.76)
       p-map: 7.0.4
       pangu: 4.0.7
       react: 19.2.4
@@ -17438,7 +17427,7 @@ snapshots:
       acorn: 8.16.0
       pathe: 2.0.3
       pkg-types: 1.3.1
-      ufo: 1.6.1
+      ufo: 1.6.3
 
   modern-tar@0.7.3: {}
 
@@ -17615,7 +17604,7 @@ snapshots:
     dependencies:
       destr: 2.0.5
       node-fetch-native: 1.6.7
-      ufo: 1.6.1
+      ufo: 1.6.3
 
   ohash@2.0.11: {}
 
@@ -17661,7 +17650,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@4.104.0(ws@8.19.0)(zod@3.24.1):
+  openai@4.104.0(ws@8.19.0)(zod@3.25.76):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -17672,7 +17661,7 @@ snapshots:
       node-fetch: 2.7.0
     optionalDependencies:
       ws: 8.19.0
-      zod: 3.24.1
+      zod: 3.25.76
     transitivePeerDependencies:
       - encoding
 
@@ -19323,8 +19312,6 @@ snapshots:
 
   uc.micro@2.1.0: {}
 
-  ufo@1.6.1: {}
-
   ufo@1.6.3: {}
 
   uint8array-extras@1.5.0: {}
@@ -20176,10 +20163,6 @@ snapshots:
       async: 3.2.5
       jszip: 3.10.1
 
-  zod-to-json-schema@3.24.1(zod@3.24.1):
-    dependencies:
-      zod: 3.24.1
-
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:
       zod: 3.25.76
@@ -20189,11 +20172,9 @@ snapshots:
       typescript: 5.9.3
       zod: 3.25.76
 
-  zod-validation-error@3.3.0(zod@3.24.1):
+  zod-validation-error@3.3.0(zod@3.25.76):
     dependencies:
-      zod: 3.24.1
-
-  zod@3.24.1: {}
+      zod: 3.25.76
 
   zod@3.25.76: {}
 
