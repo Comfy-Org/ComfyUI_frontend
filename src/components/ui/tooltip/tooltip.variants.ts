@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const tooltipVariants = cva({
-  base: 'z-1700 select-none border border-node-component-tooltip-border bg-node-component-tooltip-surface px-4 py-2 text-node-component-tooltip shadow-interface',
+  base: 'z-[1700] select-none border border-node-component-tooltip-border bg-node-component-tooltip-surface px-4 py-2 text-node-component-tooltip shadow-interface',
   variants: {
     size: {
       small: 'rounded-lg text-xs leading-none',
