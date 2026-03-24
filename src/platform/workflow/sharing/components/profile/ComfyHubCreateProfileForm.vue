@@ -75,10 +75,19 @@
             >
               @
             </span>
-            <Input id="profile-username" v-model="username" class="pl-7" />
+            <Input
+              id="profile-username"
+              v-model="username"
+              class="pl-7"
+              :aria-invalid="showUsernameError ? 'true' : 'false'"
+              :aria-describedby="
+                showUsernameError ? 'profile-username-error' : undefined
+              "
+            />
           </div>
           <p
             v-if="showUsernameError"
+            id="profile-username-error"
             class="text-xs text-destructive-background"
           >
             {{ $t('comfyHubProfile.usernameError') }}

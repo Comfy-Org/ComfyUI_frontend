@@ -68,6 +68,8 @@ const emit = defineEmits<{
   insertFiles: [index: number, files: FileList]
 }>()
 
+// focusVisible is a Chromium 122+ extension to FocusOptions
+// (not yet in TypeScript's lib.dom.d.ts)
 function focusVisible(el: HTMLElement) {
   el.focus({ focusVisible: true } as FocusOptions)
 }

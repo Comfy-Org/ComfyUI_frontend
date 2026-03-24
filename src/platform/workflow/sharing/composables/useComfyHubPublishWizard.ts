@@ -19,6 +19,7 @@ const PUBLISH_STEPS = [
 
 export type ComfyHubPublishStep = (typeof PUBLISH_STEPS)[number]
 
+// TODO: Migrate to a Pinia store alongside the profile gate singleton
 const cachedPrefills = new Map<string, PublishPrefill>()
 
 function createDefaultFormData(): ComfyHubPublishFormData {

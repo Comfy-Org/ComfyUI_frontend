@@ -118,7 +118,11 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      throw new Error('Failed to upload file')
+      const message = await parseErrorMessage(
+        response,
+        'Failed to upload file to presigned URL'
+      )
+      throw new Error(message)
     }
   }
 

@@ -18,7 +18,7 @@
             class="size-full rounded-full object-cover"
           />
           <span v-else class="text-base text-white">
-            {{ (profile.name ?? profile.username)[0].toUpperCase() }}
+            {{ (profile.name ?? profile.username).charAt(0).toUpperCase() }}
           </span>
         </div>
         <div class="flex flex-1 flex-col gap-2">
@@ -72,15 +72,18 @@ const ready = defineModel<boolean>('ready', { default: false })
 
 const shareService = useWorkflowShareService()
 
-const { state: privateAssets, isLoading: isLoadingAssets } = useAsyncState(
-  () => shareService.getShareableAssets(),
-  []
-)
+const {
+  state: privateAssets,
+  isLoading: isLoadingAssets,
+  error: privateAssetsError
+} = useAsyncState(() => shareService.getShareableAssets(), [])
 
 const hasPrivateAssets = computed(() => privateAssets.value.length > 0)
 const isReady = computed(
   () =>
-    !isLoadingAssets.value && (!hasPrivateAssets.value || acknowledged.value)
+    !isLoadingAssets.value &&
+    !privateAssetsError.value &&
+    (!hasPrivateAssets.value || acknowledged.value)
 )
 
 watch(

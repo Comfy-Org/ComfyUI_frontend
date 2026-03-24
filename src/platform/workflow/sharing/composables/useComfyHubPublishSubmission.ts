@@ -10,10 +10,6 @@ function getFileContentType(file: File): string {
   return file.type || 'application/octet-stream'
 }
 
-function hasExampleContent(formData: ComfyHubPublishFormData): boolean {
-  return formData.exampleImages.length > 0
-}
-
 function getUsername(profile: ComfyHubProfile | null): string {
   const username = profile?.username?.trim()
   if (!username) {
@@ -88,7 +84,7 @@ export function useComfyHubPublishSubmission() {
         ? await uploadFileAndGetToken(formData.comparisonAfterFile)
         : undefined
 
-    const sampleImageTokensOrUrls = hasExampleContent(formData)
+    const sampleImageTokensOrUrls = formData.exampleImages.length > 0
       ? await Promise.all(
           formData.exampleImages.map((image) =>
             image.file ? uploadFileAndGetToken(image.file) : image.url
