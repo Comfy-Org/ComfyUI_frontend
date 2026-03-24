@@ -1634,6 +1634,7 @@ export class ComfyApp {
                   executionStore.storeJob({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
+                    promptOutput: p.output,
                     workflow: queuedWorkflow
                   })
                 }

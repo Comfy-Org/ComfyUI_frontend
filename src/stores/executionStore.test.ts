@@ -1,17 +1,22 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
+
+type WorkflowConstructor = typeof WorkflowStoreModule.ComfyWorkflow
 
 // Create mock functions that will be shared
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
 const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
-
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeProgressState } from '@/schemas/apiSchema'
+const workflowModuleState = vi.hoisted(() => ({
+  WorkflowClass: undefined as WorkflowConstructor | undefined
+}))
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -20,6 +25,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
     '@/platform/workflow/management/stores/workflowStore'
   )
+  workflowModuleState.WorkflowClass = ComfyWorkflow
   return {
     ComfyWorkflow,
     useWorkflowStore: vi.fn(() => ({
@@ -60,7 +66,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/imagePreviewStore', () => ({
+vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: vi.fn()
   })
@@ -83,6 +89,29 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
+
+function createQueuedWorkflow(path: string = 'workflows/test.json') {
+  const { WorkflowClass } = workflowModuleState
+  if (!WorkflowClass) {
+    throw new Error('ComfyWorkflow mock class is not available')
+  }
+
+  return new WorkflowClass({
+    path,
+    modified: 0,
+    size: 0
+  })
+}
+
+function createPromptNode(title: string, classType: string) {
+  return {
+    inputs: {},
+    class_type: classType,
+    _meta: {
+      title
+    }
+  }
+}
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
@@ -595,6 +624,103 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
       const result = store.slotHasError('123', 'width')
       expect(result).toBe(false)
     })
+  })
+})
+
+describe('useExecutionStore - executingNode with subgraphs', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should find executing node info in root graph from queued prompt data', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '123': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '123',
+        prompt_id: 'test-prompt',
+        node_id: '123'
+      }
+    }
+
+    expect(store.executingNode).toEqual({
+      title: 'Test Node',
+      type: 'TestNode'
+    })
+  })
+
+  it('should find executing node info in subgraph using execution ID', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['456:789'],
+      promptOutput: {
+        '456:789': createPromptNode('Nested Node', 'NestedNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '456:789': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '456:789',
+        prompt_id: 'test-prompt',
+        node_id: '456:789'
+      }
+    }
+
+    expect(store.executingNode).toEqual({
+      title: 'Nested Node',
+      type: 'NestedNode'
+    })
+  })
+
+  it('should return null when no node is executing', () => {
+    store.nodeProgressStates = {}
+
+    expect(store.executingNode).toBeNull()
+  })
+
+  it('should return null when executing node metadata cannot be found', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '999': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '999',
+        prompt_id: 'test-prompt',
+        node_id: '999'
+      }
+    }
+
+    expect(store.executingNode).toBeNull()
   })
 })
 
