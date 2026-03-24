@@ -300,6 +300,68 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
   })
 
+  test('subgraph transition (enter and exit)', async ({ comfyPage }) => {
+    // Load workflow with a subgraph containing 80 interior nodes.
+    // Entering the subgraph unmounts root nodes and mounts all 80 interior
+    // nodes synchronously — this is the bottleneck we're measuring.
+    await comfyPage.workflow.loadWorkflow('subgraphs/large-subgraph-80-nodes')
+
+    // Wait for initial render to stabilize
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    // Enter the subgraph via the footer button
+    await comfyPage.vueNodes.enterSubgraph()
+
+    // Wait for subgraph to fully mount
+    await expect(async () => {
+      const nodeCount = await comfyPage.vueNodes.getNodeCount()
+      expect(nodeCount).toBeGreaterThanOrEqual(80)
+    }).toPass({ timeout: 10000 })
+
+    // Let it settle
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    // Now measure a fresh enter/exit cycle
+    // Exit back to root graph first
+    await comfyPage.command.executeCommand('Comfy.Graph.ExitSubgraph')
+    await expect(async () => {
+      const isRoot = await comfyPage.page.evaluate(
+        () => !('inputNode' in window.app!.canvas.graph!)
+      )
+      expect(isRoot).toBe(true)
+    }).toPass({ timeout: 5000 })
+
+    for (let i = 0; i < 10; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    // Start measuring the enter transition
+    await comfyPage.perf.startMeasuring()
+
+    await comfyPage.vueNodes.enterSubgraph()
+
+    // Wait for all 80 nodes to mount
+    await expect(async () => {
+      const nodeCount = await comfyPage.vueNodes.getNodeCount()
+      expect(nodeCount).toBeGreaterThanOrEqual(80)
+    }).toPass({ timeout: 10000 })
+
+    // Let layout settle
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
+    recordMeasurement(m)
+    console.log(
+      `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
