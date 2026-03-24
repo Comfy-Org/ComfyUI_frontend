@@ -42,7 +42,6 @@ import type { StyleValue } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
-import type { ClassValue } from '@/utils/tailwindUtil'
 
 const {
   src,
@@ -54,8 +53,8 @@ const {
 } = defineProps<{
   src: string
   alt?: string
-  containerClass?: ClassValue
-  imageClass?: ClassValue
+  containerClass?: string
+  imageClass?: string
   imageStyle?: StyleValue
   rootMargin?: string
 }>()

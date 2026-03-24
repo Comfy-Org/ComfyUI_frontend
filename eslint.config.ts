@@ -145,9 +145,7 @@ export default defineConfig([
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
