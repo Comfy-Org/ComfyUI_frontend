@@ -32,8 +32,8 @@ const mockBalance = vi.hoisted(() => ({
 
 const mockIsFetchingBalance = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
     balance: mockBalance.value,
     isFetchingBalance: mockIsFetchingBalance.value
   }))

@@ -9,7 +9,7 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -181,7 +181,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     error.value = null
 
     try {
-      const firebaseAuthStore = useFirebaseAuthStore()
+      const firebaseAuthStore = useAuthStore()
       const firebaseToken = await firebaseAuthStore.getIdToken()
       if (!firebaseToken) {
         throw new WorkspaceAuthError(

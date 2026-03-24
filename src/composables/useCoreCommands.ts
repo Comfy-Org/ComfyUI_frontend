@@ -1,5 +1,5 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -78,7 +78,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
-  const firebaseAuthActions = useFirebaseAuthActions()
+  const firebaseAuthActions = useAuthActions()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()

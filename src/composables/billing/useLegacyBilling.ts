@@ -5,7 +5,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   BalanceInfo,
@@ -33,7 +33,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
 
-  const firebaseAuthStore = useFirebaseAuthStore()
+  const firebaseAuthStore = useAuthStore()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)

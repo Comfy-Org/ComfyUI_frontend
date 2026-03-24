@@ -78,7 +78,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -120,7 +120,7 @@ watch(linearMode, (isLinear) => {
 })
 
 const telemetry = useTelemetry()
-const firebaseAuthStore = useFirebaseAuthStore()
+const firebaseAuthStore = useAuthStore()
 let hasTrackedLogin = false
 
 watch(

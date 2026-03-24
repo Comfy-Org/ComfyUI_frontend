@@ -67,7 +67,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
@@ -1591,7 +1591,7 @@ export class ComfyApp {
     executionErrorStore.clearAllErrors()
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const comfyOrgAuthToken = await useAuthStore().getAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
