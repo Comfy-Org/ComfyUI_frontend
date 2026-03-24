@@ -67,7 +67,7 @@ const {
         <TooltipArrow
           :width="8"
           :height="5"
-          class="fill-node-component-tooltip-surface"
+          class="fill-node-component-tooltip-surface stroke-node-component-tooltip-border"
         />
       </TooltipContent>
     </TooltipPortal>
