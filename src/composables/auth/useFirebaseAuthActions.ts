@@ -140,13 +140,19 @@ export const useFirebaseAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.loginWithGoogle()
-  }, reportError)
+  const signInWithGoogle = wrapWithErrorHandlingAsync(
+    async (options?: { isNewUser?: boolean }) => {
+      return await authStore.loginWithGoogle(options)
+    },
+    reportError
+  )
 
-  const signInWithGithub = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.loginWithGithub()
-  }, reportError)
+  const signInWithGithub = wrapWithErrorHandlingAsync(
+    async (options?: { isNewUser?: boolean }) => {
+      return await authStore.loginWithGithub(options)
+    },
+    reportError
+  )
 
   const signInWithEmail = wrapWithErrorHandlingAsync(
     async (email: string, password: string) => {
