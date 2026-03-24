@@ -892,7 +892,7 @@ async function runAgenticLoop(
   // Use flash for agentic loop — rapid iteration matters more than reasoning
   const agenticModel = opts.model.includes('flash')
     ? opts.model
-    : opts.model.replace('pro', 'flash')
+    : 'gemini-3-flash-preview'
   const model = genAI.getGenerativeModel({
     model: agenticModel,
     systemInstruction
