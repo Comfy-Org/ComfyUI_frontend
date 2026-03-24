@@ -103,8 +103,9 @@ playwright-cli snapshot
 Start recording the **research video** (Video 1). This captures the full exploration — mistakes, retries, dead ends — all valuable context.
 
 ```bash
-# Start browser with video recording for the research session
-playwright-cli goto "http://127.0.0.1:8188" --save-video=/tmp/qa/research-video/
+# Open browser and start video recording
+playwright-cli open "http://127.0.0.1:8188"
+playwright-cli video-start
 
 # Take a snapshot to see current state
 playwright-cli snapshot
@@ -148,18 +149,26 @@ playwright-cli screenshot --filename=/tmp/qa/research-step-1.png
 | Right-click menu | `playwright-cli click <ref> --button right` |
 | Keyboard shortcut | `playwright-cli press "Control+z"` |
 
-## Phase 4: Record Clean Demo — Reproduce Video
+## Phase 4: Record Clean Demo — Reproduce Video (max 5 minutes)
 
-Once the bug is confirmed, **close the research browser** to finalize Video 1:
+Once the bug is confirmed, **stop the research video** and **close the research browser**:
 ```bash
+playwright-cli video-stop
 playwright-cli close
 ```
 
-Now start a **fresh browser session** for the clean reproduce video (Video 2):
+Now start a **fresh browser session** for the clean reproduce video (Video 2).
 
-1. **Start recording**:
+**IMPORTANT constraints:**
+- **Max 5 minutes** — the reproduce video must be short and focused
+- **No environment setup** — server, user, custom nodes are already set up from Phase 3. Just log in and go.
+- **No exploration** — you already know the exact steps. Execute them quickly and precisely.
+- **Start video recording immediately**, execute steps, stop. Don't leave the recording running while thinking.
+
+1. **Open browser and start recording**:
    ```bash
-   playwright-cli goto "http://127.0.0.1:8188" --save-video=/tmp/qa/reproduce-video/
+   playwright-cli open "http://127.0.0.1:8188"
+   playwright-cli video-start
    ```
 
 2. **Execute only the minimal reproduction steps** — no exploration, no mistakes. Just the clean sequence that demonstrates the bug. You already know exactly what works from Phase 3.
@@ -171,8 +180,9 @@ Now start a **fresh browser session** for the clean reproduce video (Video 2):
    playwright-cli screenshot --filename=/tmp/qa/bug-visible.png
    ```
 
-4. **Close the browser** to finalize Video 2:
+4. **Stop recording and close** immediately after the bug is demonstrated:
    ```bash
+   playwright-cli video-stop
    playwright-cli close
    ```
 
