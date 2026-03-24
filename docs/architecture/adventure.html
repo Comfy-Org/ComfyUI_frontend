@@ -531,6 +531,42 @@
       justify-content: space-between;
     }
 
+    /* --- Collapsible details --- */
+    details.sidebar-section {
+      interpolate-size: allow-keywords;
+    }
+
+    details.sidebar-section > summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    details.sidebar-section > summary::-webkit-details-marker { display: none; }
+
+    details.sidebar-section > summary::after {
+      content: '▸';
+      font-size: 10px;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+      margin-left: 6px;
+    }
+
+    details[open].sidebar-section > summary::after {
+      transform: rotate(90deg);
+    }
+
+    details.sidebar-section > .sidebar-body {
+      overflow: clip;
+      height: 0;
+      transition: height 0.25s ease, padding 0.25s ease;
+      padding: 0 8px;
+    }
+
+    details[open].sidebar-section > .sidebar-body {
+      height: auto;
+      padding: 8px;
+    }
+
     .sidebar-body {
       padding: 8px;
       font-size: 12px;
@@ -927,13 +963,13 @@
           <div class="log-entry" style="color:var(--muted)">No decisions yet.</div>
         </div>
       </div>
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <span>Log</span>
+      <details class="sidebar-section" id="log-section">
+        <summary class="sidebar-header">
+          <span style="flex:1">Log</span>
           <span id="log-count">0</span>
-        </div>
+        </summary>
         <div class="sidebar-body" id="log"></div>
-      </div>
+      </details>
     </aside>
 
   </div>
