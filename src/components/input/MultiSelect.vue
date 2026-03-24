@@ -6,6 +6,7 @@
     :disabled
     ignore-filter
     :reset-search-term-on-select="false"
+    @keydown="stopEscapePropagation"
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
@@ -13,17 +14,10 @@
         :aria-label="label || t('g.multiSelectDropdown')"
         :class="
           cn(
-            'relative inline-flex cursor-pointer items-center select-none',
-            size === 'md' ? 'h-8' : 'h-10',
-            'rounded-lg bg-secondary-background text-base-foreground',
-            'transition-all duration-200 ease-in-out',
-            'hover:bg-secondary-background-hover',
-            'border-[2.5px] border-solid border-transparent',
-            selectedCount > 0
-              ? 'border-base-foreground'
-              : 'focus-visible:border-node-component-border data-[state=open]:border-node-component-border',
-            disabled &&
-              'cursor-default opacity-30 hover:bg-secondary-background'
+            selectTriggerVariants({
+              size,
+              border: selectedCount > 0 ? 'active' : 'none'
+            })
           )
         "
       >
@@ -45,9 +39,7 @@
             {{ selectedCount }}
           </span>
         </div>
-        <div
-          class="flex shrink-0 cursor-pointer items-center justify-center px-3"
-        >
+        <div :class="selectDropdownClass">
           <i class="icon-[lucide--chevron-down] text-muted-foreground" />
         </div>
       </ComboboxTrigger>
@@ -59,19 +51,7 @@
         :side-offset="8"
         align="start"
         :style="popoverStyle"
-        :class="
-          cn(
-            'z-3000 overflow-hidden',
-            'rounded-lg p-2',
-            'bg-base-background text-base-foreground',
-            'border border-solid border-border-default',
-            'shadow-md',
-            'data-[state=closed]:animate-out data-[state=open]:animate-in',
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-            'data-[side=bottom]:slide-in-from-top-2'
-          )
-        "
+        :class="selectContentClass"
         @focus-outside="preventFocusDismiss"
       >
         <div
@@ -132,13 +112,7 @@
             v-for="opt in filteredOptions"
             :key="opt.value"
             :value="opt"
-            :class="
-              cn(
-                'group flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 outline-none',
-                'hover:bg-secondary-background-hover',
-                'data-highlighted:bg-secondary-background-selected data-highlighted:hover:bg-secondary-background-selected'
-              )
-            "
+            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
           >
             <div
               class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
@@ -151,7 +125,7 @@
             </div>
             <span>{{ opt.name }}</span>
           </ComboboxItem>
-          <ComboboxEmpty class="px-3 pb-4 text-sm text-muted-foreground">
+          <ComboboxEmpty :class="selectEmptyMessageClass">
             {{ $t('g.noResultsFound') }}
           </ComboboxEmpty>
         </ComboboxViewport>
@@ -183,6 +157,14 @@ import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
+import {
+  selectContentClass,
+  selectDropdownClass,
+  selectEmptyMessageClass,
+  selectItemVariants,
+  selectTriggerVariants,
+  stopEscapePropagation
+} from './select.variants'
 import type { SelectOption } from './types'
 
 defineOptions({
