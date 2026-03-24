@@ -6,7 +6,6 @@ import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
 import type { Component } from 'vue'
 
-import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 type DialogPosition =
@@ -34,23 +33,19 @@ interface CustomDialogComponentProps {
   headless?: boolean
 }
 
-export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
-  CustomDialogComponentProps
+export type DialogComponentProps = CustomDialogComponentProps &
+  Record<string, unknown>
 
-export interface DialogInstance<
-  H extends Component = Component,
-  B extends Component = Component,
-  F extends Component = Component
-> {
+export interface DialogInstance {
   key: string
   visible: boolean
   title?: string
-  headerComponent?: H
-  headerProps?: ComponentAttrs<H>
-  component: B
-  contentProps: ComponentAttrs<B>
-  footerComponent?: F
-  footerProps?: ComponentAttrs<F>
+  headerComponent?: Component
+  headerProps?: Record<string, unknown>
+  component: Component
+  contentProps: Record<string, unknown>
+  footerComponent?: Component
+  footerProps?: Record<string, unknown>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
