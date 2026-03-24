@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -40,11 +40,11 @@ const isPending = computed(() => job.status === 'created')
         <i
           class="icon-[lucide--circle-alert] size-4 text-destructive-background"
         />
-        <StatusBadge :label="t('progressToast.failed')" severity="danger" />
+        <Badge :label="t('progressToast.failed')" severity="danger" />
       </template>
 
       <template v-else-if="isCompleted">
-        <StatusBadge :label="t('progressToast.finished')" severity="contrast" />
+        <Badge :label="t('progressToast.finished')" severity="contrast" />
       </template>
 
       <template v-else-if="isRunning">

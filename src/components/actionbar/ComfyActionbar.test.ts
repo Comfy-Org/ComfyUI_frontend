@@ -44,7 +44,7 @@ const mountActionbar = (showRunProgressBar: boolean) => {
           name: 'Panel',
           template: '<div><slot /></div>'
         },
-        StatusBadge: true,
+        Badge: true,
         ComfyRunButton: {
           name: 'ComfyRunButton',
           template: '<button type="button">Run</button>'

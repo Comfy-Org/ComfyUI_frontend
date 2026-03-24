@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import StatusBadge from './StatusBadge.vue'
+import Badge from './Badge.vue'
 
 const meta = {
-  title: 'Components/Badges/StatusBadge',
-  component: StatusBadge,
+  title: 'Components/Badges/Badge',
+  component: Badge,
   tags: ['autodocs'],
   argTypes: {
     label: { control: 'text' },
@@ -21,7 +21,7 @@ const meta = {
     label: 'NEW',
     severity: 'default'
   }
-} satisfies Meta<typeof StatusBadge>
+} satisfies Meta<typeof Badge>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -65,14 +65,14 @@ export const Circle: Story = {
 
 export const AllSeveritiesLabel: Story = {
   render: () => ({
-    components: { StatusBadge },
+    components: { Badge },
     template: `
       <div class="flex items-center gap-2">
-        <StatusBadge label="NEW" severity="default" />
-        <StatusBadge label="NEW" severity="secondary" />
-        <StatusBadge label="NEW" severity="warn" />
-        <StatusBadge label="NEW" severity="danger" />
-        <StatusBadge label="NEW" severity="contrast" />
+        <Badge label="NEW" severity="default" />
+        <Badge label="NEW" severity="secondary" />
+        <Badge label="NEW" severity="warn" />
+        <Badge label="NEW" severity="danger" />
+        <Badge label="NEW" severity="contrast" />
       </div>
     `
   })
@@ -80,14 +80,14 @@ export const AllSeveritiesLabel: Story = {
 
 export const AllSeveritiesDot: Story = {
   render: () => ({
-    components: { StatusBadge },
+    components: { Badge },
     template: `
       <div class="flex items-center gap-2">
-        <StatusBadge variant="dot" severity="default" />
-        <StatusBadge variant="dot" severity="secondary" />
-        <StatusBadge variant="dot" severity="warn" />
-        <StatusBadge variant="dot" severity="danger" />
-        <StatusBadge variant="dot" severity="contrast" />
+        <Badge variant="dot" severity="default" />
+        <Badge variant="dot" severity="secondary" />
+        <Badge variant="dot" severity="warn" />
+        <Badge variant="dot" severity="danger" />
+        <Badge variant="dot" severity="contrast" />
       </div>
     `
   })
@@ -95,19 +95,19 @@ export const AllSeveritiesDot: Story = {
 
 export const AllVariants: Story = {
   render: () => ({
-    components: { StatusBadge },
+    components: { Badge },
     template: `
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-center gap-1">
-          <StatusBadge label="NEW" variant="label" />
+          <Badge label="NEW" variant="label" />
           <span class="text-xs text-muted">label</span>
         </div>
         <div class="flex flex-col items-center gap-1">
-          <StatusBadge variant="dot" severity="danger" />
+          <Badge variant="dot" severity="danger" />
           <span class="text-xs text-muted">dot</span>
         </div>
         <div class="flex flex-col items-center gap-1">
-          <StatusBadge label="5" variant="circle" />
+          <Badge label="5" variant="circle" />
           <span class="text-xs text-muted">circle</span>
         </div>
       </div>

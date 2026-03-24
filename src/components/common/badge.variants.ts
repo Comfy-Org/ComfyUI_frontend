@@ -1,7 +1,7 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
-export const statusBadgeVariants = cva({
+export const badgeVariants = cva({
   base: 'inline-flex items-center justify-center rounded-full',
   variants: {
     severity: {
@@ -23,4 +23,4 @@ export const statusBadgeVariants = cva({
   }
 })
 
-export type StatusBadgeVariants = VariantProps<typeof statusBadgeVariants>
+export type BadgeVariants = VariantProps<typeof badgeVariants>

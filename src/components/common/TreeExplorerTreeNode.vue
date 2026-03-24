@@ -21,7 +21,7 @@
         />
         <slot name="after-label" :node="props.node" />
       </span>
-      <StatusBadge
+      <Badge
         v-if="showNodeBadgeText"
         :label="nodeBadgeText"
         severity="secondary"
@@ -39,7 +39,7 @@
 
 <script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import { computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'

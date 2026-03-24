@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import { statusBadgeVariants } from './statusBadge.variants'
-import type { StatusBadgeVariants } from './statusBadge.variants'
+import { badgeVariants } from './badge.variants'
+import type { BadgeVariants } from './badge.variants'
 
 const {
   label,
@@ -13,14 +13,14 @@ const {
   class: className
 } = defineProps<{
   label?: string | number
-  severity?: StatusBadgeVariants['severity']
-  variant?: StatusBadgeVariants['variant']
+  severity?: BadgeVariants['severity']
+  variant?: BadgeVariants['variant']
   class?: string
 }>()
 
 const badgeClass = computed(() =>
   cn(
-    statusBadgeVariants({
+    badgeVariants({
       severity,
       variant: variant ?? (label == null ? 'dot' : 'label')
     }),

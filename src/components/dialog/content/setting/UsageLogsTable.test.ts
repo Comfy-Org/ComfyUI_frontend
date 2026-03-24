@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import PrimeVue from 'primevue/config'
@@ -163,7 +163,7 @@ describe('UsageLogsTable', () => {
         components: {
           DataTable,
           Column,
-          StatusBadge,
+          Badge,
           Button,
           Message,
           ProgressSpinner
@@ -240,7 +240,7 @@ describe('UsageLogsTable', () => {
       vm.events = mockEventsResponse.events
       await nextTick()
 
-      const badges = wrapper.findAllComponents(StatusBadge)
+      const badges = wrapper.findAllComponents(Badge)
       expect(badges.length).toBeGreaterThan(0)
 
       // Check if formatEventType and getEventSeverity are called
