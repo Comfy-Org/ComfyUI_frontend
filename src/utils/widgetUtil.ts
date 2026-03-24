@@ -1,7 +1,9 @@
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -48,7 +50,10 @@ export function renameWidget(
   newLabel: string,
   parents?: SubgraphNode[]
 ): boolean {
-  if (isPromotedWidgetView(widget) && parents?.length) {
+  if (
+    isPromotedWidgetView(widget) &&
+    (parents?.length || node.isSubgraphNode())
+  ) {
     const sourceWidget = resolvePromotedWidgetSource(node, widget)
     if (!sourceWidget) {
       console.error('Could not resolve source widget for promoted widget')
@@ -73,7 +78,18 @@ export function renameWidget(
   widget.label = newLabel || undefined
   if (input) {
     input.label = newLabel || undefined
+
+    const subgraphSlot = (input as Partial<ISubgraphInput>)._subgraphSlot
+    if (subgraphSlot) {
+      subgraphSlot.label = newLabel || undefined
+    }
   }
+
+  // Fires for all node types; listeners guard against non-subgraph nodes.
+  node.graph?.trigger('node:slot-label:changed', {
+    nodeId: node.id,
+    slotType: NodeSlotType.INPUT
+  })
 
   return true
 }
