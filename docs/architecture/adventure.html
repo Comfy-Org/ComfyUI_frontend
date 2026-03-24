@@ -891,7 +891,8 @@
 
     .ach-slot.locked img { filter: brightness(0) saturate(0); opacity: 0.2; }
 
-    .ach-slot.unlocked { border-color: var(--purple); }
+    .ach-slot.unlocked { border-color: var(--purple); cursor: pointer; }
+    .ach-slot.unlocked:hover { border-color: var(--accent); }
 
     #ach-label {
       padding: 4px 12px;
@@ -2143,6 +2144,25 @@
       els.endingOverlay.classList.add('active')
     }
 
+    function previewEnding(endingId) {
+      const ending = endings.find(e => e.id === endingId)
+      if (!ending) return
+
+      els.endingTitle.textContent = ending.title
+      els.endingTitle.style.color = `var(${ending.color})`
+      els.endingDesc.innerHTML = ending.description
+      els.endingScorecard.innerHTML = ''
+      els.endingStats.innerHTML = `
+        <div class="ending-stat" style="grid-column: 1 / -1; text-align: center">
+          <div class="label">Ending Unlocked</div>
+          <div class="value" style="color:var(${ending.color})">
+            <img src="icons/ending-${ending.id}.png" alt="" style="width:48px;height:48px;border-radius:8px;display:inline-block;vertical-align:middle">
+          </div>
+        </div>
+      `
+      els.endingOverlay.classList.add('active')
+    }
+
     function renderAchievements() {
       const unlocked = loadAchievements()
 
@@ -2164,6 +2184,9 @@
         slot.addEventListener('mouseleave', () => {
           els.achLabel.innerHTML = '&nbsp;'
         })
+        if (got) {
+          slot.addEventListener('click', () => previewEnding(e.id))
+        }
       })
 
       els.achCount.textContent = unlocked.length + '/' + endings.length
