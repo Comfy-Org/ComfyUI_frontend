@@ -84,13 +84,14 @@ export function useComfyHubPublishSubmission() {
         ? await uploadFileAndGetToken(formData.comparisonAfterFile)
         : undefined
 
-    const sampleImageTokensOrUrls = formData.exampleImages.length > 0
-      ? await Promise.all(
-          formData.exampleImages.map((image) =>
-            image.file ? uploadFileAndGetToken(image.file) : image.url
+    const sampleImageTokensOrUrls =
+      formData.exampleImages.length > 0
+        ? await Promise.all(
+            formData.exampleImages.map((image) =>
+              image.file ? uploadFileAndGetToken(image.file) : image.url
+            )
           )
-        )
-      : undefined
+        : undefined
 
     await comfyHubService.publishWorkflow({
       username,
