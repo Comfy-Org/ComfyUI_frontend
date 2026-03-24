@@ -29,7 +29,7 @@ const DEFAULT_OPTIONS: CliOptions = {
   videoFile: '',
   beforeVideo: '',
   outputDir: './tmp',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-3-flash-preview',
   requestTimeoutMs: 300_000,
   dryRun: false,
   prContext: '',
@@ -50,7 +50,7 @@ Options:
   --output-dir <path>           Output directory for markdown reports
                                  (default: ./tmp)
   --model <name>                Gemini model
-                                 (default: gemini-2.5-flash)
+                                 (default: gemini-3-flash-preview)
   --request-timeout-ms <n>      Request timeout in milliseconds
                                  (default: 300000)
   --pr-context <file>           File with PR context (title, body, diff)
