@@ -189,7 +189,7 @@ When CI fails on a backport PR, present failures to the user using this template
 - **Failing check:** test / lint / typecheck
 - **Error:** (summary of the failure message)
 - **Likely cause:** test backported without implementation / missing dependency / flaky test / snapshot mismatch
-- **Recommendation:** backport PR #YYYY first / skip this PR / admin-merge (safe — failure is unrelated)
+- **Recommendation:** backport PR #YYYY first / skip this PR / rerun CI after fixing prerequisites
 ```
 
 Common failure categories:
