@@ -141,7 +141,7 @@ onMounted(async () => {
   if (isStandaloneMode && props.modelUrl) {
     await viewer.initializeStandaloneViewer(containerRef.value, props.modelUrl)
   } else if (props.node) {
-    const source = useLoad3dService().getLoad3d(props.node)
+    const source = await useLoad3dService().getLoad3dAsync(props.node)
     if (source) {
       await viewer.initializeViewer(containerRef.value, source)
     }

@@ -267,8 +267,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       useToastStore().add({
         severity: 'error',
         summary: t('subgraphStore.loadFailure'),
-        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`,
-        life: 6000
+        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`
       })
     }
   }

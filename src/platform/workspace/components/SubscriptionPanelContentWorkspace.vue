@@ -428,8 +428,7 @@ async function handleResubscribe() {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: message,
-      life: 5000
+      detail: message
     })
   } finally {
     isResubscribing.value = false
@@ -471,7 +470,8 @@ function handleSubscribeWorkspace() {
 }
 
 function handleUpgrade() {
-  isFreeTierPlan.value ? showPricingTable() : showSubscriptionDialog()
+  if (isFreeTierPlan.value) showPricingTable()
+  else showSubscriptionDialog()
 }
 
 function handleUpgradeToAddCredits() {

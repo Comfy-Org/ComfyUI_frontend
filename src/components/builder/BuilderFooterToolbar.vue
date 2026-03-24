@@ -58,6 +58,6 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
 })
 
 function onExitBuilder() {
-  void appModeStore.exitBuilder()
+  appModeStore.exitBuilder()
 }
 </script>

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { remove } from 'es-toolkit'
-import { computed, provide, ref, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import {
   LGraphEventMode,
@@ -25,12 +25,11 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
-import { useDialogService } from '@/services/dialogService'
+import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -46,25 +45,11 @@ const { isSelectMode, isSelectInputsMode, isSelectOutputsMode, isArrangeMode } =
   useAppMode()
 const hoveringSelectable = ref(false)
 
-provide(HideLayoutFieldKey, true)
-
 workflowStore.activeWorkflow?.changeTracker?.reset()
-
-const arrangeInputs = computed(() =>
-  appModeStore.selectedInputs
-    .map(([nodeId, widgetName]) => {
-      const node = resolveNode(nodeId)
-      if (!node) return null
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      return { nodeId, widgetName, node, widget }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-)
 
 const inputsWithState = computed(() =>
   appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const node = resolveNode(nodeId)
-    const widget = node?.widgets?.find((w) => w.name === widgetName)
+    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!node || !widget) {
       return {
         nodeId,
@@ -73,15 +58,12 @@ const inputsWithState = computed(() =>
       }
     }
 
-    const input = node.inputs.find((i) => i.widget?.name === widget.name)
-    const rename = input && (() => renameWidget(widget, input))
-
     return {
       nodeId,
       widgetName,
       label: widget.label,
       subLabel: node.title,
-      rename
+      canRename: true
     }
   })
 )
@@ -92,18 +74,14 @@ const outputsWithState = computed<[NodeId, string][]>(() =>
   ])
 )
 
-async function renameWidget(widget: IBaseWidget, input: INodeInputSlot) {
-  const newLabel = await useDialogService().prompt({
-    title: t('g.rename'),
-    message: t('g.enterNewNamePrompt'),
-    defaultValue: widget.label,
-    placeholder: widget.name
-  })
-  if (newLabel === null) return
-  widget.label = newLabel || undefined
-  input.label = newLabel || undefined
-  widget.callback?.(widget.value)
-  useCanvasStore().canvas?.setDirty(true)
+function inlineRenameInput(
+  nodeId: NodeId,
+  widgetName: string,
+  newLabel: string
+) {
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+  if (!node || !widget) return
+  renameWidget(widget, node, newLabel)
 }
 
 function getHovered(
@@ -126,7 +104,7 @@ function getHovered(
 
 function getBounding(nodeId: NodeId, widgetName?: string) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const node = app.rootGraph.getNodeById(nodeId)
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
   if (!node) return
 
   const titleOffset =
@@ -139,7 +117,6 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
       left: `${node.pos[0]}px`,
       top: `${node.pos[1] - titleOffset}px`
     }
-  const widget = node.widgets?.find((w) => w.name === widgetName)
   if (!widget) return
 
   const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
@@ -162,7 +139,11 @@ function handleDown(e: MouseEvent) {
 }
 function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
-  if (node?.mode !== LGraphEventMode.ALWAYS)
+  if (
+    node?.mode !== LGraphEventMode.ALWAYS ||
+    !nodeTypeValidForApp(node.type) ||
+    node.has_errors
+  )
     return canvasInteractions.forwardEventToCanvas(e)
 
   if (!widget) {
@@ -174,12 +155,16 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value) return
+  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
+  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+  const storeName = isPromotedWidgetView(widget)
+    ? widget.sourceWidgetName
+    : widget.name
   const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => node.id == nodeId && widget.name === widgetName
+    ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
   )
-  if (index === -1) appModeStore.selectedInputs.push([node.id, widget.name])
+  if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -198,7 +183,9 @@ const renderedOutputs = computed(() => {
   return canvas
     .graph!.nodes.filter(
       (n) =>
-        n.constructor.nodeData?.output_node && n.mode === LGraphEventMode.ALWAYS
+        n.constructor.nodeData?.output_node &&
+        n.mode === LGraphEventMode.ALWAYS &&
+        !n.has_errors
     )
     .map(nodeToDisplayTuple)
 })
@@ -212,68 +199,41 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
 </script>
 <template>
   <div class="flex h-full flex-col">
-    <div class="flex items-center border-b border-border-subtle p-2 font-bold">
+    <div
+      class="flex h-12 items-center border-b border-border-subtle px-4 font-bold"
+    >
       {{
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
       }}
     </div>
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <DraggableList
         v-if="isArrangeMode"
-        v-slot="{ dragClass }"
         v-model="appModeStore.selectedInputs"
         class="overflow-x-clip"
       >
-        <div
-          v-for="{ nodeId, widgetName, node, widget } in arrangeInputs"
-          :key="`${nodeId}: ${widgetName}`"
-          :class="cn(dragClass, 'pointer-events-auto my-2 p-2')"
-          :aria-label="`${widget?.label ?? widgetName} — ${node.title}`"
-        >
-          <div v-if="widget" class="pointer-events-none" inert>
-            <WidgetItem
-              :widget="widget"
-              :node="node"
-              show-node-name
-              hidden-widget-actions
-            />
-          </div>
-          <div
-            v-else
-            class="pointer-events-none p-1 text-sm text-muted-foreground"
-          >
-            {{ widgetName }}
-            <p class="text-xs italic">
-              ({{ t('linearMode.builder.unknownWidget') }})
-            </p>
-          </div>
-        </div>
+        <AppModeWidgetList builder-mode />
       </DraggableList>
       <PropertiesAccordionItem
         v-if="isSelectInputsMode"
         :label="t('nodeHelpPage.inputs')"
         enable-empty-state
         :disabled="!appModeStore.selectedInputs.length"
-        class="border-b border-border-subtle"
         :tooltip="`${t('linearMode.builder.inputsDesc')}\n${t('linearMode.builder.inputsExample')}`"
         :tooltip-delay="100"
       >
         <template #label>
           <div class="flex gap-3">
             {{ t('nodeHelpPage.inputs') }}
-            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
+            <i class="icon-[lucide--info] bg-muted-foreground" />
           </div>
         </template>
         <template #empty>
           <div
-            class="w-full p-4 pt-2 text-muted-foreground"
+            class="p-4 text-muted-foreground"
             v-text="t('linearMode.builder.promptAddInputs')"
           />
         </template>
-        <div
-          class="w-full p-4 pt-2 text-muted-foreground"
-          v-text="t('linearMode.builder.promptAddInputs')"
-        />
         <DraggableList
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedInputs"
@@ -284,7 +244,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               widgetName,
               label,
               subLabel,
-              rename
+              canRename
             } in inputsWithState"
             :key="`${nodeId}: ${widgetName}`"
             :class="
@@ -292,7 +252,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             "
             :title="label ?? widgetName"
             :sub-title="subLabel"
-            :rename
+            :can-rename="canRename"
             :remove="
               () =>
                 remove(
@@ -300,9 +260,16 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                   ([id, name]) => nodeId == id && widgetName === name
                 )
             "
+            @rename="inlineRenameInput(nodeId, widgetName, $event)"
           />
         </DraggableList>
       </PropertiesAccordionItem>
+      <div
+        v-if="isSelectInputsMode && !appModeStore.selectedInputs.length"
+        class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary-background bg-primary-background/20 text-center text-sm text-primary-background"
+      >
+        {{ t('linearMode.builder.inputPlaceholder') }}
+      </div>
       <PropertiesAccordionItem
         v-if="isSelectOutputsMode"
         :label="t('nodeHelpPage.outputs')"
@@ -314,19 +281,15 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         <template #label>
           <div class="flex gap-3">
             {{ t('nodeHelpPage.outputs') }}
-            <i class="icon-[lucide--circle-alert] bg-muted-foreground" />
+            <i class="icon-[lucide--info] bg-muted-foreground" />
           </div>
         </template>
         <template #empty>
           <div
-            class="w-full p-4 pt-2 text-muted-foreground"
+            class="p-4 text-muted-foreground"
             v-text="t('linearMode.builder.promptAddOutputs')"
           />
         </template>
-        <div
-          class="w-full p-4 pt-2 text-muted-foreground"
-          v-text="t('linearMode.builder.promptAddOutputs')"
-        />
         <DraggableList
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedOutputs"
@@ -349,6 +312,15 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           />
         </DraggableList>
       </PropertiesAccordionItem>
+      <div
+        v-if="isSelectOutputsMode && !appModeStore.selectedOutputs.length"
+        class="m-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-warning-background bg-warning-background/20 text-center text-sm text-warning-background"
+      >
+        {{ t('linearMode.builder.outputPlaceholder') }}
+        <span class="font-bold">
+          {{ t('linearMode.builder.outputRequiredPlaceholder') }}
+        </span>
+      </div>
     </div>
   </div>
 

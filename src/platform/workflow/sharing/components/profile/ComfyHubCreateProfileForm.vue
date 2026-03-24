@@ -183,8 +183,7 @@ async function handleCreate() {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.error'),
-      life: 5000
+      detail: error instanceof Error ? error.message : t('g.error')
     })
   } finally {
     isCreating.value = false

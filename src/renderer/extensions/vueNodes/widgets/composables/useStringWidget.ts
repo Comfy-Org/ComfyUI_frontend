@@ -40,6 +40,7 @@ function addMultilineWidget(
   })
 
   widget.element = inputEl
+  widget.inputEl = inputEl
   widget.options.minNodeSize = [400, 200]
 
   inputEl.addEventListener('input', (event) => {

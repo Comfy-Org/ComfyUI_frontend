@@ -33,10 +33,18 @@ import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspac
 
 const { t } = useI18n()
 const toast = useToast()
-const { switchWithConfirmation } = useWorkspaceSwitch()
+const { switchWorkspace } = useWorkspaceSwitch()
 
-function viewWorkspace(workspaceId: string) {
-  void switchWithConfirmation(workspaceId)
-  toast.removeGroup('invite-accepted')
+async function viewWorkspace(workspaceId: string) {
+  const success = await switchWorkspace(workspaceId)
+  if (success) {
+    toast.removeGroup('invite-accepted')
+  } else {
+    toast.add({
+      severity: 'error',
+      summary: t('workspace.switchFailed'),
+      life: 5000
+    })
+  }
 }
 </script>

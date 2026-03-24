@@ -167,7 +167,9 @@ import type {
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -182,6 +184,11 @@ const publishDialog = useComfyHubPublishDialog()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
+const { isAppMode } = useAppMode()
+
+function getShareSource() {
+  return isAppMode.value ? 'app_mode' : ('graph_mode' as const)
+}
 
 type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
 type DialogMode = 'shareLink' | 'publishToHub'
@@ -298,6 +305,10 @@ async function refreshDialogState() {
 
   if (!workflow || workflow.isTemporary || workflow.isModified) {
     dialogState.value = 'unsaved'
+    useTelemetry()?.trackShareFlow({
+      step: 'save_prompted',
+      source: getShareSource()
+    })
     if (workflow) {
       workflowName.value = stripJsonExtension(workflow.filename)
     }
@@ -352,8 +363,7 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       toast.add({
         severity: 'error',
         summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription'),
-        life: 5000
+        detail: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -380,6 +390,10 @@ const {
     )
     dialogState.value = 'shared'
     acknowledged.value = false
+    useTelemetry()?.trackShareFlow({
+      step: 'link_created',
+      source: getShareSource()
+    })
 
     return result
   },
@@ -391,8 +405,7 @@ const {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: error instanceof Error ? error.message : t('g.error'),
-        life: 5000
+        detail: error instanceof Error ? error.message : t('g.error')
       })
     }
   }

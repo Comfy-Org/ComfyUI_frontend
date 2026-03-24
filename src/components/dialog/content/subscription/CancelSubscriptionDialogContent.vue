@@ -98,8 +98,7 @@ async function onConfirmCancel() {
     toast.add({
       severity: 'error',
       summary: t('subscription.cancelDialog.failed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError'),
-      life: 5000
+      detail: error instanceof Error ? error.message : t('g.unknownError')
     })
   } finally {
     isLoading.value = false

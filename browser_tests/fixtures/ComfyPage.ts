@@ -25,12 +25,15 @@ import {
 import { Topbar } from './components/Topbar'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
+import { QueueHelper } from './helpers/QueueHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
+import { FeatureFlagHelper } from './helpers/FeatureFlagHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
+import { AppModeHelper } from './helpers/AppModeHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
@@ -174,6 +177,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly appMode: AppModeHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
@@ -184,9 +188,11 @@ export class ComfyPage {
   public readonly contextMenu: ContextMenu
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
+  public readonly featureFlags: FeatureFlagHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
+  public readonly queue: QueueHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -206,9 +212,7 @@ export class ComfyPage {
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
-    this.runButton = page
-      .getByTestId(TestIds.topbar.queueButton)
-      .getByRole('button', { name: 'Run' })
+    this.runButton = page.getByTestId(TestIds.topbar.queueButton)
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
@@ -219,19 +223,22 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
-    this.clipboard = new ClipboardHelper(this.keyboard)
+    this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
     this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
+    this.queue = new QueueHelper(page)
   }
 
   get visibleToasts() {
@@ -283,9 +290,7 @@ export class ComfyPage {
     clearStorage?: boolean
     mockReleases?: boolean
   } = {}) {
-    await this.goto()
-
-    // Mock release endpoint to prevent changelog popups
+    // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
       await this.page.route('**/releases**', async (route) => {
         const url = route.request().url()
@@ -305,12 +310,16 @@ export class ComfyPage {
     }
 
     if (clearStorage) {
+      // Navigate to a lightweight same-origin endpoint to obtain a page
+      // context for clearing storage without loading the full frontend app.
+      await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
         localStorage.clear()
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
+
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)
@@ -432,7 +441,10 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
         // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true
+        'Comfy.VersionCompatibility.DisableWarnings': true,
+        // Disable errors tab to prevent missing model detection from
+        // rendering error indicators on nodes during unrelated tests.
+        'Comfy.RightSidePanel.ShowErrorsTab': false
       })
     } catch (e) {
       console.error(e)

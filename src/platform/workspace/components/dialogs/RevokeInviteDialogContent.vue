@@ -69,8 +69,7 @@ async function onRevoke() {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error instanceof Error ? error.message : undefined,
-      life: 3000
+      detail: error instanceof Error ? error.message : undefined
     })
   } finally {
     loading.value = false

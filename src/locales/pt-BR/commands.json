@@ -71,6 +71,9 @@
   "Comfy_Canvas_PasteFromClipboard": {
     "label": "Colar"
   },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Colar com Conexão"
+  },
   "Comfy_Canvas_ResetView": {
     "label": "Redefinir visualização"
   },

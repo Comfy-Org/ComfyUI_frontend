@@ -50,7 +50,9 @@
             {{ t('g.dismiss') }}
           </Button>
           <Button variant="secondary" size="lg" @click="seeErrors">
-            {{ t('errorOverlay.seeErrors') }}
+            {{
+              appMode ? t('linearMode.error.goto') : t('errorOverlay.seeErrors')
+            }}
           </Button>
         </div>
       </div>
@@ -68,6 +70,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+
+defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
@@ -94,6 +98,7 @@ function dismiss() {
 }
 
 function seeErrors() {
+  canvasStore.linearMode = false
   if (canvasStore.canvas) {
     canvasStore.canvas.deselectAll()
     canvasStore.updateSelectedItems()

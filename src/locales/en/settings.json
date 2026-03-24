@@ -25,6 +25,10 @@
       "custom": "custom"
     }
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "Disable animations",
+    "tooltip": "Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Canvas background image",
     "tooltip": "Image URL for the canvas background. You can right-click an image in the outputs panel and select \"Set as Background\" to use it, or upload your own image using the upload button."
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "Float widget rounding decimal places [0 = auto].",
     "tooltip": "(requires page reload)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Auto-pan speed",
+    "tooltip": "Maximum speed when auto-panning by dragging to the canvas edge. Set to 0 to disable auto-panning."
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "Show canvas info on bottom left corner (fps, etc.)"
@@ -348,8 +356,8 @@
     "tooltip": "The maximum number of tasks that show in the queue history."
   },
   "Comfy_Queue_QPOV2": {
-    "name": "Use the unified job queue in the Assets side panel",
-    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout."
+    "name": "Docked job history/queue panel",
+    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout."
   },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
@@ -398,10 +406,10 @@
   },
   "Comfy_UI_TabBarLayout": {
     "name": "Tab Bar Layout",
-    "tooltip": "Controls the layout of the tab bar. \"Integrated\" moves Help and User controls into the tab bar area.",
+    "tooltip": "Controls the elements contained in the integrated tab bar.",
     "options": {
       "Default": "Default",
-      "Integrated": "Integrated"
+      "Legacy": "Legacy"
     }
   },
   "Comfy_UseNewMenu": {
@@ -454,9 +462,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Show missing models warning"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Show missing nodes warning"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"
   },
@@ -480,6 +485,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Select group children on click",
+    "tooltip": "When enabled, clicking a group selects all nodes and items inside it"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Always shrink new nodes",

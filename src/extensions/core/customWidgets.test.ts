@@ -30,6 +30,7 @@ describe('PrimitiveFloat widget type bridging', () => {
     })
 
     Object.defineProperty(widget.options, 'gradient_stops', {
+      enumerable: true,
       get: () => properties.gradient_stops,
       set: (v) => {
         properties.gradient_stops = v
@@ -80,6 +81,20 @@ describe('PrimitiveFloat widget type bridging', () => {
     ]
     properties.gradient_stops = stops
     expect(widget.options.gradient_stops).toBe(stops)
+  })
+
+  it('gradient_stops survives object spread', () => {
+    const { properties, widget } = createMockNodeAndWidget()
+    applyFloatPropertyBridges(properties, widget)
+
+    const stops = [
+      { offset: 0, color: [0, 255, 255] },
+      { offset: 1, color: [255, 0, 0] }
+    ]
+    properties.gradient_stops = stops
+
+    const spread = { ...widget.options }
+    expect(spread.gradient_stops).toBe(stops)
   })
 
   it('writes gradient_stops back to properties', () => {

@@ -8,6 +8,7 @@
     <!-- Node -->
     <div
       v-if="item.value.type === 'node'"
+      v-bind="$attrs"
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       draggable="true"
@@ -48,6 +49,7 @@
     <!-- Folder -->
     <div
       v-else
+      v-bind="$attrs"
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
@@ -98,8 +100,12 @@ import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 const ROW_CLASS =
-  'group/tree-node flex cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input mx-2 rounded'
+  'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input mx-2 rounded'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>

@@ -47,6 +47,14 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
+const mockTrackMonthlySubscriptionSucceeded = vi.fn()
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+  })
+}))
+
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingOperationStore } from './billingOperationStore'
@@ -159,6 +167,37 @@ describe('billingOperationStore', () => {
       })
     })
 
+    it('fires purchase telemetry on subscription success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
+    })
+
+    it('does not fire purchase telemetry on topup success', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
+    })
+
     it('shows topup success message for topup operations', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -219,8 +258,7 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.subscriptionFailed',
-        detail: errorMessage,
-        life: 5000
+        detail: errorMessage
       })
     })
 
@@ -239,8 +277,7 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.topupFailed',
-        detail: undefined,
-        life: 5000
+        detail: undefined
       })
     })
   })
@@ -267,8 +304,7 @@ describe('billingOperationStore', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
-        summary: 'billingOperation.subscriptionTimeout',
-        life: 5000
+        summary: 'billingOperation.subscriptionTimeout'
       })
     })
 
@@ -287,8 +323,7 @@ describe('billingOperationStore', () => {
 
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
-        summary: 'billingOperation.topupTimeout',
-        life: 5000
+        summary: 'billingOperation.topupTimeout'
       })
     })
   })

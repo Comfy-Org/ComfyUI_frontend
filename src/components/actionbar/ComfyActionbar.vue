@@ -119,9 +119,14 @@ import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
-const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
+const {
+  topMenuContainer,
+  queueOverlayExpanded = false,
+  hasAnyError = false
+} = defineProps<{
   topMenuContainer?: HTMLElement | null
   queueOverlayExpanded?: boolean
+  hasAnyError?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -435,7 +440,12 @@ const panelClass = computed(() =>
     isDragging.value && 'pointer-events-none select-none',
     isDocked.value
       ? 'static border-none bg-transparent p-0'
-      : 'fixed shadow-interface'
+      : [
+          'fixed shadow-interface',
+          hasAnyError
+            ? 'border-destructive-background-hover'
+            : 'border-interface-stroke'
+        ]
   )
 )
 </script>

@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -14,6 +13,7 @@ import {
   useQueueSettingsStore,
   useQueueStore
 } from '@/stores/queueStore'
+import { render, screen } from '@/utils/test-utils'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
@@ -41,28 +41,9 @@ vi.mock('@/stores/workspaceStore', () => ({
   })
 }))
 
-const SplitButtonStub = defineComponent({
-  name: 'SplitButton',
-  props: {
-    label: {
-      type: String,
-      default: ''
-    },
-    severity: {
-      type: String,
-      default: 'primary'
-    }
-  },
-  template: `
-    <button
-      data-testid="split-button"
-      :data-label="label"
-      :data-severity="severity"
-    >
-      <slot name="icon" />
-    </button>
-  `
-})
+const BatchCountEditStub = {
+  template: '<div data-testid="batch-count-edit" />'
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -97,26 +78,40 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
   return new TaskItemImpl(job)
 }
 
-function createWrapper() {
+const stubs = {
+  BatchCountEdit: BatchCountEditStub,
+  DropdownMenuRoot: { template: '<div><slot /></div>' },
+  DropdownMenuTrigger: { template: '<div><slot /></div>' },
+  DropdownMenuPortal: { template: '<div><slot /></div>' },
+  DropdownMenuContent: { template: '<div><slot /></div>' },
+  DropdownMenuItem: { template: '<div><slot /></div>' }
+}
+
+function renderQueueButton() {
   const pinia = createTestingPinia({ createSpy: vi.fn })
 
-  return mount(ComfyQueueButton, {
+  return render(ComfyQueueButton, {
     global: {
       plugins: [pinia, i18n],
       directives: {
         tooltip: () => {}
       },
-      stubs: {
-        SplitButton: SplitButtonStub,
-        BatchCountEdit: true
-      }
+      stubs
     }
   })
 }
 
 describe('ComfyQueueButton', () => {
+  it('renders the batch count control before the run button', () => {
+    renderQueueButton()
+    const controls = screen.getAllByTestId(/batch-count-edit|queue-button/)
+
+    expect(controls[0]).toHaveAttribute('data-testid', 'batch-count-edit')
+    expect(controls[1]).toHaveAttribute('data-testid', 'queue-button')
+  })
+
   it('keeps the run instant presentation while idle even with active jobs', async () => {
-    const wrapper = createWrapper()
+    renderQueueButton()
     const queueSettingsStore = useQueueSettingsStore()
     const queueStore = useQueueStore()
 
@@ -124,29 +119,27 @@ describe('ComfyQueueButton', () => {
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
-    const splitButton = wrapper.get('[data-testid="queue-button"]')
+    const queueButton = screen.getByTestId('queue-button')
 
-    expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
-    expect(splitButton.attributes('data-severity')).toBe('primary')
-    expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
+    expect(queueButton).toHaveTextContent('Run (Instant)')
+    expect(queueButton).toHaveAttribute('data-variant', 'primary')
   })
 
   it('switches to stop presentation when instant mode is armed', async () => {
-    const wrapper = createWrapper()
+    renderQueueButton()
     const queueSettingsStore = useQueueSettingsStore()
 
     queueSettingsStore.mode = 'instant-running'
     await nextTick()
 
-    const splitButton = wrapper.get('[data-testid="queue-button"]')
+    const queueButton = screen.getByTestId('queue-button')
 
-    expect(splitButton.attributes('data-label')).toBe('Stop Run (Instant)')
-    expect(splitButton.attributes('data-severity')).toBe('danger')
-    expect(wrapper.find('.icon-\\[lucide--square\\]').exists()).toBe(true)
+    expect(queueButton).toHaveTextContent('Stop Run (Instant)')
+    expect(queueButton).toHaveAttribute('data-variant', 'destructive')
   })
 
   it('disarms instant mode without interrupting even when jobs are active', async () => {
-    const wrapper = createWrapper()
+    const { user } = renderQueueButton()
     const queueSettingsStore = useQueueSettingsStore()
     const queueStore = useQueueStore()
     const commandStore = useCommandStore()
@@ -155,35 +148,26 @@ describe('ComfyQueueButton', () => {
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
-    await wrapper.get('[data-testid="queue-button"]').trigger('click')
+    await user!.click(screen.getByTestId('queue-button'))
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-idle')
-    const splitButtonWhileStopping = wrapper.get('[data-testid="queue-button"]')
-    expect(splitButtonWhileStopping.attributes('data-label')).toBe(
-      'Run (Instant)'
-    )
-    expect(splitButtonWhileStopping.attributes('data-severity')).toBe('primary')
-    expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
+    const queueButton = screen.getByTestId('queue-button')
+    expect(queueButton).toHaveTextContent('Run (Instant)')
+    expect(queueButton).toHaveAttribute('data-variant', 'primary')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
-
-    const splitButton = wrapper.get('[data-testid="queue-button"]')
-    expect(queueSettingsStore.mode).toBe('instant-idle')
-    expect(splitButton.attributes('data-label')).toBe('Run (Instant)')
-    expect(splitButton.attributes('data-severity')).toBe('primary')
-    expect(wrapper.find('.icon-\\[lucide--fast-forward\\]').exists()).toBe(true)
   })
 
   it('activates instant running mode when queueing again', async () => {
-    const wrapper = createWrapper()
+    const { user } = renderQueueButton()
     const queueSettingsStore = useQueueSettingsStore()
     const commandStore = useCommandStore()
 
     queueSettingsStore.mode = 'instant-idle'
     await nextTick()
 
-    await wrapper.get('[data-testid="queue-button"]').trigger('click')
+    await user!.click(screen.getByTestId('queue-button'))
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-running')

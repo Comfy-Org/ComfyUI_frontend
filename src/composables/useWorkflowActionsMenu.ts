@@ -12,7 +12,6 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -54,9 +53,9 @@ export function useWorkflowActionsMenu(
   const commandStore = useCommandStore()
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
-  const canvasStore = useCanvasStore()
   const { flags } = useFeatureFlags()
-  const { enterBuilder } = useAppModeStore()
+  const appModeStore = useAppModeStore()
+  const { enterBuilder, pruneLinearData } = appModeStore
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -96,12 +95,15 @@ export function useWorkflowActionsMenu(
       items.push(item)
     }
 
-    const isLinearMode = canvasStore.linearMode
+    const workflowMode =
+      workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
+    const isLinearMode = workflowMode === 'app'
     const showAppModeItems =
       isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
     const toggleLinear = async () => {
+      await ensureWorkflowActive(targetWorkflow.value)
       await commandStore.execute('Comfy.ToggleLinear', {
         metadata: { source: 'breadcrumb_menu' }
       })
@@ -218,11 +220,31 @@ export function useWorkflowActionsMenu(
       prependSeparator: true
     })
 
+    const isActive = workflow === workflowStore.activeWorkflow
+    const rawLd = isActive
+      ? {
+          inputs: appModeStore.selectedInputs,
+          outputs: appModeStore.selectedOutputs
+        }
+      : workflow?.changeTracker?.activeState?.extra?.linearData
+    let hasLinearData: boolean
+    if (rawLd) {
+      const { inputs, outputs } = pruneLinearData(rawLd)
+      hasLinearData = inputs.length > 0 || outputs.length > 0
+    } else {
+      hasLinearData = workflow?.path?.endsWith('.app.json') ?? false
+    }
+
     addItem({
       id: 'enter-builder-mode',
-      label: t('breadcrumbsMenu.enterBuilderMode'),
+      label: hasLinearData
+        ? t('breadcrumbsMenu.editBuilderMode')
+        : t('breadcrumbsMenu.enterBuilderMode'),
       icon: 'icon-[lucide--hammer]',
-      command: () => enterBuilder(),
+      command: async () => {
+        await ensureWorkflowActive(targetWorkflow.value)
+        enterBuilder()
+      },
       visible: showAppModeItems,
       isNew: true
     })

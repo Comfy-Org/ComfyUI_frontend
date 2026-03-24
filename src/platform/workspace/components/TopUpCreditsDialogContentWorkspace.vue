@@ -273,8 +273,7 @@ async function handleBuy() {
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError'),
-        life: 5000
+        detail: t('credits.topUp.unknownError')
       })
     }
   } catch (error) {
@@ -285,8 +284,7 @@ async function handleBuy() {
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage }),
-      life: 5000
+      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
     })
   } finally {
     loading.value = false

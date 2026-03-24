@@ -317,8 +317,7 @@ export function useNodeReplacement() {
       toastStore.add({
         severity: 'error',
         summary: t('g.error', 'Error'),
-        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes'),
-        life: 5000
+        detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
       })
       return replacedTypes
     } finally {

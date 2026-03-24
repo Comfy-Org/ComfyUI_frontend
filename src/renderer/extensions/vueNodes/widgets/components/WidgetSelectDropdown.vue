@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { capitalize } from 'es-toolkit'
-import { computed, provide, ref, toRef, watch } from 'vue'
+import { computed, provide, ref, shallowRef, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -17,6 +18,7 @@ import {
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import type {
   FilterOption,
@@ -29,12 +31,15 @@ import type {
 } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -67,7 +72,8 @@ const modelValue = defineModel<string | undefined>({
 
 const { t } = useI18n()
 const toastStore = useToastStore()
-const queueStore = useQueueStore()
+
+const outputMediaAssets = useMediaAssets('output')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -146,36 +152,86 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     label: getDisplayLabel(String(value))
   }))
 })
-const outputItems = computed<FormDropdownItem[]>(() => {
-  if (!['image', 'video', 'mesh'].includes(props.assetKind ?? '')) return []
+function assetKindToMediaType(kind: AssetKind): string {
+  return kind === 'mesh' ? '3D' : kind
+}
 
-  const outputs = new Set<string>()
+/**
+ * Per-job cache of resolved outputs for multi-output jobs.
+ * Keyed by jobId, populated lazily via resolveOutputAssetItems which
+ * fetches full outputs through getJobDetail (itself LRU-cached).
+ */
+const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
+const pendingJobIds = new Set<string>()
 
-  // Extract output images/videos from queue history
-  queueStore.historyTasks.forEach((task) => {
-    task.flatOutputs.forEach((output) => {
-      const isTargetType =
-        (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video') ||
-        (props.assetKind === 'mesh' && output.is3D)
-
-      if (output.type === 'output' && isTargetType) {
-        const path = output.subfolder
-          ? `${output.subfolder}/${output.filename}`
-          : output.filename
-        // Add [output] annotation so the preview component knows the type
-        const annotatedPath = `${path} [output]`
-        outputs.add(annotatedPath)
-      }
+watch(
+  () => outputMediaAssets.media.value,
+  (assets, _, onCleanup) => {
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
     })
+    pendingJobIds.clear()
+
+    for (const asset of assets) {
+      const meta = getOutputAssetMetadata(asset.user_metadata)
+      if (!meta) continue
+
+      const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
+      if (
+        outputCount <= 1 ||
+        resolvedByJobId.value.has(meta.jobId) ||
+        pendingJobIds.has(meta.jobId)
+      )
+        continue
+
+      pendingJobIds.add(meta.jobId)
+      void resolveOutputAssetItems(meta, { createdAt: asset.created_at })
+        .then((resolved) => {
+          if (cancelled || !resolved.length) return
+          const next = new Map(resolvedByJobId.value)
+          next.set(meta.jobId, resolved)
+          resolvedByJobId.value = next
+        })
+        .catch((error) => {
+          console.warn('Failed to resolve multi-output job', meta.jobId, error)
+        })
+        .finally(() => {
+          pendingJobIds.delete(meta.jobId)
+        })
+    }
+  },
+  { immediate: true }
+)
+
+const outputItems = computed<FormDropdownItem[]>(() => {
+  if (!['image', 'video', 'audio', 'mesh'].includes(props.assetKind ?? ''))
+    return []
+
+  const targetMediaType = assetKindToMediaType(props.assetKind!)
+  const seen = new Set<string>()
+  const items: FormDropdownItem[] = []
+
+  const assets = outputMediaAssets.media.value.flatMap((asset) => {
+    const meta = getOutputAssetMetadata(asset.user_metadata)
+    const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
+    return resolved ?? [asset]
   })
 
-  return Array.from(outputs).map((output) => ({
-    id: `output-${output}`,
-    preview_url: getMediaUrl(output.replace(' [output]', ''), 'output'),
-    name: output,
-    label: getDisplayLabel(output)
-  }))
+  for (const asset of assets) {
+    if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+    if (seen.has(asset.id)) continue
+    seen.add(asset.id)
+    const annotatedPath = `${asset.name} [output]`
+    items.push({
+      id: `output-${annotatedPath}`,
+      preview_url: asset.preview_url || getMediaUrl(asset.name, 'output'),
+      name: annotatedPath,
+      label: getDisplayLabel(annotatedPath)
+    })
+  }
+
+  return items
 })
 
 /**
@@ -376,6 +432,7 @@ function updateSelectedItems(selectedItems: Set<string>) {
     return
   }
   modelValue.value = name
+  useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
 }
 
 const uploadFile = async (
@@ -450,6 +507,9 @@ async function handleFilesUpdate(files: File[]) {
     if (props.widget.callback) {
       props.widget.callback(uploadedPaths[0])
     }
+
+    // 5. Snapshot undo state so the image change gets its own undo entry
+    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   } catch (error) {
     console.error('Upload error:', error)
     toastStore.addAlert(`Upload failed: ${error}`)
@@ -460,10 +520,17 @@ function getMediaUrl(
   filename: string,
   type: 'input' | 'output' = 'input'
 ): string {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
+  if (!['image', 'video', 'audio', 'mesh'].includes(props.assetKind ?? ''))
+    return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
+}
+
+function handleIsOpenUpdate(isOpen: boolean) {
+  if (isOpen && !outputMediaAssets.loading.value) {
+    void outputMediaAssets.refresh()
+  }
 }
 </script>
 
@@ -490,6 +557,7 @@ function getMediaUrl(
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="handleFilesUpdate"
+      @update:is-open="handleIsOpenUpdate"
     />
   </WidgetLayoutField>
 </template>

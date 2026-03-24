@@ -58,7 +58,7 @@ describe('WidgetImageCompare Display', () => {
       expect(images[1].attributes('src')).toBe('https://example.com/before.jpg')
 
       images.forEach((img) => {
-        expect(img.classes()).toContain('object-contain')
+        expect(img.classes()).toContain('object-cover')
       })
     })
   })
@@ -290,7 +290,6 @@ describe('WidgetImageCompare Display', () => {
 
       const slider = wrapper.find('[role="presentation"]')
       expect(slider.exists()).toBe(true)
-      expect(slider.classes()).toContain('bg-white')
     })
 
     it('does not render slider when no images', () => {

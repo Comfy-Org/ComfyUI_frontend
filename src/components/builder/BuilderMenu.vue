@@ -72,7 +72,7 @@ const menuItems = computed(() => [
   },
   {
     label: t('builderMenu.exitAppBuilder'),
-    icon: 'icon-[lucide--square-pen]',
+    icon: 'icon-[lucide--x]',
     action: onExitBuilder
   }
 ])
@@ -94,7 +94,7 @@ function onEnterAppMode(close: () => void) {
 }
 
 function onExitBuilder(close: () => void) {
-  void appModeStore.exitBuilder()
+  appModeStore.exitBuilder()
   close()
 }
 </script>

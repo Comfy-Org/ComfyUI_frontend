@@ -1,5 +1,6 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
+import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
@@ -280,10 +281,12 @@ export interface ComfyApi extends EventTarget {
 
 export class PromptExecutionError extends Error {
   response: PromptResponse
+  status?: number
 
-  constructor(response: PromptResponse) {
+  constructor(response: PromptResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
+    this.status = status
   }
 
   override toString() {
@@ -379,6 +382,7 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    if (route.startsWith('/api')) return this.api_base + route
     return this.api_base + '/api' + route
   }
 
@@ -414,9 +418,10 @@ export class ComfyApi extends EventTarget {
 
       if (authStore.isInitialized) return
 
+      const { isInitialized } = storeToRefs(authStore)
       try {
         await Promise.race([
-          until(authStore.isInitialized),
+          until(isInitialized).toBe(true),
           promiseTimeout(10000)
         ])
       } catch {
@@ -623,15 +628,44 @@ export class ComfyApi extends EventTarget {
 
           let imageMime
           switch (eventType) {
-            case 3:
-              const decoder = new TextDecoder()
-              const data = event.data.slice(4)
-              const nodeIdLength = view.getUint32(4)
-              this.dispatchCustomEvent('progress_text', {
-                nodeId: decoder.decode(data.slice(4, 4 + nodeIdLength)),
-                text: decoder.decode(data.slice(4 + nodeIdLength))
-              })
+            case 3: {
+              try {
+                const decoder3 = new TextDecoder()
+                const rawData = event.data.slice(4)
+                const rawView = new DataView(rawData)
+
+                let offset = 0
+                let promptId: string | undefined
+
+                if (
+                  this.getClientFeatureFlags()?.supports_progress_text_metadata
+                ) {
+                  const promptIdLength = rawView.getUint32(offset)
+                  offset += 4
+                  promptId = decoder3.decode(
+                    rawData.slice(offset, offset + promptIdLength)
+                  )
+                  offset += promptIdLength
+                }
+
+                const nodeIdLength = rawView.getUint32(offset)
+                offset += 4
+                const nodeId = decoder3.decode(
+                  rawData.slice(offset, offset + nodeIdLength)
+                )
+                offset += nodeIdLength
+                const text = decoder3.decode(rawData.slice(offset))
+
+                this.dispatchCustomEvent('progress_text', {
+                  nodeId,
+                  text,
+                  ...(promptId !== undefined && { prompt_id: promptId })
+                })
+              } catch (e) {
+                console.warn('Failed to parse progress_text binary message', e)
+              }
               break
+            }
             case 1:
               const imageType = view.getUint32(4)
               const imageData = event.data.slice(8)
@@ -869,7 +903,7 @@ export class ComfyApi extends EventTarget {
           }
         }
       }
-      throw new PromptExecutionError(errorResponse)
+      throw new PromptExecutionError(errorResponse, res.status)
     }
 
     return await res.json()
@@ -1315,15 +1349,13 @@ export class ComfyApi extends EventTarget {
         useToastStore().add({
           severity: 'error',
           summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.',
-          life: 5000
+            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
         })
       }
     } catch (error) {
       useToastStore().add({
         severity: 'error',
-        summary: 'An error occurred while trying to unload models.',
-        life: 5000
+        summary: 'An error occurred while trying to unload models.'
       })
     }
   }

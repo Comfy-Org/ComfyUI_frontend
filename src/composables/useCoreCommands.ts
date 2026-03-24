@@ -397,8 +397,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (app.canvas.empty) {
           toastStore.add({
             severity: 'error',
-            summary: t('toastMessages.emptyCanvas'),
-            life: 3000
+            summary: t('toastMessages.emptyCanvas')
           })
           return
         }
@@ -557,8 +556,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToQueue'),
-            detail: t('toastMessages.pleaseSelectOutputNodes'),
-            life: 3000
+            detail: t('toastMessages.pleaseSelectOutputNodes')
           })
           return
         }
@@ -571,8 +569,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.failedToQueue'),
-            detail: t('toastMessages.failedExecutionPathResolution'),
-            life: 3000
+            detail: t('toastMessages.failedExecutionPathResolution')
           })
           return
         }
@@ -602,8 +599,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToGroup'),
-            detail: t('toastMessages.pleaseSelectNodesToGroup'),
-            life: 3000
+            detail: t('toastMessages.pleaseSelectNodesToGroup')
           })
           return
         }
@@ -962,8 +958,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('g.error'),
-            detail: t('manager.notAvailable'),
-            life: 3000
+            detail: t('manager.notAvailable')
           })
           return
         }
@@ -1048,8 +1043,7 @@ export function useCoreCommands(): ComfyCommand[] {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.cannotCreateSubgraph'),
-            detail: t('toastMessages.failedToConvertToSubgraph'),
-            life: 3000
+            detail: t('toastMessages.failedToConvertToSubgraph')
           })
           return
         }
@@ -1258,8 +1252,7 @@ export function useCoreCommands(): ComfyCommand[] {
             summary: t('g.error'),
             detail: t('g.commandProhibited', {
               command: 'Comfy.Memory.UnloadModels'
-            }),
-            life: 3000
+            })
           })
           return
         }
@@ -1278,8 +1271,7 @@ export function useCoreCommands(): ComfyCommand[] {
             summary: t('g.error'),
             detail: t('g.commandProhibited', {
               command: 'Comfy.Memory.UnloadModelsAndExecutionCache'
-            }),
-            life: 3000
+            })
           })
           return
         }

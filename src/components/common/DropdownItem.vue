@@ -54,11 +54,12 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
-    <i class="size-5" :class="item.icon" />
-    {{ item.label }}
+    <i class="size-5 shrink-0" :class="item.icon" />
+    <div class="mr-auto truncate" v-text="item.label" />
+    <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div
-      v-if="item.new"
-      class="ml-auto flex items-center rounded-full bg-primary-background px-1 text-xxs leading-none font-bold"
+      v-else-if="item.new"
+      class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-xxs leading-none font-bold"
       v-text="t('contextMenu.new')"
     />
   </DropdownMenuItem>

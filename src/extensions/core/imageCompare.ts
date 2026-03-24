@@ -1,6 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
@@ -29,7 +28,6 @@ useExtensionService().registerExtension({
 
       const toUrl = (record: Record<string, string>) => {
         const params = new URLSearchParams(record)
-        appendCloudResParam(params, record.filename)
         return api.apiURL(`/view?${params}${rand}`)
       }
 

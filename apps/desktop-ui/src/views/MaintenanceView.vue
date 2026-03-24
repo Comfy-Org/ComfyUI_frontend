@@ -1,21 +1,21 @@
 <template>
   <BaseViewTemplate dark>
     <div
-      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme overflow-y-auto"
+      class="dark-theme grid h-screen min-h-full w-screen min-w-full justify-around overflow-y-auto bg-neutral-900 font-sans text-neutral-300"
     >
-      <div class="max-w-(--breakpoint-sm) w-screen m-8 relative">
+      <div class="relative m-8 w-screen max-w-(--breakpoint-sm)">
         <!-- Header -->
         <h1 class="backspan pi-wrench text-4xl font-bold">
           {{ t('maintenance.title') }}
         </h1>
 
         <!-- Toolbar -->
-        <div class="w-full flex flex-wrap gap-4 items-center">
+        <div class="flex w-full flex-wrap items-center gap-4">
           <span class="grow">
             {{ t('maintenance.status') }}:
             <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
           </span>
-          <div class="flex gap-4 items-center">
+          <div class="flex items-center gap-4">
             <SelectButton
               v-model="displayAsList"
               :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
@@ -56,10 +56,10 @@
               :value="t('icon.exclamation-triangle')"
             />
             <span>
-              <strong class="block mb-1">
+              <strong class="mb-1 block">
                 {{ t('maintenance.unsafeMigration.title') }}
               </strong>
-              <span class="block mb-1">
+              <span class="mb-1 block">
                 {{ unsafeReasonText }}
               </span>
               <span class="block text-sm text-neutral-400">
@@ -71,13 +71,13 @@
 
         <!-- Tasks -->
         <TaskListPanel
-          class="border-neutral-700 border-solid border-x-0 border-y"
+          class="border-x-0 border-y border-solid border-neutral-700"
           :filter
           :display-as-list
         />
 
         <!-- Actions -->
-        <div class="flex justify-between gap-4 flex-row">
+        <div class="flex flex-row justify-between gap-4">
           <Button
             :label="t('maintenance.consoleLogs')"
             icon="pi pi-desktop"
@@ -117,13 +117,13 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import RefreshButton from '@/components/common/RefreshButton.vue'
-import StatusTag from '@/components/maintenance/StatusTag.vue'
-import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
-import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
-import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import type { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
-import { electronAPI } from '@/utils/envUtil'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
+import StatusTag from '../components/maintenance/StatusTag.vue'
+import TaskListPanel from '../components/maintenance/TaskListPanel.vue'
+import TerminalOutputDrawer from '../components/maintenance/TerminalOutputDrawer.vue'
+import { useMaintenanceTaskStore } from '../stores/maintenanceTaskStore'
+import type { MaintenanceFilter } from '../types/desktop/maintenanceTypes'
+import { electronAPI } from '../utils/envUtil'
+import { useMinLoadingDurationRef } from '../utils/refUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
@@ -189,8 +189,7 @@ const completeValidation = async () => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('maintenance.error.cannotContinue'),
-      life: 5_000
+      detail: t('maintenance.error.cannotContinue')
     })
   }
 }

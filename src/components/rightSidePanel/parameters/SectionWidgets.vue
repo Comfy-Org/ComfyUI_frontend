@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { getSourceNodeId } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -23,6 +24,7 @@ import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
+import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
 const {
   label,
@@ -77,19 +79,22 @@ function isWidgetShownOnParents(
 ): boolean {
   return parents.some((parent) => {
     if (isPromotedWidgetView(widget)) {
-      return promotionStore.isPromoted(
-        parent.rootGraph.id,
-        parent.id,
-        widget.sourceNodeId,
-        widget.sourceWidgetName
-      )
+      const sourceNodeId = getSourceNodeId(widget)
+      const interiorNodeId =
+        String(widgetNode.id) === String(parent.id)
+          ? widget.sourceNodeId
+          : String(widgetNode.id)
+
+      return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+        sourceNodeId: interiorNodeId,
+        sourceWidgetName: widget.sourceWidgetName,
+        disambiguatingSourceNodeId: sourceNodeId
+      })
     }
-    return promotionStore.isPromoted(
-      parent.rootGraph.id,
-      parent.id,
-      String(widgetNode.id),
-      widget.name
-    )
+    return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+      sourceNodeId: String(widgetNode.id),
+      sourceWidgetName: widget.name
+    })
   })
 }
 
@@ -272,7 +277,7 @@ defineExpose({
         <TransitionGroup name="list-scale">
           <WidgetItem
             v-for="{ widget, node } in widgets"
-            :key="`${node.id}-${widget.name}-${widget.type}`"
+            :key="getStableWidgetRenderKey(widget)"
             :widget="widget"
             :node="node"
             :is-draggable="isDraggable"

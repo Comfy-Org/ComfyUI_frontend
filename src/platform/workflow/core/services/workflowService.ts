@@ -13,15 +13,15 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
-import { useMissingModelsDialog } from '@/composables/useMissingModelsDialog'
-import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
@@ -40,8 +40,6 @@ export const useWorkflowService = () => {
   const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
   const dialogService = useDialogService()
-  const missingModelsDialog = useMissingModelsDialog()
-  const missingNodesDialog = useMissingNodesDialog()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const executionErrorStore = useExecutionErrorStore()
@@ -149,6 +147,8 @@ export const useWorkflowService = () => {
       await openWorkflow(tempWorkflow)
       await workflowStore.saveWorkflow(tempWorkflow)
     }
+
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
     return true
   }
 
@@ -189,6 +189,7 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.saveWorkflow(workflow)
+      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
     }
   }
 
@@ -239,8 +240,8 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote,
+        showMissingModels: loadFromRemote,
+        showMissingNodes: true,
         checkForRerouteMigration: false,
         deferWarnings: true
       }
@@ -370,8 +371,7 @@ export const useWorkflowService = () => {
             toastStore.add({
               severity: 'error',
               summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft'),
-              life: 3000
+              detail: t('toastMessages.failedToSaveDraft')
             })
           }
         }
@@ -404,6 +404,7 @@ export const useWorkflowService = () => {
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
+    useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
       if (!wasAppMode && workflow.initialMode === 'app') {
@@ -537,23 +538,11 @@ export const useWorkflowService = () => {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf?.pendingWarnings) return
 
-    const { missingNodeTypes, missingModels } = wf.pendingWarnings
+    const { missingNodeTypes } = wf.pendingWarnings
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
-      // Remove modal once Node Replacement is implemented in TabErrors.
-      if (settingStore.get('Comfy.Workflow.ShowMissingNodesWarning')) {
-        missingNodesDialog.show({ missingNodeTypes })
-      }
-
       executionErrorStore.surfaceMissingNodes(missingNodeTypes)
-    }
-
-    if (
-      missingModels &&
-      settingStore.get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
-      missingModelsDialog.show(missingModels)
     }
   }
 

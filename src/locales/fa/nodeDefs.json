@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "عبارت ریاضی",
+    "inputs": {
+      "expression": {
+        "name": "عبارت"
+      },
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "سوئیچ",
     "inputs": {
@@ -1717,6 +1736,10 @@
         "name": "حلقه بسته",
         "tooltip": "آیا حلقه پنجره زمینه بسته شود؛ فقط برای برنامه‌ریزی حلقه‌ای قابل استفاده است."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "فهرست اندیس‌های latent که باید در تنسورهای شرطی برای هر پنجره حفظ شوند؛ برای مثال، اگر این مقدار را '۰' قرار دهید، تصویر ابتدایی برای هر پنجره استفاده خواهد شد."
+      },
       "context_length": {
         "name": "طول پنجره زمینه",
         "tooltip": "طول پنجره زمینه."
@@ -1748,6 +1771,10 @@
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که پنجره‌های زمینه هنگام نمونه‌گیری بر آن اعمال می‌شود."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "آیا شرط‌های متعدد (ایجاد شده توسط ConditionCombine) بر اساس اندیس ناحیه به هر پنجره تقسیم شوند یا خیر."
       }
     },
     "outputs": {
@@ -3188,6 +3215,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "بهینه‌سازی KV Cache را برای تصاویر مرجع در مدل‌های خانواده Flux فعال می‌کند.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که قرار است KV Cache روی آن فعال شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل اصلاح‌شده با KV Cache فعال."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "این نود تصویر را به اندازه‌ای تغییر می‌دهد که برای flux kontext بهینه‌تر باشد.",
     "display_name": "FluxKontextImageScale",
@@ -3781,6 +3823,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "اولین تصویر از فرایند تفکر مدل. فقط در حالت thinking_level بالا و مدالیته IMAGE+TEXT در دسترس است."
       }
     }
   },
@@ -11272,6 +11318,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "نقاش",
+    "inputs": {
+      "bg_color": {
+        "name": "رنگ پس‌زمینه"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پایه اختیاری برای نقاشی روی آن"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ترکیب جفت شرطی",
     "inputs": {
@@ -11878,6 +11953,91 @@
       },
       "clip_name4": {
         "name": "clip_name4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "بردارسازی یک تصویر شطرنجی به SVG با استفاده از Quiver AI.",
+    "display_name": "تبدیل تصویر Quiver به SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "برش خودکار به سوژه غالب."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر ورودی برای بردارسازی."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده برای بردارسازی SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "تولید یک SVG از طریق پرامپت متنی با استفاده از Quiver AI.",
+    "display_name": "تبدیل متن Quiver به SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "راهنمایی‌های اضافی برای سبک یا قالب‌بندی."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل مورد استفاده برای تولید SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "توضیح متنی برای خروجی SVG مورد نظر."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حداکثر ۴ تصویر مرجع برای راهنمایی تولید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -12833,6 +12993,133 @@
       "1": {
         "name": "ارتفاع",
         "tooltip": "ارتفاع محاسبه‌شده بر حسب پیکسل (مضربی از ۸)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "تولید تصویر از توضیحات متنی با استفاده از Reve.",
+    "display_name": "ایجاد تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "ویرایش تصاویر با استفاده از دستور زبان طبیعی در Reve.",
+    "display_name": "ویرایش تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "edit_instruction": {
+        "name": "دستور ویرایش",
+        "tooltip": "توضیح متنی نحوه ویرایش تصویر. حداکثر ۲۵۶۰ کاراکتر."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که باید ویرایش شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ویرایش."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "ترکیب تصاویر مرجع با پرامپت متنی برای ایجاد تصاویر جدید با استفاده از Reve.",
+    "display_name": "ترکیب تصویر با Reve",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "نسخه مدل مورد استفاده برای ترکیب."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_test_time_scaling": {
+        "name": "مقیاس‌دهی زمان تست"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی تصویر مورد نظر. می‌توانید از تگ XML img برای ارجاع به تصاویر خاص با شماره اندیس استفاده کنید، مانند <img>۰</img>، <img>۱</img> و غیره."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "remove_background": {
+        "name": "حذف پس‌زمینه",
+        "tooltip": "حذف پس‌زمینه از تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "upscale": {
+        "name": "افزایش وضوح",
+        "tooltip": "افزایش وضوح تصویر تولید شده. ممکن است هزینه اضافی داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15061,6 +15348,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "پس از وارد کردن مدل سه‌بعدی، بازطراحی بافت مدل سه‌بعدی را انجام دهید.",
+    "display_name": "Hunyuan3D: ویرایش بافت سه‌بعدی",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "مدل سه‌بعدی با فرمت FBX. مدل باید کمتر از ۱۰۰٬۰۰۰ وجه داشته باشد."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "توضیح ویرایش بافت. تا ۱۰۲۴ نویسه UTF-8 پشتیبانی می‌شود."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed کنترل می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "تصویر بافت",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {
@@ -15109,6 +15431,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "تصویر بافت",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metallic اختیاری",
+        "tooltip": null
+      },
+      "5": {
+        "name": "normal اختیاری",
+        "tooltip": null
+      },
+      "6": {
+        "name": "roughness اختیاری",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "بازکردن UV روی یک مدل سه‌بعدی برای تولید بافت UV. مدل ورودی باید کمتر از ۳۰۰۰۰ وجه داشته باشد.",
+    "display_name": "Hunyuan3D: مدل به UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB، OBJ یا FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "اجرای رتپولوژی هوشمند روی یک مدل سه‌بعدی. پشتیبانی از فرمت‌های GLB/OBJ؛ حداکثر ۲۰۰ مگابایت؛ توصیه‌شده برای مدل‌های با چندضلعی بالا.",
+    "display_name": "Hunyuan3D: توپولوژی هوشمند",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_level": {
+        "name": "سطح وجه",
+        "tooltip": "سطح کاهش چندضلعی."
+      },
+      "model_3d": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": "مدل سه‌بعدی ورودی (GLB یا OBJ)"
+      },
+      "polygon_type": {
+        "name": "نوع چندضلعی",
+        "tooltip": "نوع ترکیب سطح."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -15151,6 +15547,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "تصویر بافت",
         "tooltip": null
       }
     }

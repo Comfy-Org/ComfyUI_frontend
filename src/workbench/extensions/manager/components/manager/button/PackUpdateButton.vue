@@ -8,7 +8,7 @@
     :disabled="isUpdating"
     @click="updateAllPacks"
   >
-    <DotSpinner v-if="isUpdating" duration="1s" :size="12" />
+    <DotSpinner v-if="isUpdating" duration="1s" />
     <i v-else class="icon-[lucide--refresh-cw]" />
     <span>{{
       nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')

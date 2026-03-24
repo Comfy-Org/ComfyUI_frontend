@@ -124,6 +124,7 @@ describe('linearOutputStore', () => {
 
   it('auto-selects skeleton on first job start when no selection', () => {
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
 
     expect(store.selectedId).toBe(`slot:${store.inProgressItems[0].id}`)
@@ -132,6 +133,7 @@ describe('linearOutputStore', () => {
   it('transitions to latent on preview', () => {
     vi.useFakeTimers()
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
 
     const itemId = store.inProgressItems[0].id
@@ -265,6 +267,7 @@ describe('linearOutputStore', () => {
     // selectAsLatest simulates "following the latest output"
     store.selectAsLatest('history:asset-1:0')
 
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
 
     // Following latest → auto-select new skeleton
@@ -286,6 +289,7 @@ describe('linearOutputStore', () => {
 
   it('falls back selection when selected item is removed', () => {
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     store.onJobStart('job-1')
     const firstId = `slot:${store.inProgressItems[0].id}`
     expect(store.selectedId).toBe(firstId)
@@ -361,6 +365,7 @@ describe('linearOutputStore', () => {
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     activeJobIdRef.value = 'job-1'
     await nextTick()
 
@@ -383,12 +388,14 @@ describe('linearOutputStore', () => {
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
     activeJobIdRef.value = 'job-1'
     await nextTick()
 
     store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
 
     // Direct transition: job-1 → job-2 (no null in between)
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
     activeJobIdRef.value = 'job-2'
     await nextTick()
 
@@ -400,6 +407,8 @@ describe('linearOutputStore', () => {
 
   it('two sequential runs: selection clears after each resolve', () => {
     const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
 
     // Run 1: 3 outputs
     store.onJobStart('job-1')
@@ -625,7 +634,7 @@ describe('linearOutputStore', () => {
     )
   })
 
-  it('resets state when leaving app mode', async () => {
+  it('preserves in-progress items when leaving app mode', async () => {
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
 
@@ -637,9 +646,65 @@ describe('linearOutputStore', () => {
     isAppModeRef.value = false
     await nextTick()
 
-    expect(store.inProgressItems).toHaveLength(0)
-    expect(store.selectedId).toBeNull()
-    expect(store.pendingResolve.size).toBe(0)
+    expect(store.inProgressItems.length).toBeGreaterThan(0)
+    expect(store.selectedId).toBe('slot:some-id')
+  })
+
+  it('completes stale tracked job when re-entering app mode', async () => {
+    const { nextTick } = await import('vue')
+    const store = useLinearOutputStore()
+
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    activeJobIdRef.value = 'job-1'
+    await nextTick()
+
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+
+    // Switch away — job finishes while we're gone
+    isAppModeRef.value = false
+    await nextTick()
+    activeJobIdRef.value = null
+    await nextTick()
+
+    // Switch back — store should reconcile the stale tracked job
+    isAppModeRef.value = true
+    await nextTick()
+
+    expect(store.pendingResolve.has('job-1')).toBe(true)
+  })
+
+  it('recovers latent preview when re-entering app mode', async () => {
+    vi.useFakeTimers()
+    const { nextTick } = await import('vue')
+    const store = useLinearOutputStore()
+
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    activeJobIdRef.value = 'job-1'
+    await nextTick()
+
+    // First node executes, consuming the skeleton
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    expect(store.inProgressItems[0].state).toBe('image')
+
+    // Switch away — latent preview arrives for next node while gone
+    isAppModeRef.value = false
+    await nextTick()
+    previewsRef.value = {
+      'job-1': { url: 'blob:preview-while-away', nodeId: 'node-2' }
+    }
+    await nextTick()
+
+    // Switch back — should recover the latent preview
+    isAppModeRef.value = true
+    await nextTick()
+    vi.advanceTimersByTime(16)
+
+    const latentItems = store.inProgressItems.filter(
+      (i) => i.state === 'latent'
+    )
+    expect(latentItems).toHaveLength(1)
+    expect(latentItems[0].latentPreviewUrl).toBe('blob:preview-while-away')
+    vi.useRealTimers()
   })
 
   it('does not show in-progress items from another workflow', () => {
@@ -738,6 +803,34 @@ describe('linearOutputStore', () => {
     expect(imageItems[0].output?.nodeId).toBe('2')
   })
 
+  it('does not auto-select for jobs belonging to another workflow', () => {
+    const store = useLinearOutputStore()
+
+    // User is on workflow-b, following latest
+    activeWorkflowPathRef.value = 'workflows/app-b.json'
+    store.selectAsLatest('history:asset-b:0')
+
+    // Job from workflow-a starts
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    store.onJobStart('job-1')
+
+    // Should NOT yank selection to the other workflow's slot
+    expect(store.selectedId).toBe('history:asset-b:0')
+  })
+
+  it('auto-selects for jobs belonging to the active workflow', () => {
+    const store = useLinearOutputStore()
+
+    activeWorkflowPathRef.value = 'workflows/app-a.json'
+    store.selectAsLatest('history:asset-a:0')
+
+    setJobWorkflowPath('job-1', 'workflows/app-a.json')
+    store.onJobStart('job-1')
+
+    // Should auto-select since job matches active workflow
+    expect(store.selectedId?.startsWith('slot:')).toBe(true)
+  })
+
   it('ignores execution events when not in app mode', async () => {
     const { nextTick } = await import('vue')
     const store = useLinearOutputStore()
@@ -750,5 +843,565 @@ describe('linearOutputStore', () => {
     await nextTick()
 
     expect(store.inProgressItems).toHaveLength(0)
+  })
+
+  describe('workflow switching during generation', () => {
+    async function setup() {
+      vi.useFakeTimers()
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+      return { store, nextTick }
+    }
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('preserves images and latent previews across tab switch', async () => {
+      const { store, nextTick } = await setup()
+
+      // Workflow A: start job, produce 1 image + 1 latent
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+      store.onLatentPreview('job-a', 'blob:node2-latent', '2')
+      vi.advanceTimersByTime(16)
+
+      const imagesBefore = store.inProgressItems.filter(
+        (i) => i.state === 'image'
+      )
+      const latentsBefore = store.inProgressItems.filter(
+        (i) => i.state === 'latent'
+      )
+      expect(imagesBefore).toHaveLength(1)
+      expect(latentsBefore).toHaveLength(1)
+
+      // Switch to workflow B (graph mode)
+      activeWorkflowPathRef.value = 'workflows/graph-b.json'
+      isAppModeRef.value = false
+      await nextTick()
+
+      // Items still in store (not reset)
+      expect(store.inProgressItems.filter((i) => i.state === 'image')).toEqual(
+        imagesBefore
+      )
+      expect(store.inProgressItems.filter((i) => i.state === 'latent')).toEqual(
+        latentsBefore
+      )
+
+      // Switch back to workflow A
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      isAppModeRef.value = true
+      await nextTick()
+      vi.advanceTimersByTime(16)
+
+      // Items visible via activeWorkflowInProgressItems
+      expect(store.activeWorkflowInProgressItems).toHaveLength(2)
+      expect(
+        store.activeWorkflowInProgressItems.some((i) => i.state === 'image')
+      ).toBe(true)
+    })
+
+    it('captures outputs produced while viewing another tab', async () => {
+      const { store, nextTick } = await setup()
+
+      // Workflow A: start job, produce 1 image
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'image')
+      ).toHaveLength(1)
+
+      // Switch away
+      activeWorkflowPathRef.value = 'workflows/graph-b.json'
+      isAppModeRef.value = false
+      await nextTick()
+
+      // While away: node 2 executes (event missed — listener removed)
+      // Node 3 starts sending latent previews (watcher guarded)
+      previewsRef.value = {
+        'job-a': { url: 'blob:node3-latent', nodeId: '3' }
+      }
+      await nextTick()
+
+      // Switch back
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      isAppModeRef.value = true
+      await nextTick()
+      vi.advanceTimersByTime(16)
+
+      // Original image preserved + latent preview recovered
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'image')
+      ).toHaveLength(1)
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'latent')
+      ).toHaveLength(1)
+      expect(store.inProgressItems[0].latentPreviewUrl).toBe(
+        'blob:node3-latent'
+      )
+    })
+
+    it('scopes items to correct workflow after switching back', async () => {
+      const { store, nextTick } = await setup()
+
+      // Workflow A: start job
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+
+      // Switch to workflow B
+      activeWorkflowPathRef.value = 'workflows/app-b.json'
+
+      // Workflow A items should NOT appear for workflow B
+      expect(store.activeWorkflowInProgressItems).toHaveLength(0)
+
+      // Switch back to workflow A
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+
+      // Workflow A items should reappear
+      expect(store.activeWorkflowInProgressItems).toHaveLength(1)
+      expect(store.activeWorkflowInProgressItems[0].jobId).toBe('job-a')
+      expect(store.activeWorkflowInProgressItems[0].state).toBe('image')
+    })
+
+    it('completes job A while away and starts tracking job B on return', async () => {
+      const { store, nextTick } = await setup()
+
+      // Workflow A: start and partially generate
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+
+      // Switch to workflow B (graph mode)
+      activeWorkflowPathRef.value = 'workflows/graph-b.json'
+      isAppModeRef.value = false
+      await nextTick()
+
+      // While away: job A finishes, job B starts
+      setJobWorkflowPath('job-b', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-b'
+      await nextTick()
+
+      // Switch back to workflow A
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      isAppModeRef.value = true
+      await nextTick()
+
+      // Job A should have been completed (pending resolve)
+      expect(store.pendingResolve.has('job-a')).toBe(true)
+
+      // Job B should have been started
+      expect(store.inProgressItems.some((i) => i.jobId === 'job-b')).toBe(true)
+    })
+
+    it('handles job finishing while away with no new job', async () => {
+      const { store, nextTick } = await setup()
+
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+
+      // Switch away
+      isAppModeRef.value = false
+      await nextTick()
+
+      // Job finishes, no new job
+      activeJobIdRef.value = null
+      await nextTick()
+
+      // Switch back
+      isAppModeRef.value = true
+      await nextTick()
+
+      // Job A completed, images pending resolve
+      expect(store.pendingResolve.has('job-a')).toBe(true)
+      // No new skeleton should have been created (no active job)
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'skeleton')
+      ).toHaveLength(0)
+    })
+
+    it('does not leak workflow A items into workflow B view', async () => {
+      const { store, nextTick } = await setup()
+
+      // Workflow A: two images
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+      store.onNodeExecuted(
+        'job-a',
+        makeExecutedDetail(
+          'job-a',
+          [{ filename: 'b.png', subfolder: '', type: 'output' }],
+          '2'
+        )
+      )
+
+      // Items exist in the global list
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'image')
+      ).toHaveLength(2)
+
+      // Switch to workflow B (also app mode)
+      activeWorkflowPathRef.value = 'workflows/app-b.json'
+
+      // Workflow B should see nothing from job-a
+      expect(store.activeWorkflowInProgressItems).toHaveLength(0)
+
+      // Global list still has them
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'image')
+      ).toHaveLength(2)
+    })
+
+    it('cleans up stale tracked job when leaving app mode after job finishes', async () => {
+      const { store, nextTick } = await setup()
+
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+
+      // Job finishes while still in app mode
+      store.onJobComplete('job-a')
+      expect(store.pendingResolve.has('job-a')).toBe(true)
+
+      // Now switch away — pendingResolve items stay (still-running case
+      // doesn't apply, but items are kept for history absorption)
+      activeJobIdRef.value = null
+      isAppModeRef.value = false
+      await nextTick()
+
+      // Items preserved (pendingResolve is not cleared on exit)
+      expect(store.inProgressItems.some((i) => i.jobId === 'job-a')).toBe(true)
+    })
+
+    it('evicts prior pendingResolve entries when a new job completes', () => {
+      vi.useFakeTimers()
+      const store = useLinearOutputStore()
+
+      // Job 1: produce image, complete
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      store.onJobStart('job-1')
+      store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+      store.onJobComplete('job-1')
+
+      expect(store.pendingResolve.has('job-1')).toBe(true)
+      expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(true)
+
+      // Job 2: produce image, complete — should evict job-1
+      store.onJobStart('job-2')
+      store.onNodeExecuted('job-2', makeExecutedDetail('job-2'))
+      store.onJobComplete('job-2')
+
+      expect(store.pendingResolve.has('job-1')).toBe(false)
+      expect(store.inProgressItems.some((i) => i.jobId === 'job-1')).toBe(false)
+      // Job 2 is now pending resolve
+      expect(store.pendingResolve.has('job-2')).toBe(true)
+
+      vi.useRealTimers()
+    })
+
+    it('cleans up finished tracked job on exit when job ended while in app mode', async () => {
+      const { store, nextTick } = await setup()
+
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+
+      // Job ends, new job starts — all while in app mode
+      setJobWorkflowPath('job-b', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-b'
+      await nextTick()
+
+      // job-a completed via activeJobId watcher, now pending resolve
+      expect(store.pendingResolve.has('job-a')).toBe(true)
+
+      // Switch away — tracked job is now job-b which is still active, so
+      // the else-branch does NOT complete it (it's still running)
+      isAppModeRef.value = false
+      await nextTick()
+
+      // job-b items preserved (still running)
+      expect(store.inProgressItems.some((i) => i.jobId === 'job-b')).toBe(true)
+    })
+
+    it('does not leak items across many job cycles', () => {
+      vi.useFakeTimers()
+      const store = useLinearOutputStore()
+
+      for (let i = 1; i <= 5; i++) {
+        const jobId = `job-${i}`
+        setJobWorkflowPath(jobId, 'workflows/test-workflow.json')
+        store.onJobStart(jobId)
+        store.onNodeExecuted(jobId, makeExecutedDetail(jobId))
+        store.onJobComplete(jobId)
+      }
+
+      // Only the last job should have items (pending resolve).
+      // All prior jobs were evicted by subsequent onJobComplete calls.
+      expect(store.pendingResolve.size).toBe(1)
+      expect(store.pendingResolve.has('job-5')).toBe(true)
+      expect(store.inProgressItems.every((i) => i.jobId === 'job-5')).toBe(true)
+
+      vi.useRealTimers()
+    })
+
+    it('does not adopt another workflow job when switching back', async () => {
+      const { store, nextTick } = await setup()
+
+      // Tab A: queue "cat"
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-cat', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-cat'
+      await nextTick()
+
+      store.onNodeExecuted(
+        'job-cat',
+        makeExecutedDetail('job-cat', undefined, '1')
+      )
+      expect(store.activeWorkflowInProgressItems).toHaveLength(1)
+      expect(store.activeWorkflowInProgressItems[0].jobId).toBe('job-cat')
+
+      // Switch to tab B (different workflow, also app mode): queue "dog"
+      activeWorkflowPathRef.value = 'workflows/app-b.json'
+      isAppModeRef.value = false
+      await nextTick()
+      isAppModeRef.value = true
+      await nextTick()
+
+      setJobWorkflowPath('job-dog', 'workflows/app-b.json')
+      activeJobIdRef.value = 'job-dog'
+      await nextTick()
+
+      // Tab B should see dog, not cat
+      expect(
+        store.activeWorkflowInProgressItems.every((i) => i.jobId === 'job-dog')
+      ).toBe(true)
+
+      // Switch back to tab A
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      isAppModeRef.value = false
+      await nextTick()
+      isAppModeRef.value = true
+      await nextTick()
+
+      // Dog's executed events arrive while viewing tab A (listener is
+      // active and activeJobId is still job-dog).
+      const event = new CustomEvent('executed', {
+        detail: makeExecutedDetail(
+          'job-dog',
+          [{ filename: 'dog.png', subfolder: '', type: 'output' }],
+          '1'
+        )
+      })
+      apiTarget.dispatchEvent(event)
+
+      // Dog's latent preview also arrives
+      previewsRef.value = {
+        'job-dog': { url: 'blob:dog-latent', nodeId: '2' }
+      }
+      await nextTick()
+      vi.advanceTimersByTime(16)
+
+      // Tab A must NOT show dog — only cat
+      const tabAItems = store.activeWorkflowInProgressItems
+      expect(tabAItems.every((i) => i.jobId === 'job-cat')).toBe(true)
+      expect(tabAItems.some((i) => i.jobId === 'job-dog')).toBe(false)
+
+      // Selection must not have been yanked to a dog item
+      expect(store.selectedId?.includes('job-dog') ?? false).toBe(false)
+
+      // Dog should still exist globally (scoped to tab B)
+      expect(store.inProgressItems.some((i) => i.jobId === 'job-dog')).toBe(
+        true
+      )
+    })
+
+    it('does not create skeleton for next job from another workflow', async () => {
+      const { store, nextTick } = await setup()
+
+      // Run dog on dog tab
+      activeWorkflowPathRef.value = 'workflows/dog.json'
+      setJobWorkflowPath('job-dog', 'workflows/dog.json')
+      activeJobIdRef.value = 'job-dog'
+      await nextTick()
+
+      // Swap to cat tab, queue cat (dog still running)
+      activeWorkflowPathRef.value = 'workflows/cat.json'
+      isAppModeRef.value = false
+      await nextTick()
+      isAppModeRef.value = true
+      await nextTick()
+      setJobWorkflowPath('job-cat', 'workflows/cat.json')
+
+      // Swap back to dog tab
+      activeWorkflowPathRef.value = 'workflows/dog.json'
+      isAppModeRef.value = false
+      await nextTick()
+      isAppModeRef.value = true
+      await nextTick()
+
+      // Dog finishes, cat starts (activeJobId transitions on dog tab)
+      activeJobIdRef.value = 'job-cat'
+      await nextTick()
+
+      // Dog tab must NOT show cat's skeleton
+      expect(store.activeWorkflowInProgressItems).toHaveLength(0)
+      // No skeleton for cat should have been created at all
+      expect(
+        store.inProgressItems.some(
+          (i) => i.jobId === 'job-cat' && i.state === 'skeleton'
+        )
+      ).toBe(false)
+    })
+
+    it('processes new executed events after switching back', async () => {
+      const { store, nextTick } = await setup()
+
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      setJobWorkflowPath('job-a', 'workflows/app-a.json')
+      activeJobIdRef.value = 'job-a'
+      await nextTick()
+
+      store.onNodeExecuted('job-a', makeExecutedDetail('job-a', undefined, '1'))
+
+      // Switch away and back
+      isAppModeRef.value = false
+      await nextTick()
+      isAppModeRef.value = true
+      await nextTick()
+
+      // Fire an executed event via the API — listener should be re-attached
+      const event = new CustomEvent('executed', {
+        detail: makeExecutedDetail(
+          'job-a',
+          [{ filename: 'c.png', subfolder: '', type: 'output' }],
+          '3'
+        )
+      })
+      apiTarget.dispatchEvent(event)
+
+      expect(
+        store.inProgressItems.filter((i) => i.state === 'image')
+      ).toHaveLength(2)
+    })
+  })
+
+  describe('deferred path mapping (WebSocket/HTTP race)', () => {
+    it('starts tracking when path mapping arrives after activeJobId', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+
+      // activeJobId set before path mapping exists (WebSocket race)
+      activeJobIdRef.value = 'job-1'
+      await nextTick()
+
+      // No skeleton yet — path mapping is missing
+      expect(store.inProgressItems).toHaveLength(0)
+
+      // Path mapping arrives (HTTP response from queuePrompt)
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      await nextTick()
+
+      // Now onJobStart should have fired
+      expect(store.inProgressItems).toHaveLength(1)
+      expect(store.inProgressItems[0].state).toBe('skeleton')
+      expect(store.inProgressItems[0].jobId).toBe('job-1')
+    })
+
+    it('processes executed events after deferred start', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+
+      activeJobIdRef.value = 'job-1'
+      await nextTick()
+
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      await nextTick()
+
+      // Executed event arrives — should create an image item
+      store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+
+      const imageItems = store.inProgressItems.filter(
+        (i) => i.state === 'image'
+      )
+      expect(imageItems).toHaveLength(1)
+    })
+
+    it('does not double-start if path mapping is already available', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+
+      // Path mapping set before activeJobId (normal case, no race)
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      activeJobIdRef.value = 'job-1'
+      await nextTick()
+
+      expect(store.inProgressItems).toHaveLength(1)
+
+      // Trigger path mapping update again — should not create a second skeleton
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      await nextTick()
+
+      expect(store.inProgressItems).toHaveLength(1)
+    })
+
+    it('ignores deferred mapping if activeJobId changed', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+
+      activeJobIdRef.value = 'job-1'
+      await nextTick()
+
+      // Job changes before path mapping arrives
+      activeJobIdRef.value = null
+      await nextTick()
+
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      await nextTick()
+
+      // Should not have started job-1
+      expect(store.inProgressItems).toHaveLength(0)
+    })
+
+    it('ignores deferred mapping for a different workflow', async () => {
+      const { nextTick } = await import('vue')
+      const store = useLinearOutputStore()
+
+      activeJobIdRef.value = 'job-1'
+      await nextTick()
+
+      // Path maps to a different workflow than the active one
+      setJobWorkflowPath('job-1', 'workflows/other-workflow.json')
+      await nextTick()
+
+      expect(store.inProgressItems).toHaveLength(0)
+    })
   })
 })

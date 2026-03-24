@@ -36,14 +36,7 @@
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple",
         "cnr_id": "comfy-core",
-        "ver": "0.3.65",
-        "models": [
-          {
-            "name": "v1-5-pruned-emaonly-fp16.safetensors",
-            "url": "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true",
-            "directory": "checkpoints"
-          }
-        ]
+        "ver": "0.3.65"
       },
       "widgets_values": ["v1-5-pruned-emaonly-fp16.safetensors"]
     },

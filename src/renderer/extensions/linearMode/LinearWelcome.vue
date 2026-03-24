@@ -4,12 +4,18 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
+const workflowStore = useWorkflowStore()
+const isAppDefault = computed(
+  () => workflowStore.activeWorkflow?.initialMode === 'app'
+)
 const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
 </script>
 
@@ -46,6 +52,18 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
     <template v-else>
       <p v-if="!hasNodes" class="mt-0 max-w-md text-sm text-base-foreground">
         {{ t('linearMode.emptyWorkflowExplanation') }}
+      </p>
+      <p
+        v-if="hasNodes && isAppDefault"
+        class="mt-0 max-w-md text-sm text-base-foreground"
+      >
+        <i18n-t keypath="linearMode.welcome.noOutputs" tag="span">
+          <template #count>
+            <span class="font-bold text-warning-background">{{
+              t('linearMode.welcome.oneOutput')
+            }}</span>
+          </template>
+        </i18n-t>
       </p>
       <div class="flex flex-row gap-2">
         <Button variant="textonly" size="lg" @click="setMode('graph')">

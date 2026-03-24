@@ -25,6 +25,10 @@
     },
     "tooltip": "选择自定义选项以隐藏系统标题栏"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "禁用动画",
+    "tooltip": "关闭大多数 CSS 动画和过渡效果。当显示 GPU 也用于生成时，可加快推理速度。"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "画布背景图像",
     "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "浮点组件四舍五入的小数位数 [0 = 自动]。",
     "tooltip": "(需要重新加载页面)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "自动平移速度",
+    "tooltip": "拖动到画布边缘时自动平移的最大速度。设置为 0 可禁用自动平移。"
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "在左下角显示画布信息（fps等）"
@@ -400,7 +408,7 @@
     "name": "标签栏布局",
     "options": {
       "Default": "默认",
-      "Integrated": "集成"
+      "Legacy": "传统"
     },
     "tooltip": "控制标签栏的布局。“集成”会将帮助和用户控件移动到标签栏区域。"
   },
@@ -454,9 +462,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "显示缺失模型警告"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "显示缺失节点警告"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "保存节点ID到工作流"
   },
@@ -480,6 +485,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大时缩放节点组合部件菜单（列表）"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "点击时选择组内所有子项",
+    "tooltip": "启用后，点击分组会选择其中的所有节点和项目"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "始终收缩新节点",

@@ -4,7 +4,7 @@
     <template v-if="filter.tasks.length === 0">
       <!-- Empty filter -->
       <Divider />
-      <p class="text-neutral-400 w-full text-center">
+      <p class="w-full text-center text-neutral-400">
         {{ $t('maintenance.allOk') }}
       </p>
     </template>
@@ -25,7 +25,7 @@
 
       <!-- Display: Cards -->
       <template v-else>
-        <div class="flex flex-wrap justify-evenly gap-8 pad-y my-4">
+        <div class="pad-y my-4 flex flex-wrap justify-evenly gap-8">
           <TaskCard
             v-for="task in filter.tasks"
             :key="task.id"
@@ -45,16 +45,18 @@ import { useConfirm, useToast } from 'primevue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Divider from 'primevue/divider'
 
-import { t } from '@/i18n'
-import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import { useI18n } from 'vue-i18n'
+
+import { useMaintenanceTaskStore } from '../../stores/maintenanceTaskStore'
 import type {
   MaintenanceFilter,
   MaintenanceTask
-} from '@/types/desktop/maintenanceTypes'
+} from '../../types/desktop/maintenanceTypes'
 
 import TaskCard from './TaskCard.vue'
 import TaskListItem from './TaskListItem.vue'
 
+const { t } = useI18n()
 const toast = useToast()
 const confirm = useConfirm()
 const taskStore = useMaintenanceTaskStore()
@@ -80,8 +82,7 @@ const executeTask = async (task: MaintenanceTask) => {
   toast.add({
     severity: 'error',
     summary: t('maintenance.error.toastTitle'),
-    detail: message ?? t('maintenance.error.defaultDescription'),
-    life: 10_000
+    detail: message ?? t('maintenance.error.defaultDescription')
   })
 }
 

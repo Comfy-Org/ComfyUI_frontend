@@ -73,8 +73,7 @@ async function onRemove() {
   } catch {
     toast.add({
       severity: 'error',
-      summary: t('workspacePanel.removeMemberDialog.error'),
-      life: 3000
+      summary: t('workspacePanel.removeMemberDialog.error')
     })
   } finally {
     loading.value = false

@@ -9,6 +9,7 @@ import { computed, useTemplateRef } from 'vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -85,15 +86,22 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
   [activeTab, splitterKey]
 )
 
-const TYPEFORM_WIDGET_ID = 'gmVqFi8l'
+const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
+
+function dragDrop(e: DragEvent) {
+  const { dataTransfer } = e
+  if (!dataTransfer) return
+
+  linearWorkflowRef.value?.handleDragDrop(e)
+}
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute size-full">
+  <div v-else class="absolute size-full" @dragover.prevent>
     <div
       class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
     >
@@ -143,19 +151,21 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         id="linearCenterPanel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
+        @drop="dragDrop"
       >
         <LinearProgressBar
-          class="absolute top-0 left-0 z-21 w-[calc(100%+16px)]"
+          class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
         <LinearPreview
           :run-button-click="linearWorkflowRef?.runButtonClick"
           :typeform-widget-id="TYPEFORM_WIDGET_ID"
         />
-        <div class="absolute top-4 left-4 z-21">
+        <div class="absolute top-2 left-4.5 z-21">
           <AppModeToolbar v-if="!isBuilderMode" />
         </div>
         <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
         <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
+        <div class="absolute top-4 right-4 z-20"><ErrorOverlay app-mode /></div>
       </SplitterPanel>
       <SplitterPanel
         v-if="hasRightPanel"

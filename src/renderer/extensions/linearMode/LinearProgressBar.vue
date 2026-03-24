@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { useQueueStore } from '@/stores/queueStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 defineOptions({ inheritAttrs: false })
@@ -18,14 +18,14 @@ const {
 }>()
 
 const { totalPercent, currentNodePercent } = useQueueProgress()
-const queueStore = useQueueStore()
+const executionStore = useExecutionStore()
 </script>
 <template>
   <div
     :class="
       cn(
         'relative h-2 bg-secondary-background transition-opacity',
-        queueStore.runningTasks.length === 0 && 'opacity-0',
+        !executionStore.isActiveWorkflowRunning && 'opacity-0',
         rounded && 'rounded-sm',
         className
       )

@@ -1,9 +1,5 @@
 <template>
-  <TabsContent
-    ref="panelEl"
-    value="essentials"
-    class="h-full flex-1 overflow-y-auto px-3"
-  >
+  <div ref="panelEl" class="h-full flex-1 overflow-y-auto px-3">
     <div class="flex flex-col gap-2 pb-6">
       <!-- Flat sorted grid when alphabetical -->
       <div
@@ -57,28 +53,25 @@
         </CollapsibleRoot>
       </template>
     </div>
-  </TabsContent>
+  </div>
 </template>
 
 <script setup lang="ts">
 import {
   CollapsibleContent,
   CollapsibleRoot,
-  CollapsibleTrigger,
-  TabsContent
+  CollapsibleTrigger
 } from 'reka-ui'
-import type { ComponentPublicInstance } from 'vue'
 import { computed, provide, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const panelEl = ref<ComponentPublicInstance | null>(null)
-const panelRef = computed(() => panelEl.value?.$el as HTMLElement | null)
-provide('essentialsPanelRef', panelRef)
-
 import EssentialNodeCard from './EssentialNodeCard.vue'
+
+const panelEl = ref<HTMLDivElement | null>(null)
+provide('essentialsPanelRef', panelEl)
 
 const { root, flatNodes = [] } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>

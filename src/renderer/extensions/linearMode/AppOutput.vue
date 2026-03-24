@@ -25,7 +25,7 @@ function togglePromotion() {
   <div
     :class="
       cn(
-        'pointer-events-auto absolute size-full rounded-2xl ring-5 ring-warning-background/50',
+        'pointer-events-auto absolute z-1 size-full rounded-2xl ring-5 ring-warning-background/50',
         isPromoted && 'ring-warning-background'
       )
     "

@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useTelemetry } from '@/platform/telemetry'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
@@ -117,11 +119,11 @@ export function useTemplateUrlLoader() {
           summary: t('g.error'),
           detail: t('templateWorkflows.error.templateNotFound', {
             templateName: templateParam
-          }),
-          life: 3000
+          })
         })
       } else if (modeParam === 'linear') {
         // Set linear mode after successful template load
+        useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }
     } catch (error) {
@@ -132,8 +134,7 @@ export function useTemplateUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate'),
-        life: 3000
+        detail: t('g.errorLoadingTemplate')
       })
     } finally {
       cleanupUrlParams()

@@ -13,6 +13,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -36,12 +37,15 @@ import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
 const { hasAnyError, allErrorExecutionIds, activeMissingNodeGraphIds } =
   storeToRefs(executionErrorStore)
+
+const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -118,12 +122,21 @@ const hasMissingNodeSelected = computed(
     )
 )
 
+const hasMissingModelSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingModelGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
-    hasMissingNodeSelected.value
+    hasMissingNodeSelected.value ||
+    hasMissingModelSelected.value
   )
 })
 
@@ -314,7 +327,11 @@ function handleTitleCancel() {
             :value="tab.value"
           >
             {{ tab.label() }}
-            <i v-if="tab.icon" :class="cn(tab.icon, 'size-4')" />
+            <i
+              v-if="tab.icon"
+              aria-hidden="true"
+              :class="cn(tab.icon, 'size-4')"
+            />
           </Tab>
         </TabList>
       </nav>

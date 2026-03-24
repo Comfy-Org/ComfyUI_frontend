@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -210,11 +211,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (
       graphId &&
       !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(
-        graphId,
-        String(this.node.id),
-        this.name
-      )
+      usePromotionStore().isPromotedByAny(graphId, {
+        sourceNodeId: String(this.node.id),
+        sourceWidgetName: this.name
+      })
     )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
@@ -349,8 +349,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     // Measure label and value
     const { displayName, _displayValue } = this
-    const labelWidth = ctx.measureText(displayName).width
-    const valueWidth = ctx.measureText(_displayValue).width
+    const labelWidth = cachedMeasureText(ctx, displayName)
+    const valueWidth = cachedMeasureText(ctx, _displayValue)
 
     const gap = BaseWidget.labelValueGap
     const x = margin * 2 + leftPadding

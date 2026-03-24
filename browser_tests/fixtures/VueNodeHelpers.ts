@@ -172,6 +172,19 @@ export class VueNodeHelpers {
   async enterSubgraph(nodeId?: string): Promise<void> {
     const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
     const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
-    await editButton.click()
+
+    // The footer tab button extends below the node body (visible area),
+    // but its bounding box center overlaps the node body div.
+    // Click at the bottom 25% of the button which is the genuinely visible
+    // and unobstructed area outside the node body boundary.
+    const box = await editButton.boundingBox()
+    if (!box) {
+      throw new Error(
+        'subgraph-enter-button has no bounding box: element may be hidden or not in DOM'
+      )
+    }
+    await editButton.click({
+      position: { x: box.width / 2, y: box.height * 0.75 }
+    })
   }
 }

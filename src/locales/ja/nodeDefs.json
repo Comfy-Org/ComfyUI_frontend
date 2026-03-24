@@ -1419,6 +1419,25 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "数式",
+    "inputs": {
+      "expression": {
+        "name": "式"
+      },
+      "values": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "スイッチ",
     "inputs": {
@@ -1717,6 +1736,10 @@
         "name": "closed_loop",
         "tooltip": "コンテキストウィンドウのループを閉じるかどうか。ループスケジュールにのみ適用されます。"
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "各ウィンドウのコンディショニングテンソルで保持するlatentインデックスのリストです。例えば「0」に設定すると、各ウィンドウで初期の開始画像が使用されます。"
+      },
       "context_length": {
         "name": "コンテキスト長",
         "tooltip": "コンテキストウィンドウの長さ。"
@@ -1748,6 +1771,10 @@
       "model": {
         "name": "モデル",
         "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデル。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "複数のコンディショニング（ConditionCombineで作成）を領域インデックスに基づいて各ウィンドウに分割するかどうか。"
       }
     },
     "outputs": {
@@ -3188,6 +3215,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Fluxファミリーモデルの参照画像に対してKVキャッシュ最適化を有効にします。",
+    "display_name": "Flux KVキャッシュ",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "KVキャッシュを使用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KVキャッシュが有効になったパッチ済みモデル。"
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "このノードは、Flux Kontextに最適なサイズに画像をリサイズします。",
     "display_name": "FluxKontextImageScale",
@@ -3781,6 +3823,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "モデルの思考過程からの最初の画像です。thinking_levelがHIGHかつIMAGE+TEXTモダリティの場合のみ利用可能です。"
       }
     }
   },
@@ -11272,6 +11318,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "上から描画するための任意のベース画像"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "ペア条件付け組み合わせ",
     "inputs": {
@@ -11878,6 +11953,91 @@
       },
       "clip_name4": {
         "name": "clip_name4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "Quiver AIを使ってラスタ画像をSVGにベクトル化します。",
+    "display_name": "Quiver画像からSVGへ",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "主要な被写体に自動でクロップします。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "ベクトル化する入力画像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVGベクトル化に使用するモデル。"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Quiver AIを使ってテキストプロンプトからSVGを生成します。",
+    "display_name": "QuiverテキストからSVGへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "追加のスタイルやフォーマットに関する指示。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG生成に使用するモデル。"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望するSVG出力のテキスト説明。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "生成をガイドするための最大4枚の参照画像。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -12833,6 +12993,133 @@
       "1": {
         "name": "高さ",
         "tooltip": "計算された高さ（ピクセル単位、8の倍数）。"
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reveを使用してテキスト説明から画像を生成します。",
+    "display_name": "Reve画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "生成に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。最大2560文字。"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reveを使って自然言語指示で画像を編集します。",
+    "display_name": "Reve画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "edit_instruction": {
+        "name": "編集指示",
+        "tooltip": "画像の編集方法のテキスト説明。最大2560文字。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "編集する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "編集に使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "参照画像とテキストプロンプトを組み合わせてReveで新しい画像を作成します。",
+    "display_name": "Reve画像リミックス",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "リミックスに使用するモデルバージョン。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_test_time_scaling": {
+        "name": "テスト時スケーリング"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成したい画像のテキスト説明。特定の画像をインデックスで参照するXML imgタグ（例：<img>0</img>, <img>1</img>など）を含めることができます。"
+      },
+      "reference_images": {
+        "name": "参照画像"
+      },
+      "remove_background": {
+        "name": "背景を削除",
+        "tooltip": "生成された画像から背景を削除します。追加料金が発生する場合があります。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "upscale": {
+        "name": "アップスケール",
+        "tooltip": "生成された画像をアップスケールします。追加料金が発生する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15061,6 +15348,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3Dモデルを入力後、3Dモデルのテクスチャを再描画します。",
+    "display_name": "Hunyuan3D: 3Dテクスチャ編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX形式の3Dモデル。モデルの面数は100,000未満である必要があります。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "テクスチャ編集内容を記述します。最大1024文字のUTF-8文字列がサポートされています。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
     "inputs": {
@@ -15109,6 +15431,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "3DモデルにUV展開を行い、UVテクスチャを生成します。入力モデルは30,000面未満である必要があります。",
+    "display_name": "Hunyuan3D: モデルからUVへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLB、OBJ、またはFBX）"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "3Dモデルにスマートリトポロジーを実行します。GLB/OBJ形式をサポート、最大200MB、高ポリゴンモデルに推奨。",
+    "display_name": "Hunyuan3D: スマートトポロジー",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "face_level": {
+        "name": "面レベル",
+        "tooltip": "ポリゴン削減レベル。"
+      },
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "入力3Dモデル（GLBまたはOBJ）"
+      },
+      "polygon_type": {
+        "name": "ポリゴンタイプ",
+        "tooltip": "表面構成タイプ。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -15151,6 +15547,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

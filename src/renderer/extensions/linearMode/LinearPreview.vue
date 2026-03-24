@@ -20,18 +20,13 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
-const executionStore = useExecutionStore()
 const mediaActions = useMediaAssetActions()
-const queueStore = useQueueStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs } = useOutputHistory()
+const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
+  useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
@@ -42,12 +37,14 @@ const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
+const showSkeleton = ref(false)
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
   selectedOutput.value = sel.output
   canShowPreview.value = sel.canShowPreview
   latentPreview.value = sel.latentPreviewUrl
+  showSkeleton.value = sel.showSkeleton ?? false
 }
 
 function downloadAsset(item?: AssetItem) {
@@ -76,7 +73,7 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="selectedItem || selectedOutput || !executionStore.isIdle"
+    v-if="selectedItem || selectedOutput || showSkeleton || isWorkflowActive"
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
@@ -105,9 +102,9 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--download]" />
     </Button>
     <Button
-      v-if="!executionStore.isIdle && !selectedItem"
+      v-if="isWorkflowActive && !selectedItem"
       variant="destructive"
-      @click="commandStore.execute('Comfy.Interrupt')"
+      @click="cancelActiveWorkflowJobs()"
     >
       <i class="icon-[lucide--x]" />
       {{ t('linearMode.cancelThisRun') }}
@@ -129,7 +126,7 @@ async function rerun(e: Event) {
           : []),
         {
           icon: 'icon-[lucide--trash-2]',
-          label: t('queue.jobMenu.deleteAsset'),
+          label: t('linearMode.deleteAllAssets'),
           command: () => mediaActions.deleteAssets(selectedItem!)
         }
       ]"
@@ -145,7 +142,7 @@ async function rerun(e: Event) {
     :output="selectedOutput"
     :mobile
   />
-  <LatentPreview v-else-if="queueStore.runningTasks.length > 0" />
+  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
   <div

@@ -10,6 +10,8 @@
     ></div>
 
     <ButtonGroup
+      role="toolbar"
+      :aria-label="t('graphCanvasMenu.canvasToolbar')"
       class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
@@ -30,7 +32,7 @@
         class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
-        <i class="icon-[lucide--focus] size-4" />
+        <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
       </Button>
 
       <Button
@@ -44,7 +46,7 @@
       >
         <span class="inline-flex items-center gap-1 px-2 text-xs">
           <span>{{ canvasStore.appScalePercentage }}%</span>
-          <i class="icon-[lucide--chevron-down] size-4" />
+          <i class="icon-[lucide--chevron-down] size-4" aria-hidden="true" />
         </span>
       </Button>
 
@@ -59,7 +61,7 @@
         :class="minimapButtonClass"
         @click="onMinimapToggleClick"
       >
-        <i class="icon-[lucide--map] size-4" />
+        <i class="icon-[lucide--map] size-4" aria-hidden="true" />
       </Button>
 
       <Button
@@ -78,7 +80,7 @@
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="onLinkVisibilityToggleClick"
       >
-        <i class="icon-[lucide--route-off] size-4" />
+        <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
       </Button>
     </ButtonGroup>
   </div>

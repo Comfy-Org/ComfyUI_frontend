@@ -26,7 +26,7 @@
         <img
           v-if="task.headerImg"
           :src="task.headerImg"
-          class="h-full w-full object-contain px-4 pt-4 opacity-25"
+          class="size-full object-contain px-4 pt-4 opacity-25"
         />
       </template>
       <template #title>
@@ -52,7 +52,7 @@
 
     <i
       v-if="!isLoading && runner.state === 'OK'"
-      class="pi pi-check pointer-events-none absolute -right-4 -bottom-4 col-span-full row-span-full z-10 text-[4rem] text-green-500 opacity-100 transition-opacity group-hover/task-card:opacity-20 [text-shadow:0.25rem_0_0.5rem_black]"
+      class="pi pi-check pointer-events-none absolute -right-4 -bottom-4 z-10 col-span-full row-span-full text-[4rem] text-green-500 opacity-100 transition-opacity [text-shadow:0.25rem_0_0.5rem_black] group-hover/task-card:opacity-20"
     />
   </div>
 </template>
@@ -62,10 +62,10 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed } from 'vue'
 
-import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
+import { useMaintenanceTaskStore } from '../../stores/maintenanceTaskStore'
+import type { MaintenanceTask } from '../../types/desktop/maintenanceTypes'
 import { cn } from '@/utils/tailwindUtil'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
+import { useMinLoadingDurationRef } from '../../utils/refUtil'
 
 const taskStore = useMaintenanceTaskStore()
 const runner = computed(() => taskStore.getRunner(props.task))

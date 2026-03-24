@@ -2,6 +2,7 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
@@ -35,6 +36,7 @@ export function useSharedWorkflowUrlLoader() {
   const workflowShareService = useWorkflowShareService()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+  const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
   function isValidParameter(param: string): boolean {
@@ -118,8 +120,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
-        life: 3000
+        detail: t('shareWorkflow.loadFailed')
       })
       cleanupUrlParams()
       clearPreservedQuery(SHARE_NAMESPACE)
@@ -134,12 +135,16 @@ export function useSharedWorkflowUrlLoader() {
       return 'cancelled'
     }
 
+    templateSelectorDialog.hide()
+
     const { payload } = result
     const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
     const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
 
     try {
-      await app.loadGraphData(payload.workflowJson, true, true, workflowName)
+      await app.loadGraphData(payload.workflowJson, true, true, workflowName, {
+        openSource: 'shared_url'
+      })
     } catch (error) {
       console.error(
         '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
@@ -148,8 +153,7 @@ export function useSharedWorkflowUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed'),
-        life: 5000
+        detail: t('shareWorkflow.loadFailed')
       })
       return 'failed'
     }
