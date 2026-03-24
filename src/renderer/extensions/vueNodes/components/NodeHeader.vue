@@ -38,21 +38,28 @@
           </Button>
         </div>
         <!-- Node Title -->
-        <div
-          v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2"
-          data-testid="node-title"
+        <BaseTooltip
+          :text="isEditing ? '' : getNodeDescription"
+          side="top"
+          size="large"
+          :delay-duration="tooltipDelay"
+          :disabled="!tooltipsEnabled"
         >
-          <div class="flex-1 truncate">
-            <EditableText
-              :model-value="displayTitle"
-              :is-editing="isEditing"
-              :input-attrs="{ 'data-testid': 'node-title-input' }"
-              @edit="handleTitleEdit"
-              @cancel="handleTitleCancel"
-            />
+          <div
+            class="flex min-w-0 flex-1 items-center gap-2"
+            data-testid="node-title"
+          >
+            <div class="flex-1 truncate">
+              <EditableText
+                :model-value="displayTitle"
+                :is-editing="isEditing"
+                :input-attrs="{ 'data-testid': 'node-title-input' }"
+                @edit="handleTitleEdit"
+                @cancel="handleTitleCancel"
+              />
+            </div>
           </div>
-        </div>
+        </BaseTooltip>
       </div>
 
       <template v-for="badge in priceBadges ?? []" :key="badge.required">
@@ -89,6 +96,7 @@ import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import Button from '@/components/ui/button/Button.vue'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -126,17 +134,9 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
+const { getNodeDescription, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
   nodeData?.type || ''
 )
-
-const tooltipConfig = computed(() => {
-  if (isEditing.value) {
-    return { value: '', disabled: true }
-  }
-  const description = getNodeDescription.value
-  return createTooltipConfig(description)
-})
 
 const resolveTitle = (info: VueNodeData | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')

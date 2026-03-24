@@ -96,11 +96,9 @@ const createMountConfig = () => {
     global: {
       plugins: [PrimeVue, i18n, pinia],
       components: { InputText },
-      directives: {
-        tooltip: {
-          mounted: vi.fn(),
-          updated: vi.fn(),
-          unmounted: vi.fn()
+      stubs: {
+        BaseTooltip: {
+          template: '<div><slot /></div>'
         }
       }
     }
@@ -190,54 +188,11 @@ describe('NodeHeader.vue', () => {
   })
 
   describe('Tooltips', () => {
-    it('applies tooltip directive to node title with correct configuration', () => {
+    it('renders node title inside a tooltip wrapper', () => {
       const wrapper = mountHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      const titleElement = wrapper.find('[data-testid="node-title"]')
-      expect(titleElement.exists()).toBe(true)
-
-      // Check that v-tooltip directive was applied
-      const directive = wrapper.vm.$el.querySelector(
-        '[data-testid="node-title"]'
-      )
-      expect(directive).toBeTruthy()
-    })
-
-    it('disables tooltip when editing is active', async () => {
-      const wrapper = mountHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      // Enter edit mode
-      await wrapper.get('[data-testid="node-header-1"]').trigger('dblclick')
-
-      // Tooltip should be disabled during editing
-      const titleElement = wrapper.find('[data-testid="node-title"]')
-      expect(titleElement.exists()).toBe(true)
-    })
-
-    it('creates tooltip configuration when component mounts', () => {
-      const wrapper = mountHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      // Verify tooltip directive is applied to the title element
-      const titleElement = wrapper.find('[data-testid="node-title"]')
-      expect(titleElement.exists()).toBe(true)
-
-      // The tooltip composable should be initialized
-      expect(wrapper.vm).toBeDefined()
-    })
-
-    it('uses tooltip container from provide/inject', () => {
-      const wrapper = mountHeader({
-        nodeData: makeNodeData({ type: 'KSampler' })
-      })
-
-      expect(wrapper.exists()).toBe(true)
-      // Container should be provided through inject
       const titleElement = wrapper.find('[data-testid="node-title"]')
       expect(titleElement.exists()).toBe(true)
     })

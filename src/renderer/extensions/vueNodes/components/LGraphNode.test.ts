@@ -192,6 +192,7 @@ describe('LGraphNode', () => {
       global: {
         plugins: [pinia, i18n],
         stubs: {
+          BaseTooltip: { template: '<div><slot /></div>' },
           NodeSlots: true,
           NodeWidgets: true,
           NodeContent: true,

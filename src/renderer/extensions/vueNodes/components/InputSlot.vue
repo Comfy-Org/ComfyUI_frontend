@@ -1,63 +1,71 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div
+  <BaseTooltip
     v-else
-    v-tooltip.left="tooltipConfig"
-    :class="
-      cn(
-        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-        'cursor-crosshair',
-        dotOnly ? 'lg-slot--dot-only' : 'pr-6',
-        {
-          'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible,
-          'opacity-40': shouldDim
-        },
-        props.socketless && 'pointer-events-none invisible'
-      )
-    "
+    :text="inputTooltipText"
+    side="left"
+    size="large"
+    :delay-duration="tooltipDelay"
+    :disabled="!tooltipsEnabled"
   >
-    <!-- Connection Dot -->
-    <SlotConnectionDot
-      ref="connectionDotRef"
+    <div
       :class="
         cn(
-          'w-3 -translate-x-1/2',
-          hasError &&
-            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
+          'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+          'cursor-crosshair',
+          dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+          {
+            'lg-slot--connected': props.connected,
+            'lg-slot--compatible': props.compatible,
+            'opacity-40': shouldDim
+          },
+          props.socketless && 'pointer-events-none invisible'
         )
       "
-      :slot-data
-      @click="onClick"
-      @dblclick="onDoubleClick"
-      @pointerdown="onPointerDown"
-    />
-
-    <!-- Slot Name -->
-    <div class="flex h-full min-w-0 items-center">
-      <span
-        v-if="!props.dotOnly && !hasNoLabel"
+    >
+      <!-- Connection Dot -->
+      <SlotConnectionDot
+        ref="connectionDotRef"
         :class="
           cn(
-            'truncate text-node-component-slot-text',
-            hasError && 'font-medium text-error'
+            'w-3 -translate-x-1/2',
+            hasError &&
+              'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
           )
         "
-      >
-        {{
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Input ${index}`)
-        }}
-      </span>
+        :slot-data
+        @click="onClick"
+        @dblclick="onDoubleClick"
+        @pointerdown="onPointerDown"
+      />
+
+      <!-- Slot Name -->
+      <div class="flex h-full min-w-0 items-center">
+        <span
+          v-if="!props.dotOnly && !hasNoLabel"
+          :class="
+            cn(
+              'truncate text-node-component-slot-text',
+              hasError && 'font-medium text-error'
+            )
+          "
+        >
+          {{
+            slotData.label ||
+            slotData.localized_name ||
+            (slotData.name ?? `Input ${index}`)
+          }}
+        </span>
+      </div>
     </div>
-  </div>
+  </BaseTooltip>
 </template>
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -94,15 +102,13 @@ const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
+const { getInputSlotTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
   props.nodeType || ''
 )
 
-const tooltipConfig = computed(() => {
+const inputTooltipText = computed(() => {
   const slotName = props.slotData.localized_name || props.slotData.name || ''
-  const tooltipText = getInputSlotTooltip(slotName)
-  const fallbackText = tooltipText || `Input: ${slotName}`
-  return createTooltipConfig(fallbackText)
+  return getInputSlotTooltip(slotName) || `Input: ${slotName}`
 })
 
 onErrorCaptured((error) => {

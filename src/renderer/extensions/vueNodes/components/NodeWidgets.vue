@@ -55,22 +55,29 @@
           :name="widget.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
         >
-          <component
-            :is="widget.vueComponent"
-            v-model="widget.value"
-            v-tooltip.left="widget.tooltipConfig"
-            :widget="widget.simplified"
-            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
-            :node-type="nodeType"
-            :class="
-              cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
-              )
-            "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
+          <BaseTooltip
+            :text="widget.tooltipText"
+            side="left"
+            size="large"
+            :delay-duration="tooltipDelay"
+            :disabled="!tooltipsEnabled"
+          >
+            <component
+              :is="widget.vueComponent"
+              v-model="widget.value"
+              :widget="widget.simplified"
+              :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+              :node-type="nodeType"
+              :class="
+                cn(
+                  'col-span-2',
+                  widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="widget.updateHandler"
+              @contextmenu="widget.handleContextMenu"
+            />
+          </BaseTooltip>
         </AppInput>
       </div>
     </template>
@@ -78,10 +85,10 @@
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
 import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import type {
   SafeWidgetData,
   VueNodeData,
@@ -182,7 +189,7 @@ const showAdvanced = computed(
     nodeData?.showAdvanced ||
     settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
 )
-const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
+const { getWidgetTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
   nodeType.value
 )
 const widgetValueStore = useWidgetValueStore()
@@ -217,7 +224,7 @@ interface ProcessedWidget {
   name: string
   renderKey: string
   simplified: SimplifiedWidget
-  tooltipConfig: TooltipOptions
+  tooltipText: string
   type: string
   updateHandler: (value: WidgetValue) => void
   value: WidgetValue
@@ -426,7 +433,6 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     )
 
     const tooltipText = getWidgetTooltip(widget)
-    const tooltipConfig = createTooltipConfig(tooltipText)
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
@@ -454,7 +460,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       simplified,
       value,
       updateHandler,
-      tooltipConfig,
+      tooltipText,
       slotMetadata
     })
   }

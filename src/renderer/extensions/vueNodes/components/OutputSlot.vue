@@ -1,27 +1,36 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <div class="relative flex h-full min-w-0 items-center">
-      <!-- Slot Name -->
-      <span
-        v-if="!props.dotOnly && !hasNoLabel"
-        class="truncate text-node-component-slot-text"
-      >
-        {{
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Output ${index}`)
-        }}
-      </span>
+  <BaseTooltip
+    v-else
+    :text="outputTooltipText"
+    side="right"
+    size="large"
+    :delay-duration="tooltipDelay"
+    :disabled="!tooltipsEnabled"
+  >
+    <div :class="slotWrapperClass">
+      <div class="relative flex h-full min-w-0 items-center">
+        <!-- Slot Name -->
+        <span
+          v-if="!props.dotOnly && !hasNoLabel"
+          class="truncate text-node-component-slot-text"
+        >
+          {{
+            slotData.label ||
+            slotData.localized_name ||
+            (slotData.name ?? `Output ${index}`)
+          }}
+        </span>
+      </div>
+      <!-- Connection Dot -->
+      <SlotConnectionDot
+        ref="connectionDotRef"
+        class="w-3 translate-x-1/2"
+        :slot-data
+        @pointerdown="onPointerDown"
+      />
     </div>
-    <!-- Connection Dot -->
-    <SlotConnectionDot
-      ref="connectionDotRef"
-      class="w-3 translate-x-1/2"
-      :slot-data
-      @pointerdown="onPointerDown"
-    />
-  </div>
+  </BaseTooltip>
 </template>
 
 <script setup lang="ts">
@@ -29,6 +38,7 @@ import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
@@ -65,11 +75,11 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip, createTooltipConfig } = useNodeTooltips(
+const { getOutputSlotTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
   props.nodeType || ''
 )
 
-const tooltipConfig = computed(() => {
+const outputTooltipText = computed(() => {
   const slotName = props.slotData.name || ''
   const tooltipText = getOutputSlotTooltip(props.index)
   const fallbackText = tooltipText || `Output: ${slotName}`
@@ -77,7 +87,7 @@ const tooltipConfig = computed(() => {
     props.slotData.shape === RenderShape.GRID
       ? ` ${t('vueNodesSlot.iterative')}`
       : ''
-  return createTooltipConfig(fallbackText + iterativeSuffix)
+  return fallbackText + iterativeSuffix
 })
 
 onErrorCaptured((error) => {
