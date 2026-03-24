@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCopy = vi.fn()
@@ -8,7 +8,7 @@ vi.mock('@vueuse/core', () => ({
   useClipboard: vi.fn(() => ({
     copy: mockCopy,
     copied: ref(false),
-    isSupported: ref(true)
+    isSupported: computed(() => true)
   }))
 }))
 
@@ -31,7 +31,7 @@ describe('useCopyToClipboard', () => {
     vi.mocked(useClipboard).mockReturnValue({
       copy: mockCopy,
       copied: ref(false),
-      isSupported: ref(true),
+      isSupported: computed(() => true),
       text: ref('')
     })
   })
@@ -77,7 +77,7 @@ describe('useCopyToClipboard', () => {
     vi.mocked(useClipboard).mockReturnValue({
       copy: mockCopy,
       copied: ref(false),
-      isSupported: ref(false),
+      isSupported: computed(() => false),
       text: ref('')
     })
     document.execCommand = vi.fn(() => true)
