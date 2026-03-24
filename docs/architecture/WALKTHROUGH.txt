@@ -112,40 +112,40 @@
  III.  ROOM GUIDE & MAP
 ===============================================================================
 
-                  +------------------+
-                  |   ENTRY POINT    |
-                  |  (src/main.ts)   |
-                  +--+--------+--+---+
-                     |        |  |
-            +--------+        |  +----------+
-            |                 |             |
-    +-------v------+ +-------v------+ +----v-----------+
-    |   COMPONENT  | |    STORE     | |    SERVICE      |
-    |    GALLERY   | |    VAULTS    | |   CORRIDORS     |
-    |  [Challenge] | |  [Challenge] | |   [Challenge]   |
-    +---+-----+----+ +---+-----+---+ +--------+--------+
-        |     |          |     |              |
-        |     |     +----v--+  |       +------v--------+
-        |     |     |  ECS  |  |       |  COMPOSABLES  |
-        |     |     | CHAMB.|  |       |   WORKSHOP    |
-        |     |     | [Chal]|  |       |  [Challenge]  |
-        |     |     +-------+  |       +---------------+
-        |     |          +-----v-----+
-        |     |          |  RENDERER |
-        |     |          |  OVERLOOK |
-        |     |          |   [Chal]  |
-        |     |          +-----------+
-        |     |
-    +---v-----v----+
-    |   LITEGRAPH   |
-    |    ENGINE     |
-    |  [Challenge]  |
-    +-------+-------+
-            |
-    +-------v-------+
-    |   SIDE PANEL   |
-    |   (no chal.)   |
-    +----------------+
+               +-------------------+
+               |    ENTRY POINT    |
+               |   (src/main.ts)   |
+               +-+--------+------+-+
+                 |        |      |
+      +----------+        |      +-----------+
+      |                   |                  |
+  +---v----------+  +-----v--------+  +------v---------+
+  |  COMPONENT   |  |    STORE     |  |    SERVICE     |
+  |   GALLERY    |  |    VAULTS    |  |   CORRIDORS    |
+  | [Challenge]  |  | [Challenge]  |  |  [Challenge]   |
+  +--+------+----+  +--+------+----+  +--------+-------+
+     |      |          |      |               |
+     |      |     +----v---+  |        +------v-------+
+     |      |     |  ECS   |  |        | COMPOSABLES  |
+     |      |     | CHAMB. |  |        |  WORKSHOP    |
+     |      |     | [Chal] |  |        | [Challenge]  |
+     |      |     +--------+  |        +--------------+
+     |      |           +-----v------+
+     |      |           |  RENDERER  |
+     |      |           |  OVERLOOK  |
+     |      |           |   [Chal]   |
+     |      |           +------------+
+     |      |
+  +--v------v----+
+  |  LITEGRAPH   |
+  |   ENGINE     |
+  | [Challenge]  |
+  +------+-------+
+         |
+  +------v-------+
+  |  SIDE PANEL  |
+  |  (no chal.)  |
+  +--------------+
 
   ROOM DETAILS:
   =============
@@ -200,153 +200,153 @@
   *** WARNING: FULL SOLUTIONS BELOW ***
   *** SCROLL PAST SECTION VI IF YOU WANT TO PLAY BLIND ***
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 1: The Circular Dependency          | Room: Components |
-  |------------------------------------------------------------------|
-  | Subgraph extends LGraph, but LGraph creates Subgraph instances.  |
-  | Circular import forces order-dependent barrel exports.           |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  | >>> A. Composition over inheritance  [GOOD] <<<                  |
-  |     Debt -10, Quality +15, Morale +5, ECS +1                    |
-  |     Subgraph HAS a graph, not IS a graph.                       |
-  |     This is the ECS approach: no class inheritance at all.       |
-  |                                                                  |
-  |   B. Barrel file reordering  [BAD]                               |
-  |     Debt +10, Quality -5, Morale -5                              |
-  |     Band-aid. The coupling remains and will break again.         |
-  |                                                                  |
-  |   C. Factory injection  [OK]                                     |
-  |     Debt -5, Quality +10                                         |
-  |     Pragmatic fix but classes stay coupled at runtime.           |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 1: The Circular Dependency          | Room: Components   |
+  |------------------------------------------------------------------  |
+  | Subgraph extends LGraph, but LGraph creates Subgraph instances.    |
+  | Circular import forces order-dependent barrel exports.             |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Composition over inheritance  [GOOD] <<<                    |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                       |
+  |     Subgraph HAS a graph, not IS a graph.                          |
+  |     This is the ECS approach: no class inheritance at all.         |
+  |                                                                    |
+  |   B. Barrel file reordering  [BAD]                                 |
+  |     Debt +10, Quality -5, Morale -5                                |
+  |     Band-aid. The coupling remains and will break again.           |
+  |                                                                    |
+  |   C. Factory injection  [OK]                                       |
+  |     Debt -5, Quality +10                                           |
+  |     Pragmatic fix but classes stay coupled at runtime.             |
+  '--------------------------------------------------------------------'
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 2: The Scattered Mutations            | Room: Stores   |
-  |------------------------------------------------------------------|
-  | graph._version++ appears in 19 locations across 7 files.        |
-  | One missed site = silent data loss.                              |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  | >>> A. Centralize into graph.incrementVersion()  [GOOD] <<<      |
-  |     Debt -15, Quality +15, ECS +1                                |
-  |     This is Phase 0a of the real migration plan.                 |
-  |     19 sites -> 1 method. Auditable change tracking.             |
-  |                                                                  |
-  |   B. Add a JavaScript Proxy  [OK]                                |
-  |     Debt +5, Quality +5, Morale -5                               |
-  |     Catches mutations but adds opaque runtime overhead.          |
-  |                                                                  |
-  |   C. Leave it as-is  [BAD]                                       |
-  |     Debt +10, Morale +5                                          |
-  |     "It works, don't touch it" - until it doesn't.              |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 2: The Scattered Mutations            | Room: Stores     |
+  |------------------------------------------------------------------  |
+  | graph._version++ appears in 19 locations across 7 files.           |
+  | One missed site = silent data loss.                                |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Centralize into graph.incrementVersion()  [GOOD] <<<        |
+  |     Debt -15, Quality +15, ECS +1                                  |
+  |     This is Phase 0a of the real migration plan.                   |
+  |     19 sites -> 1 method. Auditable change tracking.               |
+  |                                                                    |
+  |   B. Add a JavaScript Proxy  [OK]                                  |
+  |     Debt +5, Quality +5, Morale -5                                 |
+  |     Catches mutations but adds opaque runtime overhead.            |
+  |                                                                    |
+  |   C. Leave it as-is  [BAD]                                         |
+  |     Debt +10, Morale +5                                            |
+  |     "It works, don't touch it" - until it doesn't.                 |
+  '--------------------------------------------------------------------'
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 3: The Migration Question           | Room: Services   |
-  |------------------------------------------------------------------|
-  | Legacy litegraph works. How to migrate to ECS without breaking   |
-  | production for thousands of users?                               |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  | >>> A. 5-phase incremental plan  [GOOD] <<<                      |
-  |     Quality +15, Morale +10, ECS +1                              |
-  |     Foundation -> Types -> Bridge -> Systems -> Legacy Removal.  |
-  |     Each phase independently shippable. This is the real plan.   |
-  |                                                                  |
-  |   B. Big bang rewrite  [BAD]                                     |
-  |     Debt -10, Quality +5, Morale -20                             |
-  |     Feature freeze + scope creep + burnout = disaster.           |
-  |                                                                  |
-  |   C. Strangler fig pattern  [OK]                                 |
-  |     Quality +10, Morale +5                                       |
-  |     Solid pattern but lacks clear milestones without a plan.     |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 3: The Migration Question           | Room: Services     |
+  |------------------------------------------------------------------  |
+  | Legacy litegraph works. How to migrate to ECS without breaking     |
+  | production for thousands of users?                                 |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. 5-phase incremental plan  [GOOD] <<<                        |
+  |     Quality +15, Morale +10, ECS +1                                |
+  |     Foundation -> Types -> Bridge -> Systems -> Legacy Removal.    |
+  |     Each phase independently shippable. This is the real plan.     |
+  |                                                                    |
+  |   B. Big bang rewrite  [BAD]                                       |
+  |     Debt -10, Quality +5, Morale -20                               |
+  |     Feature freeze + scope creep + burnout = disaster.             |
+  |                                                                    |
+  |   C. Strangler fig pattern  [OK]                                   |
+  |     Quality +10, Morale +5                                         |
+  |     Solid pattern but lacks clear milestones without a plan.       |
+  '--------------------------------------------------------------------'
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 4: The God Object Dilemma          | Room: Litegraph   |
-  |------------------------------------------------------------------|
-  | LGraphCanvas: ~9,100 lines. LGraphNode: ~4,300 lines.           |
-  | God objects mixing rendering, serialization, connectivity, etc.  |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  |   A. Rewrite from scratch  [BAD]                                 |
-  |     Debt -20, Quality +5, Morale -25                             |
-  |     Heroic rewrite stalls at month three. Team burns out.        |
-  |                                                                  |
-  | >>> B. Extract incrementally  [GOOD] <<<                         |
-  |     Debt -10, Quality +15, Morale +5, ECS +1                    |
-  |     Position -> Connectivity -> Rendering. Small testable PRs.   |
-  |     This matches the actual migration strategy.                  |
-  |                                                                  |
-  |   C. Add a facade layer  [OK]                                    |
-  |     Debt +5, Quality +5, Morale +10                              |
-  |     Nicer API but complexity lives behind the facade.            |
-  |                                                                  |
-  | NOTE: This is the only challenge where A is NOT the best answer! |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 4: The God Object Dilemma          | Room: Litegraph     |
+  |------------------------------------------------------------------  |
+  | LGraphCanvas: ~9,100 lines. LGraphNode: ~4,300 lines.              |
+  | God objects mixing rendering, serialization, connectivity, etc.    |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  |   A. Rewrite from scratch  [BAD]                                   |
+  |     Debt -20, Quality +5, Morale -25                               |
+  |     Heroic rewrite stalls at month three. Team burns out.          |
+  |                                                                    |
+  | >>> B. Extract incrementally  [GOOD] <<<                           |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                       |
+  |     Position -> Connectivity -> Rendering. Small testable PRs.     |
+  |     This matches the actual migration strategy.                    |
+  |                                                                    |
+  |   C. Add a facade layer  [OK]                                      |
+  |     Debt +5, Quality +5, Morale +10                                |
+  |     Nicer API but complexity lives behind the facade.              |
+  |                                                                    |
+  | NOTE: This is the only challenge where A is NOT the best answer!   |
+  '--------------------------------------------------------------------'
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 5: The ID Crossroads                     | Room: ECS   |
-  |------------------------------------------------------------------|
-  | NodeId is number | string. Nothing prevents passing a LinkId     |
-  | where a NodeId is expected. Magic sentinels: -10, -20.           |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  | >>> A. Branded types with cast helpers  [GOOD] <<<               |
-  |     Debt -15, Quality +20, ECS +1                                |
-  |     type NodeEntityId = number & { __brand: 'NodeEntityId' }     |
-  |     Compile-time safety, zero runtime cost. Phase 1a.            |
-  |                                                                  |
-  |   B. String prefixes at runtime  [OK]                            |
-  |     Debt +5, Quality +5, Morale -5                               |
-  |     "node:42" - parsing overhead everywhere.                     |
-  |                                                                  |
-  |   C. Keep plain numbers  [BAD]                                   |
-  |     Debt +15, Quality -5                                         |
-  |     "Just be careful" - someone WILL pass the wrong ID.          |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 5: The ID Crossroads                     | Room: ECS     |
+  |------------------------------------------------------------------  |
+  | NodeId is number | string. Nothing prevents passing a LinkId       |
+  | where a NodeId is expected. Magic sentinels: -10, -20.             |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Branded types with cast helpers  [GOOD] <<<                 |
+  |     Debt -15, Quality +20, ECS +1                                  |
+  |     type NodeEntityId = number & { __brand: 'NodeEntityId' }       |
+  |     Compile-time safety, zero runtime cost. Phase 1a.              |
+  |                                                                    |
+  |   B. String prefixes at runtime  [OK]                              |
+  |     Debt +5, Quality +5, Morale -5                                 |
+  |     "node:42" - parsing overhead everywhere.                       |
+  |                                                                    |
+  |   C. Keep plain numbers  [BAD]                                     |
+  |     Debt +15, Quality -5                                           |
+  |     "Just be careful" - someone WILL pass the wrong ID.            |
+  '--------------------------------------------------------------------'
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 6: The Render-Time Mutation          | Room: Renderer  |
-  |------------------------------------------------------------------|
-  | drawNode() calls _setConcreteSlots() and arrange() during the    |
-  | render pass. Draw order affects layout. Classic mutation-in-      |
-  | render bug.                                                      |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  | >>> A. Separate update and render phases  [GOOD] <<<             |
-  |     Debt -15, Quality +15, ECS +1                                |
-  |     Input -> Update (layout) -> Render (read-only).              |
-  |     Matches the ECS system pipeline design.                      |
-  |                                                                  |
-  |   B. Dirty flags and deferred render  [OK]                       |
-  |     Debt -5, Quality +5, Morale +5                               |
-  |     Reduces symptoms but render pass can still mutate.           |
-  |                                                                  |
-  | NOTE: Only 2 options here. Both are reasonable; A is optimal.    |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 6: The Render-Time Mutation          | Room: Renderer    |
+  |------------------------------------------------------------------  |
+  | drawNode() calls _setConcreteSlots() and arrange() during the      |
+  | render pass. Draw order affects layout. Classic mutation-in-       |
+  | render bug.                                                        |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Separate update and render phases  [GOOD] <<<               |
+  |     Debt -15, Quality +15, ECS +1                                  |
+  |     Input -> Update (layout) -> Render (read-only).                |
+  |     Matches the ECS system pipeline design.                        |
+  |                                                                    |
+  |   B. Dirty flags and deferred render  [OK]                         |
+  |     Debt -5, Quality +5, Morale +5                                 |
+  |     Reduces symptoms but render pass can still mutate.             |
+  |                                                                    |
+  | NOTE: Only 2 options here. Both are reasonable; A is optimal.      |
+  '--------------------------------------------------------------------'
 
-  .------------------------------------------------------------------.
-  | CHALLENGE 7: The Collaboration Protocol     | Room: Composables  |
-  |------------------------------------------------------------------|
-  | Multiple users want to edit the same workflow simultaneously.    |
-  | layoutStore already extracts position data. How to sync?         |
-  |------------------------------------------------------------------|
-  |                                                                  |
-  | >>> A. Y.js CRDTs  [GOOD] <<<                                   |
-  |     Debt -10, Quality +15, Morale +10                            |
-  |     Conflict-free replicated data types. Already proven.         |
-  |     This is what the real layoutStore uses.                      |
-  |                                                                  |
-  |   B. Polling-based sync  [BAD]                                   |
-  |     Debt +10, Quality -5, Morale -5                              |
-  |     Flickering, lag, silent data loss. Support nightmare.        |
-  |                                                                  |
-  |   C. Skip collaboration for now  [OK]                            |
-  |     Morale +5                                                    |
-  |     Pragmatic delay but cloud team won't be happy.               |
-  '------------------------------------------------------------------'
+  .--------------------------------------------------------------------.
+  | CHALLENGE 7: The Collaboration Protocol     | Room: Composables    |
+  |------------------------------------------------------------------  |
+  | Multiple users want to edit the same workflow simultaneously.      |
+  | layoutStore already extracts position data. How to sync?           |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Y.js CRDTs  [GOOD] <<<                                      |
+  |     Debt -10, Quality +15, Morale +10                              |
+  |     Conflict-free replicated data types. Already proven.           |
+  |     This is what the real layoutStore uses.                        |
+  |                                                                    |
+  |   B. Polling-based sync  [BAD]                                     |
+  |     Debt +10, Quality -5, Morale -5                                |
+  |     Flickering, lag, silent data loss. Support nightmare.          |
+  |                                                                    |
+  |   C. Skip collaboration for now  [OK]                              |
+  |     Morale +5                                                      |
+  |     Pragmatic delay but cloud team won't be happy.                 |
+  '--------------------------------------------------------------------'
 
 ===============================================================================
  V.  OPTIMAL ROUTE - "THE ECS ENLIGHTENMENT" SPEEDRUN
