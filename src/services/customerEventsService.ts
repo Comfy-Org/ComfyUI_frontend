@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import type { BadgeVariants } from '@/components/common/badge.variants'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d } from '@/i18n'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -133,7 +134,9 @@ export const useCustomerEventsService = () => {
     return value
   }
 
-  function getEventSeverity(eventType: string) {
+  function getEventSeverity(
+    eventType: string
+  ): NonNullable<BadgeVariants['severity']> {
     switch (eventType) {
       case 'credit_added':
         return 'default'

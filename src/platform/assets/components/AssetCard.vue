@@ -122,6 +122,7 @@
           <Badge
             v-if="isNewlyImported"
             severity="contrast"
+            variant="dot"
             class="absolute -top-0.5 -right-0.5"
           />
         </Button>

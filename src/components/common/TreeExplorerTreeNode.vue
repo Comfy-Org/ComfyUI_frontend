@@ -25,7 +25,7 @@
         v-if="showNodeBadgeText"
         :label="nodeBadgeText"
         severity="secondary"
-        variant="circle"
+        :variant="nodeBadgeText.length > 1 ? 'label' : 'circle'"
         class="ml-2"
       />
     </div>
