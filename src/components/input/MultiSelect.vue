@@ -18,9 +18,10 @@
             'rounded-lg bg-secondary-background text-base-foreground',
             'transition-all duration-200 ease-in-out',
             'hover:bg-secondary-background-hover',
-            'border-[2.5px] border-solid',
-            selectedCount > 0 ? 'border-base-foreground' : 'border-transparent',
-            'focus:border-base-foreground focus:outline-none',
+            'border-[2.5px] border-solid border-transparent',
+            'focus-within:border-node-component-border',
+            'data-[state=open]:border-node-component-border',
+            selectedCount > 0 && 'border-base-foreground',
             disabled &&
               'cursor-default opacity-30 hover:bg-secondary-background'
           )
