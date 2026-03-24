@@ -47,11 +47,11 @@ import Divider from 'primevue/divider'
 
 import { useI18n } from 'vue-i18n'
 
-import { useMaintenanceTaskStore } from '../../stores/maintenanceTaskStore'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type {
   MaintenanceFilter,
   MaintenanceTask
-} from '../../types/desktop/maintenanceTypes'
+} from '@/types/desktop/maintenanceTypes'
 
 import TaskCard from './TaskCard.vue'
 import TaskListItem from './TaskListItem.vue'

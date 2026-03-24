@@ -45,10 +45,10 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import { useMaintenanceTaskStore } from '../../stores/maintenanceTaskStore'
-import type { MaintenanceTask } from '../../types/desktop/maintenanceTypes'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import type { PrimeVueSeverity } from '@/types/primeVueTypes'
-import { useMinLoadingDurationRef } from '../../utils/refUtil'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
 
