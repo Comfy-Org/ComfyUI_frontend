@@ -585,14 +585,14 @@ jobs:
 
           for dir in qa-artifacts/qa-report-*; do
             [ -d "$dir" ] || continue
-            # Convert after video (qa-session.webm)
-            for name in qa-session qa-before-session; do
+            # Convert known video names (single + multi-pass + before)
+            for name in qa-session qa-session-1 qa-session-2 qa-session-3 qa-before-session; do
               if [ -f "$dir/${name}.webm" ] && [ -s "$dir/${name}.webm" ]; then
                 convert_video "$dir/${name}.webm" "$dir/${name}.mp4"
               fi
             done
             # Fallback: find any non-empty webm not yet converted
-            if [ ! -f "$dir/qa-session.mp4" ]; then
+            if [ ! -f "$dir/qa-session.mp4" ] && [ ! -f "$dir/qa-session-1.mp4" ]; then
               WEBM=$(find "$dir" -name '*.webm' -type f -size +0c | head -1)
               [ -n "$WEBM" ] && convert_video "$WEBM" "$dir/qa-session.mp4"
             fi
@@ -660,7 +660,7 @@ jobs:
               TARGET_URL_FLAG="--target-url https://github.com/${REPO}/pull/${TARGET_NUM}"
             fi
           fi
-          for vid in qa-artifacts/qa-report-*/qa-session.mp4; do
+          for vid in qa-artifacts/qa-report-*/qa-session*.mp4; do
             [ -f "$vid" ] || continue
             DIR=$(dirname "$vid")
             BEFORE_FLAG=""
@@ -753,9 +753,19 @@ jobs:
                 echo "Found ${prefix} ${os} video ($(du -h "$VID" | cut -f1))"
               fi
             done
-            # Generate GIF thumbnail from after video
-            if [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-              ffmpeg -y -ss 10 -i "$DEPLOY_DIR/qa-${os}.mp4" -t 8 \
+            # Copy multi-pass session videos (qa-session-1, qa-session-2, etc.)
+            for numbered in "$DIR"/qa-session-[0-9].mp4; do
+              [ -f "$numbered" ] || continue
+              NUM=$(basename "$numbered" | sed 's/qa-session-\([0-9]\).mp4/\1/')
+              DEST="$DEPLOY_DIR/qa-${os}-pass${NUM}.mp4"
+              cp "$numbered" "$DEST"
+              echo "Found pass ${NUM} ${os} video ($(du -h "$numbered" | cut -f1))"
+            done
+            # Generate GIF thumbnail from after video (or first pass)
+            THUMB_SRC="$DEPLOY_DIR/qa-${os}.mp4"
+            [ ! -f "$THUMB_SRC" ] && THUMB_SRC="$DEPLOY_DIR/qa-${os}-pass1.mp4"
+            if [ -f "$THUMB_SRC" ]; then
+              ffmpeg -y -ss 10 -i "$THUMB_SRC" -t 8 \
                 -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
                 -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
               || echo "GIF generation failed for ${os} (non-fatal)"
@@ -772,7 +782,7 @@ jobs:
             eval "ICON=\$ICONS_${os}"
             OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
             HAS_BEFORE=$([ -f "$DEPLOY_DIR/qa-before-${os}.mp4" ] && echo 1 || echo 0)
-            HAS_AFTER=$([ -f "$DEPLOY_DIR/qa-${os}.mp4" ] && echo 1 || echo 0)
+            HAS_AFTER=$( ([ -f "$DEPLOY_DIR/qa-${os}.mp4" ] || [ -f "$DEPLOY_DIR/qa-${os}-pass1.mp4" ]) && echo 1 || echo 0)
             [ "$HAS_AFTER" = "0" ] && continue
 
             REPORT_FILE="video-reviews/${OS_LOWER}-qa-video-report.md"
@@ -789,9 +799,18 @@ jobs:
             if [ "$HAS_BEFORE" = "1" ]; then
               # Side-by-side before/after layout
               CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=card-header><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links>${REPORT_LINK}</span></div><div class=comparison><div class=comp-panel><div class=comp-label>Before <span class=comp-tag>main</span></div><div class=video-wrap><video controls muted preload=metadata><source src=qa-before-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-before-${os}.mp4 download>${DL_ICON}Before</a></div></div><div class=comp-panel><div class=comp-label>After <span class=comp-tag>PR</span></div><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}.mp4 download>${DL_ICON}After</a></div></div></div>${REPORT_HTML}</div>"
-            else
+            elif [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
               # Single video (full QA mode or no before available)
               CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download>${DL_ICON}Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
+            else
+              # Multi-pass videos (reproduce mode with sub-issues)
+              PASS_VIDEOS=""
+              for pass_vid in "$DEPLOY_DIR"/qa-${os}-pass[0-9].mp4; do
+                [ -f "$pass_vid" ] || continue
+                PASS_NUM=$(basename "$pass_vid" | sed "s/qa-${os}-pass\([0-9]\).mp4/\1/")
+                PASS_VIDEOS="${PASS_VIDEOS}<div class=comp-panel><div class=comp-label>Pass ${PASS_NUM}</div><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}-pass${PASS_NUM}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}-pass${PASS_NUM}.mp4 download>${DL_ICON}Pass ${PASS_NUM}</a></div></div>"
+              done
+              CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=card-header><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links>${REPORT_LINK}</span></div><div class=comparison>${PASS_VIDEOS}</div>${REPORT_HTML}</div>"
             fi
             CARD_COUNT=$((CARD_COUNT + 1))
           done
