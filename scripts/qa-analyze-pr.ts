@@ -11,7 +11,7 @@
  *     --pr-number 10270 \
  *     --repo owner/repo \
  *     --output-dir qa-guides/ \
- *     [--model gemini-2.5-pro]
+ *     [--model gemini-3.1-pro-preview]
  *
  * Env: GEMINI_API_KEY (required)
  */
@@ -67,7 +67,7 @@ interface Options {
 function parseArgs(): Options {
   const args = process.argv.slice(2)
   const opts: Partial<Options> = {
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.1-pro-preview',
     apiKey: process.env.GEMINI_API_KEY || '',
     mediaBudgetBytes: 20 * 1024 * 1024,
     maxVideoBytes: 10 * 1024 * 1024,
