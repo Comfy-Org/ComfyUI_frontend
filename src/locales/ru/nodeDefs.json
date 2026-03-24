@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "Установите эталонное аудио для переноса идентичности диктора с помощью ID-LoRA. Кодирует эталонный аудиоклип в conditioning и при необходимости вносит изменения в модель с помощью identity guidance (дополнительный прямой проход без эталона, усиливающий эффект идентичности диктора).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE для кодирования."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Конец диапазона сигмы, в котором активна identity guidance."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Сила identity guidance. Выполняет дополнительный прямой проход без эталона на каждом шаге для усиления идентичности диктора. Установите 0 для отключения (без дополнительного прохода)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Эталонный аудиоклип, идентичность диктора которого будет перенесена. Рекомендуется ~5 секунд (длительность обучения). Более короткие или длинные клипы могут ухудшить перенос голосовой идентичности."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Начало диапазона сигмы, в котором активна identity guidance."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "Scheduler LTXV",
     "inputs": {

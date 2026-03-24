@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "設定參考音訊以進行 ID-LoRA 說話人身份轉換。將參考音訊 clip 編碼為條件，並可選擇性地以身份指引修補模型（額外進行一次無參考的前向傳遞，以強化說話人身份效果）。",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "用於編碼的 LTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "身份指引啟用的 sigma 範圍結束百分比。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "身份指引強度。每一步會額外進行一次無參考的前向傳遞以強化說話人身份。設為 0 可停用（不進行額外傳遞）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "要轉換說話人身份的參考音訊 clip。建議長度約 5 秒（訓練時長）。過短或過長的 clip 可能會降低聲音身份轉換效果。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "身份指引啟用的 sigma 範圍起始百分比。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXV 排程器",
     "inputs": {

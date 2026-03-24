@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "تنظیم صدای مرجع برای انتقال هویت گوینده با استفاده از ID-LoRA. یک کلیپ صوتی مرجع را به صورت شرطی رمزگذاری می‌کند و در صورت نیاز مدل را با راهنمایی هویتی (یک عبور اضافی بدون مرجع برای تقویت اثر هویت گوینده) اصلاح می‌کند.",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE برای رمزگذاری."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "پایان بازه سیگما که راهنمایی هویتی در آن فعال است."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "شدت راهنمایی هویتی. در هر مرحله یک عبور اضافی بدون مرجع اجرا می‌شود تا هویت گوینده تقویت شود. برای غیرفعال کردن، مقدار را روی ۰ قرار دهید (بدون عبور اضافی)."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "کلیپ صوتی مرجع که هویت گوینده آن منتقل می‌شود. مدت زمان پیشنهادی حدود ۵ ثانیه (مدت زمان آموزش). کلیپ‌های کوتاه‌تر یا بلندتر ممکن است کیفیت انتقال هویت صدا را کاهش دهند."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "آغاز بازه سیگما که راهنمایی هویتی در آن فعال است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "2": {
+        "name": "منفی",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXVScheduler",
     "inputs": {

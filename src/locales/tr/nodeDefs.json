@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA konuşmacı kimliği aktarımı için referans ses ayarlayın. Bir referans ses klibini koşullandırmaya kodlar ve isteğe bağlı olarak modeli kimlik rehberliğiyle yamalar (referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliği etkisini artırır).",
+    "display_name": "LTXV Referans Ses (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Kodlama için LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının sonu."
+      },
+      "identity_guidance_scale": {
+        "name": "kimlik_rehberliği_ölçeği",
+        "tooltip": "Kimlik rehberliği gücü. Her adımda referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliğini güçlendirir. Devre dışı bırakmak için 0 olarak ayarlayın (ekstra geçiş yok)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_audio": {
+        "name": "referans_ses",
+        "tooltip": "Konuşmacı kimliğinin aktarılacağı referans ses klibi. ~5 saniye önerilir (eğitim süresi). Daha kısa veya uzun klipler ses kimliği aktarımını bozabilir."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının başlangıcı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXVZamanlayıcı",
     "inputs": {

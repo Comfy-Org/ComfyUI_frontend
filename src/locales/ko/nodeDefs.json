@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA 화자 정체성 전이를 위한 참조 오디오를 설정합니다. 참조 오디오 clip을 컨디셔닝에 인코딩하고, 선택적으로 모델에 정체성 가이던스를 적용합니다(참조 없이 추가로 한 번 더 forward pass를 실행하여 화자 정체성 효과를 증폭).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "인코딩을 위한 LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "정체성 가이던스가 활성화되는 sigma 범위의 끝 지점입니다."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "정체성 가이던스의 강도입니다. 각 단계마다 참조 없이 추가로 forward pass를 실행하여 화자 정체성을 증폭합니다. 0으로 설정하면 비활성화됩니다(추가 pass 없음)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "전이할 화자 정체성을 가진 참조 오디오 clip입니다. 약 5초(학습 시간)를 권장합니다. 더 짧거나 긴 clip은 음성 정체성 전이 품질이 저하될 수 있습니다."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "정체성 가이던스가 활성화되는 sigma 범위의 시작 지점입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXV 스케줄러",
     "inputs": {

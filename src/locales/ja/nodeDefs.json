@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA話者識別転送のためのリファレンス音声を設定します。リファレンス音声クリップをコンディショニングにエンコードし、必要に応じてモデルにアイデンティティガイダンス（リファレンスなしの追加フォワードパスで話者識別効果を強調）を適用します。",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "エンコード用のLTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "アイデンティティガイダンスが有効になるシグマ範囲の終了点。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "アイデンティティガイダンスの強さ。各ステップでリファレンスなしの追加フォワードパスを実行し、話者識別を強調します。0に設定すると無効化されます（追加パスなし）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "転送したい話者識別を持つリファレンス音声クリップ。約5秒間（学習時間）が推奨されます。短すぎたり長すぎたりすると話者識別転送の品質が低下する場合があります。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "アイデンティティガイダンスが有効になるシグマ範囲の開始点。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXVスケジューラー",
     "inputs": {

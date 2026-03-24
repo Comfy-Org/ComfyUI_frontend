@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "设置参考音频用于 ID-LoRA 说话人身份迁移。将参考音频 clip 编码为条件，并可选地通过身份引导修补模型（每步额外进行一次无参考的前向传播，以增强说话人身份效果）。",
+    "display_name": "LTXV 参考音频（ID-LoRA）",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "用于编码的 LTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "身份引导激活的 sigma 区间结束百分比。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "身份引导强度。每步会额外进行一次无参考的前向传播以增强说话人身份。设置为 0 可禁用（无额外前向传播）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "要迁移说话人身份的参考音频 clip。建议时长约 5 秒（训练时长）。过短或过长的音频可能会降低声音身份迁移效果。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "身份引导激活的 sigma 区间起始百分比。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXV调度器",
     "inputs": {

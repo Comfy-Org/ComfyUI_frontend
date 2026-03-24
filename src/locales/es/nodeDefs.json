@@ -6748,6 +6748,54 @@
       }
     }
   },
+  "LTXVReferenceAudio": {
+    "description": "Establece el audio de referencia para la transferencia de identidad de locutor con ID-LoRA. Codifica un clip de audio de referencia en el condicionamiento y, opcionalmente, modifica el modelo con una guía de identidad (pase adicional sin referencia, amplificando el efecto de identidad del locutor).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE para la codificación."
+      },
+      "end_percent": {
+        "name": "porcentaje_fin",
+        "tooltip": "Fin del rango sigma donde la guía de identidad está activa."
+      },
+      "identity_guidance_scale": {
+        "name": "escala_guía_identidad",
+        "tooltip": "Intensidad de la guía de identidad. Ejecuta un pase adicional sin referencia en cada paso para amplificar la identidad del locutor. Establece en 0 para desactivar (sin pase adicional)."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "reference_audio": {
+        "name": "audio_referencia",
+        "tooltip": "Clip de audio de referencia cuya identidad de locutor se va a transferir. Se recomienda ~5 segundos (duración de entrenamiento). Clips más cortos o largos pueden degradar la transferencia de identidad de voz."
+      },
+      "start_percent": {
+        "name": "porcentaje_inicio",
+        "tooltip": "Inicio del rango sigma donde la guía de identidad está activa."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVScheduler": {
     "display_name": "LTXVProgramador",
     "inputs": {
