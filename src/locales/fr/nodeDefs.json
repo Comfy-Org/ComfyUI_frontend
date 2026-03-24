@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Conversion de nombre",
+    "inputs": {
+      "value": {
+        "name": "valeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Commutateur",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Éditeur de courbe",
+    "inputs": {
+      "curve": {
+        "name": "courbe"
+      },
+      "histogram": {
+        "name": "histogramme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "courbe",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Prolongez une vidéo existante avec une continuation fluide basée sur une invite textuelle.",
+    "display_name": "Extension vidéo Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour l’extension vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de ce qui doit se passer ensuite dans la vidéo."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo source à prolonger. Format MP4, 2-15 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Générez une vidéo à partir d'une invite ou d'une image",
     "display_name": "Grok Video",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Générez une vidéo guidée par des images de référence comme références de style et de contenu.",
+    "display_name": "Grok Référence-vers-Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle à utiliser pour la génération vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de la vidéo souhaitée."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
       }
     },
     "outputs": {
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "image_de_sortie",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Définir un audio de référence pour le transfert d'identité de locuteur ID-LoRA. Encode un clip audio de référence dans le conditionnement et, en option, applique un guidage d'identité au modèle (passe supplémentaire sans référence, amplifiant l'effet d'identité du locuteur).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE pour l'encodage."
+      },
+      "end_percent": {
+        "name": "pourcentage_fin",
+        "tooltip": "Fin de la plage sigma où le guidage d'identité est actif."
+      },
+      "identity_guidance_scale": {
+        "name": "échelle_guidage_identité",
+        "tooltip": "Intensité du guidage d'identité. Effectue une passe supplémentaire sans référence à chaque étape pour amplifier l'identité du locuteur. Mettre à 0 pour désactiver (pas de passe supplémentaire)."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "reference_audio": {
+        "name": "audio_de_référence",
+        "tooltip": "Clip audio de référence dont l'identité du locuteur sera transférée. ~5 secondes recommandées (durée d'entraînement). Des clips plus courts ou plus longs peuvent dégrader le transfert d'identité vocale."
+      },
+      "start_percent": {
+        "name": "pourcentage_début",
+        "tooltip": "Début de la plage sigma où le guidage d'identité est actif."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "négatif",
         "tooltip": null
       }
     }

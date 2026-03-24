@@ -780,6 +780,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件付け",
     "CONTROL_NET": "コントロールネット",
+    "CURVE": "カーブ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -793,6 +794,7 @@
     "GEMINI_INPUT_FILES": "GEMINI入力ファイル",
     "GLIGEN": "GLIGEN",
     "GUIDER": "ガイダー",
+    "HISTOGRAM": "ヒストグラム",
     "HOOKS": "フック",
     "HOOK_KEYFRAMES": "フックキーフレーム",
     "IMAGE": "画像",
@@ -884,13 +886,13 @@
     "resume": "ダウンロードを再開"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "エラーが発生しました",
     "extensionFileHint": "これは次のスクリプトが原因かもしれません",
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
     "noStackTrace": "スタックトレースは利用できません",
-    "promptExecutionError": "プロンプトの実行に失敗しました",
-    "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "promptExecutionError": "プロンプトの実行に失敗しました"
   },
   "errorOverlay": {
     "errorCount": "{count} 件のエラー",
@@ -933,6 +935,19 @@
     "textTo3DModel": "テキストから3Dモデル",
     "textToImage": "テキストから画像へ",
     "textToVideo": "テキストから動画へ"
+  },
+  "execution": {
+    "decoding": "デコード中…",
+    "encoding": "エンコード中…",
+    "generating": "生成中…",
+    "generatingVideo": "ビデオ生成中…",
+    "loading": "読み込み中…",
+    "processing": "処理中…",
+    "processingVideo": "ビデオ処理中…",
+    "resizing": "リサイズ中…",
+    "running": "実行中…",
+    "saving": "保存中…",
+    "training": "トレーニング中…"
   },
   "exportToast": {
     "allExportsCompleted": "すべてのエクスポートが完了しました",
@@ -1090,6 +1105,7 @@
     "icon": "アイコン",
     "imageDoesNotExist": "画像が存在しません",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
+    "imageGallery": "画像ギャラリー",
     "imageLightbox": "画像プレビュー",
     "imagePreview": "画像プレビュー - 矢印キーで画像を切り替え",
     "imageUrl": "画像URL",
@@ -1104,7 +1120,6 @@
     "installed": "インストール済み",
     "installing": "インストール中",
     "interrupted": "中断されました",
-    "itemSelected": "{selectedCount}件選択済み",
     "itemsCopiedToClipboard": "項目をクリップボードにコピーしました",
     "itemsSelected": "{selectedCount}件選択済み",
     "job": "ジョブ",
@@ -1310,6 +1325,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
     "videoPreview": "ビデオプレビュー - 矢印キーでビデオを切り替え",
+    "viewGrid": "グリッド表示",
     "viewImageOfTotal": "画像 {index} / {total} を表示",
     "viewVideoOfTotal": "ビデオ {index} / {total} を表示",
     "volume": "音量",
