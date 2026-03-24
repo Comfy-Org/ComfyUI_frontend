@@ -146,7 +146,7 @@ import {
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-export const FILE_INPUT_FIELDS = {
+const FILE_INPUT_FIELDS = {
   LoadImage: 'image',
   LoadAudio: 'audio',
   Load3D: 'model_file',
@@ -159,11 +159,17 @@ function isEmptyFileValue(value: unknown): boolean {
   return value == null
 }
 
+interface EmptyFileInputNode {
+  nodeId: string
+  classType: string
+  title: string
+}
+
 export function findEmptyFileInputNodes(
   output: ComfyApiWorkflow,
   nodeIds?: Set<string>
-): { nodeId: string; classType: string; title: string }[] {
-  const result: { nodeId: string; classType: string; title: string }[] = []
+): EmptyFileInputNode[] {
+  const result: EmptyFileInputNode[] = []
   for (const [nodeId, node] of Object.entries(output)) {
     if (nodeIds && !nodeIds.has(nodeId)) continue
     const field =
