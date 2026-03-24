@@ -1889,7 +1889,9 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
     "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "emptyFileInputTitle": "Missing File Inputs",
+    "emptyFileInputMessage": "The following nodes require a file to be selected: {nodeList}. Please upload or select files before running."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",

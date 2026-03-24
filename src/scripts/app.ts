@@ -146,6 +146,30 @@ import {
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
+export const FILE_INPUT_FIELDS: Record<string, string> = {
+  LoadImage: 'image',
+  LoadAudio: 'audio',
+  Load3D: 'model_file',
+  LoadVideo: 'video'
+}
+
+export function findEmptyFileInputNodes(
+  output: ComfyApiWorkflow
+): { nodeId: string; classType: string; title: string }[] {
+  const result: { nodeId: string; classType: string; title: string }[] = []
+  for (const [nodeId, node] of Object.entries(output)) {
+    const field = FILE_INPUT_FIELDS[node.class_type]
+    if (field && node.inputs[field] === '') {
+      result.push({
+        nodeId,
+        classType: node.class_type,
+        title: node._meta?.title ?? node.class_type
+      })
+    }
+  }
+  return result
+}
+
 export function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
@@ -1615,6 +1639,21 @@ export class ComfyApp {
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
           const p = await this.graphToPrompt(this.rootGraph)
+
+          const emptyFileInputNodes = findEmptyFileInputNodes(p.output)
+          if (emptyFileInputNodes.length) {
+            const nodeList = emptyFileInputNodes
+              .map((n) => `#${n.nodeId} ${n.title}`)
+              .join(', ')
+            useDialogService().showErrorDialog(
+              new Error(
+                t('errorDialog.emptyFileInputMessage', { nodeList })
+              ),
+              { title: t('errorDialog.emptyFileInputTitle') }
+            )
+            break
+          }
+
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
             api.authToken = comfyOrgAuthToken
