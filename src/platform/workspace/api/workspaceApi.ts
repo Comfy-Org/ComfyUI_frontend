@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -288,27 +287,11 @@ const workspaceApiClient = axios.create({
 })
 
 async function getAuthHeaderOrThrow() {
-  const authHeader = await useAuthStore().getAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
+  return useAuthStore().getAuthHeaderOrThrow()
 }
 
 async function getFirebaseHeaderOrThrow() {
-  const authHeader = await useAuthStore().getFirebaseAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
+  return useAuthStore().getFirebaseAuthHeaderOrThrow()
 }
 
 function handleAxiosError(err: unknown): never {
