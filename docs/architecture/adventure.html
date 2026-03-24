@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComfyUI Frontend — Architecture Adventure</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-dim: #1f6feb33;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- Header / HUD --- */
+    #hud {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    #hud h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+
+    #stats {
+      display: flex;
+      gap: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #stats span { display: flex; align-items: center; gap: 4px; }
+    .stat-icon { font-size: 14px; }
+    .stat-value { color: var(--text); font-weight: 600; }
+
+    /* --- Map Panel --- */
+    #map-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: none;
+    }
+
+    #map-panel.open { display: block; }
+
+    #map {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      max-width: 900px;
+    }
+
+    .map-room {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .map-room:hover { border-color: var(--accent); background: var(--accent-dim); }
+    .map-room.visited { border-color: var(--green); opacity: 0.7; }
+    .map-room.current { border-color: var(--accent); background: var(--accent-dim); }
+    .map-room.locked { opacity: 0.35; cursor: not-allowed; }
+    .map-room .room-layer { color: var(--muted); font-size: 9px; text-transform: uppercase; }
+
+    /* --- Main Content --- */
+    #main {
+      flex: 1;
+      display: flex;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      gap: 24px;
+    }
+
+    /* --- Narrative Column --- */
+    #narrative {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #room-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    #room-header h2 {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    #room-layer {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #room-description {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    #room-description code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--accent);
+      font-size: 13px;
+    }
+
+    /* --- Artifacts / Items --- */
+    #artifacts {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #artifacts.has-items { display: block; }
+
+    #artifacts-header {
+      background: var(--surface);
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .artifact {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .artifact:last-child { border-bottom: none; }
+    .artifact-name { color: var(--yellow); }
+    .artifact-type { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+
+    /* --- Choices --- */
+    #choices {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .choice-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .choice-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .choice-key {
+      background: var(--border);
+      color: var(--text);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .choice-label { flex: 1; }
+    .choice-hint { font-size: 11px; color: var(--muted); }
+
+    /* --- Sidebar: Inventory / Log --- */
+    #sidebar {
+      flex: 1;
+      min-width: 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sidebar-section {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      background: var(--surface);
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .sidebar-body {
+      padding: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+
+    .log-entry {
+      padding: 4px 6px;
+      border-radius: 4px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .log-entry.discovery { color: var(--green); }
+    .log-entry.warning { color: var(--yellow); }
+    .log-entry.error { color: var(--red); }
+
+    .inv-item {
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inv-item-name { color: var(--yellow); font-size: 12px; }
+    .inv-item-desc { color: var(--muted); font-size: 10px; }
+
+    /* --- Utilities --- */
+    .hidden { display: none !important; }
+
+    #toggle-map {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    #toggle-map:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* --- Typewriter effect --- */
+    .typing { border-right: 2px solid var(--accent); animation: blink 0.8s step-end infinite; }
+    @keyframes blink { 50% { border-color: transparent; } }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      #main { flex-direction: column; padding: 16px; }
+      #sidebar { min-width: unset; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HUD -->
+  <header id="hud">
+    <h1>COMFYUI FRONTEND — ARCHITECTURE ADVENTURE</h1>
+    <div id="stats">
+      <span><span class="stat-icon">&#9670;</span> Rooms: <span class="stat-value" id="stat-rooms">0/0</span></span>
+      <span><span class="stat-icon">&#9733;</span> Artifacts: <span class="stat-value" id="stat-artifacts">0</span></span>
+      <span><span class="stat-icon">&#9881;</span> Layer: <span class="stat-value" id="stat-layer">—</span></span>
+      <button id="toggle-map">Map [M]</button>
+    </div>
+  </header>
+
+  <!-- Collapsible Map -->
+  <section id="map-panel">
+    <div id="map"></div>
+  </section>
+
+  <!-- Main Layout -->
+  <div id="main">
+
+    <!-- Narrative -->
+    <section id="narrative">
+      <div id="room-header">
+        <div id="room-layer">—</div>
+        <h2 id="room-title">Loading...</h2>
+      </div>
+      <div id="room-description"></div>
+      <div id="artifacts">
+        <div id="artifacts-header">Artifacts in this room</div>
+        <div id="artifacts-list"></div>
+      </div>
+      <div id="choices"></div>
+    </section>
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <span>Inventory</span>
+          <span id="inv-count">0</span>
+        </div>
+        <div class="sidebar-body" id="inventory">
+          <div class="log-entry" style="color:var(--muted)">Empty — explore to find artifacts.</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-header">
+          <span>Log</span>
+          <span id="log-count">0</span>
+        </div>
+        <div class="sidebar-body" id="log"></div>
+      </div>
+    </aside>
+
+  </div>
+
+  <script>
+    // =============================================
+    // Game Engine — Skeleton
+    // =============================================
+
+    const state = {
+      currentRoom: 'entry',
+      visited: new Set(),
+      inventory: [],
+      log: [],
+      roomCount: 0,
+    }
+
+    // --- Room Definitions ---
+    const rooms = {
+      entry: {
+        title: 'The Entry Point',
+        layer: 'src',
+        description: `
+          You stand at <code>src/main.ts</code>, the entry point of the ComfyUI frontend.
+          The air hums with the bootstrapping of a Vue 3 application. Pinia stores
+          initialize around you, the router unfurls paths into the distance, and
+          i18n translations whisper in dozens of languages.<br><br>
+          Three corridors stretch ahead, each leading deeper into the architecture.
+        `,
+        artifacts: [],
+        choices: [
+          { key: '1', label: 'Enter the Component Gallery', hint: 'Presentation Layer', room: 'components' },
+          { key: '2', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
+          { key: '3', label: 'Follow the wires to Services', hint: 'Business Logic', room: 'services' },
+        ],
+      },
+
+      components: {
+        title: 'The Component Gallery',
+        layer: 'Presentation',
+        description: `
+          Vast halls lined with Vue Single File Components. <code>GraphView.vue</code>
+          dominates the center — the main canvas workspace where nodes are wired together.
+          To one side, <code>LinearView.vue</code> offers an alternative perspective.<br><br>
+          Panels flank the walls: the right side panel houses the node browser and properties;
+          the bottom panel shows queues and console output.
+        `,
+        artifacts: [
+          { name: 'GraphView.vue', type: 'Component' },
+        ],
+        choices: [
+          { key: '1', label: 'Inspect the Canvas', hint: 'Litegraph Engine', room: 'litegraph' },
+          { key: '2', label: 'Open the Right Side Panel', hint: 'Node Browser & Properties', room: 'sidepanel' },
+          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      stores: {
+        title: 'The Store Vaults',
+        layer: 'State',
+        description: `
+          Sixty Pinia stores line the walls like vault doors, each guarding a domain of reactive state.
+          The proto-ECS stores glow brightest — <code>widgetValueStore</code>,
+          <code>layoutStore</code>, and <code>promotionStore</code> — bridging the old
+          litegraph world with a modern ECS future.<br><br>
+          Deeper in, <code>queueStore</code> tracks execution jobs and
+          <code>nodeDefStore</code> catalogs every node type known to the system.
+        `,
+        artifacts: [
+          { name: 'widgetValueStore.ts', type: 'Proto-ECS Store' },
+          { name: 'layoutStore.ts', type: 'Proto-ECS Store' },
+        ],
+        choices: [
+          { key: '1', label: 'Examine the ECS Blueprints', hint: 'Entity-Component-System', room: 'ecs' },
+          { key: '2', label: 'Visit the Renderer', hint: 'Canvas & Layout', room: 'renderer' },
+          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      services: {
+        title: 'The Service Corridors',
+        layer: 'Services',
+        description: `
+          Clean corridors of orchestration logic. <code>litegraphService.ts</code> manages
+          graph creation and serialization. <code>dialogService.ts</code> conjures modals
+          and toasts on demand.<br><br>
+          <code>extensionService.ts</code> loads third-party extensions, while
+          <code>nodeSearchService.ts</code> powers Algolia-backed discovery. Every service
+          here bridges the presentation layer above with the stores below.
+        `,
+        artifacts: [
+          { name: 'litegraphService.ts', type: 'Service' },
+        ],
+        choices: [
+          { key: '1', label: 'Follow the Composables', hint: 'Reusable Logic Hooks', room: 'composables' },
+          { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      litegraph: {
+        title: 'The Litegraph Engine Room',
+        layer: 'Graph Engine',
+        description: `
+          The beating heart of ComfyUI's visual programming. Massive class files loom:
+          <code>LGraphCanvas.ts</code> at 276KB handles all rendering and interaction,
+          <code>LGraphNode.ts</code> at 127KB is the god-object node entity, and
+          <code>LGraph.ts</code> at 93KB contains the graph itself.<br><br>
+          Warning signs mark known issues: circular dependencies, render-time side effects,
+          and scattered mutation sites. The ECS migration aims to tame this complexity.
+        `,
+        artifacts: [
+          { name: 'LGraphCanvas.ts', type: 'God Object' },
+          { name: 'LGraphNode.ts', type: 'God Object' },
+        ],
+        choices: [
+          { key: '1', label: 'Examine the ECS Blueprints', hint: 'The planned future', room: 'ecs' },
+          { key: '2', label: 'Return to Components', hint: 'Presentation Layer', room: 'components' },
+          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      ecs: {
+        title: 'The ECS Architect\'s Chamber',
+        layer: 'ECS',
+        description: `
+          Blueprints cover every surface. The Entity-Component-System architecture is taking shape:
+          branded entity IDs (<code>NodeEntityId</code>, <code>LinkEntityId</code>, etc.)
+          prevent cross-kind mistakes at compile time.<br><br>
+          The <code>World</code> registry maps each entity kind to its components — data-only
+          structs with no methods. Systems like RenderSystem and SerializationSystem are planned
+          to operate on these components in clean, decoupled passes.
+        `,
+        artifacts: [
+          { name: 'World Registry', type: 'ECS Core' },
+          { name: 'Branded Entity IDs', type: 'Type Safety' },
+        ],
+        choices: [
+          { key: '1', label: 'Visit the Renderer', hint: 'Canvas & Layout', room: 'renderer' },
+          { key: '2', label: 'Return to the Store Vaults', hint: 'State Management', room: 'stores' },
+          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      renderer: {
+        title: 'The Renderer Overlook',
+        layer: 'Renderer',
+        description: `
+          From here you can see the entire canvas rendering pipeline. The
+          <code>layoutStore</code> uses Y.js CRDTs for collaborative position data —
+          multiple users can edit the same graph simultaneously.<br><br>
+          A <code>QuadTree</code> spatial index accelerates hit detection, and thumbnail
+          generation creates workflow previews. The render loop reads layout state and
+          paints nodes, links, and reroutes onto the HTML canvas.
+        `,
+        artifacts: [
+          { name: 'QuadTree Spatial Index', type: 'Data Structure' },
+          { name: 'Y.js CRDT Layout', type: 'Collaboration' },
+        ],
+        choices: [
+          { key: '1', label: 'Examine the ECS Blueprints', hint: 'Entity-Component-System', room: 'ecs' },
+          { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      composables: {
+        title: 'The Composables Workshop',
+        layer: 'Composables',
+        description: `
+          Hooks hang from the walls, each a reusable piece of Vue composition logic.
+          <code>useCoreCommands.ts</code> is the largest at 42KB — an orchestrator binding
+          keyboard shortcuts to application commands.<br><br>
+          Domain-specific workshops branch off: <code>auth/</code>, <code>canvas/</code>,
+          <code>queue/</code>, <code>node/</code>, <code>graph/</code>. Each composable
+          encapsulates logic that would otherwise clutter components.
+        `,
+        artifacts: [
+          { name: 'useCoreCommands.ts', type: 'Composable' },
+        ],
+        choices: [
+          { key: '1', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
+          { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+
+      sidepanel: {
+        title: 'The Right Side Panel',
+        layer: 'Presentation',
+        description: `
+          A multi-tabbed interface reveals itself. The Node Browser tab lets you search
+          and drag nodes onto the canvas. The Properties tab shows details of the selected
+          node. The Model panel catalogs available AI models.<br><br>
+          Everything here is wired to stores: <code>nodeDefStore</code> feeds the browser,
+          <code>modelStore</code> powers the model panel, and <code>workspaceStore</code>
+          controls which panels are visible.
+        `,
+        artifacts: [],
+        choices: [
+          { key: '1', label: 'Return to the Component Gallery', hint: 'Presentation Layer', room: 'components' },
+          { key: '2', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
+          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
+        ],
+      },
+    }
+
+    // Count total rooms
+    const totalRooms = Object.keys(rooms).length
+
+    // --- DOM Refs ---
+    const $ = (sel) => document.querySelector(sel)
+    const $$ = (sel) => document.querySelectorAll(sel)
+
+    const els = {
+      roomTitle: $('#room-title'),
+      roomLayer: $('#room-layer'),
+      roomDesc: $('#room-description'),
+      choices: $('#choices'),
+      artifacts: $('#artifacts'),
+      artifactsList: $('#artifacts-list'),
+      inventory: $('#inventory'),
+      invCount: $('#inv-count'),
+      log: $('#log'),
+      logCount: $('#log-count'),
+      statRooms: $('#stat-rooms'),
+      statArtifacts: $('#stat-artifacts'),
+      statLayer: $('#stat-layer'),
+      map: $('#map'),
+      mapPanel: $('#map-panel'),
+      toggleMap: $('#toggle-map'),
+    }
+
+    // --- Rendering ---
+    function render(roomId) {
+      const room = rooms[roomId]
+      if (!room) return
+
+      state.currentRoom = roomId
+      state.visited.add(roomId)
+
+      // Header
+      els.roomTitle.textContent = room.title
+      els.roomLayer.textContent = room.layer
+      els.statLayer.textContent = room.layer
+
+      // Description
+      els.roomDesc.innerHTML = room.description.trim()
+
+      // Artifacts in room
+      if (room.artifacts.length > 0) {
+        els.artifacts.classList.add('has-items')
+        els.artifactsList.innerHTML = room.artifacts.map(a => `
+          <div class="artifact">
+            <span class="artifact-name">${a.name}</span>
+            <span class="artifact-type">${a.type}</span>
+          </div>
+        `).join('')
+
+        // Auto-collect artifacts
+        for (const a of room.artifacts) {
+          if (!state.inventory.find(i => i.name === a.name)) {
+            state.inventory.push(a)
+            addLog(`Collected: ${a.name}`, 'discovery')
+          }
+        }
+      } else {
+        els.artifacts.classList.remove('has-items')
+        els.artifactsList.innerHTML = ''
+      }
+
+      // Choices
+      els.choices.innerHTML = room.choices.map(c => `
+        <button class="choice-btn" data-room="${c.room}">
+          <span class="choice-key">${c.key}</span>
+          <span class="choice-label">${c.label}</span>
+          <span class="choice-hint">${c.hint}</span>
+        </button>
+      `).join('')
+
+      // Bind choice clicks
+      els.choices.querySelectorAll('.choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => render(btn.dataset.room))
+      })
+
+      // Update HUD
+      els.statRooms.textContent = `${state.visited.size}/${totalRooms}`
+      els.statArtifacts.textContent = state.inventory.length
+
+      // Update inventory
+      if (state.inventory.length > 0) {
+        els.inventory.innerHTML = state.inventory.map(i => `
+          <div class="inv-item">
+            <span class="inv-item-name">${i.name}</span>
+            <span class="inv-item-desc">${i.type}</span>
+          </div>
+        `).join('')
+      }
+      els.invCount.textContent = state.inventory.length
+
+      // Update map
+      renderMap()
+
+      // Log navigation
+      addLog(`Entered: ${room.title}`)
+    }
+
+    function addLog(message, type = '') {
+      state.log.unshift({ message, type })
+      els.log.innerHTML = state.log.map(l =>
+        `<div class="log-entry ${l.type}">${l.message}</div>`
+      ).join('')
+      els.logCount.textContent = state.log.length
+    }
+
+    function renderMap() {
+      els.map.innerHTML = Object.entries(rooms).map(([id, room]) => {
+        const classes = ['map-room']
+        if (id === state.currentRoom) classes.push('current')
+        else if (state.visited.has(id)) classes.push('visited')
+        return `
+          <div class="${classes.join(' ')}" data-room="${id}">
+            <div class="room-layer">${room.layer}</div>
+            <div>${room.title}</div>
+          </div>
+        `
+      }).join('')
+
+      els.map.querySelectorAll('.map-room').forEach(el => {
+        el.addEventListener('click', () => render(el.dataset.room))
+      })
+    }
+
+    // --- Map Toggle ---
+    els.toggleMap.addEventListener('click', () => {
+      els.mapPanel.classList.toggle('open')
+    })
+
+    // --- Keyboard Navigation ---
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'm' || e.key === 'M') {
+        els.mapPanel.classList.toggle('open')
+        return
+      }
+
+      const room = rooms[state.currentRoom]
+      if (!room) return
+
+      const choice = room.choices.find(c => c.key === e.key)
+      if (choice) render(choice.room)
+    })
+
+    // --- Boot ---
+    render('entry')
+    addLog('Welcome, architect. Explore the codebase.', 'discovery')
+  </script>
+
+</body>
+</html>
