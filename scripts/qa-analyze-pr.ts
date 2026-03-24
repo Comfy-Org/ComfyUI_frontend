@@ -416,22 +416,54 @@ function buildIssueAnalysisPrompt(issue: IssueThread): string {
     .filter(Boolean)
     .join('\n')
 
-  return `You are a senior QA engineer analyzing a bug report for ComfyUI frontend (a Vue 3 + TypeScript web application for AI image generation workflows).
+  return `You are a senior QA engineer analyzing a bug report for ComfyUI frontend — a node-based visual workflow editor for AI image generation (Vue 3 + TypeScript).
 
-Your task: Generate a single targeted QA reproduction guide to verify this bug on the current main branch.
+The UI has:
+- A large canvas (1280x720 viewport) showing a node graph centered at ~(640, 400)
+- Nodes are boxes with input/output slots connected by wires
+- A hamburger menu (top-left C logo) with File, Edit, Help submenus
+- Sidebars (Workflows, Node Library, Models)
+- A topbar with workflow tabs and Queue button
+- The default workflow loads with ~5 nodes already visible on canvas
+
+Your task: Generate a DETAILED reproduction guide (8-15 steps) to trigger this bug on main.
 
 ${allText}
 
 ## Available test actions
 Each step must use one of these actions:
+
+### Menu actions
 - "openMenu" — clicks the Comfy hamburger menu (top-left C logo)
 - "hoverMenuItem" — hovers a top-level menu item to open submenu (label required)
 - "clickMenuItem" — clicks an item in the visible submenu (label required)
-- "fillDialog" — fills dialog input and presses Enter (text required)
-- "pressKey" — presses a keyboard key (key required)
+
+### Element actions (by visible text)
 - "click" — clicks an element by visible text (text required)
+- "rightClick" — right-clicks an element to open context menu (text required)
+- "doubleClick" — double-clicks an element or coordinates (text or x,y)
+- "fillDialog" — fills dialog input and presses Enter (text required)
+- "pressKey" — presses a keyboard key (key required: Escape, Tab, Delete, Enter, etc.)
+
+### Canvas actions (by coordinates — viewport is 1280x720)
+- "clickCanvas" — click at coordinates (x, y required)
+- "rightClickCanvas" — right-click at coordinates (x, y required)
+- "doubleClick" — double-click at coordinates to open node search (x, y)
+- "dragCanvas" — drag from one point to another (fromX, fromY, toX, toY)
+- "scrollCanvas" — scroll wheel for zoom (x, y, deltaY: negative=zoom in, positive=zoom out)
+
+### Utility
 - "wait" — waits briefly (ms required, max 3000)
 - "screenshot" — takes a screenshot (name required)
+
+## Common ComfyUI interactions
+- Right-click a node → context menu with Clone, Bypass, Remove, Colors, etc.
+- Double-click empty canvas → opens node search dialog
+- Ctrl+C / Ctrl+V → copy/paste selected nodes
+- Delete key → remove selected node
+- Ctrl+G → group selected nodes
+- Drag from output slot to input slot → create connection
+- Click a node to select it, Shift+click for multi-select
 
 ## Output format
 Return a JSON object with exactly one key: "reproduce", containing:
@@ -441,8 +473,8 @@ Return a JSON object with exactly one key: "reproduce", containing:
   "prerequisites": ["e.g. Load default workflow"],
   "steps": [
     {
-      "action": "openMenu",
-      "description": "Open the main menu to trigger the reported bug",
+      "action": "clickCanvas",
+      "description": "Click on first node to select it",
       "expected_before": "What should happen if the bug is present"
     }
   ],
@@ -450,12 +482,12 @@ Return a JSON object with exactly one key: "reproduce", containing:
 }
 
 ## Rules
-- REPRODUCE guide: 3-6 steps, under 30 seconds. Follow the issue's reproduction steps closely.
-- Focus on triggering and demonstrating the SPECIFIC bug reported.
-- Use information from the issue description and comments to understand the bug.
-- Include at least one screenshot step to capture the bug state.
+- Generate 8-15 DETAILED steps that actually trigger the reported bug.
+- Follow the issue's reproduction steps PRECISELY — translate them into available actions.
+- Use canvas coordinates for node interactions (nodes are typically in the center area 300-900 x 200-500).
+- Take screenshots BEFORE and AFTER critical actions to capture the bug state.
+- Do NOT just open a menu and screenshot — actually perform the full reproduction sequence.
 - Do NOT include login steps.
-- Menu pattern: openMenu -> hoverMenuItem -> clickMenuItem or screenshot.
 - Output ONLY valid JSON, no markdown fences or explanation.`
 }
 
