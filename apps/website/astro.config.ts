@@ -21,12 +21,5 @@ export default defineConfig({
     routing: {
       prefixDefaultLocale: false
     }
-  },
-  redirects: {
-    '/pricing': '/cloud/pricing',
-    '/enterprise': '/cloud/enterprise',
-    '/blog': 'https://blog.comfy.org/',
-    '/contact': '/about',
-    '/press': '/about'
   }
 })
