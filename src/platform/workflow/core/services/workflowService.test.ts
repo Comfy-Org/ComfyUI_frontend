@@ -172,7 +172,7 @@ describe('useWorkflowService', () => {
 
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledWith(missingNodeTypes, expect.any(Function))
+      ).toHaveBeenCalledWith(missingNodeTypes)
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -187,7 +187,7 @@ describe('useWorkflowService', () => {
 
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledWith(['CustomNode1'], expect.any(Function))
+      ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -240,7 +240,7 @@ describe('useWorkflowService', () => {
       )
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledWith(['CustomNode1'], expect.any(Function))
+      ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -262,7 +262,7 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledTimes(1)
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledWith(['MissingNodeA'], expect.any(Function))
+      ).toHaveBeenCalledWith(['MissingNodeA'])
       expect(workflow1.pendingWarnings).toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
@@ -272,7 +272,7 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledTimes(2)
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenLastCalledWith(['MissingNodeB'], expect.any(Function))
+      ).toHaveBeenLastCalledWith(['MissingNodeB'])
       expect(workflow2.pendingWarnings).toBeNull()
     })
 

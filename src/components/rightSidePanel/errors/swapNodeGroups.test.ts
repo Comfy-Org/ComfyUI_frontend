@@ -47,7 +47,6 @@ vi.mock('@/utils/executableGroupNodeDto', () => ({
   isGroupNode: vi.fn(() => false)
 }))
 
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 
@@ -81,11 +80,7 @@ describe('swapNodeGroups computed', () => {
   })
 
   function getSwapNodeGroups(nodeTypes: MissingNodeType[]) {
-    const executionErrorStore = useExecutionErrorStore()
-    useMissingNodesErrorStore().surfaceMissingNodes(
-      nodeTypes,
-      executionErrorStore.showErrorOverlay
-    )
+    useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 
     const searchQuery = ref('')
     const t = (key: string) => key

@@ -1106,11 +1106,9 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    const { showErrorOverlay } = useExecutionErrorStore()
-    useMissingNodesErrorStore().surfaceMissingNodes(
-      missingNodeTypes,
-      showErrorOverlay
-    )
+    if (useMissingNodesErrorStore().surfaceMissingNodes(missingNodeTypes)) {
+      useExecutionErrorStore().showErrorOverlay()
+    }
   }
 
   async loadGraphData(

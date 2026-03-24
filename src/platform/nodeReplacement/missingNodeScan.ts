@@ -41,6 +41,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
 /** Re-scan the graph for missing nodes and update the error store. */
 export function rescanAndSurfaceMissingNodes(rootGraph: LGraph): void {
   const types = scanMissingNodes(rootGraph)
-  const { showErrorOverlay } = useExecutionErrorStore()
-  useMissingNodesErrorStore().surfaceMissingNodes(types, showErrorOverlay)
+  if (useMissingNodesErrorStore().surfaceMissingNodes(types)) {
+    useExecutionErrorStore().showErrorOverlay()
+  }
 }

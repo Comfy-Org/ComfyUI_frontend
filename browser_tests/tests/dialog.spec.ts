@@ -237,13 +237,10 @@ test.describe('Missing models in Error Tab', () => {
       'missing/model_metadata_widget_mismatch'
     )
 
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).not.toBeVisible()
-
-    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
-    await expect(missingModelsTitle).not.toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+    ).not.toBeVisible()
+    await expect(comfyPage.page.getByText(/Missing Models/)).not.toBeVisible()
   })
 
   // Flaky test after parallelization

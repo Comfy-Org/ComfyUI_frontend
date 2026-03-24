@@ -55,18 +55,13 @@ export const useMissingNodesErrorStore = defineStore(
       }
     }
 
-    /** Set missing node types and open the error overlay if the Errors tab is enabled. */
-    function surfaceMissingNodes(
-      types: MissingNodeType[],
-      showErrorOverlay: () => void
-    ) {
+    /** Set missing node types. Returns true if the Errors tab is enabled and types were set. */
+    function surfaceMissingNodes(types: MissingNodeType[]): boolean {
       setMissingNodeTypes(types)
-      if (
-        types.length &&
+      return (
+        types.length > 0 &&
         useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
-      ) {
-        showErrorOverlay()
-      }
+      )
     }
 
     /** Remove specific node types from the missing nodes list (e.g. after replacement). */

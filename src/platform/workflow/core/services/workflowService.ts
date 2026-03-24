@@ -544,10 +544,9 @@ export const useWorkflowService = () => {
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
-      missingNodesErrorStore.surfaceMissingNodes(
-        missingNodeTypes,
-        executionErrorStore.showErrorOverlay
-      )
+      if (missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes)) {
+        executionErrorStore.showErrorOverlay()
+      }
     }
   }
 
