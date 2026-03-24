@@ -26,8 +26,6 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
     /* --- Header / HUD --- */
@@ -99,21 +97,55 @@
     .stat-morale .stat-bar-fill { background: var(--yellow); }
     .stat-migration .stat-bar-fill { background: var(--purple); }
 
-    /* --- Map Panel --- */
+    /* --- Map Panel (overlay) --- */
     #map-panel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      z-index: 50;
       background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      max-width: 700px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
     }
 
-    #map-panel.open { display: block; }
+    #map-panel.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #map-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 40;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s;
+    }
+
+    #map-backdrop.open { opacity: 1; visibility: visible; }
+
+    #map-panel h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
 
     #map {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 8px;
-      max-width: 900px;
     }
 
     .map-room {
@@ -142,7 +174,6 @@
 
     /* --- Main Content --- */
     #main {
-      flex: 1;
       display: flex;
       max-width: 1100px;
       width: 100%;
@@ -417,6 +448,11 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      position: sticky;
+      top: 60px;
+      align-self: flex-start;
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
     }
 
     .sidebar-section {
@@ -439,8 +475,6 @@
 
     .sidebar-body {
       padding: 8px;
-      max-height: 300px;
-      overflow-y: auto;
       font-size: 12px;
     }
 
@@ -490,10 +524,12 @@
       border: 2px solid var(--border);
       border-radius: 16px;
       padding: 40px;
-      max-width: 560px;
+      max-width: 640px;
       width: 90%;
       text-align: center;
       animation: scaleIn 0.4s ease 0.2s both;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     @keyframes scaleIn {
@@ -554,6 +590,80 @@
 
     #play-again-btn:hover { opacity: 0.85; }
 
+    /* --- Links in descriptions --- */
+    #room-description a, #challenge-desc a, .result-doc-link {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--accent);
+    }
+
+    #room-description a:hover, #challenge-desc a:hover, .result-doc-link:hover {
+      border-bottom-style: solid;
+    }
+
+    /* --- Recommended answer callout --- */
+    .result-recommended {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(88, 166, 255, 0.06);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .result-recommended strong { color: var(--accent); }
+    .result-recommended .result-doc-link { font-size: 11px; }
+
+    /* --- Challenge progress --- */
+    #challenge-progress {
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    #challenge-progress .progress-value { color: var(--text); font-weight: 600; }
+
+    /* --- Scorecard in ending --- */
+    #ending-scorecard {
+      text-align: left;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .scorecard-header {
+      background: var(--bg);
+      padding: 8px 12px;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .scorecard-row {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .scorecard-row:last-child { border-bottom: none; }
+    .scorecard-row .sc-title { color: var(--muted); flex: 1; }
+    .scorecard-row .sc-yours { font-weight: 600; min-width: 60px; }
+    .scorecard-row .sc-yours.match { color: var(--green); }
+    .scorecard-row .sc-yours.miss { color: var(--yellow); }
+    .scorecard-row .sc-best { color: var(--accent); font-size: 11px; min-width: 60px; }
+
+    /* --- Room transition --- */
+    #narrative { transition: opacity 0.15s ease; }
+    #narrative.transitioning { opacity: 0.4; }
+
     /* --- Utilities --- */
     #toggle-map {
       background: none;
@@ -576,7 +686,7 @@
 
     @media (max-width: 768px) {
       #main { flex-direction: column; padding: 16px; }
-      #sidebar { min-width: unset; }
+      #sidebar { min-width: unset; position: static; max-height: none; }
       #stat-bars { gap: 6px; }
     }
   </style>
@@ -609,12 +719,15 @@
           <span class="stat-bar-value" id="val-migration">0/5</span>
         </div>
       </div>
+      <span id="challenge-progress">Challenges: <span class="progress-value" id="val-challenges">0/7</span></span>
       <button id="toggle-map">Map [M]</button>
     </div>
   </header>
 
-  <!-- Collapsible Map -->
+  <!-- Map Overlay -->
+  <div id="map-backdrop"></div>
   <section id="map-panel">
+    <h3>Architecture Map</h3>
     <div id="map"></div>
   </section>
 
@@ -673,6 +786,7 @@
       <div class="ending-label">Adventure Complete</div>
       <h2 id="ending-title"></h2>
       <div class="ending-desc" id="ending-desc"></div>
+      <div id="ending-scorecard"></div>
       <div id="ending-stats"></div>
       <button id="play-again-btn">Play Again</button>
     </div>
@@ -691,6 +805,7 @@
         log: [],
         stats: { techDebt: 50, quality: 30, morale: 60, migrationProgress: 0 },
         challengesCompleted: new Set(),
+        challengeChoices: {},
         endingShown: false,
       }
     }
@@ -698,6 +813,7 @@
     let state = createInitialState()
 
     const TOTAL_CHALLENGES = 7
+    const GH = 'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main'
 
     // --- Image prompts per room ---
     // Image generation prompts per room (also exported as adventure-image-prompts.json)
@@ -719,10 +835,10 @@
         title: 'The Entry Point',
         layer: 'src/main.ts',
         description: `
-          You stand at <code>src/main.ts</code>, the entry point of the ComfyUI frontend.
+          You stand at <a href="${GH}/src/main.ts" target="_blank">src/main.ts</a>, the entry point of the ComfyUI frontend.
           The air hums with the bootstrapping of a Vue 3 application. Pinia stores
-          initialize around you, the router unfurls paths into the distance, and
-          i18n translations whisper in dozens of languages.<br><br>
+          initialize around you, the <a href="${GH}/src/router.ts" target="_blank">router</a> unfurls paths into the distance, and
+          <a href="${GH}/src/i18n.ts" target="_blank">i18n translations</a> whisper in dozens of languages.<br><br>
           Three corridors stretch ahead, each leading deeper into the architecture.
           Somewhere in this codebase, god objects lurk, mutations scatter in the shadows,
           and a grand migration awaits your decisions.
@@ -739,10 +855,10 @@
         title: 'The Component Gallery',
         layer: 'Presentation',
         description: `
-          Vast halls lined with Vue Single File Components. <code>GraphView.vue</code>
+          Vast halls lined with Vue Single File Components. <a href="${GH}/src/views/GraphView.vue" target="_blank">GraphView.vue</a>
           dominates the center &mdash; the main canvas workspace where nodes are wired together.
-          To one side, <code>LinearView.vue</code> offers an alternative perspective.<br><br>
-          Panels flank the walls: the right side panel houses the node browser and properties;
+          To one side, <a href="${GH}/src/views/LinearView.vue" target="_blank">LinearView.vue</a> offers an alternative perspective.<br><br>
+          Panels flank the walls: the <a href="${GH}/src/components/rightSidePanel" target="_blank">right side panel</a> houses the node browser and properties;
           the bottom panel shows queues and console output.
         `,
         artifacts: [
@@ -750,6 +866,8 @@
         ],
         challenge: {
           title: 'The Circular Dependency',
+          recommended: 'A',
+          docLink: { label: 'Entity Problems: Circular Dependencies', url: `${GH}/docs/architecture/entity-problems.md` },
           description: `
             A tangled knot blocks the corridor ahead. <code>Subgraph</code> extends <code>LGraph</code>,
             but <code>LGraph</code> creates and manages Subgraph instances. The circular import
@@ -792,11 +910,11 @@
         layer: 'State',
         description: `
           Sixty Pinia stores line the walls like vault doors, each guarding a domain of reactive state.
-          The proto-ECS stores glow brightest &mdash; <code>widgetValueStore</code>,
-          <code>layoutStore</code>, and <code>promotionStore</code> &mdash; bridging the old
+          The proto-ECS stores glow brightest &mdash; <a href="${GH}/src/stores/widgetValueStore.ts" target="_blank">widgetValueStore</a>,
+          <a href="${GH}/src/renderer/core/layout/store/layoutStore.ts" target="_blank">layoutStore</a>, and <a href="${GH}/src/stores/promotionStore.ts" target="_blank">promotionStore</a> &mdash; bridging the old
           litegraph world with a modern ECS future.<br><br>
-          Deeper in, <code>queueStore</code> tracks execution jobs and
-          <code>nodeDefStore</code> catalogs every node type known to the system.
+          Deeper in, <a href="${GH}/src/stores/queueStore.ts" target="_blank">queueStore</a> tracks execution jobs and
+          <a href="${GH}/src/stores/nodeDefStore.ts" target="_blank">nodeDefStore</a> catalogs every node type known to the system.
         `,
         artifacts: [
           { name: 'widgetValueStore.ts', type: 'Proto-ECS Store' },
@@ -804,6 +922,8 @@
         ],
         challenge: {
           title: 'The Scattered Mutations',
+          recommended: 'A',
+          docLink: { label: 'Migration Plan: Phase 0a', url: `${GH}/docs/architecture/ecs-migration-plan.md` },
           description: `
             Deep in the vaults, you find a fragile counter: <code>graph._version++</code>.
             It appears in <strong>19 locations across 7 files</strong> &mdash; LGraph.ts (5 sites),
@@ -846,11 +966,11 @@
         title: 'The Service Corridors',
         layer: 'Services',
         description: `
-          Clean corridors of orchestration logic. <code>litegraphService.ts</code> manages
-          graph creation and serialization. <code>dialogService.ts</code> conjures modals
+          Clean corridors of orchestration logic. <a href="${GH}/src/services/litegraphService.ts" target="_blank">litegraphService.ts</a> manages
+          graph creation and serialization. <a href="${GH}/src/services/dialogService.ts" target="_blank">dialogService.ts</a> conjures modals
           and toasts on demand.<br><br>
-          <code>extensionService.ts</code> loads third-party extensions, while
-          <code>nodeSearchService.ts</code> powers Algolia-backed discovery. Every service
+          <a href="${GH}/src/services/extensionService.ts" target="_blank">extensionService.ts</a> loads third-party extensions, while
+          <a href="${GH}/src/services/nodeSearchService.ts" target="_blank">nodeSearchService.ts</a> powers Algolia-backed discovery. Every service
           here bridges the presentation layer above with the stores below.
         `,
         artifacts: [
@@ -858,6 +978,8 @@
         ],
         challenge: {
           title: 'The Migration Question',
+          recommended: 'A',
+          docLink: { label: 'ECS Migration Plan', url: `${GH}/docs/architecture/ecs-migration-plan.md` },
           description: `
             A fork in the corridor. The legacy litegraph engine works &mdash; thousands of users
             depend on it daily. But the architecture docs describe a better future: ECS with
@@ -899,9 +1021,9 @@
         layer: 'Graph Engine',
         description: `
           The beating heart of ComfyUI's visual programming. Massive class files loom:
-          <code>LGraphCanvas.ts</code> at ~9,100 lines handles all rendering and interaction,
-          <code>LGraphNode.ts</code> at ~4,300 lines is the god-object node entity, and
-          <code>LGraph.ts</code> at ~3,100 lines contains the graph itself.<br><br>
+          <a href="${GH}/src/lib/litegraph/src/LGraphCanvas.ts" target="_blank">LGraphCanvas.ts</a> at ~9,100 lines handles all rendering and interaction,
+          <a href="${GH}/src/lib/litegraph/src/LGraphNode.ts" target="_blank">LGraphNode.ts</a> at ~4,300 lines is the god-object node entity, and
+          <a href="${GH}/src/lib/litegraph/src/LGraph.ts" target="_blank">LGraph.ts</a> at ~3,100 lines contains the graph itself.<br><br>
           Warning signs mark known issues: circular dependencies, render-time side effects,
           and scattered mutation sites. The ECS migration aims to tame this complexity.
         `,
@@ -911,6 +1033,8 @@
         ],
         challenge: {
           title: 'The God Object Dilemma',
+          recommended: 'B',
+          docLink: { label: 'Entity Problems: God Objects', url: `${GH}/docs/architecture/entity-problems.md` },
           description: `
             <code>LGraphCanvas</code> looms before you: <strong>~9,100 lines</strong> of rendering,
             input handling, selection, context menus, undo/redo, and more. <code>LGraphNode</code>
@@ -954,9 +1078,9 @@
         layer: 'ECS',
         description: `
           Blueprints cover every surface. The Entity-Component-System architecture is taking shape:
-          branded entity IDs (<code>NodeEntityId</code>, <code>LinkEntityId</code>, etc.)
+          branded entity IDs (<a href="${GH}/src/ecs/entityId.ts" target="_blank">NodeEntityId</a>, <code>LinkEntityId</code>, etc.)
           prevent cross-kind mistakes at compile time.<br><br>
-          The <code>World</code> registry maps each entity kind to its components &mdash; data-only
+          The <a href="${GH}/src/ecs/world.ts" target="_blank">World</a> registry maps each entity kind to its components &mdash; data-only
           structs with no methods. Systems like RenderSystem and SerializationSystem are planned
           to operate on these components in clean, decoupled passes.
         `,
@@ -966,6 +1090,8 @@
         ],
         challenge: {
           title: 'The ID Crossroads',
+          recommended: 'A',
+          docLink: { label: 'ECS Target Architecture: Entity IDs', url: `${GH}/docs/architecture/ecs-target-architecture.md` },
           description: `
             The blueprints show a problem: <code>NodeId</code> is typed as <code>number | string</code>.
             Nothing prevents passing a <code>LinkId</code> where a <code>NodeId</code> is expected.
@@ -1010,9 +1136,9 @@
         layer: 'Renderer',
         description: `
           From here you can see the entire canvas rendering pipeline. The
-          <code>layoutStore</code> uses Y.js CRDTs for collaborative position data &mdash;
+          <a href="${GH}/src/renderer/core/layout/store/layoutStore.ts" target="_blank">layoutStore</a> uses Y.js CRDTs for collaborative position data &mdash;
           multiple users can edit the same graph simultaneously.<br><br>
-          A <code>QuadTree</code> spatial index accelerates hit detection, and thumbnail
+          A <a href="${GH}/src/renderer/core/spatial/QuadTree.ts" target="_blank">QuadTree</a> spatial index accelerates hit detection, and thumbnail
           generation creates workflow previews. The render loop reads layout state and
           paints nodes, links, and reroutes onto the HTML canvas.
         `,
@@ -1022,6 +1148,8 @@
         ],
         challenge: {
           title: 'The Render-Time Mutation',
+          recommended: 'A',
+          docLink: { label: 'Entity Problems: Render-Time Mutations', url: `${GH}/docs/architecture/entity-problems.md` },
           description: `
             Alarms sound. The render pipeline has a critical flaw: <code>drawNode()</code> calls
             <code>_setConcreteSlots()</code> and <code>arrange()</code> during the render pass.
@@ -1057,9 +1185,9 @@
         layer: 'Composables',
         description: `
           Hooks hang from the walls, each a reusable piece of Vue composition logic.
-          <code>useCoreCommands.ts</code> is the largest at 42KB &mdash; an orchestrator binding
+          <a href="${GH}/src/composables/useCoreCommands.ts" target="_blank">useCoreCommands.ts</a> is the largest at 42KB &mdash; an orchestrator binding
           keyboard shortcuts to application commands.<br><br>
-          Domain-specific workshops branch off: <code>auth/</code>, <code>canvas/</code>,
+          Domain-specific workshops branch off: <a href="${GH}/src/composables" target="_blank">auth/</a>, <code>canvas/</code>,
           <code>queue/</code>, <code>node/</code>, <code>graph/</code>. Each composable
           encapsulates logic that would otherwise clutter components.
         `,
@@ -1068,6 +1196,8 @@
         ],
         challenge: {
           title: 'The Collaboration Protocol',
+          recommended: 'A',
+          docLink: { label: 'Proto-ECS Stores: LayoutStore', url: `${GH}/docs/architecture/proto-ecs-stores.md` },
           description: `
             A request arrives: multiple users want to edit the same workflow simultaneously.
             The <code>layoutStore</code> already extracts position data from litegraph entities.
@@ -1110,8 +1240,8 @@
           A multi-tabbed interface reveals itself. The Node Browser tab lets you search
           and drag nodes onto the canvas. The Properties tab shows details of the selected
           node. The Model panel catalogs available AI models.<br><br>
-          Everything here is wired to stores: <code>nodeDefStore</code> feeds the browser,
-          <code>modelStore</code> powers the model panel, and <code>workspaceStore</code>
+          Everything here is wired to stores: <a href="${GH}/src/stores/nodeDefStore.ts" target="_blank">nodeDefStore</a> feeds the browser,
+          <a href="${GH}/src/stores/modelStore.ts" target="_blank">modelStore</a> powers the model panel, and <a href="${GH}/src/stores/workspaceStore.ts" target="_blank">workspaceStore</a>
           controls which panels are visible.
         `,
         artifacts: [],
@@ -1203,10 +1333,14 @@
       valMigration: $('#val-migration'),
       map: $('#map'),
       mapPanel: $('#map-panel'),
+      mapBackdrop: $('#map-backdrop'),
       toggleMap: $('#toggle-map'),
+      valChallenges: $('#val-challenges'),
+      narrative: $('#narrative'),
       endingOverlay: $('#ending-overlay'),
       endingTitle: $('#ending-title'),
       endingDesc: $('#ending-desc'),
+      endingScorecard: $('#ending-scorecard'),
       endingStats: $('#ending-stats'),
       playAgainBtn: $('#play-again-btn'),
     }
@@ -1236,6 +1370,7 @@
       els.valQuality.textContent = s.quality
       els.valMorale.textContent = s.morale
       els.valMigration.textContent = s.migrationProgress + '/5'
+      els.valChallenges.textContent = state.challengesCompleted.size + '/' + TOTAL_CHALLENGES
     }
 
     function formatEffects(effects) {
@@ -1254,6 +1389,11 @@
     function render(roomId) {
       const room = rooms[roomId]
       if (!room) return
+
+      // Brief fade transition and scroll to top
+      els.narrative.classList.add('transitioning')
+      setTimeout(() => els.narrative.classList.remove('transitioning'), 150)
+      window.scrollTo({ top: 0, behavior: 'instant' })
 
       state.currentRoom = roomId
       state.visited.add(roomId)
@@ -1361,6 +1501,7 @@
       if (!choice) return
 
       state.challengesCompleted.add(roomId)
+      state.challengeChoices[roomId] = choiceKey
 
       // Apply effects
       applyEffects(choice.effects)
@@ -1368,12 +1509,30 @@
       // Hide challenge, show result
       hideChallenge()
 
+      // Build recommended answer callout
+      const best = challenge.choices.find(c => c.key === challenge.recommended)
+      const wasCorrect = choiceKey === challenge.recommended
+      let recommendedHtml = ''
+      if (best) {
+        recommendedHtml = `<div class="result-recommended">`
+        if (wasCorrect) {
+          recommendedHtml += `<strong>You chose the recommended approach.</strong> This matches the real migration strategy used in the ComfyUI frontend.`
+        } else {
+          recommendedHtml += `<strong>Recommended: ${best.label}</strong> &mdash; ${best.hint}`
+        }
+        if (challenge.docLink) {
+          recommendedHtml += `<br><a class="result-doc-link" href="${challenge.docLink.url}" target="_blank">Read more: ${challenge.docLink.label} &rarr;</a>`
+        }
+        recommendedHtml += `</div>`
+      }
+
       els.resultBanner.className = 'active ' + choice.rating
       els.resultBanner.classList.add('active')
       els.resultBanner.innerHTML = `
         <strong>${choice.label}</strong><br>
         ${choice.feedback}<br><br>
         ${formatEffects(choice.effects)}
+        ${recommendedHtml}
       `
 
       // Show navigation choices
@@ -1449,7 +1608,10 @@
       }).join('')
 
       els.map.querySelectorAll('.map-room').forEach(el => {
-        el.addEventListener('click', () => render(el.dataset.room))
+        el.addEventListener('click', () => {
+          toggleMap()
+          render(el.dataset.room)
+        })
       })
     }
 
@@ -1464,6 +1626,32 @@
       els.endingTitle.textContent = ending.title
       els.endingTitle.style.color = `var(${ending.color})`
       els.endingDesc.innerHTML = ending.description
+
+      // Build scorecard
+      const rows = Object.entries(rooms)
+        .filter(([, room]) => room.challenge)
+        .map(([id, room]) => {
+          const challenge = room.challenge
+          const yourKey = state.challengeChoices[id]
+          const yours = challenge.choices.find(c => c.key === yourKey)
+          const best = challenge.choices.find(c => c.key === challenge.recommended)
+          const match = yourKey === challenge.recommended
+          return `<div class="scorecard-row">
+            <span class="sc-title">${challenge.title}</span>
+            <span class="sc-yours ${match ? 'match' : 'miss'}">${yours ? yours.label : '?'}</span>
+            <span class="sc-best">${match ? '&#10003;' : best.label}</span>
+          </div>`
+        }).join('')
+
+      const correct = Object.entries(rooms)
+        .filter(([, room]) => room.challenge)
+        .filter(([id, room]) => state.challengeChoices[id] === room.challenge.recommended)
+        .length
+
+      els.endingScorecard.innerHTML = `
+        <div class="scorecard-header">Your Decisions &mdash; ${correct}/7 matched the real migration strategy</div>
+        ${rows}
+      `
 
       const statColor = (label, val, good) => {
         const color = good ? 'var(--green)' : (label === 'Technical Debt' ? 'var(--red)' : 'var(--yellow)')
@@ -1494,9 +1682,13 @@
     }
 
     // --- Map Toggle ---
-    els.toggleMap.addEventListener('click', () => {
-      els.mapPanel.classList.toggle('open')
-    })
+    function toggleMap() {
+      const open = els.mapPanel.classList.toggle('open')
+      els.mapBackdrop.classList.toggle('open', open)
+    }
+
+    els.toggleMap.addEventListener('click', toggleMap)
+    els.mapBackdrop.addEventListener('click', toggleMap)
 
     els.playAgainBtn.addEventListener('click', resetGame)
 
@@ -1505,7 +1697,12 @@
       if (state.endingShown) return
 
       if (e.key === 'm' || e.key === 'M') {
-        els.mapPanel.classList.toggle('open')
+        toggleMap()
+        return
+      }
+
+      if (e.key === 'Escape' && els.mapPanel.classList.contains('open')) {
+        toggleMap()
         return
       }
 
