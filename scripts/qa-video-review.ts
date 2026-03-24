@@ -15,6 +15,7 @@ interface CliOptions {
   requestTimeoutMs: number
   dryRun: boolean
   prContext: string
+  targetUrl: string
 }
 
 interface VideoCandidate {
@@ -31,7 +32,8 @@ const DEFAULT_OPTIONS: CliOptions = {
   model: 'gemini-2.5-flash',
   requestTimeoutMs: 300_000,
   dryRun: false,
-  prContext: ''
+  prContext: '',
+  targetUrl: ''
 }
 
 const USAGE = `Usage:
@@ -53,6 +55,7 @@ Options:
                                  (default: 300000)
   --pr-context <file>           File with PR context (title, body, diff)
                                  for PR-aware review
+  --target-url <url>            Issue or PR URL to include in the report
   --dry-run                     Discover videos and output targets only
   --help                        Show this help text
 
@@ -122,6 +125,11 @@ function parseCliOptions(args: string[]): CliOptions {
 
     if (argument === '--pr-context') {
       options.prContext = requireValue(argument)
+      continue
+    }
+
+    if (argument === '--target-url') {
+      options.targetUrl = requireValue(argument)
       continue
     }
 
@@ -570,6 +578,7 @@ function buildReportMarkdown(input: {
   beforeVideoPath?: string
   beforeVideoSizeBytes?: number
   reviewText: string
+  targetUrl?: string
 }): string {
   const headerLines = [
     `# ${input.platformName} QA Video Report`,
@@ -577,6 +586,10 @@ function buildReportMarkdown(input: {
     `- Generated at: ${new Date().toISOString()}`,
     `- Model: \`${input.model}\``
   ]
+
+  if (input.targetUrl) {
+    headerLines.push(`- Target: ${input.targetUrl}`)
+  }
 
   if (input.beforeVideoPath) {
     headerLines.push(
@@ -650,7 +663,8 @@ async function reviewVideo(
     model: options.model,
     videoPath: video.videoPath,
     videoSizeBytes: videoStat.size,
-    reviewText
+    reviewText,
+    targetUrl: options.targetUrl || undefined
   }
 
   if (beforeVideoPath) {
