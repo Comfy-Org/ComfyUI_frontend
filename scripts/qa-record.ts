@@ -46,6 +46,19 @@ type TestAction =
   | { action: 'screenshot'; name: string }
   | { action: 'loadWorkflow'; url: string }
   | { action: 'setSetting'; id: string; value: string | number | boolean }
+  | { action: 'reload' }
+  | { action: 'done'; reason: string }
+
+interface ActionResult {
+  action: TestAction
+  success: boolean
+  error?: string
+}
+
+interface SubIssue {
+  title: string
+  focus: string
+}
 
 type RecordMode = 'before' | 'after' | 'reproduce'
 
@@ -508,7 +521,174 @@ async function clickByText(page: Page, text: string) {
   }
 }
 
-// ── Step executor ──
+// ── Action executor ──
+
+async function waitForEditorReady(page: Page) {
+  try {
+    await page
+      .locator('.comfy-menu-button-wrapper')
+      .waitFor({ state: 'visible', timeout: 15000 })
+  } catch {
+    console.warn('Editor not ready after reload (menu button not visible)')
+  }
+  await sleep(1000)
+}
+
+async function executeAction(
+  page: Page,
+  step: TestAction,
+  outputDir: string
+): Promise<ActionResult> {
+  console.warn(
+    `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
+  )
+  try {
+    switch (step.action) {
+      case 'openMenu':
+        await openComfyMenu(page)
+        break
+      case 'hoverMenuItem':
+        await hoverMenuItem(page, step.label)
+        break
+      case 'clickMenuItem':
+        await clickSubmenuItem(page, step.label)
+        break
+      case 'fillDialog':
+        await fillDialogAndConfirm(page, step.text)
+        break
+      case 'pressKey':
+        try {
+          await page.keyboard.press(step.key)
+          await sleep(300)
+        } catch (e) {
+          console.warn(
+            `Skipping invalid key "${step.key}": ${e instanceof Error ? e.message : e}`
+          )
+        }
+        break
+      case 'click':
+        await clickByText(page, step.text)
+        break
+      case 'rightClick': {
+        const rcEl = page.locator(`text=${step.text}`).first()
+        if (await rcEl.isVisible().catch(() => false)) {
+          await rcEl.click({ button: 'right' })
+          await sleep(500)
+        } else {
+          console.warn(
+            `Element with text "${step.text}" not found for rightClick`
+          )
+        }
+        break
+      }
+      case 'doubleClick': {
+        if (step.x !== undefined && step.y !== undefined) {
+          await page.mouse.dblclick(step.x, step.y)
+        } else if (step.text) {
+          const dcEl = page.locator(`text=${step.text}`).first()
+          if (await dcEl.isVisible().catch(() => false)) {
+            await dcEl.dblclick()
+          } else {
+            console.warn(
+              `Element with text "${step.text}" not found for doubleClick`
+            )
+          }
+        } else {
+          await page.mouse.dblclick(640, 400)
+        }
+        await sleep(500)
+        break
+      }
+      case 'clickCanvas':
+        await page.mouse.click(step.x, step.y)
+        await sleep(300)
+        break
+      case 'rightClickCanvas':
+        await page.mouse.click(step.x, step.y, { button: 'right' })
+        await sleep(500)
+        break
+      case 'dragCanvas': {
+        await page.mouse.move(step.fromX, step.fromY)
+        await page.mouse.down()
+        await sleep(100)
+        const dragSteps = 5
+        for (let i = 1; i <= dragSteps; i++) {
+          const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
+          const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
+          await page.mouse.move(x, y)
+          await sleep(50)
+        }
+        await page.mouse.up()
+        await sleep(300)
+        break
+      }
+      case 'scrollCanvas':
+        await page.mouse.move(step.x, step.y)
+        await page.mouse.wheel(0, step.deltaY)
+        await sleep(500)
+        break
+      case 'wait':
+        await sleep(Math.min(step.ms, 5000))
+        break
+      case 'screenshot': {
+        const safeName = step.name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 100)
+        await page.screenshot({
+          path: `${outputDir}/${safeName}.png`
+        })
+        break
+      }
+      case 'loadWorkflow': {
+        console.warn(`  Loading workflow from: ${step.url}`)
+        await page.evaluate(async (workflowUrl) => {
+          const resp = await fetch(workflowUrl)
+          const workflow = await resp.json()
+          const app = (window as unknown as Record<string, unknown>).app as {
+            loadGraphData: (data: unknown) => Promise<void>
+          }
+          if (app?.loadGraphData) {
+            await app.loadGraphData(workflow)
+          }
+        }, step.url)
+        await sleep(2000)
+        break
+      }
+      case 'setSetting': {
+        console.warn(`  Setting ${step.id} = ${step.value}`)
+        await page.evaluate(
+          ({ id, value }) => {
+            const app = (window as unknown as Record<string, unknown>).app as {
+              ui: {
+                settings: {
+                  setSettingValue: (id: string, value: unknown) => void
+                }
+              }
+            }
+            app?.ui?.settings?.setSettingValue(id, value)
+          },
+          { id: step.id, value: step.value }
+        )
+        await sleep(500)
+        break
+      }
+      case 'reload':
+        await page.reload({ waitUntil: 'domcontentloaded' })
+        await waitForEditorReady(page)
+        break
+      case 'done':
+        console.warn(`  Agent done: ${step.reason}`)
+        break
+      default:
+        console.warn(`Unknown action: ${JSON.stringify(step)}`)
+    }
+    return { action: step, success: true }
+  } catch (e) {
+    const error = e instanceof Error ? e.message.split('\n')[0] : String(e)
+    console.warn(`Step ${step.action} failed: ${error}`)
+    return { action: step, success: false, error }
+  }
+}
+
+// ── Step executor (batch mode for before/after) ──
 
 async function executeSteps(
   page: Page,
@@ -516,151 +696,7 @@ async function executeSteps(
   outputDir: string
 ) {
   for (const step of steps) {
-    console.warn(
-      `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
-    )
-    try {
-      switch (step.action) {
-        case 'openMenu':
-          await openComfyMenu(page)
-          break
-        case 'hoverMenuItem':
-          await hoverMenuItem(page, step.label)
-          break
-        case 'clickMenuItem':
-          await clickSubmenuItem(page, step.label)
-          break
-        case 'fillDialog':
-          await fillDialogAndConfirm(page, step.text)
-          break
-        case 'pressKey':
-          try {
-            await page.keyboard.press(step.key)
-            await sleep(300)
-          } catch (e) {
-            console.warn(
-              `Skipping invalid key "${step.key}": ${e instanceof Error ? e.message : e}`
-            )
-          }
-          break
-        case 'click':
-          await clickByText(page, step.text)
-          break
-        case 'rightClick': {
-          const rcEl = page.locator(`text=${step.text}`).first()
-          if (await rcEl.isVisible().catch(() => false)) {
-            await rcEl.click({ button: 'right' })
-            await sleep(500)
-          } else {
-            console.warn(
-              `Element with text "${step.text}" not found for rightClick`
-            )
-          }
-          break
-        }
-        case 'doubleClick': {
-          if (step.x !== undefined && step.y !== undefined) {
-            await page.mouse.dblclick(step.x, step.y)
-          } else if (step.text) {
-            const dcEl = page.locator(`text=${step.text}`).first()
-            if (await dcEl.isVisible().catch(() => false)) {
-              await dcEl.dblclick()
-            } else {
-              console.warn(
-                `Element with text "${step.text}" not found for doubleClick`
-              )
-            }
-          } else {
-            // Double-click center of canvas as fallback
-            await page.mouse.dblclick(640, 400)
-          }
-          await sleep(500)
-          break
-        }
-        case 'clickCanvas':
-          await page.mouse.click(step.x, step.y)
-          await sleep(300)
-          break
-        case 'rightClickCanvas':
-          await page.mouse.click(step.x, step.y, { button: 'right' })
-          await sleep(500)
-          break
-        case 'dragCanvas': {
-          await page.mouse.move(step.fromX, step.fromY)
-          await page.mouse.down()
-          await sleep(100)
-          const dragSteps = 5
-          for (let i = 1; i <= dragSteps; i++) {
-            const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
-            const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
-            await page.mouse.move(x, y)
-            await sleep(50)
-          }
-          await page.mouse.up()
-          await sleep(300)
-          break
-        }
-        case 'scrollCanvas':
-          await page.mouse.move(step.x, step.y)
-          await page.mouse.wheel(0, step.deltaY)
-          await sleep(500)
-          break
-        case 'wait':
-          await sleep(Math.min(step.ms, 5000))
-          break
-        case 'screenshot': {
-          const safeName = step.name
-            .replace(/[^a-zA-Z0-9_-]/g, '_')
-            .slice(0, 100)
-          await page.screenshot({
-            path: `${outputDir}/${safeName}.png`
-          })
-          break
-        }
-        case 'loadWorkflow': {
-          // Load a workflow JSON from a URL into ComfyUI via the API
-          console.warn(`  Loading workflow from: ${step.url}`)
-          await page.evaluate(async (workflowUrl) => {
-            const resp = await fetch(workflowUrl)
-            const workflow = await resp.json()
-            // Use ComfyUI's app.loadGraphData to load the workflow
-            const app = (window as unknown as Record<string, unknown>).app as {
-              loadGraphData: (data: unknown) => Promise<void>
-            }
-            if (app?.loadGraphData) {
-              await app.loadGraphData(workflow)
-            }
-          }, step.url)
-          await sleep(2000)
-          break
-        }
-        case 'setSetting': {
-          // Set a ComfyUI setting via the app API
-          console.warn(`  Setting ${step.id} = ${step.value}`)
-          await page.evaluate(
-            ({ id, value }) => {
-              const app = (window as unknown as Record<string, unknown>).app as {
-                ui: {
-                  settings: {
-                    setSettingValue: (id: string, value: unknown) => void
-                  }
-                }
-              }
-              app?.ui?.settings?.setSettingValue(id, value)
-            },
-            { id: step.id, value: step.value }
-          )
-          await sleep(500)
-          break
-        }
-        default:
-          console.warn(`Unknown action: ${JSON.stringify(step)}`)
-      }
-    } catch (e) {
-      console.warn(
-        `Step ${step.action} failed: ${e instanceof Error ? e.message.split('\n')[0] : e}`
-      )
-    }
+    await executeAction(page, step, outputDir)
   }
 }
 
@@ -754,75 +790,461 @@ async function loginAsQaCi(page: Page, _serverUrl: string) {
   await sleep(1000)
 }
 
+// ── Agentic loop (reproduce mode) ──
+
+async function captureScreenshotForGemini(page: Page): Promise<string> {
+  const buffer = await page.screenshot({ type: 'jpeg', quality: 50 })
+  return buffer.toString('base64')
+}
+
+function buildAgenticSystemPrompt(
+  issueContext: string,
+  subIssueFocus?: string
+): string {
+  const focusSection = subIssueFocus
+    ? `\n## Current Focus\nYou are reproducing this specific sub-issue: ${subIssueFocus}\nStay focused on this particular bug. When you have demonstrated it, return done.\n`
+    : ''
+
+  return `You are an AI QA agent controlling a ComfyUI browser session to reproduce reported bugs.
+You see the ACTUAL screen after each action and decide what to do next.
+
+## ComfyUI Layout (viewport 1280x720)
+- A large canvas showing a node graph, centered roughly at (640, 400)
+- Nodes are boxes with input/output slots connected by wires
+- Hamburger menu (top-left C logo) with File, Edit, Help submenus
+- Sidebar on the left (Workflows, Node Library, Models)
+- Topbar with workflow tabs and Queue button
+- Default workflow nodes (approximate center coordinates):
+  - Load Checkpoint (~150, 300)
+  - CLIP Text Encode (positive) (~450, 250)
+  - CLIP Text Encode (negative) (~450, 450)
+  - Empty Latent Image (~450, 600)
+  - KSampler (~750, 350)
+  - VAE Decode (~1000, 350)
+  - Save Image (~1200, 350)
+
+## Available Actions
+Each action is a JSON object with an "action" field:
+- { "action": "openMenu" } — clicks the hamburger menu
+- { "action": "hoverMenuItem", "label": "File" } — hovers a top-level menu item
+- { "action": "clickMenuItem", "label": "Save As" } — clicks submenu item
+- { "action": "click", "text": "Button Text" } — clicks element by text
+- { "action": "rightClick", "text": "NodeTitle" } — right-clicks element
+- { "action": "doubleClick", "text": "NodeTitle" } — double-clicks element
+- { "action": "doubleClick", "x": 640, "y": 400 } — double-click at coords (opens node search)
+- { "action": "fillDialog", "text": "search-text" } — fills input and presses Enter
+- { "action": "pressKey", "key": "Escape" } — presses a key
+- { "action": "clickCanvas", "x": 640, "y": 400 } — click at coordinates
+- { "action": "rightClickCanvas", "x": 500, "y": 350 } — right-click on canvas
+- { "action": "dragCanvas", "fromX": 400, "fromY": 300, "toX": 600, "toY": 300 }
+- { "action": "scrollCanvas", "x": 640, "y": 400, "deltaY": -300 } — scroll (negative=zoom in)
+- { "action": "loadWorkflow", "url": "https://..." } — loads workflow JSON from URL
+- { "action": "setSetting", "id": "Comfy.Setting.Id", "value": true } — changes a setting
+- { "action": "reload" } — reloads the page (for bugs that manifest on load)
+- { "action": "wait", "ms": 1000 } — waits (max 3000ms)
+- { "action": "screenshot", "name": "step-name" } — takes a named screenshot
+- { "action": "done", "reason": "..." } — signals you are finished
+
+## Response Format
+Return JSON: { "reasoning": "brief explanation of what you see and plan to do", "action": { "action": "...", ...params } }
+Return { "reasoning": "...", "action": { "action": "done", "reason": "..." } } when finished.
+
+## Rules
+- You see the ACTUAL screen state via the screenshot. Use it to decide your next action.
+- If an action failed, try an alternative approach (different coordinates, different selector).
+- Take screenshots before and after critical state changes to capture the bug.
+- Never repeat the same failing action more than twice. Adapt your approach.
+- Establish prerequisites first: if the bug requires a specific setting, use setSetting. If it needs a workflow, use loadWorkflow.
+- Use reload for bugs that manifest on page load/startup.
+- Common interactions: right-click node for context menu, Ctrl+C/V to copy/paste, Delete to remove, double-click canvas to add node via search.
+${focusSection}
+## Issue to Reproduce
+${issueContext}`
+}
+
+interface AgenticTurnContent {
+  role: 'user' | 'model'
+  parts: Array<
+    { text: string } | { inlineData: { mimeType: string; data: string } }
+  >
+}
+
+async function runAgenticLoop(
+  page: Page,
+  opts: Options,
+  outputDir: string,
+  subIssue?: SubIssue
+): Promise<void> {
+  const MAX_TURNS = 20
+  const TIME_BUDGET_MS = 55_000
+  const SCREENSHOT_HISTORY_WINDOW = 3
+
+  const issueContext = opts.diffFile
+    ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
+    : 'No issue context provided'
+
+  const systemInstruction = buildAgenticSystemPrompt(
+    issueContext,
+    subIssue?.focus
+  )
+
+  const genAI = new GoogleGenerativeAI(opts.apiKey)
+  // Use flash for agentic loop — rapid iteration matters more than reasoning
+  const agenticModel = opts.model.includes('flash')
+    ? opts.model
+    : opts.model.replace('pro', 'flash')
+  const model = genAI.getGenerativeModel({
+    model: agenticModel,
+    systemInstruction
+  })
+
+  console.warn(
+    `Starting agentic loop with ${agenticModel}` +
+      (subIssue ? ` — focus: ${subIssue.title}` : '')
+  )
+
+  const history: AgenticTurnContent[] = []
+  let lastResult: ActionResult | undefined
+  let consecutiveFailures = 0
+  let lastActionKey = ''
+  let repeatCount = 0
+  const startTime = Date.now()
+
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    const elapsed = Date.now() - startTime
+    if (elapsed > TIME_BUDGET_MS) {
+      console.warn(`Time budget exhausted (${elapsed}ms), stopping loop`)
+      break
+    }
+
+    // 1. Capture screenshot
+    const screenshotB64 = await captureScreenshotForGemini(page)
+
+    // 2. Build user message for this turn
+    const userParts: AgenticTurnContent['parts'] = []
+
+    if (turn === 0) {
+      userParts.push({
+        text: 'Here is the current screen state. What action should I take first to reproduce the reported issue?'
+      })
+    } else if (lastResult) {
+      const statusText = lastResult.success
+        ? `Action "${lastResult.action.action}" succeeded.`
+        : `Action "${lastResult.action.action}" FAILED: ${lastResult.error}`
+      userParts.push({
+        text: `${statusText}\nHere is the screen after that action. What should I do next? (Turn ${turn + 1}/${MAX_TURNS}, ${Math.round((TIME_BUDGET_MS - elapsed) / 1000)}s remaining)`
+      })
+    }
+
+    userParts.push({
+      inlineData: { mimeType: 'image/jpeg', data: screenshotB64 }
+    })
+
+    // Add to history, trimming old screenshots
+    history.push({ role: 'user', parts: userParts })
+
+    // Build contents with sliding window for screenshots
+    const contents: AgenticTurnContent[] = history.map((entry, idx) => {
+      // Keep screenshots only in last SCREENSHOT_HISTORY_WINDOW user turns
+      const userTurnIndices = history
+        .map((e, i) => (e.role === 'user' ? i : -1))
+        .filter((i) => i >= 0)
+      const recentUserTurns = userTurnIndices.slice(-SCREENSHOT_HISTORY_WINDOW)
+
+      if (entry.role === 'user' && !recentUserTurns.includes(idx)) {
+        // Replace screenshot with placeholder text
+        return {
+          role: entry.role,
+          parts: entry.parts.map((p) =>
+            'inlineData' in p ? { text: '[screenshot omitted]' } : p
+          )
+        }
+      }
+      return entry
+    })
+
+    // 3. Call Gemini
+    let actionObj: TestAction
+    try {
+      const result = await model.generateContent({
+        contents,
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 1024,
+          responseMimeType: 'application/json'
+        }
+      })
+
+      const responseText = result.response.text().trim()
+      console.warn(`  Gemini [${turn}]: ${responseText.slice(0, 200)}`)
+
+      const parsed = JSON.parse(responseText)
+      if (parsed.reasoning) {
+        console.warn(`  Reasoning: ${parsed.reasoning.slice(0, 150)}`)
+      }
+      actionObj = parsed.action || parsed.actions?.[0] || parsed
+      if (!actionObj?.action) {
+        throw new Error('No action field in response')
+      }
+
+      consecutiveFailures = 0
+    } catch (e) {
+      consecutiveFailures++
+      const errMsg = e instanceof Error ? e.message.split('\n')[0] : String(e)
+      console.warn(`  Gemini call failed (${consecutiveFailures}/3): ${errMsg}`)
+
+      // Add a placeholder model response to keep history balanced
+      history.push({
+        role: 'model',
+        parts: [
+          {
+            text: `{"reasoning": "API error", "action": {"action": "wait", "ms": 500}}`
+          }
+        ]
+      })
+
+      if (consecutiveFailures >= 3) {
+        console.warn('3 consecutive API failures, falling back to static steps')
+        await executeSteps(page, FALLBACK_REPRODUCE, outputDir)
+        return
+      }
+      continue
+    }
+
+    // Add model response to history
+    history.push({
+      role: 'model',
+      parts: [{ text: JSON.stringify({ action: actionObj }) }]
+    })
+
+    // 4. Check for done
+    if (actionObj.action === 'done') {
+      console.warn(
+        `Agent signaled done: ${'reason' in actionObj ? actionObj.reason : 'no reason'}`
+      )
+      // Take a final screenshot
+      await page.screenshot({
+        path: `${outputDir}/agentic-final.png`
+      })
+      break
+    }
+
+    // 5. Stuck detection
+    const actionKey = JSON.stringify(actionObj)
+    if (actionKey === lastActionKey) {
+      repeatCount++
+      if (repeatCount >= 3) {
+        console.warn('Stuck: same action repeated 3x, breaking loop')
+        break
+      }
+    } else {
+      repeatCount = 0
+      lastActionKey = actionKey
+    }
+
+    // 6. Execute the action
+    lastResult = await executeAction(page, actionObj, outputDir)
+  }
+
+  console.warn('Agentic loop complete')
+}
+
+// ── Multi-pass issue decomposition ──
+
+async function decomposeIssue(opts: Options): Promise<SubIssue[]> {
+  const issueContext = opts.diffFile
+    ? readFileSync(opts.diffFile, 'utf-8').slice(0, 8000)
+    : ''
+
+  if (!issueContext) {
+    return [{ title: 'General reproduction', focus: 'Reproduce the issue' }]
+  }
+
+  const genAI = new GoogleGenerativeAI(opts.apiKey)
+  const model = genAI.getGenerativeModel({ model: opts.model })
+
+  console.warn('Decomposing issue into sub-issues...')
+
+  try {
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `Analyze this GitHub issue and decompose it into 1-3 independent, testable sub-issues that can each be reproduced in a separate browser session. Each sub-issue should focus on ONE specific bug or visual problem.
+
+If the issue describes only one bug, return just one sub-issue.
+
+Return JSON array: [{ "title": "short title", "focus": "specific instruction for what to test and how to trigger it" }]
+
+Issue context:
+${issueContext}`
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 1024,
+        responseMimeType: 'application/json'
+      }
+    })
+
+    let text = result.response.text().trim()
+    text = text
+      .replace(/^```(?:json)?\n?/gm, '')
+      .replace(/```$/gm, '')
+      .trim()
+
+    const subIssues: SubIssue[] = JSON.parse(text)
+    if (!Array.isArray(subIssues) || subIssues.length === 0) {
+      throw new Error('Expected non-empty array')
+    }
+
+    // Cap at 3 sub-issues
+    const capped = subIssues.slice(0, 3)
+    console.warn(
+      `Decomposed into ${capped.length} sub-issue(s):`,
+      capped.map((s) => s.title)
+    )
+    return capped
+  } catch (e) {
+    console.warn(
+      'Issue decomposition failed, using single pass:',
+      e instanceof Error ? e.message : e
+    )
+    return [
+      { title: 'Issue reproduction', focus: 'Reproduce the reported issue' }
+    ]
+  }
+}
+
+// ── Video file management ──
+
+function renameLatestWebm(
+  outputDir: string,
+  targetName: string,
+  knownNames: Set<string>
+) {
+  const files = readdirSync(outputDir)
+    .filter((f) => f.endsWith('.webm') && !knownNames.has(f))
+    .sort((a, b) => {
+      const mtimeA = statSync(`${outputDir}/${a}`).mtimeMs
+      const mtimeB = statSync(`${outputDir}/${b}`).mtimeMs
+      return mtimeB - mtimeA
+    })
+  if (files.length > 0) {
+    renameSync(`${outputDir}/${files[0]}`, `${outputDir}/${targetName}`)
+    console.warn(`Video saved: ${outputDir}/${targetName}`)
+  } else {
+    console.warn(`WARNING: No .webm video found for ${targetName}`)
+  }
+}
+
+// ── Browser session helpers ──
+
+async function launchSessionAndLogin(
+  opts: Options,
+  videoDir: string
+): Promise<{
+  browser: Awaited<ReturnType<typeof chromium.launch>>
+  context: Awaited<
+    ReturnType<Awaited<ReturnType<typeof chromium.launch>>['newContext']>
+  >
+  page: Page
+}> {
+  const browser = await chromium.launch({ headless: true })
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 720 },
+    recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } }
+  })
+  const page = await context.newPage()
+
+  console.warn(`Opening ComfyUI at ${opts.serverUrl}`)
+  await page.goto(opts.serverUrl, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000
+  })
+  await sleep(2000)
+  await loginAsQaCi(page, opts.serverUrl)
+  await sleep(1000)
+
+  return { browser, context, page }
+}
+
 // ── Main ──
 
 async function main() {
   const opts = parseArgs()
   mkdirSync(opts.outputDir, { recursive: true })
 
-  // Generate or fall back to default test steps
-  let steps: TestAction[]
-  try {
-    steps = await generateTestSteps(opts)
-  } catch (err) {
-    console.warn('Gemini generation failed, using fallback steps:', err)
-    steps = FALLBACK_STEPS[opts.mode]
-  }
+  if (opts.mode === 'reproduce') {
+    // Agentic multi-pass mode
+    const subIssues = await decomposeIssue(opts)
+    const knownNames = new Set<string>()
 
-  // Launch browser with video recording (Chromium for WebGL support)
-  const browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 },
-    recordVideo: { dir: opts.outputDir, size: { width: 1280, height: 720 } }
-  })
-  const page = await context.newPage()
+    for (let i = 0; i < subIssues.length; i++) {
+      const subIssue = subIssues[i]
+      const sessionLabel = subIssues.length === 1 ? '' : `-${i + 1}`
+      const videoName = `qa-session${sessionLabel}.webm`
 
-  try {
-    console.warn(`Opening ComfyUI at ${opts.serverUrl}`)
-    await page.goto(opts.serverUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000
-    })
-    await sleep(2000)
+      console.warn(
+        `\n=== Pass ${i + 1}/${subIssues.length}: ${subIssue.title} ===`
+      )
 
-    await loginAsQaCi(page, opts.serverUrl)
+      const { browser, context, page } = await launchSessionAndLogin(
+        opts,
+        opts.outputDir
+      )
 
-    // Debug: capture page state after login
-    await page.screenshot({
-      path: `${opts.outputDir}/debug-after-login-${opts.mode}.png`
-    })
-    console.warn(`Debug screenshot saved: debug-after-login-${opts.mode}.png`)
-    console.warn('Editor ready — executing test steps')
+      try {
+        await page.screenshot({
+          path: `${opts.outputDir}/debug-after-login-reproduce${sessionLabel}.png`
+        })
+        console.warn('Editor ready — starting agentic loop')
+        await runAgenticLoop(page, opts, opts.outputDir, subIssue)
+        await sleep(2000)
+      } finally {
+        await context.close()
+        await browser.close()
+      }
 
-    await executeSteps(page, steps, opts.outputDir)
-
-    await sleep(2000)
-  } finally {
-    await context.close()
-    await browser.close()
-  }
-
-  // Rename the recorded video to expected filename
-  const videoName =
-    opts.mode === 'before' ? 'qa-before-session.webm' : 'qa-session.webm'
-  // reproduce mode uses 'qa-session.webm' (same as after — it's the primary video)
-  const knownNames = new Set(['qa-before-session.webm', 'qa-session.webm'])
-  const files = readdirSync(opts.outputDir)
-    .filter((f) => f.endsWith('.webm') && !knownNames.has(f))
-    .sort((a, b) => {
-      const mtimeA = statSync(`${opts.outputDir}/${a}`).mtimeMs
-      const mtimeB = statSync(`${opts.outputDir}/${b}`).mtimeMs
-      return mtimeB - mtimeA
-    })
-  if (files.length > 0) {
-    const recorded = files[0]
-    renameSync(
-      `${opts.outputDir}/${recorded}`,
-      `${opts.outputDir}/${videoName}`
-    )
-    console.warn(`Video saved: ${opts.outputDir}/${videoName}`)
+      knownNames.add(videoName)
+      renameLatestWebm(opts.outputDir, videoName, knownNames)
+    }
   } else {
-    console.warn('WARNING: No .webm video found after recording')
+    // Before/after batch mode (unchanged)
+    let steps: TestAction[]
+    try {
+      steps = await generateTestSteps(opts)
+    } catch (err) {
+      console.warn('Gemini generation failed, using fallback steps:', err)
+      steps = FALLBACK_STEPS[opts.mode]
+    }
+
+    const { browser, context, page } = await launchSessionAndLogin(
+      opts,
+      opts.outputDir
+    )
+
+    try {
+      await page.screenshot({
+        path: `${opts.outputDir}/debug-after-login-${opts.mode}.png`
+      })
+      console.warn(`Debug screenshot saved: debug-after-login-${opts.mode}.png`)
+      console.warn('Editor ready — executing test steps')
+      await executeSteps(page, steps, opts.outputDir)
+      await sleep(2000)
+    } finally {
+      await context.close()
+      await browser.close()
+    }
+
+    const videoName =
+      opts.mode === 'before' ? 'qa-before-session.webm' : 'qa-session.webm'
+    const knownNames = new Set(['qa-before-session.webm', 'qa-session.webm'])
+    renameLatestWebm(opts.outputDir, videoName, knownNames)
   }
 
   console.warn('Recording complete!')
