@@ -71,11 +71,13 @@ describe('OutputSlot', () => {
   it('renders label when present on slotData', () => {
     const wrapper = mountOutputSlot({
       name: 'internal_name',
+      localized_name: 'Localized Name',
       label: 'My Custom Label'
     })
 
     expect(wrapper.text()).toContain('My Custom Label')
     expect(wrapper.text()).not.toContain('internal_name')
+    expect(wrapper.text()).not.toContain('Localized Name')
   })
 
   it('falls back to localized_name when label is absent', () => {
