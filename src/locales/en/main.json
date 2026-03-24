@@ -34,6 +34,8 @@
     "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
+    "viewGrid": "Grid view",
+    "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
     "previousImage": "Previous image",
