@@ -1,20 +1,16 @@
 <template>
-  <SelectRoot v-model="selectedItem" :disabled>
+  <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
       v-bind="$attrs"
       :aria-label="label || t('g.singleSelectDropdown')"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
-        cn(
-          selectTriggerVariants({
-            size,
-            border: invalid ? 'invalid' : 'none'
-          }),
-          'focus:outline-none'
-        )
+        selectTriggerVariants({
+          size,
+          border: invalid ? 'invalid' : 'none'
+        })
       "
-      @keydown="stopEscapePropagation"
     >
       <div
         :class="
@@ -43,6 +39,7 @@
         align="start"
         :style="optionStyle"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
+        @keydown="onContentKeydown"
       >
         <SelectViewport
           :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
@@ -84,6 +81,7 @@ import {
   SelectValue,
   SelectViewport
 } from 'reka-ui'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
@@ -94,7 +92,7 @@ import {
   selectDropdownClass,
   selectItemVariants,
   selectTriggerVariants,
-  stopEscapePropagation
+  stopEscapeToDocument
 } from './select.variants'
 import type { SelectOption } from './types'
 
@@ -134,6 +132,14 @@ const {
 const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
+const isOpen = ref(false)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
 
 const optionStyle = usePopoverSizing({
   minWidth: popoverMinWidth,

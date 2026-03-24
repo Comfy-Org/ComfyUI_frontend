@@ -31,7 +31,7 @@ function mountInParent(
   multiSelectProps: Record<string, unknown> = {},
   modelValue: { name: string; value: string }[] = []
 ) {
-  let parentEscapeCalled = false
+  const parentEscapeCount = { value: 0 }
 
   const Parent = {
     template:
@@ -43,7 +43,7 @@ function mountInParent(
         options,
         extraProps: multiSelectProps,
         onEsc: () => {
-          parentEscapeCalled = true
+          parentEscapeCount.value++
         }
       }
     }
@@ -54,7 +54,7 @@ function mountInParent(
     global: { plugins: [i18n] }
   })
 
-  return { wrapper, wasParentEscapeCalled: () => parentEscapeCalled }
+  return { wrapper, parentEscapeCount }
 }
 
 function dispatchEscape(element: Element) {
@@ -65,6 +65,10 @@ function dispatchEscape(element: Element) {
       bubbles: true
     })
   )
+}
+
+function findContentElement(): HTMLElement | null {
+  return document.querySelector('[data-dismissable-layer]')
 }
 
 describe('MultiSelect', () => {
@@ -88,14 +92,37 @@ describe('MultiSelect', () => {
   })
 
   describe('Escape key propagation', () => {
-    it('stops Escape from propagating to parent elements', () => {
-      const { wrapper, wasParentEscapeCalled } = mountInParent()
+    it('stops Escape from propagating to parent when popover is open', async () => {
+      const { wrapper, parentEscapeCount } = mountInParent()
 
       const trigger = wrapper.find('button[aria-haspopup="listbox"]')
-      const root = trigger.element.parentElement!
-      dispatchEscape(root)
+      await trigger.trigger('click')
+      await nextTick()
 
-      expect(wasParentEscapeCalled()).toBe(false)
+      const content = findContentElement()
+      expect(content).not.toBeNull()
+
+      dispatchEscape(content!)
+      await nextTick()
+
+      expect(parentEscapeCount.value).toBe(0)
+
+      wrapper.unmount()
+    })
+
+    it('closes the popover when Escape is pressed', async () => {
+      const { wrapper } = mountInParent()
+
+      const trigger = wrapper.find('button[aria-haspopup="listbox"]')
+      await trigger.trigger('click')
+      await nextTick()
+      expect(trigger.attributes('data-state')).toBe('open')
+
+      const content = findContentElement()
+      dispatchEscape(content!)
+      await nextTick()
+
+      expect(trigger.attributes('data-state')).toBe('closed')
 
       wrapper.unmount()
     })

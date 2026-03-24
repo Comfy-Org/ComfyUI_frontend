@@ -1,7 +1,7 @@
 import { cva } from 'cva'
 
 export const selectTriggerVariants = cva({
-  base: 'relative inline-flex cursor-pointer items-center select-none rounded-lg bg-secondary-background text-base-foreground transition-all duration-200 ease-in-out hover:bg-secondary-background-hover border-[2.5px] border-solid disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background',
+  base: 'relative inline-flex cursor-pointer items-center select-none rounded-lg bg-secondary-background text-base-foreground outline-none transition-all duration-200 ease-in-out hover:bg-secondary-background-hover border-[2.5px] border-solid disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background',
   variants: {
     size: {
       md: 'h-8',
@@ -42,6 +42,9 @@ export const selectDropdownClass =
 
 export const selectEmptyMessageClass = 'px-3 pb-4 text-sm text-muted-foreground'
 
-export function stopEscapePropagation(event: KeyboardEvent) {
-  if (event.code === 'Escape') event.stopPropagation()
+export function stopEscapeToDocument(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+  }
 }

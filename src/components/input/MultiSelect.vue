@@ -1,12 +1,12 @@
 <template>
   <ComboboxRoot
     v-model="selectedItems"
+    v-model:open="isOpen"
     multiple
     by="value"
     :disabled
     ignore-filter
     :reset-search-term-on-select="false"
-    @keydown="stopEscapePropagation"
   >
     <ComboboxAnchor as-child>
       <ComboboxTrigger
@@ -52,6 +52,7 @@
         align="start"
         :style="popoverStyle"
         :class="selectContentClass"
+        @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
       >
         <div
@@ -150,7 +151,7 @@ import {
   ComboboxTrigger,
   ComboboxViewport
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -163,7 +164,7 @@ import {
   selectEmptyMessageClass,
   selectItemVariants,
   selectTriggerVariants,
-  stopEscapePropagation
+  stopEscapeToDocument
 } from './select.variants'
 import type { SelectOption } from './types'
 
@@ -214,7 +215,15 @@ const selectedItems = defineModel<SelectOption[]>({
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
+const isOpen = ref(false)
 const selectedCount = computed(() => selectedItems.value.length)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
 
 function preventFocusDismiss(event: FocusOutsideEvent) {
   event.preventDefault()
