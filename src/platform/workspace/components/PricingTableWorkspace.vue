@@ -1,9 +1,5 @@
 <template>
-  <div class="flex flex-col gap-8">
-    <h2 class="m-0 text-center text-xl text-muted-foreground lg:text-2xl">
-      {{ t('subscription.chooseBestPlanWorkspace') }}
-    </h2>
-
+  <div class="flex flex-col gap-6">
     <div class="flex justify-center">
       <SelectButton
         v-model="currentBillingCycle"
@@ -42,18 +38,18 @@
         </template>
       </SelectButton>
     </div>
-    <div class="flex flex-col items-stretch gap-6 xl:flex-row">
+    <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
         :key="tier.id"
         :class="
           cn(
             'flex flex-1 flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
-            tier.isPopular ? 'border-muted-foreground' : ''
+            tier.isPopular ? 'border-emerald-500' : ''
           )
         "
       >
-        <div class="flex flex-col gap-8 p-8 pb-0">
+        <div class="flex flex-col gap-4 p-6 pb-0">
           <div class="flex flex-row items-center justify-between gap-2">
             <span
               class="font-inter text-base/normal font-bold text-base-foreground"
@@ -71,7 +67,7 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[32px] leading-normal font-semibold text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
                   <span
                     v-show="currentBillingCycle === 'yearly'"
@@ -99,7 +95,35 @@
             </div>
           </div>
 
-          <div class="flex flex-1 flex-col gap-4 pb-0">
+          <div
+            :class="
+              cn(
+                'flex h-10 items-center justify-between rounded-lg px-3',
+                maxMembersByTier[tier.key] > 1 ? 'bg-emerald-500/20' : ''
+              )
+            "
+          >
+            <template v-if="maxMembersByTier[tier.key] > 1">
+              <div class="flex items-center gap-2">
+                <i
+                  class="pi pi-users text-xs text-emerald-400"
+                  aria-hidden="true"
+                />
+                <span class="text-sm text-emerald-400">
+                  {{ t('subscription.inviteUpTo') }}
+                </span>
+              </div>
+              <span class="text-sm font-bold text-base-foreground">
+                {{
+                  t('subscription.memberCount', {
+                    count: maxMembersByTier[tier.key]
+                  })
+                }}
+              </span>
+            </template>
+          </div>
+
+          <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.monthlyCreditsPerMemberLabel') }}
@@ -121,7 +145,7 @@
               <span
                 class="font-inter text-sm/normal font-bold text-base-foreground"
               >
-                {{ getMaxMembers(tier) }}
+                {{ maxMembersByTier[tier.key] }}
               </span>
             </div>
 
@@ -188,7 +212,7 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col p-8">
+        <div class="flex flex-col p-6">
           <Button
             :variant="getButtonSeverity(tier)"
             :disabled="isButtonDisabled(tier)"
@@ -198,7 +222,7 @@
                 'h-10 w-full',
                 getButtonTextClass(tier),
                 tier.key === 'creator'
-                  ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
+                  ? 'border-transparent bg-success-background hover:bg-success-background/80'
                   : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "
@@ -482,7 +506,13 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
   return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
 }
 
-const getMaxMembers = (tier: PricingTierConfig): number => getMaxSeats(tier.key)
+const maxMembersByTier = computed(
+  () =>
+    Object.fromEntries(tiers.map((t) => [t.key, getMaxSeats(t.key)])) as Record<
+      CheckoutTierKey,
+      number
+    >
+)
 
 const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
   tier.pricing.credits
