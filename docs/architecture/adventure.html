@@ -2141,13 +2141,18 @@
       saveAchievement(ending.id)
       renderAchievements()
 
+      endingIsPreview = false
+      els.playAgainBtn.textContent = 'Play Again'
       els.endingOverlay.classList.add('active')
     }
+
+    let endingIsPreview = false
 
     function previewEnding(endingId) {
       const ending = endings.find(e => e.id === endingId)
       if (!ending) return
 
+      endingIsPreview = true
       els.endingTitle.textContent = ending.title
       els.endingTitle.style.color = `var(${ending.color})`
       els.endingDesc.innerHTML = ending.description
@@ -2160,6 +2165,7 @@
           </div>
         </div>
       `
+      els.playAgainBtn.textContent = 'Close'
       els.endingOverlay.classList.add('active')
     }
 
@@ -2214,7 +2220,14 @@
     els.toggleMap.addEventListener('click', toggleMap)
     els.mapBackdrop.addEventListener('click', toggleMap)
 
-    els.playAgainBtn.addEventListener('click', resetGame)
+    els.playAgainBtn.addEventListener('click', () => {
+      if (endingIsPreview) {
+        els.endingOverlay.classList.remove('active')
+        endingIsPreview = false
+      } else {
+        resetGame()
+      }
+    })
     els.restartBtn.addEventListener('click', () => {
       if (state.challengesCompleted.size === 0 && state.visited.size <= 1) return
       resetGame()
