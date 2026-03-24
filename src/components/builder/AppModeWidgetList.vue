@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -44,6 +45,7 @@ const appModeStore = useAppModeStore()
 const maskEditor = useMaskEditor()
 
 provide(HideLayoutFieldKey, true)
+provide(OverlayAppendToKey, 'body')
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
@@ -137,6 +139,21 @@ function nodeToNodeData(node: LGraphNode) {
     onDragOver: node.onDragOver
   }
 }
+
+async function handleDragDrop(e: DragEvent) {
+  for (const { nodeData } of mappedSelections.value) {
+    if (!nodeData?.onDragOver?.(e)) continue
+
+    const rawResult = nodeData?.onDragDrop?.(e)
+    if (rawResult === false) continue
+
+    e.stopPropagation()
+    e.preventDefault()
+    if ((await rawResult) === true) return
+  }
+}
+
+defineExpose({ handleDragDrop })
 </script>
 <template>
   <div

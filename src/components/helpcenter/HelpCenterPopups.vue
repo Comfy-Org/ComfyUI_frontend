@@ -17,11 +17,7 @@
   <!-- Release Notification Toast positioned within canvas area -->
   <Teleport to="#graph-canvas-container">
     <ReleaseNotificationToast
-      :class="{
-        'sidebar-left': sidebarLocation === 'left',
-        'sidebar-right': sidebarLocation === 'right',
-        'small-sidebar': isSmall
-      }"
+      :position="sidebarLocation === 'right' ? 'bottom-right' : 'bottom-left'"
     />
   </Teleport>
 

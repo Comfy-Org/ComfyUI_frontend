@@ -1133,6 +1133,12 @@ export class ComfyApp {
     useMissingModelStore().clearMissingModels()
 
     if (clean !== false) {
+      // Reset canvas context before configuring a new graph so subgraph UI
+      // state from the previous workflow cannot leak into the newly loaded
+      // one, and so `clean()` can clear the root graph even when the user is
+      // currently inside a subgraph.
+      this.canvas.setGraph(this.rootGraph)
+
       this.clean()
     }
 
@@ -1641,6 +1647,34 @@ export class ComfyApp {
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
+            } else if (
+              error instanceof PromptExecutionError &&
+              error.status === 403
+            ) {
+              // User is authenticated but not authorized (e.g. not whitelisted).
+              // Show a clear message instead of a generic error or sign-in prompt.
+              // The response may be middleware JSON {"message": "..."} or the
+              // standard {"error": {"message": "..."}} shape, so check both.
+              const raw =
+                error.response && typeof error.response === 'object'
+                  ? (error.response as Record<string, unknown>)
+                  : {}
+              const rawError =
+                raw.error && typeof raw.error === 'object'
+                  ? (raw.error as Record<string, unknown>)
+                  : undefined
+              const detail =
+                typeof raw.message === 'string'
+                  ? raw.message
+                  : typeof rawError?.message === 'string'
+                    ? rawError.message
+                    : typeof raw.error === 'string'
+                      ? raw.error
+                      : t('errorDialog.accessRestrictedMessage')
+              useDialogService().showErrorDialog(new Error(detail), {
+                title: t('errorDialog.accessRestrictedTitle'),
+                reportType: 'accessRestrictedError'
+              })
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
               !(error instanceof PromptExecutionError)

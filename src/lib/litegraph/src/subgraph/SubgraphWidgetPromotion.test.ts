@@ -147,37 +147,6 @@ describe('SubgraphWidgetPromotion', () => {
       eventCapture.cleanup()
     })
 
-    // BUG: removeWidgetByName calls demote but widgets getter rebuilds from
-    // promotionStore which still has the entry.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/10174
-    it.skip('should fire widget-demoted event when removing promoted widget', () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'input', type: 'number' }]
-      })
-
-      const { node } = createNodeWithWidget('Test Node')
-      const subgraphNode = setupPromotedWidget(subgraph, node)
-      expect(subgraphNode.widgets).toHaveLength(1)
-
-      const eventCapture = createEventCapture(subgraph.events, [
-        'widget-demoted'
-      ])
-
-      // Remove the widget
-      subgraphNode.removeWidgetByName('input')
-
-      // Check event was fired
-      const demotedEvents = eventCapture.getEventsByType('widget-demoted')
-      expect(demotedEvents).toHaveLength(1)
-      expect(demotedEvents[0].detail.widget).toBeDefined()
-      expect(demotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
-
-      // Widget should be removed
-      expect(subgraphNode.widgets).toHaveLength(0)
-
-      eventCapture.cleanup()
-    })
-
     it('should handle multiple widgets on same node', () => {
       const subgraph = createTestSubgraph({
         inputs: [

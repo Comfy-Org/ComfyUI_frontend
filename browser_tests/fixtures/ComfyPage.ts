@@ -229,7 +229,7 @@ export class ComfyPage {
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
-    this.clipboard = new ClipboardHelper(this.keyboard)
+    this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
@@ -290,9 +290,7 @@ export class ComfyPage {
     clearStorage?: boolean
     mockReleases?: boolean
   } = {}) {
-    await this.goto()
-
-    // Mock release endpoint to prevent changelog popups
+    // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
       await this.page.route('**/releases**', async (route) => {
         const url = route.request().url()
@@ -312,12 +310,16 @@ export class ComfyPage {
     }
 
     if (clearStorage) {
+      // Navigate to a lightweight same-origin endpoint to obtain a page
+      // context for clearing storage without loading the full frontend app.
+      await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
         localStorage.clear()
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
+
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)

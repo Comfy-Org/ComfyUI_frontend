@@ -97,6 +97,7 @@
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+  <VueNodeSwitchPopup />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
   canvasStore.canvas to be initialized. -->
@@ -128,6 +129,7 @@ import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitter
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
+import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
@@ -193,6 +195,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
 const { t } = useI18n()
@@ -453,8 +456,9 @@ useEventListener(
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { flags } = useFeatureFlags()
-// Set up invite loader during setup phase so useRoute/useRouter work correctly
+// Set up URL loaders during setup phase so useRoute/useRouter work correctly
 const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
+const createWorkspaceUrlLoader = isCloud ? useCreateWorkspaceUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -572,6 +576,18 @@ onMounted(async () => {
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
   if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
     await inviteUrlLoader.loadInviteFromUrl()
+  }
+
+  // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
+  if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
+    try {
+      await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
+    } catch (error) {
+      console.error(
+        '[GraphCanvas] Failed to load create workspace from URL:',
+        error
+      )
+    }
   }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
