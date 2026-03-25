@@ -158,6 +158,18 @@ System design is deferred to a future ADR.
 4. **Incremental extraction** — migrate one component at a time from classes to the World, using the bridge layer for backward compatibility
 5. **Deprecate class properties** — once all consumers read from the World, mark class properties as deprecated
 
+### Relationship to ADR 0003 (Command Pattern / CRDT)
+
+[ADR 0003](0003-crdt-based-layout-system.md) establishes that all mutations flow through serializable, idempotent commands. This ADR (0008) defines the entity data model and the World store. They are complementary architectural layers:
+
+- **Commands** (ADR 0003) describe mutation intent — serializable objects that can be logged, replayed, sent over a wire, or undone.
+- **Systems** (ADR 0008) are command handlers — they validate and execute mutations against the World.
+- **The World** (ADR 0008) is the store — it holds component data. It does not know about commands.
+
+The World's imperative API (`setComponent`, `deleteEntity`, etc.) is internal. External callers submit commands; the command executor wraps each in a World transaction. This is analogous to Redux: the store's internal mutation is imperative, but the public API is action-based.
+
+For the full design showing how each lifecycle scenario maps to a command, see [World API and Command Layer](../architecture/ecs-world-command-api.md).
+
 ### Alternatives Considered
 
 - **Refactoring classes in place**: Lower initial cost, but doesn't solve the cross-cutting concern problem. Each new feature still requires modifying multiple god objects.
