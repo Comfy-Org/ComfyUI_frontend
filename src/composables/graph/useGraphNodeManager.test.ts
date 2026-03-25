@@ -3,7 +3,11 @@ import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
+import {
+  extractVueNodeData,
+  uninstrumentNode,
+  useGraphNodeManager
+} from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -867,5 +871,83 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
+  })
+})
+
+describe('extractVueNodeData idempotency and cleanup', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('reuses reactive containers when called multiple times on the same node', () => {
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'val', 1, () => undefined, {})
+
+    const data1 = extractVueNodeData(node)
+    const data2 = extractVueNodeData(node)
+
+    // The reactive inputs/outputs arrays should be the same references
+    expect(data1.inputs).toBe(data2.inputs)
+    expect(data1.outputs).toBe(data2.outputs)
+  })
+
+  it('does not chain property descriptors on repeated calls', () => {
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'val', 1, () => undefined, {})
+
+    // Save the descriptor after first instrumentation
+    extractVueNodeData(node)
+    const desc1 = Object.getOwnPropertyDescriptor(node, 'widgets')
+
+    // Second call should not create a new getter wrapping the old one
+    extractVueNodeData(node)
+    const desc2 = Object.getOwnPropertyDescriptor(node, 'widgets')
+
+    expect(desc1!.get).toBe(desc2!.get)
+  })
+
+  it('restores original property descriptors on uninstrument', () => {
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'v', 0, () => {}, {})
+
+    // Capture original descriptor
+    const originalDesc = Object.getOwnPropertyDescriptor(node, 'widgets')
+
+    extractVueNodeData(node)
+
+    // Property is now a getter/setter
+    const instrumentedDesc = Object.getOwnPropertyDescriptor(node, 'widgets')
+    expect(instrumentedDesc!.get).toBeDefined()
+
+    // Uninstrument should restore
+    uninstrumentNode(node)
+
+    const restoredDesc = Object.getOwnPropertyDescriptor(node, 'widgets')
+    if (originalDesc) {
+      expect(restoredDesc).toEqual(originalDesc)
+    }
+  })
+
+  it('cleanup stops effect scopes for all nodes', () => {
+    const graph = new LGraph()
+    const node1 = new LGraphNode('test1')
+    const node2 = new LGraphNode('test2')
+    graph.add(node1)
+    graph.add(node2)
+
+    const { vueNodeData, cleanup } = useGraphNodeManager(graph)
+
+    expect(vueNodeData.size).toBe(2)
+
+    cleanup()
+
+    // After cleanup, descriptors should be restored (no getter)
+    const desc1 = Object.getOwnPropertyDescriptor(node1, 'inputs')
+    const desc2 = Object.getOwnPropertyDescriptor(node2, 'inputs')
+
+    // Original nodes don't have own 'inputs' descriptors (they use prototype)
+    // So after cleanup, the own descriptor should be removed
+    expect(desc1?.get).toBeUndefined()
+    expect(desc2?.get).toBeUndefined()
   })
 })
