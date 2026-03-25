@@ -1,1176 +1,1559 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Codebase Caverns — ComfyUI Architecture Adventure</title>
-  <meta name="description" content="An interactive choose-your-own-adventure game exploring the ComfyUI frontend architecture. Navigate 9 rooms, face 7 real architectural challenges, and learn the ECS migration strategy.">
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Codebase Caverns — ComfyUI Architecture Adventure">
-  <meta property="og:description" content="Explore the ComfyUI frontend architecture through an interactive adventure game. Face real engineering dilemmas, collect artifacts, and discover the ECS migration plan.">
-  <meta property="og:image" content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/architecture-adventure-game-bnCJJ/docs/architecture/images/entry.png">
-  <meta property="og:image:width" content="1152">
-  <meta property="og:image:height" content="640">
-  <meta property="og:image:alt" content="Pixel art server room with glowing terminal and three branching corridors">
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Codebase Caverns — ComfyUI Architecture Adventure">
-  <meta name="twitter:description" content="An interactive adventure game exploring the ComfyUI frontend architecture. 9 rooms, 7 challenges, 4 endings.">
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/architecture-adventure-game-bnCJJ/docs/architecture/images/entry.png">
-
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%3E%3Ctext%20y=%22.9em%22%20font-size=%2290%22%3E🏰%3C/text%3E%3C/svg%3E" sizes="any" />
-  <style>
-    :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #58a6ff;
-      --accent-dim: #1f6feb33;
-      --green: #3fb950;
-      --yellow: #d29922;
-      --red: #f85149;
-      --purple: #bc8cff;
-    }
-
-    /* Modern CSS reset (based on Josh Comeau / Andy Bell) */
-    *, *::before, *::after { box-sizing: border-box; }
-    * { margin: 0; }
-    body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
-    img, svg { display: block; max-width: 100%; }
-    input, button, textarea, select { font: inherit; }
-    p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
-
-    #hud, .stat-bar-group, .choice-key, .challenge-badge, .artifact-type,
-    .sidebar-header, #room-layer, .ending-label, .scorecard-header,
-    #challenge-header, .map-room .room-layer, #challenge-progress,
-    .stat-delta, .ending-stat .label, #play-again-btn, #toggle-map,
-    .choice-btn .choice-hint, .challenge-choice-btn .choice-hint,
-    .inv-slot, .artifact-icon {
-      user-select: none;
-    }
-
-    body {
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* --- Header / HUD --- */
-    #hud {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    #hud h1 {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent);
-      letter-spacing: 0.5px;
-    }
-
-    #hud-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    #stat-bars {
-      display: flex;
-      gap: 14px;
-      font-size: 10px;
-    }
-
-    .stat-bar-group {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .stat-bar-label { color: var(--muted); white-space: nowrap; }
-
-    .stat-bar {
-      width: 60px;
-      height: 8px;
-      background: var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .stat-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.4s ease, background-color 0.4s ease;
-    }
-
-    .stat-bar-value {
-      color: var(--text);
-      font-weight: 600;
-      min-width: 20px;
-      text-align: right;
-    }
-
-    .stat-debt .stat-bar-fill { background: var(--red); }
-    .stat-quality .stat-bar-fill { background: var(--green); }
-    .stat-morale .stat-bar-fill { background: var(--yellow); }
-    .stat-migration .stat-bar-fill { background: var(--purple); }
-
-    /* --- Map Dialog --- */
-    #map-dialog {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 24px;
-      max-width: 700px;
-      width: 90%;
-      color: var(--text);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-      opacity: 0;
-      transform: scale(0.95);
-      transition: opacity 0.2s ease, transform 0.2s ease,
-                  overlay 0.2s ease allow-discrete,
-                  display 0.2s ease allow-discrete;
-    }
-
-    #map-dialog[open] {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    @starting-style {
-      #map-dialog[open] { opacity: 0; transform: scale(0.95); }
-    }
-
-    #map-dialog::backdrop {
-      background: rgba(0, 0, 0, 0.5);
-      opacity: 0;
-      transition: opacity 0.2s ease,
-                  overlay 0.2s ease allow-discrete,
-                  display 0.2s ease allow-discrete;
-    }
-
-    #map-dialog[open]::backdrop { opacity: 1; }
-
-    @starting-style {
-      #map-dialog[open]::backdrop { opacity: 0; }
-    }
-
-    #map-dialog h3 {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-
-    #map {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 8px;
-    }
-
-    .map-room {
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .map-room:hover { border-color: var(--accent); background: var(--accent-dim); }
-    .map-room.visited { border-color: var(--green); opacity: 0.7; }
-    .map-room.current { border-color: var(--accent); background: var(--accent-dim); }
-    .map-room .room-layer { color: var(--muted); font-size: 9px; text-transform: uppercase; }
-    .map-room .challenge-badge {
-      display: inline-block;
-      font-size: 8px;
-      padding: 1px 4px;
-      border-radius: 3px;
-      margin-left: 4px;
-    }
-
-    .map-room .challenge-badge.pending { background: var(--yellow); color: var(--bg); }
-    .map-room .challenge-badge.done { background: var(--green); color: var(--bg); }
-
-    /* --- Main Content --- */
-    #main {
-      display: flex;
-      max-width: 1100px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px;
-      gap: 24px;
-    }
-
-    /* --- Narrative Column --- */
-    #narrative {
-      flex: 2;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    #room-header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-    }
-
-    #room-header h2 {
-      font-size: 18px;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    #room-layer {
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    /* --- Room Image --- */
-    .room-image {
-      aspect-ratio: 16 / 9;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .room-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .room-image.placeholder {
-      background: linear-gradient(135deg, #1a1e2e 0%, #0d1117 50%, #161b22 100%);
-      border-style: dashed;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.6;
-      font-style: italic;
-    }
-
-    #room-description {
-      font-size: 14px;
-      line-height: 1.7;
-      color: var(--muted);
-    }
-
-    #room-description code {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1px 5px;
-      border-radius: 3px;
-      color: var(--accent);
-      font-size: 13px;
-    }
-
-    /* --- Challenge Panel --- */
-    #challenge-panel {
-      border: 2px solid var(--yellow);
-      border-radius: 10px;
-      overflow: hidden;
-      display: none;
-      animation: fadeSlideIn 0.3s ease;
-    }
-
-    #challenge-panel.active { display: block; }
-
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    #challenge-header {
-      background: rgba(210, 153, 34, 0.1);
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--yellow);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #challenge-header .icon { font-size: 16px; }
-
-    #challenge-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--yellow);
-    }
-
-    #challenge-desc {
-      padding: 12px 16px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--muted);
-    }
-
-    #challenge-desc code {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1px 5px;
-      border-radius: 3px;
-      color: var(--accent);
-      font-size: 12px;
-    }
-
-    #challenge-choices {
-      padding: 8px 16px 16px;
-      display: flex;
-      gap: 10px;
-    }
-
-    .challenge-choice-btn {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 13px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.15s;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .challenge-choice-btn:hover {
-      border-color: var(--yellow);
-      background: rgba(210, 153, 34, 0.08);
-      transform: translateY(-2px);
-    }
-
-    .challenge-choice-btn .choice-icon-wrap {
-      position: relative;
-      background: var(--bg);
-      padding: 12px;
-    }
-
-    .challenge-choice-btn .choice-key {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      background: var(--yellow);
-      color: var(--bg);
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      line-height: 1.4;
-    }
-
-    .challenge-choice-btn .choice-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-      margin: 0 auto;
-    }
-
-    .challenge-choice-btn .choice-icon img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .challenge-choice-btn .choice-text {
-      padding: 10px 12px 14px;
-    }
-
-    .challenge-choice-btn .choice-label { display: block; font-weight: 600; font-size: 12px; }
-    .challenge-choice-btn .choice-hint { display: block; font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
-
-    /* --- Result Banner --- */
-    #result-banner {
-      border-radius: 8px;
-      padding: 12px 16px;
-      display: none;
-      animation: fadeSlideIn 0.3s ease;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    #result-banner.active { display: block; }
-    #result-banner.good { border: 1px solid var(--green); background: rgba(63, 185, 80, 0.08); color: var(--green); }
-    #result-banner.ok { border: 1px solid var(--yellow); background: rgba(210, 153, 34, 0.08); color: var(--yellow); }
-    #result-banner.bad { border: 1px solid var(--red); background: rgba(248, 81, 73, 0.08); color: var(--red); }
-
-    .stat-delta { font-weight: 600; font-size: 11px; }
-    .stat-delta.positive { color: var(--green); }
-    .stat-delta.negative { color: var(--red); }
-
-    /* --- Artifacts / Items --- */
-    #artifacts {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      display: none;
-    }
-
-    #artifacts.has-items { display: block; }
-
-    #artifacts-header {
-      background: var(--surface);
-      padding: 8px 12px;
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .artifact {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-    }
-
-    .artifact:last-child { border-bottom: none; }
-
-    .artifact-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 6px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .artifact-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    .artifact-icon.placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      color: var(--yellow);
-    }
-
-    .artifact-info { flex: 1; }
-    .artifact-name { color: var(--yellow); display: block; }
-    .artifact-type { font-size: 10px; color: var(--muted); text-transform: uppercase; display: block; }
-
-    /* --- Navigation Choices --- */
-    #choices {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .choice-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 13px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .choice-btn:hover {
-      border-color: var(--accent);
-      background: var(--accent-dim);
-    }
-
-    .choice-btn .choice-key {
-      background: var(--border);
-      color: var(--text);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      min-width: 24px;
-      text-align: center;
-    }
-
-    .choice-btn .choice-label { flex: 1; }
-    .choice-btn .choice-hint { font-size: 11px; color: var(--muted); }
-
-    /* --- Sidebar: Inventory / Log --- */
-    #sidebar {
-      flex: 1;
-      min-width: 240px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      position: sticky;
-      top: 60px;
-      align-self: flex-start;
-      max-height: calc(100vh - 80px);
-      overflow-y: auto;
-    }
-
-    .sidebar-section {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .sidebar-header {
-      background: var(--surface);
-      padding: 8px 12px;
-      font-size: 11px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-    }
-
-    /* --- Collapsible details --- */
-    details.sidebar-section {
-      interpolate-size: allow-keywords;
-    }
-
-    details.sidebar-section > summary {
-      cursor: pointer;
-      list-style: none;
-    }
-
-    details.sidebar-section > summary::-webkit-details-marker { display: none; }
-
-    details.sidebar-section > summary::after {
-      content: '▸';
-      font-size: 10px;
-      transition: transform 0.2s ease;
-      flex-shrink: 0;
-      margin-left: 6px;
-    }
-
-    details[open].sidebar-section > summary::after {
-      transform: rotate(90deg);
-    }
-
-    details.sidebar-section > .sidebar-body {
-      overflow: clip;
-      height: 0;
-      transition: height 0.25s ease, padding 0.25s ease;
-      padding: 0 8px;
-    }
-
-    details[open].sidebar-section > .sidebar-body {
-      height: auto;
-      padding: 8px;
-    }
-
-    .sidebar-body {
-      padding: 8px;
-      font-size: 12px;
-    }
-
-    .log-entry {
-      padding: 4px 6px;
-      border-radius: 4px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .log-entry.discovery { color: var(--green); }
-    .log-entry.warning { color: var(--yellow); }
-    .log-entry.error { color: var(--red); }
-    .log-entry.ending { color: var(--purple); }
-
-    #inv-label {
-      padding: 4px 12px;
-      font-size: 11px;
-      color: var(--yellow);
-      min-height: 22px;
-      border-bottom: 1px solid var(--border);
-      user-select: none;
-      transition: color 0.15s;
-    }
-
-    #inv-label .inv-label-type {
-      color: var(--muted);
-      font-size: 9px;
-      text-transform: uppercase;
-      margin-left: 6px;
-    }
-
-    .inv-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-      gap: 6px;
-      padding: 8px;
-    }
-
-    .inv-slot {
-      aspect-ratio: 1;
-      border-radius: 6px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      cursor: default;
-      position: relative;
-      transition: border-color 0.15s;
-    }
-
-    .inv-slot:hover { border-color: var(--yellow); }
-
-    .inv-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    .inv-slot.placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: var(--yellow);
-    }
-
-
-    /* --- Ending Dialog --- */
-    dialog { margin: auto; }
-
-    #ending-dialog {
-      background: var(--surface);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      padding: 40px;
-      max-width: 640px;
-      width: 90%;
-      color: var(--text);
-      text-align: center;
-      max-height: 90vh;
-      overflow-y: auto;
-      opacity: 0;
-      transform: scale(0.9);
-      transition: opacity 0.3s ease, transform 0.3s ease,
-                  overlay 0.3s ease allow-discrete,
-                  display 0.3s ease allow-discrete;
-    }
-
-    #ending-dialog[open] {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    @starting-style {
-      #ending-dialog[open] { opacity: 0; transform: scale(0.9); }
-    }
-
-    #ending-dialog::backdrop {
-      background: rgba(0, 0, 0, 0.85);
-      opacity: 0;
-      transition: opacity 0.3s ease,
-                  overlay 0.3s ease allow-discrete,
-                  display 0.3s ease allow-discrete;
-    }
-
-    #ending-dialog[open]::backdrop { opacity: 1; }
-
-    @starting-style {
-      #ending-dialog[open]::backdrop { opacity: 0; }
-    }
-
-    #ending-dialog .ending-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    #ending-dialog h2 {
-      font-size: 22px;
-      margin-bottom: 16px;
-    }
-
-    #ending-dialog .ending-desc {
-      font-size: 14px;
-      line-height: 1.7;
-      color: var(--muted);
-      margin-bottom: 24px;
-    }
-
-    #ending-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 28px;
-      text-align: left;
-    }
-
-    .ending-stat {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-    }
-
-    .ending-stat .label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
-    .ending-stat .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
-
-    #play-again-btn {
-      background: var(--accent);
-      color: var(--bg);
-      border: none;
-      padding: 10px 28px;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-
-    #play-again-btn:hover { opacity: 0.85; }
-
-    /* --- Links in descriptions --- */
-    #room-description a, #challenge-desc a, .result-doc-link {
-      color: var(--accent);
-      text-decoration: none;
-      border-bottom: 1px dotted var(--accent);
-    }
-
-    #room-description a:hover, #challenge-desc a:hover, .result-doc-link:hover {
-      border-bottom-style: solid;
-    }
-
-    /* --- Recommended answer callout --- */
-    .result-recommended {
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: rgba(88, 166, 255, 0.06);
-      border: 1px solid var(--accent);
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .result-recommended strong { color: var(--accent); }
-    .result-recommended .result-doc-link { font-size: 11px; }
-
-    /* --- Challenge progress --- */
-    #challenge-progress {
-      font-size: 10px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    #challenge-progress .progress-value { color: var(--text); font-weight: 600; }
-
-    /* --- Scorecard in ending --- */
-    #ending-scorecard {
-      text-align: left;
-      margin-bottom: 24px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .scorecard-header {
-      background: var(--bg);
-      padding: 8px 12px;
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .scorecard-row {
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-
-    .scorecard-row:last-child { border-bottom: none; }
-    .scorecard-row .sc-title { color: var(--muted); flex: 1; }
-    .scorecard-row .sc-yours { font-weight: 600; min-width: 60px; }
-    .scorecard-row .sc-yours.match { color: var(--green); }
-    .scorecard-row .sc-yours.miss { color: var(--yellow); }
-    .scorecard-row .sc-best { color: var(--accent); font-size: 11px; min-width: 60px; }
-
-    /* --- Decisions grid --- */
-    #dec-label {
-      padding: 4px 12px;
-      font-size: 11px;
-      color: var(--accent);
-      min-height: 22px;
-      border-bottom: 1px solid var(--border);
-      user-select: none;
-    }
-
-    #dec-label .dec-label-type {
-      color: var(--muted);
-      font-size: 9px;
-      text-transform: uppercase;
-      margin-left: 6px;
-    }
-
-    .dec-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-      gap: 6px;
-      padding: 8px;
-    }
-
-    .dec-slot {
-      aspect-ratio: 1;
-      border-radius: 6px;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      overflow: hidden;
-      cursor: default;
-      position: relative;
-      transition: border-color 0.15s;
-    }
-
-    .dec-slot:hover { border-color: var(--accent); }
-    .dec-slot.good { border-color: var(--green); }
-    .dec-slot.ok { border-color: var(--yellow); }
-    .dec-slot.bad { border-color: var(--red); }
-
-    .dec-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    .dec-slot.empty {
-      border-style: dashed;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      color: var(--border);
-    }
-
-    /* --- Achievements --- */
-    .ach-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-      gap: 6px;
-      padding: 8px;
-    }
-
-    .ach-slot {
-      aspect-ratio: 1;
-      border-radius: 6px;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      overflow: hidden;
-      cursor: default;
-      position: relative;
-      transition: border-color 0.15s;
-    }
-
-    .ach-slot:hover { border-color: var(--accent); }
-    .ach-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    .ach-slot.locked {
-      border-style: dashed;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .ach-slot.locked img { filter: brightness(0) saturate(0); opacity: 0.2; }
-
-    .ach-slot.unlocked { border-color: var(--purple); cursor: pointer; }
-    .ach-slot.unlocked:hover { border-color: var(--accent); }
-
-    #ach-label {
-      padding: 4px 12px;
-      font-size: 11px;
-      color: var(--purple);
-      min-height: 22px;
-      border-bottom: 1px solid var(--border);
-      user-select: none;
-    }
-
-    /* --- Restart button --- */
-    #restart-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    #restart-btn:hover { border-color: var(--red); color: var(--red); }
-
-    /* --- Room transition --- */
-    #narrative {
-      transition: opacity 0.2s ease;
-    }
-
-    #narrative.exit,
-    #narrative.enter {
-      opacity: 0;
-    }
-
-    /* --- Utilities --- */
-    #toggle-map {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    #toggle-map:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* --- Responsive --- */
-    @media (max-width: 900px) {
-      #stat-bars { flex-wrap: wrap; gap: 8px; }
-      .stat-bar { width: 40px; }
-    }
-
-    @media (max-width: 768px) {
-      #main { flex-direction: column; padding: 16px; }
-      #sidebar { min-width: unset; position: static; max-height: none; }
-      #stat-bars { gap: 6px; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- HUD -->
-  <header id="hud">
-    <h1>CODEBASE CAVERNS</h1>
-    <div id="hud-right">
-      <div id="stat-bars">
-        <div class="stat-bar-group stat-debt">
-          <span class="stat-bar-label">Debt</span>
-          <div class="stat-bar"><div class="stat-bar-fill" id="bar-debt"></div></div>
-          <span class="stat-bar-value" id="val-debt">50</span>
-        </div>
-        <div class="stat-bar-group stat-quality">
-          <span class="stat-bar-label">Quality</span>
-          <div class="stat-bar"><div class="stat-bar-fill" id="bar-quality"></div></div>
-          <span class="stat-bar-value" id="val-quality">30</span>
-        </div>
-        <div class="stat-bar-group stat-morale">
-          <span class="stat-bar-label">Morale</span>
-          <div class="stat-bar"><div class="stat-bar-fill" id="bar-morale"></div></div>
-          <span class="stat-bar-value" id="val-morale">60</span>
-        </div>
-        <div class="stat-bar-group stat-migration">
-          <span class="stat-bar-label">ECS</span>
-          <div class="stat-bar"><div class="stat-bar-fill" id="bar-migration"></div></div>
-          <span class="stat-bar-value" id="val-migration">0/5</span>
-        </div>
-      </div>
-      <span id="challenge-progress">Challenges: <span class="progress-value" id="val-challenges">0/7</span></span>
-      <button id="restart-btn">Restart</button>
-      <button id="toggle-map">Map [M]</button>
-    </div>
-  </header>
-
-  <!-- Map Dialog -->
-  <dialog id="map-dialog">
-    <h3>Architecture Map</h3>
-    <div id="map"></div>
-  </dialog>
-
-  <!-- Main Layout -->
-  <div id="main">
-
-    <!-- Narrative -->
-    <section id="narrative">
-      <div id="room-header">
-        <div id="room-layer"></div>
-        <h2 id="room-title">Loading...</h2>
-      </div>
-      <div id="room-image" class="room-image" style="display:none"></div>
-      <div id="room-description"></div>
-      <div id="challenge-panel">
-        <div id="challenge-header">
-          <span class="icon">&#9888;</span>
-          <span id="challenge-title"></span>
-        </div>
-        <div id="challenge-desc"></div>
-        <div id="challenge-choices"></div>
-      </div>
-      <div id="result-banner"></div>
-      <div id="artifacts">
-        <div id="artifacts-header">Artifacts in this room</div>
-        <div id="artifacts-list"></div>
-      </div>
-      <div id="choices"></div>
-    </section>
-
-    <!-- Sidebar -->
-    <aside id="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <span>Inventory</span>
-          <span id="inv-count">0</span>
-        </div>
-        <div id="inv-label">&nbsp;</div>
-        <div class="sidebar-body" id="inventory">
-          <div class="log-entry" style="color:var(--muted)">Empty &mdash; explore to find artifacts.</div>
-        </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <span>Decisions</span>
-          <span id="dec-count">0/7</span>
-        </div>
-        <div id="dec-label">&nbsp;</div>
-        <div class="sidebar-body" id="decisions">
-          <div class="log-entry" style="color:var(--muted)">No decisions yet.</div>
-        </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-header">
-          <span>Endings</span>
-          <span id="ach-count">0/4</span>
-        </div>
-        <div id="ach-label">&nbsp;</div>
-        <div class="sidebar-body" id="achievements"></div>
-      </div>
-      <details class="sidebar-section" id="log-section">
-        <summary class="sidebar-header">
-          <span style="flex:1">Log</span>
-          <span id="log-count">0</span>
-        </summary>
-        <div class="sidebar-body" id="log"></div>
-      </details>
-    </aside>
-
-  </div>
-
-  <!-- Ending Dialog -->
-  <dialog id="ending-dialog">
-    <div class="ending-label">Adventure Complete</div>
-    <h2 id="ending-title"></h2>
-    <div class="ending-desc" id="ending-desc"></div>
-    <div id="ending-scorecard"></div>
-    <div id="ending-stats"></div>
-    <button id="play-again-btn">Play Again</button>
-  </dialog>
-
-  <script>
-    // =============================================
-    // Game Engine
-    // =============================================
-
-    const STORAGE_KEY = 'codebase-caverns-state'
-    const ACH_KEY = 'codebase-caverns-achievements'
-
-    function createInitialState() {
-      return {
-        currentRoom: 'entry',
-        visited: new Set(),
-        inventory: [],
-        log: [],
-        stats: { techDebt: 50, quality: 30, morale: 60, migrationProgress: 0 },
-        challengesCompleted: new Set(),
-        challengeChoices: {},
-        endingShown: false,
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codebase Caverns — ComfyUI Architecture Adventure</title>
+    <meta
+      name="description"
+      content="An interactive choose-your-own-adventure game exploring the ComfyUI frontend architecture. Navigate 10 rooms, face 8 real architectural challenges, and learn the ECS migration strategy."
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Codebase Caverns — ComfyUI Architecture Adventure"
+    />
+    <meta
+      property="og:description"
+      content="Explore the ComfyUI frontend architecture through an interactive adventure game. Face real engineering dilemmas, collect artifacts, and discover the ECS migration plan."
+    />
+    <meta
+      property="og:image"
+      content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/architecture-adventure-game-bnCJJ/docs/architecture/images/entry.png"
+    />
+    <meta property="og:image:width" content="1152" />
+    <meta property="og:image:height" content="640" />
+    <meta
+      property="og:image:alt"
+      content="Pixel art server room with glowing terminal and three branching corridors"
+    />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Codebase Caverns — ComfyUI Architecture Adventure"
+    />
+    <meta
+      name="twitter:description"
+      content="An interactive adventure game exploring the ComfyUI frontend architecture. 10 rooms, 8 challenges, 4 endings."
+    />
+    <meta
+      name="twitter:image"
+      content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/architecture-adventure-game-bnCJJ/docs/architecture/images/entry.png"
+    />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%3E%3Ctext%20y=%22.9em%22%20font-size=%2290%22%3E🏰%3C/text%3E%3C/svg%3E"
+      sizes="any"
+    />
+    <style>
+      :root {
+        --bg: #0d1117;
+        --surface: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #9ea7b0;
+        --accent: #58a6ff;
+        --accent-dim: #1f6feb33;
+        --green: #3fb950;
+        --yellow: #d29922;
+        --red: #f85149;
+        --purple: #bc8cff;
       }
-    }
 
-    function saveState() {
-      try {
-        const s = {
-          ...state,
-          visited: [...state.visited],
-          challengesCompleted: [...state.challengesCompleted],
+      /* Modern CSS reset (based on Josh Comeau / Andy Bell) */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      * {
+        margin: 0;
+      }
+      body {
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      img,
+      svg {
+        display: block;
+        max-width: 100%;
+      }
+      input,
+      button,
+      textarea,
+      select {
+        font: inherit;
+      }
+      p,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        overflow-wrap: break-word;
+      }
+
+      #hud,
+      .stat-bar-group,
+      .choice-key,
+      .challenge-badge,
+      .artifact-type,
+      .sidebar-header,
+      #room-layer,
+      .ending-label,
+      .scorecard-header,
+      #challenge-header,
+      .map-room .room-layer,
+      #challenge-progress,
+      .stat-delta,
+      .ending-stat .label,
+      #play-again-btn,
+      #toggle-map,
+      .choice-btn .choice-hint,
+      .challenge-choice-btn .choice-hint,
+      .inv-slot,
+      .artifact-icon {
+        user-select: none;
+      }
+
+      body {
+        font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* --- Header / HUD --- */
+      #hud {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      #hud h1 {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent);
+        letter-spacing: 0.5px;
+      }
+
+      #hud-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      #stat-bars {
+        display: flex;
+        gap: 14px;
+        font-size: 10px;
+      }
+
+      .stat-bar-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .stat-bar-label {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .stat-bar {
+        width: 60px;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .stat-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition:
+          width 0.4s ease,
+          background-color 0.4s ease;
+      }
+
+      .stat-bar-value {
+        color: var(--text);
+        font-weight: 600;
+        min-width: 20px;
+        text-align: right;
+      }
+
+      .stat-debt .stat-bar-fill {
+        background: var(--red);
+      }
+      .stat-quality .stat-bar-fill {
+        background: var(--green);
+      }
+      .stat-morale .stat-bar-fill {
+        background: var(--yellow);
+      }
+      .stat-migration .stat-bar-fill {
+        background: var(--purple);
+      }
+
+      /* --- Map Dialog --- */
+      #map-dialog {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px 24px;
+        max-width: 700px;
+        width: 90%;
+        color: var(--text);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transform: scale(0.95);
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease,
+          overlay 0.2s ease allow-discrete,
+          display 0.2s ease allow-discrete;
+      }
+
+      #map-dialog[open] {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      @starting-style {
+        #map-dialog[open] {
+          opacity: 0;
+          transform: scale(0.95);
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(s))
-      } catch {}
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (!raw) return null
-        const s = JSON.parse(raw)
-        s.visited = new Set(s.visited)
-        s.challengesCompleted = new Set(s.challengesCompleted)
-        return s
-      } catch { return null }
-    }
-
-    function loadAchievements() {
-      try {
-        const raw = localStorage.getItem(ACH_KEY)
-        return raw ? JSON.parse(raw) : []
-      } catch { return [] }
-    }
-
-    function saveAchievement(endingId) {
-      const achs = loadAchievements()
-      if (!achs.includes(endingId)) {
-        achs.push(endingId)
-        try { localStorage.setItem(ACH_KEY, JSON.stringify(achs)) } catch {}
       }
-    }
 
-    let state = loadState() || createInitialState()
+      #map-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        transition:
+          opacity 0.2s ease,
+          overlay 0.2s ease allow-discrete,
+          display 0.2s ease allow-discrete;
+      }
 
-    const TOTAL_CHALLENGES = 7
-    const GH = 'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main'
+      #map-dialog[open]::backdrop {
+        opacity: 1;
+      }
 
-    // --- Image prompts per room ---
-    // Image generation prompts per room (also exported as adventure-image-prompts.json)
-    const imagePrompts = {
-      entry: 'Pixel art of a glowing terminal in a vast dark server room, Vue.js and TypeScript logos floating as holographic projections, three corridors branching ahead lit by blue, green, and purple lights',
-      components: 'Pixel art gallery hall with framed Vue component cards hung on stone walls, a massive canvas painting labeled "GraphView" in the center, smaller panels flanking either side, warm torchlight',
-      stores: 'Pixel art underground vault with 60 glowing vault doors lining the walls, three doors in front glow brightest (labeled widget, layout, promotion), a Pinia pineapple emblem etched in stone above',
-      services: 'Pixel art clean corridors with labeled pipes connecting rooms overhead, data flowing as glowing particles through transparent tubes, service names etched on brass plaques',
-      litegraph: 'Pixel art dark engine room with three massive monolith machines labeled 9100, 4300, and 3100 lines of code, warning lights flashing amber, tangled wires and cables everywhere',
-      ecs: "Pixel art architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk",
-      renderer: 'Pixel art observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below',
-      composables: 'Pixel art workshop with hooks hanging from a pegboard wall, each labeled (useCoreCommands, useCanvasDrop, etc.), workbenches for auth, canvas, and queue domains, cozy lantern light',
-      sidepanel: 'Pixel art multi-tabbed control panel glowing in the dark, a node browser search bar at top, properties inspector in the middle, model catalog below, all connected by wires to vault doors',
-    }
+      @starting-style {
+        #map-dialog[open]::backdrop {
+          opacity: 0;
+        }
+      }
 
-    // --- Room Definitions ---
-    const rooms = {
-      entry: {
-        title: 'The Entry Point',
-        layer: 'src/main.ts',
-        description: `
+      #map-dialog h3 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+
+      #map {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+      }
+
+      .map-room {
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .map-room:hover {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .map-room.visited {
+        border-color: var(--green);
+        opacity: 0.7;
+      }
+      .map-room.current {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+      .map-room .room-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 4px;
+      }
+      .map-room .room-layer {
+        color: var(--muted);
+        font-size: 9px;
+        text-transform: uppercase;
+      }
+      .map-room .challenge-badge {
+        display: inline-block;
+        font-size: 8px;
+        padding: 1px 4px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      .map-room .challenge-badge.pending {
+        background: var(--yellow);
+        color: var(--bg);
+      }
+      .map-room .challenge-badge.done {
+        background: var(--green);
+        color: var(--bg);
+      }
+
+      /* --- Main Content --- */
+      #main {
+        display: flex;
+        max-width: 1100px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 24px;
+        gap: 24px;
+      }
+
+      /* --- Narrative Column --- */
+      #narrative {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      #room-header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 12px;
+      }
+
+      #room-header h2 {
+        font-size: 18px;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      #room-layer {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* --- Room Image --- */
+      .room-image {
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+
+      .room-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .room-image.placeholder {
+        background: linear-gradient(
+          135deg,
+          #1a1e2e 0%,
+          #0d1117 50%,
+          #161b22 100%
+        );
+        border-style: dashed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+        font-style: italic;
+      }
+
+      #room-description {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      #room-description code {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 1px 5px;
+        border-radius: 3px;
+        color: var(--accent);
+        font-size: 13px;
+      }
+
+      /* --- Challenge Panel --- */
+      #challenge-panel {
+        border: 2px solid var(--yellow);
+        border-radius: 10px;
+        overflow: hidden;
+        display: none;
+        animation: fadeSlideIn 0.3s ease;
+      }
+
+      #challenge-panel.active {
+        display: block;
+      }
+
+      @keyframes fadeSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      #challenge-header {
+        background: rgba(210, 153, 34, 0.1);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--yellow);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #challenge-header .icon {
+        font-size: 16px;
+      }
+
+      #challenge-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--yellow);
+      }
+
+      #challenge-desc {
+        padding: 12px 16px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      #challenge-desc code {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 1px 5px;
+        border-radius: 3px;
+        color: var(--accent);
+        font-size: 12px;
+      }
+
+      #challenge-choices {
+        padding: 8px 16px 16px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .challenge-choice-btn {
+        flex: 1;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .challenge-choice-btn:hover {
+        border-color: var(--yellow);
+        background: rgba(210, 153, 34, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .challenge-choice-btn .choice-icon-wrap {
+        position: relative;
+        background: var(--bg);
+        padding: 12px;
+      }
+
+      .challenge-choice-btn .choice-key {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        background: var(--yellow);
+        color: var(--bg);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .challenge-choice-btn .choice-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin: 0 auto;
+      }
+
+      .challenge-choice-btn .choice-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .challenge-choice-btn .choice-text {
+        padding: 10px 12px 14px;
+      }
+
+      .challenge-choice-btn .choice-label {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .challenge-choice-btn .choice-hint {
+        display: block;
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+
+      /* --- Result Banner --- */
+      #result-banner {
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: none;
+        animation: fadeSlideIn 0.3s ease;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      #result-banner.active {
+        display: block;
+      }
+      #result-banner.good {
+        border: 1px solid var(--green);
+        background: rgba(63, 185, 80, 0.08);
+        color: var(--green);
+      }
+      #result-banner.ok {
+        border: 1px solid var(--yellow);
+        background: rgba(210, 153, 34, 0.08);
+        color: var(--yellow);
+      }
+      #result-banner.bad {
+        border: 1px solid var(--red);
+        background: rgba(248, 81, 73, 0.08);
+        color: var(--red);
+      }
+
+      .stat-delta {
+        font-weight: 600;
+        font-size: 11px;
+      }
+      .stat-delta.positive {
+        color: var(--green);
+      }
+      .stat-delta.negative {
+        color: var(--red);
+      }
+
+      /* --- Artifacts / Items --- */
+      #artifacts {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        display: none;
+      }
+
+      #artifacts.has-items {
+        display: block;
+      }
+
+      #artifacts-header {
+        background: var(--surface);
+        padding: 8px 12px;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .artifact {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+      }
+
+      .artifact:last-child {
+        border-bottom: none;
+      }
+
+      .artifact-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .artifact-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .artifact-icon.placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: var(--yellow);
+      }
+
+      .artifact-info {
+        flex: 1;
+      }
+      .artifact-name {
+        color: var(--yellow);
+        display: block;
+      }
+      .artifact-type {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        display: block;
+      }
+
+      /* --- Navigation Choices --- */
+      #choices {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .choice-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .choice-btn:hover {
+        border-color: var(--accent);
+        background: var(--accent-dim);
+      }
+
+      .choice-btn .choice-key {
+        background: var(--border);
+        color: var(--text);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        min-width: 24px;
+        text-align: center;
+      }
+
+      .choice-btn .choice-label {
+        flex: 1;
+      }
+      .choice-btn .choice-hint {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      /* --- Sidebar: Inventory / Log --- */
+      #sidebar {
+        flex: 1;
+        min-width: 240px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: sticky;
+        top: 60px;
+        align-self: flex-start;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+      }
+
+      .sidebar-section {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .sidebar-header {
+        background: var(--surface);
+        padding: 8px 12px;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* --- Collapsible details --- */
+      details.sidebar-section {
+        interpolate-size: allow-keywords;
+      }
+
+      details.sidebar-section > summary {
+        cursor: pointer;
+        list-style: none;
+      }
+
+      details.sidebar-section > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      details.sidebar-section > summary::after {
+        content: '▸';
+        font-size: 10px;
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+        margin-left: 6px;
+      }
+
+      details[open].sidebar-section > summary::after {
+        transform: rotate(90deg);
+      }
+
+      details.sidebar-section > .sidebar-body {
+        overflow: clip;
+        height: 0;
+        transition:
+          height 0.25s ease,
+          padding 0.25s ease;
+        padding: 0 8px;
+      }
+
+      details[open].sidebar-section > .sidebar-body {
+        height: auto;
+        padding: 8px;
+      }
+
+      .sidebar-body {
+        padding: 8px;
+        font-size: 12px;
+      }
+
+      .log-entry {
+        padding: 4px 6px;
+        border-radius: 4px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .log-entry.discovery {
+        color: var(--green);
+      }
+      .log-entry.warning {
+        color: var(--yellow);
+      }
+      .log-entry.error {
+        color: var(--red);
+      }
+      .log-entry.ending {
+        color: var(--purple);
+      }
+
+      #inv-label {
+        padding: 4px 12px;
+        font-size: 11px;
+        color: var(--yellow);
+        min-height: 22px;
+        border-bottom: 1px solid var(--border);
+        user-select: none;
+        transition: color 0.15s;
+      }
+
+      #inv-label .inv-label-type {
+        color: var(--muted);
+        font-size: 9px;
+        text-transform: uppercase;
+        margin-left: 6px;
+      }
+
+      .inv-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .inv-slot {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        cursor: default;
+        position: relative;
+        transition: border-color 0.15s;
+      }
+
+      .inv-slot:hover {
+        border-color: var(--yellow);
+      }
+
+      .inv-slot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .inv-slot.placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: var(--yellow);
+      }
+
+      /* --- Ending Dialog --- */
+      dialog {
+        margin: auto;
+      }
+
+      #ending-dialog {
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 16px;
+        padding: 40px;
+        max-width: 640px;
+        width: 90%;
+        color: var(--text);
+        text-align: center;
+        max-height: 90vh;
+        overflow-y: auto;
+        opacity: 0;
+        transform: scale(0.9);
+        transition:
+          opacity 0.3s ease,
+          transform 0.3s ease,
+          overlay 0.3s ease allow-discrete,
+          display 0.3s ease allow-discrete;
+      }
+
+      #ending-dialog[open] {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      @starting-style {
+        #ending-dialog[open] {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+      }
+
+      #ending-dialog::backdrop {
+        background: rgba(0, 0, 0, 0.85);
+        opacity: 0;
+        transition:
+          opacity 0.3s ease,
+          overlay 0.3s ease allow-discrete,
+          display 0.3s ease allow-discrete;
+      }
+
+      #ending-dialog[open]::backdrop {
+        opacity: 1;
+      }
+
+      @starting-style {
+        #ending-dialog[open]::backdrop {
+          opacity: 0;
+        }
+      }
+
+      #ending-dialog .ending-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      #ending-dialog h2 {
+        font-size: 22px;
+        margin-bottom: 16px;
+      }
+
+      #ending-dialog .ending-desc {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--muted);
+        margin-bottom: 24px;
+      }
+
+      #ending-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 28px;
+        text-align: left;
+      }
+
+      .ending-stat {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+
+      .ending-stat .label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .ending-stat .value {
+        font-size: 18px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+
+      #play-again-btn {
+        background: var(--accent);
+        color: var(--bg);
+        border: none;
+        padding: 10px 28px;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+
+      #play-again-btn:hover {
+        opacity: 0.85;
+      }
+
+      /* --- Links in descriptions --- */
+      #room-description a,
+      #challenge-desc a,
+      .result-doc-link {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--accent);
+      }
+
+      #room-description a:hover,
+      #challenge-desc a:hover,
+      .result-doc-link:hover {
+        border-bottom-style: solid;
+      }
+
+      /* --- Recommended answer callout --- */
+      .result-recommended {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background: rgba(88, 166, 255, 0.06);
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .result-recommended strong {
+        color: var(--accent);
+      }
+      .result-recommended .result-doc-link {
+        font-size: 11px;
+      }
+
+      /* --- Challenge progress --- */
+      #challenge-progress {
+        font-size: 10px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      #challenge-progress .progress-value {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      /* --- Scorecard in ending --- */
+      #ending-scorecard {
+        text-align: left;
+        margin-bottom: 24px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .scorecard-header {
+        background: var(--bg);
+        padding: 8px 12px;
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .scorecard-row {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+
+      .scorecard-row:last-child {
+        border-bottom: none;
+      }
+      .scorecard-row .sc-title {
+        color: var(--muted);
+        flex: 1;
+      }
+      .scorecard-row .sc-yours {
+        font-weight: 600;
+        min-width: 60px;
+      }
+      .scorecard-row .sc-yours.match {
+        color: var(--green);
+      }
+      .scorecard-row .sc-yours.miss {
+        color: var(--yellow);
+      }
+      .scorecard-row .sc-best {
+        color: var(--accent);
+        font-size: 11px;
+        min-width: 60px;
+      }
+
+      /* --- Decisions grid --- */
+      #dec-label {
+        padding: 4px 12px;
+        font-size: 11px;
+        color: var(--accent);
+        min-height: 22px;
+        border-bottom: 1px solid var(--border);
+        user-select: none;
+      }
+
+      #dec-label .dec-label-type {
+        color: var(--muted);
+        font-size: 9px;
+        text-transform: uppercase;
+        margin-left: 6px;
+      }
+
+      .dec-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .dec-slot {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        overflow: hidden;
+        cursor: default;
+        position: relative;
+        transition: border-color 0.15s;
+      }
+
+      .dec-slot:hover {
+        border-color: var(--accent);
+      }
+      .dec-slot.good {
+        border-color: var(--green);
+      }
+      .dec-slot.ok {
+        border-color: var(--yellow);
+      }
+      .dec-slot.bad {
+        border-color: var(--red);
+      }
+
+      .dec-slot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .dec-slot.empty {
+        border-style: dashed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      /* --- Achievements --- */
+      .ach-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .ach-slot {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        overflow: hidden;
+        cursor: default;
+        position: relative;
+        transition: border-color 0.15s;
+      }
+
+      .ach-slot:hover {
+        border-color: var(--accent);
+      }
+      .ach-slot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .ach-slot.locked {
+        border-style: dashed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ach-slot.locked img {
+        filter: brightness(0) saturate(0);
+        opacity: 0.2;
+      }
+
+      .ach-slot.unlocked {
+        border-color: var(--purple);
+        cursor: pointer;
+      }
+      .ach-slot.unlocked:hover {
+        border-color: var(--accent);
+      }
+
+      #ach-label {
+        padding: 4px 12px;
+        font-size: 11px;
+        color: var(--purple);
+        min-height: 22px;
+        border-bottom: 1px solid var(--border);
+        user-select: none;
+      }
+
+      /* --- Restart button --- */
+      #restart-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #restart-btn:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* --- Room transition --- */
+      #narrative {
+        transition: opacity 0.2s ease;
+      }
+
+      #narrative.exit,
+      #narrative.enter {
+        opacity: 0;
+      }
+
+      /* --- Utilities --- */
+      #toggle-map {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #toggle-map:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* --- Responsive --- */
+      @media (max-width: 900px) {
+        #stat-bars {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .stat-bar {
+          width: 40px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        #hud {
+          padding: 6px 12px;
+          gap: 6px;
+        }
+        #hud h1 {
+          font-size: 11px;
+        }
+        #hud-right {
+          width: 100%;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        #stat-bars {
+          width: 100%;
+          justify-content: space-between;
+          gap: 4px;
+        }
+        .stat-bar {
+          width: 32px;
+        }
+        .stat-bar-label {
+          display: none;
+        }
+        .stat-bar-group::before {
+          font-size: 10px;
+          color: var(--muted);
+        }
+        .stat-debt::before {
+          content: 'D';
+        }
+        .stat-quality::before {
+          content: 'Q';
+        }
+        .stat-morale::before {
+          content: 'M';
+        }
+        .stat-migration::before {
+          content: 'E';
+        }
+        #challenge-progress {
+          font-size: 9px;
+        }
+        #restart-btn,
+        #toggle-map {
+          padding: 3px 8px;
+          font-size: 10px;
+        }
+        #main {
+          flex-direction: column;
+          padding: 16px;
+          gap: 16px;
+        }
+        #sidebar {
+          min-width: unset;
+          width: 100%;
+          align-self: stretch;
+          position: static;
+          max-height: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HUD -->
+    <header id="hud">
+      <h1>CODEBASE CAVERNS</h1>
+      <div id="hud-right">
+        <div id="stat-bars">
+          <div class="stat-bar-group stat-debt">
+            <span class="stat-bar-label">Debt</span>
+            <div class="stat-bar">
+              <div class="stat-bar-fill" id="bar-debt"></div>
+            </div>
+            <span class="stat-bar-value" id="val-debt">50</span>
+          </div>
+          <div class="stat-bar-group stat-quality">
+            <span class="stat-bar-label">Quality</span>
+            <div class="stat-bar">
+              <div class="stat-bar-fill" id="bar-quality"></div>
+            </div>
+            <span class="stat-bar-value" id="val-quality">30</span>
+          </div>
+          <div class="stat-bar-group stat-morale">
+            <span class="stat-bar-label">Morale</span>
+            <div class="stat-bar">
+              <div class="stat-bar-fill" id="bar-morale"></div>
+            </div>
+            <span class="stat-bar-value" id="val-morale">60</span>
+          </div>
+          <div class="stat-bar-group stat-migration">
+            <span class="stat-bar-label">ECS</span>
+            <div class="stat-bar">
+              <div class="stat-bar-fill" id="bar-migration"></div>
+            </div>
+            <span class="stat-bar-value" id="val-migration">0/5</span>
+          </div>
+        </div>
+        <span id="challenge-progress"
+          >Challenges:
+          <span class="progress-value" id="val-challenges">0/7</span></span
+        >
+        <button id="restart-btn">Restart</button>
+        <button id="toggle-map">Map [M]</button>
+      </div>
+    </header>
+
+    <!-- Map Dialog -->
+    <dialog id="map-dialog">
+      <h3>Architecture Map</h3>
+      <div id="map"></div>
+    </dialog>
+
+    <!-- Main Layout -->
+    <div id="main">
+      <!-- Narrative -->
+      <section id="narrative">
+        <div id="room-header">
+          <div id="room-layer"></div>
+          <h2 id="room-title">Loading...</h2>
+        </div>
+        <div id="room-image" class="room-image" style="display: none"></div>
+        <div id="room-description"></div>
+        <div id="challenge-panel">
+          <div id="challenge-header">
+            <span class="icon">&#9888;</span>
+            <span id="challenge-title"></span>
+          </div>
+          <div id="challenge-desc"></div>
+          <div id="challenge-choices"></div>
+        </div>
+        <div id="result-banner"></div>
+        <div id="artifacts">
+          <div id="artifacts-header">Artifacts in this room</div>
+          <div id="artifacts-list"></div>
+        </div>
+        <div id="choices"></div>
+      </section>
+
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-header">
+            <span>Inventory</span>
+            <span id="inv-count">0</span>
+          </div>
+          <div id="inv-label">&nbsp;</div>
+          <div class="sidebar-body" id="inventory">
+            <div class="log-entry" style="color: var(--muted)">
+              Empty &mdash; explore to find artifacts.
+            </div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header">
+            <span>Decisions</span>
+            <span id="dec-count">0/7</span>
+          </div>
+          <div id="dec-label">&nbsp;</div>
+          <div class="sidebar-body" id="decisions">
+            <div class="log-entry" style="color: var(--muted)">
+              No decisions yet.
+            </div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-header">
+            <span>Endings</span>
+            <span id="ach-count">0/4</span>
+          </div>
+          <div id="ach-label">&nbsp;</div>
+          <div class="sidebar-body" id="achievements"></div>
+        </div>
+        <details class="sidebar-section" id="log-section">
+          <summary class="sidebar-header">
+            <span style="flex: 1">Log</span>
+            <span id="log-count">0</span>
+          </summary>
+          <div class="sidebar-body" id="log"></div>
+        </details>
+      </aside>
+    </div>
+
+    <!-- Ending Dialog -->
+    <dialog id="ending-dialog">
+      <div class="ending-label">Adventure Complete</div>
+      <h2 id="ending-title"></h2>
+      <div class="ending-desc" id="ending-desc"></div>
+      <div id="ending-scorecard"></div>
+      <div id="ending-stats"></div>
+      <button id="play-again-btn">Play Again</button>
+    </dialog>
+
+    <script>
+      // =============================================
+      // Game Engine
+      // =============================================
+
+      const STORAGE_KEY = 'codebase-caverns-state'
+      const ACH_KEY = 'codebase-caverns-achievements'
+
+      function createInitialState() {
+        return {
+          currentRoom: 'entry',
+          visited: new Set(),
+          inventory: [],
+          log: [],
+          stats: {
+            techDebt: 50,
+            quality: 30,
+            morale: 60,
+            migrationProgress: 0
+          },
+          challengesCompleted: new Set(),
+          challengeChoices: {},
+          endingShown: false
+        }
+      }
+
+      function saveState() {
+        try {
+          const s = {
+            ...state,
+            visited: [...state.visited],
+            challengesCompleted: [...state.challengesCompleted]
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(s))
+        } catch {}
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY)
+          if (!raw) return null
+          const s = JSON.parse(raw)
+          s.visited = new Set(s.visited)
+          s.challengesCompleted = new Set(s.challengesCompleted)
+          return s
+        } catch {
+          return null
+        }
+      }
+
+      function loadAchievements() {
+        try {
+          const raw = localStorage.getItem(ACH_KEY)
+          return raw ? JSON.parse(raw) : []
+        } catch {
+          return []
+        }
+      }
+
+      function saveAchievement(endingId) {
+        const achs = loadAchievements()
+        if (!achs.includes(endingId)) {
+          achs.push(endingId)
+          try {
+            localStorage.setItem(ACH_KEY, JSON.stringify(achs))
+          } catch {}
+        }
+      }
+
+      let state = loadState() || createInitialState()
+
+      const TOTAL_CHALLENGES = 8
+      const GH = 'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main'
+
+      // --- Image prompts per room ---
+      // Image generation prompts per room (also exported as adventure-image-prompts.json)
+      const imagePrompts = {
+        entry:
+          'Pixel art of a glowing terminal in a vast dark server room, Vue.js and TypeScript logos floating as holographic projections, three corridors branching ahead lit by blue, green, and purple lights',
+        components:
+          'Pixel art gallery hall with framed Vue component cards hung on stone walls, a massive canvas painting labeled "GraphView" in the center, smaller panels flanking either side, warm torchlight',
+        stores:
+          'Pixel art underground vault with 60 glowing vault doors lining the walls, three doors in front glow brightest (labeled widget, layout, promotion), a Pinia pineapple emblem etched in stone above',
+        services:
+          'Pixel art clean corridors with labeled pipes connecting rooms overhead, data flowing as glowing particles through transparent tubes, service names etched on brass plaques',
+        litegraph:
+          'Pixel art dark engine room with three massive monolith machines labeled 9100, 4300, and 3100 lines of code, warning lights flashing amber, tangled wires and cables everywhere',
+        ecs: "Pixel art architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk",
+        subgraph:
+          'Pixel art recursive fractal chamber where identical rooms nest inside each other like Russian dolls, typed contract scrolls float at each boundary doorway, a DAG tree diagram glows on the ceiling',
+        renderer:
+          'Pixel art observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below',
+        composables:
+          'Pixel art workshop with hooks hanging from a pegboard wall, each labeled (useCoreCommands, useCanvasDrop, etc.), workbenches for auth, canvas, and queue domains, cozy lantern light',
+        sidepanel:
+          'Pixel art multi-tabbed control panel glowing in the dark, a node browser search bar at top, properties inspector in the middle, model catalog below, all connected by wires to vault doors'
+      }
+
+      // --- Room Definitions ---
+      const rooms = {
+        entry: {
+          title: 'The Entry Point',
+          layer: 'src/main.ts',
+          description: `
           You stand at <a href="${GH}/src/main.ts" target="_blank">src/main.ts</a>, the entry point of the ComfyUI frontend.
           The air hums with the bootstrapping of a Vue 3 application. Pinia stores
           initialize around you, the <a href="${GH}/src/router.ts" target="_blank">router</a> unfurls paths into the distance, and
@@ -1179,72 +1562,119 @@
           Somewhere in this codebase, god objects lurk, mutations scatter in the shadows,
           and a grand migration awaits your decisions.
         `,
-        artifacts: [],
-        choices: [
-          { key: '1', label: 'Enter the Component Gallery', hint: 'Presentation Layer', room: 'components' },
-          { key: '2', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
-          { key: '3', label: 'Follow the wires to Services', hint: 'Business Logic', room: 'services' },
-        ],
-      },
+          artifacts: [],
+          choices: [
+            {
+              key: '1',
+              label: 'Enter the Component Gallery',
+              hint: 'Presentation Layer',
+              room: 'components'
+            },
+            {
+              key: '2',
+              label: 'Descend into the Store Vaults',
+              hint: 'State Management',
+              room: 'stores'
+            },
+            {
+              key: '3',
+              label: 'Follow the wires to Services',
+              hint: 'Business Logic',
+              room: 'services'
+            }
+          ]
+        },
 
-      components: {
-        title: 'The Component Gallery',
-        layer: 'Presentation',
-        description: `
+        components: {
+          title: 'The Component Gallery',
+          layer: 'Presentation',
+          description: `
           Vast halls lined with Vue Single File Components. <a href="${GH}/src/views/GraphView.vue" target="_blank">GraphView.vue</a>
           dominates the center &mdash; the main canvas workspace where nodes are wired together.
           To one side, <a href="${GH}/src/views/LinearView.vue" target="_blank">LinearView.vue</a> offers an alternative perspective.<br><br>
           Panels flank the walls: the <a href="${GH}/src/components/rightSidePanel" target="_blank">right side panel</a> houses the node browser and properties;
           the bottom panel shows queues and console output.
         `,
-        artifacts: [
-          { name: 'GraphView.vue', type: 'Component', icon: 'graphview' },
-        ],
-        challenge: {
-          title: 'The Circular Dependency',
-          recommended: 'A',
-          docLink: { label: 'Entity Problems: Circular Dependencies', url: `${GH}/docs/architecture/entity-problems.md` },
-          description: `
+          artifacts: [
+            { name: 'GraphView.vue', type: 'Component', icon: 'graphview' }
+          ],
+          challenge: {
+            title: 'The Circular Dependency',
+            recommended: 'A',
+            docLink: {
+              label: 'Entity Problems: Circular Dependencies',
+              url: `${GH}/docs/architecture/entity-problems.md`
+            },
+            description: `
             A tangled knot blocks the corridor ahead. <code>Subgraph</code> extends <code>LGraph</code>,
             but <code>LGraph</code> creates and manages Subgraph instances. The circular import
             forces order-dependent barrel exports and makes testing impossible in isolation.<br><br>
             How do you untangle it?
           `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Composition over inheritance',
+                icon: 'components-a',
+                hint: 'A subgraph IS a graph \u2014 just a node with a SubgraphStructure component. ECS eliminates class inheritance entirely.',
+                effects: {
+                  techDebt: -10,
+                  quality: 15,
+                  morale: 5,
+                  migrationProgress: 1
+                },
+                rating: 'good',
+                feedback:
+                  'The circular dependency dissolves. Under graph unification, a subgraph is just a node carrying a SubgraphStructure component in a flat World. No inheritance, no special cases.'
+              },
+              {
+                key: 'B',
+                label: 'Barrel file reordering',
+                icon: 'components-b',
+                hint: 'Rearrange exports so the cycle resolves at module load time.',
+                effects: { techDebt: 10, quality: -5, morale: -5 },
+                rating: 'bad',
+                feedback:
+                  'The imports stop crashing... for now. But the underlying coupling remains, and any new file touching both classes risks reviving the cycle.'
+              },
+              {
+                key: 'C',
+                label: 'Factory injection',
+                icon: 'components-c',
+                hint: 'Pass a graph factory function to break the static import cycle.',
+                effects: { techDebt: -5, quality: 10 },
+                rating: 'ok',
+                feedback:
+                  "The factory breaks the import cycle cleanly. It's a pragmatic fix, though the classes remain tightly coupled at runtime."
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: 'Composition over inheritance', icon: 'components-a',
-              hint: 'Subgraph HAS a graph, not IS a graph. ECS eliminates class inheritance entirely.',
-              effects: { techDebt: -10, quality: 15, morale: 5, migrationProgress: 1 },
-              rating: 'good',
-              feedback: 'The circular dependency dissolves. Subgraph becomes a thin wrapper holding a graph reference. Components replace inheritance.',
+              key: '1',
+              label: 'Inspect the Canvas',
+              hint: 'Litegraph Engine',
+              room: 'litegraph'
             },
             {
-              key: 'B', label: 'Barrel file reordering', icon: 'components-b',
-              hint: 'Rearrange exports so the cycle resolves at module load time.',
-              effects: { techDebt: 10, quality: -5, morale: -5 },
-              rating: 'bad',
-              feedback: 'The imports stop crashing... for now. But the underlying coupling remains, and any new file touching both classes risks reviving the cycle.',
+              key: '2',
+              label: 'Open the Right Side Panel',
+              hint: 'Node Browser & Properties',
+              room: 'sidepanel'
             },
             {
-              key: 'C', label: 'Factory injection', icon: 'components-c',
-              hint: 'Pass a graph factory function to break the static import cycle.',
-              effects: { techDebt: -5, quality: 10 },
-              rating: 'ok',
-              feedback: 'The factory breaks the import cycle cleanly. It\'s a pragmatic fix, though the classes remain tightly coupled at runtime.',
-            },
-          ],
+              key: '3',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Inspect the Canvas', hint: 'Litegraph Engine', room: 'litegraph' },
-          { key: '2', label: 'Open the Right Side Panel', hint: 'Node Browser & Properties', room: 'sidepanel' },
-          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      stores: {
-        title: 'The Store Vaults',
-        layer: 'State',
-        description: `
+        stores: {
+          title: 'The Store Vaults',
+          layer: 'State',
+          description: `
           Sixty Pinia stores line the walls like vault doors, each guarding a domain of reactive state.
           The proto-ECS stores glow brightest &mdash; <a href="${GH}/src/stores/widgetValueStore.ts" target="_blank">widgetValueStore</a>,
           <a href="${GH}/src/renderer/core/layout/store/layoutStore.ts" target="_blank">layoutStore</a>, and <a href="${GH}/src/stores/promotionStore.ts" target="_blank">promotionStore</a> &mdash; bridging the old
@@ -1252,56 +1682,91 @@
           Deeper in, <a href="${GH}/src/stores/queueStore.ts" target="_blank">queueStore</a> tracks execution jobs and
           <a href="${GH}/src/stores/nodeDefStore.ts" target="_blank">nodeDefStore</a> catalogs every node type known to the system.
         `,
-        artifacts: [
-          { name: 'widgetValueStore.ts', type: 'Proto-ECS Store', icon: 'widgetvaluestore' },
-          { name: 'layoutStore.ts', type: 'Proto-ECS Store', icon: 'layoutstore' },
-        ],
-        challenge: {
-          title: 'The Scattered Mutations',
-          recommended: 'A',
-          docLink: { label: 'Migration Plan: Phase 0a', url: `${GH}/docs/architecture/ecs-migration-plan.md` },
-          description: `
+          artifacts: [
+            {
+              name: 'widgetValueStore.ts',
+              type: 'Proto-ECS Store',
+              icon: 'widgetvaluestore'
+            },
+            {
+              name: 'layoutStore.ts',
+              type: 'Proto-ECS Store',
+              icon: 'layoutstore'
+            }
+          ],
+          challenge: {
+            title: 'The Scattered Mutations',
+            recommended: 'A',
+            docLink: {
+              label: 'Migration Plan: Phase 0a',
+              url: `${GH}/docs/architecture/ecs-migration-plan.md`
+            },
+            description: `
             Deep in the vaults, you find a fragile counter: <code>graph._version++</code>.
             It appears in <strong>19 locations across 7 files</strong> &mdash; LGraph.ts (5 sites),
             LGraphNode.ts (8 sites), LGraphCanvas.ts (2 sites), BaseWidget.ts, SubgraphInput.ts,
             SubgraphInputNode.ts, SubgraphOutput.ts.<br><br>
             Change tracking depends on this scattered increment. One missed site means silent data loss.
           `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Centralize into graph.incrementVersion()',
+                icon: 'stores-a',
+                hint: 'Route all 19 sites through a single method. Phase 0a of the migration plan.',
+                effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
+                rating: 'good',
+                feedback:
+                  'All 19 scattered increments now flow through one method. Change tracking becomes auditable, and the VersionSystem has a single hook point.'
+              },
+              {
+                key: 'B',
+                label: 'Add a JavaScript Proxy',
+                icon: 'stores-b',
+                hint: 'Intercept all writes to _version automatically.',
+                effects: { techDebt: 5, quality: 5, morale: -5 },
+                rating: 'ok',
+                feedback:
+                  'The Proxy catches mutations, but adds runtime overhead and makes debugging opaque. The scattered sites remain in the code.'
+              },
+              {
+                key: 'C',
+                label: 'Leave it as-is',
+                icon: 'stores-c',
+                hint: "It works. Don't touch it.",
+                effects: { techDebt: 10, morale: 5 },
+                rating: 'bad',
+                feedback:
+                  'The team breathes a sigh of relief... until the next silent data loss bug from a missed increment site.'
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: 'Centralize into graph.incrementVersion()', icon: 'stores-a',
-              hint: 'Route all 19 sites through a single method. Phase 0a of the migration plan.',
-              effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
-              rating: 'good',
-              feedback: 'All 19 scattered increments now flow through one method. Change tracking becomes auditable, and the VersionSystem has a single hook point.',
+              key: '1',
+              label: 'Examine the ECS Blueprints',
+              hint: 'Entity-Component-System',
+              room: 'ecs'
             },
             {
-              key: 'B', label: 'Add a JavaScript Proxy', icon: 'stores-b',
-              hint: 'Intercept all writes to _version automatically.',
-              effects: { techDebt: 5, quality: 5, morale: -5 },
-              rating: 'ok',
-              feedback: 'The Proxy catches mutations, but adds runtime overhead and makes debugging opaque. The scattered sites remain in the code.',
+              key: '2',
+              label: 'Visit the Renderer',
+              hint: 'Canvas & Layout',
+              room: 'renderer'
             },
             {
-              key: 'C', label: 'Leave it as-is', icon: 'stores-c',
-              hint: 'It works. Don\'t touch it.',
-              effects: { techDebt: 10, morale: 5 },
-              rating: 'bad',
-              feedback: 'The team breathes a sigh of relief... until the next silent data loss bug from a missed increment site.',
-            },
-          ],
+              key: '3',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Examine the ECS Blueprints', hint: 'Entity-Component-System', room: 'ecs' },
-          { key: '2', label: 'Visit the Renderer', hint: 'Canvas & Layout', room: 'renderer' },
-          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      services: {
-        title: 'The Service Corridors',
-        layer: 'Services',
-        description: `
+        services: {
+          title: 'The Service Corridors',
+          layer: 'Services',
+          description: `
           Clean corridors of orchestration logic. <a href="${GH}/src/services/litegraphService.ts" target="_blank">litegraphService.ts</a> manages
           graph creation and serialization. <a href="${GH}/src/services/dialogService.ts" target="_blank">dialogService.ts</a> conjures modals
           and toasts on demand.<br><br>
@@ -1309,53 +1774,79 @@
           <a href="${GH}/src/services/nodeSearchService.ts" target="_blank">nodeSearchService.ts</a> powers Algolia-backed discovery. Every service
           here bridges the presentation layer above with the stores below.
         `,
-        artifacts: [
-          { name: 'litegraphService.ts', type: 'Service', icon: 'litegraphservice' },
-        ],
-        challenge: {
-          title: 'The Migration Question',
-          recommended: 'A',
-          docLink: { label: 'ECS Migration Plan', url: `${GH}/docs/architecture/ecs-migration-plan.md` },
-          description: `
+          artifacts: [
+            {
+              name: 'litegraphService.ts',
+              type: 'Service',
+              icon: 'litegraphservice'
+            }
+          ],
+          challenge: {
+            title: 'The Migration Question',
+            recommended: 'A',
+            docLink: {
+              label: 'ECS Migration Plan',
+              url: `${GH}/docs/architecture/ecs-migration-plan.md`
+            },
+            description: `
             A fork in the corridor. The legacy litegraph engine works &mdash; thousands of users
             depend on it daily. But the architecture docs describe a better future: ECS with
             branded types, pure systems, and a World registry.<br><br>
             How do you get from here to there without breaking production?
           `,
+            choices: [
+              {
+                key: 'A',
+                label: '5-phase incremental plan',
+                icon: 'services-a',
+                hint: 'Foundation \u2192 Types \u2192 Bridge \u2192 Systems \u2192 Legacy Removal. Each phase is independently shippable.',
+                effects: { quality: 15, morale: 10, migrationProgress: 1 },
+                rating: 'good',
+                feedback:
+                  'The team maps out five phases, each independently testable and shippable. Old and new coexist during transition. Production never breaks.'
+              },
+              {
+                key: 'B',
+                label: 'Big bang rewrite',
+                icon: 'services-b',
+                hint: 'Freeze features, rewrite everything in parallel, swap when ready.',
+                effects: { techDebt: -10, quality: 5, morale: -20 },
+                rating: 'bad',
+                feedback:
+                  'Feature freeze begins. Weeks pass. The rewrite grows scope. Morale plummets. The old codebase drifts further from the new one.'
+              },
+              {
+                key: 'C',
+                label: 'Strangler fig pattern',
+                icon: 'services-c',
+                hint: 'Build new ECS beside old code, migrate consumers one by one.',
+                effects: { quality: 10, morale: 5 },
+                rating: 'ok',
+                feedback:
+                  'A solid pattern. The new system grows organically around the old, though without a phased plan the migration lacks clear milestones.'
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: '5-phase incremental plan', icon: 'services-a',
-              hint: 'Foundation \u2192 Types \u2192 Bridge \u2192 Systems \u2192 Legacy Removal. Each phase is independently shippable.',
-              effects: { quality: 15, morale: 10, migrationProgress: 1 },
-              rating: 'good',
-              feedback: 'The team maps out five phases, each independently testable and shippable. Old and new coexist during transition. Production never breaks.',
+              key: '1',
+              label: 'Follow the Composables',
+              hint: 'Reusable Logic Hooks',
+              room: 'composables'
             },
             {
-              key: 'B', label: 'Big bang rewrite', icon: 'services-b',
-              hint: 'Freeze features, rewrite everything in parallel, swap when ready.',
-              effects: { techDebt: -10, quality: 5, morale: -20 },
-              rating: 'bad',
-              feedback: 'Feature freeze begins. Weeks pass. The rewrite grows scope. Morale plummets. The old codebase drifts further from the new one.',
-            },
-            {
-              key: 'C', label: 'Strangler fig pattern', icon: 'services-c',
-              hint: 'Build new ECS beside old code, migrate consumers one by one.',
-              effects: { quality: 10, morale: 5 },
-              rating: 'ok',
-              feedback: 'A solid pattern. The new system grows organically around the old, though without a phased plan the migration lacks clear milestones.',
-            },
-          ],
+              key: '2',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Follow the Composables', hint: 'Reusable Logic Hooks', room: 'composables' },
-          { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      litegraph: {
-        title: 'The Litegraph Engine Room',
-        layer: 'Graph Engine',
-        description: `
+        litegraph: {
+          title: 'The Litegraph Engine Room',
+          layer: 'Graph Engine',
+          description: `
           The beating heart of ComfyUI's visual programming. Massive class files loom:
           <a href="${GH}/src/lib/litegraph/src/LGraphCanvas.ts" target="_blank">LGraphCanvas.ts</a> at ~9,100 lines handles all rendering and interaction,
           <a href="${GH}/src/lib/litegraph/src/LGraphNode.ts" target="_blank">LGraphNode.ts</a> at ~4,300 lines is the god-object node entity, and
@@ -1363,114 +1854,291 @@
           Warning signs mark known issues: circular dependencies, render-time side effects,
           and scattered mutation sites. The ECS migration aims to tame this complexity.
         `,
-        artifacts: [
-          { name: 'LGraphCanvas.ts', type: 'God Object', icon: 'lgraphcanvas' },
-          { name: 'LGraphNode.ts', type: 'God Object', icon: 'lgraphnode' },
-        ],
-        challenge: {
-          title: 'The God Object Dilemma',
-          recommended: 'B',
-          docLink: { label: 'Entity Problems: God Objects', url: `${GH}/docs/architecture/entity-problems.md` },
-          description: `
+          artifacts: [
+            {
+              name: 'LGraphCanvas.ts',
+              type: 'God Object',
+              icon: 'lgraphcanvas'
+            },
+            { name: 'LGraphNode.ts', type: 'God Object', icon: 'lgraphnode' }
+          ],
+          challenge: {
+            title: 'The God Object Dilemma',
+            recommended: 'B',
+            docLink: {
+              label: 'Entity Problems: God Objects',
+              url: `${GH}/docs/architecture/entity-problems.md`
+            },
+            description: `
             <code>LGraphCanvas</code> looms before you: <strong>~9,100 lines</strong> of rendering,
             input handling, selection, context menus, undo/redo, and more. <code>LGraphNode</code>
             adds <strong>~4,300 lines</strong> with ~539 method/property definitions mixing rendering,
             serialization, connectivity, execution, layout, and state management.<br><br>
             These god objects are the root of most architectural pain. What's your approach?
           `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Rewrite from scratch',
+                icon: 'litegraph-a',
+                hint: 'Tear it all down and rebuild with clean architecture from day one.',
+                effects: { techDebt: -20, quality: 5, morale: -25 },
+                rating: 'bad',
+                feedback:
+                  'The rewrite begins heroically... and stalls at month three. The team burns out reimplementing edge cases the god objects handled implicitly.'
+              },
+              {
+                key: 'B',
+                label: 'Extract incrementally',
+                icon: 'litegraph-b',
+                hint: 'Peel responsibilities into focused modules one at a time. Position first, then connectivity, then rendering.',
+                effects: {
+                  techDebt: -10,
+                  quality: 15,
+                  morale: 5,
+                  migrationProgress: 1
+                },
+                rating: 'good',
+                feedback:
+                  "Position extraction lands first (it's already in LayoutStore). Then connectivity. Each extraction is a small, testable PR. The god objects shrink steadily."
+              },
+              {
+                key: 'C',
+                label: 'Add a facade layer',
+                icon: 'litegraph-c',
+                hint: 'Wrap the god objects with a clean API without changing internals.',
+                effects: { techDebt: 5, quality: 5, morale: 10 },
+                rating: 'ok',
+                feedback:
+                  'The facade provides a nicer API, but the complexity still lives behind it. New features still require diving into the god objects.'
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: 'Rewrite from scratch', icon: 'litegraph-a',
-              hint: 'Tear it all down and rebuild with clean architecture from day one.',
-              effects: { techDebt: -20, quality: 5, morale: -25 },
-              rating: 'bad',
-              feedback: 'The rewrite begins heroically... and stalls at month three. The team burns out reimplementing edge cases the god objects handled implicitly.',
+              key: '1',
+              label: 'Examine the ECS Blueprints',
+              hint: 'The planned future',
+              room: 'ecs'
             },
             {
-              key: 'B', label: 'Extract incrementally', icon: 'litegraph-b',
-              hint: 'Peel responsibilities into focused modules one at a time. Position first, then connectivity, then rendering.',
-              effects: { techDebt: -10, quality: 15, morale: 5, migrationProgress: 1 },
-              rating: 'good',
-              feedback: 'Position extraction lands first (it\'s already in LayoutStore). Then connectivity. Each extraction is a small, testable PR. The god objects shrink steadily.',
+              key: '2',
+              label: 'Return to Components',
+              hint: 'Presentation Layer',
+              room: 'components'
             },
             {
-              key: 'C', label: 'Add a facade layer', icon: 'litegraph-c',
-              hint: 'Wrap the god objects with a clean API without changing internals.',
-              effects: { techDebt: 5, quality: 5, morale: 10 },
-              rating: 'ok',
-              feedback: 'The facade provides a nicer API, but the complexity still lives behind it. New features still require diving into the god objects.',
-            },
-          ],
+              key: '3',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Examine the ECS Blueprints', hint: 'The planned future', room: 'ecs' },
-          { key: '2', label: 'Return to Components', hint: 'Presentation Layer', room: 'components' },
-          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      ecs: {
-        title: 'The ECS Architect\'s Chamber',
-        layer: 'ECS',
-        description: `
-          Blueprints cover every surface. The Entity-Component-System architecture is taking shape:
-          branded entity IDs (<a href="${GH}/src/ecs/entityId.ts" target="_blank">NodeEntityId</a>, <code>LinkEntityId</code>, etc.)
-          prevent cross-kind mistakes at compile time.<br><br>
-          The <a href="${GH}/src/ecs/world.ts" target="_blank">World</a> registry maps each entity kind to its components &mdash; data-only
-          structs with no methods. Systems like RenderSystem and SerializationSystem are planned
-          to operate on these components in clean, decoupled passes.
-        `,
-        artifacts: [
-          { name: 'World Registry', type: 'ECS Core', icon: 'world-registry' },
-          { name: 'Branded Entity IDs', type: 'Type Safety', icon: 'branded-ids' },
-        ],
-        challenge: {
-          title: 'The ID Crossroads',
-          recommended: 'A',
-          docLink: { label: 'ECS Target Architecture: Entity IDs', url: `${GH}/docs/architecture/ecs-target-architecture.md` },
+        ecs: {
+          title: "The ECS Architect's Chamber",
+          layer: 'ECS',
           description: `
+          Blueprints cover every surface. The Entity-Component-System architecture is taking shape:
+          six entity kinds &mdash; Node, Link, Widget, Slot, Reroute, Group &mdash; each with
+          branded IDs (<a href="${GH}/src/ecs/entityId.ts" target="_blank">NodeEntityId</a>, <code>LinkEntityId</code>, etc.)
+          that prevent cross-kind mistakes at compile time. Notably, "subgraph" is not an entity
+          kind &mdash; it is simply a node carrying a <code>SubgraphStructure</code> component.<br><br>
+          The <a href="${GH}/src/ecs/world.ts" target="_blank">World</a> registry holds all entities
+          in one flat structure, tagged with <code>graphScope</code> identifiers. No sub-worlds,
+          no recursive containers. Systems like RenderSystem and SerializationSystem operate on
+          these components in clean, decoupled passes.
+        `,
+          artifacts: [
+            {
+              name: 'World Registry',
+              type: 'ECS Core',
+              icon: 'world-registry'
+            },
+            {
+              name: 'Branded Entity IDs',
+              type: 'Type Safety',
+              icon: 'branded-ids'
+            }
+          ],
+          challenge: {
+            title: 'The ID Crossroads',
+            recommended: 'A',
+            docLink: {
+              label: 'ECS Target Architecture: Entity IDs',
+              url: `${GH}/docs/architecture/ecs-target-architecture.md`
+            },
+            description: `
             The blueprints show a problem: <code>NodeId</code> is typed as <code>number | string</code>.
             Nothing prevents passing a <code>LinkId</code> where a <code>NodeId</code> is expected.
-            Magic sentinel values lurk: <code>SUBGRAPH_INPUT_ID = -10</code>,
-            <code>SUBGRAPH_OUTPUT_ID = -20</code>. Widgets are identified by name + parent node (fragile lookup).
-            Slots are identified by array index (breaks when reordered).<br><br>
+            Widgets are identified by name + parent node (fragile lookup).
+            Slots are identified by array index (breaks when reordered).
+            The six entity kinds &mdash; Node, Link, Widget, Slot, Reroute, Group &mdash; all
+            share the same untyped ID space.<br><br>
             How do you bring type safety to this ID chaos?
           `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Branded types with cast helpers',
+                icon: 'ecs-a',
+                hint: "type NodeEntityId = number & { __brand: 'NodeEntityId' } — compile-time safety, zero runtime cost.",
+                effects: { techDebt: -15, quality: 20, migrationProgress: 1 },
+                rating: 'good',
+                feedback:
+                  'The compiler now catches cross-kind ID bugs. Cast helpers at system boundaries (asNodeEntityId()) keep the ergonomics clean. Phase 1a complete.'
+              },
+              {
+                key: 'B',
+                label: 'String prefixes at runtime',
+                icon: 'ecs-b',
+                hint: '"node:42", "link:7" — parse and validate at every usage site.',
+                effects: { techDebt: 5, quality: 5, morale: -5 },
+                rating: 'ok',
+                feedback:
+                  'Runtime checks catch some bugs, but parsing overhead spreads everywhere. And someone will forget the prefix check in a hot path.'
+              },
+              {
+                key: 'C',
+                label: 'Keep plain numbers',
+                icon: 'ecs-c',
+                hint: 'Just be careful. Document which IDs are which.',
+                effects: { techDebt: 15, quality: -5 },
+                rating: 'bad',
+                feedback:
+                  'The next developer passes a LinkId to a node lookup. The silent failure takes two days to debug in production.'
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: 'Branded types with cast helpers', icon: 'ecs-a',
-              hint: 'type NodeEntityId = number & { __brand: \'NodeEntityId\' } — compile-time safety, zero runtime cost.',
-              effects: { techDebt: -15, quality: 20, migrationProgress: 1 },
-              rating: 'good',
-              feedback: 'The compiler now catches cross-kind ID bugs. Cast helpers at system boundaries (asNodeEntityId()) keep the ergonomics clean. Phase 1a complete.',
+              key: '1',
+              label: 'Descend into the Subgraph Depths',
+              hint: 'Boundaries & Promotion',
+              room: 'subgraph'
             },
             {
-              key: 'B', label: 'String prefixes at runtime', icon: 'ecs-b',
-              hint: '"node:42", "link:7" — parse and validate at every usage site.',
-              effects: { techDebt: 5, quality: 5, morale: -5 },
-              rating: 'ok',
-              feedback: 'Runtime checks catch some bugs, but parsing overhead spreads everywhere. And someone will forget the prefix check in a hot path.',
+              key: '2',
+              label: 'Visit the Renderer',
+              hint: 'Canvas & Layout',
+              room: 'renderer'
             },
             {
-              key: 'C', label: 'Keep plain numbers', icon: 'ecs-c',
-              hint: 'Just be careful. Document which IDs are which.',
-              effects: { techDebt: 15, quality: -5 },
-              rating: 'bad',
-              feedback: 'The next developer passes a LinkId to a node lookup. The silent failure takes two days to debug in production.',
-            },
-          ],
+              key: '3',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Visit the Renderer', hint: 'Canvas & Layout', room: 'renderer' },
-          { key: '2', label: 'Return to the Store Vaults', hint: 'State Management', room: 'stores' },
-          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      renderer: {
-        title: 'The Renderer Overlook',
-        layer: 'Renderer',
-        description: `
+        subgraph: {
+          title: 'The Subgraph Depths',
+          layer: 'Graph Boundaries',
+          description: `
+          You descend into nested chambers, each a perfect replica of the one above &mdash; graphs
+          within graphs within graphs. The fractal structure is beautiful, but the current code
+          tells a different story: <code>Subgraph extends LGraph</code>, virtual nodes with magic IDs
+          (<code>SUBGRAPH_INPUT_ID = -10</code>, <code>SUBGRAPH_OUTPUT_ID = -20</code>), and three
+          layers of indirection at every boundary crossing.<br><br>
+          Under <a href="${GH}/docs/architecture/subgraph-boundaries-and-promotion.md" target="_blank">graph unification</a>,
+          these chambers share a single flat World. Each graph is just a <code>graphScope</code> tag.
+          Nesting is a component (<code>SubgraphStructure</code>), not an inheritance hierarchy.
+          Boundaries become <a href="${GH}/docs/architecture/subgraph-boundaries-and-promotion.md" target="_blank">typed
+          interface contracts</a> &mdash; a function signature of typed inputs and outputs. No virtual nodes.
+          No magic IDs. A link is a link. A slot is a slot.
+        `,
+          artifacts: [
+            {
+              name: 'SubgraphStructure',
+              type: 'ECS Component',
+              icon: 'subgraph-structure'
+            },
+            {
+              name: 'Typed Interface Contracts',
+              type: 'Design Pattern',
+              icon: 'typed-contracts'
+            }
+          ],
+          challenge: {
+            title: 'The Widget Promotion Decision',
+            recommended: 'A',
+            docLink: {
+              label: 'Subgraph Boundaries: Widget Promotion',
+              url: `${GH}/docs/architecture/subgraph-boundaries-and-promotion.md`
+            },
+            description: `
+            A user right-clicks a widget inside a subgraph and selects "Promote to parent."
+            Today this requires three layers: <code>PromotionStore</code>, <code>PromotedWidgetViewManager</code>,
+            and <code>PromotedWidgetView</code> &mdash; a parallel state system that duplicates what
+            the type &rarr; widget mapping already does for normal inputs.<br><br>
+            Two candidates for the ECS future. The team must decide before Phase 3 solidifies.
+          `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Connections-only: promotion = adding a typed input',
+                icon: 'subgraph-a',
+                hint: 'Promote a widget by adding an interface input. The type\u2192widget mapping creates the widget automatically. No new concepts.',
+                effects: {
+                  techDebt: -15,
+                  quality: 15,
+                  morale: 5,
+                  migrationProgress: 1
+                },
+                rating: 'good',
+                feedback:
+                  'PromotionStore, ViewManager, and PromotedWidgetView are eliminated entirely. Promotion becomes an operation on the subgraph\u2019s function signature. The existing slot, link, and widget infrastructure handles everything.'
+              },
+              {
+                key: 'B',
+                label: 'Simplified component promotion',
+                icon: 'subgraph-b',
+                hint: 'A WidgetPromotion component on widget entities. Removes ViewManager but preserves promotion as a distinct concept.',
+                effects: { techDebt: -5, quality: 10, morale: 5 },
+                rating: 'ok',
+                feedback:
+                  'The ViewManager and proxy reconciliation are gone, but promotion remains a separate concept from connection. Shared subgraph instances face an open question: which source widget is authoritative?'
+              },
+              {
+                key: 'C',
+                label: 'Keep the current three-layer system',
+                icon: 'subgraph-c',
+                hint: 'PromotionStore + ViewManager + PromotedWidgetView. It works today.',
+                effects: { techDebt: 10, quality: -5, morale: -5 },
+                rating: 'bad',
+                feedback:
+                  'The parallel state system persists. Every promoted widget is a shadow copy reconciled by a virtual DOM-like diffing layer. The ECS migration must work around it indefinitely.'
+              }
+            ]
+          },
+          choices: [
+            {
+              key: '1',
+              label: 'Return to the ECS Chamber',
+              hint: 'Entity-Component-System',
+              room: 'ecs'
+            },
+            {
+              key: '2',
+              label: 'Visit the Litegraph Engine Room',
+              hint: 'Graph Engine',
+              room: 'litegraph'
+            },
+            {
+              key: '3',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
+        },
+
+        renderer: {
+          title: 'The Renderer Overlook',
+          layer: 'Renderer',
+          description: `
           From here you can see the entire canvas rendering pipeline. The
           <a href="${GH}/src/renderer/core/layout/store/layoutStore.ts" target="_blank">layoutStore</a> uses Y.js CRDTs for collaborative position data &mdash;
           multiple users can edit the same graph simultaneously.<br><br>
@@ -1478,48 +2146,75 @@
           generation creates workflow previews. The render loop reads layout state and
           paints nodes, links, and reroutes onto the HTML canvas.
         `,
-        artifacts: [
-          { name: 'QuadTree Spatial Index', type: 'Data Structure', icon: 'quadtree' },
-          { name: 'Y.js CRDT Layout', type: 'Collaboration', icon: 'yjs-crdt' },
-        ],
-        challenge: {
-          title: 'The Render-Time Mutation',
-          recommended: 'A',
-          docLink: { label: 'Entity Problems: Render-Time Mutations', url: `${GH}/docs/architecture/entity-problems.md` },
-          description: `
+          artifacts: [
+            {
+              name: 'QuadTree Spatial Index',
+              type: 'Data Structure',
+              icon: 'quadtree'
+            },
+            {
+              name: 'Y.js CRDT Layout',
+              type: 'Collaboration',
+              icon: 'yjs-crdt'
+            }
+          ],
+          challenge: {
+            title: 'The Render-Time Mutation',
+            recommended: 'A',
+            docLink: {
+              label: 'Entity Problems: Render-Time Mutations',
+              url: `${GH}/docs/architecture/entity-problems.md`
+            },
+            description: `
             Alarms sound. The render pipeline has a critical flaw: <code>drawNode()</code> calls
             <code>_setConcreteSlots()</code> and <code>arrange()</code> during the render pass.
             The <strong>render phase mutates state</strong>, making draw order affect layout.
             Node A's position depends on whether Node B was drawn first.<br><br>
             How do you fix the pipeline?
           `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Separate update and render phases',
+                icon: 'renderer-a',
+                hint: 'Compute all layout in an update pass, then render as a pure read-only pass. Matches the ECS system pipeline.',
+                effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
+                rating: 'good',
+                feedback:
+                  'The pipeline becomes: Input \u2192 Update (layout, connectivity) \u2192 Render (read-only). Draw order no longer matters. Bugs vanish.'
+              },
+              {
+                key: 'B',
+                label: 'Dirty flags and deferred render',
+                icon: 'renderer-b',
+                hint: 'Mark mutated nodes dirty, skip them, re-render next frame.',
+                effects: { techDebt: -5, quality: 5, morale: 5 },
+                rating: 'ok',
+                feedback:
+                  "Dirty flags reduce the worst symptoms, but the render pass still has permission to mutate. It's a band-aid on an architectural wound."
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: 'Separate update and render phases', icon: 'renderer-a',
-              hint: 'Compute all layout in an update pass, then render as a pure read-only pass. Matches the ECS system pipeline.',
-              effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
-              rating: 'good',
-              feedback: 'The pipeline becomes: Input \u2192 Update (layout, connectivity) \u2192 Render (read-only). Draw order no longer matters. Bugs vanish.',
+              key: '1',
+              label: 'Examine the ECS Blueprints',
+              hint: 'Entity-Component-System',
+              room: 'ecs'
             },
             {
-              key: 'B', label: 'Dirty flags and deferred render', icon: 'renderer-b',
-              hint: 'Mark mutated nodes dirty, skip them, re-render next frame.',
-              effects: { techDebt: -5, quality: 5, morale: 5 },
-              rating: 'ok',
-              feedback: 'Dirty flags reduce the worst symptoms, but the render pass still has permission to mutate. It\'s a band-aid on an architectural wound.',
-            },
-          ],
+              key: '2',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Examine the ECS Blueprints', hint: 'Entity-Component-System', room: 'ecs' },
-          { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      composables: {
-        title: 'The Composables Workshop',
-        layer: 'Composables',
-        description: `
+        composables: {
+          title: 'The Composables Workshop',
+          layer: 'Composables',
+          description: `
           Hooks hang from the walls, each a reusable piece of Vue composition logic.
           <a href="${GH}/src/composables/useCoreCommands.ts" target="_blank">useCoreCommands.ts</a> is the largest at 42KB &mdash; an orchestrator binding
           keyboard shortcuts to application commands.<br><br>
@@ -1527,52 +2222,78 @@
           <code>queue/</code>, <code>node/</code>, <code>graph/</code>. Each composable
           encapsulates logic that would otherwise clutter components.
         `,
-        artifacts: [
-          { name: 'useCoreCommands.ts', type: 'Composable', icon: 'usecorecommands' },
-        ],
-        challenge: {
-          title: 'The Collaboration Protocol',
-          recommended: 'A',
-          docLink: { label: 'Proto-ECS Stores: LayoutStore', url: `${GH}/docs/architecture/proto-ecs-stores.md` },
-          description: `
+          artifacts: [
+            {
+              name: 'useCoreCommands.ts',
+              type: 'Composable',
+              icon: 'usecorecommands'
+            }
+          ],
+          challenge: {
+            title: 'The Collaboration Protocol',
+            recommended: 'A',
+            docLink: {
+              label: 'Proto-ECS Stores: LayoutStore',
+              url: `${GH}/docs/architecture/proto-ecs-stores.md`
+            },
+            description: `
             A request arrives: multiple users want to edit the same workflow simultaneously.
             The <code>layoutStore</code> already extracts position data from litegraph entities.
             But how do you synchronize positions across users without conflicts?
           `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Y.js CRDTs',
+                icon: 'composables-a',
+                hint: 'Conflict-free replicated data types. Merge without coordination. Already proven at scale.',
+                effects: { techDebt: -10, quality: 15, morale: 10 },
+                rating: 'good',
+                feedback:
+                  'Y.js CRDT maps back the layout store. Concurrent edits merge automatically. ADR 0003 is realized. The collaboration future is here.'
+              },
+              {
+                key: 'B',
+                label: 'Polling-based sync',
+                icon: 'composables-b',
+                hint: 'Fetch full state every few seconds, merge manually, hope for the best.',
+                effects: { techDebt: 10, quality: -5, morale: -5 },
+                rating: 'bad',
+                feedback:
+                  'Polling creates a flickering, laggy experience. Two users move the same node and one edit is silently lost. Support tickets pile up.'
+              },
+              {
+                key: 'C',
+                label: 'Skip collaboration for now',
+                icon: 'composables-c',
+                hint: 'Single-user editing only. Focus on other priorities.',
+                effects: { morale: 5 },
+                rating: 'ok',
+                feedback:
+                  'A pragmatic choice. The team focuses elsewhere. But the cloud product team is not happy about the delay.'
+              }
+            ]
+          },
           choices: [
             {
-              key: 'A', label: 'Y.js CRDTs', icon: 'composables-a',
-              hint: 'Conflict-free replicated data types. Merge without coordination. Already proven at scale.',
-              effects: { techDebt: -10, quality: 15, morale: 10 },
-              rating: 'good',
-              feedback: 'Y.js CRDT maps back the layout store. Concurrent edits merge automatically. ADR 0003 is realized. The collaboration future is here.',
+              key: '1',
+              label: 'Descend into the Store Vaults',
+              hint: 'State Management',
+              room: 'stores'
             },
             {
-              key: 'B', label: 'Polling-based sync', icon: 'composables-b',
-              hint: 'Fetch full state every few seconds, merge manually, hope for the best.',
-              effects: { techDebt: 10, quality: -5, morale: -5 },
-              rating: 'bad',
-              feedback: 'Polling creates a flickering, laggy experience. Two users move the same node and one edit is silently lost. Support tickets pile up.',
-            },
-            {
-              key: 'C', label: 'Skip collaboration for now', icon: 'composables-c',
-              hint: 'Single-user editing only. Focus on other priorities.',
-              effects: { morale: 5 },
-              rating: 'ok',
-              feedback: 'A pragmatic choice. The team focuses elsewhere. But the cloud product team is not happy about the delay.',
-            },
-          ],
+              key: '2',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         },
-        choices: [
-          { key: '1', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
-          { key: '2', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
 
-      sidepanel: {
-        title: 'The Right Side Panel',
-        layer: 'Presentation',
-        description: `
+        sidepanel: {
+          title: 'The Right Side Panel',
+          layer: 'Presentation',
+          description: `
           A multi-tabbed interface reveals itself. The Node Browser tab lets you search
           and drag nodes onto the canvas. The Properties tab shows details of the selected
           node. The Model panel catalogs available AI models.<br><br>
@@ -1580,237 +2301,282 @@
           <a href="${GH}/src/stores/modelStore.ts" target="_blank">modelStore</a> powers the model panel, and <a href="${GH}/src/stores/workspaceStore.ts" target="_blank">workspaceStore</a>
           controls which panels are visible.
         `,
-        artifacts: [],
-        choices: [
-          { key: '1', label: 'Return to the Component Gallery', hint: 'Presentation Layer', room: 'components' },
-          { key: '2', label: 'Descend into the Store Vaults', hint: 'State Management', room: 'stores' },
-          { key: '3', label: 'Return to the Entry Point', hint: 'src/main.ts', room: 'entry' },
-        ],
-      },
-    }
-
-    const totalRooms = Object.keys(rooms).length
-
-    // --- Endings ---
-    const endings = [
-      {
-        id: 'great',
-        test: (s) => s.techDebt < 25 && s.quality >= 75 && s.morale >= 60,
-        title: 'The ECS Enlightenment',
-        color: '--green',
-        description: `The World registry hums with clean data. Node removal: 30 lines instead of 107.
-          Serialization: one system instead of six scattered methods. Branded IDs catch bugs at compile time.
-          Y.js CRDTs enable real-time collaboration. The team ships features faster than ever.<br><br>
-          The god objects are gone. In their place: focused components, pure systems, and a codebase
-          that new developers can understand in days, not months.`,
-      },
-      {
-        id: 'good',
-        test: (s) => s.techDebt < 40 && s.quality >= 50,
-        title: 'The Clean Architecture',
-        color: '--accent',
-        description: `The migration completes on schedule. Systems hum along, the ECS World holds
-          most entity state, and the worst god objects have been tamed. A few rough edges remain,
-          but the architecture is solid.<br><br>
-          The team can iterate with confidence. Not perfect, but a significant improvement
-          over the tangled monolith you first encountered.`,
-      },
-      {
-        id: 'mediocre',
-        test: (s) => s.techDebt < 70,
-        title: 'The Eternal Refactor',
-        color: '--yellow',
-        description: `The migration... continues. Every sprint has a "cleanup" ticket that never quite closes.
-          The proto-ECS stores coexist awkwardly with the old god objects. Some components use
-          the World, others still reach through class hierarchies.<br><br>
-          It works, mostly. But every new feature requires understanding both the old and new patterns.
-          The refactor continues into its third year.`,
-      },
-      {
-        id: 'disaster',
-        test: () => true,
-        title: 'The Spaghetti Singularity',
-        color: '--red',
-        description: `The god objects grew sentient. LGraphCanvas hit 12,000 lines and developed
-          a circular dependency with itself. Render-time mutations cause nodes to teleport randomly.
-          The version counter overflows because nobody centralized the 19 increment sites.<br><br>
-          The codebase collapses under its own weight. The team rewrites it in Rust. Then in Go.
-          Then back in TypeScript. The cycle continues.`,
-      },
-    ]
-
-    // --- DOM Refs ---
-    const $ = (sel) => document.querySelector(sel)
-
-    const els = {
-      roomTitle: $('#room-title'),
-      roomLayer: $('#room-layer'),
-      roomDesc: $('#room-description'),
-      roomImage: $('#room-image'),
-      choices: $('#choices'),
-      challengePanel: $('#challenge-panel'),
-      challengeTitle: $('#challenge-title'),
-      challengeDesc: $('#challenge-desc'),
-      challengeChoices: $('#challenge-choices'),
-      resultBanner: $('#result-banner'),
-      artifacts: $('#artifacts'),
-      artifactsList: $('#artifacts-list'),
-      inventory: $('#inventory'),
-      invCount: $('#inv-count'),
-      invLabel: $('#inv-label'),
-      decisions: $('#decisions'),
-      decCount: $('#dec-count'),
-      decLabel: $('#dec-label'),
-      log: $('#log'),
-      logCount: $('#log-count'),
-      barDebt: $('#bar-debt'),
-      barQuality: $('#bar-quality'),
-      barMorale: $('#bar-morale'),
-      barMigration: $('#bar-migration'),
-      valDebt: $('#val-debt'),
-      valQuality: $('#val-quality'),
-      valMorale: $('#val-morale'),
-      valMigration: $('#val-migration'),
-      map: $('#map'),
-      mapDialog: $('#map-dialog'),
-      toggleMap: $('#toggle-map'),
-      valChallenges: $('#val-challenges'),
-      restartBtn: $('#restart-btn'),
-      achievements: $('#achievements'),
-      achCount: $('#ach-count'),
-      achLabel: $('#ach-label'),
-      narrative: $('#narrative'),
-      endingDialog: $('#ending-dialog'),
-      endingTitle: $('#ending-title'),
-      endingDesc: $('#ending-desc'),
-      endingScorecard: $('#ending-scorecard'),
-      endingStats: $('#ending-stats'),
-      playAgainBtn: $('#play-again-btn'),
-    }
-
-    // --- Stats ---
-    function clamp(val, min, max) {
-      return Math.max(min, Math.min(max, val))
-    }
-
-    function applyEffects(effects) {
-      if (!effects) return
-      const s = state.stats
-      if (effects.techDebt) s.techDebt = clamp(s.techDebt + effects.techDebt, 0, 100)
-      if (effects.quality) s.quality = clamp(s.quality + effects.quality, 0, 100)
-      if (effects.morale) s.morale = clamp(s.morale + effects.morale, 0, 100)
-      if (effects.migrationProgress) s.migrationProgress = clamp(s.migrationProgress + effects.migrationProgress, 0, 5)
-      renderStats()
-    }
-
-    function renderStats() {
-      const s = state.stats
-      els.barDebt.style.width = s.techDebt + '%'
-      els.barQuality.style.width = s.quality + '%'
-      els.barMorale.style.width = s.morale + '%'
-      els.barMigration.style.width = (s.migrationProgress / 5 * 100) + '%'
-      els.valDebt.textContent = s.techDebt
-      els.valQuality.textContent = s.quality
-      els.valMorale.textContent = s.morale
-      els.valMigration.textContent = s.migrationProgress + '/5'
-      els.valChallenges.textContent = state.challengesCompleted.size + '/' + TOTAL_CHALLENGES
-    }
-
-    function formatEffects(effects) {
-      const labels = { techDebt: 'Debt', quality: 'Quality', morale: 'Morale', migrationProgress: 'ECS' }
-      return Object.entries(effects)
-        .filter(([, v]) => v !== 0 && v !== undefined)
-        .map(([k, v]) => {
-          const sign = v > 0 ? '+' : ''
-          const cls = (k === 'techDebt' ? (v < 0 ? 'positive' : 'negative') : (v > 0 ? 'positive' : 'negative'))
-          return `<span class="stat-delta ${cls}">${labels[k]} ${sign}${v}</span>`
-        })
-        .join(' &nbsp; ')
-    }
-
-    // --- Icon helper ---
-    const iconFallbacks = {
-      'Component': '&#9645;', 'Proto-ECS Store': '&#9671;', 'Service': '&#9881;',
-      'God Object': '&#9760;', 'ECS Core': '&#9672;', 'Type Safety': '&#9745;',
-      'Data Structure': '&#9638;', 'Collaboration': '&#8644;', 'Composable': '&#10038;',
-    }
-
-    function artifactIconHtml(a, size) {
-      const sz = size || 36
-      if (a.icon) {
-        return `<div class="artifact-icon" style="width:${sz}px;height:${sz}px">
-          <img src="icons/${a.icon}.png" alt="${a.name}"
-               onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='${iconFallbacks[a.type] || '&#9670;'}'">
-        </div>`
-      }
-      return `<div class="artifact-icon placeholder" style="width:${sz}px;height:${sz}px">${iconFallbacks[a.type] || '&#9670;'}</div>`
-    }
-
-    // --- Rendering ---
-    let isFirstRender = true
-
-    function render(roomId) {
-      if (!rooms[roomId]) return
-
-      if (isFirstRender || state.currentRoom === roomId) {
-        isFirstRender = false
-        renderRoom(roomId)
-        return
-      }
-
-      // Fade out, swap, fade in
-      els.narrative.classList.add('exit')
-      setTimeout(() => {
-        renderRoom(roomId)
-        window.scrollTo({ top: 0, behavior: 'instant' })
-        els.narrative.classList.remove('exit')
-        els.narrative.classList.add('enter')
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            els.narrative.classList.remove('enter')
-          })
-        })
-      }, 200)
-    }
-
-    function renderRoom(roomId) {
-      const room = rooms[roomId]
-      if (!room) return
-
-      state.currentRoom = roomId
-      state.visited.add(roomId)
-
-      // Header
-      els.roomTitle.textContent = room.title
-      els.roomLayer.textContent = room.layer
-
-      // Room image
-      const prompt = imagePrompts[roomId]
-      els.roomImage.style.display = ''
-      els.roomImage.classList.remove('placeholder')
-      const img = new Image()
-      img.src = `images/${roomId}.png`
-      img.alt = prompt || room.title
-      img.onload = () => {
-        els.roomImage.innerHTML = ''
-        els.roomImage.appendChild(img)
-      }
-      img.onerror = () => {
-        if (prompt) {
-          els.roomImage.classList.add('placeholder')
-          els.roomImage.innerHTML = `<span>${prompt}</span>`
-        } else {
-          els.roomImage.style.display = 'none'
+          artifacts: [],
+          choices: [
+            {
+              key: '1',
+              label: 'Return to the Component Gallery',
+              hint: 'Presentation Layer',
+              room: 'components'
+            },
+            {
+              key: '2',
+              label: 'Descend into the Store Vaults',
+              hint: 'State Management',
+              room: 'stores'
+            },
+            {
+              key: '3',
+              label: 'Return to the Entry Point',
+              hint: 'src/main.ts',
+              room: 'entry'
+            }
+          ]
         }
       }
 
-      // Description
-      els.roomDesc.innerHTML = room.description.trim()
+      const totalRooms = Object.keys(rooms).length
 
-      // Artifacts in room
-      if (room.artifacts && room.artifacts.length > 0) {
-        els.artifacts.classList.add('has-items')
-        els.artifactsList.innerHTML = room.artifacts.map(a => `
+      // --- Endings ---
+      const endings = [
+        {
+          id: 'great',
+          test: (s) => s.techDebt < 25 && s.quality >= 75 && s.morale >= 60,
+          title: 'The ECS Enlightenment',
+          color: '--green',
+          description: `The World registry hums with clean data. Node removal: 30 lines instead of 107.
+          Serialization: one system instead of six scattered methods. Branded IDs catch bugs at compile time.
+          Y.js CRDTs enable real-time collaboration. The team ships features faster than ever.<br><br>
+          The god objects are gone. In their place: focused components, pure systems, and a codebase
+          that new developers can understand in days, not months.`
+        },
+        {
+          id: 'good',
+          test: (s) => s.techDebt < 40 && s.quality >= 50,
+          title: 'The Clean Architecture',
+          color: '--accent',
+          description: `The migration completes on schedule. Systems hum along, the ECS World holds
+          most entity state, and the worst god objects have been tamed. A few rough edges remain,
+          but the architecture is solid.<br><br>
+          The team can iterate with confidence. Not perfect, but a significant improvement
+          over the tangled monolith you first encountered.`
+        },
+        {
+          id: 'mediocre',
+          test: (s) => s.techDebt < 70,
+          title: 'The Eternal Refactor',
+          color: '--yellow',
+          description: `The migration... continues. Every sprint has a "cleanup" ticket that never quite closes.
+          The proto-ECS stores coexist awkwardly with the old god objects. Some components use
+          the World, others still reach through class hierarchies.<br><br>
+          It works, mostly. But every new feature requires understanding both the old and new patterns.
+          The refactor continues into its third year.`
+        },
+        {
+          id: 'disaster',
+          test: () => true,
+          title: 'The Spaghetti Singularity',
+          color: '--red',
+          description: `The god objects grew sentient. LGraphCanvas hit 12,000 lines and developed
+          a circular dependency with itself. Render-time mutations cause nodes to teleport randomly.
+          The version counter overflows because nobody centralized the 19 increment sites.<br><br>
+          The codebase collapses under its own weight. The team rewrites it in Rust. Then in Go.
+          Then back in TypeScript. The cycle continues.`
+        }
+      ]
+
+      // --- DOM Refs ---
+      const $ = (sel) => document.querySelector(sel)
+
+      const els = {
+        roomTitle: $('#room-title'),
+        roomLayer: $('#room-layer'),
+        roomDesc: $('#room-description'),
+        roomImage: $('#room-image'),
+        choices: $('#choices'),
+        challengePanel: $('#challenge-panel'),
+        challengeTitle: $('#challenge-title'),
+        challengeDesc: $('#challenge-desc'),
+        challengeChoices: $('#challenge-choices'),
+        resultBanner: $('#result-banner'),
+        artifacts: $('#artifacts'),
+        artifactsList: $('#artifacts-list'),
+        inventory: $('#inventory'),
+        invCount: $('#inv-count'),
+        invLabel: $('#inv-label'),
+        decisions: $('#decisions'),
+        decCount: $('#dec-count'),
+        decLabel: $('#dec-label'),
+        log: $('#log'),
+        logCount: $('#log-count'),
+        barDebt: $('#bar-debt'),
+        barQuality: $('#bar-quality'),
+        barMorale: $('#bar-morale'),
+        barMigration: $('#bar-migration'),
+        valDebt: $('#val-debt'),
+        valQuality: $('#val-quality'),
+        valMorale: $('#val-morale'),
+        valMigration: $('#val-migration'),
+        map: $('#map'),
+        mapDialog: $('#map-dialog'),
+        toggleMap: $('#toggle-map'),
+        valChallenges: $('#val-challenges'),
+        restartBtn: $('#restart-btn'),
+        achievements: $('#achievements'),
+        achCount: $('#ach-count'),
+        achLabel: $('#ach-label'),
+        narrative: $('#narrative'),
+        endingDialog: $('#ending-dialog'),
+        endingTitle: $('#ending-title'),
+        endingDesc: $('#ending-desc'),
+        endingScorecard: $('#ending-scorecard'),
+        endingStats: $('#ending-stats'),
+        playAgainBtn: $('#play-again-btn')
+      }
+
+      // --- Stats ---
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val))
+      }
+
+      function applyEffects(effects) {
+        if (!effects) return
+        const s = state.stats
+        if (effects.techDebt)
+          s.techDebt = clamp(s.techDebt + effects.techDebt, 0, 100)
+        if (effects.quality)
+          s.quality = clamp(s.quality + effects.quality, 0, 100)
+        if (effects.morale) s.morale = clamp(s.morale + effects.morale, 0, 100)
+        if (effects.migrationProgress)
+          s.migrationProgress = clamp(
+            s.migrationProgress + effects.migrationProgress,
+            0,
+            5
+          )
+        renderStats()
+      }
+
+      function renderStats() {
+        const s = state.stats
+        els.barDebt.style.width = s.techDebt + '%'
+        els.barQuality.style.width = s.quality + '%'
+        els.barMorale.style.width = s.morale + '%'
+        els.barMigration.style.width = (s.migrationProgress / 5) * 100 + '%'
+        els.valDebt.textContent = s.techDebt
+        els.valQuality.textContent = s.quality
+        els.valMorale.textContent = s.morale
+        els.valMigration.textContent = s.migrationProgress + '/5'
+        els.valChallenges.textContent =
+          state.challengesCompleted.size + '/' + TOTAL_CHALLENGES
+      }
+
+      function formatEffects(effects) {
+        const labels = {
+          techDebt: 'Debt',
+          quality: 'Quality',
+          morale: 'Morale',
+          migrationProgress: 'ECS'
+        }
+        return Object.entries(effects)
+          .filter(([, v]) => v !== 0 && v !== undefined)
+          .map(([k, v]) => {
+            const sign = v > 0 ? '+' : ''
+            const cls =
+              k === 'techDebt'
+                ? v < 0
+                  ? 'positive'
+                  : 'negative'
+                : v > 0
+                  ? 'positive'
+                  : 'negative'
+            return `<span class="stat-delta ${cls}">${labels[k]} ${sign}${v}</span>`
+          })
+          .join(' &nbsp; ')
+      }
+
+      // --- Icon helper ---
+      const iconFallbacks = {
+        Component: '&#9645;',
+        'Proto-ECS Store': '&#9671;',
+        Service: '&#9881;',
+        'God Object': '&#9760;',
+        'ECS Core': '&#9672;',
+        'Type Safety': '&#9745;',
+        'Data Structure': '&#9638;',
+        Collaboration: '&#8644;',
+        Composable: '&#10038;',
+        'ECS Component': '&#9648;',
+        'Design Pattern': '&#9998;'
+      }
+
+      function artifactIconHtml(a, size) {
+        const sz = size || 36
+        if (a.icon) {
+          return `<div class="artifact-icon" style="width:${sz}px;height:${sz}px">
+          <img src="icons/${a.icon}.png" alt="${a.name}"
+               onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='${iconFallbacks[a.type] || '&#9670;'}'">
+        </div>`
+        }
+        return `<div class="artifact-icon placeholder" style="width:${sz}px;height:${sz}px">${iconFallbacks[a.type] || '&#9670;'}</div>`
+      }
+
+      // --- Rendering ---
+      let isFirstRender = true
+
+      function render(roomId) {
+        if (!rooms[roomId]) return
+
+        if (isFirstRender || state.currentRoom === roomId) {
+          isFirstRender = false
+          renderRoom(roomId)
+          return
+        }
+
+        // Fade out, swap, fade in
+        els.narrative.classList.add('exit')
+        setTimeout(() => {
+          renderRoom(roomId)
+          window.scrollTo({ top: 0, behavior: 'instant' })
+          els.narrative.classList.remove('exit')
+          els.narrative.classList.add('enter')
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              els.narrative.classList.remove('enter')
+            })
+          })
+        }, 200)
+      }
+
+      function renderRoom(roomId) {
+        const room = rooms[roomId]
+        if (!room) return
+
+        state.currentRoom = roomId
+        state.visited.add(roomId)
+
+        // Header
+        els.roomTitle.textContent = room.title
+        els.roomLayer.textContent = room.layer
+
+        // Room image
+        const prompt = imagePrompts[roomId]
+        els.roomImage.style.display = ''
+        els.roomImage.classList.remove('placeholder')
+        const img = new Image()
+        img.src = `images/${roomId}.png`
+        img.alt = prompt || room.title
+        img.onload = () => {
+          els.roomImage.innerHTML = ''
+          els.roomImage.appendChild(img)
+        }
+        img.onerror = () => {
+          if (prompt) {
+            els.roomImage.classList.add('placeholder')
+            els.roomImage.innerHTML = `<span>${prompt}</span>`
+          } else {
+            els.roomImage.style.display = 'none'
+          }
+        }
+
+        // Description
+        els.roomDesc.innerHTML = room.description.trim()
+
+        // Artifacts in room
+        if (room.artifacts && room.artifacts.length > 0) {
+          els.artifacts.classList.add('has-items')
+          els.artifactsList.innerHTML = room.artifacts
+            .map(
+              (a) => `
           <div class="artifact">
             ${artifactIconHtml(a, 36)}
             <div class="artifact-info">
@@ -1818,81 +2584,85 @@
               <span class="artifact-type">${a.type}</span>
             </div>
           </div>
-        `).join('')
+        `
+            )
+            .join('')
 
-        for (const a of room.artifacts) {
-          if (!state.inventory.find(i => i.name === a.name)) {
-            state.inventory.push(a)
-            addLog(`Collected: ${a.name}`, 'discovery')
+          for (const a of room.artifacts) {
+            if (!state.inventory.find((i) => i.name === a.name)) {
+              state.inventory.push(a)
+              addLog(`Collected: ${a.name}`, 'discovery')
+            }
           }
+        } else {
+          els.artifacts.classList.remove('has-items')
+          els.artifactsList.innerHTML = ''
         }
-      } else {
-        els.artifacts.classList.remove('has-items')
-        els.artifactsList.innerHTML = ''
+
+        // Challenge or navigation
+        const hasUnresolvedChallenge =
+          room.challenge && !state.challengesCompleted.has(roomId)
+
+        if (hasUnresolvedChallenge) {
+          showChallenge(roomId, room.challenge)
+        } else {
+          hideChallenge()
+        }
+        renderChoices(room.choices)
+
+        // Clear result banner on room change
+        els.resultBanner.classList.remove('active')
+
+        // Update HUD
+        renderStats()
+        renderInventory()
+        renderDecisions()
+        renderMap()
+
+        addLog(`Entered: ${room.title}`)
+        preloadAdjacentImages(room)
+        saveState()
       }
 
-      // Challenge or navigation
-      const hasUnresolvedChallenge = room.challenge && !state.challengesCompleted.has(roomId)
+      // --- Image preloading ---
+      const preloaded = new Set()
 
-      if (hasUnresolvedChallenge) {
-        showChallenge(roomId, room.challenge)
-      } else {
-        hideChallenge()
+      function preloadImage(src) {
+        if (preloaded.has(src)) return
+        preloaded.add(src)
+        const img = new Image()
+        img.src = src
       }
-      renderChoices(room.choices)
 
-      // Clear result banner on room change
-      els.resultBanner.classList.remove('active')
-
-      // Update HUD
-      renderStats()
-      renderInventory()
-      renderDecisions()
-      renderMap()
-
-      addLog(`Entered: ${room.title}`)
-      preloadAdjacentImages(room)
-      saveState()
-    }
-
-    // --- Image preloading ---
-    const preloaded = new Set()
-
-    function preloadImage(src) {
-      if (preloaded.has(src)) return
-      preloaded.add(src)
-      const img = new Image()
-      img.src = src
-    }
-
-    function preloadAdjacentImages(room) {
-      for (const c of room.choices) {
-        const target = rooms[c.room]
-        if (!target) continue
-        preloadImage(`images/${c.room}.png`)
-        if (target.challenge) {
-          for (const ch of target.challenge.choices) {
-            if (ch.icon) preloadImage(`icons/${ch.icon}.png`)
+      function preloadAdjacentImages(room) {
+        for (const c of room.choices) {
+          const target = rooms[c.room]
+          if (!target) continue
+          preloadImage(`images/${c.room}.png`)
+          if (target.challenge) {
+            for (const ch of target.challenge.choices) {
+              if (ch.icon) preloadImage(`icons/${ch.icon}.png`)
+            }
           }
-        }
-        if (target.artifacts) {
-          for (const a of target.artifacts) {
-            if (a.icon) preloadImage(`icons/${a.icon}.png`)
+          if (target.artifacts) {
+            for (const a of target.artifacts) {
+              if (a.icon) preloadImage(`icons/${a.icon}.png`)
+            }
           }
         }
       }
-    }
 
-    function showChallenge(roomId, challenge) {
-      els.challengePanel.classList.add('active')
-      els.challengeTitle.textContent = challenge.title
-      els.challengeDesc.innerHTML = challenge.description.trim()
+      function showChallenge(roomId, challenge) {
+        els.challengePanel.classList.add('active')
+        els.challengeTitle.textContent = challenge.title
+        els.challengeDesc.innerHTML = challenge.description.trim()
 
-      els.challengeChoices.innerHTML = challenge.choices.map(c => {
-        const iconImg = c.icon
-          ? `<div class="choice-icon"><img src="icons/${c.icon}.png" alt="" onerror="this.parentElement.style.display='none'"></div>`
-          : ''
-        return `<button class="challenge-choice-btn" data-key="${c.key}">
+        els.challengeChoices.innerHTML = challenge.choices
+          .map((c) => {
+            const iconImg = c.icon
+              ? `<div class="choice-icon"><img src="icons/${c.icon}.png" alt="" onerror="this.parentElement.style.display='none'"></div>`
+              : ''
+            return `<button class="challenge-choice-btn" data-key="${c.key}">
           <div class="choice-icon-wrap">
             <span class="choice-key">${c.key}</span>
             ${iconImg}
@@ -1902,269 +2672,324 @@
             <span class="choice-hint">${c.hint}</span>
           </div>
         </button>`
-      }).join('')
+          })
+          .join('')
 
-      els.challengeChoices.querySelectorAll('.challenge-choice-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.key
-          resolveChallenge(roomId, key)
-        })
-      })
-    }
-
-    function hideChallenge() {
-      els.challengePanel.classList.remove('active')
-    }
-
-    function resolveChallenge(roomId, choiceKey) {
-      const room = rooms[roomId]
-      const challenge = room.challenge
-      const choice = challenge.choices.find(c => c.key === choiceKey)
-      if (!choice) return
-
-      state.challengesCompleted.add(roomId)
-      state.challengeChoices[roomId] = choiceKey
-
-      // Apply effects
-      applyEffects(choice.effects)
-
-      // Hide challenge, show result
-      hideChallenge()
-
-      // Build recommended answer callout
-      const best = challenge.choices.find(c => c.key === challenge.recommended)
-      const wasCorrect = choiceKey === challenge.recommended
-      let recommendedHtml = ''
-      if (best) {
-        recommendedHtml = `<div class="result-recommended">`
-        if (wasCorrect) {
-          recommendedHtml += `<strong>You chose the recommended approach.</strong> This matches the real migration strategy used in the ComfyUI frontend.`
-        } else {
-          recommendedHtml += `<strong>Recommended: ${best.label}</strong> &mdash; ${best.hint}`
-        }
-        if (challenge.docLink) {
-          recommendedHtml += `<br><a class="result-doc-link" href="${challenge.docLink.url}" target="_blank">Read more: ${challenge.docLink.label} &rarr;</a>`
-        }
-        recommendedHtml += `</div>`
+        els.challengeChoices
+          .querySelectorAll('.challenge-choice-btn')
+          .forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const key = btn.dataset.key
+              resolveChallenge(roomId, key)
+            })
+          })
       }
 
-      els.resultBanner.className = 'active ' + choice.rating
-      els.resultBanner.classList.add('active')
-      els.resultBanner.innerHTML = `
+      function hideChallenge() {
+        els.challengePanel.classList.remove('active')
+      }
+
+      function resolveChallenge(roomId, choiceKey) {
+        const room = rooms[roomId]
+        const challenge = room.challenge
+        const choice = challenge.choices.find((c) => c.key === choiceKey)
+        if (!choice) return
+
+        state.challengesCompleted.add(roomId)
+        state.challengeChoices[roomId] = choiceKey
+
+        // Apply effects
+        applyEffects(choice.effects)
+
+        // Hide challenge, show result
+        hideChallenge()
+
+        // Build recommended answer callout
+        const best = challenge.choices.find(
+          (c) => c.key === challenge.recommended
+        )
+        const wasCorrect = choiceKey === challenge.recommended
+        let recommendedHtml = ''
+        if (best) {
+          recommendedHtml = `<div class="result-recommended">`
+          if (wasCorrect) {
+            recommendedHtml += `<strong>You chose the recommended approach.</strong> This matches the real migration strategy used in the ComfyUI frontend.`
+          } else {
+            recommendedHtml += `<strong>Recommended: ${best.label}</strong> &mdash; ${best.hint}`
+          }
+          if (challenge.docLink) {
+            recommendedHtml += `<br><a class="result-doc-link" href="${challenge.docLink.url}" target="_blank">Read more: ${challenge.docLink.label} &rarr;</a>`
+          }
+          recommendedHtml += `</div>`
+        }
+
+        els.resultBanner.className = 'active ' + choice.rating
+        els.resultBanner.classList.add('active')
+        els.resultBanner.innerHTML = `
         <strong>${choice.label}</strong><br>
         ${choice.feedback}<br><br>
         ${formatEffects(choice.effects)}
         ${recommendedHtml}
       `
 
-      // Show navigation choices
-      renderChoices(room.choices)
-      renderDecisions()
-      saveState()
+        // Show navigation choices
+        renderChoices(room.choices)
+        renderDecisions()
+        saveState()
 
-      // Log
-      addLog(`Challenge resolved: ${challenge.title}`, choice.rating === 'good' ? 'discovery' : choice.rating === 'bad' ? 'error' : 'warning')
+        // Log
+        addLog(
+          `Challenge resolved: ${challenge.title}`,
+          choice.rating === 'good'
+            ? 'discovery'
+            : choice.rating === 'bad'
+              ? 'error'
+              : 'warning'
+        )
 
-      // Check ending
-      if (state.challengesCompleted.size >= TOTAL_CHALLENGES) {
-        addLog('All challenges resolved. Your fate is sealed...', 'ending')
-        setTimeout(showEnding, 1500)
+        // Check ending
+        if (state.challengesCompleted.size >= TOTAL_CHALLENGES) {
+          addLog('All challenges resolved. Your fate is sealed...', 'ending')
+          setTimeout(showEnding, 1500)
+        }
+
+        renderMap()
       }
 
-      renderMap()
-    }
-
-    function renderChoices(choices) {
-      els.choices.innerHTML = choices.map(c => `
+      function renderChoices(choices) {
+        els.choices.innerHTML = choices
+          .map(
+            (c) => `
         <button class="choice-btn" data-room="${c.room}">
           <span class="choice-key">${c.key}</span>
           <span class="choice-label">${c.label}</span>
           <span class="choice-hint">${c.hint}</span>
         </button>
-      `).join('')
+      `
+          )
+          .join('')
 
-      els.choices.querySelectorAll('.choice-btn').forEach(btn => {
-        btn.addEventListener('click', () => render(btn.dataset.room))
-      })
-    }
+        els.choices.querySelectorAll('.choice-btn').forEach((btn) => {
+          btn.addEventListener('click', () => render(btn.dataset.room))
+        })
+      }
 
-    function renderInventory() {
-      if (state.inventory.length > 0) {
-        els.inventory.innerHTML = '<div class="inv-grid">' + state.inventory.map((item, idx) => {
-          const fallback = iconFallbacks[item.type] || '&#9670;'
-          const inner = item.icon
-            ? `<img src="icons/${item.icon}.png" alt="${item.name}"
+      function renderInventory() {
+        if (state.inventory.length > 0) {
+          els.inventory.innerHTML =
+            '<div class="inv-grid">' +
+            state.inventory
+              .map((item, idx) => {
+                const fallback = iconFallbacks[item.type] || '&#9670;'
+                const inner = item.icon
+                  ? `<img src="icons/${item.icon}.png" alt="${item.name}"
                     onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='${fallback}'">`
-            : fallback
-          const cls = item.icon ? 'inv-slot' : 'inv-slot placeholder'
-          return `<div class="${cls}" data-inv-idx="${idx}">${inner}</div>`
-        }).join('') + '</div>'
+                  : fallback
+                const cls = item.icon ? 'inv-slot' : 'inv-slot placeholder'
+                return `<div class="${cls}" data-inv-idx="${idx}">${inner}</div>`
+              })
+              .join('') +
+            '</div>'
 
-        els.inventory.querySelectorAll('.inv-slot').forEach(slot => {
-          slot.addEventListener('mouseenter', () => {
-            const item = state.inventory[slot.dataset.invIdx]
-            if (item) els.invLabel.innerHTML = `${item.name}<span class="inv-label-type">${item.type}</span>`
+          els.inventory.querySelectorAll('.inv-slot').forEach((slot) => {
+            slot.addEventListener('mouseenter', () => {
+              const item = state.inventory[slot.dataset.invIdx]
+              if (item)
+                els.invLabel.innerHTML = `${item.name}<span class="inv-label-type">${item.type}</span>`
+            })
+            slot.addEventListener('mouseleave', () => {
+              els.invLabel.innerHTML = '&nbsp;'
+            })
           })
-          slot.addEventListener('mouseleave', () => {
-            els.invLabel.innerHTML = '&nbsp;'
-          })
-        })
-      } else {
-        els.inventory.innerHTML = '<div class="log-entry" style="color:var(--muted)">Empty &mdash; explore to find artifacts.</div>'
-      }
-      els.invLabel.innerHTML = '&nbsp;'
-      els.invCount.textContent = state.inventory.length
-    }
-
-    function renderDecisions() {
-      const challengeRooms = Object.entries(rooms).filter(([, r]) => r.challenge)
-      const made = Object.keys(state.challengeChoices).length
-
-      if (made > 0) {
-        els.decisions.innerHTML = '<div class="dec-grid">' + challengeRooms.map(([roomId, room]) => {
-          const choiceKey = state.challengeChoices[roomId]
-          if (!choiceKey) {
-            return `<div class="dec-slot empty">?</div>`
-          }
-          const choice = room.challenge.choices.find(c => c.key === choiceKey)
-          const iconImg = choice.icon
-            ? `<img src="icons/${choice.icon}.png" alt="${choice.label}">`
-            : `<span style="font-size:18px;color:var(--text);display:flex;align-items:center;justify-content:center;height:100%">${choiceKey}</span>`
-          return `<div class="dec-slot ${choice.rating}" data-dec-room="${roomId}">${iconImg}</div>`
-        }).join('') + '</div>'
-
-        els.decisions.querySelectorAll('.dec-slot[data-dec-room]').forEach(slot => {
-          const roomId = slot.dataset.decRoom
-          const room = rooms[roomId]
-          const choiceKey = state.challengeChoices[roomId]
-          const choice = room.challenge.choices.find(c => c.key === choiceKey)
-          slot.addEventListener('mouseenter', () => {
-            els.decLabel.innerHTML = `${choice.label}<span class="dec-label-type">${room.challenge.title}</span>`
-          })
-          slot.addEventListener('mouseleave', () => {
-            els.decLabel.innerHTML = '&nbsp;'
-          })
-        })
-      } else {
-        els.decisions.innerHTML = '<div class="log-entry" style="color:var(--muted)">No decisions yet.</div>'
-      }
-      els.decLabel.innerHTML = '&nbsp;'
-      els.decCount.textContent = made + '/' + TOTAL_CHALLENGES
-    }
-
-    function addLog(message, type = '') {
-      state.log.unshift({ message, type })
-      els.log.innerHTML = state.log.map(l =>
-        `<div class="log-entry ${l.type}">${l.message}</div>`
-      ).join('')
-      els.logCount.textContent = state.log.length
-    }
-
-    function renderMap() {
-      els.map.innerHTML = Object.entries(rooms).map(([id, room]) => {
-        const classes = ['map-room']
-        if (id === state.currentRoom) classes.push('current')
-        else if (state.visited.has(id)) classes.push('visited')
-
-        let badge = ''
-        if (room.challenge) {
-          if (state.challengesCompleted.has(id)) {
-            badge = '<span class="challenge-badge done">&#10003;</span>'
-          } else {
-            badge = '<span class="challenge-badge pending">?</span>'
-          }
+        } else {
+          els.inventory.innerHTML =
+            '<div class="log-entry" style="color:var(--muted)">Empty &mdash; explore to find artifacts.</div>'
         }
+        els.invLabel.innerHTML = '&nbsp;'
+        els.invCount.textContent = state.inventory.length
+      }
 
-        return `
+      function renderDecisions() {
+        const challengeRooms = Object.entries(rooms).filter(
+          ([, r]) => r.challenge
+        )
+        const made = Object.keys(state.challengeChoices).length
+
+        if (made > 0) {
+          els.decisions.innerHTML =
+            '<div class="dec-grid">' +
+            challengeRooms
+              .map(([roomId, room]) => {
+                const choiceKey = state.challengeChoices[roomId]
+                if (!choiceKey) {
+                  return `<div class="dec-slot empty">?</div>`
+                }
+                const choice = room.challenge.choices.find(
+                  (c) => c.key === choiceKey
+                )
+                const iconImg = choice.icon
+                  ? `<img src="icons/${choice.icon}.png" alt="${choice.label}">`
+                  : `<span style="font-size:18px;color:var(--text);display:flex;align-items:center;justify-content:center;height:100%">${choiceKey}</span>`
+                return `<div class="dec-slot ${choice.rating}" data-dec-room="${roomId}">${iconImg}</div>`
+              })
+              .join('') +
+            '</div>'
+
+          els.decisions
+            .querySelectorAll('.dec-slot[data-dec-room]')
+            .forEach((slot) => {
+              const roomId = slot.dataset.decRoom
+              const room = rooms[roomId]
+              const choiceKey = state.challengeChoices[roomId]
+              const choice = room.challenge.choices.find(
+                (c) => c.key === choiceKey
+              )
+              slot.addEventListener('mouseenter', () => {
+                els.decLabel.innerHTML = `${choice.label}<span class="dec-label-type">${room.challenge.title}</span>`
+              })
+              slot.addEventListener('mouseleave', () => {
+                els.decLabel.innerHTML = '&nbsp;'
+              })
+            })
+        } else {
+          els.decisions.innerHTML =
+            '<div class="log-entry" style="color:var(--muted)">No decisions yet.</div>'
+        }
+        els.decLabel.innerHTML = '&nbsp;'
+        els.decCount.textContent = made + '/' + TOTAL_CHALLENGES
+      }
+
+      function addLog(message, type = '') {
+        state.log.unshift({ message, type })
+        els.log.innerHTML = state.log
+          .map((l) => `<div class="log-entry ${l.type}">${l.message}</div>`)
+          .join('')
+        els.logCount.textContent = state.log.length
+      }
+
+      function renderMap() {
+        els.map.innerHTML = Object.entries(rooms)
+          .map(([id, room]) => {
+            const classes = ['map-room']
+            if (id === state.currentRoom) classes.push('current')
+            else if (state.visited.has(id)) classes.push('visited')
+
+            let badge = ''
+            if (room.challenge) {
+              if (state.challengesCompleted.has(id)) {
+                badge = '<span class="challenge-badge done">&#10003;</span>'
+              } else {
+                badge = '<span class="challenge-badge pending">?</span>'
+              }
+            }
+
+            return `
           <div class="${classes.join(' ')}" data-room="${id}">
-            <div class="room-layer">${room.layer}${badge}</div>
+            <div class="room-header">
+              <div class="room-layer">${room.layer}</div>
+              ${badge}
+            </div>
             <div>${room.title}</div>
           </div>
         `
-      }).join('')
+          })
+          .join('')
 
-      els.map.querySelectorAll('.map-room').forEach(el => {
-        el.addEventListener('click', () => {
-          toggleMap()
-          render(el.dataset.room)
+        els.map.querySelectorAll('.map-room').forEach((el) => {
+          el.addEventListener('click', () => {
+            toggleMap()
+            render(el.dataset.room)
+          })
         })
-      })
-    }
+      }
 
-    // --- Endings ---
-    function showEnding() {
-      if (state.endingShown) return
-      state.endingShown = true
+      // --- Endings ---
+      function showEnding() {
+        if (state.endingShown) return
+        state.endingShown = true
 
-      const s = state.stats
-      const ending = endings.find(e => e.test(s))
+        const s = state.stats
+        const ending = endings.find((e) => e.test(s))
 
-      els.endingTitle.textContent = ending.title
-      els.endingTitle.style.color = `var(${ending.color})`
-      els.endingDesc.innerHTML = ending.description
+        els.endingTitle.textContent = ending.title
+        els.endingTitle.style.color = `var(${ending.color})`
+        els.endingDesc.innerHTML = ending.description
 
-      // Build scorecard
-      const rows = Object.entries(rooms)
-        .filter(([, room]) => room.challenge)
-        .map(([id, room]) => {
-          const challenge = room.challenge
-          const yourKey = state.challengeChoices[id]
-          const yours = challenge.choices.find(c => c.key === yourKey)
-          const best = challenge.choices.find(c => c.key === challenge.recommended)
-          const match = yourKey === challenge.recommended
-          return `<div class="scorecard-row">
+        // Build scorecard
+        const rows = Object.entries(rooms)
+          .filter(([, room]) => room.challenge)
+          .map(([id, room]) => {
+            const challenge = room.challenge
+            const yourKey = state.challengeChoices[id]
+            const yours = challenge.choices.find((c) => c.key === yourKey)
+            const best = challenge.choices.find(
+              (c) => c.key === challenge.recommended
+            )
+            const match = yourKey === challenge.recommended
+            return `<div class="scorecard-row">
             <span class="sc-title">${challenge.title}</span>
             <span class="sc-yours ${match ? 'match' : 'miss'}">${yours ? yours.label : '?'}</span>
             <span class="sc-best">${match ? '&#10003;' : best.label}</span>
           </div>`
-        }).join('')
+          })
+          .join('')
 
-      const correct = Object.entries(rooms)
-        .filter(([, room]) => room.challenge)
-        .filter(([id, room]) => state.challengeChoices[id] === room.challenge.recommended)
-        .length
+        const correct = Object.entries(rooms)
+          .filter(([, room]) => room.challenge)
+          .filter(
+            ([id, room]) =>
+              state.challengeChoices[id] === room.challenge.recommended
+          ).length
 
-      els.endingScorecard.innerHTML = `
+        els.endingScorecard.innerHTML = `
         <div class="scorecard-header">Your Decisions &mdash; ${correct}/7 matched the real migration strategy</div>
         ${rows}
       `
 
-      const statColor = (label, val, good) => {
-        const color = good ? 'var(--green)' : (label === 'Technical Debt' ? 'var(--red)' : 'var(--yellow)')
-        return `<div class="ending-stat">
+        const statColor = (label, val, good) => {
+          const color = good
+            ? 'var(--green)'
+            : label === 'Technical Debt'
+              ? 'var(--red)'
+              : 'var(--yellow)'
+          return `<div class="ending-stat">
           <div class="label">${label}</div>
           <div class="value" style="color:${color}">${val}</div>
         </div>`
+        }
+
+        els.endingStats.innerHTML = [
+          statColor('Technical Debt', s.techDebt, s.techDebt < 30),
+          statColor('Code Quality', s.quality, s.quality >= 60),
+          statColor('Team Morale', s.morale, s.morale >= 60),
+          statColor(
+            'ECS Migration',
+            s.migrationProgress + ' / 5',
+            s.migrationProgress >= 4
+          )
+        ].join('')
+
+        // Save achievement
+        saveAchievement(ending.id)
+        renderAchievements()
+
+        endingIsPreview = false
+        els.playAgainBtn.textContent = 'Play Again'
+        els.endingDialog.showModal()
       }
 
-      els.endingStats.innerHTML = [
-        statColor('Technical Debt', s.techDebt, s.techDebt < 30),
-        statColor('Code Quality', s.quality, s.quality >= 60),
-        statColor('Team Morale', s.morale, s.morale >= 60),
-        statColor('ECS Migration', s.migrationProgress + ' / 5', s.migrationProgress >= 4),
-      ].join('')
+      let endingIsPreview = false
 
-      // Save achievement
-      saveAchievement(ending.id)
-      renderAchievements()
+      function previewEnding(endingId) {
+        const ending = endings.find((e) => e.id === endingId)
+        if (!ending) return
 
-      endingIsPreview = false
-      els.playAgainBtn.textContent = 'Play Again'
-      els.endingDialog.showModal()
-    }
-
-    let endingIsPreview = false
-
-    function previewEnding(endingId) {
-      const ending = endings.find(e => e.id === endingId)
-      if (!ending) return
-
-      endingIsPreview = true
-      els.endingTitle.textContent = ending.title
-      els.endingTitle.style.color = `var(${ending.color})`
-      els.endingDesc.innerHTML = ending.description
-      els.endingScorecard.innerHTML = ''
-      els.endingStats.innerHTML = `
+        endingIsPreview = true
+        els.endingTitle.textContent = ending.title
+        els.endingTitle.style.color = `var(${ending.color})`
+        els.endingDesc.innerHTML = ending.description
+        els.endingScorecard.innerHTML = ''
+        els.endingStats.innerHTML = `
         <div class="ending-stat" style="grid-column: 1 / -1; text-align: center">
           <div class="label">Ending Unlocked</div>
           <div class="value" style="color:var(${ending.color})">
@@ -2172,117 +2997,130 @@
           </div>
         </div>
       `
-      els.playAgainBtn.textContent = 'Close'
-      els.endingDialog.showModal()
-    }
+        els.playAgainBtn.textContent = 'Close'
+        els.endingDialog.showModal()
+      }
 
-    function renderAchievements() {
-      const unlocked = loadAchievements()
+      function renderAchievements() {
+        const unlocked = loadAchievements()
 
-      els.achievements.innerHTML = '<div class="ach-grid">' + endings.map(e => {
-        const got = unlocked.includes(e.id)
-        const cls = got ? 'ach-slot unlocked' : 'ach-slot locked'
-        return `<div class="${cls}" data-ending="${e.id}">
+        els.achievements.innerHTML =
+          '<div class="ach-grid">' +
+          endings
+            .map((e) => {
+              const got = unlocked.includes(e.id)
+              const cls = got ? 'ach-slot unlocked' : 'ach-slot locked'
+              return `<div class="${cls}" data-ending="${e.id}">
           <img src="icons/ending-${e.id}.png" alt="${got ? e.title : '?'}"
                onerror="this.style.display='none'">
         </div>`
-      }).join('') + '</div>'
+            })
+            .join('') +
+          '</div>'
 
-      els.achievements.querySelectorAll('.ach-slot').forEach(slot => {
-        const e = endings.find(x => x.id === slot.dataset.ending)
-        const got = unlocked.includes(e.id)
-        slot.addEventListener('mouseenter', () => {
-          els.achLabel.textContent = got ? e.title : 'Locked'
+        els.achievements.querySelectorAll('.ach-slot').forEach((slot) => {
+          const e = endings.find((x) => x.id === slot.dataset.ending)
+          const got = unlocked.includes(e.id)
+          slot.addEventListener('mouseenter', () => {
+            els.achLabel.textContent = got ? e.title : 'Locked'
+          })
+          slot.addEventListener('mouseleave', () => {
+            els.achLabel.innerHTML = '&nbsp;'
+          })
+          if (got) {
+            slot.addEventListener('click', () => previewEnding(e.id))
+          }
         })
-        slot.addEventListener('mouseleave', () => {
-          els.achLabel.innerHTML = '&nbsp;'
-        })
-        if (got) {
-          slot.addEventListener('click', () => previewEnding(e.id))
+
+        els.achCount.textContent = unlocked.length + '/' + endings.length
+      }
+
+      // --- Reset ---
+      function resetGame() {
+        state = createInitialState()
+        isFirstRender = true
+        localStorage.removeItem(STORAGE_KEY)
+        els.endingDialog.close()
+        els.resultBanner.classList.remove('active')
+        els.resultBanner.className = ''
+        render('entry')
+        renderAchievements()
+        addLog('Welcome back, architect. The codebase awaits.', 'discovery')
+      }
+
+      // --- Map Toggle ---
+      function toggleMap() {
+        if (els.mapDialog.open) {
+          els.mapDialog.close()
+        } else {
+          els.mapDialog.showModal()
         }
+      }
+
+      els.toggleMap.addEventListener('click', toggleMap)
+      els.mapDialog.addEventListener('click', (e) => {
+        if (e.target === els.mapDialog) els.mapDialog.close()
       })
 
-      els.achCount.textContent = unlocked.length + '/' + endings.length
-    }
+      els.endingDialog.addEventListener('cancel', (e) => {
+        if (!endingIsPreview) e.preventDefault()
+      })
 
-    // --- Reset ---
-    function resetGame() {
-      state = createInitialState()
-      isFirstRender = true
-      localStorage.removeItem(STORAGE_KEY)
-      els.endingDialog.close()
-      els.resultBanner.classList.remove('active')
-      els.resultBanner.className = ''
-      render('entry')
-      renderAchievements()
-      addLog('Welcome back, architect. The codebase awaits.', 'discovery')
-    }
-
-    // --- Map Toggle ---
-    function toggleMap() {
-      if (els.mapDialog.open) {
-        els.mapDialog.close()
-      } else {
-        els.mapDialog.showModal()
-      }
-    }
-
-    els.toggleMap.addEventListener('click', toggleMap)
-    els.mapDialog.addEventListener('click', (e) => {
-      if (e.target === els.mapDialog) els.mapDialog.close()
-    })
-
-    els.endingDialog.addEventListener('cancel', (e) => {
-      if (!endingIsPreview) e.preventDefault()
-    })
-
-    els.playAgainBtn.addEventListener('click', () => {
-      if (endingIsPreview) {
-        els.endingDialog.close()
-        endingIsPreview = false
-      } else {
+      els.playAgainBtn.addEventListener('click', () => {
+        if (endingIsPreview) {
+          els.endingDialog.close()
+          endingIsPreview = false
+        } else {
+          resetGame()
+        }
+      })
+      els.restartBtn.addEventListener('click', () => {
+        if (state.challengesCompleted.size === 0 && state.visited.size <= 1)
+          return
         resetGame()
+      })
+
+      // --- Keyboard Navigation ---
+      document.addEventListener('keydown', (e) => {
+        if (state.endingShown) return
+
+        if (e.key === 'm' || e.key === 'M') {
+          toggleMap()
+          return
+        }
+
+        const room = rooms[state.currentRoom]
+        if (!room) return
+
+        // Check if challenge is active
+        const hasUnresolvedChallenge =
+          room.challenge && !state.challengesCompleted.has(state.currentRoom)
+        if (
+          hasUnresolvedChallenge &&
+          els.challengePanel.classList.contains('active')
+        ) {
+          const choice = room.challenge.choices.find(
+            (c) => c.key.toLowerCase() === e.key.toLowerCase()
+          )
+          if (choice) resolveChallenge(state.currentRoom, choice.key)
+          return
+        }
+
+        // Normal navigation
+        const choice = room.choices.find((c) => c.key === e.key)
+        if (choice) render(choice.room)
+      })
+
+      // --- Boot ---
+      render(state.currentRoom)
+      renderStats()
+      renderAchievements()
+      if (state.log.length === 0) {
+        addLog(
+          'Welcome, architect. Explore the codebase. Challenges await in every room.',
+          'discovery'
+        )
       }
-    })
-    els.restartBtn.addEventListener('click', () => {
-      if (state.challengesCompleted.size === 0 && state.visited.size <= 1) return
-      resetGame()
-    })
-
-    // --- Keyboard Navigation ---
-    document.addEventListener('keydown', (e) => {
-      if (state.endingShown) return
-
-      if (e.key === 'm' || e.key === 'M') {
-        toggleMap()
-        return
-      }
-
-
-      const room = rooms[state.currentRoom]
-      if (!room) return
-
-      // Check if challenge is active
-      const hasUnresolvedChallenge = room.challenge && !state.challengesCompleted.has(state.currentRoom)
-      if (hasUnresolvedChallenge && els.challengePanel.classList.contains('active')) {
-        const choice = room.challenge.choices.find(c => c.key.toLowerCase() === e.key.toLowerCase())
-        if (choice) resolveChallenge(state.currentRoom, choice.key)
-        return
-      }
-
-      // Normal navigation
-      const choice = room.choices.find(c => c.key === e.key)
-      if (choice) render(choice.room)
-    })
-
-    // --- Boot ---
-    render(state.currentRoom)
-    renderStats()
-    renderAchievements()
-    if (state.log.length === 0) {
-      addLog('Welcome, architect. Explore the codebase. Challenges await in every room.', 'discovery')
-    }
-  </script>
-
-</body>
+    </script>
+  </body>
 </html>

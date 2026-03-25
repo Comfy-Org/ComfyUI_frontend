@@ -85,6 +85,18 @@
     "composables-c": {
       "label": "Skip collaboration for now",
       "prompt": "Pixel art icon of a single person at a desk with a pause symbol, grey neutral glow, dark background, game UI icon"
+    },
+    "subgraph-a": {
+      "label": "Connections-only: promotion = adding a typed input",
+      "prompt": "Pixel art icon of a function signature with typed input slots and a green checkmark, clean minimal glow, dark background, game UI icon"
+    },
+    "subgraph-b": {
+      "label": "Simplified component promotion",
+      "prompt": "Pixel art icon of a widget being lifted up with a promotion arrow and a component badge, amber glow, dark background, game UI icon"
+    },
+    "subgraph-c": {
+      "label": "Keep the current three-layer system",
+      "prompt": "Pixel art icon of three stacked translucent layers with proxy shadows underneath, red complex glow, dark background, game UI icon"
     }
   }
 }

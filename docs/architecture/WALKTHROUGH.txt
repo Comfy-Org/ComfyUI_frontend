@@ -34,7 +34,7 @@
 
   Codebase Caverns is an interactive choose-your-own-adventure game that
   teaches you the architecture of the ComfyUI frontend codebase. You explore
-  9 rooms representing different architectural layers, face 7 real engineering
+  10 rooms representing different architectural layers, face 8 real engineering
   challenges, collect artifacts, and reach one of 4 endings based on your
   decisions.
 
@@ -76,7 +76,7 @@
 
   CHALLENGES
   ==========
-  7 of the 9 rooms contain a one-time challenge - an architectural dilemma
+  8 of the 10 rooms contain a one-time challenge - an architectural dilemma
   with 2-3 options. Each option has a rating:
 
     [GOOD]   Best practice. Matches the real migration strategy.
@@ -99,7 +99,7 @@
 
   ENDINGS
   =======
-  After resolving all 7 challenges, you get one of 4 endings based on
+  After resolving all 8 challenges, you get one of 4 endings based on
   your accumulated stats. See Section VI for details.
 
   ACHIEVEMENTS
@@ -129,12 +129,13 @@
      |      |     |  ECS   |  |        | COMPOSABLES  |
      |      |     | CHAMB. |  |        |  WORKSHOP    |
      |      |     | [Chal] |  |        | [Challenge]  |
-     |      |     +--------+  |        +--------------+
-     |      |           +-----v------+
-     |      |           |  RENDERER  |
-     |      |           |  OVERLOOK  |
-     |      |           |   [Chal]   |
-     |      |           +------------+
+     |      |     +---+----+  |        +--------------+
+     |      |         |  +----v------+
+     |      |    +----v--+--+        |
+     |      |    |SUBGRAPH| RENDERER |
+     |      |    | DEPTHS | OVERLOOK |
+     |      |    | [Chal] |  [Chal]  |
+     |      |    +--------+----------+
      |      |
   +--v------v----+
   |  LITEGRAPH   |
@@ -177,19 +178,24 @@
   6. THE ECS ARCHITECT'S CHAMBER [ECS]
      Challenge: The ID Crossroads
      Artifacts: World Registry, Branded Entity IDs
-     Exits: Renderer (1), Stores (2), Entry (3)
+     Exits: Subgraph Depths (1), Renderer (2), Entry (3)
 
-  7. THE RENDERER OVERLOOK [Renderer]
+  7. THE SUBGRAPH DEPTHS [Graph Boundaries]
+     Challenge: The Widget Promotion Decision
+     Artifacts: SubgraphStructure, Typed Interface Contracts
+     Exits: ECS (1), Litegraph (2), Entry (3)
+
+  8. THE RENDERER OVERLOOK [Renderer]
      Challenge: The Render-Time Mutation
      Artifacts: QuadTree Spatial Index, Y.js CRDT Layout
      Exits: ECS (1), Entry (2)
 
-  8. THE COMPOSABLES WORKSHOP [Composables]
+  9. THE COMPOSABLES WORKSHOP [Composables]
      Challenge: The Collaboration Protocol
      Artifacts: useCoreCommands.ts
      Exits: Stores (1), Entry (2)
 
-  9. THE RIGHT SIDE PANEL [Presentation]
+ 10. THE RIGHT SIDE PANEL [Presentation]
      No challenge. No artifacts. Dead end / lore room.
      Exits: Components (1), Stores (2), Entry (3)
 
@@ -209,8 +215,8 @@
   |                                                                    |
   | >>> A. Composition over inheritance  [GOOD] <<<                    |
   |     Debt -10, Quality +15, Morale +5, ECS +1                       |
-  |     Subgraph HAS a graph, not IS a graph.                          |
-  |     This is the ECS approach: no class inheritance at all.         |
+  |     A subgraph IS a graph - just a node with SubgraphStructure.    |
+  |     Under graph unification, no class inheritance at all.          |
   |                                                                    |
   |   B. Barrel file reordering  [BAD]                                 |
   |     Debt +10, Quality -5, Morale -5                                |
@@ -290,7 +296,7 @@
   | CHALLENGE 5: The ID Crossroads                     | Room: ECS     |
   |------------------------------------------------------------------  |
   | NodeId is number | string. Nothing prevents passing a LinkId       |
-  | where a NodeId is expected. Magic sentinels: -10, -20.             |
+  | where a NodeId is expected. Six entity kinds share one ID space.   |
   |------------------------------------------------------------------  |
   |                                                                    |
   | >>> A. Branded types with cast helpers  [GOOD] <<<                 |
@@ -308,7 +314,32 @@
   '--------------------------------------------------------------------'
 
   .--------------------------------------------------------------------.
-  | CHALLENGE 6: The Render-Time Mutation          | Room: Renderer    |
+  | CHALLENGE 6: The Widget Promotion Decision   | Room: Subgraph     |
+  |------------------------------------------------------------------  |
+  | A user promotes a widget from inside a subgraph to the parent.     |
+  | Today this needs PromotionStore + ViewManager + PromotedWidgetView |
+  | — a parallel state system. Two ECS candidates.                     |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Connections-only: promotion = typed input  [GOOD] <<<       |
+  |     Debt -15, Quality +15, Morale +5, ECS +1                      |
+  |     Promotion = adding an interface input. Type->widget mapping    |
+  |     creates the widget automatically. Eliminates PromotionStore,   |
+  |     ViewManager, and PromotedWidgetView entirely.                  |
+  |                                                                    |
+  |   B. Simplified component promotion  [OK]                          |
+  |     Debt -5, Quality +10, Morale +5                                |
+  |     WidgetPromotion component on widget entities. Removes           |
+  |     ViewManager but keeps promotion as a distinct concept.         |
+  |     Shared subgraph instance ambiguity remains.                    |
+  |                                                                    |
+  |   C. Keep the current three-layer system  [BAD]                    |
+  |     Debt +10, Quality -5, Morale -5                                |
+  |     The parallel state system persists indefinitely.               |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 7: The Render-Time Mutation          | Room: Renderer    |
   |------------------------------------------------------------------  |
   | drawNode() calls _setConcreteSlots() and arrange() during the      |
   | render pass. Draw order affects layout. Classic mutation-in-       |
@@ -328,7 +359,7 @@
   '--------------------------------------------------------------------'
 
   .--------------------------------------------------------------------.
-  | CHALLENGE 7: The Collaboration Protocol     | Room: Composables    |
+  | CHALLENGE 8: The Collaboration Protocol     | Room: Composables    |
   |------------------------------------------------------------------  |
   | Multiple users want to edit the same workflow simultaneously.      |
   | layoutStore already extracts position data. How to sync?           |
@@ -352,8 +383,8 @@
  V.  OPTIMAL ROUTE - "THE ECS ENLIGHTENMENT" SPEEDRUN
 ===============================================================================
 
-  This route hits all 7 challenges picking the GOOD answer, collecting
-  all 11 artifacts, visiting all 9 rooms. Order matters for efficiency
+  This route hits all 8 challenges picking the GOOD answer, collecting
+  all 13 artifacts, visiting all 10 rooms. Order matters for efficiency
   (fewest key presses).
 
   Starting stats: Debt 50, Quality 30, Morale 60, ECS 0/5
@@ -377,11 +408,17 @@
     ECS ARCHITECT'S CHAMBER
       Challenge: The ID Crossroads -> Press A (Branded types)
       [Debt 10, Quality 80, Morale 65, ECS 3/5]
-      Press 1 -> Renderer
+      Press 1 -> Subgraph Depths
+
+    SUBGRAPH DEPTHS
+      Challenge: The Widget Promotion Decision -> Press A (Connections-only)
+      [Debt 0, Quality 95, Morale 70, ECS 4/5]
+      Press 1 -> ECS Chamber
+      Press 2 -> Renderer
 
     RENDERER OVERLOOK
       Challenge: The Render-Time Mutation -> Press A (Separate phases)
-      [Debt -5->0, Quality 95, Morale 65, ECS 4/5]
+      [Debt 0, Quality 100, Morale 70, ECS 5/5]
       Press 2 -> Entry Point
 
     ENTRY POINT
@@ -389,12 +426,12 @@
 
     SERVICE CORRIDORS
       Challenge: The Migration Question -> Press A (5-phase plan)
-      [Debt 0, Quality 100, Morale 75, ECS 5/5]
+      [Debt 0, Quality 100, Morale 80, ECS 5/5]
       Press 1 -> Composables
 
     COMPOSABLES WORKSHOP
       Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
-      [Debt 0, Quality 100, Morale 85, ECS 5/5]
+      [Debt 0, Quality 100, Morale 90, ECS 5/5]
       Press 2 -> Entry Point
 
     ENTRY POINT
@@ -403,16 +440,16 @@
 
     LITEGRAPH ENGINE ROOM
       Challenge: The God Object Dilemma -> Press B (Extract incrementally)
-      [Debt 0, Quality 100, Morale 90, ECS 5/5]
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
 
-  FINAL STATS: Debt 0 | Quality 100 | Morale 90 | ECS 5/5
+  FINAL STATS: Debt 0 | Quality 100 | Morale 95 | ECS 5/5
 
   *** ENDING: THE ECS ENLIGHTENMENT ***
 
-  Total key presses: 24 (including challenge answers)
-  Rooms visited: 9/9
-  Artifacts: 11/11
-  Challenges: 7/7 correct
+  Total key presses: 27 (including challenge answers)
+  Rooms visited: 10/10
+  Artifacts: 13/13
+  Challenges: 8/8 correct
 
 ===============================================================================
  VI.  ALL FOUR ENDINGS
@@ -502,10 +539,11 @@
     Services:    C (Strangler fig)             Debt  +0 -> 70
     Litegraph:   C (Add a facade)              Debt  +5 -> 75
     ECS:         C (Keep plain numbers)        Debt +15 -> 90
-    Renderer:    B (Dirty flags)               Debt  -5 -> 85
-    Composables: B (Polling-based sync)        Debt +10 -> 95
+    Subgraph:    C (Keep three-layer system)   Debt +10 -> 100
+    Renderer:    B (Dirty flags)               Debt  -5 -> 95
+    Composables: B (Polling-based sync)        Debt +10 -> 100
 
-  Final: Debt 95 / Quality 35 / Morale 75 -> SPAGHETTI SINGULARITY
+  Final: Debt 100 / Quality 25 / Morale 60 -> SPAGHETTI SINGULARITY
 
   WARNING: Picking "all bad-rated answers" does NOT work! The bad
   answers for Litegraph (A: Rewrite) and Services (B: Big bang) have
@@ -515,21 +553,23 @@
  VIII.  ARTIFACTS CHECKLIST
 ===============================================================================
 
-  Room              | Artifact                | Type
-  ==================|=========================|==================
-  Component Gallery | GraphView.vue           | Component
-  Store Vaults      | widgetValueStore.ts     | Proto-ECS Store
-  Store Vaults      | layoutStore.ts          | Proto-ECS Store
-  Service Corridors | litegraphService.ts     | Service
-  Litegraph Engine  | LGraphCanvas.ts         | God Object
-  Litegraph Engine  | LGraphNode.ts           | God Object
-  ECS Chamber       | World Registry          | ECS Core
-  ECS Chamber       | Branded Entity IDs      | Type Safety
-  Renderer Overlook | QuadTree Spatial Index  | Data Structure
-  Renderer Overlook | Y.js CRDT Layout        | Collaboration
-  Composables       | useCoreCommands.ts      | Composable
+  Room              | Artifact                   | Type
+  ==================|============================|==================
+  Component Gallery | GraphView.vue              | Component
+  Store Vaults      | widgetValueStore.ts        | Proto-ECS Store
+  Store Vaults      | layoutStore.ts             | Proto-ECS Store
+  Service Corridors | litegraphService.ts        | Service
+  Litegraph Engine  | LGraphCanvas.ts            | God Object
+  Litegraph Engine  | LGraphNode.ts              | God Object
+  ECS Chamber       | World Registry             | ECS Core
+  ECS Chamber       | Branded Entity IDs         | Type Safety
+  Subgraph Depths   | SubgraphStructure          | ECS Component
+  Subgraph Depths   | Typed Interface Contracts  | Design Pattern
+  Renderer Overlook | QuadTree Spatial Index     | Data Structure
+  Renderer Overlook | Y.js CRDT Layout           | Collaboration
+  Composables       | useCoreCommands.ts         | Composable
 
-  Total: 11 artifacts across 7 rooms.
+  Total: 13 artifacts across 8 rooms.
   Entry Point and Side Panel have no artifacts.
 
 ===============================================================================
@@ -562,15 +602,15 @@
     and workspaceStore wire the UI together. Worth visiting once.
 
   * The ECS Migration Progress stat maxes at 5, matching the 5 phases
-    of the real migration plan. But only 7 challenges can give +1 each
-    (6 of the 7 GOOD answers grant +1 ECS). The Services challenge
+    of the real migration plan. But 8 challenges can give +1 each
+    (7 of the 8 GOOD answers grant +1 ECS). The Services challenge
     ("5-phase plan") gives +1 ECS but no debt reduction - it's pure
     planning, not implementation.
 
-  * There are exactly 4^7... wait, no. There are between 2-3 choices
-    per challenge, giving 3*3*3*3*3*2*3 = 1,458 possible playthroughs.
-    But only 4 distinct endings. Most paths lead to "The Clean
-    Architecture" or "The Eternal Refactor."
+  * There are between 2-3 choices per challenge, giving
+    3*3*3*3*3*3*2*3 = 4,374 possible playthroughs. But only 4
+    distinct endings. Most paths lead to "The Clean Architecture"
+    or "The Eternal Refactor."
 
   * If you want to learn the ComfyUI frontend architecture for real,
     the recommended reading order matches the optimal speedrun route:
