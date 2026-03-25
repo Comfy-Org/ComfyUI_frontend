@@ -32,6 +32,7 @@ Phase 5: Report         → Generate a structured reproduction report
 ## Phase 1: Research the Issue
 
 1. Fetch the issue details:
+
    ```bash
    gh issue view <number> --repo Comfy-Org/ComfyUI_frontend --json title,body,comments
    ```
@@ -83,6 +84,7 @@ curl -X POST http://127.0.0.1:8188/api/workflow \
 ```
 
 Or load via playwright-cli:
+
 ```bash
 playwright-cli goto "http://127.0.0.1:8188"
 # Drag-and-drop or use File > Open to load the workflow
@@ -91,6 +93,7 @@ playwright-cli goto "http://127.0.0.1:8188"
 ### Settings
 
 If the issue requires specific settings:
+
 ```bash
 # Use playwright-cli to open settings and change them
 playwright-cli press "Control+,"
@@ -136,22 +139,23 @@ playwright-cli screenshot --filename=/tmp/qa/research-step-1.png
 
 ### Common ComfyUI Interactions via playwright-cli
 
-| Action | Command |
-|--------|---------|
-| Open hamburger menu | `playwright-cli click` on the C logo button |
-| Navigate menu | `playwright-cli hover <ref>` then `playwright-cli click <ref>` |
-| Add node | Double-click canvas → type node name → select from results |
-| Connect nodes | Drag from output slot to input slot |
-| Save workflow | `playwright-cli press "Control+s"` |
-| Save As | Menu > File > Save As |
-| Select node | Click on the node |
-| Delete node | Select → `playwright-cli press "Delete"` |
-| Right-click menu | `playwright-cli click <ref> --button right` |
-| Keyboard shortcut | `playwright-cli press "Control+z"` |
+| Action              | Command                                                        |
+| ------------------- | -------------------------------------------------------------- |
+| Open hamburger menu | `playwright-cli click` on the C logo button                    |
+| Navigate menu       | `playwright-cli hover <ref>` then `playwright-cli click <ref>` |
+| Add node            | Double-click canvas → type node name → select from results     |
+| Connect nodes       | Drag from output slot to input slot                            |
+| Save workflow       | `playwright-cli press "Control+s"`                             |
+| Save As             | Menu > File > Save As                                          |
+| Select node         | Click on the node                                              |
+| Delete node         | Select → `playwright-cli press "Delete"`                       |
+| Right-click menu    | `playwright-cli click <ref> --button right`                    |
+| Keyboard shortcut   | `playwright-cli press "Control+z"`                             |
 
 ## Phase 4: Record Clean Demo — Reproduce Video (max 5 minutes)
 
 Once the bug is confirmed, **stop the research video** and **close the research browser**:
+
 ```bash
 playwright-cli video-stop
 playwright-cli close
@@ -160,12 +164,14 @@ playwright-cli close
 Now start a **fresh browser session** for the clean reproduce video (Video 2).
 
 **IMPORTANT constraints:**
+
 - **Max 5 minutes** — the reproduce video must be short and focused
 - **No environment setup** — server, user, custom nodes are already set up from Phase 3. Just log in and go.
 - **No exploration** — you already know the exact steps. Execute them quickly and precisely.
 - **Start video recording immediately**, execute steps, stop. Don't leave the recording running while thinking.
 
 1. **Open browser and start recording**:
+
    ```bash
    playwright-cli open "http://127.0.0.1:8188"
    playwright-cli video-start
@@ -174,6 +180,7 @@ Now start a **fresh browser session** for the clean reproduce video (Video 2).
 2. **Execute only the minimal reproduction steps** — no exploration, no mistakes. Just the clean sequence that demonstrates the bug. You already know exactly what works from Phase 3.
 
 3. **Take key screenshots** at critical moments:
+
    ```bash
    playwright-cli screenshot --filename=/tmp/qa/before-bug.png
    # ... trigger the bug ...
@@ -256,12 +263,14 @@ If the bug **cannot be reproduced**:
 ## CI Integration
 
 In CI, this skill runs as a Claude Code agent with:
+
 - `ANTHROPIC_API_KEY` for Claude
 - `GEMINI_API_KEY` for initial issue analysis (optional)
 - ComfyUI server pre-started in the container
 - `playwright-cli` pre-installed
 
 The CI workflow:
+
 1. Gemini generates a reproduce guide (markdown) from the issue
 2. Claude agent receives the guide and runs this skill
 3. Claude explores interactively, installs dependencies, retries
