@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { getActivePinia } from 'pinia'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -9,6 +10,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useNodeImageStore } from '@/stores/nodeImageStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -994,6 +996,13 @@ export class LGraph
       for (const widget of node.widgets) {
         if (isNodeBindable(widget)) widget.setNodeId(node.id)
       }
+    }
+
+    // Install property projection so node.imgs, node.imageIndex, etc.
+    // delegate to the centralized NodeImageStore.
+    // Guarded because Pinia may not be initialized in unit tests.
+    if (getActivePinia()) {
+      useNodeImageStore().installPropertyProjection(node)
     }
 
     this._nodes.push(node)
