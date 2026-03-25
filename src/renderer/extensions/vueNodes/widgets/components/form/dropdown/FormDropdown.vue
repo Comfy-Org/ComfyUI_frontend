@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computedAsync, onClickOutside, refDebounced } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import type { CSSProperties } from 'vue'
+import { computed, inject, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -94,6 +96,10 @@ const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const triggerRef = useTemplateRef('triggerRef')
+const dropdownRef = useTemplateRef('dropdownRef')
+
+const injectedAppendTo = inject(OverlayAppendToKey, undefined)
+const shouldTeleport = computed(() => injectedAppendTo === 'body')
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
@@ -141,6 +147,25 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 
 const MENU_HEIGHT = 640 + 8
 const openUpward = ref(false)
+const fixedPosition = ref({ top: 0, left: 0 })
+
+const teleportStyle = computed<CSSProperties | undefined>(() => {
+  if (!shouldTeleport.value) return undefined
+  const pos = fixedPosition.value
+  return openUpward.value
+    ? {
+        position: 'fixed',
+        left: `${pos.left}px`,
+        bottom: `${window.innerHeight - pos.top}px`,
+        paddingBottom: '0.5rem'
+      }
+    : {
+        position: 'fixed',
+        left: `${pos.left}px`,
+        top: `${pos.top}px`,
+        paddingTop: '0.5rem'
+      }
+})
 
 function toggleDropdown() {
   if (disabled) return
@@ -149,6 +174,13 @@ function toggleDropdown() {
     const spaceBelow = window.innerHeight - rect.bottom
     const spaceAbove = rect.top
     openUpward.value = spaceBelow < MENU_HEIGHT && spaceAbove > spaceBelow
+
+    if (shouldTeleport.value) {
+      fixedPosition.value = {
+        top: openUpward.value ? rect.top : rect.bottom,
+        left: rect.left
+      }
+    }
   }
   isOpen.value = !isOpen.value
 }
@@ -157,7 +189,7 @@ function closeDropdown() {
   isOpen.value = false
 }
 
-onClickOutside(triggerRef, closeDropdown)
+onClickOutside(triggerRef, closeDropdown, { ignore: [dropdownRef] })
 
 function handleEscape(event: KeyboardEvent) {
   if (event.key === 'Escape') {
@@ -215,35 +247,41 @@ function handleSelection(item: FormDropdownItem, index: number) {
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
-    <div
-      v-if="isOpen"
-      :class="
-        cn(
-          'absolute left-0 z-50 rounded-lg border-none bg-transparent p-0 shadow-lg',
-          openUpward ? 'bottom-full pb-2' : 'top-full pt-2'
-        )
-      "
-    >
-      <FormDropdownMenu
-        v-model:filter-selected="filterSelected"
-        v-model:layout-mode="layoutMode"
-        v-model:sort-selected="sortSelected"
-        v-model:search-query="searchQuery"
-        v-model:ownership-selected="ownershipSelected"
-        v-model:base-model-selected="baseModelSelected"
-        :filter-options
-        :sort-options
-        :show-ownership-filter
-        :ownership-options
-        :show-base-model-filter
-        :base-model-options
-        :disabled
-        :items="sortedItems"
-        :is-selected="internalIsSelected"
-        :max-selectable
-        @close="closeDropdown"
-        @item-click="handleSelection"
-      />
-    </div>
+    <Teleport to="body" :disabled="!shouldTeleport">
+      <div
+        v-if="isOpen"
+        ref="dropdownRef"
+        :class="
+          cn(
+            'z-50 rounded-lg border-none bg-transparent p-0 shadow-lg',
+            !shouldTeleport && 'absolute left-0',
+            !shouldTeleport &&
+              (openUpward ? 'bottom-full pb-2' : 'top-full pt-2')
+          )
+        "
+        :style="teleportStyle"
+      >
+        <FormDropdownMenu
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          v-model:ownership-selected="ownershipSelected"
+          v-model:base-model-selected="baseModelSelected"
+          :filter-options
+          :sort-options
+          :show-ownership-filter
+          :ownership-options
+          :show-base-model-filter
+          :base-model-options
+          :disabled
+          :items="sortedItems"
+          :is-selected="internalIsSelected"
+          :max-selectable
+          @close="closeDropdown"
+          @item-click="handleSelection"
+        />
+      </div>
+    </Teleport>
   </div>
 </template>
