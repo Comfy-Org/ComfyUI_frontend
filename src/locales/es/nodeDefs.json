@@ -16240,6 +16240,10 @@
         "name": "positivo",
         "tooltip": "El condicionamiento positivo a utilizar para el entrenamiento."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Al usar 'training_dtype' como 'none' y entrenar en un modelo cuantizado, realiza el retropropagado con multiplicación de matrices cuantizadas cuando está activado."
+      },
       "rank": {
         "name": "rango",
         "tooltip": "El rango de las capas LoRA."
