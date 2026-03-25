@@ -154,6 +154,45 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph viewport pan sweep', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    // Pan aggressively across the full graph so many nodes cross the
+    // viewport boundary, triggering mount/unmount cycles and GC churn.
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+    await comfyPage.page.mouse.move(centerX, centerY)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+
+    await comfyPage.perf.startMeasuring()
+
+    // Sweep right (nodes exit left edge, new nodes enter right edge)
+    for (let i = 0; i < 120; i++) {
+      await comfyPage.page.mouse.move(centerX + i * 8, centerY + i * 3)
+      await comfyPage.nextFrame()
+    }
+    // Sweep back left
+    for (let i = 120; i > 0; i--) {
+      await comfyPage.page.mouse.move(centerX + i * 8, centerY + i * 3)
+      await comfyPage.nextFrame()
+    }
+
+    await comfyPage.page.mouse.up({ button: 'middle' })
+
+    const m = await comfyPage.perf.stopMeasuring('viewport-pan-sweep')
+    recordMeasurement(m)
+    console.log(
+      `Viewport pan sweep: ${m.styleRecalcs} recalcs, ${m.layouts} layouts, ` +
+        `${m.taskDurationMs.toFixed(1)}ms task, ` +
+        `heap Δ${(m.heapDeltaBytes / 1024).toFixed(0)}KB, ` +
+        `${m.domNodes} DOM nodes`
+    )
+  })
+
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {
