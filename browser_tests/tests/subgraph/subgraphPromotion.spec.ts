@@ -98,24 +98,25 @@ test.describe(
       test('LoadImage node gets $$canvas-image-preview pseudo-widget promoted', async ({
         comfyPage
       }) => {
-        // Add a LoadImage node to the graph
-        const loadImageNodeId = await comfyPage.page.evaluate(() => {
+        await comfyPage.workflow.loadWorkflow('default')
+
+        // Add a LoadImage node and convert to subgraph programmatically
+        const subgraphNodeId = await comfyPage.page.evaluate(() => {
           const graph = window.app!.graph!
           const node = window.LiteGraph!.createNode('LoadImage')!
           node.pos = [300, 300]
           graph.add(node)
-          return String(node.id)
+          const { node: subgraphNode } = graph.convertToSubgraph(
+            new Set([node])
+          )
+          return String(subgraphNode.id)
         })
         await comfyPage.nextFrame()
 
-        const loadImageNode =
-          await comfyPage.nodeOps.getNodeRefById(loadImageNodeId)
-        await loadImageNode.click('title')
-        const subgraphNode = await loadImageNode.convertToSubgraph()
-        await comfyPage.nextFrame()
-
-        const nodeId = String(subgraphNode.id)
-        const pseudoWidgets = await getPseudoPreviewWidgets(comfyPage, nodeId)
+        const pseudoWidgets = await getPseudoPreviewWidgets(
+          comfyPage,
+          subgraphNodeId
+        )
         expect(pseudoWidgets.length).toBeGreaterThan(0)
         expect(
           pseudoWidgets.some(([, name]) => name === '$$canvas-image-preview')
