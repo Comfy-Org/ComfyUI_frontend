@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    data-testid="node-widgets"
     :class="
       cn(
         'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
@@ -24,6 +25,7 @@
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
+        data-testid="node-widget"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
