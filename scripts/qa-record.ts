@@ -50,6 +50,13 @@ type TestAction =
   | { action: 'openSettings' }
   | { action: 'reload' }
   | { action: 'done'; reason: string }
+  | {
+      action: 'annotate'
+      text: string
+      x: number
+      y: number
+      durationMs?: number
+    }
 
 interface ActionResult {
   action: TestAction
@@ -232,6 +239,8 @@ Each step is an object with an "action" field:
 ### Utility actions
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
+- { "action": "annotate", "text": "Look here!", "x": 640, "y": 400 } — shows a floating label at coordinates for 2s (use to draw viewer attention to important UI state)
+- { "action": "annotate", "text": "Bug: tab still dirty", "x": 100, "y": 20, "durationMs": 3000 } — annotation with custom duration
 ${qaGuideSection}${testPlanSection}
 ${diff ? `## PR Diff\n\`\`\`\n${diff.slice(0, 3000)}\n\`\`\`` : ''}
 
@@ -512,6 +521,8 @@ async function fillDialogAndConfirm(page: Page, text: string) {
 async function clickByText(page: Page, text: string) {
   const el = page.locator(`text=${text}`).first()
   if (await el.isVisible().catch(() => false)) {
+    await el.hover({ timeout: 3000 }).catch(() => {})
+    await sleep(400)
     await el.click({ timeout: 5000 }).catch((e) => {
       console.warn(
         `Click on "${text}" failed: ${e instanceof Error ? e.message.split('\n')[0] : e}`
@@ -614,10 +625,14 @@ async function executeAction(
         break
       }
       case 'clickCanvas':
+        await page.mouse.move(step.x, step.y)
+        await sleep(300)
         await page.mouse.click(step.x, step.y)
         await sleep(300)
         break
       case 'rightClickCanvas':
+        await page.mouse.move(step.x, step.y)
+        await sleep(300)
         await page.mouse.click(step.x, step.y, { button: 'right' })
         await sleep(500)
         break
@@ -704,6 +719,45 @@ async function executeAction(
       case 'done':
         console.warn(`  Agent done: ${step.reason}`)
         break
+      case 'annotate': {
+        const duration = Math.min(step.durationMs ?? 2000, 5000)
+        await page.evaluate(
+          ({ text, x, y, ms }) => {
+            const el = document.createElement('div')
+            el.textContent = text
+            Object.assign(el.style, {
+              position: 'fixed',
+              left: x + 'px',
+              top: y + 'px',
+              zIndex: '2147483646',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              background: 'rgba(255, 60, 60, 0.9)',
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: '600',
+              fontFamily: 'system-ui, sans-serif',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              transform: 'translateY(-100%) translateX(-50%)',
+              animation: 'qa-ann-in 200ms ease-out'
+            })
+            const style = document.createElement('style')
+            style.textContent =
+              '@keyframes qa-ann-in{from{opacity:0;transform:translateY(-80%) translateX(-50%)}to{opacity:1;transform:translateY(-100%) translateX(-50%)}}'
+            document.head.appendChild(style)
+            document.body.appendChild(el)
+            setTimeout(() => {
+              el.remove()
+              style.remove()
+            }, ms)
+          },
+          { text: step.text, x: step.x, y: step.y, ms: duration }
+        )
+        await sleep(duration + 200)
+        break
+      }
       default:
         console.warn(`Unknown action: ${JSON.stringify(step)}`)
     }
@@ -1261,6 +1315,48 @@ async function launchSessionAndLogin(
     recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } }
   })
   const page = await context.newPage()
+
+  // Inject visible cursor overlay (headless Chrome doesn't render system cursor)
+  await page.addInitScript(() => {
+    const style = document.createElement('style')
+    style.textContent = `
+      #qa-cursor {
+        position: fixed; z-index: 2147483647; pointer-events: none;
+        width: 16px; height: 16px; margin: -8px 0 0 -8px;
+        border-radius: 50%; background: rgba(255, 60, 60, 0.7);
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 0 8px rgba(255, 60, 60, 0.5);
+        transition: transform 80ms ease-out, opacity 80ms;
+        transform: scale(1); opacity: 0.85;
+      }
+      #qa-cursor.clicking {
+        transform: scale(1.8); opacity: 1;
+        background: rgba(255, 200, 60, 0.8);
+        border-color: rgba(255, 255, 255, 1);
+        box-shadow: 0 0 16px rgba(255, 200, 60, 0.6);
+      }
+    `
+    const cursor = document.createElement('div')
+    cursor.id = 'qa-cursor'
+
+    const init = () => {
+      document.head.appendChild(style)
+      document.body.appendChild(cursor)
+      document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX + 'px'
+        cursor.style.top = e.clientY + 'px'
+      })
+      document.addEventListener('mousedown', () =>
+        cursor.classList.add('clicking')
+      )
+      document.addEventListener('mouseup', () =>
+        cursor.classList.remove('clicking')
+      )
+    }
+
+    if (document.body) init()
+    else document.addEventListener('DOMContentLoaded', init)
+  })
 
   console.warn(`Opening ComfyUI at ${opts.serverUrl}`)
   await page.goto(opts.serverUrl, {
