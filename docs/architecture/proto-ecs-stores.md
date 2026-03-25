@@ -131,11 +131,11 @@ Without ref counting, this query would require scanning all SubgraphNodes in the
 ```mermaid
 graph LR
     PS["PromotionStore
-    (data)"] -->|"entries"| VM["PromotedWidgetViewManager
-    (reconciliation)"] -->|"stable views"| PV["PromotedWidgetView
-    (proxy widget)"]
+(data)"] -->|"entries"| VM["PromotedWidgetViewManager
+(reconciliation)"] -->|"stable views"| PV["PromotedWidgetView
+(proxy widget)"]
     PV -->|"resolveDeepest()"| CW["Concrete Widget
-    (leaf node)"]
+(leaf node)"]
     PV -->|"reads value"| WVS["WidgetValueStore"]
 ```
 
@@ -216,28 +216,28 @@ graph TD
         style Have fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
         H1["Centralized data stores"]
         H2["Plain data components
-        (WidgetState, LayoutMap)"]
+(WidgetState, LayoutMap)"]
         H3["Query APIs
-        (getWidget, isPromotedByAny)"]
+(getWidget, isPromotedByAny)"]
         H4["Graph-scoped lifecycle"]
         H5["Partial position extraction
-        (LayoutStore)"]
+(LayoutStore)"]
     end
 
     subgraph Missing["What's Missing"]
         style Missing fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
         M1["Unified World
-        (6 stores, 6 keying strategies)"]
+(6 stores, 6 keying strategies)"]
         M2["Branded entity IDs
-        (keys are string concatenations)"]
+(keys are string concatenations)"]
         M3["System layer
-        (mutations from anywhere)"]
+(mutations from anywhere)"]
         M4["Complete extraction
-        (behavior still on classes)"]
+(behavior still on classes)"]
         M5["No entity-to-entity refs
-        (back-refs remain)"]
+(back-refs remain)"]
         M6["Render/update separation
-        (stores queried during render)"]
+(stores queried during render)"]
     end
 ```
 
@@ -263,75 +263,75 @@ Current state of extraction for each entity kind:
 graph TD
     subgraph Node["LGraphNode"]
         N_ext["Extracted:
-        - pos, size → LayoutStore
-        - zIndex → LayoutStore"]
+- pos, size → LayoutStore
+- zIndex → LayoutStore"]
         N_rem["Remains on class:
-        - type, category, nodeData
-        - color, bgcolor, boxcolor
-        - inputs[], outputs[]
-        - widgets[]
-        - properties
-        - order, mode, flags
-        - serialize(), configure()
-        - drawSlots(), drawWidgets()
-        - connect(), disconnect()"]
+- type, category, nodeData
+- color, bgcolor, boxcolor
+- inputs[], outputs[]
+- widgets[]
+- properties
+- order, mode, flags
+- serialize(), configure()
+- drawSlots(), drawWidgets()
+- connect(), disconnect()"]
     end
 
     subgraph Widget["BaseWidget"]
         W_ext["Extracted:
-        - value → WidgetValueStore
-        - label → WidgetValueStore
-        - disabled → WidgetValueStore
-        - promotion status → PromotionStore
-        - DOM pos/vis → DomWidgetStore"]
+- value → WidgetValueStore
+- label → WidgetValueStore
+- disabled → WidgetValueStore
+- promotion status → PromotionStore
+- DOM pos/vis → DomWidgetStore"]
         W_rem["Remains on class:
-        - _node back-ref
-        - drawWidget()
-        - onClick(), onDrag()
-        - computedHeight
-        - callback, linkedWidgets"]
+- _node back-ref
+- drawWidget()
+- onClick(), onDrag()
+- computedHeight
+- callback, linkedWidgets"]
     end
 
     subgraph Link["LLink"]
         L_ext["Extracted:
-        - layout data → LayoutStore"]
+- layout data → LayoutStore"]
         L_rem["Remains on class:
-        - origin_id, target_id
-        - origin_slot, target_slot
-        - type, color, path
-        - data, _dragging
-        - disconnect(), resolve()"]
+- origin_id, target_id
+- origin_slot, target_slot
+- type, color, path
+- data, _dragging
+- disconnect(), resolve()"]
     end
 
     subgraph Reroute["Reroute"]
         R_ext["Extracted:
-        - pos → LayoutStore"]
+- pos → LayoutStore"]
         R_rem["Remains on class:
-        - parentId, linkIds
-        - floatingLinkIds
-        - color, draw()
-        - findSourceOutput()"]
+- parentId, linkIds
+- floatingLinkIds
+- color, draw()
+- findSourceOutput()"]
     end
 
     subgraph Group["LGraphGroup"]
         G_ext["Extracted:
-        (nothing)"]
+(nothing)"]
         G_rem["Remains on class:
-        - pos, size, bounding
-        - title, font, color
-        - _children, _nodes
-        - draw(), move()
-        - recomputeInsideNodes()"]
+- pos, size, bounding
+- title, font, color
+- _children, _nodes
+- draw(), move()
+- recomputeInsideNodes()"]
     end
 
     subgraph Subgraph["Subgraph"]
         S_ext["Extracted:
-        - promotions → PromotionStore"]
+- promotions → PromotionStore"]
         S_rem["Remains on class:
-        - name, description
-        - inputs[], outputs[]
-        - inputNode, outputNode
-        - All LGraph state"]
+- name, description
+- inputs[], outputs[]
+- inputNode, outputNode
+- All LGraph state"]
     end
 
     style N_ext fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0

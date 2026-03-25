@@ -29,22 +29,22 @@ graph TD
     end
 
     Graph["LGraph
-    (UUID)"]
+(UUID)"]
     Node["LGraphNode
-    (NodeId)"]
+(NodeId)"]
     SubgraphEntity["Subgraph
-    (UUID)"]
+(UUID)"]
     SubgraphNode["SubgraphNode"]
     Link["LLink
-    (LinkId)"]
+(LinkId)"]
     Widget["BaseWidget
-    (name)"]
+(name)"]
     Slot["SlotBase
-    (index)"]
+(index)"]
     Reroute["Reroute
-    (RerouteId)"]
+(RerouteId)"]
     Group["LGraphGroup
-    (number)"]
+(number)"]
     Canvas["LGraphCanvas"]
 
     %% Ownership (solid)
@@ -84,18 +84,18 @@ How Nodes, Slots, Links, and Reroutes form the graph topology.
 graph LR
     subgraph OutputNode["Origin Node"]
         OSlot["Output Slot
-        links: LinkId[]"]
+links: LinkId[]"]
     end
 
     subgraph InputNode["Target Node"]
         ISlot["Input Slot
-        link: LinkId | null"]
+link: LinkId | null"]
     end
 
     OSlot -->|"LinkId ref"| Link["LLink
-    origin_id + origin_slot
-    target_id + target_slot
-    type: ISlotType"]
+origin_id + origin_slot
+target_id + target_slot
+type: ISlotType"]
     Link -->|"LinkId ref"| ISlot
 
     Link -.->|"parentId"| R1["Reroute A"]
@@ -112,16 +112,16 @@ graph TD
     subgraph ParentGraph["Parent Graph"]
         ExtNode["External Node"]
         SGNode["SubgraphNode
-        (in parent graph)"]
+(in parent graph)"]
     end
 
     subgraph SubgraphDef["Subgraph"]
         SInput["SubgraphInput"]
         SInputNode["SubgraphInputNode
-        (virtual)"]
+(virtual)"]
         InternalNode["Internal Node"]
         SOutputNode["SubgraphOutputNode
-        (virtual)"]
+(virtual)"]
         SOutput["SubgraphOutput"]
     end
 
@@ -140,12 +140,12 @@ graph TD
 ```mermaid
 graph LR
     Slot["Source Slot"] -->|"drag starts"| FL["Floating LLink
-    origin_id=-1 or target_id=-1"]
+origin_id=-1 or target_id=-1"]
     FL -->|"stored in"| FLMap["graph.floatingLinks Map"]
     FL -.->|"may pass through"| Reroute
     Reroute -.-|"floatingLinkIds Set"| FL
     FL -->|"on drop"| Permanent["Permanent LLink
-    (registered in graph._links)"]
+(registered in graph._links)"]
 ```
 
 ## 3. Rendering
@@ -155,7 +155,7 @@ How LGraphCanvas draws each entity type.
 ```mermaid
 graph TD
     Canvas["LGraphCanvas
-    render loop"]
+render loop"]
 
     Canvas -->|"1. background"| DrawGroups["drawGroups()"]
     Canvas -->|"2. connections"| DrawConns["drawConnections()"]
@@ -167,7 +167,7 @@ graph TD
     DrawConns --> LinkSeg["LinkSegment interface"]
     LinkSeg --> Link["LLink path rendering"]
     LinkSeg --> RerouteRender["Reroute inline rendering
-    (draw, drawSlots)"]
+(draw, drawSlots)"]
 
     DrawNodes --> NodeDraw["node drawing pipeline"]
     NodeDraw -->|"drawSlots()"| SlotDraw["slot.draw() per slot"]
@@ -358,18 +358,18 @@ graph TD
 
     subgraph Stores
         WVS["WidgetValueStore
-        (Pinia)"]
+(Pinia)"]
         PS["PromotionStore
-        (Pinia)"]
+(Pinia)"]
         LM["LayoutMutations
-        (composable)"]
+(composable)"]
     end
 
     subgraph GraphState["Graph Internal State"]
         Version["graph._version"]
         LGState["graph.state
-        (lastNodeId, lastLinkId,
-        lastRerouteId, lastGroupId)"]
+(lastNodeId, lastLinkId,
+lastRerouteId, lastGroupId)"]
     end
 
     %% WidgetValueStore

@@ -11,19 +11,19 @@ graph TD
     subgraph World["World (Central Registry)"]
         direction TB
         NodeStore["Nodes
-        Map&lt;NodeEntityId, NodeComponents&gt;"]
+Map&lt;NodeEntityId, NodeComponents&gt;"]
         LinkStore["Links
-        Map&lt;LinkEntityId, LinkComponents&gt;"]
+Map&lt;LinkEntityId, LinkComponents&gt;"]
         SubgraphStore["Subgraphs
-        Map&lt;SubgraphEntityId, SubgraphComponents&gt;"]
+Map&lt;SubgraphEntityId, SubgraphComponents&gt;"]
         WidgetStore["Widgets
-        Map&lt;WidgetEntityId, WidgetComponents&gt;"]
+Map&lt;WidgetEntityId, WidgetComponents&gt;"]
         SlotStore["Slots
-        Map&lt;SlotEntityId, SlotComponents&gt;"]
+Map&lt;SlotEntityId, SlotComponents&gt;"]
         RerouteStore["Reroutes
-        Map&lt;RerouteEntityId, RerouteComponents&gt;"]
+Map&lt;RerouteEntityId, RerouteComponents&gt;"]
         GroupStore["Groups
-        Map&lt;GroupEntityId, GroupComponents&gt;"]
+Map&lt;GroupEntityId, GroupComponents&gt;"]
     end
 
     subgraph Systems["Systems (Behavior)"]
@@ -53,19 +53,19 @@ graph TD
 graph LR
     subgraph "Branded IDs (compile-time distinct)"
         NID["NodeEntityId
-        number & { __brand: 'NodeEntityId' }"]
+number & { __brand: 'NodeEntityId' }"]
         LID["LinkEntityId
-        number & { __brand: 'LinkEntityId' }"]
+number & { __brand: 'LinkEntityId' }"]
         SID["SubgraphEntityId
-        string & { __brand: 'SubgraphEntityId' }"]
+string & { __brand: 'SubgraphEntityId' }"]
         WID["WidgetEntityId
-        number & { __brand: 'WidgetEntityId' }"]
+number & { __brand: 'WidgetEntityId' }"]
         SLID["SlotEntityId
-        number & { __brand: 'SlotEntityId' }"]
+number & { __brand: 'SlotEntityId' }"]
         RID["RerouteEntityId
-        number & { __brand: 'RerouteEntityId' }"]
+number & { __brand: 'RerouteEntityId' }"]
         GID["GroupEntityId
-        number & { __brand: 'GroupEntityId' }"]
+number & { __brand: 'GroupEntityId' }"]
     end
 
     NID -.-x LID
@@ -104,19 +104,19 @@ graph LR
     subgraph After["NodeEntityId + Components"]
         direction TB
         A1["Position
-        { pos, size, bounding }"]
+{ pos, size, bounding }"]
         A2["NodeVisual
-        { color, bgcolor, boxcolor, title }"]
+{ color, bgcolor, boxcolor, title }"]
         A3["NodeType
-        { type, category, nodeData }"]
+{ type, category, nodeData }"]
         A4["Connectivity
-        { inputSlotIds[], outputSlotIds[] }"]
+{ inputSlotIds[], outputSlotIds[] }"]
         A5["Execution
-        { order, mode, flags }"]
+{ order, mode, flags }"]
         A6["Properties
-        { properties, propertiesInfo }"]
+{ properties, propertiesInfo }"]
         A7["WidgetContainer
-        { widgetIds[] }"]
+{ widgetIds[] }"]
     end
 
     B1 -.-> A1
@@ -144,7 +144,7 @@ graph LR
     subgraph Before["LLink (class)"]
         direction TB
         B1["origin_id, origin_slot
-        target_id, target_slot, type"]
+target_id, target_slot, type"]
         B2["color, path, _pos"]
         B3["_dragging, data"]
         B4["disconnect()"]
@@ -154,12 +154,12 @@ graph LR
     subgraph After["LinkEntityId + Components"]
         direction TB
         A1["LinkEndpoints
-        { originId, originSlot,
-        targetId, targetSlot, type }"]
+{ originId, originSlot,
+targetId, targetSlot, type }"]
         A2["LinkVisual
-        { color, path, centerPos }"]
+{ color, path, centerPos }"]
         A3["LinkState
-        { dragging, data }"]
+{ dragging, data }"]
     end
 
     B1 -.-> A1
@@ -189,11 +189,11 @@ graph LR
     subgraph After["WidgetEntityId + Components"]
         direction TB
         A1["WidgetIdentity
-        { name, widgetType, parentNodeId }"]
+{ name, widgetType, parentNodeId }"]
         A2["WidgetValue
-        { value, options, serialize }"]
+{ value, options, serialize }"]
         A3["WidgetLayout
-        { computedHeight, constraints }"]
+{ computedHeight, constraints }"]
     end
 
     B1 -.-> A1
@@ -215,43 +215,43 @@ Systems are pure functions that query the World for entities with specific compo
 graph TD
     subgraph InputPhase["Input Phase"]
         UserInput["User Input
-        (pointer, keyboard)"]
+(pointer, keyboard)"]
         APIInput["API Input
-        (backend execution results)"]
+(backend execution results)"]
     end
 
     subgraph UpdatePhase["Update Phase (ordered)"]
         direction TB
         CS["ConnectivitySystem
-        Manages link/slot mutations.
-        Writes: LinkEndpoints, SlotConnection,
-        Connectivity"]
+Manages link/slot mutations.
+Writes: LinkEndpoints, SlotConnection,
+Connectivity"]
         VS["VersionSystem
-        Centralizes change tracking.
-        Replaces 15+ scattered _version++.
-        Writes: version counter"]
+Centralizes change tracking.
+Replaces 15+ scattered _version++.
+Writes: version counter"]
         LS["LayoutSystem
-        Computes positions and sizes.
-        Runs BEFORE render, not during.
-        Reads: Connectivity, WidgetContainer
-        Writes: Position, SlotVisual, WidgetLayout"]
+Computes positions and sizes.
+Runs BEFORE render, not during.
+Reads: Connectivity, WidgetContainer
+Writes: Position, SlotVisual, WidgetLayout"]
         ES["ExecutionSystem
-        Determines run order.
-        Reads: Connectivity, Execution
-        Writes: Execution.order"]
+Determines run order.
+Reads: Connectivity, Execution
+Writes: Execution.order"]
     end
 
     subgraph RenderPhase["Render Phase (read-only)"]
         RS["RenderSystem
-        Pure read of components.
-        No state mutation.
-        Reads: Position, *Visual, *Layout"]
+Pure read of components.
+No state mutation.
+Reads: Position, *Visual, *Layout"]
     end
 
     subgraph PersistPhase["Persist Phase"]
         SS["SerializationSystem
-        Reads/writes all components.
-        Handles workflow JSON."]
+Reads/writes all components.
+Handles workflow JSON."]
     end
 
     UserInput --> CS
@@ -363,7 +363,7 @@ graph TD
     end
 
     World["World
-    (single source of truth)"]
+(single source of truth)"]
 
     subgraph Components["Component Stores"]
         Pos["Position"]
@@ -395,37 +395,37 @@ How each problem from [entity-problems.md](entity-problems.md) is resolved:
 graph LR
     subgraph Problems["Current Problems"]
         P1["God Objects
-        (9k+ line classes)"]
+(9k+ line classes)"]
         P2["Circular Deps
-        (LGraph ↔ Subgraph)"]
+(LGraph ↔ Subgraph)"]
         P3["Mixed Concerns
-        (render + domain + state)"]
+(render + domain + state)"]
         P4["Inconsistent IDs
-        (number|string, no safety)"]
+(number|string, no safety)"]
         P5["Demeter Violations
-        (graph._links, graph._version++)"]
+(graph._links, graph._version++)"]
         P6["Scattered Side Effects
-        (15+ _version++ sites)"]
+(15+ _version++ sites)"]
         P7["Render-Time Mutations
-        (arrange() during draw)"]
+(arrange() during draw)"]
     end
 
     subgraph Solutions["ECS Solutions"]
         S1["Components: small, focused
-        data objects (5-10 fields each)"]
+data objects (5-10 fields each)"]
         S2["Entities are just IDs.
-        No inheritance hierarchy."]
+No inheritance hierarchy."]
         S3["One system per concern.
-        Systems don't overlap."]
+Systems don't overlap."]
         S4["Branded per-kind IDs.
-        Compile-time type errors."]
+Compile-time type errors."]
         S5["Systems query World.
-        No entity→entity refs."]
+No entity→entity refs."]
         S6["VersionSystem owns
-        all change tracking."]
+all change tracking."]
         S7["LayoutSystem runs in
-        update phase, before render.
-        RenderSystem is read-only."]
+update phase, before render.
+RenderSystem is read-only."]
     end
 
     P1 --> S1
@@ -487,26 +487,26 @@ graph LR
 
     subgraph Phase2["Phase 2: Bridge"]
         B1["Bridge adapters
-        class ↔ World sync"]
+class ↔ World sync"]
         B2["New features use
-        World as source"]
+World as source"]
         B3["Old code unchanged"]
     end
 
     subgraph Phase3["Phase 3: Extract"]
         E1["Migrate one component
-        at a time"]
+at a time"]
         E2["Deprecate class
-        properties"]
+properties"]
         E3["Systems replace
-        methods"]
+methods"]
     end
 
     subgraph Phase4["Phase 4: Clean"]
         C1["Remove bridge"]
         C2["Remove legacy classes"]
         C3["Systems are sole
-        behavior layer"]
+behavior layer"]
     end
 
     Phase1 --> Phase2 --> Phase3 --> Phase4
