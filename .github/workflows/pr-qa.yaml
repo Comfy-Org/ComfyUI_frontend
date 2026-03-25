@@ -852,6 +852,7 @@ jobs:
           RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
           BEFORE_SHA: ${{ needs.resolve-matrix.outputs.before_sha }}
           AFTER_SHA: ${{ needs.resolve-matrix.outputs.after_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           TARGET_NUM: ${{ steps.pr.outputs.number }}
           TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
           REPO: ${{ github.repository }}
@@ -1027,7 +1028,7 @@ jobs:
           .vctrl .vsep{width:1px;height:1rem;background:var(--border);flex-shrink:0}
           .vctrl .vhint{font-size:.6rem;color:var(--fg-dim);margin-left:auto}
           </style></head><body><div class=container>
-          <header><div class=header-icon><svg width=20 height=20 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg></div><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA${COMMIT_HTML}</div></div></header>
+          <header><div class=header-icon><svg width=20 height=20 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg></div><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA${COMMIT_HTML} &middot; <a href="${RUN_URL}" class=sha title="GitHub Actions run">CI Job</a></div></div></header>
           <div class=grid>${CARDS}</div>
           </div><script>
           document.querySelectorAll('[data-md]').forEach(el=>{const t=el.textContent;el.removeAttribute('data-md');el.innerHTML=marked.parse(t)});
