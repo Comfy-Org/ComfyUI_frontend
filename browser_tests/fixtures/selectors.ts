@@ -113,7 +113,8 @@ export const TestIds = {
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
-    formDropdownMenu: 'form-dropdown-menu'
+    formDropdownMenu: 'form-dropdown-menu',
+    formDropdownTrigger: 'form-dropdown-trigger'
   },
   builder: {
     footerNav: 'builder-footer-nav',

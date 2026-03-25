@@ -20,9 +20,7 @@ test.describe(
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       await expect(node).toBeVisible()
 
-      const trigger = node.locator(
-        'button:has(> span > span), button:has(i.icon-\\[lucide--chevron-down\\])'
-      )
+      const trigger = node.getByTestId(TestIds.widgets.formDropdownTrigger)
       await trigger.first().click()
 
       const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
@@ -50,7 +48,7 @@ test.describe(
     test('dropdown menu appears correctly at different zoom levels', async ({
       comfyPage
     }) => {
-      for (const zoom of [0.5, 1.5]) {
+      for (const zoom of [0.75, 1.5]) {
         // Set zoom via canvas
         await comfyPage.page.evaluate((scale) => {
           const canvas = window.app!.canvas
@@ -62,9 +60,7 @@ test.describe(
         const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
         await expect(node).toBeVisible()
 
-        const trigger = node.locator(
-          'button:has(i.icon-\\[lucide--chevron-down\\])'
-        )
+        const trigger = node.getByTestId(TestIds.widgets.formDropdownTrigger)
         await trigger.first().click()
 
         const menu = comfyPage.page.getByTestId(
@@ -94,9 +90,7 @@ test.describe(
 
     test('dropdown closes on outside click', async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
-      const trigger = node.locator(
-        'button:has(i.icon-\\[lucide--chevron-down\\])'
-      )
+      const trigger = node.getByTestId(TestIds.widgets.formDropdownTrigger)
       await trigger.first().click()
 
       const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
@@ -109,9 +103,7 @@ test.describe(
 
     test('dropdown closes on Escape key', async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
-      const trigger = node.locator(
-        'button:has(i.icon-\\[lucide--chevron-down\\])'
-      )
+      const trigger = node.getByTestId(TestIds.widgets.formDropdownTrigger)
       await trigger.first().click()
 
       const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)

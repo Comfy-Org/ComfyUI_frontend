@@ -61,6 +61,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      data-testid="form-dropdown-trigger"
       :class="
         cn(
           theButtonStyle,

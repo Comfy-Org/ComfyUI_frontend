@@ -4,6 +4,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
  * Default workflow widget inputs as [nodeId, widgetName] tuples.
@@ -137,12 +138,12 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const dropdownButton = imageRow.locator('button:has(> span)').first()
     await dropdownButton.click()
 
-    // The unstyled PrimeVue Popover renders with role="dialog".
-    // Locate the one containing the image grid (filter buttons like "All", "Inputs").
-    const popover = comfyPage.appMode.imagePickerPopover
-    await expect(popover).toBeVisible({ timeout: 5000 })
+    const menu = comfyPage.page
+      .getByTestId(TestIds.widgets.formDropdownMenu)
+      .first()
+    await expect(menu).toBeVisible({ timeout: 5000 })
 
-    const isInViewport = await popover.evaluate((el) => {
+    const isInViewport = await menu.evaluate((el) => {
       const rect = el.getBoundingClientRect()
       return (
         rect.top >= 0 &&
@@ -153,7 +154,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     })
     expect(isInViewport).toBe(true)
 
-    const isClipped = await popover.evaluate(isClippedByAnyAncestor)
+    const isClipped = await menu.evaluate(isClippedByAnyAncestor)
     expect(isClipped).toBe(false)
   })
 })
