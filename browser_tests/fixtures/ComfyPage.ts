@@ -5,7 +5,7 @@ import type {
   Page
 } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { TestIds } from './selectors'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
@@ -40,7 +40,7 @@ import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
 import type { WorkspaceStore } from '../types/globals'
 
-dotenv.config()
+dotenvConfig()
 
 class ComfyPropertiesPanel {
   readonly root: Locator

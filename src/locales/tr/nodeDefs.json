@@ -16240,6 +16240,10 @@
         "name": "pozitif",
         "tooltip": "Eğitim için kullanılacak pozitif koşullandırma."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Eğer training_dtype 'none' olarak ayarlanmışsa ve quantized bir modelde eğitim yapılıyorsa, etkinleştirildiğinde backward işlemi quantized matmul ile yapılır."
+      },
       "rank": {
         "name": "rütbe",
         "tooltip": "LoRA katmanlarının rütbesi."

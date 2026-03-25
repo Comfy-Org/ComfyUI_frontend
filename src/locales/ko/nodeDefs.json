@@ -16240,6 +16240,10 @@
         "name": "긍정 조건",
         "tooltip": "학습에 사용할 긍정 조건입니다."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "training_dtype가 'none'이고 양자화된 모델에서 학습할 때, 활성화 시 양자화된 matmul로 역전파를 수행합니다."
+      },
       "rank": {
         "name": "랭크",
         "tooltip": "LoRA 계층의 랭크입니다."

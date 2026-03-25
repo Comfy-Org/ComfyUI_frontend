@@ -16240,6 +16240,10 @@
         "name": "正向条件",
         "tooltip": "用于训练的正向条件。"
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "当 training_dtype 设为 'none' 并在量化模型上训练时，启用后将使用量化矩阵乘法进行反向传播。"
+      },
       "rank": {
         "name": "秩",
         "tooltip": "LoRA 层的秩。"
