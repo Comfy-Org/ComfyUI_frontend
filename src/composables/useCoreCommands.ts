@@ -78,7 +78,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
-  const firebaseAuthActions = useAuthActions()
+  const authActions = useAuthActions()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
@@ -996,7 +996,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Sign Out',
       versionAdded: '1.18.1',
       function: async () => {
-        await firebaseAuthActions.logout()
+        await authActions.logout()
       }
     },
     {

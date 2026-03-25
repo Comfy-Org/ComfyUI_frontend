@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import type { Mock } from 'vitest'
 import { computed, reactive, ref } from 'vue'
 

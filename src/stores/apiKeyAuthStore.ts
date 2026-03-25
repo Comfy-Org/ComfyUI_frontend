@@ -15,7 +15,7 @@ type ComfyApiUser =
 const STORAGE_KEY = 'comfy_api_key'
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
-  const firebaseAuthStore = useAuthStore()
+  const authStore = useAuthStore()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
@@ -24,7 +24,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const isAuthenticated = computed(() => !!currentUser.value)
 
   const initializeUserFromApiKey = async () => {
-    const createCustomerResponse = await firebaseAuthStore
+    const createCustomerResponse = await authStore
       .createCustomer()
       .catch((err) => {
         console.error(err)

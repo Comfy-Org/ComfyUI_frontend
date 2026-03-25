@@ -95,7 +95,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const authStore = useAuthStore()
-const firebaseAuthActions = useAuthActions()
+const authActions = useAuthActions()
 const loading = computed(() => authStore.loading)
 const toast = useToast()
 
@@ -127,6 +127,6 @@ const handleForgotPassword = async (
     document.getElementById(emailInputId)?.focus?.()
     return
   }
-  await firebaseAuthActions.sendPasswordReset(email)
+  await authActions.sendPasswordReset(email)
 }
 </script>

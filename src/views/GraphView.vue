@@ -120,7 +120,7 @@ watch(linearMode, (isLinear) => {
 })
 
 const telemetry = useTelemetry()
-const firebaseAuthStore = useAuthStore()
+const authStore = useAuthStore()
 let hasTrackedLogin = false
 
 watch(
@@ -308,7 +308,7 @@ void nextTick(() => {
 const onGraphReady = () => {
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
-    if (isCloud && firebaseAuthStore.isAuthenticated && !hasTrackedLogin) {
+    if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
       telemetry?.trackUserLoggedIn()
       hasTrackedLogin = true
     }

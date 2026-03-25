@@ -181,8 +181,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     error.value = null
 
     try {
-      const firebaseAuthStore = useAuthStore()
-      const firebaseToken = await firebaseAuthStore.getIdToken()
+      const authStore = useAuthStore()
+      const firebaseToken = await authStore.getIdToken()
       if (!firebaseToken) {
         throw new WorkspaceAuthError(
           t('workspaceAuth.errors.notAuthenticated'),

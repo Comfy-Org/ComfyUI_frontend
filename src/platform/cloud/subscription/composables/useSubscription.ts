@@ -37,8 +37,8 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortal } = useAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
-  const firebaseAuthStore = useAuthStore()
-  const { getAuthHeader } = firebaseAuthStore
+  const authStore = useAuthStore()
+  const { getAuthHeader } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
