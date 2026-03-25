@@ -152,12 +152,19 @@ const fixedPosition = ref({ top: 0, left: 0 })
 const teleportStyle = computed<CSSProperties | undefined>(() => {
   if (!shouldTeleport.value) return undefined
   const pos = fixedPosition.value
-  return {
-    position: 'fixed',
-    left: `${pos.left}px`,
-    top: `${pos.top}px`,
-    paddingTop: '0.5rem'
-  }
+  return openUpward.value
+    ? {
+        position: 'fixed',
+        left: `${pos.left}px`,
+        bottom: `${window.innerHeight - pos.top}px`,
+        paddingBottom: '0.5rem'
+      }
+    : {
+        position: 'fixed',
+        left: `${pos.left}px`,
+        top: `${pos.top}px`,
+        paddingTop: '0.5rem'
+      }
 })
 
 function toggleDropdown() {
@@ -165,16 +172,16 @@ function toggleDropdown() {
   if (!isOpen.value && triggerRef.value) {
     const rect = triggerRef.value.getBoundingClientRect()
 
+    const spaceBelow = window.innerHeight - rect.bottom
+    const spaceAbove = rect.top
+    openUpward.value = spaceBelow < MENU_HEIGHT && spaceAbove > spaceBelow
+
     if (shouldTeleport.value) {
       const MENU_WIDTH = 412
       fixedPosition.value = {
-        top: rect.bottom,
+        top: openUpward.value ? rect.top : rect.bottom,
         left: Math.min(rect.right, window.innerWidth - MENU_WIDTH)
       }
-    } else {
-      const spaceBelow = window.innerHeight - rect.bottom
-      const spaceAbove = rect.top
-      openUpward.value = spaceBelow < MENU_HEIGHT && spaceAbove > spaceBelow
     }
   }
   isOpen.value = !isOpen.value
