@@ -203,6 +203,8 @@ const translations = {
   'academy.cta': { en: 'EXPLORE ACADEMY', 'zh-CN': '探索学院' },
 
   // SiteNav
+  'nav.ariaLabel': { en: 'Main navigation', 'zh-CN': '主导航' },
+  'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.enterprise': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
   'nav.gallery': { en: 'GALLERY', 'zh-CN': '画廊' },
   'nav.about': { en: 'ABOUT', 'zh-CN': '关于' },

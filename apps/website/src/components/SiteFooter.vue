@@ -89,9 +89,11 @@ const socials = [
     >
       <!-- Brand -->
       <div class="lg:col-span-1">
+        <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
         <a :href="localePath('/', locale)" class="text-2xl font-bold italic text-brand-yellow">
           Comfy
         </a>
+        <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
         <p class="mt-4 text-sm text-smoke-700">
           {{ t('footer.tagline', locale) }}
         </p>

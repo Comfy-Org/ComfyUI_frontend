@@ -55,13 +55,15 @@ onUnmounted(() => {
 <template>
   <nav
     class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md"
-    aria-label="Main navigation"
+    :aria-label="t('nav.ariaLabel', locale)"
   >
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <!-- Logo -->
+      <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
       <a :href="localePath('/', locale)" class="text-2xl font-bold italic text-brand-yellow">
         Comfy
       </a>
+      <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
 
       <!-- Desktop nav links -->
       <div class="hidden items-center gap-8 md:flex">
@@ -95,7 +97,7 @@ onUnmounted(() => {
       <!-- Mobile hamburger -->
       <button
         class="flex flex-col gap-1.5 md:hidden"
-        aria-label="Toggle menu"
+        :aria-label="t('nav.toggleMenu', locale)"
         aria-controls="site-mobile-menu"
         :aria-expanded="mobileMenuOpen"
         @click="mobileMenuOpen = !mobileMenuOpen"
