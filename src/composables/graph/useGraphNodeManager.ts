@@ -521,9 +521,7 @@ function instrumentNode(node: LGraphNode): NodeInstrumentation {
     enumerable: true
   })
 
-  const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(
-    node.outputs ?? []
-  )
+  const reactiveOutputs = shallowReactive<INodeOutputSlot[]>(node.outputs ?? [])
   Object.defineProperty(node, 'outputs', {
     get() {
       return reactiveOutputs
