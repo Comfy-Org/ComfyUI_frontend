@@ -2,7 +2,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
 
 /**
  * Regression test for PR #10532:
@@ -45,9 +44,7 @@ test.describe(
       const stepsWidget = nodeLocator
         .getByLabel('steps', { exact: true })
         .first()
-      const textWidget = nodeLocator
-        .getByTestId(TestIds.widgets.domWidgetTextarea)
-        .first()
+      const textWidget = nodeLocator.getByRole('textbox', { name: 'prompt' })
 
       const widthControls =
         comfyPage.vueNodes.getInputNumberControls(widthWidget)
@@ -60,7 +57,7 @@ test.describe(
         await expect(widthControls.input).toHaveValue('1024')
         await expect(heightControls.input).toHaveValue('1024')
         await expect(stepsControls.input).toHaveValue('8')
-        await expect(textWidget).toContainText('Latina female')
+        await expect(textWidget).toHaveValue(/Latina female/)
       }).toPass({ timeout: 5000 })
 
       // 2. Enter the subgraph via Vue node button
@@ -99,9 +96,7 @@ test.describe(
         .getByLabel('height', { exact: true })
         .first()
       const stepsAfter = nodeAfter.getByLabel('steps', { exact: true }).first()
-      const textAfter = nodeAfter
-        .getByTestId(TestIds.widgets.domWidgetTextarea)
-        .first()
+      const textAfter = nodeAfter.getByRole('textbox', { name: 'prompt' })
 
       const widthControlsAfter =
         comfyPage.vueNodes.getInputNumberControls(widthAfter)
@@ -114,7 +109,7 @@ test.describe(
         await expect(widthControlsAfter.input).toHaveValue('1024')
         await expect(heightControlsAfter.input).toHaveValue('1024')
         await expect(stepsControlsAfter.input).toHaveValue('8')
-        await expect(textAfter).toContainText('Latina female')
+        await expect(textAfter).toHaveValue(/Latina female/)
       }).toPass({ timeout: 5000 })
     })
 
