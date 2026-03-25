@@ -96,7 +96,7 @@ describe('TopbarBadge', () => {
       )
       expect(screen.queryByText('Full Text')).not.toBeInTheDocument()
       await user.click(screen.getByText('ALERT'))
-      expect(screen.getByText('Full Text')).toBeInTheDocument()
+      expect(await screen.findByText('Full Text')).toBeInTheDocument()
     })
   })
 
@@ -188,11 +188,13 @@ describe('TopbarBadge', () => {
     it('handles badge with only text', () => {
       renderTopbarBadge(
         {
-          text: 'Simple Badge'
+          text: 'Simple Badge',
+          label: undefined
         },
         'full'
       )
       expect(screen.getByText('Simple Badge')).toBeInTheDocument()
+      expect(screen.queryByText('BETA')).not.toBeInTheDocument()
       expect(screen.queryByTestId('badge-icon')).not.toBeInTheDocument()
     })
 
