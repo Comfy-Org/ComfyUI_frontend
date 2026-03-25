@@ -19,6 +19,7 @@
 import { execSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
@@ -783,8 +784,6 @@ async function analyzePr(opts: Options) {
   console.warn(`  Before: ${beforePath}`)
   console.warn(`  After:  ${afterPath}`)
 }
-
-import { fileURLToPath } from 'node:url'
 
 function isExecutedAsScript(metaUrl: string): boolean {
   const modulePath = fileURLToPath(metaUrl)
