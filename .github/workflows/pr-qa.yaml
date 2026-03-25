@@ -236,6 +236,18 @@ jobs:
           grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
             sed 's|diff --git a/||;s| b/.*||' | sort -u
 
+      - name: Get issue body (for reproduce mode)
+        if: needs.resolve-matrix.outputs.target_type == 'issue' && needs.resolve-matrix.outputs.number
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue view ${{ needs.resolve-matrix.outputs.number }} \
+            --repo ${{ github.repository }} \
+            --json title,body --jq '.title + "\n\n" + .body' \
+            > "${{ runner.temp }}/issue-body.txt"
+          echo "Issue body saved ($(wc -c < "${{ runner.temp }}/issue-body.txt") bytes)"
+
       - name: Download QA guide
         continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -288,6 +300,8 @@ jobs:
           DIFF_FLAG=""
           if [ -f "${{ runner.temp }}/pr-diff.txt" ]; then
             DIFF_FLAG="--diff ${{ runner.temp }}/pr-diff.txt"
+          elif [ -f "${{ runner.temp }}/issue-body.txt" ]; then
+            DIFF_FLAG="--diff ${{ runner.temp }}/issue-body.txt"
           fi
 
           pnpm exec tsx scripts/qa-record.ts \

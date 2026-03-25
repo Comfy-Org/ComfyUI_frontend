@@ -46,6 +46,8 @@ type TestAction =
   | { action: 'screenshot'; name: string }
   | { action: 'loadWorkflow'; url: string }
   | { action: 'setSetting'; id: string; value: string | number | boolean }
+  | { action: 'loadDefaultWorkflow' }
+  | { action: 'openSettings' }
   | { action: 'reload' }
   | { action: 'done'; reason: string }
 
@@ -542,6 +544,18 @@ async function executeAction(
   console.warn(
     `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
   )
+  // Reject invalid click targets
+  const INVALID_TARGETS = ['undefined', 'null', '[object Object]', '']
+  if (
+    'text' in step &&
+    typeof step.text === 'string' &&
+    INVALID_TARGETS.includes(step.text.trim())
+  ) {
+    const error = `Invalid click target: "${step.text}". Use a real UI label or coordinates instead.`
+    console.warn(`  ${error}`)
+    return { action: step, success: false, error }
+  }
+
   try {
     switch (step.action) {
       case 'openMenu':
@@ -670,6 +684,19 @@ async function executeAction(
         await sleep(500)
         break
       }
+      case 'loadDefaultWorkflow':
+        // Convenience: File → Load Default in one action
+        await openComfyMenu(page)
+        await hoverMenuItem(page, 'File')
+        await clickSubmenuItem(page, 'Load Default')
+        await sleep(1000)
+        break
+      case 'openSettings':
+        // Convenience: open Settings dialog in one action
+        await openComfyMenu(page)
+        await clickSubmenuItem(page, 'Settings')
+        await sleep(1000)
+        break
       case 'reload':
         await page.reload({ waitUntil: 'domcontentloaded' })
         await waitForEditorReady(page)
@@ -799,10 +826,15 @@ async function captureScreenshotForGemini(page: Page): Promise<string> {
 
 function buildAgenticSystemPrompt(
   issueContext: string,
-  subIssueFocus?: string
+  subIssueFocus?: string,
+  qaGuide?: string
 ): string {
   const focusSection = subIssueFocus
     ? `\n## Current Focus\nYou are reproducing this specific sub-issue: ${subIssueFocus}\nStay focused on this particular bug. When you have demonstrated it, return done.\n`
+    : ''
+
+  const qaSection = qaGuide
+    ? `\n## QA Analysis\nA deep analysis of this issue produced the following guide. Follow it closely:\n${qaGuide}\n`
     : ''
 
   return `You are an AI QA agent controlling a ComfyUI browser session to reproduce reported bugs.
@@ -840,6 +872,8 @@ Each action is a JSON object with an "action" field:
 - { "action": "scrollCanvas", "x": 640, "y": 400, "deltaY": -300 } — scroll (negative=zoom in)
 - { "action": "loadWorkflow", "url": "https://..." } — loads workflow JSON from URL
 - { "action": "setSetting", "id": "Comfy.Setting.Id", "value": true } — changes a setting
+- { "action": "loadDefaultWorkflow" } — loads the default workflow (File → Load Default)
+- { "action": "openSettings" } — opens the Settings dialog
 - { "action": "reload" } — reloads the page (for bugs that manifest on load)
 - { "action": "wait", "ms": 1000 } — waits (max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a named screenshot
@@ -857,7 +891,13 @@ Return { "reasoning": "...", "action": { "action": "done", "reason": "..." } } w
 - Establish prerequisites first: if the bug requires a specific setting, use setSetting. If it needs a workflow, use loadWorkflow.
 - Use reload for bugs that manifest on page load/startup.
 - Common interactions: right-click node for context menu, Ctrl+C/V to copy/paste, Delete to remove, double-click canvas to add node via search.
-${focusSection}
+
+## Strategy Hints
+- For accessibility/UI bugs: use openSettings, setSetting to change themes or display options.
+- For workflow bugs: use loadDefaultWorkflow first to ensure a clean starting state.
+- Prefer convenience actions (loadDefaultWorkflow, openSettings) over manual menu navigation — they save turns and are more reliable.
+- Do NOT waste turns on generic exploration. Focus on reproducing the specific bug.
+${focusSection}${qaSection}
 ## Issue to Reproduce
 ${issueContext}`
 }
@@ -875,17 +915,47 @@ async function runAgenticLoop(
   outputDir: string,
   subIssue?: SubIssue
 ): Promise<void> {
-  const MAX_TURNS = 20
-  const TIME_BUDGET_MS = 55_000
+  const MAX_TURNS = 30
+  const TIME_BUDGET_MS = 120_000
   const SCREENSHOT_HISTORY_WINDOW = 3
 
   const issueContext = opts.diffFile
     ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
     : 'No issue context provided'
 
+  // Read QA guide if available — contains structured analysis from analyze-pr
+  let qaGuideSummary = ''
+  if (opts.qaGuideFile) {
+    try {
+      const raw = readFileSync(opts.qaGuideFile, 'utf-8')
+      const guide = JSON.parse(raw)
+      const parts: string[] = []
+      if (guide.summary) parts.push(`Summary: ${guide.summary}`)
+      if (guide.test_focus) parts.push(`Test focus: ${guide.test_focus}`)
+      if (guide.steps?.length) {
+        parts.push(
+          'Steps:\n' +
+            guide.steps
+              .map(
+                (s: { description?: string }, i: number) =>
+                  `${i + 1}. ${s.description || JSON.stringify(s)}`
+              )
+              .join('\n')
+        )
+      }
+      if (guide.expected_result)
+        parts.push(`Expected: ${guide.expected_result}`)
+      qaGuideSummary = parts.join('\n')
+      console.warn(`Loaded QA guide: ${qaGuideSummary.slice(0, 200)}...`)
+    } catch {
+      console.warn(`Could not load QA guide from ${opts.qaGuideFile}`)
+    }
+  }
+
   const systemInstruction = buildAgenticSystemPrompt(
     issueContext,
-    subIssue?.focus
+    subIssue?.focus,
+    qaGuideSummary
   )
 
   const genAI = new GoogleGenerativeAI(opts.apiKey)
@@ -908,6 +978,7 @@ async function runAgenticLoop(
   let consecutiveFailures = 0
   let lastActionKey = ''
   let repeatCount = 0
+  const actionTypeCounts: Record<string, number> = {}
   const startTime = Date.now()
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -923,6 +994,9 @@ async function runAgenticLoop(
     // 2. Build user message for this turn
     const userParts: AgenticTurnContent['parts'] = []
 
+    // Build focus reminder from QA guide or sub-issue
+    const focusGoal = subIssue?.focus || qaGuideSummary.split('\n')[0] || ''
+
     if (turn === 0) {
       userParts.push({
         text: 'Here is the current screen state. What action should I take first to reproduce the reported issue?'
@@ -931,8 +1005,10 @@ async function runAgenticLoop(
       const statusText = lastResult.success
         ? `Action "${lastResult.action.action}" succeeded.`
         : `Action "${lastResult.action.action}" FAILED: ${lastResult.error}`
+      const reminder =
+        turn >= 3 && focusGoal ? `\nRemember your goal: ${focusGoal}` : ''
       userParts.push({
-        text: `${statusText}\nHere is the screen after that action. What should I do next? (Turn ${turn + 1}/${MAX_TURNS}, ${Math.round((TIME_BUDGET_MS - elapsed) / 1000)}s remaining)`
+        text: `${statusText}\nHere is the screen after that action. What should I do next? (Turn ${turn + 1}/${MAX_TURNS}, ${Math.round((TIME_BUDGET_MS - elapsed) / 1000)}s remaining)${reminder}`
       })
     }
 
@@ -1029,8 +1105,15 @@ async function runAgenticLoop(
       break
     }
 
-    // 5. Stuck detection
-    const actionKey = JSON.stringify(actionObj)
+    // 5. Stuck detection — normalize coords to 50px grid for fuzzy matching
+    const normalizedAction = { ...actionObj } as Record<string, unknown>
+    for (const key of ['x', 'y', 'fromX', 'fromY', 'toX', 'toY']) {
+      if (typeof normalizedAction[key] === 'number') {
+        normalizedAction[key] =
+          Math.round((normalizedAction[key] as number) / 50) * 50
+      }
+    }
+    const actionKey = JSON.stringify(normalizedAction)
     if (actionKey === lastActionKey) {
       repeatCount++
       if (repeatCount >= 3) {
@@ -1040,6 +1123,24 @@ async function runAgenticLoop(
     } else {
       repeatCount = 0
       lastActionKey = actionKey
+    }
+
+    // Track action-type frequency — inject nudge if stuck in a pattern
+    actionTypeCounts[actionObj.action] =
+      (actionTypeCounts[actionObj.action] || 0) + 1
+    let stuckNudge = ''
+    if (actionTypeCounts[actionObj.action] >= 5) {
+      stuckNudge = ` You have used "${actionObj.action}" ${actionTypeCounts[actionObj.action]} times. Try a different approach or action type.`
+    }
+    if (stuckNudge && lastResult) {
+      // Append nudge to the last user message
+      const lastUserEntry = history[history.length - 2] // -2 because model response was just pushed
+      if (lastUserEntry?.role === 'user') {
+        const textPart = lastUserEntry.parts.find(
+          (p): p is { text: string } => 'text' in p
+        )
+        if (textPart) textPart.text += stuckNudge
+      }
     }
 
     // 6. Execute the action
