@@ -9,6 +9,7 @@
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
     "src/types/generatedManagerTypes.ts",
-    "**/__fixtures__/**/*.json"
+    "**/__fixtures__/**/*.json",
+    "scripts/qa-report-template.html"
   ]
 }

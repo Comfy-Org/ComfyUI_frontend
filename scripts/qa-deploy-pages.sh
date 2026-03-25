@@ -41,6 +41,7 @@ done
 
 # Build video cards and report sections
 CARDS=""
+# shellcheck disable=SC2034 # accessed via eval
 ICONS_Linux="&#x1F427;" ICONS_macOS="&#x1F34E;" ICONS_Windows="&#x1FA9F;"
 CARD_COUNT=0
 DL_ICON="<svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1=12 y1=15 x2=12 y2=3'/></svg>"
@@ -49,7 +50,7 @@ for os in Linux macOS Windows; do
   eval "ICON=\$ICONS_${os}"
   OS_LOWER=$(echo "$os" | tr '[:upper:]' '[:lower:]')
   HAS_BEFORE=$([ -f "$DEPLOY_DIR/qa-before-${os}.mp4" ] && echo 1 || echo 0)
-  HAS_AFTER=$( ([ -f "$DEPLOY_DIR/qa-${os}.mp4" ] || [ -f "$DEPLOY_DIR/qa-${os}-pass1.mp4" ]) && echo 1 || echo 0)
+  HAS_AFTER=$( { [ -f "$DEPLOY_DIR/qa-${os}.mp4" ] || [ -f "$DEPLOY_DIR/qa-${os}-pass1.mp4" ]; } && echo 1 || echo 0)
   [ "$HAS_AFTER" = "0" ] && continue
 
   # Collect all reports for this platform (single + multi-pass)
@@ -81,7 +82,7 @@ for os in Linux macOS Windows; do
     CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download>${DL_ICON}Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
   else
     PASS_VIDEOS=""
-    for pass_vid in "$DEPLOY_DIR"/qa-${os}-pass[0-9].mp4; do
+    for pass_vid in "$DEPLOY_DIR/qa-${os}-pass"[0-9].mp4; do
       [ -f "$pass_vid" ] || continue
       PASS_NUM=$(basename "$pass_vid" | sed "s/qa-${os}-pass\([0-9]\).mp4/\1/")
       PASS_VIDEOS="${PASS_VIDEOS}<div class=comp-panel><div class=comp-label>Pass ${PASS_NUM}</div><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}-pass${PASS_NUM}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}-pass${PASS_NUM}.mp4 download>${DL_ICON}Pass ${PASS_NUM}</a></div></div>"

@@ -58,7 +58,7 @@ if $CLEANUP; then
   fi
 
   echo "Found branches:"
-  echo "$branches" | sed 's/^/  /'
+  while IFS= read -r b; do echo "  $b"; done <<< "$branches"
   echo
 
   if $DRY_RUN; then
@@ -108,7 +108,7 @@ for num in "${NUMBERS[@]}"; do
 done
 
 # Deduplicate
-NUMBERS=($(printf '%s\n' "${NUMBERS[@]}" | sort -un))
+mapfile -t NUMBERS < <(printf '%s\n' "${NUMBERS[@]}" | sort -un)
 
 # --- Push branches ---
 echo "Triggering QA for: ${NUMBERS[*]}"

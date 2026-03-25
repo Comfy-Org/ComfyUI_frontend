@@ -65,8 +65,7 @@ describe('DefaultThumbnail', () => {
     const classString = Array.isArray(imageClass)
       ? imageClass.join(' ')
       : imageClass
-    expect(classString).toContain('w-full')
-    expect(classString).toContain('h-full')
+    expect(classString).toContain('size-full')
     expect(classString).toContain('object-cover')
   })
 
