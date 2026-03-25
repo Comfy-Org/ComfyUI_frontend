@@ -57,6 +57,8 @@ type TestAction =
       y: number
       durationMs?: number
     }
+  | { action: 'addNode'; nodeName: string; x?: number; y?: number }
+  | { action: 'cloneNode'; x: number; y: number }
 
 interface ActionResult {
   action: TestAction
@@ -235,6 +237,10 @@ Each step is an object with an "action" field:
 ### Setup actions (use to establish prerequisites)
 - { "action": "loadWorkflow", "url": "https://..." } — loads a workflow JSON from a URL
 - { "action": "setSetting", "id": "Comfy.Setting.Id", "value": true } — changes a ComfyUI setting
+
+### Compound actions (save multiple turns)
+- { "action": "addNode", "nodeName": "KSampler", "x": 640, "y": 400 } — double-clicks canvas to open node search, types name, presses Enter
+- { "action": "cloneNode", "x": 750, "y": 350 } — right-clicks node at coords and clicks Clone in context menu
 
 ### Utility actions
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
@@ -553,7 +559,7 @@ async function executeAction(
   outputDir: string
 ): Promise<ActionResult> {
   console.warn(
-    `  → ${step.action}${('label' in step && `: ${step.label}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
+    `  → ${step.action}${('label' in step && `: ${step.label}`) || ('nodeName' in step && `: ${step.nodeName}`) || ('text' in step && `: ${step.text}`) || ('name' in step && `: ${step.name}`) || ('x' in step && `: (${step.x},${step.y})`) || ''}`
   )
   // Reject invalid click targets
   const INVALID_TARGETS = ['undefined', 'null', '[object Object]', '']
@@ -758,6 +764,28 @@ async function executeAction(
         await sleep(duration + 200)
         break
       }
+      case 'addNode': {
+        const nx = step.x ?? 640
+        const ny = step.y ?? 400
+        await page.mouse.dblclick(nx, ny)
+        await sleep(500)
+        await page.keyboard.type(step.nodeName, { delay: 30 })
+        await sleep(300)
+        await page.keyboard.press('Enter')
+        await sleep(500)
+        console.warn(`  Added node "${step.nodeName}" at (${nx}, ${ny})`)
+        break
+      }
+      case 'cloneNode': {
+        await page.mouse.move(step.x, step.y)
+        await sleep(300)
+        await page.mouse.click(step.x, step.y, { button: 'right' })
+        await sleep(500)
+        await clickSubmenuItem(page, 'Clone')
+        await sleep(500)
+        console.warn(`  Cloned node at (${step.x}, ${step.y})`)
+        break
+      }
       default:
         console.warn(`Unknown action: ${JSON.stringify(step)}`)
     }
@@ -931,6 +959,8 @@ Each action is a JSON object with an "action" field:
 - { "action": "reload" } — reloads the page (for bugs that manifest on load)
 - { "action": "wait", "ms": 1000 } — waits (max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a named screenshot
+- { "action": "addNode", "nodeName": "KSampler", "x": 640, "y": 400 } — double-clicks canvas to open search, types node name, presses Enter (compound action)
+- { "action": "cloneNode", "x": 750, "y": 350 } — right-clicks node at coords and clicks Clone
 - { "action": "done", "reason": "..." } — signals you are finished
 
 ## Response Format
@@ -949,7 +979,11 @@ Return { "reasoning": "...", "action": { "action": "done", "reason": "..." } } w
 ## Strategy Hints
 - For accessibility/UI bugs: use openSettings, setSetting to change themes or display options.
 - For workflow bugs: use loadDefaultWorkflow first to ensure a clean starting state.
-- Prefer convenience actions (loadDefaultWorkflow, openSettings) over manual menu navigation — they save turns and are more reliable.
+- Prefer convenience actions (loadDefaultWorkflow, openSettings, addNode, cloneNode) over manual menu navigation — they save turns and are more reliable.
+- To add nodes to the canvas: use addNode (double-clicks canvas → types name → Enter), or loadDefaultWorkflow (loads 7 default nodes).
+- For visual/rendering bugs (z-index, overlap, z-fighting): ALWAYS start with loadDefaultWorkflow to get nodes on canvas. You cannot reproduce visual bugs on an empty canvas.
+- To clone a node: use cloneNode at the node's coordinates (right-clicks → Clone).
+- To overlap nodes for z-index testing: use dragCanvas to move one node on top of another.
 - Do NOT waste turns on generic exploration. Focus on reproducing the specific bug.
 ${focusSection}${qaSection}
 ## Issue to Reproduce

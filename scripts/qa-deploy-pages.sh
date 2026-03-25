@@ -52,15 +52,27 @@ for os in Linux macOS Windows; do
   HAS_AFTER=$( ([ -f "$DEPLOY_DIR/qa-${os}.mp4" ] || [ -f "$DEPLOY_DIR/qa-${os}-pass1.mp4" ]) && echo 1 || echo 0)
   [ "$HAS_AFTER" = "0" ] && continue
 
-  REPORT_FILE="video-reviews/${OS_LOWER}-qa-video-report.md"
+  # Collect all reports for this platform (single + multi-pass)
+  REPORT_FILES=""
   REPORT_LINK=""
   REPORT_HTML=""
-  if [ -f "$REPORT_FILE" ]; then
-    cp "$REPORT_FILE" "$DEPLOY_DIR/report-${OS_LOWER}.md"
-    REPORT_LINK="<a class=dl href=report-${OS_LOWER}.md><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1=16 y1=13 x2=8 y2=13/><line x1=16 y1=17 x2=8 y2=17'/></svg>Report</a>"
+  for rpt in "video-reviews/${OS_LOWER}-qa-video-report.md" video-reviews/${OS_LOWER}-pass*-qa-video-report.md; do
+    [ -f "$rpt" ] && REPORT_FILES="${REPORT_FILES} ${rpt}"
+  done
 
-    REPORT_MD=$(cat "$REPORT_FILE" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-    REPORT_HTML="<details class=report open><summary><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><circle cx=12 cy=12 r=10/><line x1=12 y1=16 x2=12 y2=12/><line x1=12 y1=8 x2=12.01 y2=8'/></svg> AI Comparative Review</summary><div class=report-body data-md>${REPORT_MD}</div></details>"
+  if [ -n "$REPORT_FILES" ]; then
+    # Concatenate all reports into one combined report file
+    COMBINED_MD=""
+    for rpt in $REPORT_FILES; do
+      cp "$rpt" "$DEPLOY_DIR/$(basename "$rpt")"
+      RPT_MD=$(cat "$rpt" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+      [ -n "$COMBINED_MD" ] && COMBINED_MD="${COMBINED_MD}&#10;&#10;---&#10;&#10;"
+      COMBINED_MD="${COMBINED_MD}${RPT_MD}"
+    done
+    FIRST_REPORT=$(echo $REPORT_FILES | awk '{print $1}')
+    FIRST_BASENAME=$(basename "$FIRST_REPORT")
+    REPORT_LINK="<a class=dl href=${FIRST_BASENAME}><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1=16 y1=13 x2=8 y2=13/><line x1=16 y1=17 x2=8 y2=17'/></svg>Report</a>"
+    REPORT_HTML="<details class=report open><summary><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><circle cx=12 cy=12 r=10/><line x1=12 y1=16 x2=12 y2=12/><line x1=12 y1=8 x2=12.01 y2=8'/></svg> AI Comparative Review</summary><div class=report-body data-md>${COMBINED_MD}</div></details>"
   fi
 
   if [ "$HAS_BEFORE" = "1" ]; then
@@ -134,11 +146,15 @@ ERROREOF
 
 # Generate badge SVGs into deploy dir
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
-if grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
+# Check INCONCLUSIVE first — the AI prompt explicitly uses this word
+if grep -riq 'INCONCLUSIVE' video-reviews/ 2>/dev/null; then
+  REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
+elif grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
   REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
 elif grep -riq 'partially reproduced\|partial' video-reviews/ 2>/dev/null; then
   REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
-elif grep -riq 'reproduced\|confirmed' video-reviews/ 2>/dev/null; then
+# Exclude markdown headings (e.g. "## Confirmed Issues") — only match body text
+elif grep -ri 'reproduced\|confirmed' video-reviews/ 2>/dev/null | grep -viq '^[^:]*:##'; then
   REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
 fi
 
