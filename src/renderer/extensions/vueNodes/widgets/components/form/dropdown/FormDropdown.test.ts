@@ -43,11 +43,6 @@ const MockFormDropdownInput = {
     '<button class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
-const MockPopover = {
-  name: 'Popover',
-  template: '<div><slot /></div>'
-}
-
 interface MountDropdownOptions {
   searcher?: (
     query: string,
@@ -72,12 +67,20 @@ function mountDropdown(
       plugins: [PrimeVue, i18n],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
         FormDropdownMenu: MockFormDropdownMenu
       }
     }
   })
   return { ...result, user }
+}
+
+async function openDropdown(
+  container: HTMLElement,
+  user: ReturnType<typeof userEvent.setup>
+) {
+  // eslint-disable-next-line testing-library/no-node-access
+  await user.click(container.querySelector('.mock-dropdown-trigger')!)
+  await flushPromises()
 }
 
 function getMenuItems(): FormDropdownItem[] {
@@ -88,11 +91,11 @@ function getMenuItems(): FormDropdownItem[] {
 describe('FormDropdown', () => {
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const { rerender } = mountDropdown([
+      const { rerender, container, user } = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await flushPromises()
+      await openDropdown(container, user)
 
       expect(getMenuItems()).toHaveLength(2)
 
@@ -110,8 +113,10 @@ describe('FormDropdown', () => {
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const { rerender } = mountDropdown([createItem('1', 'alpha')])
-      await flushPromises()
+      const { rerender, container, user } = mountDropdown([
+        createItem('1', 'alpha')
+      ])
+      await openDropdown(container, user)
 
       await rerender({ items: [createItem('1', 'beta')] })
       await flushPromises()
@@ -120,8 +125,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const { rerender } = mountDropdown([])
-      await flushPromises()
+      const { rerender, container, user } = mountDropdown([])
+      await openDropdown(container, user)
 
       expect(getMenuItems()).toHaveLength(0)
 
@@ -180,9 +185,7 @@ describe('FormDropdown', () => {
     )
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-node-access
-    await user.click(container.querySelector('.mock-dropdown-trigger')!)
-    await flushPromises()
+    await openDropdown(container, user)
 
     expect(searcher).toHaveBeenCalled()
     expect(getMenuItems().map((item) => item.id)).toEqual(['keep'])

@@ -112,7 +112,8 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    formDropdownMenu: 'form-dropdown-menu'
   },
   builder: {
     footerNav: 'builder-footer-nav',

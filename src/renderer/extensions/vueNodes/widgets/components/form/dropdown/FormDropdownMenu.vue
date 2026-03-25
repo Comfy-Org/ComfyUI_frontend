@@ -97,6 +97,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
 
 <template>
   <div
+    data-testid="form-dropdown-menu"
     class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
     data-capture-wheel="true"
   >
