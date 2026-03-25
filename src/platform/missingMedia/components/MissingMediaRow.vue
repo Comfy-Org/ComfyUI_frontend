@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full flex-col pb-3">
+  <div data-testid="missing-media-row" class="flex w-full flex-col pb-3">
     <!-- File header -->
     <div class="flex h-8 w-full items-center gap-2">
       <i
@@ -35,6 +35,7 @@
 
       <!-- Confirm button (visible when pending selection exists) -->
       <Button
+        data-testid="missing-media-confirm-button"
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingMedia.confirmSelection')"
@@ -57,6 +58,7 @@
       <!-- Locate button (single node only) -->
       <Button
         v-if="isSingleNode"
+        data-testid="missing-media-locate-button"
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingMedia.locateNode')"
@@ -129,6 +131,7 @@
     <TransitionCollapse>
       <div
         v-if="isPending || isUploading"
+        data-testid="missing-media-status-card"
         role="status"
         aria-live="polite"
         class="bg-foreground/5 relative mt-1 overflow-hidden rounded-lg border border-interface-stroke p-2"
@@ -165,6 +168,7 @@
           </div>
 
           <Button
+            data-testid="missing-media-cancel-button"
             variant="textonly"
             size="icon-sm"
             :aria-label="t('rightSidePanel.missingMedia.cancelSelection')"
@@ -183,6 +187,7 @@
         <!-- Upload dropzone -->
         <div class="flex w-full flex-col py-1">
           <button
+            data-testid="missing-media-upload-dropzone"
             type="button"
             :class="
               cn(
@@ -205,6 +210,7 @@
 
         <!-- OR separator + Use from Library -->
         <MissingMediaLibrarySelect
+          data-testid="missing-media-library-select"
           :model-value="undefined"
           :options="libraryOptions"
           :show-divider="true"

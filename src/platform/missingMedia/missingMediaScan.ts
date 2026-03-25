@@ -17,7 +17,7 @@ import {
 import { resolveComboValues } from '@/utils/litegraphUtil'
 
 /** Map of node types to their media widget name and media type. */
-export const MEDIA_NODE_WIDGETS: Record<
+const MEDIA_NODE_WIDGETS: Record<
   string,
   { widgetName: string; mediaType: MediaType }
 > = {
