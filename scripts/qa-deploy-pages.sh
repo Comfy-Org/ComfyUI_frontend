@@ -145,16 +145,17 @@ cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 ERROREOF
 
 # Generate badge SVGs into deploy dir
+# Verdict detection: check AI review reports for reproduction outcome.
+# Patterns are ordered from most specific to least specific.
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
-# Check INCONCLUSIVE first — the AI prompt explicitly uses this word
 if grep -riq 'INCONCLUSIVE' video-reviews/ 2>/dev/null; then
   REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
 elif grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
   REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
-elif grep -riq 'partially reproduced\|partial' video-reviews/ 2>/dev/null; then
+elif grep -riq 'partially reproduced' video-reviews/ 2>/dev/null; then
   REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
-# Exclude markdown headings (e.g. "## Confirmed Issues") — only match body text
-elif grep -ri 'reproduced\|confirmed' video-reviews/ 2>/dev/null | grep -viq '^[^:]*:##'; then
+# Match "reproduced", "confirmed", "confirms", "reproducible" in body text (not headings)
+elif grep -ri 'reproduc\|confirm' video-reviews/ 2>/dev/null | grep -vq '^[^:]*:##'; then
   REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
 fi
 
