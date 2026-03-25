@@ -526,6 +526,40 @@ jobs:
           BADGESCRIPT
           chmod +x /tmp/gen-badge.sh
 
+          # Create dual badge generator (for PRs: Bug + Fix in one badge)
+          cat > /tmp/gen-badge-dual.sh <<'DUALBADGE'
+          #!/bin/bash
+          # Usage: gen-badge-dual.sh <bug_status> <bug_color> <fix_status> <fix_color> <output>
+          BUG="Bug: $1" BUG_C="$2" FIX="Fix: $3" FIX_C="$4" OUT="$5"
+          LABEL="QA Bot"
+          LW=$(( ${#LABEL} * 7 + 12 ))
+          BW=$(( ${#BUG} * 7 + 12 ))
+          FW=$(( ${#FIX} * 7 + 12 ))
+          TW=$(( LW + BW + FW ))
+          cat > "$OUT" <<SVGEOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="20" role="img" aria-label="${LABEL}: ${BUG} | ${FIX}">
+            <title>${LABEL}: ${BUG} | ${FIX}</title>
+            <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+            <clipPath id="r"><rect width="${TW}" height="20" rx="3" fill="#fff"/></clipPath>
+            <g clip-path="url(#r)">
+              <rect width="${LW}" height="20" fill="#555"/>
+              <rect x="${LW}" width="${BW}" height="20" fill="${BUG_C}"/>
+              <rect x="$(( LW + BW ))" width="${FW}" height="20" fill="${FIX_C}"/>
+              <rect width="${TW}" height="20" fill="url(#s)"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
+              <text aria-hidden="true" x="$(( LW / 2 ))" y="15" fill="#010101" fill-opacity=".3">${LABEL}</text>
+              <text x="$(( LW / 2 ))" y="14">${LABEL}</text>
+              <text aria-hidden="true" x="$(( LW + BW / 2 ))" y="15" fill="#010101" fill-opacity=".3">${BUG}</text>
+              <text x="$(( LW + BW / 2 ))" y="14">${BUG}</text>
+              <text aria-hidden="true" x="$(( LW + BW + FW / 2 ))" y="15" fill="#010101" fill-opacity=".3">${FIX}</text>
+              <text x="$(( LW + BW + FW / 2 ))" y="14">${FIX}</text>
+            </g>
+          </svg>
+          SVGEOF
+          DUALBADGE
+          chmod +x /tmp/gen-badge-dual.sh
+
           # Create badge deploy script
           cat > /tmp/deploy-badge.sh <<DEPLOYSCRIPT
           #!/bin/bash
@@ -1061,15 +1095,12 @@ jobs:
               SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
             fi
 
-            # Bug badge shows reproduction status
-            /tmp/gen-badge.sh "Bug${REPRO_RESULT:+: ${REPRO_RESULT}}" "${REPRO_COLOR}" "$DEPLOY_DIR/badge-bug.svg"
-            # Fix badge shows solution quality
-            /tmp/gen-badge.sh "Fix${SOLN_RESULT:+: ${SOLN_RESULT}}" "${SOLN_COLOR}" "$DEPLOY_DIR/badge-fix.svg"
-            # Main badge combines both
-            BADGE_STATUS="FINISHED"
-            BADGE_COLOR="${SOLN_COLOR}"
-            [ "${REPRO_COLOR}" = "#e05d44" ] && [ "${SOLN_COLOR}" != "#e05d44" ] && BADGE_COLOR="${SOLN_COLOR}"
-            /tmp/gen-badge.sh "$BADGE_STATUS" "$BADGE_COLOR" "$DEPLOY_DIR/badge.svg"
+            # Single combined badge: QA Bot | Bug: X | Fix: Y
+            /tmp/gen-badge-dual.sh \
+              "${REPRO_RESULT:-UNKNOWN}" "${REPRO_COLOR}" \
+              "${SOLN_RESULT:-UNKNOWN}" "${SOLN_COLOR}" \
+              "$DEPLOY_DIR/badge.svg"
+            BADGE_STATUS="Bug: ${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
           fi
           echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
@@ -1151,7 +1182,7 @@ jobs:
           ${COMMENT_MARKER}
           ## QA ${MODE_BADGE}
 
-          ![QA Badge](${VIDEO_BASE}/badge.svg) ![Bug](${VIDEO_BASE}/badge-bug.svg) ![Fix](${VIDEO_BASE}/badge-fix.svg)
+          ![QA Badge](${VIDEO_BASE}/badge.svg)
 
           ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
