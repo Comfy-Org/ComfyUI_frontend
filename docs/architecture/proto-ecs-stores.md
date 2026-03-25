@@ -324,7 +324,7 @@ graph TD
 - recomputeInsideNodes()"]
     end
 
-    subgraph Subgraph["Subgraph"]
+    subgraph Subgraph["Subgraph (node component)"]
         S_ext["Extracted:
 - promotions → PromotionStore"]
         S_rem["Remains on class:
@@ -361,7 +361,7 @@ What each entity needs to reach the ECS target from [ADR 0008](../adr/0008-entit
 | **Slot**     | (nothing)                                                                                         | name, type, direction, link refs, visual, position                                   | SlotIdentity, SlotConnection, SlotVisual                                             | Full — no extraction started                               |
 | **Reroute**  | pos (LayoutStore)                                                                                 | links, visual, chain traversal                                                       | Position, RerouteLinks, RerouteVisual                                                | Medium — position done, rest unextracted                   |
 | **Group**    | (nothing)                                                                                         | pos, size, meta, visual, children                                                    | Position, GroupMeta, GroupVisual, GroupChildren                                      | Full — no extraction started                               |
-| **Subgraph** | promotions (PromotionStore)                                                                       | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta                                                      | Large — mostly unextracted                                 |
+| **Subgraph** | promotions (PromotionStore)                                                                       | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
 
 ### Priority Order for Extraction
 
@@ -373,4 +373,4 @@ Based on existing progress and problem severity:
 4. **Slot** — no extraction yet, but small and self-contained
 5. **Reroute** — partially extracted, moderate complexity
 6. **Group** — no extraction, but least coupled to other entities
-7. **Subgraph** — most complex, depends on Node and Link extraction first
+7. **Subgraph** — not a separate entity kind; SubgraphStructure and SubgraphMeta become node components. Depends on Node and Link extraction first. See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md)

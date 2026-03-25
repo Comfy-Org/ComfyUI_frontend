@@ -88,7 +88,11 @@ Define branded types in a new `src/ecs/entityId.ts`:
 ```
 type NodeEntityId = number & { readonly __brand: 'NodeEntityId' }
 type LinkEntityId = number & { readonly __brand: 'LinkEntityId' }
-// ... etc per ADR 0008
+type WidgetEntityId = number & { readonly __brand: 'WidgetEntityId' }
+type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
+type RerouteEntityId = number & { readonly __brand: 'RerouteEntityId' }
+type GroupEntityId = number & { readonly __brand: 'GroupEntityId' }
+type GraphId = string & { readonly __brand: 'GraphId' }  // scope, not entity
 ```
 
 Add cast helpers (`asNodeEntityId(id: number): NodeEntityId`) for use at
@@ -146,7 +150,7 @@ interface World {
   slots: Map<SlotEntityId, SlotComponents>
   reroutes: Map<RerouteEntityId, RerouteComponents>
   groups: Map<GroupEntityId, GroupComponents>
-  subgraphs: Map<SubgraphEntityId, SubgraphComponents>
+  scopes: Map<GraphId, GraphId | null>  // graph scope DAG (parent or null for root)
 
   createEntity<K extends EntityKind>(kind: K): EntityIdFor<K>
   deleteEntity<K extends EntityKind>(kind: K, id: EntityIdFor<K>): void
@@ -154,6 +158,11 @@ interface World {
   setComponent<C>(id: EntityId, component: ComponentKey<C>, data: C): void
 }
 ```
+
+Subgraphs are not a separate entity kind. A node with a `SubgraphStructure`
+component represents a subgraph. The `scopes` map tracks the graph nesting DAG.
+See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md) for the full
+model.
 
 Initial implementation: plain `Map`-backed. No reactivity, no CRDT, no
 persistence. The World exists but nothing populates it yet.

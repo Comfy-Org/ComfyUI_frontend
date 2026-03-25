@@ -401,18 +401,20 @@ sequenceDiagram
     CS->>W: query Connectivity + SlotConnection for selected nodes
     CS->>CS: classify links as internal vs boundary
 
-    CS->>W: createEntity(SubgraphEntityId)
-    CS->>W: setComponent(sgId, SubgraphMeta, { name: 'New Subgraph' })
-
-    Note over CS,W: Move selected entities into subgraph scope
-
-    CS->>W: setComponent(sgId, SubgraphStructure, {<br/>  nodeIds: [...selected],<br/>  linkIds: [...internal],<br/>  rerouteIds: [...internal]<br/>})
+    CS->>W: create new GraphId scope in scopes registry
 
     Note over CS,W: Create SubgraphNode entity in parent scope
 
     CS->>W: createEntity(NodeEntityId) [the SubgraphNode]
     CS->>W: setComponent(nodeId, Position, { center of selection })
-    CS->>W: setComponent(nodeId, NodeType, { type: sgId })
+    CS->>W: setComponent(nodeId, SubgraphStructure, { graphId, interface })
+    CS->>W: setComponent(nodeId, SubgraphMeta, { name: 'New Subgraph' })
+
+    Note over CS,W: Re-parent selected entities into new graph scope
+
+    loop each selected entity
+        CS->>W: update graphScope to new graphId
+    end
 
     Note over CS,W: Create boundary slots on SubgraphNode
 
@@ -431,7 +433,7 @@ sequenceDiagram
 
 | Aspect                     | Current                                           | ECS                                                     |
 | -------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
-| Entity movement            | Clone → serialize → configure → remove originals  | Move entity IDs into SubgraphStructure component        |
+| Entity movement            | Clone → serialize → configure → remove originals  | Re-parent entities: update graphScope to new GraphId    |
 | Boundary links             | Disconnect → remove → recreate → reconnect        | Update LinkEndpoints to point at new SubgraphNode slots |
 | Intermediate inconsistency | Graph is partially disconnected during operation  | Atomic: all component writes happen together            |
 | Code size                  | 200+ lines                                        | ~50 lines in system                                     |
@@ -498,26 +500,27 @@ sequenceDiagram
 
     Caller->>CS: unpackSubgraph(world, subgraphNodeId)
 
-    CS->>W: getComponent(subgraphNodeId, NodeType)
-    W-->>CS: { type: subgraphEntityId }
+    CS->>W: getComponent(subgraphNodeId, SubgraphStructure)
+    W-->>CS: { graphId, interface }
 
-    CS->>W: getComponent(subgraphEntityId, SubgraphStructure)
-    W-->>CS: { nodeIds, linkIds, rerouteIds }
+    CS->>W: query entities where graphScope = graphId
+    W-->>CS: all child entities (nodes, links, reroutes, etc.)
 
-    Note over CS,W: Move entities back to parent scope
+    Note over CS,W: Re-parent entities to containing graph scope
 
-    CS->>W: remove nodeIds from SubgraphStructure
-    Note over CS,W: Entities already exist in World — just reparent
+    loop each child entity
+        CS->>W: update graphScope to parent scope
+    end
 
     Note over CS,W: Reconnect boundary links
 
-    loop each boundary slot on SubgraphNode
+    loop each boundary slot in interface
         CS->>W: getComponent(slotId, SlotConnection)
         CS->>W: update LinkEndpoints: SubgraphNode slot → internal node slot
     end
 
     CS->>W: deleteEntity(subgraphNodeId)
-    CS->>W: deleteEntity(subgraphEntityId) [if no other refs]
+    CS->>W: remove graphId from scopes registry
 
     Note over CS,W: Offset positions
 
@@ -530,7 +533,7 @@ sequenceDiagram
 
 | Aspect            | Current                                             | ECS                                              |
 | ----------------- | --------------------------------------------------- | ------------------------------------------------ |
-| ID remapping      | `nodeIdMap[oldId] = newId` for every node and link  | No remapping — entities keep their IDs           |
+| ID remapping      | `nodeIdMap[oldId] = newId` for every node and link  | No remapping — entities keep their IDs, only graphScope changes |
 | Magic IDs         | SUBGRAPH_INPUT_ID = -10, SUBGRAPH_OUTPUT_ID = -20   | No magic IDs — boundary modeled as slot entities |
 | Clone vs move     | Clone nodes, assign new IDs, configure from scratch | Move entity references between scopes            |
 | Link reconnection | Remap origin_id/target_id, create new LLink objects | Update LinkEndpoints component in place          |

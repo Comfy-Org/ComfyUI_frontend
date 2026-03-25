@@ -32,17 +32,18 @@ Adopt an Entity Component System architecture for the graph domain model. This A
 
 ### Entity Taxonomy
 
-Seven entity kinds, each with a branded ID type:
+Six entity kinds, each with a branded ID type:
 
 | Entity Kind | Current Class(es)                                 | Current ID                  | Branded ID         |
 | ----------- | ------------------------------------------------- | --------------------------- | ------------------ |
 | Node        | `LGraphNode`                                      | `NodeId = number \| string` | `NodeEntityId`     |
 | Link        | `LLink`                                           | `LinkId = number`           | `LinkEntityId`     |
-| Subgraph    | `Subgraph` (extends `LGraph`)                     | `UUID`                      | `SubgraphEntityId` |
 | Widget      | `BaseWidget` subclasses (25+)                     | name + parent node          | `WidgetEntityId`   |
 | Slot        | `SlotBase` / `INodeInputSlot` / `INodeOutputSlot` | index on parent node        | `SlotEntityId`     |
 | Reroute     | `Reroute`                                         | `RerouteId = number`        | `RerouteEntityId`  |
 | Group       | `LGraphGroup`                                     | `number`                    | `GroupEntityId`    |
+
+Subgraphs are not a separate entity kind. A subgraph is a node with a `SubgraphStructure` component. See [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) for the full design rationale.
 
 ### Branded ID Design
 
@@ -51,11 +52,13 @@ Each entity kind gets a nominal/branded type wrapping its underlying primitive. 
 ```ts
 type NodeEntityId = number & { readonly __brand: 'NodeEntityId' }
 type LinkEntityId = number & { readonly __brand: 'LinkEntityId' }
-type SubgraphEntityId = string & { readonly __brand: 'SubgraphEntityId' }
 type WidgetEntityId = number & { readonly __brand: 'WidgetEntityId' }
 type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
 type RerouteEntityId = number & { readonly __brand: 'RerouteEntityId' }
 type GroupEntityId = number & { readonly __brand: 'GroupEntityId' }
+
+// Scope identifier, not an entity ID
+type GraphId = string & { readonly __brand: 'GraphId' }
 ```
 
 Widgets and Slots currently lack independent IDs. The ECS will assign synthetic IDs at entity creation time via an auto-incrementing counter (matching the pattern used by `lastNodeId`, `lastLinkId`, etc. in `LGraphState`).
@@ -89,14 +92,14 @@ Components are plain data objects — no methods, no back-references to parent e
 | `LinkVisual`    | `color`, `path`, `_pos` (center point)                         |
 | `LinkState`     | `_dragging`, `data`                                            |
 
-#### Subgraph
+#### Subgraph (Node Components)
 
-Inherits all Node components, plus:
+A node carrying a subgraph gains these additional components. Subgraphs are not a separate entity kind — see [Subgraph Boundaries](../architecture/subgraph-boundaries-and-promotion.md).
 
-| Component           | Data (from `Subgraph`)                                       |
-| ------------------- | ------------------------------------------------------------ |
-| `SubgraphStructure` | child node/link/reroute entity refs, `inputs[]`, `outputs[]` |
-| `SubgraphMeta`      | `name`, `description`                                        |
+| Component           | Data                                                                      |
+| ------------------- | ------------------------------------------------------------------------- |
+| `SubgraphStructure` | `graphId`, typed interface (input/output names, types, slot entity refs)   |
+| `SubgraphMeta`      | `name`, `description`                                                     |
 
 #### Widget
 
@@ -133,7 +136,7 @@ Inherits all Node components, plus:
 
 ### World
 
-A central registry (the "World") maps entity IDs to their component sets. Each entity kind has its own typed store (e.g., `Map<NodeEntityId, NodeComponents>`), avoiding the need for a single heterogeneous map.
+A central registry (the "World") maps entity IDs to their component sets. One World exists per workflow, containing all entities across all nesting levels. Each entity carries a `graphScope` identifier linking it to its containing graph. The World also maintains a scope registry mapping each `graphId` to its parent (or null for the root graph).
 
 ### Systems (future work)
 
@@ -181,5 +184,6 @@ System design is deferred to a future ADR.
 ## Notes
 
 - The 25+ widget types (`BooleanWidget`, `NumberWidget`, `ComboWidget`, etc.) will share the same ECS component schema. Widget-type-specific behavior lives in systems, not in component data.
-- `SubgraphEntityId` uses `string` (UUID) as its underlying type, matching the existing `LGraph.id: UUID`. All other entity IDs use `number`.
+- Subgraphs are not a separate entity kind. A `GraphId` scope identifier (branded `string`) tracks which graph an entity belongs to. The scope DAG must be acyclic — see [Subgraph Boundaries](../architecture/subgraph-boundaries-and-promotion.md).
 - The existing `LGraphState.lastNodeId` / `lastLinkId` / `lastRerouteId` counters extend naturally to `lastWidgetId` and `lastSlotId`.
+- The internal ECS model and the serialization format are deliberately separate concerns. The `SerializationSystem` translates between the flat World and the nested serialization format. Backward-compatible loading of all prior workflow formats is a hard, indefinite constraint.
