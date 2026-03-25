@@ -1020,36 +1020,44 @@ jobs:
           </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
           ERROREOF
 
-          # Generate badge SVG into deploy dir (served as /badge.svg)
-          # Determine result sub-state from video review reports
-          RESULT=""
-          BADGE_COLOR="#4c1"
-          if [ "$TARGET_TYPE" = "issue" ]; then
-            if grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
-              RESULT="NOT REPRODUCIBLE"
-              BADGE_COLOR="#9f9f9f"
-            elif grep -riq 'partially reproduced\|partial' video-reviews/ 2>/dev/null; then
-              RESULT="PARTIAL"
-              BADGE_COLOR="#dfb317"
-            elif grep -riq 'reproduced\|confirmed' video-reviews/ 2>/dev/null; then
-              RESULT="REPRODUCED"
-              BADGE_COLOR="#e05d44"
-            fi
-          else
-            if grep -riq 'major.*issue\|critical\|breaking\|regression' video-reviews/ 2>/dev/null; then
-              RESULT="MAJOR ISSUES"
-              BADGE_COLOR="#e05d44"
-            elif grep -riq 'minor.*issue\|cosmetic\|nitpick' video-reviews/ 2>/dev/null; then
-              RESULT="MINOR ISSUES"
-              BADGE_COLOR="#dfb317"
-            elif grep -riq 'no.*issue\|looks good\|approved\|pass' video-reviews/ 2>/dev/null; then
-              RESULT="APPROVED"
-              BADGE_COLOR="#4c1"
-            fi
+          # Generate badge SVGs into deploy dir
+          # 1) Reproduction result (issue or PR before-branch)
+          REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
+          if grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
+            REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
+          elif grep -riq 'partially reproduced\|partial' video-reviews/ 2>/dev/null; then
+            REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
+          elif grep -riq 'reproduced\|confirmed' video-reviews/ 2>/dev/null; then
+            REPRO_RESULT="REPRODUCED" REPRO_COLOR="#e05d44"
           fi
-          BADGE_STATUS="FINISHED${RESULT:+: ${RESULT}}"
-          /tmp/gen-badge.sh "$BADGE_STATUS" "$BADGE_COLOR" "$DEPLOY_DIR/badge.svg"
-          echo "badge_status=${BADGE_STATUS}" >> "$GITHUB_OUTPUT"
+
+          if [ "$TARGET_TYPE" = "issue" ]; then
+            # Issues: single badge for reproduction
+            BADGE_STATUS="FINISHED${REPRO_RESULT:+: ${REPRO_RESULT}}"
+            /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg"
+          else
+            # PRs: two badges — reproduction + solution quality
+            # 2) Solution quality (PR after-branch)
+            SOLN_RESULT="" SOLN_COLOR="#4c1"
+            if grep -riq 'major.*issue\|critical\|breaking\|regression' video-reviews/ 2>/dev/null; then
+              SOLN_RESULT="MAJOR ISSUES" SOLN_COLOR="#e05d44"
+            elif grep -riq 'minor.*issue\|cosmetic\|nitpick' video-reviews/ 2>/dev/null; then
+              SOLN_RESULT="MINOR ISSUES" SOLN_COLOR="#dfb317"
+            elif grep -riq 'no.*issue\|looks good\|approved\|pass' video-reviews/ 2>/dev/null; then
+              SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
+            fi
+
+            # Bug badge shows reproduction status
+            /tmp/gen-badge.sh "Bug${REPRO_RESULT:+: ${REPRO_RESULT}}" "${REPRO_COLOR}" "$DEPLOY_DIR/badge-bug.svg"
+            # Fix badge shows solution quality
+            /tmp/gen-badge.sh "Fix${SOLN_RESULT:+: ${SOLN_RESULT}}" "${SOLN_COLOR}" "$DEPLOY_DIR/badge-fix.svg"
+            # Main badge combines both
+            BADGE_STATUS="FINISHED"
+            BADGE_COLOR="${SOLN_COLOR}"
+            [ "${REPRO_COLOR}" = "#e05d44" ] && [ "${SOLN_COLOR}" != "#e05d44" ] && BADGE_COLOR="${SOLN_COLOR}"
+            /tmp/gen-badge.sh "$BADGE_STATUS" "$BADGE_COLOR" "$DEPLOY_DIR/badge.svg"
+          fi
+          echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
           BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
@@ -1129,7 +1137,7 @@ jobs:
           ${COMMENT_MARKER}
           ## QA ${MODE_BADGE}
 
-          ![QA Badge](${VIDEO_BASE}/badge.svg)
+          ![QA Badge](${VIDEO_BASE}/badge.svg) ![Bug](${VIDEO_BASE}/badge-bug.svg) ![Fix](${VIDEO_BASE}/badge-fix.svg)
 
           ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
