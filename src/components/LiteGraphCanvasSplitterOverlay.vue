@@ -73,7 +73,7 @@
             state-storage="local"
             @resizestart="onResizestart"
           >
-            <SplitterPanel class="graph-canvas-panel relative">
+            <SplitterPanel class="graph-canvas-panel relative overflow-visible">
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
             <SplitterPanel
