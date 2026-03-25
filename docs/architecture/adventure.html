@@ -136,7 +136,7 @@
         z-index: 10;
         background: var(--surface);
         border-bottom: 1px solid var(--border);
-        padding: 10px 24px;
+        padding: 12px 32px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -145,7 +145,7 @@
       }
 
       #hud h1 {
-        font-size: 13px;
+        font-size: 16px;
         font-weight: 600;
         color: var(--accent);
         letter-spacing: 0.5px;
@@ -154,13 +154,13 @@
       #hud-right {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
       }
 
       #stat-bars {
         display: flex;
-        gap: 14px;
-        font-size: 10px;
+        gap: 18px;
+        font-size: 12px;
       }
 
       .stat-bar-group {
@@ -175,8 +175,8 @@
       }
 
       .stat-bar {
-        width: 60px;
-        height: 8px;
+        width: 80px;
+        height: 10px;
         background: var(--border);
         border-radius: 4px;
         overflow: hidden;
@@ -194,6 +194,7 @@
       .stat-bar-value {
         color: var(--text);
         font-weight: 600;
+        font-size: 13px;
         min-width: 20px;
         text-align: right;
       }
@@ -329,11 +330,11 @@
       /* --- Main Content --- */
       #main {
         display: flex;
-        max-width: 1100px;
+        max-width: 1600px;
         width: 100%;
         margin: 0 auto;
-        padding: 24px;
-        gap: 24px;
+        padding: 32px;
+        gap: 32px;
       }
 
       /* --- Narrative Column --- */
@@ -350,13 +351,13 @@
       }
 
       #room-header h2 {
-        font-size: 18px;
+        font-size: 26px;
         color: var(--text);
         margin-bottom: 4px;
       }
 
       #room-layer {
-        font-size: 11px;
+        font-size: 13px;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -364,7 +365,7 @@
 
       /* --- Room Image --- */
       .room-image {
-        aspect-ratio: 16 / 9;
+        aspect-ratio: 21 / 9;
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid var(--border);
@@ -397,8 +398,8 @@
       }
 
       #room-description {
-        font-size: 14px;
-        line-height: 1.7;
+        font-size: 16px;
+        line-height: 1.8;
         color: var(--muted);
       }
 
@@ -408,7 +409,7 @@
         padding: 1px 5px;
         border-radius: 3px;
         color: var(--accent);
-        font-size: 13px;
+        font-size: 15px;
       }
 
       /* --- Challenge Panel --- */
@@ -449,15 +450,15 @@
       }
 
       #challenge-title {
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 600;
         color: var(--yellow);
       }
 
       #challenge-desc {
-        padding: 12px 16px;
-        font-size: 13px;
-        line-height: 1.6;
+        padding: 14px 18px;
+        font-size: 15px;
+        line-height: 1.8;
         color: var(--muted);
       }
 
@@ -467,7 +468,7 @@
         padding: 1px 5px;
         border-radius: 3px;
         color: var(--accent);
-        font-size: 12px;
+        font-size: 14px;
       }
 
       #challenge-choices {
@@ -484,7 +485,7 @@
         padding: 0;
         color: var(--text);
         font-family: inherit;
-        font-size: 13px;
+        font-size: 15px;
         cursor: pointer;
         text-align: center;
         transition: all 0.15s;
@@ -541,11 +542,11 @@
       .challenge-choice-btn .choice-label {
         display: block;
         font-weight: 600;
-        font-size: 12px;
+        font-size: 14px;
       }
       .challenge-choice-btn .choice-hint {
         display: block;
-        font-size: 10px;
+        font-size: 12px;
         color: var(--muted);
         margin-top: 4px;
         line-height: 1.4;
@@ -557,7 +558,7 @@
         padding: 12px 16px;
         display: none;
         animation: fadeSlideIn 0.3s ease;
-        font-size: 13px;
+        font-size: 15px;
         line-height: 1.5;
       }
 
@@ -619,7 +620,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        font-size: 13px;
+        font-size: 15px;
       }
 
       .artifact:last-child {
@@ -680,7 +681,7 @@
         padding: 12px 16px;
         color: var(--text);
         font-family: inherit;
-        font-size: 13px;
+        font-size: 15px;
         cursor: pointer;
         text-align: left;
         transition: all 0.15s;
@@ -699,7 +700,7 @@
         color: var(--text);
         padding: 2px 8px;
         border-radius: 4px;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 700;
         min-width: 24px;
         text-align: center;
@@ -709,7 +710,7 @@
         flex: 1;
       }
       .choice-btn .choice-hint {
-        font-size: 11px;
+        font-size: 13px;
         color: var(--muted);
       }
 
@@ -736,7 +737,7 @@
       .sidebar-header {
         background: var(--surface);
         padding: 8px 12px;
-        font-size: 11px;
+        font-size: 13px;
         color: var(--muted);
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -787,7 +788,7 @@
 
       .sidebar-body {
         padding: 8px;
-        font-size: 12px;
+        font-size: 14px;
       }
 
       .log-entry {
@@ -1019,7 +1020,7 @@
 
       /* --- Challenge progress --- */
       #challenge-progress {
-        font-size: 10px;
+        font-size: 12px;
         color: var(--muted);
         white-space: nowrap;
       }
@@ -1246,6 +1247,45 @@
         color: var(--accent);
       }
 
+      /* --- Welcome Panel --- */
+      #welcome-panel {
+        border: 1px solid var(--accent);
+        border-radius: 10px;
+        padding: 16px 20px;
+        background: rgba(88, 166, 255, 0.04);
+        display: none;
+      }
+
+      #welcome-panel.active {
+        display: block;
+      }
+
+      #welcome-panel h3 {
+        font-size: 16px;
+        color: var(--accent);
+        margin-bottom: 10px;
+      }
+
+      #welcome-panel p {
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      #welcome-panel p:last-child {
+        margin-bottom: 0;
+      }
+
+      #welcome-panel kbd {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: var(--text);
+      }
+
       /* --- Responsive --- */
       @media (max-width: 900px) {
         #stat-bars {
@@ -1309,6 +1349,7 @@
           flex-direction: column;
           padding: 16px;
           gap: 16px;
+          max-width: 100%;
         }
         #sidebar {
           min-width: unset;
@@ -1380,6 +1421,25 @@
         </div>
         <div id="room-image" class="room-image" style="display: none"></div>
         <div id="room-description"></div>
+        <div id="welcome-panel">
+          <h3>What is this?</h3>
+          <p>
+            An interactive choose-your-own-adventure exploring the ComfyUI
+            frontend architecture. Navigate 10 rooms, face real engineering
+            dilemmas, collect artifacts, and discover 4 possible endings based
+            on your decisions.
+          </p>
+          <p>
+            Your choices affect four stats &mdash; Tech Debt, Code Quality,
+            Team Morale, and ECS Migration progress &mdash; tracked in the
+            header above.
+          </p>
+          <p>
+            Use <kbd>1</kbd>-<kbd>3</kbd> to navigate and
+            <kbd>A</kbd>-<kbd>C</kbd> to answer challenges. Press
+            <kbd>M</kbd> for the architecture map.
+          </p>
+        </div>
         <div id="challenge-panel">
           <div id="challenge-header">
             <span class="icon">&#9888;</span>
@@ -2382,6 +2442,7 @@
         roomTitle: $('#room-title'),
         roomLayer: $('#room-layer'),
         roomDesc: $('#room-description'),
+        welcomePanel: $('#welcome-panel'),
         roomImage: $('#room-image'),
         choices: $('#choices'),
         challengePanel: $('#challenge-panel'),
@@ -2570,6 +2631,9 @@
 
         // Description
         els.roomDesc.innerHTML = room.description.trim()
+
+        // Welcome panel (entry room only)
+        els.welcomePanel.classList.toggle('active', roomId === 'entry')
 
         // Artifacts in room
         if (room.artifacts && room.artifacts.length > 0) {
