@@ -70,3 +70,13 @@ export const zHubWorkflowPublishResponse = z.object({
   workflow_id: z.string(),
   thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional()
 })
+
+export const zHubLabelInfo = z.object({
+  name: z.string(),
+  display_name: z.string(),
+  type: z.enum(['tag', 'model', 'custom_node'])
+})
+
+export const zHubLabelListResponse = z.object({
+  labels: z.array(zHubLabelInfo)
+})
