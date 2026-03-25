@@ -5861,6 +5861,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.globalAlpha = this.editor_alpha
     // for every node
     const nodes = graph._nodes
+
+    // Ensure widget-input slot positions are computed before rendering links.
+    // arrange() sets input.pos for widget-backed slots, but is normally called
+    // in drawNode (foreground canvas). drawConnections runs on the background
+    // canvas, which may render before drawNode has executed for this frame.
+    // The dirty flag avoids a per-frame O(N) scan of all inputs.
+    for (const node of nodes) {
+      if (node.flags.collapsed || !node._widgetSlotsDirty) continue
+
+      node._setConcreteSlots()
+      node.arrange()
+    }
+
     for (const node of nodes) {
       // for every input (we render just inputs because it is easier as every slot can only have one input)
       const { inputs } = node
