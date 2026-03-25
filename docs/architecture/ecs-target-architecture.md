@@ -4,9 +4,7 @@ This document describes the target ECS architecture for the litegraph entity sys
 
 ## 1. World Overview
 
-The World is the single source of truth for runtime entity state in one
-workflow instance. Entities are just branded IDs. Components are plain data
-objects. Systems are functions that query the World.
+The World is the single source of truth for all entity state. Entities are just branded IDs. Components are plain data objects. Systems are functions that query the World.
 
 ```mermaid
 graph TD
@@ -16,8 +14,8 @@ graph TD
 Map&lt;NodeEntityId, NodeComponents&gt;"]
         LinkStore["Links
 Map&lt;LinkEntityId, LinkComponents&gt;"]
-        ScopeRegistry["Graph Scopes
-Map&lt;GraphId, ParentGraphId | null&gt;"]
+        SubgraphStore["Subgraphs
+Map&lt;SubgraphEntityId, SubgraphComponents&gt;"]
         WidgetStore["Widgets
 Map&lt;WidgetEntityId, WidgetComponents&gt;"]
         SlotStore["Slots
@@ -58,6 +56,8 @@ graph LR
 number & { __brand: 'NodeEntityId' }"]
         LID["LinkEntityId
 number & { __brand: 'LinkEntityId' }"]
+        SID["SubgraphEntityId
+string & { __brand: 'SubgraphEntityId' }"]
         WID["WidgetEntityId
 number & { __brand: 'WidgetEntityId' }"]
         SLID["SlotEntityId
@@ -68,14 +68,9 @@ number & { __brand: 'RerouteEntityId' }"]
 number & { __brand: 'GroupEntityId' }"]
     end
 
-    GRID["GraphId
-string & { __brand: 'GraphId' }"]:::scopeId
-
     NID -.-x LID
     LID -.-x WID
     WID -.-x SLID
-
-    classDef scopeId fill:#2a2a4a,stroke:#4a4a6a,color:#e0e0e0,stroke-dasharray:5
 
     linkStyle 0 stroke:red,stroke-dasharray:5
     linkStyle 1 stroke:red,stroke-dasharray:5
@@ -83,30 +78,6 @@ string & { __brand: 'GraphId' }"]:::scopeId
 ```
 
 Red dashed lines = compile-time errors if mixed. No more accidentally passing a `LinkId` where a `NodeId` is expected.
-
-Note: `GraphId` is a scope identifier, not an entity ID. It identifies which graph an entity belongs to. Subgraphs are nodes with a `SubgraphStructure` component — see [Subgraph Boundaries](subgraph-boundaries-and-promotion.md).
-
-### Linked subgraphs and instance-varying state
-
-Linked subgraph definitions can be shared structurally, but mutable values are
-instance-scoped.
-
-- Shared definition-level data (interface shape, default metadata) can be reused
-  across instances.
-- Runtime state (`WidgetValue`, execution/transient state, selection) is scoped
-  to the containing `graphId` chain inside one World instance.
-- "Single source of truth" therefore means one source per workflow instance,
-  not one global source across all linked instances.
-
-### Recursive subgraphs without inheritance
-
-Recursive containment is represented through graph scopes rather than
-`Subgraph extends LGraph` inheritance.
-
-- A subgraph node points to a child graph via
-  `SubgraphStructure.childGraphId`.
-- The scope registry stores `childGraphId -> parentGraphId` links.
-- Depth queries traverse this scope DAG, then filter entities by `graphScope`.
 
 ## 2. Component Composition
 
@@ -392,7 +363,7 @@ graph TD
     end
 
     World["World
-(instance-scoped source of truth)"]
+(single source of truth)"]
 
     subgraph Components["Component Stores"]
         Pos["Position"]
@@ -415,8 +386,6 @@ Key differences:
 - **No Demeter violations**: systems query the World directly, never reach through entities
 - **No scattered store access**: the World _is_ the store; systems are the only writers
 - **Unidirectional**: Input → Systems → World → Render (no back-edges)
-- **Instance safety**: linked definitions can be reused without forcing shared
-  mutable widget/execution state across instances
 
 ## 5. Problem Resolution Map
 
@@ -445,8 +414,7 @@ graph LR
         S1["Components: small, focused
 data objects (5-10 fields each)"]
         S2["Entities are just IDs.
-No inheritance hierarchy.
-Subgraph = node + component."]
+No inheritance hierarchy."]
         S3["One system per concern.
 Systems don't overlap."]
         S4["Branded per-kind IDs.
@@ -507,20 +475,6 @@ sequenceDiagram
     World-->>New: { pos: [150, 250] }
 ```
 
-### Incremental layout/render separation
-
-Layout extraction is staged by node family, not all-at-once:
-
-1. Mark `arrange()` as deprecated in render paths and collect call-site
-   telemetry.
-2. Run `LayoutSystem` during update for a selected node family behind a feature
-   gate.
-3. Keep a temporary compatibility fallback for un-migrated node families only.
-4. Remove the fallback once parity tests and frame-time budgets pass.
-
-This keeps `RenderSystem` read-only for migrated families while preserving
-incremental rollout safety.
-
 ### Migration Phases
 
 ```mermaid
@@ -562,7 +516,3 @@ behavior layer"]
     style Phase3 fill:#2a3a1a,stroke:#3a4a2a,color:#e0e0e0
     style Phase4 fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
 ```
-
-This diagram is intentionally high level. The operational Phase 4 -> 5 entry
-criteria (compatibility matrix, bridge fallback usage, rollback requirements)
-are defined in [ecs-migration-plan.md](ecs-migration-plan.md).
