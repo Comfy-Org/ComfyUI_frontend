@@ -14,8 +14,8 @@ graph TD
 Map&lt;NodeEntityId, NodeComponents&gt;"]
         LinkStore["Links
 Map&lt;LinkEntityId, LinkComponents&gt;"]
-        SubgraphStore["Subgraphs
-Map&lt;SubgraphEntityId, SubgraphComponents&gt;"]
+        ScopeRegistry["Graph Scopes
+Map&lt;GraphId, ParentGraphId | null&gt;"]
         WidgetStore["Widgets
 Map&lt;WidgetEntityId, WidgetComponents&gt;"]
         SlotStore["Slots
@@ -56,8 +56,6 @@ graph LR
 number & { __brand: 'NodeEntityId' }"]
         LID["LinkEntityId
 number & { __brand: 'LinkEntityId' }"]
-        SID["SubgraphEntityId
-string & { __brand: 'SubgraphEntityId' }"]
         WID["WidgetEntityId
 number & { __brand: 'WidgetEntityId' }"]
         SLID["SlotEntityId
@@ -68,9 +66,14 @@ number & { __brand: 'RerouteEntityId' }"]
 number & { __brand: 'GroupEntityId' }"]
     end
 
+    GRID["GraphId
+string & { __brand: 'GraphId' }"]:::scopeId
+
     NID -.-x LID
     LID -.-x WID
     WID -.-x SLID
+
+    classDef scopeId fill:#2a2a4a,stroke:#4a4a6a,color:#e0e0e0,stroke-dasharray:5
 
     linkStyle 0 stroke:red,stroke-dasharray:5
     linkStyle 1 stroke:red,stroke-dasharray:5
@@ -78,6 +81,8 @@ number & { __brand: 'GroupEntityId' }"]
 ```
 
 Red dashed lines = compile-time errors if mixed. No more accidentally passing a `LinkId` where a `NodeId` is expected.
+
+Note: `GraphId` is a scope identifier, not an entity ID. It identifies which graph an entity belongs to. Subgraphs are nodes with a `SubgraphStructure` component — see [Subgraph Boundaries](subgraph-boundaries-and-promotion.md).
 
 ## 2. Component Composition
 
@@ -414,7 +419,8 @@ graph LR
         S1["Components: small, focused
 data objects (5-10 fields each)"]
         S2["Entities are just IDs.
-No inheritance hierarchy."]
+No inheritance hierarchy.
+Subgraph = node + component."]
         S3["One system per concern.
 Systems don't overlap."]
         S4["Branded per-kind IDs.

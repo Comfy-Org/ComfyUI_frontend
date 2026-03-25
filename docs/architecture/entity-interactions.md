@@ -4,16 +4,16 @@ This document maps the relationships and interaction patterns between all entity
 
 ## Entities
 
-| Entity   | Class         | ID Type         | Primary Location                                                             |
-| -------- | ------------- | --------------- | ---------------------------------------------------------------------------- |
-| Graph    | `LGraph`      | `UUID`          | `src/lib/litegraph/src/LGraph.ts`                                            |
-| Node     | `LGraphNode`  | `NodeId`        | `src/lib/litegraph/src/LGraphNode.ts`                                        |
-| Link     | `LLink`       | `LinkId`        | `src/lib/litegraph/src/LLink.ts`                                             |
+| Entity   | Class         | ID Type         | Primary Location                              |
+| -------- | ------------- | --------------- | --------------------------------------------- |
+| Graph    | `LGraph`      | `UUID`          | `src/lib/litegraph/src/LGraph.ts`             |
+| Node     | `LGraphNode`  | `NodeId`        | `src/lib/litegraph/src/LGraphNode.ts`         |
+| Link     | `LLink`       | `LinkId`        | `src/lib/litegraph/src/LLink.ts`              |
 | Subgraph | `Subgraph`    | `UUID`          | `src/lib/litegraph/src/LGraph.ts` (ECS: node component, not separate entity) |
-| Widget   | `BaseWidget`  | name + nodeId   | `src/lib/litegraph/src/widgets/BaseWidget.ts`                                |
-| Slot     | `SlotBase`    | index on parent | `src/lib/litegraph/src/node/SlotBase.ts`                                     |
-| Reroute  | `Reroute`     | `RerouteId`     | `src/lib/litegraph/src/Reroute.ts`                                           |
-| Group    | `LGraphGroup` | `number`        | `src/lib/litegraph/src/LGraphGroup.ts`                                       |
+| Widget   | `BaseWidget`  | name + nodeId   | `src/lib/litegraph/src/widgets/BaseWidget.ts` |
+| Slot     | `SlotBase`    | index on parent | `src/lib/litegraph/src/node/SlotBase.ts`      |
+| Reroute  | `Reroute`     | `RerouteId`     | `src/lib/litegraph/src/Reroute.ts`            |
+| Group    | `LGraphGroup` | `number`        | `src/lib/litegraph/src/LGraphGroup.ts`        |
 
 Under the ECS model, subgraphs are not a separate entity kind — they are nodes with `SubgraphStructure` and `SubgraphMeta` components. See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md).
 
