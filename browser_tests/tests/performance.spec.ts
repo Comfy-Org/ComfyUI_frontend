@@ -189,7 +189,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       `Viewport pan sweep: ${m.styleRecalcs} recalcs, ${m.layouts} layouts, ` +
         `${m.taskDurationMs.toFixed(1)}ms task, ` +
         `heap Δ${(m.heapDeltaBytes / 1024).toFixed(0)}KB, ` +
-        `DOM Δ${m.domNodes} nodes`
+        `${m.domNodes} DOM nodes`
     )
   })
 
