@@ -112,7 +112,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
   isCustomNode,
-  isEssentialNode
+  isEssentialNode,
+  NodeSourceType
 } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -120,7 +121,7 @@ import { cn } from '@/utils/tailwindUtil'
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
     essentials: isEssentialNode,
-    comfy: (n) => !isCustomNode(n),
+    comfy: (n) => n.nodeSource.type === NodeSourceType.Core,
     custom: isCustomNode
   }
 
