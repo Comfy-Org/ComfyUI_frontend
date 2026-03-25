@@ -1,15 +1,6 @@
 <template>
   <Chip removable @remove="emit('remove', $event)">
-    <span
-      :class="
-        cn(
-          'inline-flex items-center justify-center rounded-full px-1 text-xxxs font-semibold uppercase',
-          semanticBadgeClass
-        )
-      "
-    >
-      {{ badge }}
-    </span>
+    <Badge :label="badge" :class="semanticBadgeClass" />
     {{ text }}
   </Chip>
 </template>
@@ -18,7 +9,7 @@
 import Chip from 'primevue/chip'
 import { computed } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import Badge from '@/components/common/Badge.vue'
 
 export interface SearchFilter {
   text: string
@@ -28,9 +19,9 @@ export interface SearchFilter {
 }
 
 const semanticClassMap: Record<string, string> = {
-  'i-badge': 'bg-green-500 text-white',
-  'o-badge': 'bg-red-500 text-white',
-  'c-badge': 'bg-blue-500 text-white',
+  'i-badge': 'bg-green-500 text-[color:white]',
+  'o-badge': 'bg-red-500 text-[color:white]',
+  'c-badge': 'bg-blue-500 text-[color:white]',
   's-badge': 'bg-yellow-500'
 }
 
