@@ -48,7 +48,7 @@ function resolveComboOptions(
   const result = getMediaComboWidget(candidate)
   if (!result) return []
 
-  const values = result.widget.options.values
+  const values = result.widget.options?.values
   if (!values) return []
 
   const list: string[] =

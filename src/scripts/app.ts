@@ -1594,6 +1594,14 @@ export class ComfyApp {
             '[Missing Media Pipeline] Asset verification failed:',
             err
           )
+          useToastStore().add({
+            severity: 'warn',
+            summary: st(
+              'toastMessages.missingMediaVerificationFailed',
+              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+            ),
+            life: 5000
+          })
         })
     } else {
       const confirmed = candidates.filter((c) => c.isMissing === true)

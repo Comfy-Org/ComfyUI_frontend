@@ -67,18 +67,29 @@ describe('useMissingMediaStore', () => {
     expect(store.hasMissingMedia).toBe(false)
   })
 
-  it('clearMissingMedia resets all state', () => {
+  it('clearMissingMedia resets all state including interaction state', () => {
     const store = useMissingMediaStore()
     store.setMissingMedia([
       makeCandidate('1', 'photo.png'),
       makeCandidate('2', 'clip.mp4', 'video')
     ])
+    store.expandState['photo.png'] = true
+    store.uploadState['photo.png'] = {
+      fileName: 'photo.png',
+      status: 'uploaded'
+    }
+    store.pendingSelection['photo.png'] = 'uploaded/photo.png'
+    const controller = store.createVerificationAbortController()
 
     store.clearMissingMedia()
 
     expect(store.missingMediaCandidates).toBeNull()
     expect(store.hasMissingMedia).toBe(false)
     expect(store.missingMediaCount).toBe(0)
+    expect(controller.signal.aborted).toBe(true)
+    expect(store.expandState).toEqual({})
+    expect(store.uploadState).toEqual({})
+    expect(store.pendingSelection).toEqual({})
   })
 
   it('missingMediaNodeIds tracks unique node IDs', () => {

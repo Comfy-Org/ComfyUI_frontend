@@ -37,6 +37,7 @@
       <Button
         variant="textonly"
         size="icon-sm"
+        :aria-label="t('rightSidePanel.missingMedia.confirmSelection')"
         :disabled="!isPending"
         :class="
           cn(
@@ -164,6 +165,7 @@
           <Button
             variant="textonly"
             size="icon-sm"
+            :aria-label="t('rightSidePanel.missingMedia.cancelSelection')"
             class="relative z-10 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
             @click="cancelSelection(item.name)"
           >
@@ -302,20 +304,23 @@ function openFilePicker() {
   fileInputRef.value?.click()
 }
 
-function handleFileInputChange(e: Event) {
+async function handleFileInputChange(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file) {
-    handleUpload(file, item.name, item.mediaType)
+  try {
+    if (file) {
+      await handleUpload(file, item.name, item.mediaType)
+    }
+  } finally {
+    input.value = ''
   }
-  input.value = ''
 }
 
-function handleDrop(e: DragEvent) {
+async function handleDrop(e: DragEvent) {
   isDragOver.value = false
   const file = e.dataTransfer?.files[0]
   if (file) {
-    handleUpload(file, item.name, item.mediaType)
+    await handleUpload(file, item.name, item.mediaType)
   }
 }
 </script>

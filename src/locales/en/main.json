@@ -3539,7 +3539,9 @@
       "uploading": "Uploading...",
       "uploaded": "Uploaded",
       "selectedFromLibrary": "Selected from library",
-      "useFromLibrary": "Use from Library"
+      "useFromLibrary": "Use from Library",
+      "confirmSelection": "Confirm selection",
+      "cancelSelection": "Cancel selection"
     }
   },
   "errorOverlay": {
