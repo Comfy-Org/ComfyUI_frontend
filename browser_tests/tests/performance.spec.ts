@@ -391,7 +391,9 @@ test(
   )
 
   test('fast pan memory pressure', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+    await comfyPage.vueNodes.waitForNodes()
 
     const canvas = comfyPage.canvas
     const box = await canvas.boundingBox()
