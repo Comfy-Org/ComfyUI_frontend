@@ -201,5 +201,79 @@ for (const mode of ['litegraph', 'vue'] as const) {
       const selectedIds = await comfyPage.nodeOps.getSelectedNodeIds()
       expect(selectedIds).not.toContain(ksamplerRef.id)
     })
+
+    test(
+      'subgraph blueprint added from search box enters ghost mode',
+      { tag: ['@subgraph'] },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeSearchBoxImpl',
+          'default'
+        )
+        await comfyPage.searchBoxV2.reload(comfyPage)
+
+        // Convert a node to a subgraph and publish it as a blueprint
+        const nodeRef = await comfyPage.nodeOps.getNodeRefById('3')
+        await nodeRef.click('title')
+        await comfyPage.nextFrame()
+        await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+        await comfyPage.nextFrame()
+        await comfyPage.nextFrame()
+        const subgraphNodes =
+          await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
+        expect(subgraphNodes.length).toBe(1)
+        const subgraphNode = subgraphNodes[0]
+
+        const blueprintName = `ghost-test-${Date.now()}`
+        await subgraphNode.click('title')
+        await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
+          name: blueprintName
+        })
+        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+        await comfyPage.toast.closeToasts(1)
+
+        const nodeCountBefore = await comfyPage.nodeOps.getGraphNodesCount()
+
+        // Open v2 search box and search for the published blueprint
+        await comfyPage.canvasOps.doubleClick()
+        const { searchBoxV2 } = comfyPage
+        await expect(searchBoxV2.input).toBeVisible()
+
+        await searchBoxV2.input.fill(blueprintName)
+        await expect(searchBoxV2.results.first()).toBeVisible()
+
+        // Click the result to add the node (v2 search box uses ghost mode)
+        await searchBoxV2.results.first().click()
+        await comfyPage.nextFrame()
+
+        // A new node should exist on the graph in ghost mode
+        const nodeCountAfter = await comfyPage.nodeOps.getGraphNodesCount()
+        expect(nodeCountAfter).toBe(nodeCountBefore + 1)
+
+        const ghostNodeId = await comfyPage.page.evaluate(() => {
+          return window.app!.canvas.state.ghostNodeId
+        })
+        expect(ghostNodeId).not.toBeNull()
+
+        const ghostState = await getNodeById(comfyPage, ghostNodeId!)
+        expect(ghostState).not.toBeNull()
+        expect(ghostState!.ghost).toBe(true)
+
+        // Wait for search box to close, then click to confirm placement
+        await expect(searchBoxV2.input).not.toBeVisible()
+        await comfyPage.nextFrame()
+        const viewport = comfyPage.page.viewportSize()!
+        await comfyPage.page.mouse.click(
+          Math.round(viewport.width / 2),
+          Math.round(viewport.height / 2)
+        )
+        await comfyPage.nextFrame()
+
+        const afterPlace = await getNodeById(comfyPage, ghostNodeId!)
+        expect(afterPlace).not.toBeNull()
+        expect(afterPlace!.ghost).toBe(false)
+      }
+    )
   })
 }
