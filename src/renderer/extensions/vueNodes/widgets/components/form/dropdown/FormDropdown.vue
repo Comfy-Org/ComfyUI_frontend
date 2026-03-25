@@ -146,7 +146,9 @@ function toggleDropdown() {
   if (disabled) return
   if (!isOpen.value && triggerRef.value) {
     const rect = triggerRef.value.getBoundingClientRect()
-    openUpward.value = rect.bottom + MENU_HEIGHT > window.innerHeight
+    const spaceBelow = window.innerHeight - rect.bottom
+    const spaceAbove = rect.top
+    openUpward.value = spaceBelow < MENU_HEIGHT && spaceAbove > spaceBelow
   }
   isOpen.value = !isOpen.value
 }
