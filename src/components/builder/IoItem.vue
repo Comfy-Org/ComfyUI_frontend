@@ -63,7 +63,7 @@ const entries = computed(() => {
     </div>
     <Popover :entries>
       <template #button>
-        <Button variant="muted-textonly">
+        <Button variant="muted-textonly" data-testid="widget-actions-menu">
           <i class="icon-[lucide--ellipsis]" />
         </Button>
       </template>
