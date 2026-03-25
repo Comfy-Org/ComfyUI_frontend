@@ -88,7 +88,7 @@ async function saveAndReopenInAppMode(
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      localStorage.setItem('ff:linear_toggle_enabled', 'true')
+      window.__setServerCapability!('linear_toggle_enabled', true)
     })
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(

@@ -18,7 +18,10 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
-import { initServerCapabilities } from '@/services/serverCapabilities'
+import {
+  initServerCapabilities,
+  setServerCapability
+} from '@/services/serverCapabilities'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -27,6 +30,7 @@ import './assets/css/style.css'
 import { i18n } from './i18n'
 
 await initServerCapabilities()
+window.__setServerCapability = setServerCapability
 
 /**
  * CRITICAL: Load remote config FIRST for cloud builds to ensure

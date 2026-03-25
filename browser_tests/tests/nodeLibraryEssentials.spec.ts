@@ -7,10 +7,9 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 
-    // Enable the essentials feature flag via localStorage dev override.
-    // getServerCapability() checks getDevOverride() (localStorage ff: prefix) first.
+    // Enable the essentials feature flag via runtime capability override.
     await comfyPage.page.evaluate(() => {
-      localStorage.setItem('ff:node_library_essentials_enabled', 'true')
+      window.__setServerCapability!('node_library_essentials_enabled', true)
     })
 
     // Register a mock essential node so the essentials tab has content.

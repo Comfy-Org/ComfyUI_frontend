@@ -42,6 +42,14 @@ export async function initServerCapabilities(): Promise<void> {
   capabilities = EMPTY
 }
 
+/**
+ * Override a single capability at runtime.
+ * Used by E2E tests to enable features not returned by the CI backend.
+ */
+export function setServerCapability(key: string, value: unknown): void {
+  capabilities = Object.freeze({ ...capabilities, [key]: value })
+}
+
 export function getServerCapability<T = unknown>(
   key: string,
   defaultValue?: T

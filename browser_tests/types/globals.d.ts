@@ -38,6 +38,9 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
 
+    // Server capabilities runtime override (exposed from main.ts)
+    __setServerCapability?: (key: string, value: unknown) => void
+
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
