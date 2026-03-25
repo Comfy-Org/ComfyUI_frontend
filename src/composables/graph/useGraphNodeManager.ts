@@ -416,6 +416,7 @@ interface NodeInstrumentation {
   originalInputsDescriptor: PropertyDescriptor | undefined
   originalOutputsDescriptor: PropertyDescriptor | undefined
   scope: EffectScope
+  safeWidgets?: SafeWidgetData[]
 }
 
 const instrumentedNodes = new WeakMap<LGraphNode, NodeInstrumentation>()
@@ -573,22 +574,24 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     )
   }
 
-  const slotMetadata = new Map<string, WidgetSlotMetadata>()
-
-  // Create the reactiveComputed inside the node's effect scope so it
-  // is stopped when the node is uninstrumented.
-  let safeWidgets!: SafeWidgetData[]
-  inst.scope.run(() => {
-    safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-      const widgetsSnapshot = node.widgets ?? []
-      const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
-      slotMetadata.clear()
-      for (const [key, value] of freshMetadata) {
-        slotMetadata.set(key, value)
-      }
-      return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
+  // Reuse the cached reactiveComputed if it already exists on the
+  // instrumentation record; otherwise create it inside the node's
+  // effect scope so it is stopped when the node is uninstrumented.
+  if (!inst.safeWidgets) {
+    const slotMetadata = new Map<string, WidgetSlotMetadata>()
+    inst.scope.run(() => {
+      inst.safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+        const widgetsSnapshot = node.widgets ?? []
+        const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
+        slotMetadata.clear()
+        for (const [key, value] of freshMetadata) {
+          slotMetadata.set(key, value)
+        }
+        return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
+      })
     })
-  })
+  }
+  const safeWidgets = inst.safeWidgets!
 
   const nodeType =
     node.type ||
