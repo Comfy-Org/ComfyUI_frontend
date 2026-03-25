@@ -38,11 +38,14 @@ function getIcon() {
       <div class="line-clamp-1 text-xs text-text-secondary">
         {{ nodeTitle }}
       </div>
-      <div class="line-clamp-1 text-sm/8">{{ widgetName }}</div>
+      <div class="line-clamp-1 text-sm/8" data-testid="subgraph-widget-label">
+        {{ widgetName }}
+      </div>
     </div>
     <Button
       variant="muted-textonly"
       size="sm"
+      data-testid="subgraph-widget-toggle"
       :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >
