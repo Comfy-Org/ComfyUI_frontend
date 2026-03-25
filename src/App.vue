@@ -7,14 +7,12 @@
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
@@ -25,9 +23,6 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
-const settingStore = useSettingStore()
-const dialogService = useDialogService()
-let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(
   isLoading,
@@ -132,39 +127,5 @@ onMounted(() => {
   // Initialize conflict detection in background
   // This runs async and doesn't block UI setup
   void conflictDetection.initializeConflictDetection()
-
-  if (!isDesktop || electronAPI()?.getPlatform() !== 'darwin') return
-
-  void (async () => {
-    try {
-      await settingStore.load()
-    } catch (error) {
-      console.warn('[CloudNotification] Failed to load settings', error)
-      return
-    }
-
-    if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
-
-    cloudNotificationTimer = setTimeout(async () => {
-      try {
-        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
-        await dialogService.showCloudNotification()
-      } catch (error) {
-        console.warn('[CloudNotification] Failed to show', error)
-        await settingStore
-          .set('Comfy.Desktop.CloudNotificationShown', false)
-          .catch((resetError) => {
-            console.warn(
-              '[CloudNotification] Failed to reset shown state',
-              resetError
-            )
-          })
-      }
-    }, 2000)
-  })()
-})
-
-onUnmounted(() => {
-  if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
 })
 </script>

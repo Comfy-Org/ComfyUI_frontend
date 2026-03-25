@@ -73,6 +73,7 @@ import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useDialogService } from '@/services/dialogService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -110,8 +111,10 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const dialogService = useDialogService()
 const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
@@ -285,10 +288,41 @@ onMounted(() => {
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
+
+  if (!isDesktop || electronAPI()?.getPlatform() !== 'darwin') return
+
+  void (async () => {
+    try {
+      await settingStore.load()
+    } catch (error) {
+      console.warn('[CloudNotification] Failed to load settings', error)
+      return
+    }
+
+    if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
+
+    cloudNotificationTimer = setTimeout(async () => {
+      try {
+        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+        await dialogService.showCloudNotification()
+      } catch (error) {
+        console.warn('[CloudNotification] Failed to show', error)
+        await settingStore
+          .set('Comfy.Desktop.CloudNotificationShown', false)
+          .catch((resetError) => {
+            console.warn(
+              '[CloudNotification] Failed to reset shown state',
+              resetError
+            )
+          })
+      }
+    }, 2000)
+  })()
 })
 
 onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
+  if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
