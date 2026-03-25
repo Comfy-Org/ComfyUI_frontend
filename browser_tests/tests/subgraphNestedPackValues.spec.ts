@@ -36,41 +36,40 @@ test.describe(
       await expect(nodeLocator).toBeVisible()
 
       // 1. Verify initial promoted widget values via Vue node DOM
-      const widthWidget = nodeLocator.getByLabel('width', { exact: true })
-      const heightWidget = nodeLocator.getByLabel('height', { exact: true })
-      const stepsWidget = nodeLocator.getByLabel('steps', { exact: true })
-      const textWidget = nodeLocator.getByTestId(
-        TestIds.widgets.domWidgetTextarea
-      )
+      const widthWidget = nodeLocator
+        .getByLabel('width', { exact: true })
+        .first()
+      const heightWidget = nodeLocator
+        .getByLabel('height', { exact: true })
+        .first()
+      const stepsWidget = nodeLocator
+        .getByLabel('steps', { exact: true })
+        .first()
+      const textWidget = nodeLocator
+        .getByTestId(TestIds.widgets.domWidgetTextarea)
+        .first()
 
-      await expect(widthWidget).toBeVisible()
-      await expect(heightWidget).toBeVisible()
-      await expect(stepsWidget).toBeVisible()
-      await expect(textWidget).toBeVisible()
+      const widthControls =
+        comfyPage.vueNodes.getInputNumberControls(widthWidget)
+      const heightControls =
+        comfyPage.vueNodes.getInputNumberControls(heightWidget)
+      const stepsControls =
+        comfyPage.vueNodes.getInputNumberControls(stepsWidget)
 
-      const widthControls = comfyPage.vueNodes.getInputNumberControls(
-        widthWidget.first()
-      )
-      const heightControls = comfyPage.vueNodes.getInputNumberControls(
-        heightWidget.first()
-      )
-      const stepsControls = comfyPage.vueNodes.getInputNumberControls(
-        stepsWidget.first()
-      )
+      await expect(async () => {
+        await expect(widthControls.input).toHaveValue('1024')
+        await expect(heightControls.input).toHaveValue('1024')
+        await expect(stepsControls.input).toHaveValue('8')
+        await expect(textWidget).toContainText('Latina female')
+      }).toPass({ timeout: 5000 })
 
-      await expect(widthControls.input).toHaveValue('1024')
-      await expect(heightControls.input).toHaveValue('1024')
-      await expect(stepsControls.input).toHaveValue('8')
-      await expect(textWidget.first()).toContainText('Latina female')
+      // 2. Enter the subgraph via Vue node button
+      await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
+      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      // 2. Disable Vue nodes for canvas operations (subgraph navigation + convert)
+      // 3. Disable Vue nodes for canvas operations (select all + convert)
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.nextFrame()
-
-      // 3. Enter the subgraph
-      const subgraphNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
-      await subgraphNode.navigateIntoSubgraph()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       // 4. Select all interior nodes and convert to nested subgraph
       await comfyPage.canvas.click()
@@ -83,40 +82,39 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      // 5. Navigate back to root graph
+      // 5. Navigate back to root graph and trigger a checkState cycle
       await comfyPage.subgraph.exitViaBreadcrumb()
-
-      // 6. Trigger a checkState cycle by clicking the canvas
       await comfyPage.canvas.click()
       await comfyPage.nextFrame()
 
-      // 7. Re-enable Vue nodes and verify values are preserved
+      // 6. Re-enable Vue nodes and verify values are preserved
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.vueNodes.waitForNodes()
 
       const nodeAfter = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
       await expect(nodeAfter).toBeVisible()
 
-      const widthAfter = nodeAfter.getByLabel('width', { exact: true })
-      const heightAfter = nodeAfter.getByLabel('height', { exact: true })
-      const stepsAfter = nodeAfter.getByLabel('steps', { exact: true })
-      const textAfter = nodeAfter.getByTestId(TestIds.widgets.domWidgetTextarea)
+      const widthAfter = nodeAfter.getByLabel('width', { exact: true }).first()
+      const heightAfter = nodeAfter
+        .getByLabel('height', { exact: true })
+        .first()
+      const stepsAfter = nodeAfter.getByLabel('steps', { exact: true }).first()
+      const textAfter = nodeAfter
+        .getByTestId(TestIds.widgets.domWidgetTextarea)
+        .first()
 
-      const widthControlsAfter = comfyPage.vueNodes.getInputNumberControls(
-        widthAfter.first()
-      )
-      const heightControlsAfter = comfyPage.vueNodes.getInputNumberControls(
-        heightAfter.first()
-      )
-      const stepsControlsAfter = comfyPage.vueNodes.getInputNumberControls(
-        stepsAfter.first()
-      )
+      const widthControlsAfter =
+        comfyPage.vueNodes.getInputNumberControls(widthAfter)
+      const heightControlsAfter =
+        comfyPage.vueNodes.getInputNumberControls(heightAfter)
+      const stepsControlsAfter =
+        comfyPage.vueNodes.getInputNumberControls(stepsAfter)
 
       await expect(async () => {
         await expect(widthControlsAfter.input).toHaveValue('1024')
         await expect(heightControlsAfter.input).toHaveValue('1024')
         await expect(stepsControlsAfter.input).toHaveValue('8')
-        await expect(textAfter.first()).toContainText('Latina female')
+        await expect(textAfter).toContainText('Latina female')
       }).toPass({ timeout: 5000 })
     })
 
@@ -130,13 +128,10 @@ test.describe(
       const nodeLocator = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
       await expect(nodeLocator).toBeVisible()
 
-      // Disable Vue nodes for canvas operations
+      // Enter the subgraph via Vue node button, then disable for canvas ops
+      await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.nextFrame()
-
-      // Enter, select all, pack
-      const subgraphNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
-      await subgraphNode.navigateIntoSubgraph()
 
       await comfyPage.canvas.click()
       await comfyPage.canvas.press('Control+a')
