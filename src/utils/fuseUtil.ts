@@ -1,7 +1,18 @@
-import type { FuseOptionKey, FuseSearchOptions, IFuseOptions } from 'fuse.js'
+import type {
+  FuseOptionKey,
+  FuseResult,
+  FuseResultMatch,
+  FuseSearchOptions,
+  IFuseOptions
+} from 'fuse.js'
 import Fuse from 'fuse.js'
 
 export type SearchAuxScore = number[]
+
+interface FuseSearchResultWithMatches<T> {
+  item: T
+  matches: readonly FuseResultMatch[]
+}
 
 export interface FuseFilterWithValue<T, O = string> {
   filterDef: FuseFilter<T, O>
@@ -109,7 +120,7 @@ export class FuseSearch<T> {
       createIndex && this.keys.length
         ? Fuse.createIndex(this.keys, data)
         : undefined
-    this.fuse = new Fuse(data, fuseOptions, index)
+    this.fuse = new Fuse(data, { ...fuseOptions, includeMatches: true }, index)
   }
 
   public search(query: string, options?: FuseSearchOptions): T[] {
@@ -133,6 +144,38 @@ export class FuseSearch<T> {
       .sort((a, b) => this.compareAux(a.scores, b.scores))
 
     return aux.map((x) => x.item)
+  }
+
+  public searchWithMatches(
+    query: string,
+    options?: FuseSearchOptions
+  ): FuseSearchResultWithMatches<T>[] {
+    if (!query) {
+      return this.data.map((item) => ({ item, matches: [] }))
+    }
+
+    const fuseResult: FuseResult<T>[] = this.fuse.search(query, options)
+
+    const toResult = (r: FuseResult<T>): FuseSearchResultWithMatches<T> => ({
+      item: r.item,
+      matches: r.matches ?? []
+    })
+
+    if (!this.advancedScoring) {
+      return fuseResult.map(toResult)
+    }
+
+    return fuseResult
+      .map((r) => ({
+        result: toResult(r),
+        scores: this.calcAuxScores(
+          query.toLocaleLowerCase(),
+          r.item,
+          r.score ?? 0
+        )
+      }))
+      .sort((a, b) => this.compareAux(a.scores, b.scores))
+      .map((x) => x.result)
   }
 
   public calcAuxScores(query: string, entry: T, score: number): SearchAuxScore {

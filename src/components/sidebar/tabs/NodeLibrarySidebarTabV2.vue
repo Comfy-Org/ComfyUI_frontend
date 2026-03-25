@@ -164,7 +164,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
+import { computed, nextTick, onMounted, provide, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -200,6 +200,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
+import { InjectKeySearchHighlights } from '@/types/treeExplorerTypes'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import BlueprintsPanel from './nodeLibrary/BlueprintsPanel.vue'
@@ -261,17 +262,73 @@ const expandedKeys = usePerTabState(selectedTab, expandedKeysByTab)
 const nodeDefStore = useNodeDefStore()
 const { startDrag } = useNodeDragToCanvas()
 
-const filteredNodeDefs = computed(() => {
-  if (searchQuery.value.length === 0) {
-    return []
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function buildHighlightHtml(
+  text: string,
+  indices: ReadonlyArray<readonly [number, number]>
+): string {
+  if (indices.length === 0) return escapeHtml(text)
+
+  const sorted = [...indices].sort((a, b) => a[0] - b[0])
+  let result = ''
+  let lastIndex = 0
+  for (const [start, end] of sorted) {
+    if (start > lastIndex) {
+      result += escapeHtml(text.slice(lastIndex, start))
+    }
+    result += `<span class="highlight">${escapeHtml(text.slice(start, end + 1))}</span>`
+    lastIndex = end + 1
   }
-  return nodeDefStore.nodeSearchService.searchNode(
-    searchQuery.value,
-    [],
-    { limit: 64 },
-    { matchWildcards: false }
-  )
+  if (lastIndex < text.length) {
+    result += escapeHtml(text.slice(lastIndex))
+  }
+  return result
+}
+
+const searchResult = computed(() => {
+  if (searchQuery.value.length === 0) {
+    return {
+      items: [] as ComfyNodeDefImpl[],
+      highlights: new Map<string, string>()
+    }
+  }
+
+  const { items, matchesByNode } =
+    nodeDefStore.nodeSearchService.searchNodeWithMatches(
+      searchQuery.value,
+      [],
+      { limit: 64 },
+      { matchWildcards: false }
+    )
+
+  const highlights = new Map<string, string>()
+  for (const [nodeName, matches] of matchesByNode) {
+    const displayNameMatch = matches.find((m) => m.key === 'display_name')
+    if (displayNameMatch) {
+      const node = items.find((n) => n.name === nodeName)
+      if (node) {
+        highlights.set(
+          nodeName,
+          buildHighlightHtml(node.display_name, displayNameMatch.indices)
+        )
+      }
+    }
+  }
+
+  return { items, highlights }
 })
+
+const filteredNodeDefs = computed(() => searchResult.value.items)
+const searchHighlights = computed(() => searchResult.value.highlights)
+provide(InjectKeySearchHighlights, searchHighlights)
 
 const activeNodes = computed(() =>
   filteredNodeDefs.value.length > 0

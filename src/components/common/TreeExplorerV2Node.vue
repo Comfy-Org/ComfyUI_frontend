@@ -20,9 +20,12 @@
       @dragend="handleDragEnd"
     >
       <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <span
+        class="text-foreground min-w-0 flex-1 truncate text-sm [&_.highlight]:rounded-sm [&_.highlight]:bg-primary-background [&_.highlight]:px-0.5 [&_.highlight]:font-bold [&_.highlight]:text-white"
+      >
         <slot name="node" :node="item.value">
-          {{ item.value.label }}
+          <span v-if="highlightedLabel" v-html="highlightedLabel" />
+          <template v-else>{{ item.value.label }}</template>
         </slot>
       </span>
       <button
@@ -90,13 +93,16 @@
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
 import { TreeItem } from 'reka-ui'
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
+import {
+  InjectKeyContextMenuNode,
+  InjectKeySearchHighlights
+} from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -119,9 +125,18 @@ const emit = defineEmits<{
 }>()
 
 const contextMenuNode = inject(InjectKeyContextMenuNode)
+const searchHighlights = inject(
+  InjectKeySearchHighlights,
+  ref(new Map<string, string>())
+)
 const nodeBookmarkStore = useNodeBookmarkStore()
 
 const nodeDef = computed(() => item.value.data)
+const highlightedLabel = computed(() => {
+  const name = nodeDef.value?.name
+  if (!name) return ''
+  return searchHighlights.value.get(name) ?? ''
+})
 
 const isBookmarked = computed(() => {
   if (!nodeDef.value) return false
