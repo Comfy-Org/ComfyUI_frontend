@@ -501,7 +501,7 @@ sequenceDiagram
     CS->>W: getComponent(subgraphNodeId, NodeType)
     W-->>CS: { type: subgraphEntityId }
 
-    CS->>W: getComponent(sgId, SubgraphStructure)
+    CS->>W: getComponent(subgraphEntityId, SubgraphStructure)
     W-->>CS: { nodeIds, linkIds, rerouteIds }
 
     Note over CS,W: Move entities back to parent scope
@@ -675,7 +675,9 @@ sequenceDiagram
     end
 ```
 
-Problems: clone-serialize-parse-remap-deserialize dance. Every entity type has its own ID remapping logic. Subgraph IDs, node IDs, reroute IDs, and link parentIds all remapped independently. ~300 lines across multiple methods.
+Problems: clone-serialize-parse-remap-deserialize dance. Every entity type has
+its own ID remapping logic. Subgraph IDs, node IDs, reroute IDs, and link
+parent IDs all remapped independently. ~300 lines across multiple methods.
 
 ### ECS Flow
 

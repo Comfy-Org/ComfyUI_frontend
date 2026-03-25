@@ -177,7 +177,12 @@ These make the domain objects untestable without a Vue app context.
 
 ### Change Notification Sprawl
 
-`beforeChange()` and `afterChange()` (undo/redo checkpoints) are called from **12+ locations** in `LGraphCanvas` alone (lines 1574, 1592, 1604, 1620, 1752, 1770, 8754, 8760, 8771, 8777, 8803, 8811). Missing a call means undo/redo doesn't capture the change; adding an extra call means a wasted checkpoint.
+`beforeChange()` and `afterChange()` (undo/redo checkpoints) are called from
+**12+ locations** in `LGraphCanvas` alone (lines 1574, 1592, 1604, 1620, 1752,
+1770, 8754, 8760, 8771, 8777, 8803, 8811). These calls are grouping brackets:
+misplaced or missing pairs can split one logical operation across multiple undo
+entries, while unmatched extra calls can delay checkpoint emission until the
+nesting counter returns to zero.
 
 ## 7. Render-Time Mutations
 

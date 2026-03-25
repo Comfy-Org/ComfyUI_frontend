@@ -227,6 +227,17 @@ centralizing version first matters.)
 without breaking existing behavior. The bridge is read-only (World mirrors
 classes, not the reverse), which limits blast radius.
 
+### Bridge sunset criteria (applies to every Phase 2 bridge)
+
+A bridge can move from "transitional" to "removal candidate" only when:
+
+- All production reads for that concern flow through World component queries.
+- All production writes for that concern flow through system APIs.
+- Serialization parity tests show no diff between legacy and World paths.
+- Extension compatibility tests pass without bridge-only fallback paths.
+
+These criteria prevent the bridge from becoming permanent by default.
+
 ---
 
 ## Phase 3: Systems
@@ -312,6 +323,16 @@ must fire them at the same points in the operation, or extensions break.
 layer translates into legacy callbacks. This preserves the contract without
 the system knowing about the callback API.
 
+**Phase 4 callback contract (locked):**
+
+- `onConnectOutput()` and `onConnectInput()` run before any World mutation.
+- If either callback rejects, abort with no component writes, no version bump,
+  and no lifecycle events.
+- `onConnectionsChange()` fires synchronously after commit, preserving current
+  source-then-target ordering.
+- Bridge lifecycle events remain internal. Legacy callbacks stay the public
+  compatibility API during Phase 4.
+
 **Risk:** High. Extensions depend on callback ordering and timing. Must be
 validated against real-world extensions.
 
@@ -323,6 +344,20 @@ source of truth; WidgetValueStore becomes a read-through cache or is removed.
 
 **Risk:** Medium. WidgetValueStore is already well-abstracted. The main
 change is routing writes through the World instead of the store.
+
+### Phase 3 -> 4 gate (required)
+
+Phase 4 starts only when all of the following are true:
+
+- A transaction wrapper API exists on the World and is used by connectivity and
+  widget write paths in integration tests.
+- Undo batching parity is proven: one logical user action yields one undo
+  checkpoint in both legacy and ECS paths.
+- Callback timing and rejection semantics from Phase 4b are covered by
+  integration tests.
+- A representative extension suite passes, including `rgthree-comfy`.
+- Write bridge re-entrancy tests prove there is no World <-> legacy feedback
+  loop.
 
 ---
 
@@ -351,6 +386,19 @@ removed entirely, replaced by entity ID + component queries.
 **Risk:** Very High. This is the irreversible step. Must be done only after
 thorough validation that all consumers (including extensions) work with the
 ECS path.
+
+### Phase 4 -> 5 exit criteria (required)
+
+Legacy removal starts only when all of the following are true:
+
+- The component being removed has no remaining direct reads or writes outside
+  World/system APIs.
+- Serialization equivalence tests pass continuously for one release cycle.
+- A representative extension compatibility matrix is green, including
+  `rgthree-comfy`.
+- Bridge instrumentation shows zero fallback-path usage in integration and e2e
+  suites.
+- A rollback plan exists for each removal PR until the release is cut.
 
 ---
 
@@ -396,13 +444,17 @@ typed events at the same points where callbacks currently fire. The bridge
 layer translates events into legacy callbacks. Extensions can gradually adopt
 event listeners instead of callbacks.
 
-**Questions to resolve:**
+**Phase 4 decisions:**
 
-- Can extension callbacks that reject operations (e.g., `onConnectInput`
-  returning `false`) work with a system that has already committed the
-  connection to the World?
-- Should the event system be synchronous (preserving current behavior) or
-  asynchronous (enabling batching)?
+- Rejection callbacks act as pre-commit guards (reject before World mutation).
+- Callback dispatch remains synchronous during the bridge period.
+- Callback order remains: output validation -> input validation -> commit ->
+  output change notification -> input change notification.
+
+**Question to resolve after compatibility parity:**
+
+- Should ECS-native lifecycle events stay synchronous after bridge removal, or
+  can they become asynchronous once legacy callback compatibility is dropped?
 
 ### Atomicity and transactions
 
@@ -414,13 +466,21 @@ writes and commit or rollback as a unit.
 checkpoints but not true transactions. The graph can be in an inconsistent
 state between these calls.
 
+**Phase 4 baseline semantics:**
+
+- Mutating systems run inside `world.transaction(label, fn)`.
+- The bridge maps one World transaction to one `beforeChange()` /
+  `afterChange()` bracket.
+- Failed transactions do not publish partial writes, lifecycle events, or
+  version increments.
+
 **Questions to resolve:**
 
-- Does the World need a `transaction()` API?
-- How does this interact with Y.js transactions (which already batch CRDT
-  operations)?
-- Is eventual consistency acceptable (systems correct inconsistencies on next
-  tick), or must every operation be immediately consistent?
+- How should `world.transaction()` interact with Y.js transactions when a
+  component is CRDT-backed?
+- Is eventual consistency acceptable for derived data updates between
+  transactions, or must post-transaction state always be immediately
+  consistent?
 
 ### Keying strategy unification
 
@@ -466,11 +526,15 @@ Phase 3a (SerializationSystem)  ─── depends on 2a, 2b, 2c
 Phase 3b (VersionSystem)  ──────── depends on 0a, 2c
 Phase 3c (ConnectivitySystem)  ──── depends on 2c
 
+Phase 3->4 gate checklist  ──────── depends on 3a, 3b, 3c
+
 Phase 4a (Position writes)  ────── depends on 2a, 3b
-Phase 4b (Connectivity mutations) ─ depends on 3c
+Phase 4b (Connectivity mutations) ─ depends on 3c, 3->4 gate
 Phase 4c (Widget writes)  ─────── depends on 2b
 
-Phase 5 (legacy removal)  ─────── depends on all of Phase 4
+Phase 4->5 exit criteria  ──────── depends on all of Phase 4
+
+Phase 5 (legacy removal)  ─────── depends on 4->5 exit criteria
 ```
 
 ## Risk Summary

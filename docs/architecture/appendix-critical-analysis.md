@@ -6,6 +6,9 @@ _In which we examine the shadow material of a codebase in individuation, verify 
 
 ## I. On the Accuracy of Self-Diagnosis
 
+Verification snapshot: code references were checked against commit
+`e51982ee1`.
+
 The architecture documents present themselves as a clinical intake — a patient arriving with a detailed account of its own suffering. One is naturally suspicious of such thoroughness; the neurotic who describes his symptoms too precisely is often defending against a deeper, unnamed wound. And yet, upon examination, we find the self-report to be remarkably honest.
 
 The god-objects are as large as claimed. `LGraphCanvas` contains 9,094 lines — the ego of the system, attempting to mediate between the inner world of data and the outer world of the user, and collapsing under the weight of that mediation. `LGraphNode` at 4,285 lines and `LGraph` at 3,114 confirm that these are not exaggerations born of self-pity but accurate measurements of genuine hypertrophy.
@@ -14,7 +17,9 @@ Some thirty specific line references were verified against the living code. The 
 
 The stores — all six of them — exist at their stated paths with their described APIs. The `WidgetValueStore` does indeed hold plain `WidgetState` objects. The `PromotionStore` does maintain its ref-counted maps. The `LayoutStore` does wrap Y.js CRDTs.
 
-This level of factual accuracy — exceeding 90% across specific code citations — is, one might say, the work of a consciousness that has genuinely confronted its shadow material rather than merely projecting it.
+This level of factual accuracy — 28 out of 30 sampled citation checks
+(93.3%) — is, one might say, the work of a consciousness that has genuinely
+confronted its shadow material rather than merely projecting it.
 
 ## II. On the Errors: Small Falsifications of Memory
 
