@@ -83,21 +83,28 @@ export function useViewportCulling({
     const visibleNow = computeVisibleNodeIds()
     const current = mountedNodeIds.value
 
+    let hasNewNodes = false
     let needsPrune = false
-    const next = new Set(current)
+    let next = current
 
     for (const id of visibleNow) {
-      next.add(id)
+      if (!current.has(id)) {
+        if (next === current) next = new Set(current)
+        next.add(id)
+        hasNewNodes = true
+      }
     }
 
-    for (const id of next) {
+    for (const id of current) {
       if (!visibleNow.has(id)) {
         needsPrune = true
         break
       }
     }
 
-    mountedNodeIds.value = next
+    if (hasNewNodes) {
+      mountedNodeIds.value = next
+    }
 
     if (needsPrune) {
       void pruneMountedNodes()
