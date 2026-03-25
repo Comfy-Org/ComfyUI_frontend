@@ -16240,6 +16240,10 @@
         "name": "شرط مثبت",
         "tooltip": "شرط مثبت مورد استفاده برای آموزش."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "زمانی که training_dtype روی 'none' تنظیم شده و آموزش روی مدل quantized انجام می‌شود، در صورت فعال بودن، عملیات backward با quantized matmul انجام می‌شود."
+      },
       "rank": {
         "name": "رتبه",
         "tooltip": "رتبه لایه‌های LoRA."
