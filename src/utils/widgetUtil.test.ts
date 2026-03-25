@@ -119,9 +119,16 @@ describe('renameWidget', () => {
       sourceWidgetName: 'innerSeed'
     })
     const subgraphNode = makeNode({ isSubgraph: true })
-    const parents = [subgraphNode] as unknown as Parameters<typeof renameWidget>[3]
+    const parents = [subgraphNode] as unknown as Parameters<
+      typeof renameWidget
+    >[3]
 
-    const result = renameWidget(promotedWidget, subgraphNode, 'Renamed', parents)
+    const result = renameWidget(
+      promotedWidget,
+      subgraphNode,
+      'Renamed',
+      parents
+    )
 
     expect(result).toBe(true)
     expect(sourceWidget.label).toBe('Renamed')
