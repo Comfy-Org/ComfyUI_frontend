@@ -37,6 +37,11 @@
       "prompt": "Pixel art architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk",
       "path": "images/ecs.png"
     },
+    "subgraph": {
+      "title": "The Subgraph Depths",
+      "prompt": "Pixel art recursive fractal chamber where identical rooms nest inside each other like Russian dolls, typed contract scrolls float at each boundary doorway, a DAG tree diagram glows on the ceiling",
+      "path": "images/subgraph.png"
+    },
     "renderer": {
       "title": "The Renderer Overlook",
       "prompt": "Pixel art observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below",
