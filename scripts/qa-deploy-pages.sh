@@ -127,6 +127,8 @@ TEMPLATE="$SCRIPT_DIR/qa-report-template.html"
 echo -n "$COMMIT_HTML" > "$DEPLOY_DIR/.commit_html"
 echo -n "$CARDS" > "$DEPLOY_DIR/.cards_html"
 echo -n "$RUN_LINK" > "$DEPLOY_DIR/.run_link"
+# Badge HTML with copy button (placeholder URL filled after deploy)
+echo -n '<div class="badge-bar"><img src="badge.svg" alt="QA Badge" class="badge-img"/><button class="copy-badge" title="Copy badge markdown" onclick="copyBadge()"><svg width=14 height=14 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2><rect x=9 y=9 width=13 height=13 rx=2/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' > "$DEPLOY_DIR/.badge_html"
 python3 -c "
 import sys, pathlib
 d = pathlib.Path(sys.argv[1])
@@ -134,9 +136,10 @@ t = pathlib.Path(sys.argv[2]).read_text()
 t = t.replace('{{COMMIT_HTML}}', (d / '.commit_html').read_text())
 t = t.replace('{{CARDS}}', (d / '.cards_html').read_text())
 t = t.replace('{{RUN_LINK}}', (d / '.run_link').read_text())
+t = t.replace('{{BADGE_HTML}}', (d / '.badge_html').read_text())
 sys.stdout.write(t)
 " "$DEPLOY_DIR" "$TEMPLATE" > "$DEPLOY_DIR/index.html"
-rm -f "$DEPLOY_DIR/.commit_html" "$DEPLOY_DIR/.cards_html" "$DEPLOY_DIR/.run_link"
+rm -f "$DEPLOY_DIR/.commit_html" "$DEPLOY_DIR/.cards_html" "$DEPLOY_DIR/.run_link" "$DEPLOY_DIR/.badge_html"
 
 cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 <!DOCTYPE html><html lang=en><head><meta charset=utf-8><title>404</title>
@@ -160,9 +163,13 @@ elif grep -ri 'reproduc\|confirm' video-reviews/ 2>/dev/null | grep -vq '^[^:]*:
   REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
 fi
 
+# Badge label includes the target number for identification
+BADGE_LABEL="QA"
+[ -n "${TARGET_NUM:-}" ] && BADGE_LABEL="#${TARGET_NUM} QA"
+
 if [ "$TARGET_TYPE" = "issue" ]; then
-  BADGE_STATUS="FINISHED${REPRO_RESULT:+: ${REPRO_RESULT}}"
-  /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg"
+  BADGE_STATUS="${REPRO_RESULT:-FINISHED}"
+  /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
 else
   SOLN_RESULT="" SOLN_COLOR="#4c1"
   if grep -riq 'major.*issue\|critical\|breaking\|regression' video-reviews/ 2>/dev/null; then
@@ -172,11 +179,11 @@ else
   elif grep -riq 'no.*issue\|looks good\|approved\|pass' video-reviews/ 2>/dev/null; then
     SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
   fi
+  BADGE_STATUS="${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
   /tmp/gen-badge-dual.sh \
     "${REPRO_RESULT:-UNKNOWN}" "${REPRO_COLOR}" \
     "${SOLN_RESULT:-UNKNOWN}" "${SOLN_COLOR}" \
-    "$DEPLOY_DIR/badge.svg"
-  BADGE_STATUS="${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
+    "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
 fi
 echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
