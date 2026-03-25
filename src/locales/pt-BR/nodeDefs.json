@@ -16240,6 +16240,10 @@
         "name": "positivo",
         "tooltip": "O condicionamento positivo a ser usado para o treinamento."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Ao usar 'training_dtype' como 'none' e treinar em um modelo quantizado, realiza o backward com matmul quantizado quando ativado."
+      },
       "rank": {
         "name": "rank",
         "tooltip": "O rank das camadas da LoRA."

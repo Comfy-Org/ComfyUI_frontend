@@ -16225,6 +16225,10 @@
         "name": "lora_dtype",
         "tooltip": "The dtype to use for lora."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "When using training_dtype 'none' and training on quantized model, doing backward with quantized matmul when enabled."
+      },
       "algorithm": {
         "name": "algorithm",
         "tooltip": "The algorithm to use for training."
