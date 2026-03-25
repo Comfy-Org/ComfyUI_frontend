@@ -120,10 +120,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function onHydrationComplete(nodeId: NodeId, callback: HydrationCallback) {
-    if (!hydratingNodes.has(nodeId)) {
-      callback()
-      return
-    }
+    if (!hydratingNodes.has(nodeId)) return callback()
+
     const existing = hydrationCallbacks.get(nodeId) ?? []
     existing.push(callback)
     hydrationCallbacks.set(nodeId, existing)
