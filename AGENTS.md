@@ -208,7 +208,7 @@ See @docs/testing/\*.md for detailed patterns.
 3. Keep your module mocks contained  
    Do not use global mutable state within the test file  
    Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
-4. For Component testing, use [Vue Test Utils](https://test-utils.vuejs.org/) and especially follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
+4. For Component testing, prefer [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) with `@testing-library/user-event` for user-centric, behavioral tests. [Vue Test Utils](https://test-utils.vuejs.org/) is also accepted, especially for tests that need direct access to the component wrapper (e.g., `findComponent`, `emitted()`). Follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
 5. Aim for behavioral coverage of critical and new features
 
 ### Playwright / Browser / E2E Tests
