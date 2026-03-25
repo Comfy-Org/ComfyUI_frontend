@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -100,9 +100,12 @@ function createLayoutEntry(node: LGraphNode, zIndex: number) {
 describe('cloned node z-index in Vue renderer', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
+  let previousVueNodesMode: boolean
 
   beforeEach(() => {
     vi.clearAllMocks()
+    previousVueNodesMode = LiteGraph.vueNodesMode
+    LiteGraph.vueNodesMode = true
     LiteGraph.registerNodeType('test/CloneZIndex', TestNode)
 
     graph = new LGraph()
@@ -115,6 +118,10 @@ describe('cloned node z-index in Vue renderer', () => {
     graph.onNodeAdded = (node: LGraphNode) => {
       createLayoutEntry(node, 0)
     }
+  })
+
+  afterEach(() => {
+    LiteGraph.vueNodesMode = previousVueNodesMode
   })
 
   it('places cloned nodes above the original node z-index', () => {
