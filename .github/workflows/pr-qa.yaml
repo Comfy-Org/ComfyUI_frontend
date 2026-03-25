@@ -526,10 +526,28 @@ jobs:
           BADGESCRIPT
           chmod +x /tmp/gen-badge.sh
 
-          # Create dual badge generator (for PRs: Bug + Fix in one badge)
+          # Create badge deploy script
+          cat > /tmp/deploy-badge.sh <<DEPLOYSCRIPT
+          #!/bin/bash
+          # Usage: deploy-badge.sh <status> [color]
+          STATUS="\$1"
+          COLOR="\${2:-#555}"
+          DIR=\$(mktemp -d)
+          /tmp/gen-badge.sh "\$STATUS" "\$COLOR" "\$DIR/badge.svg"
+          # Also create a minimal redirect page
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=badge.svg"></head></html>' > "\$DIR/index.html"
+          wrangler pages deploy "\$DIR" \
+            --project-name="comfy-qa" \
+            --branch="${BRANCH}" 2>&1 | tail -3
+          rm -rf "\$DIR"
+          echo "Badge deployed: ${STATUS}"
+          DEPLOYSCRIPT
+          chmod +x /tmp/deploy-badge.sh
+
+      - name: Setup dual badge generator
+        run: |
           cat > /tmp/gen-badge-dual.sh <<'DUALBADGE'
           #!/bin/bash
-          # Usage: gen-badge-dual.sh <bug_status> <bug_color> <fix_status> <fix_color> <output>
           BUG="$1" BUG_C="$2" FIX="Fix: $3" FIX_C="$4" OUT="$5"
           LABEL="QA Bot"
           LW=$(( ${#LABEL} * 7 + 12 ))
@@ -559,24 +577,6 @@ jobs:
           SVGEOF
           DUALBADGE
           chmod +x /tmp/gen-badge-dual.sh
-
-          # Create badge deploy script
-          cat > /tmp/deploy-badge.sh <<DEPLOYSCRIPT
-          #!/bin/bash
-          # Usage: deploy-badge.sh <status> [color]
-          STATUS="\$1"
-          COLOR="\${2:-#555}"
-          DIR=\$(mktemp -d)
-          /tmp/gen-badge.sh "\$STATUS" "\$COLOR" "\$DIR/badge.svg"
-          # Also create a minimal redirect page
-          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=badge.svg"></head></html>' > "\$DIR/index.html"
-          wrangler pages deploy "\$DIR" \
-            --project-name="comfy-qa" \
-            --branch="${BRANCH}" 2>&1 | tail -3
-          rm -rf "\$DIR"
-          echo "Badge deployed: ${STATUS}"
-          DEPLOYSCRIPT
-          chmod +x /tmp/deploy-badge.sh
 
       - name: Deploy badge — PREPARING
         env:
