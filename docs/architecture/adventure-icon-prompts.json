@@ -60,6 +60,16 @@
       "name": "useCoreCommands.ts",
       "type": "Composable",
       "prompt": "Pixel art icon of a hook tool with keyboard key symbols orbiting it, yellow and blue glow, dark background, game inventory item"
+    },
+    "subgraph-structure": {
+      "name": "SubgraphStructure",
+      "type": "ECS Component",
+      "prompt": "Pixel art icon of nested rectangular frames inside each other like Russian dolls with glowing typed connections at each boundary, purple and teal accent, dark background, game inventory item"
+    },
+    "typed-contracts": {
+      "name": "Typed Interface Contracts",
+      "type": "Architecture",
+      "prompt": "Pixel art icon of a sealed scroll with a glowing typed signature stamp and interface brackets, gold and blue accent, dark background, game inventory item"
     }
   }
 }
