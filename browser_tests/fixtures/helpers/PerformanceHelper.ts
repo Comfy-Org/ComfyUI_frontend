@@ -30,6 +30,8 @@ export interface PerfMeasurement {
   eventListeners: number
   totalBlockingTimeMs: number
   frameDurationMs: number
+  p95FrameDurationMs: number
+  allFrameDurationsMs: number[]
 }
 
 export class PerformanceHelper {
@@ -101,13 +103,15 @@ export class PerformanceHelper {
   }
 
   /**
-   * Measure average frame duration via rAF timing over a sample window.
-   * Returns average ms per frame (lower = better, 16.67 = 60fps).
+   * Measure individual frame durations via rAF timing over a sample window.
+   * Returns all per-frame durations so callers can compute avg, p95, etc.
    */
-  private async measureFrameDuration(sampleFrames = 10): Promise<number> {
+  private async measureFrameDurations(
+    sampleFrames = 10
+  ): Promise<number[]> {
     return this.page.evaluate((frames) => {
-      return new Promise<number>((resolve) => {
-        const timeout = setTimeout(() => resolve(0), 5000)
+      return new Promise<number[]>((resolve) => {
+        const timeout = setTimeout(() => resolve([]), 5000)
         const timestamps: number[] = []
         let count = 0
         function tick(ts: number) {
@@ -118,11 +122,14 @@ export class PerformanceHelper {
           } else {
             clearTimeout(timeout)
             if (timestamps.length < 2) {
-              resolve(0)
+              resolve([])
               return
             }
-            const total = timestamps[timestamps.length - 1] - timestamps[0]
-            resolve(total / (timestamps.length - 1))
+            const durations: number[] = []
+            for (let i = 1; i < timestamps.length; i++) {
+              durations.push(timestamps[i] - timestamps[i - 1])
+            }
+            resolve(durations)
           }
         }
         requestAnimationFrame(tick)
@@ -177,10 +184,22 @@ export class PerformanceHelper {
       return after[key] - before[key]
     }
 
-    const [totalBlockingTimeMs, frameDurationMs] = await Promise.all([
+    const [totalBlockingTimeMs, allFrameDurationsMs] = await Promise.all([
       this.collectTBT(),
-      this.measureFrameDuration()
+      this.measureFrameDurations()
     ])
+
+    const frameDurationMs =
+      allFrameDurationsMs.length > 0
+        ? allFrameDurationsMs.reduce((a, b) => a + b, 0) /
+          allFrameDurationsMs.length
+        : 0
+
+    const sorted = [...allFrameDurationsMs].sort((a, b) => a - b)
+    const p95FrameDurationMs =
+      sorted.length > 0
+        ? sorted[Math.ceil(sorted.length * 0.95) - 1]
+        : 0
 
     return {
       name,
@@ -197,7 +216,9 @@ export class PerformanceHelper {
       scriptDurationMs: delta('ScriptDuration') * 1000,
       eventListeners: delta('JSEventListeners'),
       totalBlockingTimeMs,
-      frameDurationMs
+      frameDurationMs,
+      p95FrameDurationMs,
+      allFrameDurationsMs
     }
   }
 }
