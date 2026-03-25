@@ -14,10 +14,10 @@ import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
-import { useDialogService } from '@/services/dialogService'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -25,6 +25,9 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+const settingStore = useSettingStore()
+const dialogService = useDialogService()
+let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(
   isLoading,
@@ -130,24 +133,37 @@ onMounted(() => {
   // This runs async and doesn't block UI setup
   void conflictDetection.initializeConflictDetection()
 
-  // Show cloud notification for macOS desktop users (one-time)
-  if (isDesktop && electronAPI()?.getPlatform() === 'darwin') {
-    const settingStore = useSettingStore()
-    if (!settingStore.get('Comfy.Desktop.CloudNotificationShown')) {
-      const dialogService = useDialogService()
-      cloudNotificationTimer = setTimeout(async () => {
-        try {
-          await dialogService.showCloudNotification()
-        } catch (e) {
-          console.warn('[CloudNotification] Failed to show', e)
-        }
-        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
-      }, 2000)
+  if (!isDesktop || electronAPI()?.getPlatform() !== 'darwin') return
+
+  void (async () => {
+    try {
+      await settingStore.load()
+    } catch (error) {
+      console.warn('[CloudNotification] Failed to load settings', error)
+      return
     }
-  }
+
+    if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
+
+    cloudNotificationTimer = setTimeout(async () => {
+      try {
+        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+        await dialogService.showCloudNotification()
+      } catch (error) {
+        console.warn('[CloudNotification] Failed to show', error)
+        await settingStore
+          .set('Comfy.Desktop.CloudNotificationShown', false)
+          .catch((resetError) => {
+            console.warn(
+              '[CloudNotification] Failed to reset shown state',
+              resetError
+            )
+          })
+      }
+    }, 2000)
+  })()
 })
 
-let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 onUnmounted(() => {
   if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
 })
