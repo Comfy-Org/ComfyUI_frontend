@@ -91,6 +91,23 @@ describe('DesktopCloudNotificationController', () => {
     wrapper.unmount()
   })
 
+  it('does not schedule or show the notification after unmounting before settings load resolves', async () => {
+    const loadSettings = createDeferred()
+    settingStore.load.mockImplementation(() => loadSettings.promise)
+
+    const wrapper = mount(DesktopCloudNotificationController)
+    await nextTick()
+
+    wrapper.unmount()
+    loadSettings.resolve()
+
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(settingStore.set).not.toHaveBeenCalled()
+    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+  })
+
   it('marks the notification as shown before awaiting dialog close', async () => {
     const dialogOpen = createDeferred()
     dialogService.showCloudNotification.mockImplementation(

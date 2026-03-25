@@ -9,6 +9,7 @@ import { electronAPI } from '@/utils/envUtil'
 const settingStore = useSettingStore()
 const dialogService = useDialogService()
 
+let isDisposed = false
 let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 
 async function scheduleCloudNotification() {
@@ -21,11 +22,15 @@ async function scheduleCloudNotification() {
     return
   }
 
+  if (isDisposed) return
   if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
 
   cloudNotificationTimer = setTimeout(async () => {
+    if (isDisposed) return
+
     try {
       await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+      if (isDisposed) return
       await dialogService.showCloudNotification()
     } catch (error) {
       console.warn('[CloudNotification] Failed to show', error)
@@ -46,6 +51,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  isDisposed = true
   if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
 })
 </script>
