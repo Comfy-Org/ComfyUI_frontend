@@ -531,13 +531,13 @@ sequenceDiagram
 
 ### Key Differences
 
-| Aspect            | Current                                             | ECS                                              |
-| ----------------- | --------------------------------------------------- | ------------------------------------------------ |
+| Aspect            | Current                                             | ECS                                                             |
+| ----------------- | --------------------------------------------------- | --------------------------------------------------------------- |
 | ID remapping      | `nodeIdMap[oldId] = newId` for every node and link  | No remapping — entities keep their IDs, only graphScope changes |
-| Magic IDs         | SUBGRAPH_INPUT_ID = -10, SUBGRAPH_OUTPUT_ID = -20   | No magic IDs — boundary modeled as slot entities |
-| Clone vs move     | Clone nodes, assign new IDs, configure from scratch | Move entity references between scopes            |
-| Link reconnection | Remap origin_id/target_id, create new LLink objects | Update LinkEndpoints component in place          |
-| Complexity        | ~200 lines with deduplication and reroute remapping | ~40 lines, no remapping needed                   |
+| Magic IDs         | SUBGRAPH_INPUT_ID = -10, SUBGRAPH_OUTPUT_ID = -20   | No magic IDs — boundary modeled as slot entities                |
+| Clone vs move     | Clone nodes, assign new IDs, configure from scratch | Move entity references between scopes                           |
+| Link reconnection | Remap origin_id/target_id, create new LLink objects | Update LinkEndpoints component in place                         |
+| Complexity        | ~200 lines with deduplication and reroute remapping | ~40 lines, no remapping needed                                  |
 
 ## 6. Connect Slots
 

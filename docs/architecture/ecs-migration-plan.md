@@ -150,7 +150,7 @@ interface World {
   slots: Map<SlotEntityId, SlotComponents>
   reroutes: Map<RerouteEntityId, RerouteComponents>
   groups: Map<GroupEntityId, GroupComponents>
-  scopes: Map<GraphId, GraphId | null>  // graph scope DAG (parent or null for root)
+  scopes: Map<GraphId, GraphId | null> // graph scope DAG (parent or null for root)
 
   createEntity<K extends EntityKind>(kind: K): EntityIdFor<K>
   deleteEntity<K extends EntityKind>(kind: K, id: EntityIdFor<K>): void

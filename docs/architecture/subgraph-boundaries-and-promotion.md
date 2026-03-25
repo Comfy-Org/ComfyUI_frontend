@@ -29,7 +29,7 @@ These are the same thing.
 The current codebase almost knows this. `Subgraph extends LGraph` — the
 inheritance hierarchy encodes the identity. But it encodes it as a special case
 of a general case, when in truth there is no special case. A subgraph is not a
-*kind* of graph. A subgraph *is* a graph. The root workflow is not a privileged
+_kind_ of graph. A subgraph _is_ a graph. The root workflow is not a privileged
 container — it is simply a graph that happens to have no parent.
 
 This is the pattern that appears everywhere in nature and mathematics: the
@@ -183,8 +183,8 @@ graph LR
 
 Two separate links. A virtual node with a magic sentinel ID
 (`SUBGRAPH_INPUT_ID = -10`). A slot-like object that is neither a slot nor a
-node. Every link in the system carries a latent special case: *am I a boundary
-link?* Every pack/unpack operation must remap both links and reconcile both ID
+node. Every link in the system carries a latent special case: _am I a boundary
+link?_ Every pack/unpack operation must remap both links and reconcile both ID
 spaces.
 
 This complexity exists because the boundary was never designed — it accreted.
@@ -270,6 +270,7 @@ Under graph unification, packing and unpacking become operations on `graphScope`
 tags rather than on class hierarchies:
 
 **Pack** (convert selection to subgraph):
+
 1. Create a new `graphId`
 2. Move selected entities: change their `graphScope` to the new graph
 3. For links that crossed the selection boundary: create boundary slot mappings
@@ -278,6 +279,7 @@ tags rather than on class hierarchies:
    component
 
 **Unpack** (dissolve subgraph):
+
 1. Move entities back: change their `graphScope` to the parent
 2. Reconnect boundary links directly (remove the SubgraphNode intermediary)
 3. Delete the SubgraphNode
@@ -324,6 +326,7 @@ Promotion is not a separate mechanism. It is adding a typed input to the
 subgraph's interface.
 
 When a user "promotes" widget X (type `INT`) on interior node N:
+
 1. A new entry is added to `SubgraphStructure.interface.inputs`:
    `{ name: "seed", type: "INT", slotId: <new slot> }`
 2. The SubgraphNode gains a new input slot of type `INT`. The type → widget
@@ -373,17 +376,17 @@ concept of promotion as distinct from connection.
 
 ### Tradeoff matrix
 
-| Dimension | A: Connections-Only | B: Simplified Promotion |
-| --- | --- | --- |
-| New concepts | None — reuses slots, links, widgets | `WidgetPromotion` component |
-| Code removed | PromotionStore, ViewManager, PromotedWidgetView, `_syncPromotions` | ViewManager, proxy reconciliation |
-| Shared subgraph compat | ✅ Each instance has independent interface inputs with independent values | ⚠️ Promotion delegates to a source widget by entity ID — when multiple SubgraphNode instances share a definition, which instance's source widget is authoritative? |
-| Dynamic widgets | ✅ Input type drives widget creation via existing registry | ⚠️ Must handle type changes in promotion component |
-| Serialization | Interface inputs serialized as `SubgraphIO` entries | Separate `proxyWidgets` property |
-| Backward-compatible loading | Migration: old `proxyWidgets` → interface inputs + boundary links | Direct — same serialization shape |
-| UX consistency | Promoted widgets look like normal input widgets | Promoted widgets look like proxy widgets (distinct) |
-| Widget ordering | Slot ordering (reorderable like any input) | Explicit promotion order (`movePromotion`) |
-| Nested promotion | Adding interface inputs at each nesting level — simple mechanically, but N levels = N manual promote operations for the user | `disambiguatingSourceNodeId` complexity persists |
+| Dimension                   | A: Connections-Only                                                                                                          | B: Simplified Promotion                                                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| New concepts                | None — reuses slots, links, widgets                                                                                          | `WidgetPromotion` component                                                                                                                                        |
+| Code removed                | PromotionStore, ViewManager, PromotedWidgetView, `_syncPromotions`                                                           | ViewManager, proxy reconciliation                                                                                                                                  |
+| Shared subgraph compat      | ✅ Each instance has independent interface inputs with independent values                                                    | ⚠️ Promotion delegates to a source widget by entity ID — when multiple SubgraphNode instances share a definition, which instance's source widget is authoritative? |
+| Dynamic widgets             | ✅ Input type drives widget creation via existing registry                                                                   | ⚠️ Must handle type changes in promotion component                                                                                                                 |
+| Serialization               | Interface inputs serialized as `SubgraphIO` entries                                                                          | Separate `proxyWidgets` property                                                                                                                                   |
+| Backward-compatible loading | Migration: old `proxyWidgets` → interface inputs + boundary links                                                            | Direct — same serialization shape                                                                                                                                  |
+| UX consistency              | Promoted widgets look like normal input widgets                                                                              | Promoted widgets look like proxy widgets (distinct)                                                                                                                |
+| Widget ordering             | Slot ordering (reorderable like any input)                                                                                   | Explicit promotion order (`movePromotion`)                                                                                                                         |
+| Nested promotion            | Adding interface inputs at each nesting level — simple mechanically, but N levels = N manual promote operations for the user | `disambiguatingSourceNodeId` complexity persists                                                                                                                   |
 
 ### Constraints that hold regardless
 
@@ -468,9 +471,9 @@ and produces the recursive `ExportedSubgraph` structure, matching the current
 format exactly. Existing workflows, the ComfyUI backend, and third-party tools
 see no change.
 
-| Direction | Format | Notes |
-| --- | --- | --- |
-| **Save/export** | Nested (current shape) | SerializationSystem walks scope tree |
+| Direction       | Format                          | Notes                                    |
+| --------------- | ------------------------------- | ---------------------------------------- |
+| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree     |
 | **Load/import** | Nested (current) or future flat | Ratchet: normalize to flat World on load |
 
 The "ratchet conversion" pattern: load any supported format, normalize to the
@@ -479,10 +482,10 @@ current format on save.
 
 ### Widget identity at the boundary
 
-| Context | Identity | Example |
-| --- | --- | --- |
-| **Internal (World)** | `WidgetEntityId` (opaque branded number) | `42 as WidgetEntityId` |
-| **Serialized** | Position in `widgets_values[]` + name from node definition | `widgets_values[2]` → third widget |
+| Context              | Identity                                                   | Example                            |
+| -------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| **Internal (World)** | `WidgetEntityId` (opaque branded number)                   | `42 as WidgetEntityId`             |
+| **Serialized**       | Position in `widgets_values[]` + name from node definition | `widgets_values[2]` → third widget |
 
 On save: the `SerializationSystem` queries `WidgetIdentity.name` and
 `WidgetValue.value`, produces the positional array ordered by widget creation
@@ -544,17 +547,17 @@ This is a hard constraint with no expiration:
 This document proposes or surfaces the following changes to
 [ADR 0008](../adr/0008-entity-component-system.md):
 
-| Area | Current ADR 0008 | Proposed Change |
-| --- | --- | --- |
-| Entity taxonomy | 7 kinds including `SubgraphEntityId` | 6 kinds — subgraph is a node with `SubgraphStructure` component |
-| `SubgraphEntityId` | `string & { __brand: 'SubgraphEntityId' }` | Eliminated; replaced by `GraphId` scope identifier |
-| Subgraph components | `SubgraphStructure`, `SubgraphMeta` listed as separate-entity components | Become node components on SubgraphNode entities |
-| World structure | Implied per-graph containment | Flat World with `graphScope` tags; one World per workflow |
-| Acyclicity | Not addressed | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation |
-| Boundary model | Deferred | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
-| Widget promotion | Treated as a given feature to migrate | Open decision: Candidate A (connections-only) vs B (simplified component) |
-| Serialization | Not explicitly separated from internal model | Internal model ≠ wire format; `SerializationSystem` is the membrane |
-| Backward compat | Implicit | Explicit contract: load any prior format, indefinitely |
+| Area                | Current ADR 0008                                                         | Proposed Change                                                                 |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Entity taxonomy     | 7 kinds including `SubgraphEntityId`                                     | 6 kinds — subgraph is a node with `SubgraphStructure` component                 |
+| `SubgraphEntityId`  | `string & { __brand: 'SubgraphEntityId' }`                               | Eliminated; replaced by `GraphId` scope identifier                              |
+| Subgraph components | `SubgraphStructure`, `SubgraphMeta` listed as separate-entity components | Become node components on SubgraphNode entities                                 |
+| World structure     | Implied per-graph containment                                            | Flat World with `graphScope` tags; one World per workflow                       |
+| Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation   |
+| Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
+| Widget promotion    | Treated as a given feature to migrate                                    | Open decision: Candidate A (connections-only) vs B (simplified component)       |
+| Serialization       | Not explicitly separated from internal model                             | Internal model ≠ wire format; `SerializationSystem` is the membrane             |
+| Backward compat     | Implicit                                                                 | Explicit contract: load any prior format, indefinitely                          |
 
 These amendments should be applied to ADR 0008 and the related architecture
 documents in a follow-up pass after team review of this document:

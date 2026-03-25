@@ -34,14 +34,14 @@ Adopt an Entity Component System architecture for the graph domain model. This A
 
 Six entity kinds, each with a branded ID type:
 
-| Entity Kind | Current Class(es)                                 | Current ID                  | Branded ID         |
-| ----------- | ------------------------------------------------- | --------------------------- | ------------------ |
-| Node        | `LGraphNode`                                      | `NodeId = number \| string` | `NodeEntityId`     |
-| Link        | `LLink`                                           | `LinkId = number`           | `LinkEntityId`     |
-| Widget      | `BaseWidget` subclasses (25+)                     | name + parent node          | `WidgetEntityId`   |
-| Slot        | `SlotBase` / `INodeInputSlot` / `INodeOutputSlot` | index on parent node        | `SlotEntityId`     |
-| Reroute     | `Reroute`                                         | `RerouteId = number`        | `RerouteEntityId`  |
-| Group       | `LGraphGroup`                                     | `number`                    | `GroupEntityId`    |
+| Entity Kind | Current Class(es)                                 | Current ID                  | Branded ID        |
+| ----------- | ------------------------------------------------- | --------------------------- | ----------------- |
+| Node        | `LGraphNode`                                      | `NodeId = number \| string` | `NodeEntityId`    |
+| Link        | `LLink`                                           | `LinkId = number`           | `LinkEntityId`    |
+| Widget      | `BaseWidget` subclasses (25+)                     | name + parent node          | `WidgetEntityId`  |
+| Slot        | `SlotBase` / `INodeInputSlot` / `INodeOutputSlot` | index on parent node        | `SlotEntityId`    |
+| Reroute     | `Reroute`                                         | `RerouteId = number`        | `RerouteEntityId` |
+| Group       | `LGraphGroup`                                     | `number`                    | `GroupEntityId`   |
 
 Subgraphs are not a separate entity kind. A subgraph is a node with a `SubgraphStructure` component. See [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) for the full design rationale.
 
@@ -96,10 +96,10 @@ Components are plain data objects — no methods, no back-references to parent e
 
 A node carrying a subgraph gains these additional components. Subgraphs are not a separate entity kind — see [Subgraph Boundaries](../architecture/subgraph-boundaries-and-promotion.md).
 
-| Component           | Data                                                                      |
-| ------------------- | ------------------------------------------------------------------------- |
-| `SubgraphStructure` | `graphId`, typed interface (input/output names, types, slot entity refs)   |
-| `SubgraphMeta`      | `name`, `description`                                                     |
+| Component           | Data                                                                     |
+| ------------------- | ------------------------------------------------------------------------ |
+| `SubgraphStructure` | `graphId`, typed interface (input/output names, types, slot entity refs) |
+| `SubgraphMeta`      | `name`, `description`                                                    |
 
 #### Widget
 
