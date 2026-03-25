@@ -63,6 +63,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      alt: true,
+      key: 'μ'
+    },
+    commandId: 'Comfy.ToggleLinear'
+  },
+  {
+    combo: {
       key: 's',
       ctrl: true
     },
