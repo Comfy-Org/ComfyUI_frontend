@@ -166,6 +166,10 @@ vi.stubGlobal(
   }
 )
 
+const mockConvertToBlob = vi.fn(() =>
+  Promise.resolve(new Blob(['fake'], { type: 'image/webp' }))
+)
+
 vi.stubGlobal(
   'OffscreenCanvas',
   class {
@@ -181,7 +185,7 @@ vi.stubGlobal(
         : null
     }
     convertToBlob() {
-      return Promise.resolve(new Blob(['fake'], { type: 'image/webp' }))
+      return mockConvertToBlob()
     }
   }
 )
@@ -671,5 +675,62 @@ describe('useGLSLRenderer', () => {
       // 2 built-in + 5 inputs + 20 floats + 20 ints + 10 bools + 4 curves = 61
       expect(mockGL.getUniformLocation).toHaveBeenCalledTimes(61)
     })
+  })
+})
+
+describe('useGLSLRenderer debounced toBlob', () => {
+  let renderer: ReturnType<typeof useGLSLRenderer>
+
+  beforeEach(() => {
+    mockGL = createMockGLContext()
+    vi.useFakeTimers()
+    vi.clearAllMocks()
+    vi.mocked(detectPassCount).mockReturnValue(1)
+    renderer = useGLSLRenderer()
+    renderer.init(100, 100)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('delays convertToBlob execution by the debounce period', () => {
+    renderer.debouncedToBlob()
+
+    expect(mockConvertToBlob).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(150)
+
+    expect(mockConvertToBlob).toHaveBeenCalledOnce()
+  })
+
+  it('coalesces rapid calls into a single convertToBlob', () => {
+    renderer.debouncedToBlob()
+    vi.advanceTimersByTime(50)
+    renderer.debouncedToBlob()
+    vi.advanceTimersByTime(50)
+    renderer.debouncedToBlob()
+
+    vi.advanceTimersByTime(150)
+
+    expect(mockConvertToBlob).toHaveBeenCalledOnce()
+  })
+
+  it('cancelPendingBlob prevents the conversion from running', () => {
+    renderer.debouncedToBlob()
+    renderer.cancelPendingBlob()
+
+    vi.advanceTimersByTime(200)
+
+    expect(mockConvertToBlob).not.toHaveBeenCalled()
+  })
+
+  it('dispose cancels pending blob conversions', () => {
+    renderer.debouncedToBlob()
+    renderer.dispose()
+
+    vi.advanceTimersByTime(200)
+
+    expect(mockConvertToBlob).not.toHaveBeenCalled()
   })
 })
