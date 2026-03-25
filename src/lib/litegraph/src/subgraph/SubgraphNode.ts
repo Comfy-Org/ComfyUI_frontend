@@ -63,6 +63,8 @@ workflowSvg.src =
 type LinkedPromotionEntry = PromotedWidgetSource & {
   inputName: string
   inputKey: string
+  /** The subgraph input slot's internal name (stable identity). */
+  slotName: string
 }
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
@@ -192,6 +194,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           linkedEntries.push({
             inputName: input.label ?? input.name,
             inputKey: String(subgraphInput.id),
+            slotName: subgraphInput.name,
             sourceNodeId: boundWidget.sourceNodeId,
             sourceWidgetName: boundWidget.sourceWidgetName
           })
@@ -206,6 +209,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       linkedEntries.push({
         inputName: input.label ?? input.name,
         inputKey: String(subgraphInput.id),
+        slotName: subgraphInput.name,
         ...resolved
       })
     }
@@ -277,7 +281,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           entry.sourceNodeId,
           entry.sourceWidgetName,
           entry.viewKey ? displayNameByViewKey.get(entry.viewKey) : undefined,
-          entry.disambiguatingSourceNodeId
+          entry.disambiguatingSourceNodeId,
+          entry.slotName
         )
     )
 
@@ -333,6 +338,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       sourceWidgetName: string
       viewKey?: string
       disambiguatingSourceNodeId?: string
+      slotName?: string
     }>
   } {
     const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
@@ -564,17 +570,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     sourceNodeId: string
     sourceWidgetName: string
     viewKey: string
+    disambiguatingSourceNodeId?: string
+    slotName: string
   }> {
     return linkedEntries.map(
       ({
         inputKey,
         inputName,
+        slotName,
         sourceNodeId,
         sourceWidgetName,
         disambiguatingSourceNodeId
       }) => ({
         sourceNodeId,
         sourceWidgetName,
+        slotName,
+        disambiguatingSourceNodeId,
         viewKey: this._makePromotionViewKey(
           inputKey,
           sourceNodeId,
@@ -782,9 +793,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!input) throw new Error('Subgraph input not found')
 
         input.label = newName
-        if (input._widget) {
-          input._widget.label = newName
-        }
+        // Do NOT change input.widget.name — it is the stable internal
+        // identifier used by onGraphConfigured (widgetInputs.ts) to match
+        // inputs to widgets. Changing it to the display label would cause
+        // collisions when two promoted inputs share the same label.
+        // Display is handled via input.label and _widget.label.
+        if (input._widget) input._widget.label = newName
         this._invalidatePromotedViewsCache()
         this.graph?.trigger('node:slot-label:changed', {
           nodeId: this.id,
@@ -1137,6 +1151,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  /**
+   * Binds a promoted widget view to a subgraph input slot.
+   *
+   * Creates or retrieves a {@link PromotedWidgetView}, registers it in the
+   * promotion store, sets up the prototype chain for multi-level subgraph
+   * nesting, and dispatches the `widget-promoted` event.
+   */
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
@@ -1190,7 +1211,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
     }
 
-    // Create/retrieve the view from cache
+    // Create/retrieve the view from cache.
+    // The cache key uses `input.name` (the slot's internal name) rather
+    // than `subgraphInput.name` because nested subgraphs may remap
+    // the internal name independently of the interior node.
     const view = this._promotedViewManager.getOrCreate(
       nodeId,
       widgetName,
@@ -1200,7 +1224,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           nodeId,
           widgetName,
           input.label ?? subgraphInput.name,
-          sourceNodeId
+          sourceNodeId,
+          subgraphInput.name
         ),
       this._makePromotionViewKey(
         String(subgraphInput.id),
@@ -1214,6 +1239,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
     // creating new objects. Have care when making changes.
+    // Use subgraphInput.name as the stable identity — unique per subgraph
+    // slot, immune to label renames. Matches PromotedWidgetView.name.
+    // Display is handled via widget.label / PromotedWidgetView.label.
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)

@@ -1,6 +1,6 @@
 <template>
   <nav class="flex flex-col gap-6 px-3 py-4">
-    <ol class="flex flex-col">
+    <ol class="flex list-none flex-col p-0">
       <li
         v-for="step in steps"
         :key="step.name"

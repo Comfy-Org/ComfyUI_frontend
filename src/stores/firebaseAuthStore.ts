@@ -378,7 +378,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return result
   }
 
-  const loginWithGoogle = async (): Promise<UserCredential> => {
+  const loginWithGoogle = async (options?: {
+    isNewUser?: boolean
+  }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
       { createCustomer: true }
@@ -386,10 +388,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
-      const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user: isNewUser,
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid
       })
     }
@@ -397,7 +399,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return result
   }
 
-  const loginWithGithub = async (): Promise<UserCredential> => {
+  const loginWithGithub = async (options?: {
+    isNewUser?: boolean
+  }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
       { createCustomer: true }
@@ -405,10 +409,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
-      const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user: isNewUser,
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid
       })
     }
