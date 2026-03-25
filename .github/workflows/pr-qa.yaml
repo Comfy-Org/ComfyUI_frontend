@@ -530,7 +530,7 @@ jobs:
           cat > /tmp/gen-badge-dual.sh <<'DUALBADGE'
           #!/bin/bash
           # Usage: gen-badge-dual.sh <bug_status> <bug_color> <fix_status> <fix_color> <output>
-          BUG="Bug: $1" BUG_C="$2" FIX="Fix: $3" FIX_C="$4" OUT="$5"
+          BUG="$1" BUG_C="$2" FIX="Fix: $3" FIX_C="$4" OUT="$5"
           LABEL="QA Bot"
           LW=$(( ${#LABEL} * 7 + 12 ))
           BW=$(( ${#BUG} * 7 + 12 ))
@@ -1095,12 +1095,12 @@ jobs:
               SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
             fi
 
-            # Single combined badge: QA Bot | Bug: X | Fix: Y
+            # Single combined badge: QA Bot | Issue: X | Fix: Y
             /tmp/gen-badge-dual.sh \
               "${REPRO_RESULT:-UNKNOWN}" "${REPRO_COLOR}" \
               "${SOLN_RESULT:-UNKNOWN}" "${SOLN_COLOR}" \
               "$DEPLOY_DIR/badge.svg"
-            BADGE_STATUS="Bug: ${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
+            BADGE_STATUS="${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
           fi
           echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
