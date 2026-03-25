@@ -132,7 +132,6 @@ export function useMissingMediaInteractions() {
 
   /** Step 1: Upload file and store result as pending (does not apply yet). */
   async function handleUpload(file: File, name: string, mediaType: MediaType) {
-    // M4: Validate MIME type — also check when file.type is empty (some browsers)
     const expectedPrefix =
       mediaType === 'audio'
         ? 'audio/'
@@ -153,7 +152,6 @@ export function useMissingMediaInteractions() {
       })
 
       if (resp.status !== 200) {
-        // M5: Show generic message instead of raw server status
         useToastStore().addAlert(
           st(
             'toastMessages.uploadFailed',
@@ -169,7 +167,6 @@ export function useMissingMediaInteractions() {
         ? `${data.subfolder}/${data.name}`
         : data.name
 
-      // M6: Separate updateInputs failure from upload failure
       store.uploadState[name] = { fileName: file.name, status: 'uploaded' }
       store.pendingSelection[name] = uploadedPath
 
