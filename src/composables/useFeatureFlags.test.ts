@@ -41,7 +41,8 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.supportsPreviewMetadata).toBe(true)
       expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
-        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA
+        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA,
+        false
       )
     })
 
@@ -71,19 +72,20 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.supportsManagerV4).toBe(true)
       expect(serverCapabilities.getServerCapability).toHaveBeenCalledWith(
-        ServerFeatureFlag.MANAGER_SUPPORTS_V4
+        ServerFeatureFlag.MANAGER_SUPPORTS_V4,
+        false
       )
     })
 
-    it('should return undefined when features are not available and no default provided', () => {
+    it('should return defaults when features are not available', () => {
       vi.mocked(serverCapabilities.getServerCapability).mockImplementation(
         (_path, defaultValue) => defaultValue
       )
 
       const { flags } = useFeatureFlags()
-      expect(flags.supportsPreviewMetadata).toBeUndefined()
+      expect(flags.supportsPreviewMetadata).toBe(false)
       expect(flags.maxUploadSize).toBeUndefined()
-      expect(flags.supportsManagerV4).toBeUndefined()
+      expect(flags.supportsManagerV4).toBe(false)
     })
   })
 

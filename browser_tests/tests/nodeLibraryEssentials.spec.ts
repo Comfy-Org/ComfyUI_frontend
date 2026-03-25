@@ -7,14 +7,10 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 
-    // Enable the essentials feature flag via the reactive serverFeatureFlags ref.
-    // In production, this flag comes via WebSocket or remoteConfig (cloud only).
-    // The localhost test server has neither, so we set it directly.
+    // Enable the essentials feature flag via localStorage dev override.
+    // getServerCapability() checks getDevOverride() (localStorage ff: prefix) first.
     await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        node_library_essentials_enabled: true
-      }
+      localStorage.setItem('ff:node_library_essentials_enabled', 'true')
     })
 
     // Register a mock essential node so the essentials tab has content.
