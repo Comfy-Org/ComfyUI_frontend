@@ -1422,7 +1422,7 @@ export class ComfyApp {
         showMissingModels
       )
 
-      this.runMissingMediaPipeline()
+      await this.runMissingMediaPipeline()
 
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings()
@@ -1573,7 +1573,7 @@ export class ComfyApp {
     return { missingModels }
   }
 
-  private runMissingMediaPipeline(): void {
+  private async runMissingMediaPipeline(): Promise<void> {
     const missingMediaStore = useMissingMediaStore()
     const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
 

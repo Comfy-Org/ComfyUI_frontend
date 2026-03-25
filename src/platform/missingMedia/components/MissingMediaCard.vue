@@ -12,7 +12,7 @@
         >
           <i
             aria-hidden="true"
-            :class="mediaTypeIcon(group.mediaType)"
+            :class="MEDIA_TYPE_ICONS[group.mediaType]"
             class="mr-1 size-3.5 align-text-bottom"
           />
           {{ t(`rightSidePanel.missingMedia.${group.mediaType}`) }}
@@ -57,9 +57,5 @@ const MEDIA_TYPE_ICONS: Record<MediaType, string> = {
   image: 'icon-[lucide--image]',
   video: 'icon-[lucide--video]',
   audio: 'icon-[lucide--music]'
-}
-
-function mediaTypeIcon(mediaType: MediaType): string {
-  return MEDIA_TYPE_ICONS[mediaType]
 }
 </script>

@@ -9,7 +9,7 @@ import type {
 } from '@/platform/missingMedia/types'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { isCloud } from '@/platform/distribution/types'
-import { addToComboValues } from '@/utils/litegraphUtil'
+import { addToComboValues, resolveComboValues } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -42,23 +42,13 @@ function getMediaComboWidget(
   return { node, widget }
 }
 
-function resolveComboOptions(
+function resolveLibraryOptions(
   candidate: MissingMediaCandidate
 ): { name: string; value: string }[] {
   const result = getMediaComboWidget(candidate)
   if (!result) return []
 
-  const values = result.widget.options?.values
-  if (!values) return []
-
-  const list: string[] =
-    typeof values === 'function'
-      ? values(result.widget)
-      : Array.isArray(values)
-        ? values
-        : Object.keys(values)
-
-  return list
+  return resolveComboValues(result.widget)
     .filter((v) => v !== candidate.name)
     .map((v) => ({ name: getMediaDisplayName(v), value: v }))
 }
@@ -106,6 +96,7 @@ export function getMediaDisplayName(name: string): string {
 
 export function useMissingMediaInteractions() {
   const store = useMissingMediaStore()
+  const assetsStore = useAssetsStore()
 
   function isExpanded(key: string): boolean {
     return store.expandState[key] ?? false
@@ -131,7 +122,7 @@ export function useMissingMediaInteractions() {
   function getLibraryOptions(
     candidate: MissingMediaCandidate
   ): { name: string; value: string }[] {
-    return resolveComboOptions(candidate)
+    return resolveLibraryOptions(candidate)
   }
 
   /** Step 1: Store selection from library (does not apply yet). */
@@ -141,13 +132,14 @@ export function useMissingMediaInteractions() {
 
   /** Step 1: Upload file and store result as pending (does not apply yet). */
   async function handleUpload(file: File, name: string, mediaType: MediaType) {
+    // M4: Validate MIME type — also check when file.type is empty (some browsers)
     const expectedPrefix =
       mediaType === 'audio'
         ? 'audio/'
         : mediaType === 'video'
           ? 'video/'
           : 'image/'
-    if (file.type && !file.type.startsWith(expectedPrefix)) return
+    if (!file.type || !file.type.startsWith(expectedPrefix)) return
 
     store.uploadState[name] = { fileName: file.name, status: 'uploading' }
 
@@ -161,7 +153,13 @@ export function useMissingMediaInteractions() {
       })
 
       if (resp.status !== 200) {
-        useToastStore().addAlert(`${resp.status} - ${resp.statusText}`)
+        // M5: Show generic message instead of raw server status
+        useToastStore().addAlert(
+          st(
+            'toastMessages.uploadFailed',
+            'Failed to upload file. Please try again.'
+          )
+        )
         delete store.uploadState[name]
         return
       }
@@ -171,13 +169,23 @@ export function useMissingMediaInteractions() {
         ? `${data.subfolder}/${data.name}`
         : data.name
 
-      const assetsStore = useAssetsStore()
-      await assetsStore.updateInputs()
-
+      // M6: Separate updateInputs failure from upload failure
       store.uploadState[name] = { fileName: file.name, status: 'uploaded' }
       store.pendingSelection[name] = uploadedPath
-    } catch (err) {
-      useToastStore().addAlert(String(err))
+
+      // Refresh assets store (non-critical — upload already succeeded)
+      try {
+        await assetsStore.updateInputs()
+      } catch {
+        // Asset list refresh failed but upload is valid; selection can proceed
+      }
+    } catch {
+      useToastStore().addAlert(
+        st(
+          'toastMessages.uploadFailed',
+          'Failed to upload file. Please try again.'
+        )
+      )
       delete store.uploadState[name]
     }
   }

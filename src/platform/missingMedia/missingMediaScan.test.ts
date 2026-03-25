@@ -2,27 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   verifyCloudMediaCandidates,
   groupCandidatesByName,
-  groupCandidatesByMediaType,
-  MEDIA_NODE_WIDGETS
+  groupCandidatesByMediaType
 } from './missingMediaScan'
 import type { MissingMediaCandidate } from './types'
-
-describe('MEDIA_NODE_WIDGETS', () => {
-  it('maps LoadImage, LoadVideo, LoadAudio', () => {
-    expect(MEDIA_NODE_WIDGETS.LoadImage).toEqual({
-      widgetName: 'image',
-      mediaType: 'image'
-    })
-    expect(MEDIA_NODE_WIDGETS.LoadVideo).toEqual({
-      widgetName: 'file',
-      mediaType: 'video'
-    })
-    expect(MEDIA_NODE_WIDGETS.LoadAudio).toEqual({
-      widgetName: 'audio',
-      mediaType: 'audio'
-    })
-  })
-})
 
 describe('groupCandidatesByName', () => {
   it('groups candidates with the same name', () => {

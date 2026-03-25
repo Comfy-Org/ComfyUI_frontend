@@ -14,6 +14,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { resolveComboValues } from '@/utils/litegraphUtil'
 
 /** Map of node types to their media widget name and media type. */
 export const MEDIA_NODE_WIDGETS: Record<
@@ -27,14 +28,6 @@ export const MEDIA_NODE_WIDGETS: Record<
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
-}
-
-function resolveComboOptions(widget: IComboWidget): string[] {
-  const values = widget.options.values
-  if (!values) return []
-  if (typeof values === 'function') return values(widget)
-  if (Array.isArray(values)) return values
-  return Object.keys(values)
 }
 
 /**
@@ -74,7 +67,7 @@ export function scanAllMediaCandidates(
         // Cloud: options may be empty initially; defer to async verification
         isMissing = undefined
       } else {
-        const options = resolveComboOptions(widget)
+        const options = resolveComboValues(widget)
         isMissing = !options.includes(value)
       }
 
@@ -166,6 +159,6 @@ export function groupCandidatesByMediaType(
     .filter((t) => typeMap.has(t))
     .map((mediaType) => ({
       mediaType,
-      items: groupCandidatesByName(typeMap.get(mediaType)!)
+      items: groupCandidatesByName(typeMap.get(mediaType) ?? [])
     }))
 }

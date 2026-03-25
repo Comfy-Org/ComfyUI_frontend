@@ -50,13 +50,7 @@ export function isModelFileName(name: string): boolean {
   return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
 
-function resolveComboOptions(widget: IComboWidget): string[] {
-  const values = widget.options.values
-  if (!values) return []
-  if (typeof values === 'function') return values(widget)
-  if (Array.isArray(values)) return values
-  return Object.keys(values)
-}
+import { resolveComboValues } from '@/utils/litegraphUtil'
 
 /**
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
@@ -139,7 +133,7 @@ function scanComboWidget(
   if (!isModelFileName(value)) return null
 
   const nodeIsAssetSupported = isAssetSupported(node.type, widget.name)
-  const options = resolveComboOptions(widget)
+  const options = resolveComboValues(widget)
   const inOptions = options.includes(value)
 
   return {

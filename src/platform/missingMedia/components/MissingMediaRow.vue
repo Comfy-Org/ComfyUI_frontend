@@ -99,25 +99,25 @@
         class="mb-1 flex flex-col gap-0.5 overflow-hidden pl-6"
       >
         <div
-          v-for="ref in item.referencingNodes"
-          :key="`${String(ref.nodeId)}::${ref.widgetName}`"
+          v-for="nodeRef in item.referencingNodes"
+          :key="`${String(nodeRef.nodeId)}::${nodeRef.widgetName}`"
           class="flex h-7 items-center"
         >
           <span
             v-if="showNodeIdBadge"
             class="mr-1 shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 font-mono text-xs font-bold text-muted-foreground"
           >
-            #{{ ref.nodeId }}
+            #{{ nodeRef.nodeId }}
           </span>
           <p class="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            {{ getNodeDisplayLabel(String(ref.nodeId), item.name) }}
+            {{ getNodeDisplayLabel(String(nodeRef.nodeId), item.name) }}
           </p>
           <Button
             variant="textonly"
             size="icon-sm"
             :aria-label="t('rightSidePanel.missingMedia.locateNode')"
             class="mr-1 size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
-            @click="emit('locateNode', String(ref.nodeId))"
+            @click="emit('locateNode', String(nodeRef.nodeId))"
           >
             <i aria-hidden="true" class="icon-[lucide--locate] size-3" />
           </Button>
@@ -129,6 +129,8 @@
     <TransitionCollapse>
       <div
         v-if="isPending || isUploading"
+        role="status"
+        aria-live="polite"
         class="bg-foreground/5 relative mt-1 overflow-hidden rounded-lg border border-interface-stroke p-2"
       >
         <div class="relative z-10 flex items-center gap-2">
@@ -216,7 +218,10 @@
     <input
       ref="fileInputRef"
       type="file"
-      class="hidden"
+      class="sr-only"
+      :aria-label="
+        t('rightSidePanel.missingMedia.uploadFile', { type: extensionHint })
+      "
       :accept="acceptType"
       @change="handleFileInputChange"
     />
@@ -276,10 +281,13 @@ const singleNodeLabel = computed(() => {
 
 const expanded = computed(() => isExpanded(item.name))
 const acceptType = computed(() => getAcceptType(item.mediaType))
-const libraryOptions = computed(() => {
+const matchingCandidate = computed(() => {
   const candidates = store.missingMediaCandidates
-  if (!candidates?.length) return []
-  const candidate = candidates.find((c) => c.name === item.name)
+  if (!candidates?.length) return null
+  return candidates.find((c) => c.name === item.name) ?? null
+})
+const libraryOptions = computed(() => {
+  const candidate = matchingCandidate.value
   if (!candidate) return []
   return getLibraryOptions(candidate)
 })

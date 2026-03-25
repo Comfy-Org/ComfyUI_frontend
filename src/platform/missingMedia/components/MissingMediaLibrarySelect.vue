@@ -21,7 +21,7 @@
       </SelectTrigger>
 
       <SelectContent class="max-h-72">
-        <template v-if="options.length > 4" #prepend>
+        <template v-if="options.length > SEARCH_THRESHOLD" #prepend>
           <div class="px-1 pb-1.5">
             <div
               class="flex items-center gap-1.5 rounded-md border border-border-default px-2"
@@ -58,6 +58,7 @@
             />
             <video
               v-else-if="mediaType === 'video'"
+              aria-hidden="true"
               :src="getPreviewUrl(option.value)"
               class="size-8 shrink-0 rounded-sm object-cover"
               preload="metadata"
@@ -112,12 +113,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const SEARCH_THRESHOLD = 4
 const filterQuery = ref('')
 
 watch(
   () => options.length,
   (len) => {
-    if (len <= 4) filterQuery.value = ''
+    if (len <= SEARCH_THRESHOLD) filterQuery.value = ''
   }
 )
 
