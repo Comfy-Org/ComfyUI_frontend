@@ -300,6 +300,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
   })
 
+  test('fast pan memory pressure', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    await comfyPage.perf.startMeasuring()
+
+    // Rapidly pan back and forth across the large graph (245 nodes).
+    // Each pan pass triggers reactive node instrumentation as nodes
+    // enter/leave the viewport. Without idempotent instrumentation,
+    // each pass leaks ComputedRefImpl, Link, Dep, and EventListener
+    // objects (~198K ComputedRefImpl and 1.5M Link objects observed
+    // in the original heap snapshot analysis).
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+
+    for (let pass = 0; pass < 5; pass++) {
+      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      for (let i = 0; i < 60; i++) {
+        await comfyPage.page.mouse.move(
+          centerX + i * 8,
+          centerY + (i % 2 === 0 ? i * 3 : -i * 3)
+        )
+        await comfyPage.nextFrame()
+      }
+      await comfyPage.page.mouse.up({ button: 'middle' })
+
+      // Return to center for next pass
+      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      for (let i = 0; i < 60; i++) {
+        await comfyPage.page.mouse.move(
+          centerX - i * 8,
+          centerY - (i % 2 === 0 ? i * 3 : -i * 3)
+        )
+        await comfyPage.nextFrame()
+      }
+      await comfyPage.page.mouse.up({ button: 'middle' })
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('fast-pan-memory')
+    recordMeasurement(m)
+    console.log(
+      `Fast pan memory: ${(m.heapDeltaBytes / 1024 / 1024).toFixed(1)}MB heap delta, ${m.eventListeners} event listeners, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
