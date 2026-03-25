@@ -23,12 +23,11 @@
         "
         state-storage="local"
         @resizestart="onResizestart"
+        @resizeend="normalizeSavedSizes"
       >
         <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
-          v-if="
-            !focusMode && (sidebarLocation === 'left' || showOffsideSplitter)
-          "
+          v-if="firstPanelVisible"
           :class="
             sidebarLocation === 'left'
               ? cn(
@@ -58,7 +57,7 @@
         </SplitterPanel>
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="CENTER_PANEL_SIZE" class="flex flex-col">
+        <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
           <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
@@ -88,9 +87,7 @@
 
         <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
-          v-if="
-            !focusMode && (sidebarLocation === 'right' || showOffsideSplitter)
-          "
+          v-if="lastPanelVisible"
           :class="
             sidebarLocation === 'right'
               ? cn(
@@ -169,6 +166,30 @@ const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
 
+const firstPanelVisible = computed(
+  () =>
+    !focusMode.value &&
+    (sidebarLocation.value === 'left' || showOffsideSplitter.value)
+)
+const lastPanelVisible = computed(
+  () =>
+    !focusMode.value &&
+    (sidebarLocation.value === 'right' || showOffsideSplitter.value)
+)
+
+/**
+ * When both side panels are visible, reduce center panel default size so that
+ * initial sizes sum to 100%. This prevents PrimeVue Splitter from saving an
+ * inconsistent panelSizes array (where untouched panel values are prop-based
+ * while resized panels are pixel-derived), which caused one panel's width to
+ * drift when the other was resized.
+ */
+const centerPanelDefaultSize = computed(() =>
+  firstPanelVisible.value && lastPanelVisible.value
+    ? 100 - 2 * SIDE_PANEL_SIZE
+    : CENTER_PANEL_SIZE
+)
+
 const sidebarTabKey = computed(() => {
   return unifiedWidth.value
     ? 'unified-sidebar'
@@ -187,6 +208,28 @@ const sidebarStateKey = computed(() => {
  */
 function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
   event.preventDefault()
+}
+
+/**
+ * Normalize persisted panel sizes to sum to 100% after each resize.
+ *
+ * PrimeVue Splitter only updates the two panels adjacent to the dragged gutter,
+ * leaving the third panel at its initial prop value. Because that prop value
+ * doesn't account for CSS min-width or gutter offsets, the saved array can sum
+ * to more than 100%, causing the untouched panel's width to drift on restore.
+ */
+function normalizeSavedSizes() {
+  const stateKey = isSelectMode.value
+    ? `builder-splitter-${sidebarLocation.value}`
+    : sidebarStateKey.value
+  const raw = localStorage.getItem(stateKey)
+  if (!raw) return
+  const sizes: number[] = JSON.parse(raw)
+  const sum = sizes.reduce((a, b) => a + b, 0)
+  if (Math.abs(sum - 100) > 0.5) {
+    const normalized = sizes.map((s) => (s / sum) * 100)
+    localStorage.setItem(stateKey, JSON.stringify(normalized))
+  }
 }
 
 /*
