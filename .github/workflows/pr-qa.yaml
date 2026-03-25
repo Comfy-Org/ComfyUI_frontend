@@ -472,6 +472,70 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Setup badge deploy function
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          npm install -g wrangler@4.74.0 >/dev/null 2>&1
+          BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
+          echo "QA_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+          # Create badge generator script
+          cat > /tmp/gen-badge.sh <<'BADGESCRIPT'
+          #!/bin/bash
+          # Usage: gen-badge.sh <status> <color> <output-path>
+          STATUS="$1" COLOR="$2" OUT="$3"
+          LABEL="QA Bot"
+          LABEL_W=$(( ${#LABEL} * 7 + 12 ))
+          STATUS_W=$(( ${#STATUS} * 7 + 12 ))
+          TOTAL_W=$(( LABEL_W + STATUS_W ))
+          cat > "$OUT" <<SVGEOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="${TOTAL_W}" height="20" role="img" aria-label="${LABEL}: ${STATUS}">
+            <title>${LABEL}: ${STATUS}</title>
+            <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+            <clipPath id="r"><rect width="${TOTAL_W}" height="20" rx="3" fill="#fff"/></clipPath>
+            <g clip-path="url(#r)">
+              <rect width="${LABEL_W}" height="20" fill="#555"/>
+              <rect x="${LABEL_W}" width="${STATUS_W}" height="20" fill="${COLOR}"/>
+              <rect width="${TOTAL_W}" height="20" fill="url(#s)"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
+              <text aria-hidden="true" x="$(( LABEL_W / 2 ))" y="15" fill="#010101" fill-opacity=".3">${LABEL}</text>
+              <text x="$(( LABEL_W / 2 ))" y="14">${LABEL}</text>
+              <text aria-hidden="true" x="$(( LABEL_W + STATUS_W / 2 ))" y="15" fill="#010101" fill-opacity=".3">${STATUS}</text>
+              <text x="$(( LABEL_W + STATUS_W / 2 ))" y="14">${STATUS}</text>
+            </g>
+          </svg>
+          SVGEOF
+          BADGESCRIPT
+          chmod +x /tmp/gen-badge.sh
+
+          # Create badge deploy script
+          cat > /tmp/deploy-badge.sh <<DEPLOYSCRIPT
+          #!/bin/bash
+          # Usage: deploy-badge.sh <status> [color]
+          STATUS="\$1"
+          COLOR="\${2:-#555}"
+          DIR=\$(mktemp -d)
+          /tmp/gen-badge.sh "\$STATUS" "\$COLOR" "\$DIR/badge.svg"
+          # Also create a minimal redirect page
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=badge.svg"></head></html>' > "\$DIR/index.html"
+          wrangler pages deploy "\$DIR" \
+            --project-name="comfy-qa" \
+            --branch="${BRANCH}" 2>&1 | tail -3
+          rm -rf "\$DIR"
+          echo "Badge deployed: ${STATUS}"
+          DEPLOYSCRIPT
+          chmod +x /tmp/deploy-badge.sh
+
+      - name: Deploy badge — PREPARING
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: /tmp/deploy-badge.sh "PREPARING" "#2196f3"
+
       - name: Resolve target number and type
         id: pr
         env:
@@ -597,6 +661,12 @@ jobs:
               [ -n "$WEBM" ] && convert_video "$WEBM" "$dir/qa-session.mp4"
             fi
           done
+
+      - name: Deploy badge — ANALYZING
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: /tmp/deploy-badge.sh "ANALYZING" "#ff9800"
 
       - name: Build context for video review
         env:
@@ -950,6 +1020,35 @@ jobs:
           </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
           ERROREOF
 
+          # Generate badge SVG into deploy dir (served as /badge.svg)
+          BADGE_STATUS="FINISHED"
+          BADGE_COLOR="#4c1"
+          # Determine final status from video review reports
+          if grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
+            BADGE_STATUS="NOT REPRODUCIBLE"
+            BADGE_COLOR="#9f9f9f"
+          elif grep -riq 'partially reproduced\|partial' video-reviews/ 2>/dev/null; then
+            BADGE_STATUS="PARTIAL"
+            BADGE_COLOR="#dfb317"
+          elif grep -riq 'reproduced\|confirmed' video-reviews/ 2>/dev/null; then
+            BADGE_STATUS="REPRODUCED"
+            BADGE_COLOR="#e05d44"
+          fi
+          if [ "$TARGET_TYPE" != "issue" ]; then
+            if grep -riq 'major.*issue\|critical\|breaking\|regression' video-reviews/ 2>/dev/null; then
+              BADGE_STATUS="MAJOR ISSUES"
+              BADGE_COLOR="#e05d44"
+            elif grep -riq 'minor.*issue\|cosmetic\|nitpick' video-reviews/ 2>/dev/null; then
+              BADGE_STATUS="MINOR ISSUES"
+              BADGE_COLOR="#dfb317"
+            elif grep -riq 'no.*issue\|looks good\|approved\|pass' video-reviews/ 2>/dev/null; then
+              BADGE_STATUS="APPROVED"
+              BADGE_COLOR="#4c1"
+            fi
+          fi
+          /tmp/gen-badge.sh "$BADGE_STATUS" "$BADGE_COLOR" "$DEPLOY_DIR/badge.svg"
+          echo "badge_status=${BADGE_STATUS}" >> "$GITHUB_OUTPUT"
+
           BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
           URL=$(wrangler pages deploy "$DEPLOY_DIR" \
             --project-name="comfy-qa" \
@@ -1027,6 +1126,8 @@ jobs:
           BODY=$(cat <<EOF
           ${COMMENT_MARKER}
           ## QA ${MODE_BADGE}
+
+          ![QA Badge](${VIDEO_BASE}/badge.svg)
 
           ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
