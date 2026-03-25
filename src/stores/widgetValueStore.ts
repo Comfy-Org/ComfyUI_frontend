@@ -123,7 +123,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!hydratingNodes.has(nodeId)) return callback()
 
     const existing = hydrationCallbacks.get(nodeId) ?? []
-    existing.push(callback)
+    if (!existing.includes(callback)) existing.push(callback)
     hydrationCallbacks.set(nodeId, existing)
   }
 
