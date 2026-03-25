@@ -273,7 +273,7 @@ async function collectVideoCandidates(
   artifactsDir: string
 ): Promise<VideoCandidate[]> {
   const absoluteArtifactsDir = resolve(artifactsDir)
-  const videoPaths = globSync('**/qa-session.mp4', {
+  const videoPaths = globSync('**/qa-session{,-[0-9]}.mp4', {
     cwd: absoluteArtifactsDir,
     absolute: true,
     nodir: true
