@@ -1,3 +1,5 @@
+import { debounce } from 'es-toolkit'
+
 import { detectPassCount } from '@/renderer/glsl/glslUtils'
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
@@ -443,9 +445,18 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     return canvas.convertToBlob({ type: 'image/webp', quality: 0.92 })
   }
 
+  const DEBOUNCE_DELAY_MS = 150
+
+  const debouncedToBlob = debounce(() => toBlob(), DEBOUNCE_DELAY_MS)
+
+  function cancelPendingBlob(): void {
+    debouncedToBlob.cancel()
+  }
+
   function dispose(): void {
     if (disposed) return
     disposed = true
+    cancelPendingBlob()
     if (!gl) return
 
     for (const tex of inputTextures) {
@@ -497,6 +508,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     render,
     readPixels,
     toBlob,
+    debouncedToBlob,
+    cancelPendingBlob,
     dispose
   }
 }
