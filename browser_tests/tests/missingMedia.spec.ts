@@ -205,18 +205,16 @@ test.describe('Missing media inputs in Error Tab', () => {
       await expect(locateButton).toBeVisible()
       await locateButton.click()
 
-      await comfyPage.page.waitForTimeout(500)
-
-      const offsetAfter = await comfyPage.page.evaluate(() => {
-        const canvas = window['app']?.canvas
-        return canvas?.ds?.offset
-          ? [canvas.ds.offset[0], canvas.ds.offset[1]]
-          : null
-      })
-
-      expect(offsetBefore).not.toBeNull()
-      expect(offsetAfter).not.toBeNull()
-      expect(offsetAfter).not.toEqual(offsetBefore)
+      await expect
+        .poll(async () => {
+          return await comfyPage.page.evaluate(() => {
+            const canvas = window['app']?.canvas
+            return canvas?.ds?.offset
+              ? [canvas.ds.offset[0], canvas.ds.offset[1]]
+              : null
+          })
+        })
+        .not.toEqual(offsetBefore)
     })
   })
 })

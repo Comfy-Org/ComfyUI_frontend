@@ -145,6 +145,47 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaCandidates).toHaveLength(1)
   })
 
+  it('removeMissingMediaByName clears interaction state for removed name', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+    store.expandState['photo.png'] = true
+    store.uploadState['photo.png'] = {
+      fileName: 'photo.png',
+      status: 'uploaded'
+    }
+    store.pendingSelection['photo.png'] = 'uploaded/photo.png'
+
+    store.removeMissingMediaByName('photo.png')
+
+    expect(store.expandState['photo.png']).toBeUndefined()
+    expect(store.uploadState['photo.png']).toBeUndefined()
+    expect(store.pendingSelection['photo.png']).toBeUndefined()
+  })
+
+  it('removeMissingMediaByWidget clears interaction state for removed name', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+    store.pendingSelection['photo.png'] = 'library/photo.png'
+
+    store.removeMissingMediaByWidget('1', 'image')
+
+    expect(store.pendingSelection['photo.png']).toBeUndefined()
+  })
+
+  it('removeMissingMediaByWidget preserves interaction state when other candidates share the name', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([
+      makeCandidate('1', 'photo.png'),
+      makeCandidate('2', 'photo.png')
+    ])
+    store.pendingSelection['photo.png'] = 'library/photo.png'
+
+    store.removeMissingMediaByWidget('1', 'image')
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+    expect(store.pendingSelection['photo.png']).toBe('library/photo.png')
+  })
+
   it('createVerificationAbortController aborts previous controller', () => {
     const store = useMissingMediaStore()
     const first = store.createVerificationAbortController()

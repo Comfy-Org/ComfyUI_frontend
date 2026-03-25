@@ -88,20 +88,39 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     return activeMissingMediaGraphIds.value.has(String(node.id))
   }
 
+  function clearInteractionStateForName(name: string) {
+    delete expandState.value[name]
+    delete uploadState.value[name]
+    delete pendingSelection.value[name]
+  }
+
   function removeMissingMediaByName(name: string) {
     if (!missingMediaCandidates.value) return
     missingMediaCandidates.value = missingMediaCandidates.value.filter(
       (m) => m.name !== name
     )
+    clearInteractionStateForName(name)
     if (!missingMediaCandidates.value.length)
       missingMediaCandidates.value = null
   }
 
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
     if (!missingMediaCandidates.value) return
+    const removedNames = new Set(
+      missingMediaCandidates.value
+        .filter(
+          (m) => String(m.nodeId) === nodeId && m.widgetName === widgetName
+        )
+        .map((m) => m.name)
+    )
     missingMediaCandidates.value = missingMediaCandidates.value.filter(
       (m) => !(String(m.nodeId) === nodeId && m.widgetName === widgetName)
     )
+    for (const name of removedNames) {
+      if (!missingMediaCandidates.value.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
     if (!missingMediaCandidates.value.length)
       missingMediaCandidates.value = null
   }

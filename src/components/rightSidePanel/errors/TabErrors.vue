@@ -15,6 +15,7 @@
     <div
       v-if="singleRuntimeErrorCard"
       data-testid="runtime-error-panel"
+      aria-live="polite"
       class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
     >
       <div
