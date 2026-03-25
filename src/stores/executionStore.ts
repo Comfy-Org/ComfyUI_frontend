@@ -33,7 +33,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import { createRafBatch } from '@/utils/rafBatch'
+import { createRafCoalescer } from '@/utils/rafBatch'
 
 interface QueuedJob {
   /**
@@ -244,10 +244,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
 
-    progressBatch.cancel()
-    _pendingProgress = null
-    progressStateBatch.cancel()
-    _pendingProgressState = null
+    cancelPendingProgressUpdates()
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -298,8 +295,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
     // Cancel any pending progress RAF before clearing state to prevent
     // stale data from being written back on the next frame.
-    progressBatch.cancel()
-    _pendingProgress = null
+    progressCoalescer.cancel()
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
@@ -343,17 +339,11 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
-  let _pendingProgressState: ProgressStateWsMessage | null = null
-  const progressStateBatch = createRafBatch(() => {
-    if (_pendingProgressState) {
-      _applyProgressState(_pendingProgressState)
-      _pendingProgressState = null
-    }
-  })
+  const progressStateCoalescer =
+    createRafCoalescer<ProgressStateWsMessage>(_applyProgressState)
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    _pendingProgressState = e.detail
-    progressStateBatch.schedule()
+    progressStateCoalescer.push(e.detail)
   }
 
   function _applyProgressState(detail: ProgressStateWsMessage) {
@@ -393,17 +383,17 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  let _pendingProgress: ProgressWsMessage | null = null
-  const progressBatch = createRafBatch(() => {
-    if (_pendingProgress) {
-      _executingNodeProgress.value = _pendingProgress
-      _pendingProgress = null
-    }
+  const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
+    _executingNodeProgress.value = detail
   })
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _pendingProgress = e.detail
-    progressBatch.schedule()
+    progressCoalescer.push(e.detail)
+  }
+
+  function cancelPendingProgressUpdates() {
+    progressCoalescer.cancel()
+    progressStateCoalescer.cancel()
   }
 
   function handleStatus() {
@@ -525,12 +515,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
-    // Cancel pending RAFs before clearing state to prevent stale data
-    // from being written back on the next frame.
-    progressBatch.cancel()
-    _pendingProgress = null
-    progressStateBatch.cancel()
-    _pendingProgressState = null
+    cancelPendingProgressUpdates()
 
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
