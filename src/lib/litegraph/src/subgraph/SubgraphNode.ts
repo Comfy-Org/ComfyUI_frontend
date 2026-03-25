@@ -1108,6 +1108,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  /**
+   * Clears all cached promoted widget views and re-resolves `input._widget`
+   * bindings from the current subgraph connections.  Called after ancestor
+   * promotions are repointed during nested subgraph packing.
+   */
+  rebuildInputWidgetBindings(): void {
+    this._promotedViewManager.clear()
+    this._invalidatePromotedViewsCache()
+
+    for (const input of this.inputs) {
+      input._widget = undefined
+      const subgraphInput = input._subgraphSlot
+      if (!subgraphInput) continue
+      this._resolveInputWidget(subgraphInput, input)
+    }
+
+    this._syncPromotions()
+  }
+
   private _resolveInputWidget(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot

@@ -1907,6 +1907,13 @@ export class LGraph
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
 
+    // Repair ancestor promotions: when nodes are packed into a nested
+    // subgraph, any host SubgraphNode whose proxyWidgets referenced the
+    // moved nodes must be repointed to chain through the new nested node.
+    if (!this.isRootGraph) {
+      this._repointAncestorPromotions(nodes, subgraphNode as SubgraphNode)
+    }
+
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
@@ -1917,6 +1924,55 @@ export class LGraph
     )
 
     return { subgraph, node: subgraphNode as SubgraphNode }
+  }
+
+  /**
+   * After packing nodes into a nested subgraph, repoint any ancestor
+   * SubgraphNode promotions that referenced the moved nodes so they
+   * chain through the newly created nested SubgraphNode.
+   */
+  private _repointAncestorPromotions(
+    movedNodes: Set<LGraphNode>,
+    nestedSubgraphNode: SubgraphNode
+  ): void {
+    const movedNodeIds = new Set([...movedNodes].map((n) => String(n.id)))
+    const store = usePromotionStore()
+    const nestedNodeId = String(nestedSubgraphNode.id)
+    const graphId = this.rootGraph.id
+
+    // Find all SubgraphNode instances that host `this` subgraph.
+    // They live in any graph and have `type === this.id`.
+    const allGraphs: LGraph[] = [
+      this.rootGraph,
+      ...this.rootGraph._subgraphs.values()
+    ]
+    for (const graph of allGraphs) {
+      for (const node of graph._nodes) {
+        if (!node.isSubgraphNode() || node.type !== this.id) continue
+
+        const entries = store.getPromotions(graphId, node.id)
+        let changed = false
+        const nextEntries = entries.map((entry) => {
+          if (!movedNodeIds.has(entry.sourceNodeId)) return entry
+
+          // Ensure the nested node also promotes the moved source
+          store.promote(graphId, nestedSubgraphNode.id, entry)
+
+          changed = true
+          return {
+            sourceNodeId: nestedNodeId,
+            sourceWidgetName: entry.sourceWidgetName,
+            disambiguatingSourceNodeId:
+              entry.disambiguatingSourceNodeId ?? entry.sourceNodeId
+          }
+        })
+
+        if (changed) {
+          store.setPromotions(graphId, node.id, nextEntries)
+          node.rebuildInputWidgetBindings()
+        }
+      }
+    }
   }
 
   unpackSubgraph(
