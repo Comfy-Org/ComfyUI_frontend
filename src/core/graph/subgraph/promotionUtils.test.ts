@@ -201,6 +201,28 @@ describe('getPromotableWidgets', () => {
     ).toBe(true)
   })
 
+  it('adds virtual canvas preview widget for LoadImage nodes', () => {
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(true)
+  })
+
+  it('adds virtual canvas preview widget for LoadVideo nodes', () => {
+    const node = new LGraphNode('LoadVideo')
+    node.type = 'LoadVideo'
+
+    const widgets = getPromotableWidgets(node)
+
+    expect(
+      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
+    ).toBe(true)
+  })
+
   it('does not add virtual canvas preview widget for non-image nodes', () => {
     const node = new LGraphNode('TextNode')
     node.addOutput('TEXT', 'STRING')
@@ -263,6 +285,25 @@ describe('promoteRecommendedWidgets', () => {
     expect(
       store.isPromoted(subgraphNode.rootGraph.id, subgraphNode.id, {
         sourceNodeId: String(glslNode.id),
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+      })
+    ).toBe(true)
+    expect(updatePreviewsMock).not.toHaveBeenCalled()
+  })
+
+  it('eagerly promotes virtual preview widget for LoadImage nodes', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const loadImageNode = new LGraphNode('LoadImage')
+    loadImageNode.type = 'LoadImage'
+    subgraph.add(loadImageNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    const store = usePromotionStore()
+    expect(
+      store.isPromoted(subgraphNode.rootGraph.id, subgraphNode.id, {
+        sourceNodeId: String(loadImageNode.id),
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
       })
     ).toBe(true)
