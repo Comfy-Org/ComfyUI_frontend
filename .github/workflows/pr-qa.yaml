@@ -10,9 +10,6 @@
 name: 'PR: QA'
 
 on:
-  # TODO: remove push trigger before merge
-  push:
-    branches: [sno-skills, sno-qa-*]
   pull_request:
     types: [labeled]
     branches: [main]
@@ -24,10 +21,9 @@ on:
         options: [focused, full]
         default: focused
 
-# TODO: restore concurrency group before merge (stuck-run issue on dev branches)
-# concurrency:
-#   group: ${{ github.workflow }}-${{ github.ref }}
-#   cancel-in-progress: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   resolve-matrix:
