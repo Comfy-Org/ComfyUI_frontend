@@ -5,9 +5,9 @@
 Maintain `execution-log.md` with per-branch tables:
 
 ```markdown
-| PR#   | Title | Status                            | Backport PR | Notes   |
-| ----- | ----- | --------------------------------- | ----------- | ------- |
-| #XXXX | Title | ✅ Merged / ⏭️ Skip / ⏸️ Deferred | #YYYY       | Details |
+| PR#   | Title | CI Status                      | Status                            | Backport PR | Notes   |
+| ----- | ----- | ------------------------------ | --------------------------------- | ----------- | ------- |
+| #XXXX | Title | ✅ Pass / ❌ Fail / ⏳ Pending | ✅ Merged / ⏭️ Skip / ⏸️ Deferred | #YYYY       | Details |
 ```
 
 ## Wave Verification Log
@@ -19,6 +19,7 @@ Track verification results per wave:
 
 - PRs merged: #A, #B, #C
 - Typecheck: ✅ Pass / ❌ Fail
+- Unit tests: ✅ Pass / ❌ Fail
 - Issues found: (if any)
 - Human review needed: (list any non-trivial conflict resolutions)
 ```
@@ -40,6 +41,11 @@ Track verification results per wave:
 ## Conflict Resolutions Requiring Review
 
 | PR# | Branch | Conflict Type | Resolution Summary |
+
+## CI Failure Report
+
+| PR# | Branch | Failing Check | Error Summary | Cause | Resolution |
+| --- | ------ | ------------- | ------------- | ----- | ---------- |
 
 ## Automation Performance
 
