@@ -16,6 +16,7 @@ interface CliOptions {
   dryRun: boolean
   prContext: string
   targetUrl: string
+  passLabel: string
 }
 
 interface VideoCandidate {
@@ -33,7 +34,8 @@ const DEFAULT_OPTIONS: CliOptions = {
   requestTimeoutMs: 300_000,
   dryRun: false,
   prContext: '',
-  targetUrl: ''
+  targetUrl: '',
+  passLabel: ''
 }
 
 const USAGE = `Usage:
@@ -56,6 +58,8 @@ Options:
   --pr-context <file>           File with PR context (title, body, diff)
                                  for PR-aware review
   --target-url <url>            Issue or PR URL to include in the report
+  --pass-label <label>          Label for multi-pass reports (e.g. pass1)
+                                 Output becomes {platform}-{label}-qa-video-report.md
   --dry-run                     Discover videos and output targets only
   --help                        Show this help text
 
@@ -130,6 +134,11 @@ function parseCliOptions(args: string[]): CliOptions {
 
     if (argument === '--target-url') {
       options.targetUrl = requireValue(argument)
+      continue
+    }
+
+    if (argument === '--pass-label') {
+      options.passLabel = requireValue(argument)
       continue
     }
 
@@ -653,9 +662,10 @@ async function reviewVideo(
   })
 
   const videoStat = await stat(video.videoPath)
+  const passSegment = options.passLabel ? `-${options.passLabel}` : ''
   const outputPath = resolve(
     options.outputDir,
-    `${video.platformName}-qa-video-report.md`
+    `${video.platformName}${passSegment}-qa-video-report.md`
   )
 
   const reportInput: Parameters<typeof buildReportMarkdown>[0] = {
