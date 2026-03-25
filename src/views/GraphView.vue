@@ -66,6 +66,7 @@ import ModelImportProgressDialog from '@/platform/assets/components/ModelImportP
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWebSocketReconnectTracking } from '@/composables/useWebSocketReconnectTracking'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -253,17 +254,10 @@ const reconnectingMessage: ToastMessageOptions = {
   summary: t('g.reconnecting')
 }
 
-let disconnectedAt: number | null = null
-let activeJobCountAtDisconnect = 0
+const wsReconnectTracking = useWebSocketReconnectTracking()
 
 const onReconnecting = () => {
-  if (disconnectedAt === null) {
-    disconnectedAt = Date.now()
-    // Includes pending + running tasks. Pending tasks matter because their
-    // pending→running transition is delivered via WebSocket — if the connection
-    // drops while tasks are queued, the user never sees them start.
-    activeJobCountAtDisconnect = queueStore.activeJobsCount
-  }
+  wsReconnectTracking.onDisconnect()
   if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
     toast.remove(reconnectingMessage)
     toast.add(reconnectingMessage)
@@ -271,15 +265,7 @@ const onReconnecting = () => {
 }
 
 const onReconnected = () => {
-  if (disconnectedAt !== null) {
-    telemetry?.trackWebSocketReconnected({
-      disconnect_duration_ms: Date.now() - disconnectedAt,
-      had_active_jobs: activeJobCountAtDisconnect > 0,
-      active_job_count: activeJobCountAtDisconnect
-    })
-    disconnectedAt = null
-    activeJobCountAtDisconnect = 0
-  }
+  wsReconnectTracking.onReconnect()
   if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
     toast.remove(reconnectingMessage)
     toast.add({
@@ -307,8 +293,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  disconnectedAt = null
-  activeJobCountAtDisconnect = 0
+  wsReconnectTracking.reset()
   executionStore.unbindExecutionEvents()
 })
 

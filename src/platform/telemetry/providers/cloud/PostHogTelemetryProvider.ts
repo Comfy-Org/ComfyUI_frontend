@@ -36,7 +36,6 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
-  WebSocketReconnectedMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
@@ -452,9 +451,5 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
-  }
-
-  trackWebSocketReconnected(metadata: WebSocketReconnectedMetadata): void {
-    this.trackEvent(TelemetryEvents.WEBSOCKET_RECONNECTED, metadata)
   }
 }

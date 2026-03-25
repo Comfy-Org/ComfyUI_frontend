@@ -305,15 +305,6 @@ export interface WorkflowCreatedMetadata {
 }
 
 /**
- * WebSocket reconnection metadata
- */
-export interface WebSocketReconnectedMetadata {
-  disconnect_duration_ms: number
-  had_active_jobs: boolean
-  active_job_count: number
-}
-
-/**
  * Page view metadata for route tracking
  */
 export interface PageViewMetadata {
@@ -436,9 +427,6 @@ export interface TelemetryProvider {
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
-
-  // WebSocket lifecycle events
-  trackWebSocketReconnected?(metadata: WebSocketReconnectedMetadata): void
 }
 
 /**
@@ -526,10 +514,7 @@ export const TelemetryEvents = {
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
   // Page View
-  PAGE_VIEW: 'app:page_view',
-
-  // WebSocket Lifecycle
-  WEBSOCKET_RECONNECTED: 'app:websocket_reconnected'
+  PAGE_VIEW: 'app:page_view'
 } as const
 
 export type TelemetryEventName =
@@ -573,4 +558,3 @@ export type TelemetryEventProperties =
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata
-  | WebSocketReconnectedMetadata
