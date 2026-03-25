@@ -1,15 +1,15 @@
 <template>
-  <div class="aspect-7/3 w-full overflow-hidden z-0">
+  <div class="z-0 aspect-7/3 w-full overflow-hidden">
     <!-- default banner show -->
-    <div v-if="showDefaultBanner" class="h-full w-full">
+    <div v-if="showDefaultBanner" class="size-full">
       <img
         :src="DEFAULT_BANNER"
         :alt="$t('g.defaultBanner')"
-        class="h-full w-full object-cover"
+        class="size-full object-cover"
       />
     </div>
     <!-- banner_url or icon show -->
-    <div v-else class="relative h-full w-full">
+    <div v-else class="relative size-full">
       <!-- blur background -->
       <div
         v-if="imgSrc"
@@ -25,8 +25,8 @@
         :alt="nodePack.name + ' banner'"
         :class="
           isImageError
-            ? 'relative w-full h-full object-cover z-10'
-            : 'relative w-full h-full object-contain z-10'
+            ? 'relative z-10 size-full object-cover'
+            : 'relative z-10 size-full object-contain'
         "
         @error="isImageError = true"
       />

@@ -1,14 +1,14 @@
 <template>
-  <div class="flex flex-col w-full mb-2">
+  <div class="mb-2 flex w-full flex-col">
     <!-- Pack header row: pack name + info + chevron -->
-    <div class="flex h-8 items-center w-full">
+    <div class="flex h-8 w-full items-center">
       <!-- Warning icon for unknown packs -->
       <i
         v-if="group.packId === null && !group.isResolving"
-        class="icon-[lucide--triangle-alert] size-4 text-warning-background shrink-0 mr-1.5"
+        class="mr-1.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning-background"
       />
       <p
-        class="flex-1 min-w-0 text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap"
+        class="min-w-0 flex-1 truncate text-sm font-medium"
         :class="
           group.packId === null && !group.isResolving
             ? 'text-warning-background'
@@ -28,7 +28,7 @@
         v-if="showInfoButton && group.packId !== null"
         variant="textonly"
         size="icon-sm"
-        class="size-8 text-muted-foreground hover:text-base-foreground shrink-0"
+        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
         :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
         @click="emit('openManagerInfo', group.packId ?? '')"
       >
@@ -60,7 +60,7 @@
     <TransitionCollapse>
       <div
         v-if="expanded"
-        class="flex flex-col gap-0.5 pl-2 mb-1 overflow-hidden"
+        class="mb-1 flex flex-col gap-0.5 overflow-hidden pl-2"
       >
         <div
           v-for="nodeType in group.nodeTypes"
@@ -73,18 +73,18 @@
               typeof nodeType !== 'string' &&
               nodeType.nodeId != null
             "
-            class="shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 text-xs font-mono text-muted-foreground font-bold mr-1"
+            class="mr-1 shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 font-mono text-xs font-bold text-muted-foreground"
           >
             #{{ nodeType.nodeId }}
           </span>
-          <p class="flex-1 min-w-0 text-xs text-muted-foreground truncate">
+          <p class="min-w-0 flex-1 truncate text-xs text-muted-foreground">
             {{ getLabel(nodeType) }}
           </p>
           <Button
             v-if="typeof nodeType !== 'string' && nodeType.nodeId != null"
             variant="textonly"
             size="icon-sm"
-            class="size-6 text-muted-foreground hover:text-base-foreground shrink-0 mr-1"
+            class="mr-1 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
             :aria-label="t('rightSidePanel.locateNode')"
             @click="handleLocateNode(nodeType)"
           >
@@ -101,12 +101,12 @@
         group.packId !== null &&
         (nodePack || comfyManagerStore.isPackInstalled(group.packId))
       "
-      class="flex items-start w-full pt-1 pb-1"
+      class="flex w-full items-start py-1"
     >
       <Button
         variant="secondary"
         size="md"
-        class="flex flex-1 w-full"
+        class="flex w-full flex-1 rounded-lg"
         :disabled="
           comfyManagerStore.isPackInstalled(group.packId) || isInstalling
         "
@@ -120,13 +120,13 @@
         />
         <i
           v-else-if="comfyManagerStore.isPackInstalled(group.packId)"
-          class="icon-[lucide--check] size-4 text-foreground shrink-0 mr-1"
+          class="text-foreground mr-1 icon-[lucide--check] size-4 shrink-0"
         />
         <i
           v-else
-          class="icon-[lucide--download] size-4 text-foreground shrink-0 mr-1"
+          class="text-foreground mr-1 icon-[lucide--download] size-4 shrink-0"
         />
-        <span class="text-sm text-foreground truncate min-w-0">
+        <span class="text-foreground min-w-0 truncate text-sm">
           {{
             isInstalling
               ? t('rightSidePanel.missingNodePacks.installing')
@@ -141,13 +141,13 @@
     <!-- Registry still loading: packId known but result not yet available -->
     <div
       v-else-if="group.packId !== null && shouldShowManagerButtons && isLoading"
-      class="flex items-start w-full pt-1 pb-1"
+      class="flex w-full items-start py-1"
     >
       <div
-        class="flex flex-1 h-8 items-center justify-center overflow-hidden p-2 rounded-lg min-w-0 bg-secondary-background opacity-60 cursor-not-allowed select-none"
+        class="flex h-8 min-w-0 flex-1 cursor-not-allowed items-center justify-center overflow-hidden rounded-lg bg-secondary-background p-2 opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="text-sm text-foreground truncate min-w-0">
+        <span class="text-foreground min-w-0 truncate text-sm">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -156,12 +156,12 @@
     <!-- Search in Manager: fetch done but pack not found in registry -->
     <div
       v-else-if="group.packId !== null && shouldShowManagerButtons"
-      class="flex items-start w-full pt-1 pb-1"
+      class="flex w-full items-start py-1"
     >
       <Button
         variant="secondary"
         size="md"
-        class="flex flex-1 w-full"
+        class="flex w-full flex-1 rounded-lg"
         @click="
           openManager({
             initialTab: ManagerTab.All,
@@ -169,8 +169,8 @@
           })
         "
       >
-        <i class="icon-[lucide--search] size-4 text-foreground shrink-0 mr-1" />
-        <span class="text-sm text-foreground truncate min-w-0">
+        <i class="text-foreground mr-1 icon-[lucide--search] size-4 shrink-0" />
+        <span class="text-foreground min-w-0 truncate text-sm">
           {{ t('rightSidePanel.missingNodePacks.searchInManager') }}
         </span>
       </Button>
@@ -193,7 +193,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import type { MissingNodeType } from '@/types/comfy'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const props = defineProps<{
+const { group, showInfoButton, showNodeIdBadge } = defineProps<{
   group: MissingPackGroup
   showInfoButton: boolean
   showNodeIdBadge: boolean
@@ -211,8 +211,8 @@ const comfyManagerStore = useComfyManagerStore()
 const { shouldShowManagerButtons, openManager } = useManagerState()
 
 const nodePack = computed(() => {
-  if (!props.group.packId) return null
-  return missingNodePacks.value.find((p) => p.id === props.group.packId) ?? null
+  if (!group.packId) return null
+  return missingNodePacks.value.find((p) => p.id === group.packId) ?? null
 })
 
 const { isInstalling, installAllPacks } = usePackInstall(() =>
@@ -220,8 +220,8 @@ const { isInstalling, installAllPacks } = usePackInstall(() =>
 )
 
 function handlePackInstallClick() {
-  if (!props.group.packId) return
-  if (!comfyManagerStore.isPackInstalled(props.group.packId)) {
+  if (!group.packId) return
+  if (!comfyManagerStore.isPackInstalled(group.packId)) {
     void installAllPacks()
   }
 }

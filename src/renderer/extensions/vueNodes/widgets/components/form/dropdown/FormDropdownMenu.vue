@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CSSProperties, MaybeRefOrGetter } from 'vue'
+import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
@@ -20,11 +20,6 @@ interface Props {
   isSelected: (item: FormDropdownItem, index: number) => boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
-  searcher?: (
-    query: string,
-    onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<void>
-  updateKey?: MaybeRefOrGetter<unknown>
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -36,8 +31,6 @@ const {
   isSelected,
   filterOptions,
   sortOptions,
-  searcher,
-  updateKey,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
@@ -104,7 +97,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
@@ -118,8 +111,6 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :sort-options
-      :searcher
-      :update-key
       :show-ownership-filter
       :ownership-options
       :show-base-model-filter

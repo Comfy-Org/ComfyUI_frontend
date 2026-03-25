@@ -20,15 +20,14 @@
       </Button>
     </template>
     <template #header>
-      <div class="px-2 2xl:px-4">
-        <SearchBox
+      <SidebarTopArea>
+        <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
-          class="workflows-search-box"
           :placeholder="$t('g.searchPlaceholder', { subject: searchSubject })"
           @search="handleSearch"
         />
-      </div>
+      </SidebarTopArea>
     </template>
     <template #body>
       <div v-if="!isSearching" class="comfyui-workflows-panel">
@@ -146,7 +145,8 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -154,6 +154,7 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -163,26 +164,23 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
+import {
+  ensureWorkflowSuffix,
+  getFilenameDetails,
+  getWorkflowSuffix
+} from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
-const {
-  title,
-  filter,
-  searchSubject,
-  dataTestid,
-  labelTransform,
-  hideLeafIcon
-} = defineProps<{
+const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
   title: string
   filter?: (workflow: ComfyWorkflow) => boolean
   searchSubject: string
   dataTestid: string
-  labelTransform?: (label: string) => string
   hideLeafIcon?: boolean
 }>()
 
 const { t } = useI18n()
+const { isAppMode } = useAppMode()
 
 const applyFilter = (workflows: ComfyWorkflow[]) =>
   filter ? workflows.filter(filter) : workflows
@@ -304,14 +302,18 @@ const renderTreeNode = (
             },
         contextMenuItems() {
           return [
-            {
-              label: t('g.insert'),
-              icon: 'pi pi-file-export',
-              command: async () => {
-                const workflow = node.data
-                await workflowService.insertWorkflow(workflow)
-              }
-            },
+            ...(isAppMode.value
+              ? []
+              : [
+                  {
+                    label: t('g.insert'),
+                    icon: 'pi pi-file-export',
+                    command: async () => {
+                      const workflow = node.data
+                      await workflowService.insertWorkflow(workflow)
+                    }
+                  }
+                ]),
             {
               label: t('g.duplicate'),
               icon: 'pi pi-file-export',
@@ -326,8 +328,7 @@ const renderTreeNode = (
       }
     : { handleClick }
 
-  const label =
-    node.leaf && labelTransform ? labelTransform(node.label) : node.label
+  const label = node.leaf ? getFilenameDetails(node.label).filename : node.label
 
   return {
     key: node.key,

@@ -9,7 +9,9 @@ const zAsset = z.object({
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
+  display_name: z.string().optional(),
   preview_url: z.string().optional(),
+  thumbnail_url: z.string().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   is_immutable: z.boolean().optional(),
@@ -93,7 +95,7 @@ export type ModelFile = z.infer<typeof zModelFile>
 
 /** Payload for updating an asset via PUT /assets/:id */
 export type AssetUpdatePayload = Partial<
-  Pick<AssetItem, 'name' | 'tags' | 'user_metadata'>
+  Pick<AssetItem, 'name' | 'tags' | 'user_metadata' | 'preview_id'>
 >
 
 /** User-editable metadata fields for model assets */

@@ -19,9 +19,12 @@ export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: resultItemType.optional()
+  type: resultItemType.optional(),
+  display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
+// Uses .passthrough() because custom nodes can output arbitrary keys.
+// See docs/adr/0007-node-execution-output-passthrough-schema.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
@@ -111,7 +114,8 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 
 const zProgressTextWsMessage = z.object({
   nodeId: zNodeId,
-  text: z.string()
+  text: z.string(),
+  prompt_id: z.string().optional()
 })
 
 const zNotificationWsMessage = z.object({
@@ -296,10 +300,11 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
-  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
-  'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
+  'Comfy.Appearance.DisableAnimations': z.boolean(),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
+  'Comfy.Desktop.CloudNotificationShown': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),
   'Comfy.DisableSliders': z.boolean(),
   'Comfy.DOMClippingEnabled': z.boolean(),
@@ -307,6 +312,7 @@ const zSettings = z.object({
   'Comfy.EnableTooltips': z.boolean(),
   'Comfy.EnableWorkflowViewRestore': z.boolean(),
   'Comfy.FloatRoundingPrecision': z.number(),
+  'Comfy.Graph.AutoPanSpeed': z.number(),
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
@@ -376,6 +382,7 @@ const zSettings = z.object({
   'Comfy.WorkflowActions.SeenItems': z.array(z.string()),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
+  'Comfy.Keybinding.CurrentPreset': z.string(),
   'Comfy.Extension.Disabled': z.array(z.string()),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
@@ -408,6 +415,7 @@ const zSettings = z.object({
   'Comfy.Canvas.LeftMouseClickBehavior': z.string(),
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
+  'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
@@ -463,7 +471,8 @@ const zSettings = z.object({
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
-  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
+  'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
@@ -480,3 +489,31 @@ export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
 export type TerminalSize = z.infer<typeof zTerminalSize>
 export type LogEntry = z.infer<typeof zLogEntry>
 export type LogsRawResponse = z.infer<typeof zLogRawResponse>
+
+export const zComfyHubProfile = z.object({
+  username: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  coverImageUrl: z.string().nullish(),
+  profilePictureUrl: z.string().nullish()
+})
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
+
+export const zAssetInfo = z.object({
+  id: z.string(),
+  name: z.string(),
+  preview_url: z.string(),
+  storage_url: z.string(),
+  model: z.boolean(),
+  public: z.boolean(),
+  in_library: z.boolean()
+})
+
+export type AssetInfo = z.infer<typeof zAssetInfo>
+
+export const zShareableAssetsResponse = z.object({
+  assets: z.array(zAssetInfo)
+})
+
+export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>

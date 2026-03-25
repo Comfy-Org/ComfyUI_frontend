@@ -267,8 +267,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       useToastStore().add({
         severity: 'error',
         summary: t('subgraphStore.loadFailure'),
-        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`,
-        life: 6000
+        detail: errors.length > 3 ? `x${errors.length}` : `${errors}`
       })
     }
   }
@@ -393,7 +392,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
-    return subgraphCache[name].changeTracker.initialState
+    return structuredClone(subgraphCache[name].changeTracker.initialState)
   }
   async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)

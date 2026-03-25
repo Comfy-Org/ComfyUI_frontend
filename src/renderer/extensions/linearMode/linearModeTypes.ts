@@ -14,6 +14,7 @@ export interface OutputSelection {
   output?: ResultItemImpl
   canShowPreview: boolean
   latentPreviewUrl?: string
+  showSkeleton?: boolean
 }
 
 export type SelectionValue =

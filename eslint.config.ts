@@ -5,6 +5,7 @@ import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
+import testingLibrary from 'eslint-plugin-testing-library'
 // eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
 import { configs as storybookConfigs } from 'eslint-plugin-storybook'
@@ -24,6 +25,7 @@ const extraFileExtensions = ['.vue']
 const commonGlobals = {
   ...globals.browser,
   __COMFYUI_FRONTEND_VERSION__: 'readonly',
+  __COMFYUI_FRONTEND_COMMIT__: 'readonly',
   __DISTRIBUTION__: 'readonly',
   __IS_NIGHTLY__: 'readonly'
 } as const
@@ -127,10 +129,8 @@ export default defineConfig([
       // Off: may conflict with oxfmt formatting
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
-      'better-tailwindcss/enforce-consistent-class-order': 'off',
-      // Off: large batch change (v3→v4 renames like rounded→rounded-sm),
-      // enable and apply with `eslint --fix` in a follow-up PR
-      'better-tailwindcss/enforce-canonical-classes': 'off',
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
+      'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
     }
   },
@@ -153,13 +153,6 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-import-type-side-effects': 'error',
-      '@typescript-eslint/no-empty-object-type': [
-        'error',
-        {
-          allowInterfaces: 'always'
-        }
-      ],
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
@@ -280,6 +273,20 @@ export default defineConfig([
     }
   },
   {
+    files: ['**/*.test.ts'],
+    plugins: { 'testing-library': testingLibrary },
+    rules: {
+      'testing-library/prefer-screen-queries': 'error',
+      'testing-library/no-container': 'error',
+      'testing-library/no-node-access': 'error',
+      'testing-library/no-wait-for-multiple-assertions': 'error',
+      'testing-library/prefer-find-by': 'error',
+      'testing-library/prefer-presence-queries': 'error',
+      'testing-library/prefer-user-event': 'error',
+      'testing-library/no-debugging-utils': 'error'
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -303,6 +310,49 @@ export default defineConfig([
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
       'import-x/consistent-type-specifier-style': 'off'
+    }
+  },
+
+  // Layer architecture boundary enforcement
+  // Layers (bottom to top): base → platform → workbench → renderer
+  // Each layer may only import from layers below it.
+  // Existing violations are suppressed with eslint-disable comments.
+  {
+    files: [
+      'src/base/**/*.{ts,vue}',
+      'src/platform/**/*.{ts,vue}',
+      'src/workbench/**/*.{ts,vue}'
+    ],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './src/base/**',
+              from: [
+                './src/platform/**',
+                './src/workbench/**',
+                './src/renderer/**'
+              ],
+              message:
+                'base/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/platform/**',
+              from: ['./src/workbench/**', './src/renderer/**'],
+              message:
+                'platform/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/workbench/**',
+              from: './src/renderer/**',
+              message:
+                'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            }
+          ]
+        }
+      ]
     }
   },
 

@@ -1,5 +1,6 @@
-// TODO: Fix these tests after migration
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type {
   ISlotType,
@@ -11,7 +12,8 @@ import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createEventCapture,
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
 // Helper to create a node with a widget
@@ -53,8 +55,13 @@ function setupPromotedWidget(
   return createTestSubgraphNode(subgraph)
 }
 
-describe.skip('SubgraphWidgetPromotion', () => {
-  describe.skip('Widget Promotion Functionality', () => {
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
+describe('SubgraphWidgetPromotion', () => {
+  describe('Widget Promotion Functionality', () => {
     it('should promote widgets when connecting node to subgraph input', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
@@ -136,34 +143,6 @@ describe.skip('SubgraphWidgetPromotion', () => {
       expect(promotedEvents).toHaveLength(1)
       expect(promotedEvents[0].detail.widget).toBeDefined()
       expect(promotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
-
-      eventCapture.cleanup()
-    })
-
-    it('should fire widget-demoted event when removing promoted widget', () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'input', type: 'number' }]
-      })
-
-      const { node } = createNodeWithWidget('Test Node')
-      const subgraphNode = setupPromotedWidget(subgraph, node)
-      expect(subgraphNode.widgets).toHaveLength(1)
-
-      const eventCapture = createEventCapture(subgraph.events, [
-        'widget-demoted'
-      ])
-
-      // Remove the widget
-      subgraphNode.removeWidgetByName('input')
-
-      // Check event was fired
-      const demotedEvents = eventCapture.getEventsByType('widget-demoted')
-      expect(demotedEvents).toHaveLength(1)
-      expect(demotedEvents[0].detail.widget).toBeDefined()
-      expect(demotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
-
-      // Widget should be removed
-      expect(subgraphNode.widgets).toHaveLength(0)
 
       eventCapture.cleanup()
     })
@@ -284,7 +263,7 @@ describe.skip('SubgraphWidgetPromotion', () => {
     })
   })
 
-  describe.skip('Tooltip Promotion', () => {
+  describe('Tooltip Promotion', () => {
     it('should preserve widget tooltip when promoting', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]

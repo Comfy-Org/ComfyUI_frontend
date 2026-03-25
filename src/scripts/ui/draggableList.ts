@@ -314,18 +314,22 @@ export class DraggableList extends EventTarget {
   unsetDraggableItem() {
     this.draggableItem.style = null
     this.draggableItem.classList.remove('is-draggable')
-    this.draggableItem.classList.add('is-idle')
     this.draggableItem = null
   }
 
   unsetItemState() {
-    this.getIdleItems().forEach((item) => {
-      // @ts-expect-error fixme ts strict error
+    this.getIdleItems().forEach((item: HTMLElement) => {
       delete item.dataset.isAbove
-      // @ts-expect-error fixme ts strict error
       delete item.dataset.isToggled
-      // @ts-expect-error fixme ts strict error
       item.style.transform = ''
+
+      // Defer re-adding is-idle (which enables CSS transitions) until after
+      // the browser paints items in their final positions. Without this,
+      // the transition animates the stale drag transform.
+      item.classList.remove('is-idle')
+      requestAnimationFrame(() => {
+        item.classList.add('is-idle')
+      })
     })
   }
 

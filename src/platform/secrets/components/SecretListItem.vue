@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex items-center justify-between rounded-lg border border-border-default bg-base-raised-surface p-4"
+    class="bg-base-raised-surface flex items-center justify-between rounded-lg border border-border-default p-4"
   >
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
@@ -9,11 +9,11 @@
           v-if="providerLogo"
           :src="providerLogo"
           :alt="providerLabel"
-          class="h-5 w-5"
+          class="size-5"
         />
         <span
           v-else-if="secret.provider"
-          class="rounded-sm bg-base-surface px-2 py-0.5 text-xs text-muted"
+          class="bg-base-surface rounded-sm px-2 py-0.5 text-xs text-muted"
         >
           {{ providerLabel }}
         </span>

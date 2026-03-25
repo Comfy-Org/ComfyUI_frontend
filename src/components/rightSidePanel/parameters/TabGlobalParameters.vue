@@ -117,7 +117,7 @@ function onCollapseUpdate() {
 
 <template>
   <div
-    class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke"
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
     <FormSearchInput
       v-model="searchQuery"
@@ -138,7 +138,7 @@ function onCollapseUpdate() {
     @update:collapse="onCollapseUpdate"
   >
     <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center py-10">
+      <div class="px-4 py-10 text-center text-sm text-muted-foreground">
         <p>
           {{
             isSearching
@@ -155,7 +155,7 @@ function onCollapseUpdate() {
           <template #moreIcon>
             <span
               aria-hidden="true"
-              class="inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover text-secondary-foreground align-middle"
+              class="text-secondary-foreground inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle"
             >
               <i class="icon-[lucide--more-vertical] text-sm" />
             </span>

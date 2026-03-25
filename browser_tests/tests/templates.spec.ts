@@ -16,10 +16,6 @@ async function checkTemplateFileExists(
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.ShowMissingModelsWarning',
-      false
-    )
   })
 
   test('should have a JSON workflow file for each template', async ({
@@ -209,6 +205,31 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
+
+  test(
+    'select components in filter bar render correctly',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+      await expect(comfyPage.templates.content).toBeVisible()
+
+      // Wait for filter bar select components to render
+      const dialog = comfyPage.page.getByRole('dialog')
+      const sortBySelect = dialog.getByRole('combobox', { name: /Sort/ })
+      await expect(sortBySelect).toBeVisible()
+
+      // Screenshot the filter bar containing MultiSelect and SingleSelect
+      const filterBar = sortBySelect.locator(
+        'xpath=ancestor::div[contains(@class, "justify-between")]'
+      )
+      await expect(filterBar).toHaveScreenshot(
+        'template-filter-bar-select-components.png',
+        {
+          mask: [comfyPage.page.locator('.p-toast')]
+        }
+      )
+    }
+  )
 
   test(
     'template cards descriptions adjust height dynamically',

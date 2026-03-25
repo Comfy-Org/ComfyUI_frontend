@@ -23,7 +23,7 @@
         </div>
         <div class="flex items-center gap-1 text-text-secondary">
           <span>{{ t('sideToolbar.queueProgressOverlay.currentNode') }}</span>
-          <span class="inline-block max-w-[10rem] truncate">{{
+          <span class="inline-block max-w-40 truncate">{{
             currentNodeName
           }}</span>
           <span class="flex items-center gap-1">

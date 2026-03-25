@@ -28,7 +28,7 @@
       <!-- Technical Details (Collapsible) -->
       <div v-if="errorMessage" class="mb-4 text-left">
         <button
-          class="flex w-full items-center justify-between rounded-sm bg-secondary-background px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary-background-hover border-0"
+          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary-background px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary-background-hover"
           @click="showTechnicalDetails = !showTechnicalDetails"
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
@@ -41,7 +41,7 @@
         </button>
         <div
           v-if="showTechnicalDetails"
-          class="mt-2 rounded-sm border-muted-background border p-4 font-mono text-xs text-muted-foreground break-all"
+          class="mt-2 rounded-sm border border-muted-background p-4 font-mono text-xs break-all text-muted-foreground"
         >
           {{ errorMessage }}
         </div>

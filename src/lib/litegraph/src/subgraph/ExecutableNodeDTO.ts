@@ -266,6 +266,9 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     }
     visited.add(uniqueId)
 
+    // Muted nodes produce no output
+    if (this.mode === LGraphEventMode.NEVER) return
+
     // Upstreamed: Bypass nodes are bypassed using the first input with matching type
     if (this.mode === LGraphEventMode.BYPASS) {
       // Bypass nodes by finding first input with matching type
@@ -288,6 +291,20 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       return this._resolveSubgraphOutput(slot, type, visited)
 
     if (node.isVirtualNode) {
+      // Cross-graph virtual nodes (e.g. Set/Get) resolve their source directly.
+      const virtualSource = this.node.resolveVirtualOutput?.(slot)
+      if (virtualSource) {
+        const inputNodeDto = [...this.nodesByExecutionId.values()].find(
+          (dto) =>
+            dto instanceof ExecutableNodeDTO && dto.node === virtualSource.node
+        )
+        if (!inputNodeDto)
+          throw new Error(
+            `No DTO found for virtual source node [${virtualSource.node.id}]`
+          )
+
+        return inputNodeDto.resolveOutput(virtualSource.slot, type, visited)
+      }
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
         const { inputNode } = virtualLink.resolve(this.graph)

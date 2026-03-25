@@ -7,7 +7,7 @@
       side="bottom"
       :side-offset="8"
       :collision-padding="10"
-      class="z-[1001] w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity] data-[state=open]:data-[side=bottom]:animate-slideUpAndFade"
+      class="data-[state=open]:data-[side=bottom]:animate-slideUpAndFade z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity]"
     >
       <div class="flex h-12 items-center justify-between px-4">
         <h3 class="text-sm font-medium text-base-foreground">
@@ -21,12 +21,12 @@
         </PopoverClose>
       </div>
       <div class="border-t border-border-default" />
-      <p class="mt-3 px-4 text-xs text-muted-foreground leading-relaxed">
+      <p class="mt-3 px-4 text-xs/relaxed text-muted-foreground">
         {{ t('builderToolbar.connectOutputBody1') }}
       </p>
       <p
         v-if="!isSelectActive"
-        class="mt-2 px-4 text-xs text-muted-foreground leading-relaxed"
+        class="mt-2 px-4 text-xs/relaxed text-muted-foreground"
       >
         {{ t('builderToolbar.connectOutputBody2') }}
       </p>

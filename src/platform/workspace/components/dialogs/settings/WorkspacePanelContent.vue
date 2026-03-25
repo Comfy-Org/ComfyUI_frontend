@@ -1,8 +1,8 @@
 <template>
-  <div class="flex h-full w-full flex-col">
+  <div class="flex size-full flex-col">
     <header class="mb-8 flex items-center gap-4">
       <WorkspaceProfilePic
-        class="size-12 !text-3xl"
+        class="size-12 text-3xl!"
         :workspace-name="workspaceName"
       />
       <h1 class="text-3xl text-base-foreground">
@@ -53,7 +53,7 @@
             :class="
               !isSingleSeatPlan &&
               isInviteLimitReached &&
-              'opacity-50 cursor-not-allowed'
+              'cursor-not-allowed opacity-50'
             "
             :aria-label="$t('workspacePanel.inviteMember')"
             @click="handleInviteMember"
@@ -82,7 +82,7 @@
                   :disabled="!!item.disabled"
                   :class="
                     cn(
-                      'flex w-full items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer',
+                      'flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-3 py-2',
                       item.class,
                       item.disabled && 'pointer-events-auto cursor-not-allowed'
                     )

@@ -1,16 +1,16 @@
 <template>
-  <h2 class="text-xl lg:text-2xl text-muted-foreground m-0 text-center mb-8">
+  <h2 class="m-0 mb-8 text-center text-xl text-muted-foreground lg:text-2xl">
     {{ $t('subscription.preview.confirmPlanChange') }}
   </h2>
   <div
-    class="flex flex-col justify-between items-stretch mx-auto text-sm h-full"
+    class="mx-auto flex h-full flex-col items-stretch justify-between text-sm"
   >
     <div>
       <!-- Plan Comparison Header -->
       <div class="flex items-center gap-4">
         <!-- Current Plan -->
-        <div class="flex flex-col gap-1 w-[250px]">
-          <span class="text-base-foreground text-sm">
+        <div class="flex w-[250px] flex-col gap-1">
+          <span class="text-sm text-base-foreground">
             {{ currentTierName }}
           </span>
           <div class="flex items-baseline gap-1">
@@ -21,14 +21,14 @@
               {{ $t('subscription.usdPerMonthPerMember') }}
             </span>
           </div>
-          <div class="flex items-center gap-1 text-muted-foreground text-sm">
-            <i class="icon-[lucide--component] text-amber-400 text-xs" />
+          <div class="flex items-center gap-1 text-sm text-muted-foreground">
+            <i class="icon-[lucide--component] text-xs text-amber-400" />
             <span
               >{{ currentDisplayCredits }}
               {{ $t('subscription.perMonth') }}</span
             >
           </div>
-          <span class="text-muted-foreground text-sm inline">
+          <span class="inline text-sm text-muted-foreground">
             {{
               $t('subscription.preview.ends', { date: currentPeriodEndDate })
             }}
@@ -36,11 +36,11 @@
         </div>
 
         <!-- Arrow -->
-        <i class="pi pi-arrow-right text-muted-foreground w-8 h-8" />
+        <i class="pi pi-arrow-right size-8 text-muted-foreground" />
 
         <!-- New Plan -->
         <div class="flex flex-col gap-1">
-          <span class="text-base-foreground text-sm font-semibold">
+          <span class="text-sm font-semibold text-base-foreground">
             {{ newTierName }}
           </span>
           <div class="flex items-baseline gap-1">
@@ -51,13 +51,13 @@
               {{ $t('subscription.usdPerMonthPerMember') }}
             </span>
           </div>
-          <div class="flex items-center gap-1 text-muted-foreground text-sm">
-            <i class="icon-[lucide--component] text-amber-400 text-xs" />
+          <div class="flex items-center gap-1 text-sm text-muted-foreground">
+            <i class="icon-[lucide--component] text-xs text-amber-400" />
             <span
               >{{ newDisplayCredits }} {{ $t('subscription.perMonth') }}</span
             >
           </div>
-          <span class="text-muted-foreground text-sm">
+          <span class="text-sm text-muted-foreground">
             {{ $t('subscription.preview.starting', { date: effectiveDate }) }}
           </span>
         </div>
@@ -70,7 +70,7 @@
             {{ $t('subscription.preview.eachMonthCreditsRefill') }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-amber-400 text-sm" />
+            <i class="icon-[lucide--component] text-sm text-amber-400" />
             <span class="font-bold text-base-foreground">
               {{ newDisplayCredits }}
             </span>
@@ -81,7 +81,7 @@
       <!-- Proration Section -->
       <div
         v-if="showProration"
-        class="flex flex-col gap-2 border-t border-border-subtle pt-6 pb-6"
+        class="flex flex-col gap-2 border-t border-border-subtle py-6"
       >
         <div
           v-if="proratedRefundCents > 0"
@@ -111,7 +111,7 @@
 
       <!-- Total Due Section -->
       <div class="flex flex-col gap-2 border-t border-border-subtle pt-6">
-        <div class="flex text-base items-center justify-between">
+        <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
@@ -119,7 +119,7 @@
             ${{ totalDueToday }}
           </span>
         </div>
-        <span class="text-muted-foreground text-sm">
+        <span class="text-sm text-muted-foreground">
           {{
             $t('subscription.preview.nextPaymentDue', {
               date: nextPaymentDate
@@ -143,7 +143,7 @@
 
       <Button
         variant="textonly"
-        class="text-muted-foreground hover:text-base-foreground hover:bg-none text-center cursor-pointer transition-colors text-xs"
+        class="cursor-pointer text-center text-xs text-muted-foreground transition-colors hover:bg-none hover:text-base-foreground"
         @click="$emit('back')"
       >
         {{ $t('subscription.preview.backToAllPlans') }}

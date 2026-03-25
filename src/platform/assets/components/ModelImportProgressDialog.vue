@@ -4,7 +4,7 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -141,10 +141,10 @@ function closeDialog() {
         </div>
       </div>
 
-      <div class="relative max-h-75 overflow-y-auto px-4 py-4">
+      <div class="relative max-h-75 overflow-y-auto p-4">
         <div
           v-if="filteredJobs.length > 3"
-          class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"
+          class="absolute top-4 right-1 h-12 w-1 rounded-full bg-muted-foreground"
         />
 
         <div class="flex flex-col gap-2">
@@ -208,7 +208,7 @@ function closeDialog() {
         <div class="flex shrink-0 items-center gap-2">
           <span
             v-if="isInProgress"
-            class="whitespace-nowrap text-sm text-muted-foreground"
+            class="text-sm whitespace-nowrap text-muted-foreground"
           >
             {{
               t('progressToast.progressCount', {

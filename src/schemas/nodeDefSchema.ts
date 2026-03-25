@@ -341,6 +341,15 @@ export const zDynamicComboInputSpec = z.tuple([
   })
 ])
 
+export const zMatchTypeOptions = z.object({
+  ...zBaseInputOptions.shape,
+  type: z.literal('COMFY_MATCHTYPE_V3'),
+  template: z.object({
+    allowed_types: z.string(),
+    template_id: z.string()
+  })
+})
+
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>

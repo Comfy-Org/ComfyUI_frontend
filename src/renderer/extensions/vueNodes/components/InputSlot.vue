@@ -5,7 +5,7 @@
     v-tooltip.left="tooltipConfig"
     :class="
       cn(
-        'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
         dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
@@ -22,9 +22,9 @@
       ref="connectionDotRef"
       :class="
         cn(
-          '-translate-x-1/2 w-3',
+          'w-3 -translate-x-1/2',
           hasError &&
-            'before:ring-2 before:ring-error before:ring-offset-0 before:size-4 before:absolute before:rounded-full before:pointer-events-none'
+            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
         )
       "
       :slot-data
@@ -34,13 +34,13 @@
     />
 
     <!-- Slot Name -->
-    <div class="h-full flex items-center min-w-0">
+    <div class="flex h-full min-w-0 items-center">
       <span
         v-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
-            hasError && 'text-error font-medium'
+            hasError && 'font-medium text-error'
           )
         "
       >

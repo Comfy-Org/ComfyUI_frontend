@@ -7,41 +7,26 @@
     ref="nodeContainerRef"
     tabindex="0"
     :data-node-id="nodeData.id"
+    :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node bg-node-component-header-surface lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
-        shapeClass,
-        'touch-none flex flex-col',
-        'border-1 border-solid border-component-node-border',
-        // hover (only when node should handle events)
-        shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
-        borderClass,
-        outlineClass,
+        'group/node lg-node absolute isolate text-sm',
+        'flex flex-col contain-layout contain-style',
+        isRerouteNode ? 'h-(--node-height)' : 'min-w-(--min-node-width)',
         cursorClass,
-        {
-          [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
-            bypassed,
-          [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
-            muted,
-          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
-        },
+        isSelected && 'outline-node-component-outline',
+        executing && 'outline-node-stroke-executing',
         shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
     "
-    :style="[
-      {
-        transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
-        zIndex: zIndex,
-        opacity: nodeOpacity,
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
-        backgroundColor: applyLightThemeColor(nodeData?.color)
-      }
-    ]"
+    :style="{
+      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      zIndex: zIndex,
+      opacity: nodeOpacity
+    }"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -50,175 +35,183 @@
     @dragleave="handleDragLeave"
     @drop.stop.prevent="handleDrop"
   >
+    <!-- Selection/Execution Outline Overlay -->
     <AppOutput
       v-if="
-        lgraphNode?.constructor?.nodeData?.output_node && isSelectOutputsMode
+        lgraphNode?.constructor?.nodeData?.output_node &&
+        isSelectOutputsMode &&
+        nodeData.mode === LGraphEventMode.ALWAYS &&
+        !nodeData.hasErrors
       "
       :id="nodeData.id"
     />
     <div
-      v-if="displayHeader"
-      class="flex flex-col justify-center items-center relative"
-    >
-      <template v-if="isCollapsed">
-        <SlotConnectionDot
-          v-if="hasInputs"
-          multi
-          class="absolute left-0 -translate-x-1/2"
-        />
-        <SlotConnectionDot
-          v-if="hasOutputs"
-          multi
-          class="absolute right-0 translate-x-1/2"
-        />
-        <NodeSlots :node-data="nodeData" unified />
-      </template>
-      <NodeHeader
-        :node-data="nodeData"
-        :collapsed="isCollapsed"
-        :price-badges="badges.pricing"
-        @collapse="handleCollapse"
-        @update:title="handleHeaderTitleUpdate"
-      />
-    </div>
-
-    <div
-      v-if="isCollapsed && executing && progress !== undefined"
+      v-if="isSelected || executing"
+      data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'absolute inset-x-4 -bottom-[1px] translate-y-1/2 rounded-full',
-          progressClasses
+          'pointer-events-none absolute z-0 border-3 outline-none',
+          selectionShapeClass,
+          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
+          isSelected
+            ? 'border-node-component-outline'
+            : 'border-node-stroke-executing',
+          footerStateOutlineBottomClass
         )
       "
-      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
-
-    <template v-if="!isCollapsed">
-      <div class="relative">
-        <!-- Progress bar for executing state -->
-        <div
-          v-if="executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-0 top-1/2 -translate-y-1/2',
-              !!(progress < 1) && 'rounded-r-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+    <!-- Root Border Overlay -->
+    <div
+      :class="
+        cn(
+          'pointer-events-none absolute border border-solid border-component-node-border',
+          rootBorderShapeClass,
+          hasAnyError ? '-inset-1' : 'inset-0',
+          footerRootBorderBottomClass
+        )
+      "
+    />
+    <div
+      data-testid="node-inner-wrapper"
+      :class="
+        cn(
+          'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
+          'w-(--node-width)',
+          !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
+          shapeClass,
+          hasAnyError && 'ring-4 ring-destructive-background',
+          {
+            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
+              bypassed,
+            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
+              muted,
+            'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
+          }
+        )
+      "
+      :style="{
+        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
+        backgroundColor: applyLightThemeColor(nodeData?.color)
+      }"
+    >
+      <div
+        v-if="displayHeader"
+        class="relative flex flex-col items-center justify-center"
+      >
+        <template v-if="isCollapsed">
+          <SlotConnectionDot
+            v-if="hasInputs"
+            multi
+            class="absolute left-0 -translate-x-1/2"
+          />
+          <SlotConnectionDot
+            v-if="hasOutputs"
+            multi
+            class="absolute right-0 translate-x-1/2"
+          />
+          <NodeSlots :node-data="nodeData" unified />
+        </template>
+        <NodeHeader
+          :node-data="nodeData"
+          :collapsed="isCollapsed"
+          :price-badges="badges.pricing"
+          @collapse="handleCollapse"
+          @update:title="handleHeaderTitleUpdate"
         />
       </div>
 
       <div
-        class="flex flex-1 flex-col gap-1 pt-1 pb-3 bg-component-node-background rounded-b-2xl"
-        :data-testid="`node-body-${nodeData.id}`"
-      >
+        v-if="isCollapsed && executing && progress !== undefined"
+        :class="
+          cn(
+            'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
+            progressClasses
+          )
+        "
+        :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+      />
+
+      <template v-if="!isCollapsed && isRerouteNode">
         <NodeSlots :node-data="nodeData" />
+      </template>
 
-        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
-
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex flex-col">
-          <NodeContent
-            v-if="nodeMedia"
-            :node-data="nodeData"
-            :media="nodeMedia"
-          />
-          <NodeContent
-            v-for="preview in promotedPreviews"
-            :key="`${preview.interiorNodeId}-${preview.widgetName}`"
-            :node-data="nodeData"
-            :media="preview"
+      <template v-else-if="!isCollapsed">
+        <div class="relative">
+          <!-- Progress bar for executing state -->
+          <div
+            v-if="executing && progress !== undefined"
+            :class="
+              cn(
+                'absolute inset-x-0 top-1/2 -translate-y-1/2',
+                !!(progress < 1) && 'rounded-r-full',
+                progressClasses
+              )
+            "
+            :style="{ width: `${Math.min(progress * 100, 100)}%` }"
           />
         </div>
-        <!-- Live mid-execution preview images -->
-        <LivePreview
-          v-if="shouldShowPreviewImg"
-          :image-url="latestPreviewUrl"
-        />
-        <NodeBadges v-bind="badges" :pricing="undefined" class="mt-auto" />
-      </div>
-    </template>
-    <div
-      v-if="
-        (hasAnyError && showErrorsTabEnabled) ||
-        lgraphNode?.isSubgraphNode() ||
-        showAdvancedState ||
-        showAdvancedInputsButton
-      "
-      :class="
-        cn(
-          'flex w-full h-7 rounded-b-2xl -z-1 text-xs rounded-t-none overflow-hidden divide-x divide-component-node-border',
-          !isCollapsed && '-mt-5 h-12'
-        )
-      "
-    >
-      <Button
-        v-if="lgraphNode?.isSubgraphNode()"
-        variant="textonly"
-        :class="
-          cn(
-            'flex-1 rounded-none h-full',
-            hasAnyError &&
-              showErrorsTabEnabled &&
-              !nodeData.color &&
-              'bg-node-component-header-surface',
-            isCollapsed ? 'py-2' : 'pt-7 pb-2'
-          )
-        "
-        data-testid="subgraph-enter-button"
-        @click.stop="handleEnterSubgraph"
-      >
-        <span class="truncate">{{
-          hasAnyError && showErrorsTabEnabled
-            ? t('g.enter')
-            : t('g.enterSubgraph')
-        }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
-      </Button>
 
-      <Button
-        v-if="hasAnyError && showErrorsTabEnabled"
-        variant="textonly"
-        :class="
-          cn(
-            'flex-1 rounded-none h-full bg-error hover:bg-destructive-background-hover',
-            isCollapsed ? 'py-2' : 'pt-7 pb-2'
-          )
-        "
-        @click.stop="useRightSidePanelStore().openPanel('errors')"
-      >
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
-      </Button>
+        <div
+          :class="
+            cn(
+              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
+              bodyRoundingClass
+            )
+          "
+          :data-testid="`node-body-${nodeData.id}`"
+        >
+          <NodeSlots :node-data="nodeData" />
 
-      <!-- Advanced inputs (non-subgraph nodes only) -->
-      <Button
-        v-if="
-          !lgraphNode?.isSubgraphNode() &&
-          (showAdvancedState || showAdvancedInputsButton)
-        "
-        variant="textonly"
-        :class="
-          cn('flex-1 rounded-none h-full', isCollapsed ? 'py-2' : 'pt-7 pb-2')
-        "
-        @click.stop="showAdvancedState = !showAdvancedState"
-      >
-        <template v-if="showAdvancedState">
-          <span class="truncate">{{
-            t('rightSidePanel.hideAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
-        </template>
-        <template v-else>
-          <span class="truncate">{{
-            t('rightSidePanel.showAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
-        </template>
-      </Button>
+          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+
+          <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
+            <NodeContent
+              v-if="nodeMedia"
+              :node-data="nodeData"
+              :media="nodeMedia"
+            />
+            <NodeContent
+              v-for="preview in promotedPreviews"
+              :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
+              :node-data="nodeData"
+              :media="preview"
+            />
+          </div>
+          <!-- Live mid-execution preview images -->
+          <LivePreview
+            v-if="shouldShowPreviewImg"
+            :image-url="latestPreviewUrl"
+          />
+          <NodeBadges
+            v-if="!isTransparentHeaderless"
+            v-bind="badges"
+            :pricing="undefined"
+            class="mt-auto"
+          />
+        </div>
+      </template>
     </div>
+    <NodeFooter
+      v-if="!isRerouteNode"
+      :is-subgraph="!!lgraphNode?.isSubgraphNode()"
+      :has-any-error="hasAnyError"
+      :show-errors-tab-enabled="showErrorsTabEnabled"
+      :is-collapsed="isCollapsed"
+      :show-advanced-inputs-button="showAdvancedInputsButton"
+      :show-advanced-state="showAdvancedState"
+      :header-color="applyLightThemeColor(nodeData?.color)"
+      :shape="nodeData.shape"
+      @enter-subgraph="handleEnterSubgraph"
+      @open-errors="handleOpenErrors"
+      @toggle-advanced="handleToggleAdvanced"
+    />
     <template
-      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+      v-if="
+        !isCollapsed &&
+        !isRerouteNode &&
+        nodeData.resizable !== false &&
+        !isSelectMode
+      "
     >
       <div
         v-for="handle in RESIZE_HANDLES"
@@ -229,6 +222,8 @@
           cn(
             baseResizeHandleClasses,
             handle.positionClasses,
+            (handle.corner === 'SE' || handle.corner === 'SW') &&
+              footerResizeHandleBottomClass,
             handle.cursorClass,
             'group-hover/node:opacity-100'
           )
@@ -238,7 +233,7 @@
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 12 12"
-          :class="cn('w-2/5 h-2/5 absolute', handle.svgPositionClasses)"
+          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
           :style="
             handle.svgTransform ? { transform: handle.svgTransform } : undefined
           "
@@ -270,12 +265,11 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -293,6 +287,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LayoutChange } from '@/renderer/core/layout/types'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -307,25 +302,29 @@ import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useN
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isTransparent } from '@/utils/colorUtil'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
+import { isTransparent } from '@/utils/colorUtil'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '../interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
+import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 
@@ -356,6 +355,8 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -366,9 +367,11 @@ const hasAnyError = computed((): boolean => {
     nodeData.hasErrors ||
     error ||
     executionErrorStore.getNodeErrors(nodeLocatorId.value) ||
+    missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
     (lgraphNode.value &&
       (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        executionErrorStore.isContainerWithMissingNode(lgraphNode.value)))
+        missingNodesErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
+        missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
   )
 })
 
@@ -377,6 +380,8 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -465,18 +470,13 @@ function initSizeStyles() {
  * Handle external size changes (e.g., from extensions calling node.setSize()).
  * Updates CSS variables when layoutStore changes from Canvas/External source.
  */
-function handleLayoutChange(change: {
-  source: LayoutSource
-  nodeIds: string[]
-}) {
+function handleLayoutChange(change: LayoutChange) {
   // Only handle Canvas or External source (extensions calling setSize)
   if (
     change.source !== LayoutSource.Canvas &&
     change.source !== LayoutSource.External
   )
     return
-
-  if (!change.nodeIds.includes(nodeData.id)) return
   if (layoutStore.isResizingVueNodes.value) return
   if (isCollapsed.value) return
 
@@ -493,7 +493,10 @@ let unsubscribeLayoutChange: (() => void) | null = null
 
 onMounted(() => {
   initSizeStyles()
-  unsubscribeLayoutChange = layoutStore.onChange(handleLayoutChange)
+  unsubscribeLayoutChange = layoutStore.onNodeChange(
+    nodeData.id,
+    handleLayoutChange
+  )
 })
 
 onUnmounted(() => {
@@ -503,7 +506,6 @@ onUnmounted(() => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
-const MIN_NODE_WIDTH = 225
 const mutations = useLayoutMutations()
 
 const { startResize } = useNodeResize((result, element) => {
@@ -563,53 +565,104 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
-const borderClass = computed(() => {
-  if (hasAnyError.value) return 'border-node-stroke-error bg-error'
-  //FIXME need a better way to detecting transparency
-  if (
-    !displayHeader.value &&
-    nodeData.bgcolor &&
-    isTransparent(nodeData.bgcolor)
+const hasFooter = computed(() => {
+  return !!(
+    (hasAnyError.value && showErrorsTabEnabled.value) ||
+    lgraphNode.value?.isSubgraphNode() ||
+    (!lgraphNode.value?.isSubgraphNode() &&
+      (showAdvancedState.value || showAdvancedInputsButton.value))
   )
-    return 'border-0'
-  return ''
 })
 
-const outlineClass = computed(() => {
-  return cn(
-    isSelected.value && 'outline-node-component-outline',
-    hasAnyError.value && 'outline-node-stroke-error',
-    executing.value && 'outline-node-stroke-executing'
-  )
+// Footer offset computed classes
+
+const footerStateOutlineBottomClass = computed(() =>
+  hasFooter.value ? '-bottom-[35px]' : ''
+)
+
+const footerRootBorderBottomClass = computed(() =>
+  hasFooter.value ? '-bottom-8' : ''
+)
+
+const footerResizeHandleBottomClass = computed(() => {
+  if (!hasFooter.value) return ''
+  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-35px]'
 })
 
 const cursorClass = computed(() => {
-  return cn(
-    nodeData.flags?.pinned
-      ? 'cursor-default'
-      : layoutStore.isDraggingVueNodes.value
-        ? 'cursor-grabbing'
-        : 'cursor-grab'
-  )
+  if (nodeData.flags?.pinned) return 'cursor-default'
+  return layoutStore.isDraggingVueNodes.value
+    ? 'cursor-grabbing'
+    : 'cursor-grab'
+})
+
+const bodyRoundingClass = computed(() => {
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return ''
+    case RenderShape.CARD:
+      return 'rounded-br-2xl'
+    default:
+      return 'rounded-b-2xl'
+  }
 })
 
 const shapeClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'rounded-none'
+      return ''
     case RenderShape.CARD:
-      return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+      return 'rounded-tl-2xl rounded-br-2xl'
     default:
       return 'rounded-2xl'
+  }
+})
+
+const isTransparentHeaderless = computed(
+  () =>
+    !displayHeader.value &&
+    !!nodeData.bgcolor &&
+    isTransparent(nodeData.bgcolor)
+)
+
+const rootBorderShapeClass = computed(() => {
+  if (isTransparentHeaderless.value) return 'border-0'
+
+  const isExpanded = hasAnyError.value
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return ''
+    case RenderShape.CARD:
+      return isExpanded
+        ? 'rounded-tl-[20px] rounded-br-[20px]'
+        : 'rounded-tl-2xl rounded-br-2xl'
+    default:
+      return isExpanded ? 'rounded-[20px]' : 'rounded-2xl'
+  }
+})
+
+const selectionShapeClass = computed(() => {
+  if (isTransparentHeaderless.value) return 'border-0'
+
+  const isExpanded = hasAnyError.value
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return ''
+    case RenderShape.CARD:
+      return isExpanded
+        ? 'rounded-tl-[23px] rounded-br-[23px]'
+        : 'rounded-tl-[19px] rounded-br-[19px]'
+    default:
+      return isExpanded ? 'rounded-[23px]' : 'rounded-[19px]'
   }
 })
 
 const beforeShapeClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return 'before:rounded-none'
+      return ''
     case RenderShape.CARD:
-      return 'before:rounded-tl-2xl before:rounded-br-2xl before:rounded-tr-none before:rounded-bl-none'
+      return 'before:rounded-tl-2xl before:rounded-br-2xl'
     default:
       return 'before:rounded-2xl'
   }
@@ -622,6 +675,16 @@ const handleCollapse = () => {
 
 const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
+}
+
+const rightSidePanelStore = useRightSidePanelStore()
+
+const handleOpenErrors = () => {
+  rightSidePanelStore.openPanel('errors')
+}
+
+const handleToggleAdvanced = () => {
+  showAdvancedState.value = !showAdvancedState.value
 }
 
 const handleEnterSubgraph = () => {
@@ -703,7 +766,6 @@ const showAdvancedState = customRef((track, trigger) => {
 
       if (node instanceof SubgraphNode) {
         // Do not modify internalState for subgraph nodes
-        const rightSidePanelStore = useRightSidePanelStore()
         if (value) {
           rightSidePanelStore.focusSection('advanced-inputs')
         } else {

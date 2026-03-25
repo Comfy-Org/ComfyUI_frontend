@@ -2,7 +2,7 @@
   <ContextMenu
     ref="contextMenu"
     :model="menuItems"
-    class="max-h-[80vh] md:max-h-none overflow-y-auto md:overflow-y-visible"
+    class="max-h-[80vh] overflow-y-auto md:max-h-none md:overflow-y-visible"
     @show="onMenuShow"
     @hide="onMenuHide"
   >

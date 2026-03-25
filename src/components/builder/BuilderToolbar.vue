@@ -13,7 +13,7 @@
               stepClasses,
               activeStep === step.id
                 ? 'bg-interface-builder-mode-background'
-                : 'hover:bg-secondary-background bg-transparent'
+                : 'bg-transparent hover:bg-secondary-background'
             )
           "
           :aria-current="activeStep === step.id ? 'step' : undefined"
@@ -32,7 +32,7 @@
         :is-select-active="isSelectStep"
         @switch="navigateToStep('builder:outputs')"
       >
-        <button :class="cn(stepClasses, 'opacity-30 bg-transparent')">
+        <button :class="cn(stepClasses, 'bg-transparent opacity-30')">
           <StepBadge
             :step="defaultViewStep"
             :index="steps.length"
@@ -48,7 +48,7 @@
             stepClasses,
             activeStep === 'setDefaultView'
               ? 'bg-interface-builder-mode-background'
-              : 'hover:bg-secondary-background bg-transparent'
+              : 'bg-transparent hover:bg-secondary-background'
           )
         "
         @click="navigateToStep('setDefaultView')"

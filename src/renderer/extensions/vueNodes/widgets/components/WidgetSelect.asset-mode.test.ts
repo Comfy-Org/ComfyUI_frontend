@@ -4,9 +4,8 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -27,14 +26,13 @@ import { assetService } from '@/platform/assets/services/assetService'
 const mockShouldUseAssetBrowser = vi.mocked(assetService.shouldUseAssetBrowser)
 
 describe('WidgetSelect asset mode', () => {
-  const createWidget = (): SimplifiedWidget<string | undefined> => ({
-    name: 'ckpt_name',
-    type: 'combo',
-    value: undefined,
-    options: {
-      values: []
-    }
-  })
+  const createWidget = () =>
+    createMockWidget<string | undefined>({
+      value: undefined,
+      name: 'ckpt_name',
+      type: 'combo',
+      options: { values: [] }
+    })
 
   beforeEach(() => {
     vi.clearAllMocks()

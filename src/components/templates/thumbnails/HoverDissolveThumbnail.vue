@@ -1,6 +1,6 @@
 <template>
   <BaseThumbnail :is-hovered="isHovered">
-    <div class="relative h-full w-full">
+    <div class="relative size-full">
       <div class="absolute inset-0">
         <LazyImage
           :src="baseImageSrc"

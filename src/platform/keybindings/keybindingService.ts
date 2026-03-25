@@ -1,6 +1,5 @@
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -14,16 +13,6 @@ export function useKeybindingService() {
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
-
-  function shouldForwardToCanvas(event: KeyboardEvent): boolean {
-    if (event.ctrlKey || event.altKey || event.metaKey) {
-      return false
-    }
-
-    const canvasKeys = ['Delete', 'Backspace']
-
-    return canvasKeys.includes(event.key)
-  }
 
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -44,7 +33,17 @@ export function useKeybindingService() {
     }
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
-    if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
+    if (keybinding) {
+      const targetElementId =
+        keybinding.targetElementId === 'graph-canvas'
+          ? 'graph-canvas-container'
+          : keybinding.targetElementId
+      if (targetElementId) {
+        const container = document.getElementById(targetElementId)
+        if (!container?.contains(target)) {
+          return
+        }
+      }
       if (
         event.key === 'Escape' &&
         !event.ctrlKey &&
@@ -72,18 +71,6 @@ export function useKeybindingService() {
         await commandStore.execute(keybinding.commandId)
       }
       return
-    }
-
-    if (!keybinding && shouldForwardToCanvas(event)) {
-      const canvas = app.canvas
-      if (
-        canvas &&
-        canvas.processKey &&
-        typeof canvas.processKey === 'function'
-      ) {
-        canvas.processKey(event)
-        return
-      }
     }
 
     if (event.ctrlKey || event.altKey || event.metaKey) {

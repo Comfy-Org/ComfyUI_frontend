@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.41.12",
+  "version": "1.43.4",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -60,6 +60,7 @@
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",
     "@primeuix/styled": "catalog:",
@@ -80,6 +81,7 @@
     "@tiptap/starter-kit": "catalog:",
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
+    "@vueuse/router": "^14.2.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-serialize": "^0.13.0",
     "@xterm/xterm": "^5.5.0",
@@ -100,6 +102,7 @@
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
     "pinia": "catalog:",
+    "posthog-js": "catalog:",
     "primeicons": "catalog:",
     "primevue": "catalog:",
     "reka-ui": "catalog:",
@@ -132,6 +135,9 @@
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@testing-library/vue": "catalog:",
     "@types/fs-extra": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
@@ -150,8 +156,10 @@
     "eslint-plugin-import-x": "catalog:",
     "eslint-plugin-oxlint": "catalog:",
     "eslint-plugin-storybook": "catalog:",
+    "eslint-plugin-testing-library": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",
     "eslint-plugin-vue": "catalog:",
+    "fast-check": "catalog:",
     "fs-extra": "^11.2.0",
     "globals": "catalog:",
     "happy-dom": "catalog:",
@@ -173,9 +181,7 @@
     "storybook": "catalog:",
     "stylelint": "catalog:",
     "tailwindcss": "catalog:",
-    "tailwindcss-primeui": "catalog:",
     "tsx": "catalog:",
-    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "unplugin-icons": "catalog:",
@@ -192,6 +198,9 @@
     "vue-tsc": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "pnpm": {
     "overrides": {

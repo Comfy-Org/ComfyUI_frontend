@@ -3,7 +3,7 @@
     v-if="!isLoggedIn"
     variant="textonly"
     size="icon"
-    :class="cn('group rounded-full text-base-foreground p-0', className)"
+    :class="cn('group rounded-full p-0 text-base-foreground', className)"
     :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"

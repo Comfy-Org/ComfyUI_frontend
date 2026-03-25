@@ -255,6 +255,35 @@ describe('jobOutputCache', () => {
       expect(video?.mediaType).toBe('video')
     })
 
+    it('preserves display_name from output items', async () => {
+      const { getPreviewableOutputsFromJobDetail } =
+        await import('@/services/jobOutputCache')
+      const jobDetail: JobDetail = {
+        id: 'job-display-name',
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {
+          'node-1': {
+            images: [
+              {
+                filename: 'abc123hash.png',
+                subfolder: '',
+                type: 'output',
+                display_name: 'ComfyUI_00001_.png'
+              }
+            ]
+          }
+        }
+      }
+
+      const result = getPreviewableOutputsFromJobDetail(jobDetail)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].filename).toBe('abc123hash.png')
+      expect(result[0].display_name).toBe('ComfyUI_00001_.png')
+    })
+
     it('filters non-previewable outputs and non-object items', async () => {
       const { getPreviewableOutputsFromJobDetail } =
         await import('@/services/jobOutputCache')

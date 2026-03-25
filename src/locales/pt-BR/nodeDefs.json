@@ -1419,6 +1419,41 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Expressão Matemática",
+    "inputs": {
+      "expression": {
+        "name": "expressão"
+      },
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "Conversão de Número",
+    "inputs": {
+      "value": {
+        "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Alternar",
     "inputs": {
@@ -1717,6 +1752,10 @@
         "name": "ciclo_fechado",
         "tooltip": "Se deve fechar o ciclo da janela de contexto; aplicável apenas para agendamentos em loop."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Lista de índices latentes a serem mantidos nos tensores de condicionamento para cada janela. Por exemplo, definir como '0' usará a imagem inicial para cada janela."
+      },
       "context_length": {
         "name": "comprimento_contexto",
         "tooltip": "O comprimento da janela de contexto."
@@ -1748,6 +1787,10 @@
       "model": {
         "name": "modelo",
         "tooltip": "O modelo ao qual aplicar as janelas de contexto durante a amostragem."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Se deve dividir múltiplos condicionamentos (criados por ConditionCombine) para cada janela com base no índice da região."
       }
     },
     "outputs": {
@@ -2187,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Editor de Curva",
+    "inputs": {
+      "curve": {
+        "name": "curva"
+      },
+      "histogram": {
+        "name": "histograma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curva",
         "tooltip": null
       }
     }
@@ -3188,6 +3248,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Ativa a otimização KV Cache para imagens de referência em modelos da família Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo para aplicar o KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo modificado com KV Cache ativado."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Este nó redimensiona a imagem para um tamanho mais ideal para flux kontext.",
     "display_name": "FluxKontextImageScale",
@@ -3781,6 +3856,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Primeira imagem do processo de pensamento do modelo. Disponível apenas com thinking_level ALTO e modalidade IMAGEM+TEXTO."
       }
     }
   },
@@ -3947,6 +4026,10 @@
     "description": "Modifique uma imagem existente com base em um prompt de texto",
     "display_name": "Grok Image Edit",
     "inputs": {
+      "aspect_ratio": {
+        "name": "proporção",
+        "tooltip": "Só é permitido quando várias imagens estão conectadas à entrada de imagem."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -3999,6 +4082,9 @@
         "name": "prompt",
         "tooltip": "O prompt de texto usado para gerar a imagem"
       },
+      "resolution": {
+        "name": "resolução"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
@@ -4039,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Estenda um vídeo existente com uma continuação perfeita baseada em um prompt de texto.",
+    "display_name": "Grok Video Extend",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para extensão de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do que deve acontecer a seguir no vídeo."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de origem para estender. Formato MP4, 2-15 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Gere vídeo a partir de um prompt ou de uma imagem",
     "display_name": "Grok Video",
@@ -4071,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Gere vídeo guiado por imagens de referência como referências de estilo e conteúdo.",
+    "display_name": "Grok Referência-para-Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -5854,6 +6008,9 @@
       "mode": {
         "name": "modo"
       },
+      "model": {
+        "name": "modelo"
+      },
       "prompt": {
         "name": "prompt"
       },
@@ -6688,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Defina o áudio de referência para transferência de identidade de locutor com ID-LoRA. Codifica um clipe de áudio de referência no condicionamento e, opcionalmente, ajusta o modelo com orientação de identidade (passagem extra sem referência, amplificando o efeito de identidade do locutor).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE para codificação."
+      },
+      "end_percent": {
+        "name": "percentual_final",
+        "tooltip": "Fim do intervalo sigma onde a orientação de identidade está ativa."
+      },
+      "identity_guidance_scale": {
+        "name": "escala_de_orientação_de_identidade",
+        "tooltip": "Intensidade da orientação de identidade. Executa uma passagem extra sem referência a cada etapa para amplificar a identidade do locutor. Defina como 0 para desativar (sem passagem extra)."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "reference_audio": {
+        "name": "áudio_de_referência",
+        "tooltip": "Clipe de áudio de referência cuja identidade do locutor será transferida. Recomenda-se cerca de 5 segundos (duração do treinamento). Clipe mais curto ou mais longo pode prejudicar a transferência da identidade vocal."
+      },
+      "start_percent": {
+        "name": "percentual_inicial",
+        "tooltip": "Início do intervalo sigma onde a orientação de identidade está ativa."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
         "tooltip": null
       }
     }
@@ -11262,6 +11467,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "cor_de_fundo"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem base opcional para pintar por cima"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Combinar Par de Condições",
     "inputs": {
@@ -11868,6 +12102,91 @@
       },
       "clip_name4": {
         "name": "clip_name4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "Vetorização de uma imagem raster para SVG usando Quiver AI.",
+    "display_name": "Quiver Imagem para SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "corte_automático",
+        "tooltip": "Recortar automaticamente para o sujeito dominante."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de entrada para vetorizar."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para vetorização SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Gerar um SVG a partir de um prompt de texto usando Quiver AI.",
+    "display_name": "Quiver Texto para SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instruções",
+        "tooltip": "Orientações adicionais de estilo ou formatação."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do SVG desejado."
+      },
+      "reference_images": {
+        "name": "imagens_de_referência",
+        "tooltip": "Até 4 imagens de referência para guiar a geração."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -12823,6 +13142,133 @@
       "1": {
         "name": "altura",
         "tooltip": "Altura calculada em pixels (múltiplo de 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Gere imagens a partir de descrições de texto usando o Reve.",
+    "display_name": "Reve Image Create",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para geração."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. Máximo de 2560 caracteres."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Edite imagens usando instruções em linguagem natural com o Reve.",
+    "display_name": "Reve Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Descrição em texto de como editar a imagem. Máximo de 2560 caracteres."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "A imagem a ser editada."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para edição."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Combine imagens de referência com prompts de texto para criar novas imagens usando o Reve.",
+    "display_name": "Reve Image Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Versão do modelo a ser usada para remix."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. Pode incluir tags XML img para referenciar imagens específicas pelo índice, por exemplo, <img>0</img>, <img>1</img>, etc."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remover o fundo da imagem gerada. Pode gerar custo adicional."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Aumentar a resolução da imagem gerada. Pode gerar custo adicional."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15051,6 +15497,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "Após inserir o modelo 3D, realize a repintura da textura do modelo 3D.",
+    "display_name": "Hunyuan3D: Edição de Textura 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve a edição da textura. Suporta até 1024 caracteres UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -15099,6 +15580,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Realiza o desdobramento UV em um modelo 3D para gerar textura UV. O modelo de entrada deve ter menos de 30.000 faces.",
+    "display_name": "Hunyuan3D: Modelo para UV",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB, OBJ ou FBX)"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Realiza retopologia inteligente em um modelo 3D. Suporta formatos GLB/OBJ; máximo de 200MB; recomendado para modelos de alta poligonagem.",
+    "display_name": "Hunyuan3D: Topologia Inteligente",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "face_level": {
+        "name": "nível_de_faces",
+        "tooltip": "Nível de redução de polígonos."
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Modelo 3D de entrada (GLB ou OBJ)"
+      },
+      "polygon_type": {
+        "name": "tipo_de_polígono",
+        "tooltip": "Tipo de composição da superfície."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -15141,6 +15696,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }

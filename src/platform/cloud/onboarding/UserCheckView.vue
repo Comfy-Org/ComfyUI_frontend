@@ -15,7 +15,7 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
-    <ProgressSpinner class="h-8 w-8" />
+    <ProgressSpinner class="size-8" />
   </div>
 </template>
 

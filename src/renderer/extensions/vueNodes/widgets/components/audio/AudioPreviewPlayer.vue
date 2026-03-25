@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div
       v-if="!hideWhenEmpty || modelValue"
-      class="bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0"
+      class="relative box-border flex h-16 w-full items-center justify-start gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
     >
       <!-- Hidden audio element -->
       <audio
@@ -108,7 +108,7 @@
         popup
         class="audio-player-menu"
         :pt:root:class="
-          cn('bg-component-node-widget-background border-component-node-border')
+          cn('border-component-node-border bg-component-node-widget-background')
         "
         :pt:submenu:class="cn('bg-component-node-widget-background')"
       >
@@ -156,7 +156,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-import { formatTime } from '../../utils/audioUtils'
+import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -208,8 +208,7 @@ const handleDownload = () => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: t('g.failedToDownloadFile'),
-      life: 3000
+      detail: t('g.failedToDownloadFile')
     })
   }
 }

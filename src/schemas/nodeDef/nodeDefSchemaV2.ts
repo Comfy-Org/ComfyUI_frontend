@@ -128,11 +128,16 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
 
 const zCurvePoint = z.tuple([z.number(), z.number()])
 
+const zCurveData = z.object({
+  points: z.array(zCurvePoint),
+  interpolation: z.enum(['monotone_cubic', 'linear'])
+})
+
 const zCurveInputSpec = zBaseInputOptions.extend({
   type: z.literal('CURVE'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  default: z.array(zCurvePoint).optional()
+  default: zCurveData.optional()
 })
 
 const zCustomInputSpec = zBaseInputOptions.extend({

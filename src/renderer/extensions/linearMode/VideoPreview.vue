@@ -3,6 +3,7 @@ import { ref, useTemplateRef } from 'vue'
 
 const { src } = defineProps<{
   src: string
+  label?: string
 }>()
 
 const videoRef = useTemplateRef('videoRef')
@@ -23,5 +24,8 @@ const height = ref('')
       }
     "
   />
-  <span class="self-center z-10" v-text="`${width} x ${height}`" />
+  <span class="z-10 self-center">
+    {{ `${width} x ${height}` }}
+    <template v-if="label"> | {{ label }}</template>
+  </span>
 </template>

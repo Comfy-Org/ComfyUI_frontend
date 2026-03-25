@@ -67,7 +67,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     inProgressItems.value = [item, ...inProgressItems.value]
 
     trackedJobId.value = jobId
-    autoSelect(`slot:${item.id}`)
+    autoSelect(`slot:${item.id}`, jobId)
   }
 
   let raf: number | null = null
@@ -88,7 +88,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
           state: 'latent',
           latentPreviewUrl: url
         }))
-        if (wasEmpty) autoSelect(`slot:${existing.id}`)
+        if (wasEmpty) autoSelect(`slot:${existing.id}`, jobId)
         return
       }
 
@@ -103,7 +103,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       }
       currentSkeletonId.value = item.id
       inProgressItems.value = [item, ...inProgressItems.value]
-      autoSelect(`slot:${item.id}`)
+      autoSelect(`slot:${item.id}`, jobId)
     })
   }
 
@@ -136,7 +136,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
         output: newOutputs[0],
         latentPreviewUrl: undefined
       }
-      autoSelect(`slot:${imageItem.id}`)
+      autoSelect(`slot:${imageItem.id}`, jobId)
 
       const extras: InProgressItem[] = newOutputs.slice(1).map((o) => ({
         id: makeItemId(jobId),
@@ -162,11 +162,19 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       state: 'image' as const,
       output: o
     }))
-    autoSelect(`slot:${newItems[0].id}`)
+    autoSelect(`slot:${newItems[0].id}`, jobId)
     inProgressItems.value = [...newItems, ...inProgressItems.value]
   }
 
   function onJobComplete(jobId: string) {
+    // On any job complete, remove all pending resolve items.
+    if (pendingResolve.value.size > 0) {
+      for (const oldJobId of pendingResolve.value) {
+        removeJobItems(oldJobId)
+      }
+      pendingResolve.value = new Set()
+    }
+
     if (raf) {
       cancelAnimationFrame(raf)
       raf = null
@@ -226,7 +234,17 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     isFollowing.value = true
   }
 
-  function autoSelect(slotId: string) {
+  function isJobForActiveWorkflow(jobId: string): boolean {
+    return (
+      executionStore.jobIdToSessionWorkflowPath.get(jobId) ===
+      workflowStore.activeWorkflow?.path
+    )
+  }
+
+  function autoSelect(slotId: string, jobId: string) {
+    // Only auto-select if the job belongs to the active workflow
+    if (!isJobForActiveWorkflow(jobId)) return
+
     const sel = selectedId.value
     if (!sel || sel.startsWith('slot:') || isFollowing.value) {
       selectedId.value = slotId
@@ -244,28 +262,27 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     onNodeExecuted(jobId, detail)
   }
 
-  function reset() {
-    if (raf) {
-      cancelAnimationFrame(raf)
-      raf = null
-    }
-    executedNodeIds.clear()
-    inProgressItems.value = []
-    selectedId.value = null
-    isFollowing.value = true
-    trackedJobId.value = null
-    currentSkeletonId.value = null
-    pendingResolve.value = new Set()
-  }
-
+  // Watch both activeJobId and the path mapping together. The path mapping
+  // may arrive after activeJobId due to a race between WebSocket
+  // (execution_start) and the HTTP response (queuePrompt > storeJob).
+  // Watching both ensures onJobStart fires once the mapping is available.
   watch(
-    () => executionStore.activeJobId,
-    (jobId, oldJobId) => {
+    [
+      () => executionStore.activeJobId,
+      () => executionStore.jobIdToSessionWorkflowPath
+    ],
+    ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
       if (oldJobId && oldJobId !== jobId) {
         onJobComplete(oldJobId)
       }
-      if (jobId) {
+      // Guard with trackedJobId to avoid double-starting when the
+      // path mapping arrives after activeJobId was already set.
+      if (
+        jobId &&
+        trackedJobId.value !== jobId &&
+        isJobForActiveWorkflow(jobId)
+      ) {
         onJobStart(jobId)
       }
     }
@@ -283,14 +300,66 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     { deep: true }
   )
 
+  function reconcileOnEnter() {
+    // Complete any tracked job that finished while we were away.
+    // The activeJobId watcher couldn't fire onJobComplete because
+    // isAppMode was false at the time.
+    if (
+      trackedJobId.value &&
+      trackedJobId.value !== executionStore.activeJobId
+    ) {
+      onJobComplete(trackedJobId.value)
+    }
+    // Start tracking the current job only if it belongs to this
+    // workflow — otherwise we'd adopt another tab's job.
+    if (
+      executionStore.activeJobId &&
+      trackedJobId.value !== executionStore.activeJobId &&
+      isJobForActiveWorkflow(executionStore.activeJobId)
+    ) {
+      onJobStart(executionStore.activeJobId)
+    }
+
+    // Clear stale selection from another workflow's job.
+    if (
+      selectedId.value?.startsWith('slot:') &&
+      trackedJobId.value &&
+      !isJobForActiveWorkflow(trackedJobId.value)
+    ) {
+      selectedId.value = null
+      isFollowing.value = true
+    }
+
+    // Re-apply the latest latent preview that may have arrived while
+    // away, but only for a job belonging to the active workflow.
+    const jobId = trackedJobId.value
+    if (jobId && isJobForActiveWorkflow(jobId)) {
+      const preview = jobPreviewStore.nodePreviewsByPromptId[jobId]
+      if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
+    }
+  }
+
+  function cleanupOnLeave() {
+    // If the tracked job already finished (no longer the active job),
+    // complete it now to clean up skeletons/latents. If it's still
+    // running, preserve all items for tab switching.
+    if (
+      trackedJobId.value &&
+      trackedJobId.value !== executionStore.activeJobId
+    ) {
+      onJobComplete(trackedJobId.value)
+    }
+  }
+
   watch(
     isAppMode,
     (active, wasActive) => {
       if (active) {
         api.addEventListener('executed', handleExecuted)
+        reconcileOnEnter()
       } else if (wasActive) {
         api.removeEventListener('executed', handleExecuted)
-        reset()
+        cleanupOnLeave()
       }
     },
     { immediate: true }

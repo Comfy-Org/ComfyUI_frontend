@@ -2,14 +2,16 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -51,9 +53,9 @@ export function useWorkflowActionsMenu(
   const commandStore = useCommandStore()
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
-  const canvasStore = useCanvasStore()
   const { flags } = useFeatureFlags()
-  const { enterBuilder } = useAppModeStore()
+  const appModeStore = useAppModeStore()
+  const { enterBuilder, pruneLinearData } = appModeStore
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -93,12 +95,15 @@ export function useWorkflowActionsMenu(
       items.push(item)
     }
 
-    const isLinearMode = canvasStore.linearMode
+    const workflowMode =
+      workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
+    const isLinearMode = workflowMode === 'app'
     const showAppModeItems =
       isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
     const toggleLinear = async () => {
+      await ensureWorkflowActive(targetWorkflow.value)
       await commandStore.execute('Comfy.ToggleLinear', {
         metadata: { source: 'breadcrumb_menu' }
       })
@@ -189,11 +194,11 @@ export function useWorkflowActionsMenu(
 
     addItem({
       id: 'share',
-      label: t('menuLabels.Share'),
+      label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: async () => {},
-      disabled: true,
-      visible: isRoot
+      command: () =>
+        openShareDialog().catch(useErrorHandling().toastErrorHandler),
+      visible: isCloud && flags.workflowSharingEnabled
     })
 
     addItem({
@@ -215,11 +220,31 @@ export function useWorkflowActionsMenu(
       prependSeparator: true
     })
 
+    const isActive = workflow === workflowStore.activeWorkflow
+    const rawLd = isActive
+      ? {
+          inputs: appModeStore.selectedInputs,
+          outputs: appModeStore.selectedOutputs
+        }
+      : workflow?.changeTracker?.activeState?.extra?.linearData
+    let hasLinearData: boolean
+    if (rawLd) {
+      const { inputs, outputs } = pruneLinearData(rawLd)
+      hasLinearData = inputs.length > 0 || outputs.length > 0
+    } else {
+      hasLinearData = workflow?.path?.endsWith('.app.json') ?? false
+    }
+
     addItem({
       id: 'enter-builder-mode',
-      label: t('breadcrumbsMenu.enterBuilderMode'),
+      label: hasLinearData
+        ? t('breadcrumbsMenu.editBuilderMode')
+        : t('breadcrumbsMenu.enterBuilderMode'),
       icon: 'icon-[lucide--hammer]',
-      command: () => enterBuilder(),
+      command: async () => {
+        await ensureWorkflowActive(targetWorkflow.value)
+        enterBuilder()
+      },
       visible: showAppModeItems,
       isNew: true
     })

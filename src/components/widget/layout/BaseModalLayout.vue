@@ -1,26 +1,26 @@
 <template>
   <div
-    :class="cn('rounded-2xl overflow-hidden relative', sizeClasses)"
+    :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
     @keydown.esc.capture="handleEscape"
   >
     <div
-      class="grid h-full w-full transition-[grid-template-columns] duration-300 ease-out"
+      class="grid size-full transition-[grid-template-columns] duration-300 ease-out"
       :style="gridStyle"
     >
       <nav
-        class="h-full overflow-hidden bg-modal-panel-background flex flex-col"
+        class="flex h-full flex-col overflow-hidden bg-modal-panel-background"
         :inert="!showLeftPanel"
         :aria-hidden="!showLeftPanel"
       >
         <header
           data-component-id="LeftPanelHeader"
-          class="flex w-full h-18 shrink-0 gap-2 pl-6 pr-3 items-center-safe"
+          class="flex h-18 w-full shrink-0 items-center-safe gap-2 pr-3 pl-6"
         >
           <slot name="leftPanelHeaderTitle" />
           <Button
             v-if="!notMobile && showLeftPanel"
             size="lg"
-            class="w-10 p-0 ml-auto"
+            class="ml-auto w-10 p-0"
             :aria-label="t('g.hideLeftPanel')"
             @click="toggleLeftPanel"
           >
@@ -30,10 +30,10 @@
         <slot name="leftPanel" />
       </nav>
 
-      <div class="flex flex-col bg-base-background overflow-hidden">
+      <div class="flex flex-col overflow-hidden bg-base-background">
         <header
           v-if="$slots.header"
-          class="w-full h-18 px-6 flex items-center justify-between gap-2"
+          class="flex h-18 w-full items-center justify-between gap-2 px-6"
         >
           <div class="flex flex-1 shrink-0 gap-2">
             <Button
@@ -73,13 +73,11 @@
           <slot name="contentFilter" />
           <h2
             v-if="!hasLeftPanel"
-            class="text-xxl m-0 select-none px-6 pt-2 pb-6 capitalize"
+            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize select-none"
           >
             {{ contentTitle }}
           </h2>
-          <div
-            class="min-h-0 flex-1 px-6 pt-0 pb-10 overflow-y-auto scrollbar-custom"
-          >
+          <div :class="contentContainerClass">
             <slot name="content" />
           </div>
         </main>
@@ -92,7 +90,7 @@
         :aria-hidden="!isRightPanelOpen"
       >
         <div
-          class="min-w-72 w-72 flex flex-col bg-modal-panel-background h-full"
+          class="flex h-full w-72 min-w-72 flex-col bg-modal-panel-background"
         >
           <header
             data-component-id="RightPanelHeader"
@@ -100,7 +98,7 @@
           >
             <h2
               v-if="rightPanelTitle"
-              class="flex-1 select-none text-base font-semibold"
+              class="flex-1 text-base font-semibold select-none"
             >
               {{ rightPanelTitle }}
             </h2>
@@ -153,15 +151,20 @@ const SIZE_CLASSES = {
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES
+type ContentPadding = 'default' | 'compact' | 'none'
 
 const {
   contentTitle,
   rightPanelTitle,
-  size = 'lg'
+  size = 'lg',
+  leftPanelWidth = '14rem',
+  contentPadding = 'default'
 } = defineProps<{
   contentTitle: string
   rightPanelTitle?: string
   size?: ModalSize
+  leftPanelWidth?: string
+  contentPadding?: ContentPadding
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
@@ -197,10 +200,18 @@ const showLeftPanel = computed(() => {
   return shouldShow
 })
 
+const contentContainerClass = computed(() =>
+  cn(
+    'flex scrollbar-custom min-h-0 flex-1 flex-col overflow-y-auto',
+    contentPadding === 'default' && 'px-6 pt-0 pb-10',
+    contentPadding === 'compact' && 'px-6 pt-0 pb-2'
+  )
+)
+
 const gridStyle = computed(() => ({
   gridTemplateColumns: hasRightPanel.value
-    ? `${hasLeftPanel.value && showLeftPanel.value ? '14rem' : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
-    : `${hasLeftPanel.value && showLeftPanel.value ? '14rem' : '0rem'} 1fr`
+    ? `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
+    : `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr`
 }))
 
 const toggleLeftPanel = () => {

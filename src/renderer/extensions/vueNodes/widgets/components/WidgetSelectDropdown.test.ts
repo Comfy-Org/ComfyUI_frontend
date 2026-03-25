@@ -13,8 +13,36 @@ import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+import { createMockWidget } from './widgetTestUtils'
 
+const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
+  const actual = await vi.importActual(
+    '@/platform/workflow/management/stores/workflowStore'
+  )
+  return {
+    ...actual,
+    useWorkflowStore: () => ({
+      activeWorkflow: {
+        changeTracker: {
+          checkState: mockCheckState
+        }
+      }
+    })
+  }
+})
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    fetchApi: vi.fn(),
+    apiURL: vi.fn((url: string) => url),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
+}))
+
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
   () => ({
@@ -26,6 +54,33 @@ vi.mock(
     })
   })
 )
+
+const { mockMediaAssets, mockResolveOutputAssetItems } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ref } = require('vue')
+  return {
+    mockMediaAssets: {
+      media: ref([]),
+      loading: ref(false),
+      error: ref(null),
+      fetchMediaList: vi.fn().mockResolvedValue([]),
+      refresh: vi.fn().mockResolvedValue([]),
+      loadMore: vi.fn(),
+      hasMore: ref(false),
+      isLoadingMore: ref(false)
+    },
+    mockResolveOutputAssetItems: vi.fn()
+  }
+})
+
+vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
+  useMediaAssets: () => mockMediaAssets
+}))
+
+vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
+  resolveOutputAssetItems: (...args: unknown[]) =>
+    mockResolveOutputAssetItems(...args)
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -42,23 +97,24 @@ interface WidgetSelectDropdownInstance extends ComponentPublicInstance {
 }
 
 describe('WidgetSelectDropdown custom label mapping', () => {
-  const createMockWidget = (
+  const createSelectDropdownWidget = (
     value: string = 'img_001.png',
     options: {
       values?: string[]
       getOptionLabel?: (value?: string | null) => string
     } = {},
     spec?: ComboInputSpec
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_image_select',
-    type: 'combo',
-    value,
-    options: {
-      values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
-      ...options
-    },
-    spec
-  })
+  ) =>
+    createMockWidget<string | undefined>({
+      value,
+      name: 'test_image_select',
+      type: 'combo',
+      options: {
+        values: ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
+        ...options
+      },
+      spec
+    })
 
   const mountComponent = (
     widget: SimplifiedWidget<string | undefined>,
@@ -81,7 +137,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('when custom labels are not provided', () => {
     it('uses values as labels when no mapping provided', () => {
-      const widget = createMockWidget('img_001.png')
+      const widget = createSelectDropdownWidget('img_001.png')
       const wrapper = mountComponent(widget, 'img_001.png')
 
       const inputItems = wrapper.vm.inputItems
@@ -107,7 +163,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return mapping[value] || value
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -132,7 +188,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Custom: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -160,7 +216,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => {})
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -185,7 +241,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Labeled: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -207,7 +263,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Labeled: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -229,7 +285,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         return `Output: ${value}`
       })
 
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         getOptionLabel
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -242,7 +298,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('missing value handling for template-loaded nodes', () => {
     it('creates a fallback item in "all" filter when modelValue is not in available items', () => {
-      const widget = createMockWidget('template_image.png', {
+      const widget = createSelectDropdownWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
@@ -263,7 +319,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not include fallback item when filter is "inputs"', async () => {
-      const widget = createMockWidget('template_image.png', {
+      const widget = createSelectDropdownWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
@@ -279,7 +335,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not include fallback item when filter is "outputs"', async () => {
-      const widget = createMockWidget('template_image.png', {
+      const widget = createSelectDropdownWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
@@ -295,7 +351,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not create a fallback item when modelValue exists in available items', () => {
-      const widget = createMockWidget('img_001.png', {
+      const widget = createSelectDropdownWidget('img_001.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'img_001.png')
@@ -308,9 +364,12 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('does not create a fallback item when modelValue is undefined', () => {
-      const widget = createMockWidget(undefined as unknown as string, {
-        values: ['img_001.png', 'photo_abc.jpg']
-      })
+      const widget = createSelectDropdownWidget(
+        undefined as unknown as string,
+        {
+          values: ['img_001.png', 'photo_abc.jpg']
+        }
+      )
       const wrapper = mountComponent(widget, undefined)
 
       const dropdownItems = wrapper.vm.dropdownItems
@@ -449,5 +508,294 @@ describe('WidgetSelectDropdown cloud asset mode (COM-14333)', () => {
 
     const selectedSet = wrapper.vm.selectedSet
     expect(selectedSet.has('missing-missing_model.safetensors')).toBe(true)
+  })
+})
+
+describe('WidgetSelectDropdown multi-output jobs', () => {
+  interface MultiOutputInstance extends ComponentPublicInstance {
+    outputItems: FormDropdownItem[]
+  }
+
+  function makeMultiOutputAsset(
+    jobId: string,
+    name: string,
+    nodeId: string,
+    outputCount: number
+  ) {
+    return {
+      id: jobId,
+      name,
+      preview_url: `/api/view?filename=${name}&type=output`,
+      tags: ['output'],
+      user_metadata: {
+        jobId,
+        nodeId,
+        subfolder: '',
+        outputCount,
+        allOutputs: [
+          {
+            filename: name,
+            subfolder: '',
+            type: 'output',
+            nodeId,
+            mediaType: 'images'
+          }
+        ]
+      }
+    }
+  }
+
+  function mountMultiOutput(
+    widget: SimplifiedWidget<string | undefined>,
+    modelValue: string | undefined
+  ): VueWrapper<MultiOutputInstance> {
+    return mount(WidgetSelectDropdown, {
+      props: { widget, modelValue, assetKind: 'image' as const },
+      global: { plugins: [PrimeVue, createTestingPinia(), i18n] }
+    }) as unknown as VueWrapper<MultiOutputInstance>
+  }
+
+  const defaultWidget = () =>
+    createMockWidget<string | undefined>({
+      value: 'output_001.png',
+      name: 'test_image',
+      type: 'combo',
+      options: { values: [] }
+    })
+
+  beforeEach(() => {
+    mockMediaAssets.media.value = []
+    mockResolveOutputAssetItems.mockReset()
+  })
+
+  it('shows all outputs after resolving multi-output jobs', async () => {
+    mockMediaAssets.media.value = [
+      makeMultiOutputAsset('job-1', 'preview.png', '5', 3)
+    ]
+
+    mockResolveOutputAssetItems.mockResolvedValue([
+      {
+        id: 'job-1-5-output_001.png',
+        name: 'output_001.png',
+        preview_url: '/api/view?filename=output_001.png&type=output',
+        tags: ['output']
+      },
+      {
+        id: 'job-1-5-output_002.png',
+        name: 'output_002.png',
+        preview_url: '/api/view?filename=output_002.png&type=output',
+        tags: ['output']
+      },
+      {
+        id: 'job-1-5-output_003.png',
+        name: 'output_003.png',
+        preview_url: '/api/view?filename=output_003.png&type=output',
+        tags: ['output']
+      }
+    ])
+
+    const wrapper = mountMultiOutput(defaultWidget(), 'output_001.png')
+
+    await vi.waitFor(() => {
+      expect(wrapper.vm.outputItems).toHaveLength(3)
+    })
+
+    expect(wrapper.vm.outputItems.map((i) => i.name)).toEqual([
+      'output_001.png [output]',
+      'output_002.png [output]',
+      'output_003.png [output]'
+    ])
+  })
+
+  it('shows preview output when job has only one output', () => {
+    mockMediaAssets.media.value = [
+      makeMultiOutputAsset('job-2', 'single.png', '3', 1)
+    ]
+
+    const widget = createMockWidget<string | undefined>({
+      value: 'single.png',
+      name: 'test_image',
+      type: 'combo',
+      options: { values: [] }
+    })
+    const wrapper = mountMultiOutput(widget, 'single.png')
+
+    expect(wrapper.vm.outputItems).toHaveLength(1)
+    expect(wrapper.vm.outputItems[0].name).toBe('single.png [output]')
+    expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
+  })
+
+  it('resolves two multi-output jobs independently', async () => {
+    mockMediaAssets.media.value = [
+      makeMultiOutputAsset('job-A', 'previewA.png', '1', 2),
+      makeMultiOutputAsset('job-B', 'previewB.png', '2', 2)
+    ]
+
+    mockResolveOutputAssetItems.mockImplementation(async (meta) => {
+      if (meta.jobId === 'job-A') {
+        return [
+          { id: 'A-1', name: 'a1.png', preview_url: '', tags: ['output'] },
+          { id: 'A-2', name: 'a2.png', preview_url: '', tags: ['output'] }
+        ]
+      }
+      return [
+        { id: 'B-1', name: 'b1.png', preview_url: '', tags: ['output'] },
+        { id: 'B-2', name: 'b2.png', preview_url: '', tags: ['output'] }
+      ]
+    })
+
+    const wrapper = mountMultiOutput(defaultWidget(), undefined)
+
+    await vi.waitFor(() => {
+      expect(wrapper.vm.outputItems).toHaveLength(4)
+    })
+
+    const names = wrapper.vm.outputItems.map((i) => i.name)
+    expect(names).toContain('a1.png [output]')
+    expect(names).toContain('a2.png [output]')
+    expect(names).toContain('b1.png [output]')
+    expect(names).toContain('b2.png [output]')
+  })
+
+  it('resolves outputs when allOutputs already contains all items', async () => {
+    mockMediaAssets.media.value = [
+      {
+        id: 'job-complete',
+        name: 'preview.png',
+        preview_url: '/api/view?filename=preview.png&type=output',
+        tags: ['output'],
+        user_metadata: {
+          jobId: 'job-complete',
+          nodeId: '1',
+          subfolder: '',
+          outputCount: 2,
+          allOutputs: [
+            {
+              filename: 'out1.png',
+              subfolder: '',
+              type: 'output',
+              nodeId: '1',
+              mediaType: 'images'
+            },
+            {
+              filename: 'out2.png',
+              subfolder: '',
+              type: 'output',
+              nodeId: '1',
+              mediaType: 'images'
+            }
+          ]
+        }
+      }
+    ]
+
+    mockResolveOutputAssetItems.mockResolvedValue([
+      { id: 'c-1', name: 'out1.png', preview_url: '', tags: ['output'] },
+      { id: 'c-2', name: 'out2.png', preview_url: '', tags: ['output'] }
+    ])
+
+    const wrapper = mountMultiOutput(defaultWidget(), undefined)
+
+    await vi.waitFor(() => {
+      expect(wrapper.vm.outputItems).toHaveLength(2)
+    })
+
+    expect(mockResolveOutputAssetItems).toHaveBeenCalledWith(
+      expect.objectContaining({ jobId: 'job-complete' }),
+      expect.any(Object)
+    )
+    const names = wrapper.vm.outputItems.map((i) => i.name)
+    expect(names).toEqual(['out1.png [output]', 'out2.png [output]'])
+  })
+
+  it('falls back to preview when resolver rejects', async () => {
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {})
+
+    mockMediaAssets.media.value = [
+      makeMultiOutputAsset('job-fail', 'preview.png', '1', 3)
+    ]
+    mockResolveOutputAssetItems.mockRejectedValue(new Error('network error'))
+
+    const wrapper = mountMultiOutput(defaultWidget(), undefined)
+
+    await vi.waitFor(() => {
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to resolve multi-output job',
+        'job-fail',
+        expect.any(Error)
+      )
+    })
+
+    expect(wrapper.vm.outputItems).toHaveLength(1)
+    expect(wrapper.vm.outputItems[0].name).toBe('preview.png [output]')
+    consoleWarnSpy.mockRestore()
+  })
+})
+
+describe('WidgetSelectDropdown undo tracking', () => {
+  interface UndoTrackingInstance extends ComponentPublicInstance {
+    updateSelectedItems: (selectedSet: Set<string>) => void
+    handleFilesUpdate: (files: File[]) => Promise<void>
+  }
+
+  const mountForUndo = (
+    widget: SimplifiedWidget<string | undefined>,
+    modelValue: string | undefined
+  ): VueWrapper<UndoTrackingInstance> => {
+    return mount(WidgetSelectDropdown, {
+      props: {
+        widget,
+        modelValue,
+        assetKind: 'image',
+        allowUpload: true,
+        uploadFolder: 'input'
+      },
+      global: {
+        plugins: [PrimeVue, createTestingPinia(), i18n]
+      }
+    }) as unknown as VueWrapper<UndoTrackingInstance>
+  }
+
+  beforeEach(() => {
+    mockCheckState.mockClear()
+  })
+
+  it('calls checkState after dropdown selection changes modelValue', () => {
+    const widget = createMockWidget<string | undefined>({
+      value: 'img_001.png',
+      name: 'test_image',
+      type: 'combo',
+      options: { values: ['img_001.png', 'photo_abc.jpg'] }
+    })
+    const wrapper = mountForUndo(widget, 'img_001.png')
+
+    wrapper.vm.updateSelectedItems(new Set(['input-1']))
+
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['photo_abc.jpg'])
+    expect(mockCheckState).toHaveBeenCalledOnce()
+  })
+
+  it('calls checkState after file upload completes', async () => {
+    const { api } = await import('@/scripts/api')
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      status: 200,
+      json: () => Promise.resolve({ name: 'uploaded.png', subfolder: '' })
+    } as Response)
+
+    const widget = createMockWidget<string | undefined>({
+      value: 'img_001.png',
+      name: 'test_image',
+      type: 'combo',
+      options: { values: ['img_001.png'] }
+    })
+    const wrapper = mountForUndo(widget, 'img_001.png')
+
+    const file = new File(['test'], 'uploaded.png', { type: 'image/png' })
+    await wrapper.vm.handleFilesUpdate([file])
+
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['uploaded.png'])
+    expect(mockCheckState).toHaveBeenCalledOnce()
   })
 })

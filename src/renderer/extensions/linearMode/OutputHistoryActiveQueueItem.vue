@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Loader from '@/components/common/Loader.vue'
+import Loader from '@/components/loader/Loader.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 const { queueCount } = defineProps<{
   queueCount: number
@@ -12,6 +13,7 @@ const { queueCount } = defineProps<{
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
+const queueStore = useQueueStore()
 
 function clearQueue(close: () => void) {
   void commandStore.execute('Comfy.ClearPendingTasks')
@@ -20,7 +22,7 @@ function clearQueue(close: () => void) {
 </script>
 <template>
   <div
-    class="shrink-0 p-1 border-2 border-transparent relative"
+    class="relative shrink-0 border-2 border-transparent p-1"
     data-testid="linear-job"
   >
     <Popover side="top" :show-arrow="false" @focus-outside.prevent>
@@ -30,16 +32,22 @@ function clearQueue(close: () => void) {
           :aria-label="t('linearMode.queue.clickToClear')"
           variant="textonly"
           size="unset"
-          class="size-10 rounded-sm bg-secondary-background flex items-center justify-center"
+          class="flex size-10 items-center justify-center rounded-sm bg-secondary-background"
         >
-          <Loader size="sm" class="text-muted-foreground" />
+          <Loader
+            :variant="
+              queueStore.runningTasks.length ? 'loader-circle' : 'loader'
+            "
+            size="sm"
+            class="text-muted-foreground"
+          />
         </Button>
       </template>
       <template #default="{ close }">
         <Button
           :disabled="queueCount === 0"
           variant="textonly"
-          class="text-destructive-background px-4 text-sm"
+          class="px-4 text-sm text-destructive-background"
           @click="clearQueue(close)"
         >
           <i class="icon-[lucide--list-x]" />
@@ -48,9 +56,9 @@ function clearQueue(close: () => void) {
       </template>
     </Popover>
     <div
-      v-if="queueCount > 0"
+      v-if="queueCount > 1"
       aria-hidden="true"
-      class="absolute top-0 right-0 min-w-4 h-4 flex justify-center items-center rounded-full bg-primary-background text-text-primary text-xs"
+      class="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-background text-xs text-text-primary"
       v-text="queueCount"
     />
   </div>

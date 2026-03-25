@@ -76,7 +76,7 @@ async function searcher(query: string) {
 
 <template>
   <div
-    class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke"
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
     <FormSearchInput
       v-model="searchQuery"
@@ -92,7 +92,7 @@ async function searcher(query: string) {
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
       v-if="isSearching && searchedWidgetsSectionDataList.length === 0"
-      class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+      class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground"
     >
       {{ $t('rightSidePanel.noneSearchDesc') }}
     </div>

@@ -1,3 +1,5 @@
+import type { PostHogConfig } from 'posthog-js'
+
 import type { TelemetryEventName } from '@/platform/telemetry/types'
 
 /**
@@ -29,6 +31,9 @@ export type RemoteConfig = {
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
+  posthog_project_token?: string
+  posthog_api_host?: string
+  posthog_config?: Partial<PostHogConfig>
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
@@ -46,4 +51,8 @@ export type RemoteConfig = {
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number
   new_free_tier_subscriptions?: boolean
+  workflow_sharing_enabled?: boolean
+  comfyhub_upload_enabled?: boolean
+  comfyhub_profile_gate_enabled?: boolean
+  sentry_dsn?: string
 }

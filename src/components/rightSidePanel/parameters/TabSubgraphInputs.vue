@@ -14,6 +14,10 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import {
+  getSourceNodeId,
+  getWidgetName
+} from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
@@ -84,15 +88,27 @@ const widgetsList = computed((): NodeWidgetsList => {
   const { widgets = [] } = node
 
   const result: NodeWidgetsList = []
-  for (const { interiorNodeId, widgetName } of entries) {
+  for (const {
+    sourceNodeId: entryNodeId,
+    sourceWidgetName,
+    disambiguatingSourceNodeId
+  } of entries) {
     const widget = widgets.find((w) => {
       if (isPromotedWidgetView(w)) {
+        if (
+          String(w.sourceNodeId) !== entryNodeId ||
+          w.sourceWidgetName !== sourceWidgetName
+        )
+          return false
+
+        if (!disambiguatingSourceNodeId) return true
+
         return (
-          String(w.sourceNodeId) === interiorNodeId &&
-          w.sourceWidgetName === widgetName
+          (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
+          disambiguatingSourceNodeId
         )
       }
-      return w.name === widgetName
+      return w.name === sourceWidgetName
     })
     if (widget) {
       result.push({ node, widget })
@@ -113,12 +129,11 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
-      !promotionStore.isPromoted(
-        node.rootGraph.id,
-        node.id,
-        String(interiorNode.id),
-        widget.name
-      )
+      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
+        sourceNodeId: String(interiorNode.id),
+        sourceWidgetName: getWidgetName(widget),
+        disambiguatingSourceNodeId: getSourceNodeId(widget)
+      })
   )
 })
 
@@ -201,7 +216,7 @@ const label = computed(() => {
 
 <template>
   <div
-    class="px-4 pt-1 pb-4 flex items-center border-b border-interface-stroke"
+    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
     <FormSearchInput
       v-model="searchQuery"
@@ -237,7 +252,7 @@ const label = computed(() => {
     "
   >
     <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">
+      <div class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground">
         {{ t('rightSidePanel.noneSearchDesc') }}
       </div>
     </template>

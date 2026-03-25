@@ -1,28 +1,43 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
+    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
+      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="pi pi-times text-xl" aria-hidden="true" />
     </Button>
-    <div class="text-center">
-      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
-        {{ $t('subscription.description') }}
-      </h2>
+    <div class="flex flex-col items-center gap-3">
+      <div
+        class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
+        aria-hidden="true"
+      >
+        <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
+        P
+      </div>
+      <i18n-t
+        keypath="subscription.plansForWorkspace"
+        tag="h2"
+        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+      >
+        <template #workspace>
+          <span class="text-muted-foreground">
+            {{ $t('subscription.personalWorkspace') }}
+          </span>
+        </template>
+      </i18n-t>
     </div>
 
-    <PricingTable class="flex-1" />
+    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
-      <p class="text-sm text-text-secondary m-0">
+      <p class="m-0 text-sm text-text-secondary">
         {{ $t('subscription.haveQuestions') }}
       </p>
       <div class="flex items-center gap-1.5">
@@ -51,11 +66,11 @@
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
+      class="absolute top-2.5 right-2.5 z-10 size-8 rounded-full p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times" />
+      <i class="pi pi-times" aria-hidden="true" />
     </Button>
 
     <div
@@ -113,7 +128,7 @@
 
       <div class="flex flex-col pt-8">
         <SubscribeButton
-          class="py-2 px-4 rounded-lg"
+          class="rounded-lg px-4 py-2"
           :pt="{
             root: {
               style: 'background: var(--color-accent-blue, #0B8CE9);'
@@ -144,9 +159,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const { onClose, reason } = defineProps<{
+const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
+  onChooseTeam?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -236,6 +252,7 @@ watch(
   () => isActiveSubscription.value,
   (isActive) => {
     if (isActive && showCustomPricingTable.value) {
+      telemetry?.trackMonthlySubscriptionSucceeded()
       emit('close', true)
     }
   }
@@ -243,6 +260,15 @@ watch(
 
 const handleSubscribed = () => {
   emit('close', true)
+}
+
+const handleChooseTeam = () => {
+  stopPolling()
+  if (onChooseTeam) {
+    onChooseTeam()
+  } else {
+    onClose()
+  }
 }
 
 const handleClose = () => {

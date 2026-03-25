@@ -22,7 +22,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
 <template>
   <DropdownMenuSeparator
     v-if="item.separator"
-    class="h-[1px] bg-border-subtle m-1"
+    class="m-1 h-px bg-border-subtle"
   />
   <DropdownMenuSub v-else-if="item.items">
     <DropdownMenuSubTrigger
@@ -54,11 +54,12 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
-    <i class="size-5" :class="item.icon" />
-    {{ item.label }}
+    <i class="size-5 shrink-0" :class="item.icon" />
+    <div class="mr-auto truncate" v-text="item.label" />
+    <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div
-      v-if="item.new"
-      class="ml-auto bg-primary-background rounded-full text-xxs font-bold px-1 flex leading-none items-center"
+      v-else-if="item.new"
+      class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-xxs leading-none font-bold"
       v-text="t('contextMenu.new')"
     />
   </DropdownMenuItem>

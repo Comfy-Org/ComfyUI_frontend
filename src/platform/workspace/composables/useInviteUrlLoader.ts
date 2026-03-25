@@ -97,8 +97,7 @@ export function useInviteUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('workspace.inviteFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError'),
-        life: 5000
+        detail: error instanceof Error ? error.message : t('g.unknownError')
       })
     } finally {
       cleanupUrlParams()

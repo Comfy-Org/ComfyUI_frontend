@@ -24,17 +24,6 @@
         </div>
       </div>
     </template>
-    <template #tool-buttons>
-      <!-- Normal Tab View -->
-      <TabList v-if="!isInFolderView" v-model="activeTab">
-        <Tab class="font-inter" value="output">{{
-          $t('sideToolbar.labels.generated')
-        }}</Tab>
-        <Tab class="font-inter" value="input">{{
-          $t('sideToolbar.labels.imported')
-        }}</Tab>
-      </TabList>
-    </template>
     <template #header>
       <!-- Job Detail View Header -->
       <div v-if="isInFolderView" class="px-2 2xl:px-4">
@@ -50,15 +39,24 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
-        class="pb-1 px-2 2xl:px-4"
+        bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <Divider type="dashed" class="my-2" />
+      <!-- Tab list -->
+      <div
+        v-if="!isInFolderView"
+        class="border-b border-comfy-input p-2 2xl:px-4"
+      >
+        <TabList v-model="activeTab">
+          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
+          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+        </TabList>
+      </div>
     </template>
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 px-2"
+        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 p-2"
       >
         <div
           v-for="n in skeletonCount"
@@ -85,7 +83,11 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+      <div
+        v-else
+        class="relative size-full py-2"
+        @click="handleEmptySpaceClick"
+      >
         <AssetsSidebarListView
           v-if="isListView"
           :asset-items="listViewAssetItems"
@@ -93,7 +95,6 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
-          :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
@@ -103,7 +104,6 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
           @select-asset="handleAssetSelect"
@@ -118,7 +118,7 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
-        class="flex gap-1 h-18 w-full items-center justify-between"
+        class="flex h-18 w-full items-center justify-between gap-1"
       >
         <div class="flex-1 pl-4">
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
@@ -137,7 +137,7 @@
             </Button>
           </div>
         </div>
-        <div class="flex shrink gap-2 pr-4 items-center-safe justify-end-safe">
+        <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
             <Button
@@ -170,7 +170,7 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ResultGallery
+  <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
@@ -203,7 +203,6 @@ import {
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
-import Divider from 'primevue/divider'
 import { useToast } from 'primevue/usetoast'
 import {
   computed,
@@ -221,7 +220,7 @@ import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridVi
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -236,6 +235,7 @@ import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -569,7 +569,7 @@ const handleZoomClick = (asset: AssetItem) => {
     const dialogStore = useDialogStore()
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
-      title: asset.name,
+      title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
         modelUrl: asset.preview_url || ''
@@ -615,8 +615,7 @@ const enterFolderView = async (asset: AssetItem) => {
     toast.add({
       severity: 'error',
       summary: t('sideToolbar.folderView.errorSummary'),
-      detail: t('sideToolbar.folderView.errorDetail'),
-      life: 5000
+      detail: t('sideToolbar.folderView.errorDetail')
     })
     exitFolderView()
   }
@@ -662,8 +661,7 @@ const copyJobId = async () => {
       toast.add({
         severity: 'error',
         summary: t('mediaAsset.jobIdToast.error'),
-        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed'),
-        life: 3000
+        detail: t('mediaAsset.jobIdToast.jobIdCopyFailed')
       })
     }
   }

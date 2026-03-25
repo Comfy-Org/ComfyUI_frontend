@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-50 flex-col overflow-hidden rounded-2xl bg-base-background border border-border-default"
+    class="flex w-50 flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div ref="previewWrapperRef" class="origin-top-left scale-50">
@@ -11,14 +11,14 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-xs font-semibold text-foreground m-0">
+      <h3 class="text-foreground m-0 text-xs font-semibold">
         {{ nodeDef.display_name }}
       </h3>
 
       <!-- Category Path -->
       <p
         v-if="showCategoryPath && nodeDef.category"
-        class="text-xs text-muted-foreground -mt-1"
+        class="-mt-1 text-xs text-muted-foreground"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </p>
@@ -32,7 +32,7 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="text-[11px] font-normal leading-normal text-muted-foreground m-0"
+        class="m-0 text-[11px] leading-normal font-normal text-muted-foreground"
       >
         {{ nodeDef.description }}
       </p>
@@ -49,7 +49,7 @@
         class="flex flex-col gap-1"
       >
         <h4
-          class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
+          class="m-0 text-xxs font-semibold tracking-wide text-muted-foreground uppercase"
         >
           {{ $t('nodeHelpPage.inputs') }}
         </h4>
@@ -58,7 +58,7 @@
           :key="input.name"
           class="flex items-center justify-between gap-2 text-xxs"
         >
-          <span class="shrink-0 text-foreground">{{ input.name }}</span>
+          <span class="text-foreground shrink-0">{{ input.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             input.type
           }}</span>
@@ -71,7 +71,7 @@
         class="flex flex-col gap-1"
       >
         <h4
-          class="text-xxs font-semibold uppercase tracking-wide text-muted-foreground m-0"
+          class="m-0 text-xxs font-semibold tracking-wide text-muted-foreground uppercase"
         >
           {{ $t('nodeHelpPage.outputs') }}
         </h4>
@@ -80,7 +80,7 @@
           :key="output.name"
           class="flex items-center justify-between gap-2 text-xxs"
         >
-          <span class="shrink-0 text-foreground">{{ output.name }}</span>
+          <span class="text-foreground shrink-0">{{ output.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             output.type
           }}</span>

@@ -1,12 +1,12 @@
 <template>
-  <div class="flex flex-col gap-8 w-full max-w-3xl mx-auto select-none">
+  <div class="mx-auto flex w-full max-w-3xl flex-col gap-8 select-none">
     <!-- Installation Path Section -->
-    <div class="grow flex flex-col gap-6 text-neutral-300">
-      <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
+    <div class="flex grow flex-col gap-6 text-neutral-300">
+      <h2 class="text-center font-inter text-3xl font-bold text-neutral-100">
         {{ $t('install.locationPicker.title') }}
       </h2>
 
-      <p class="text-center text-neutral-400 px-12">
+      <p class="px-12 text-center text-neutral-400">
         {{ $t('install.locationPicker.subtitle') }}
       </p>
 
@@ -15,7 +15,7 @@
         <InputText
           v-model="installPath"
           :placeholder="$t('install.locationPicker.pathPlaceholder')"
-          class="flex-1 bg-neutral-800/50 border-neutral-700 text-neutral-200 placeholder:text-neutral-500"
+          class="flex-1 border-neutral-700 bg-neutral-800/50 text-neutral-200 placeholder:text-neutral-500"
           :class="{ 'p-invalid': pathError }"
           @update:model-value="validatePath"
           @focus="onFocus"
@@ -23,7 +23,7 @@
         <Button
           icon="pi pi-folder-open"
           severity="secondary"
-          class="bg-neutral-700 hover:bg-neutral-600 border-0"
+          class="border-0 bg-neutral-700 hover:bg-neutral-600"
           @click="browsePath"
         />
       </div>
@@ -33,7 +33,7 @@
         <Message
           v-if="pathError"
           severity="error"
-          class="whitespace-pre-line w-full"
+          class="w-full whitespace-pre-line"
         >
           {{ pathError }}
         </Message>

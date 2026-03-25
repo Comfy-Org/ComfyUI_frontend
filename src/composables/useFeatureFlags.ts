@@ -23,7 +23,10 @@ export enum ServerFeatureFlag {
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
-  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled'
+  NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
+  WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
+  COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled'
 }
 
 /**
@@ -137,6 +140,29 @@ export function useFeatureFlags() {
           ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
           false
         )
+      )
+    },
+    get workflowSharingEnabled() {
+      // UI is also gated on `isCloud` in TopMenuSection; default false
+      // to match other flags' opt-in convention.
+      return resolveFlag(
+        ServerFeatureFlag.WORKFLOW_SHARING_ENABLED,
+        remoteConfig.value.workflow_sharing_enabled,
+        false
+      )
+    },
+    get comfyHubUploadEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
+        remoteConfig.value.comfyhub_upload_enabled,
+        false
+      )
+    },
+    get comfyHubProfileGateEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
+        remoteConfig.value.comfyhub_profile_gate_enabled,
+        false
       )
     }
   })

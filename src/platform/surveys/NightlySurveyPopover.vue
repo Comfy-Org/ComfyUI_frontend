@@ -54,7 +54,9 @@ watch(
 
     showTimeout = setTimeout(() => {
       showTimeout = null
+      if (!isValidTypeformId.value) return
       isVisible.value = true
+      markSurveyShown()
       emit('shown')
     }, delayMs.value)
   },
@@ -78,10 +80,6 @@ whenever(typeformRef, () => {
   }
   document.head.appendChild(scriptEl)
 })
-
-function handleAccept() {
-  markSurveyShown()
-}
 
 function handleDismiss() {
   isVisible.value = false
@@ -108,26 +106,20 @@ function handleOptOut() {
       <div
         v-if="isVisible"
         data-testid="nightly-survey-popover"
-        class="fixed bottom-4 right-4 z-[10000] w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
+        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
       >
-        <div class="mb-3 flex items-start justify-between">
-          <h3 class="text-sm font-medium text-text-primary">
-            {{ t('nightlySurvey.title') }}
-          </h3>
-          <button
-            class="text-text-muted hover:text-text-primary"
+        <div class="mb-2 flex items-center justify-end">
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="t('g.close')"
             @click="handleDismiss"
           >
             <i class="icon-[lucide--x] size-4" />
-          </button>
+          </Button>
         </div>
 
-        <p class="mb-4 text-sm text-text-secondary">
-          {{ t('nightlySurvey.description') }}
-        </p>
-
-        <div v-if="typeformError" class="mb-4 text-sm text-danger">
+        <div v-if="typeformError" class="text-danger text-sm">
           {{ t('nightlySurvey.loadError') }}
         </div>
 
@@ -139,26 +131,13 @@ function handleOptOut() {
           class="min-h-[300px]"
         />
 
-        <div class="mt-4 flex flex-col gap-2">
-          <Button variant="primary" class="w-full" @click="handleAccept">
-            {{ t('nightlySurvey.accept') }}
+        <div class="mt-3 flex items-center justify-center gap-2">
+          <Button variant="textonly" size="sm" @click="handleDismiss">
+            {{ t('nightlySurvey.notNow') }}
           </Button>
-          <div class="flex gap-2">
-            <Button
-              variant="textonly"
-              class="flex-1 text-xs"
-              @click="handleDismiss"
-            >
-              {{ t('nightlySurvey.notNow') }}
-            </Button>
-            <Button
-              variant="muted-textonly"
-              class="flex-1 text-xs"
-              @click="handleOptOut"
-            >
-              {{ t('nightlySurvey.dontAskAgain') }}
-            </Button>
-          </div>
+          <Button variant="muted-textonly" size="sm" @click="handleOptOut">
+            {{ t('nightlySurvey.dontAskAgain') }}
+          </Button>
         </div>
       </div>
     </Transition>

@@ -1,0 +1,80 @@
+import { orderBy } from 'es-toolkit/array'
+
+/**
+ * Curated tag options for ComfyHub workflow publishing.
+ * Sourced from https://github.com/Comfy-Org/workflow_templates/blob/main/templates/index.json
+ *
+ * To regenerate: pnpm dlx tsx temp/scripts/extract-comfyhub-tags.ts
+ */
+const COMFY_HUB_TAG_FREQUENCIES = [
+  { tag: 'API', count: 143 },
+  { tag: 'Video', count: 102 },
+  { tag: 'Image', count: 98 },
+  { tag: 'Text to Image', count: 61 },
+  { tag: 'Image to Video', count: 48 },
+  { tag: 'Image Edit', count: 46 },
+  { tag: 'Text to Video', count: 34 },
+  { tag: 'Audio', count: 20 },
+  { tag: '3D', count: 19 },
+  { tag: 'FLF2V', count: 18 },
+  { tag: 'ControlNet', count: 16 },
+  { tag: 'Image Upscale', count: 16 },
+  { tag: 'Product', count: 11 },
+  { tag: 'Text to Audio', count: 10 },
+  { tag: 'Image to 3D', count: 9 },
+  { tag: 'Inpainting', count: 8 },
+  { tag: 'Character Reference', count: 6 },
+  { tag: 'Video to Video', count: 6 },
+  { tag: 'Video Upscale', count: 6 },
+  { tag: 'Mockup', count: 5 },
+  { tag: 'Outpainting', count: 5 },
+  { tag: 'Preprocessor', count: 5 },
+  { tag: 'Relight', count: 5 },
+  { tag: 'Voice Cloning', count: 5 },
+  { tag: 'Brand Design', count: 4 },
+  { tag: 'Fashion', count: 4 },
+  { tag: 'Image to Model', count: 4 },
+  { tag: 'Portrait', count: 4 },
+  { tag: 'Text to Model', count: 4 },
+  { tag: 'Video Edit', count: 4 },
+  { tag: 'Anime', count: 3 },
+  { tag: 'Audio to Audio', count: 3 },
+  { tag: 'Audio to Video', count: 3 },
+  { tag: 'LLM', count: 3 },
+  { tag: 'Motion Control', count: 3 },
+  { tag: 'Music', count: 3 },
+  { tag: 'Style Reference', count: 3 },
+  { tag: 'Style Transfer', count: 3 },
+  { tag: 'Text to Speech', count: 3 },
+  { tag: '3D Model', count: 2 },
+  { tag: 'Audio Editing', count: 2 },
+  { tag: 'Character', count: 2 },
+  { tag: 'Layer Decompose', count: 2 },
+  { tag: 'Lip Sync', count: 2 },
+  { tag: 'Multiple Angles', count: 2 },
+  { tag: 'Remove Background', count: 2 },
+  { tag: 'Vector', count: 2 },
+  { tag: 'Brand', count: 1 },
+  { tag: 'Canny', count: 1 },
+  { tag: 'Depth Map', count: 1 },
+  { tag: 'Frame Interpolation', count: 1 },
+  { tag: 'icon', count: 1 },
+  { tag: 'Image Enhancement', count: 1 },
+  { tag: 'Layout Design', count: 1 },
+  { tag: 'Normal Map', count: 1 },
+  { tag: 'OpenPose', count: 1 },
+  { tag: 'Pose transfer', count: 1 },
+  { tag: 'Replacement', count: 1 },
+  { tag: 'Sound Effects', count: 1 },
+  { tag: 'Speech to Text', count: 1 },
+  { tag: 'Text Generation', count: 1 },
+  { tag: 'Turbo', count: 1 },
+  { tag: 'Video Extension', count: 1 },
+  { tag: 'Voice Isolation', count: 1 }
+] as const
+
+export const COMFY_HUB_TAG_OPTIONS = orderBy(
+  COMFY_HUB_TAG_FREQUENCIES,
+  ['count', 'tag'],
+  ['desc', 'asc']
+).map(({ tag }) => tag)

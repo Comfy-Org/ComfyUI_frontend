@@ -1,9 +1,5 @@
 <template>
-  <TabsContent
-    ref="panelEl"
-    value="essentials"
-    class="flex-1 overflow-y-auto px-3 h-full"
-  >
+  <div ref="panelEl" class="h-full flex-1 overflow-y-auto px-3">
     <div class="flex flex-col gap-2 pb-6">
       <!-- Flat sorted grid when alphabetical -->
       <div
@@ -28,7 +24,7 @@
           @update:open="toggleFolder(folder.key, $event)"
         >
           <CollapsibleTrigger
-            class="group flex w-full cursor-pointer items-center justify-between border-0 bg-transparent py-3 px-1 text-xs font-medium tracking-wide text-muted-foreground h-8 box-content"
+            class="group box-content flex h-8 w-full cursor-pointer items-center justify-between border-0 bg-transparent px-1 py-3 text-xs font-medium tracking-wide text-muted-foreground"
           >
             <span class="uppercase">{{ folder.label }}</span>
             <i
@@ -57,28 +53,25 @@
         </CollapsibleRoot>
       </template>
     </div>
-  </TabsContent>
+  </div>
 </template>
 
 <script setup lang="ts">
 import {
   CollapsibleContent,
   CollapsibleRoot,
-  CollapsibleTrigger,
-  TabsContent
+  CollapsibleTrigger
 } from 'reka-ui'
-import type { ComponentPublicInstance } from 'vue'
 import { computed, provide, ref, watch } from 'vue'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const panelEl = ref<ComponentPublicInstance | null>(null)
-const panelRef = computed(() => panelEl.value?.$el as HTMLElement | null)
-provide('essentialsPanelRef', panelRef)
-
 import EssentialNodeCard from './EssentialNodeCard.vue'
+
+const panelEl = ref<HTMLDivElement | null>(null)
+provide('essentialsPanelRef', panelEl)
 
 const { root, flatNodes = [] } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>

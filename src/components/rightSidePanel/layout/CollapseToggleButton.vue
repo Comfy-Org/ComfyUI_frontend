@@ -7,7 +7,7 @@
     leave-from-class="max-w-10 opacity-100 ml-2"
     leave-to-class="max-w-0 opacity-0 ml-0"
   >
-    <div v-if="show" class="overflow-hidden flex items-center ml-2">
+    <div v-if="show" class="ml-2 flex items-center overflow-hidden">
       <Button
         v-tooltip.bottom="
           isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')

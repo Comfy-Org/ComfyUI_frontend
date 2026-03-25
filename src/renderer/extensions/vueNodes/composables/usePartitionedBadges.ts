@@ -4,6 +4,8 @@ import { computed, toValue } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { app } from '@/scripts/app'
@@ -15,6 +17,56 @@ function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
   if (index === -1) return [text, undefined]
   return [text.slice(0, index), text.slice(index + 1)]
+}
+
+type TrackableNode = {
+  id: NodeId
+  type: string
+  inputs?: INodeInputSlot[]
+}
+//TODO deduplicate reactivity tracking once more thoroughly tested
+export function trackNodePrice(node: TrackableNode) {
+  const {
+    getRelevantWidgetNames,
+    hasDynamicPricing,
+    getInputGroupPrefixes,
+    getInputNames,
+    getNodeRevisionRef
+  } = useNodePricing()
+  // Access per-node revision ref to establish dependency (each node has its own ref)
+  void getNodeRevisionRef(node.id).value
+
+  if (!hasDynamicPricing(node.type)) return
+
+  // Access only the widget values that affect pricing (from widgetValueStore)
+  const relevantNames = getRelevantWidgetNames(node.type)
+  const widgetStore = useWidgetValueStore()
+  const graphId = app.canvas?.graph?.rootGraph.id
+  if (relevantNames.length > 0 && node.id != null) {
+    for (const name of relevantNames) {
+      // Access value from store to create reactive dependency
+      if (!graphId) continue
+      void widgetStore.getWidget(graphId, node.id, name)?.value
+    }
+  }
+  // Access input connections for regular inputs
+  const inputNames = getInputNames(node.type)
+  if (inputNames.length > 0) {
+    node?.inputs?.forEach((inp) => {
+      if (inp.name && inputNames.includes(inp.name)) {
+        void inp.link // Access link to create reactive dependency
+      }
+    })
+  }
+  // Access input connections for input_groups (e.g., autogrow inputs)
+  const groupPrefixes = getInputGroupPrefixes(node.type)
+  if (groupPrefixes.length > 0) {
+    node?.inputs?.forEach((inp) => {
+      if (groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))) {
+        void inp.link // Access link to create reactive dependency
+      }
+    })
+  }
 }
 
 export function usePartitionedBadges(nodeData: VueNodeData) {

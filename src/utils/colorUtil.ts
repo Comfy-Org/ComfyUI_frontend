@@ -1,10 +1,16 @@
 import { memoize } from 'es-toolkit/compat'
 
 type RGB = { r: number; g: number; b: number }
-export interface HSB {
+interface HSB {
   h: number
   s: number
   b: number
+}
+export interface HSVA {
+  h: number
+  s: number
+  v: number
+  a: number
 }
 type HSL = { h: number; s: number; l: number }
 type HSLA = { h: number; s: number; l: number; a: number }
@@ -64,14 +70,11 @@ export function hexToRgb(hex: string): RGB {
   let r = 0,
     g = 0,
     b = 0
-  // 3 digits
-  if (hex.length == 4) {
+  if (hex.length === 4 || hex.length === 5) {
     r = parseInt(hex[1] + hex[1], 16)
     g = parseInt(hex[2] + hex[2], 16)
     b = parseInt(hex[3] + hex[3], 16)
-  }
-  // 6 digits
-  else if (hex.length == 7) {
+  } else if (hex.length === 7 || hex.length === 9) {
     r = parseInt(hex.slice(1, 3), 16)
     g = parseInt(hex.slice(3, 5), 16)
     b = parseInt(hex.slice(5, 7), 16)
@@ -193,7 +196,13 @@ export function parseToRgb(color: string): RGB {
 
 const identifyColorFormat = (color: string): ColorFormatInternal | null => {
   if (!color) return null
-  if (color.startsWith('#') && (color.length === 4 || color.length === 7))
+  if (
+    color.startsWith('#') &&
+    (color.length === 4 ||
+      color.length === 5 ||
+      color.length === 7 ||
+      color.length === 9)
+  )
     return 'hex'
   if (/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*/.test(color))
     return color.includes('rgba') ? 'rgba' : 'rgb'
@@ -246,10 +255,12 @@ export function toHexFromFormat(val: unknown, format: ColorFormat): string {
   if (format === 'hex' && typeof val === 'string') {
     const raw = val.trim().toLowerCase()
     if (!raw) return '#000000'
-    if (/^[0-9a-f]{3}$/.test(raw)) return `#${raw}`
-    if (/^#[0-9a-f]{3}$/.test(raw)) return raw
+    if (/^[0-9a-f]{3,4}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{3,4}$/.test(raw)) return raw
     if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`
     if (/^#[0-9a-f]{6}$/.test(raw)) return raw
+    if (/^[0-9a-f]{8}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{8}$/.test(raw)) return raw
     return '#000000'
   }
 
@@ -283,12 +294,22 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
 
   switch (format) {
     case 'hex': {
-      const hsl = rgbToHsl(hexToRgb(color))
+      let a = 1
+      let hexColor = color
+      if (color.length === 9) {
+        a = parseInt(color.slice(7, 9), 16) / 255
+        hexColor = color.slice(0, 7)
+      } else if (color.length === 5) {
+        const aChar = color[4]
+        a = parseInt(aChar + aChar, 16) / 255
+        hexColor = color.slice(0, 4)
+      }
+      const hsl = rgbToHsl(hexToRgb(hexColor))
       return {
         h: Math.round(hsl.h * 360),
         s: +(hsl.s * 100).toFixed(1),
         l: +(hsl.l * 100).toFixed(1),
-        a: 1
+        a
       }
     }
 
@@ -320,6 +341,66 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
     default:
       return null
   }
+}
+
+function rgbToHsv({ r, g, b }: RGB): {
+  h: number
+  s: number
+  v: number
+} {
+  r /= 255
+  g /= 255
+  b /= 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  let h = 0
+  const s = max === 0 ? 0 : (d / max) * 100
+  const v = max * 100
+
+  if (d !== 0) {
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) * 60
+        break
+      case g:
+        h = ((b - r) / d + 2) * 60
+        break
+      case b:
+        h = ((r - g) / d + 4) * 60
+        break
+    }
+  }
+  return { h, s, v }
+}
+
+export function hexToHsva(hex: string): HSVA {
+  const normalized = hex.startsWith('#') ? hex : `#${hex}`
+  let a = 100
+  let hexColor = normalized
+
+  if (normalized.length === 9) {
+    a = Math.round((parseInt(normalized.slice(7, 9), 16) / 255) * 100)
+    hexColor = normalized.slice(0, 7)
+  } else if (normalized.length === 5) {
+    const aChar = normalized[4]
+    a = Math.round((parseInt(aChar + aChar, 16) / 255) * 100)
+    hexColor = normalized.slice(0, 4)
+  }
+
+  const rgb = hexToRgb(hexColor)
+  const hsv = rgbToHsv(rgb)
+  return { ...hsv, a }
+}
+
+export function hsvaToHex(hsva: HSVA): string {
+  const rgb = hsbToRgb({ h: hsva.h, s: hsva.s, b: hsva.v })
+  const hex = rgbToHex(rgb)
+  if (hsva.a >= 100) return hex.toLowerCase()
+  const alphaHex = Math.round((hsva.a / 100) * 255)
+    .toString(16)
+    .padStart(2, '0')
+  return `${hex}${alphaHex}`.toLowerCase()
 }
 
 const applyColorAdjustments = (

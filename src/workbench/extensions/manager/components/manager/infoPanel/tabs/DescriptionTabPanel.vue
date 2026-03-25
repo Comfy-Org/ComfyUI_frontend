@@ -15,7 +15,7 @@
         :href="nodePack.repository"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
+        class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
       >
         <i
           v-if="isGitHubLink(nodePack.repository)"
@@ -31,12 +31,12 @@
         :href="licenseInfo.text"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
+        class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
       >
         <span class="break-all">{{ licenseInfo.text }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
-      <span v-else class="text-muted-foreground break-all">
+      <span v-else class="break-all text-muted-foreground">
         {{ licenseInfo.text }}
       </span>
     </ModelInfoField>
@@ -47,7 +47,7 @@
       <div
         v-for="(dep, index) in nodePack.latest_version.dependencies"
         :key="index"
-        class="break-words text-muted-foreground"
+        class="wrap-break-word text-muted-foreground"
       >
         {{ dep }}
       </div>

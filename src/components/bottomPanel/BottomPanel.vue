@@ -25,15 +25,13 @@
                   class: {
                     'p-3 rounded-lg': true,
                     'pointer-events-none':
-                      bottomPanelStore.bottomPanelTabs.length === 1
-                  },
-                  style: {
-                    color: 'var(--fg-color)',
-                    backgroundColor:
+                      bottomPanelStore.bottomPanelTabs.length === 1,
+                    'bg-secondary-background text-secondary-foreground':
+                      x.context.active &&
+                      bottomPanelStore.bottomPanelTabs.length > 1,
+                    'text-muted-foreground':
                       !x.context.active ||
-                      bottomPanelStore.bottomPanelTabs.length === 1
-                        ? ''
-                        : 'var(--bg-color)'
+                      bottomPanelStore.bottomPanelTabs.length <= 1
                   }
                 })
               "
@@ -126,5 +124,9 @@ const closeBottomPanel = () => {
 <style scoped>
 :deep(.p-tablist-active-bar) {
   display: none;
+}
+
+:deep(.p-tab-active) {
+  color: inherit;
 }
 </style>

@@ -76,18 +76,15 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: { value: null }
 }))
 
-import { MixpanelTelemetryProvider } from './MixpanelTelemetryProvider'
+import { getExecutionContext } from '../../utils/getExecutionContext'
 
-describe('MixpanelTelemetryProvider.getExecutionContext', () => {
-  let provider: MixpanelTelemetryProvider
-
+describe('getExecutionContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     hoisted.mockNodes.length = 0
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]
     }
-    provider = new MixpanelTelemetryProvider()
   })
 
   it('returns has_toolkit_nodes false when no toolkit nodes are present', () => {
@@ -101,7 +98,7 @@ describe('MixpanelTelemetryProvider.getExecutionContext', () => {
       python_module: 'nodes'
     }
 
-    const context = provider.getExecutionContext()
+    const context = getExecutionContext()
 
     expect(context.has_toolkit_nodes).toBe(false)
     expect(context.toolkit_node_names).toEqual([])
@@ -119,7 +116,7 @@ describe('MixpanelTelemetryProvider.getExecutionContext', () => {
       python_module: 'nodes'
     }
 
-    const context = provider.getExecutionContext()
+    const context = getExecutionContext()
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual(['Canny'])
@@ -134,7 +131,7 @@ describe('MixpanelTelemetryProvider.getExecutionContext', () => {
       python_module: 'comfy_essentials'
     }
 
-    const context = provider.getExecutionContext()
+    const context = getExecutionContext()
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual([blueprintType])
@@ -148,7 +145,7 @@ describe('MixpanelTelemetryProvider.getExecutionContext', () => {
       python_module: 'comfy_extras.nodes_canny'
     }
 
-    const context = provider.getExecutionContext()
+    const context = getExecutionContext()
 
     expect(context.toolkit_node_names).toEqual(['Canny'])
     expect(context.toolkit_node_count).toBe(2)
@@ -162,7 +159,7 @@ describe('MixpanelTelemetryProvider.getExecutionContext', () => {
       api_node: true
     }
 
-    const context = provider.getExecutionContext()
+    const context = getExecutionContext()
 
     expect(context.has_api_nodes).toBe(true)
     expect(context.api_node_names).toEqual(['RecraftRemoveBackgroundNode'])
@@ -173,7 +170,7 @@ describe('MixpanelTelemetryProvider.getExecutionContext', () => {
   it('uses node.type as tracking name when nodeDef is missing', () => {
     hoisted.mockNodes.push(mockNode('ImageCrop'))
 
-    const context = provider.getExecutionContext()
+    const context = getExecutionContext()
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual(['ImageCrop'])

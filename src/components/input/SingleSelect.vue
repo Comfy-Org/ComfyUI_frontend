@@ -1,127 +1,120 @@
 <template>
-  <!--
-    Note: We explicitly pass options here (not just via $attrs) because:
-    1. Our custom value template needs options to look up labels from values
-    2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
-    3. We need to maintain the icon slot functionality in the value template
-    option-label="name" is required because our option template directly accesses option.name
-  -->
-  <Select
-    v-model="selectedItem"
-    v-bind="$attrs"
-    :options="options"
-    option-label="name"
-    option-value="value"
-    unstyled
-    :pt="{
-      root: ({ props }: SelectPassThroughMethodOptions<SelectOption>) => ({
-        class: [
-          // container
-          'h-10 relative inline-flex cursor-pointer select-none items-center',
-          // trigger surface
+  <SelectRoot v-model="selectedItem" :disabled>
+    <SelectTrigger
+      v-bind="$attrs"
+      :aria-label="label || t('g.singleSelectDropdown')"
+      :aria-busy="loading || undefined"
+      :aria-invalid="invalid || undefined"
+      :class="
+        cn(
+          'relative inline-flex cursor-pointer items-center select-none',
+          size === 'md' ? 'h-8' : 'h-10',
           'rounded-lg',
           'bg-secondary-background text-base-foreground',
-          'border-[2.5px] border-solid border-transparent',
           'transition-all duration-200 ease-in-out',
-          'focus-within:border-node-component-border',
-          // disabled
-          { 'opacity-60 cursor-default': props.disabled }
-        ]
-      }),
-      label: {
-        class:
-          // Align with MultiSelect labelContainer spacing
-          'flex-1 flex items-center whitespace-nowrap pl-4 py-2 outline-hidden'
-      },
-      dropdown: {
-        class:
-          // Right chevron touch area
-          'flex shrink-0 items-center justify-center px-3 py-2'
-      },
-      overlay: {
-        class: cn(
-          'mt-2 p-2 rounded-lg',
-          'bg-base-background text-base-foreground',
-          'border border-solid border-border-default'
-        )
-      },
-      listContainer: () => ({
-        style: `max-height: min(${listMaxHeight}, 50vh)`,
-        class: 'scrollbar-custom'
-      }),
-      list: {
-        class:
-          // Same list tone/size as MultiSelect
-          'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
-      },
-      option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
-        class: cn(
-          // Row layout
-          'flex items-center justify-between gap-3 px-2 py-3 rounded-sm',
           'hover:bg-secondary-background-hover',
-          // Add focus state for keyboard navigation
-          context.focused && 'bg-secondary-background-hover',
-          // Selected state + check icon
-          context.selected &&
-            'bg-secondary-background-selected hover:bg-secondary-background-selected'
+          'border-[2.5px] border-solid',
+          invalid ? 'border-destructive-background' : 'border-transparent',
+          'focus:border-node-component-border focus:outline-none',
+          'disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background'
         )
-      }),
-      optionLabel: {
-        class: 'truncate'
-      },
-      optionGroupLabel: {
-        class: 'px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground'
-      },
-      emptyMessage: {
-        class: 'px-3 py-2 text-sm text-muted-foreground'
-      }
-    }"
-    :aria-label="label || t('g.singleSelectDropdown')"
-    role="combobox"
-    :aria-expanded="false"
-    aria-haspopup="listbox"
-    :tabindex="0"
-  >
-    <!-- Trigger value -->
-    <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm">
-        <slot name="icon" />
-        <span
-          v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-base-foreground"
-        >
-          {{ getLabel(slotProps.value) }}
-        </span>
-        <span v-else class="text-base-foreground">
-          {{ label }}
-        </span>
-      </div>
-    </template>
-
-    <!-- Trigger caret -->
-    <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
-    </template>
-
-    <!-- Option row -->
-    <template #option="{ option, selected }">
+      "
+    >
       <div
-        class="flex w-full items-center justify-between gap-3"
-        :style="optionStyle"
+        :class="
+          cn(
+            'flex flex-1 items-center gap-2 overflow-hidden py-2',
+            size === 'md' ? 'pl-3 text-xs' : 'pl-4 text-sm'
+          )
+        "
       >
-        <span class="truncate">{{ option.name }}</span>
-        <i v-if="selected" class="icon-[lucide--check] text-base-foreground" />
+        <i
+          v-if="loading"
+          class="icon-[lucide--loader-circle] shrink-0 animate-spin text-muted-foreground"
+        />
+        <slot v-else name="icon" />
+        <SelectValue :placeholder="label" class="truncate" />
       </div>
-    </template>
-  </Select>
+      <div
+        class="flex shrink-0 cursor-pointer items-center justify-center px-3"
+      >
+        <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+      </div>
+    </SelectTrigger>
+
+    <SelectPortal>
+      <SelectContent
+        position="popper"
+        :side-offset="8"
+        align="start"
+        :style="optionStyle"
+        :class="
+          cn(
+            'z-3000 overflow-hidden',
+            'rounded-lg p-2',
+            'bg-base-background text-base-foreground',
+            'border border-solid border-border-default',
+            'shadow-md',
+            'min-w-(--reka-select-trigger-width)',
+            'data-[state=closed]:animate-out data-[state=open]:animate-in',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            'data-[side=bottom]:slide-in-from-top-2'
+          )
+        "
+      >
+        <SelectViewport
+          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+          class="scrollbar-custom w-full"
+        >
+          <SelectItem
+            v-for="opt in options"
+            :key="opt.value"
+            :value="opt.value"
+            :class="
+              cn(
+                'relative flex w-full cursor-pointer items-center justify-between select-none',
+                'gap-3 rounded-sm px-2 py-3 text-sm outline-none',
+                'hover:bg-secondary-background-hover',
+                'focus:bg-secondary-background-hover',
+                'data-[state=checked]:bg-secondary-background-selected',
+                'data-[state=checked]:hover:bg-secondary-background-selected'
+              )
+            "
+          >
+            <SelectItemText class="truncate">
+              {{ opt.name }}
+            </SelectItemText>
+            <SelectItemIndicator
+              class="flex shrink-0 items-center justify-center"
+            >
+              <i
+                class="icon-[lucide--check] text-base-foreground"
+                aria-hidden="true"
+              />
+            </SelectItemIndicator>
+          </SelectItem>
+        </SelectViewport>
+      </SelectContent>
+    </SelectPortal>
+  </SelectRoot>
 </template>
 
 <script setup lang="ts">
-import type { SelectPassThroughMethodOptions } from 'primevue/select'
-import Select from 'primevue/select'
-import { computed } from 'vue'
+import {
+  SelectContent,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectPortal,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectViewport
+} from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
+import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { SelectOption } from './types'
@@ -133,17 +126,24 @@ defineOptions({
 const {
   label,
   options,
+  size = 'lg',
+  invalid = false,
+  loading = false,
+  disabled = false,
   listMaxHeight = '28rem',
   popoverMinWidth,
   popoverMaxWidth
 } = defineProps<{
   label?: string
-  /**
-   * Required for displaying the selected item's label.
-   * Cannot rely on $attrs alone because we need to access options
-   * in getLabel() to map values to their display names.
-   */
   options?: SelectOption[]
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
+  /** Show invalid (destructive) border */
+  invalid?: boolean
+  /** Show loading spinner instead of chevron */
+  loading?: boolean
+  /** Disable the select */
+  disabled?: boolean
   /** Maximum height of the dropdown panel (default: 28rem) */
   listMaxHeight?: string
   /** Minimum width of the popover (default: auto) */
@@ -156,26 +156,8 @@ const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 
-/**
- * Maps a value to its display label.
- * Necessary because PrimeVue's value slot doesn't provide the selected item's label,
- * only the raw value. We need this to show the correct text when an item is selected.
- */
-const getLabel = (val: string | null | undefined) => {
-  if (val == null) return label ?? ''
-  if (!options) return label ?? ''
-  const found = options.find((o) => o.value === val)
-  return found ? found.name : (label ?? '')
-}
-
-// Extract complex style logic from template
-const optionStyle = computed(() => {
-  if (!popoverMinWidth && !popoverMaxWidth) return undefined
-
-  const styles: string[] = []
-  if (popoverMinWidth) styles.push(`min-width: ${popoverMinWidth}`)
-  if (popoverMaxWidth) styles.push(`max-width: ${popoverMaxWidth}`)
-
-  return styles.join('; ')
+const optionStyle = usePopoverSizing({
+  minWidth: popoverMinWidth,
+  maxWidth: popoverMaxWidth
 })
 </script>

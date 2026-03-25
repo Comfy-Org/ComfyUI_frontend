@@ -1,10 +1,10 @@
 <template>
   <BaseViewTemplate dark>
     <!-- Fixed height container with flexbox layout for proper content management -->
-    <div class="w-full h-full flex flex-col">
+    <div class="flex size-full flex-col">
       <Stepper
         v-model:value="currentStep"
-        class="flex flex-col h-full"
+        class="flex h-full flex-col"
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
@@ -37,7 +37,7 @@
 
         <!-- Install footer with navigation -->
         <InstallFooter
-          class="w-full max-w-2xl my-6 mx-auto"
+          class="mx-auto my-6 w-full max-w-2xl"
           :current-step
           :can-proceed
           :disable-location-step="noGpu"

@@ -3,7 +3,7 @@
     <div class="max-w-screen p-2 lg:w-96">
       <!-- Header -->
       <div class="mb-8 flex flex-col gap-4">
-        <h1 class="my-0 text-xl leading-normal font-medium">
+        <h1 class="my-0 text-xl/normal font-medium">
           {{ t('auth.signup.title') }}
         </h1>
         <p class="my-0 text-base">
@@ -50,7 +50,7 @@
 
           <Button
             type="button"
-            class="h-10 bg-[#2d2e32]"
+            class="h-10 bg-charcoal-500"
             variant="secondary"
             @click="signInWithGithub"
           >
@@ -182,14 +182,14 @@ const onSuccess = async () => {
 
 const signInWithGoogle = async () => {
   authError.value = ''
-  if (await authActions.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle({ isNewUser: true })) {
     await onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
-  if (await authActions.signInWithGithub()) {
+  if (await authActions.signInWithGithub({ isNewUser: true })) {
     await onSuccess()
   }
 }

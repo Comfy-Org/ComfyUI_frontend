@@ -3,14 +3,14 @@
     :for="inputId"
     :class="
       cn(
-        'flex h-10 cursor-text items-center rounded-lg bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover focus-within:ring-1 focus-within:ring-secondary-foreground',
-        disabled && 'opacity-50 pointer-events-none'
+        'text-secondary-foreground focus-within:ring-secondary-foreground flex h-10 cursor-text items-center rounded-lg bg-secondary-background focus-within:ring-1 hover:bg-secondary-background-hover',
+        disabled && 'pointer-events-none opacity-50'
       )
     "
   >
     <button
       type="button"
-      class="flex h-full w-8 cursor-pointer items-center justify-center rounded-l-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-secondary-foreground disabled:opacity-30"
+      class="focus-visible:ring-secondary-foreground flex h-full w-8 cursor-pointer items-center justify-center rounded-l-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-30"
       :disabled="disabled || modelValue <= min"
       :aria-label="$t('g.decrement')"
       @click="handleStep(-1)"
@@ -28,7 +28,7 @@
         type="text"
         inputmode="numeric"
         :style="{ width: `${inputWidth}ch` }"
-        class="min-w-0 rounded-sm border-none bg-transparent text-center text-base-foreground font-medium text-lg focus-visible:outline-none"
+        class="min-w-0 rounded-sm border-none bg-transparent text-center text-lg font-medium text-base-foreground focus-visible:outline-none"
         :disabled="disabled"
         @input="handleInputChange"
         @blur="handleInputBlur"
@@ -38,7 +38,7 @@
     </div>
     <button
       type="button"
-      class="flex h-full w-8 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-secondary-foreground disabled:opacity-30"
+      class="focus-visible:ring-secondary-foreground flex h-full w-8 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-30"
       :disabled="disabled || modelValue >= max"
       :aria-label="$t('g.increment')"
       @click="handleStep(1)"

@@ -1,5 +1,5 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="md">
+  <BaseModalLayout content-title="" data-testid="settings-dialog" size="sm">
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -7,18 +7,19 @@
 
     <template #leftPanel>
       <div class="px-3">
-        <SearchBox
+        <SearchInput
           v-model:model-value="searchQuery"
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
+          autofocus
           @search="handleSearch"
         />
       </div>
 
       <nav
         ref="navRef"
-        class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
       >
         <div
           v-for="(group, index) in navGroups"
@@ -41,7 +42,20 @@
       </nav>
     </template>
 
-    <template #header />
+    <template #header>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-header"
+        class="flex-1"
+      />
+    </template>
+
+    <template #header-right-area>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-actions"
+      />
+    </template>
 
     <template #content>
       <template v-if="activePanel">
@@ -71,7 +85,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'

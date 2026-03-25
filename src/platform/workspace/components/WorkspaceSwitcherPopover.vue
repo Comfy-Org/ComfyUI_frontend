@@ -47,10 +47,10 @@
                       }}
                     </span>
                     <span
-                      v-if="getTierLabel(workspace)"
-                      class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                      v-if="resolveTierLabel(workspace)"
+                      class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
                     >
-                      {{ getTierLabel(workspace) }}
+                      {{ resolveTierLabel(workspace) }}
                     </span>
                   </div>
                   <span class="text-xs text-muted-foreground">
@@ -68,11 +68,11 @@
       </template>
 
       <!-- Create workspace button -->
-      <div class="px-2 py-2">
+      <div class="p-2">
         <div
           :class="
             cn(
-              'flex h-12 w-full items-center gap-2 rounded-sm px-2 py-2',
+              'flex h-12 w-full items-center gap-2 rounded-sm p-2',
               canCreateWorkspace
                 ? 'cursor-pointer hover:bg-secondary-background-hover'
                 : 'cursor-default'
@@ -115,6 +115,7 @@ import { useI18n } from 'vue-i18n'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
+import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
   SubscriptionTier,
   WorkspaceRole,
@@ -139,29 +140,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { switchWithConfirmation } = useWorkspaceSwitch()
+const { switchWorkspace } = useWorkspaceSwitch()
 const { subscription } = useBillingContext()
-
-const tierKeyMap: Record<string, string> = {
-  FREE: 'free',
-  STANDARD: 'standard',
-  CREATOR: 'creator',
-  PRO: 'pro',
-  FOUNDER: 'founder',
-  FOUNDERS_EDITION: 'founder'
-}
-
-function formatTierName(
-  tier: string | null | undefined,
-  isYearly: boolean
-): string {
-  if (!tier) return ''
-  const key = tierKeyMap[tier] ?? 'standard'
-  const baseName = t(`subscription.tiers.${key}.name`)
-  return isYearly
-    ? t('subscription.tierNameYearly', { name: baseName })
-    : baseName
-}
+const { formatTierName, getTierLabel } = useWorkspaceTierLabel()
 
 const currentSubscriptionTierName = computed(() => {
   const tier = subscription.value?.tier
@@ -196,37 +177,16 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
   return ''
 }
 
-function getTierLabel(workspace: AvailableWorkspace): string | null {
-  // For the current/active workspace, use billing context directly
-  // This ensures we always have the most up-to-date subscription info
+function resolveTierLabel(workspace: AvailableWorkspace): string | null {
   if (isCurrentWorkspace(workspace)) {
     return currentSubscriptionTierName.value || null
   }
 
-  // For non-active workspaces, use cached store data
-  if (!workspace.isSubscribed) return null
-
-  if (workspace.subscriptionTier) {
-    return formatTierName(workspace.subscriptionTier, false)
-  }
-
-  if (!workspace.subscriptionPlan) return null
-
-  // Parse plan slug (format: TIER_DURATION, e.g. "CREATOR_MONTHLY", "PRO_YEARLY")
-  const planSlug = workspace.subscriptionPlan
-
-  // Extract tier from plan slug (e.g., "CREATOR_MONTHLY" -> "CREATOR")
-  const tierMatch = Object.keys(tierKeyMap).find((tier) =>
-    planSlug.startsWith(tier)
-  )
-  if (!tierMatch) return null
-
-  const isYearly = planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
-  return formatTierName(tierMatch, isYearly)
+  return getTierLabel(workspace)
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {
-  const success = await switchWithConfirmation(workspace.id)
+  const success = await switchWorkspace(workspace.id)
   if (success) {
     emit('select', workspace)
   }

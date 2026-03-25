@@ -7,9 +7,9 @@
       :aria-pressed="activeChipKey === chip.key"
       :class="
         cn(
-          'cursor-pointer rounded-md border px-3 py-1 text-sm transition-colors flex-auto border-secondary-background',
+          'flex-auto cursor-pointer rounded-md border border-secondary-background px-3 py-1 text-sm transition-colors',
           activeChipKey === chip.key
-            ? 'bg-secondary-background text-foreground'
+            ? 'text-foreground bg-secondary-background'
             : 'bg-transparent text-muted-foreground hover:border-base-foreground/60 hover:text-base-foreground/60'
         )
       "

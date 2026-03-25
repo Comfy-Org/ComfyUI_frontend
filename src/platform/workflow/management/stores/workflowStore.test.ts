@@ -183,6 +183,31 @@ describe('useWorkflowStore', () => {
       const workflow = store.createTemporary('a.json')
       expect(workflow.path).toBe('workflows/a (2).json')
     })
+
+    it('should assign a workflow id to newly created temporary workflows', () => {
+      const workflow = store.createTemporary('id-test.json')
+      const state = JSON.parse(workflow.content!)
+
+      expect(typeof state.id).toBe('string')
+      expect(state.id.length).toBeGreaterThan(0)
+    })
+
+    it('should assign an id when temporary workflow data is missing one', () => {
+      const workflowDataWithoutId = {
+        ...defaultGraph,
+        id: undefined
+      }
+
+      const workflow = store.createTemporary(
+        'missing-id.json',
+        workflowDataWithoutId
+      )
+      const state = JSON.parse(workflow.content!)
+
+      expect(typeof state.id).toBe('string')
+      expect(state.id.length).toBeGreaterThan(0)
+      expect(workflowDataWithoutId.id).toBeUndefined()
+    })
   })
 
   describe('openWorkflow', () => {

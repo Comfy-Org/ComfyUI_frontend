@@ -1419,6 +1419,41 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Math Expression",
+    "inputs": {
+      "expression": {
+        "name": "expression"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "Number Convert",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Switch",
     "inputs": {
@@ -1748,6 +1783,14 @@
       "freenoise": {
         "name": "freenoise",
         "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
+      },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "List of latent indices to retain in the conditioning tensors for each window, for example setting this to '0' will use the initial start image for each window."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
       }
     },
     "outputs": {
@@ -2187,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Curve Editor",
+    "inputs": {
+      "curve": {
+        "name": "curve"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curve",
         "tooltip": null
       }
     }
@@ -3300,6 +3360,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "display_name": "Flux KV Cache",
+    "description": "Enables KV Cache optimization for reference images on Flux family models.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use KV Cache on."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The patched model with KV Cache enabled."
+      }
+    }
+  },
   "FluxProExpandNode": {
     "display_name": "Flux.1 Expand Image",
     "description": "Outpaints image based on prompt.",
@@ -3681,6 +3756,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "First image from the model's thinking process. Only available with thinking_level HIGH and IMAGE+TEXT modality."
       }
     }
   },
@@ -3968,6 +4047,10 @@
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
       },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Only allowed when multiple images are connected to the image input."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -3999,6 +4082,9 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "resolution": {
+        "name": "resolution"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -4039,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "display_name": "Grok Video Extend",
+    "description": "Extend an existing video with a seamless continuation based on a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of what should happen next in the video."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Source video to extend. MP4 format, 2-15 seconds."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video extension."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "display_name": "Grok Video",
     "description": "Generate video from a prompt or an image",
@@ -4071,6 +4190,41 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "display_name": "Grok Reference-to-Video",
+    "description": "Generate video guided by reference images as style and content references.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired video."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -5749,6 +5903,9 @@
       },
       "mode": {
         "name": "mode"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -7563,6 +7720,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "description": "Set reference audio for ID-LoRA speaker identity transfer. Encodes a reference audio clip into the conditioning and optionally patches the model with identity guidance (extra forward pass without reference, amplifying the speaker identity effect).",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Reference audio clip whose speaker identity to transfer. ~5 seconds recommended (training duration). Shorter or longer clips may degrade voice identity transfer."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE for encoding."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Strength of identity guidance. Runs an extra forward pass without reference each step to amplify speaker identity. Set to 0 to disable (no extra pass)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Start of the sigma range where identity guidance is active."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "End of the sigma range where identity guidance is active."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11262,6 +11467,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional base image to paint over"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combine",
     "inputs": {
@@ -11868,6 +12102,91 @@
       },
       "clip_name4": {
         "name": "clip_name4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "display_name": "Quiver Image to SVG",
+    "description": "Vectorize a raster image into SVG using Quiver AI.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Input image to vectorize."
+      },
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Automatically crop to the dominant subject."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG vectorization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "display_name": "Quiver Text to SVG",
+    "description": "Generate an SVG from a text prompt using Quiver AI.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired SVG output."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Additional style or formatting guidance."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 4 reference images to guide the generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -12826,6 +13145,133 @@
       }
     }
   },
+  "ReveImageCreateNode": {
+    "display_name": "Reve Image Create",
+    "description": "Generate images from text descriptions using Reve.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. Maximum 2560 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for generation."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "display_name": "Reve Image Edit",
+    "description": "Edit images using natural language instructions with Reve.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to edit."
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Text description of how to edit the image. Maximum 2560 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for editing."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "display_name": "Reve Image Remix",
+    "description": "Combine reference images with text prompts to create new images using Reve.",
+    "inputs": {
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. May include XML img tags to reference specific images by index, e.g. <img>0</img>, <img>1</img>, etc."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model version to use for remixing."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Upscale the generated image. May add additional cost."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Remove the background from the generated image. May add additional cost."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Detail": {
     "display_name": "Rodin 3D Generate - Detail Generate",
     "description": "Generate 3D Assets using Rodin API",
@@ -13650,7 +14096,7 @@
       },
       "steps": {
         "name": "steps",
-        "tooltip": "Optional: The number of steps to LoRA has been trained for, used to name the saved file."
+        "tooltip": "Optional: The number of steps the LoRA has been trained for, used to name the saved file."
       }
     }
   },
@@ -15051,6 +15497,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "display_name": "Hunyuan3D: 3D Texture Edit",
+    "description": "After inputting the 3D model, perform 3D model texture redrawing.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes texture editing. Supports up to 1024 UTF-8 characters."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
@@ -15099,6 +15580,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "display_name": "Hunyuan3D: Model to UV",
+    "description": "Perform UV unfolding on a 3D model to generate UV texture. Input model must have less than 30000 faces.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB, OBJ, or FBX)"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "display_name": "Hunyuan3D: Smart Topology",
+    "description": "Perform smart retopology on a 3D model. Supports GLB/OBJ formats; max 200MB; recommended for high-poly models.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Input 3D model (GLB or OBJ)"
+      },
+      "polygon_type": {
+        "name": "polygon_type",
+        "tooltip": "Surface composition type."
+      },
+      "face_level": {
+        "name": "face_level",
+        "tooltip": "Polygon reduction level."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -15141,6 +15696,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -15660,7 +16219,7 @@
       },
       "training_dtype": {
         "name": "training_dtype",
-        "tooltip": "The dtype to use for training."
+        "tooltip": "The dtype to use for training. 'none' preserves the model's native compute dtype instead of overriding it. For fp16 models, GradScaler is automatically enabled."
       },
       "lora_dtype": {
         "name": "lora_dtype",
@@ -15680,7 +16239,7 @@
       },
       "offloading": {
         "name": "offloading",
-        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
+        "tooltip": "Offload model weights to CPU during training to save GPU memory."
       },
       "existing_lora": {
         "name": "existing_lora",

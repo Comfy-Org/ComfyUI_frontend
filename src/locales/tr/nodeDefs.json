@@ -1419,6 +1419,41 @@
       }
     }
   },
+  "ComfyMathExpression": {
+    "display_name": "Matematiksel İfade",
+    "inputs": {
+      "expression": {
+        "name": "ifade"
+      },
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "Sayı Dönüştürme",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -1717,6 +1752,10 @@
         "name": "kapalı döngü",
         "tooltip": "Bağlam penceresi döngüsünün kapatılıp kapatılmayacağı; sadece döngülü çizelgeler için geçerlidir."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Her pencere için koşullandırma tensörlerinde tutulacak latent indekslerin listesi; örneğin, bunu '0' olarak ayarlamak, her pencere için başlangıç görselini kullanır."
+      },
       "context_length": {
         "name": "bağlam uzunluğu",
         "tooltip": "Bağlam penceresinin uzunluğu."
@@ -1748,6 +1787,10 @@
       "model": {
         "name": "model",
         "tooltip": "Örnekleme sırasında bağlam pencerelerinin uygulanacağı model."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Birden fazla koşullandırmanın (ConditionCombine tarafından oluşturulan) bölge indeksine göre her pencereye bölünüp bölünmeyeceği."
       }
     },
     "outputs": {
@@ -2187,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Eğri Düzenleyici",
+    "inputs": {
+      "curve": {
+        "name": "eğri"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "eğri",
         "tooltip": null
       }
     }
@@ -3188,6 +3248,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Flux ailesi modellerinde referans görselleri için KV Cache optimizasyonunu etkinleştirir.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "KV Cache uygulanacak model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "KV Cache etkinleştirilmiş yamalı model."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Bu düğüm, görüntüyü flux kontext için daha uygun bir boyuta yeniden boyutlandırır.",
     "display_name": "FluxKontext Görüntü Ölçeği",
@@ -3781,6 +3856,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Modelin düşünme sürecinden ilk görsel. Sadece thinking_level HIGH ve IMAGE+TEXT modunda kullanılabilir."
       }
     }
   },
@@ -3947,6 +4026,10 @@
     "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
     "display_name": "Grok Görüntü Düzenle",
     "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı",
+        "tooltip": "Yalnızca birden fazla görsel, görsel girişine bağlandığında kullanılabilir."
+      },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
       },
@@ -3999,6 +4082,9 @@
         "name": "istem",
         "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
       },
+      "resolution": {
+        "name": "çözünürlük"
+      },
       "seed": {
         "name": "tohum",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
@@ -4039,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Bir metin istemine dayalı olarak mevcut bir videoyu sorunsuz bir şekilde devam ettirin.",
+    "display_name": "Grok Video Uzatma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video uzatma için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Videoda sonraki adımda ne olacağını açıklayan metin."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Uzatılacak kaynak video. MP4 formatında, 2-15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Bir istem veya görüntüden video oluştur",
     "display_name": "Grok Video",
@@ -4067,6 +4186,41 @@
       "resolution": {
         "name": "çözünürlük",
         "tooltip": "Çıktı videonun çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Stil ve içerik referansı olarak referans görsellerle yönlendirilen video oluşturun.",
+    "display_name": "Grok Referans-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen videonun metin açıklaması."
       },
       "seed": {
         "name": "tohum",
@@ -5854,6 +6008,9 @@
       "mode": {
         "name": "mod"
       },
+      "model": {
+        "name": "model"
+      },
       "prompt": {
         "name": "istem"
       },
@@ -6688,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "çıktı_görüntüsü",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA konuşmacı kimliği aktarımı için referans ses ayarlayın. Bir referans ses klibini koşullandırmaya kodlar ve isteğe bağlı olarak modeli kimlik rehberliğiyle yamalar (referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliği etkisini artırır).",
+    "display_name": "LTXV Referans Ses (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Kodlama için LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının sonu."
+      },
+      "identity_guidance_scale": {
+        "name": "kimlik_rehberliği_ölçeği",
+        "tooltip": "Kimlik rehberliği gücü. Her adımda referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliğini güçlendirir. Devre dışı bırakmak için 0 olarak ayarlayın (ekstra geçiş yok)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_audio": {
+        "name": "referans_ses",
+        "tooltip": "Konuşmacı kimliğinin aktarılacağı referans ses klibi. ~5 saniye önerilir (eğitim süresi). Daha kısa veya uzun klipler ses kimliği aktarımını bozabilir."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının başlangıcı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
         "tooltip": null
       }
     }
@@ -11262,6 +11467,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "arka_plan_rengi"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Üzerine boyanacak isteğe bağlı temel görüntü"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Koşul Çifti Birleştir",
     "inputs": {
@@ -11868,6 +12102,91 @@
       },
       "clip_name4": {
         "name": "clip_adı4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "Bir raster görseli Quiver AI kullanarak SVG'ye vektörleştirir.",
+    "display_name": "Quiver Görselden SVG'ye",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Baskın nesneye otomatik kırp."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Vektörleştirilecek giriş görseli."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG vektörleştirme için kullanılacak model."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Quiver AI kullanarak bir metin isteminden SVG oluşturur.",
+    "display_name": "Quiver Metinden SVG'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Ek stil veya biçimlendirme yönergeleri."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG üretimi için kullanılacak model."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen SVG çıktısının metin açıklaması."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Üretime rehberlik etmek için en fazla 4 referans görsel."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
       }
     },
     "outputs": {
@@ -12823,6 +13142,133 @@
       "1": {
         "name": "yukseklik",
         "tooltip": "Piksel cinsinden hesaplanan yükseklik (8'in katı)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Reve kullanarak metin açıklamalarından görseller oluşturun.",
+    "display_name": "Reve Görsel Oluştur",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Oluşturma için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. En fazla 2560 karakter."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Reve ile doğal dil talimatları kullanarak görselleri düzenleyin.",
+    "display_name": "Reve Görsel Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "edit_instruction": {
+        "name": "düzenleme_talimatı",
+        "tooltip": "Görselin nasıl düzenleneceğine dair metin açıklaması. En fazla 2560 karakter."
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Düzenlenecek görsel."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Düzenleme için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Referans görselleri ve metin istemlerini birleştirerek Reve ile yeni görseller oluşturun.",
+    "display_name": "Reve Görsel Remix",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Remix için kullanılacak model sürümü."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_test_time_scaling": {
+        "name": "test_zamanı_ölçekleme"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen görselin metin açıklaması. Belirli görselleri indeks ile referans göstermek için XML img etiketleri ekleyebilirsiniz, örn. <img>0</img>, <img>1</img> vb."
+      },
+      "reference_images": {
+        "name": "referans_görseller"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Oluşturulan görselin arka planını kaldır. Ek maliyet oluşturabilir."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Oluşturulan görseli büyüt. Ek maliyet oluşturabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15051,6 +15497,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "3D modeli girdikten sonra, 3D modelin dokusunu yeniden çiz.",
+    "display_name": "Hunyuan3D: 3D Doku Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "FBX formatında 3D model. Model 100000'den az yüzeye sahip olmalıdır."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Doku düzenlemesini açıklar. En fazla 1024 UTF-8 karakteri destekler."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "doku_görseli",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
     "inputs": {
@@ -15099,6 +15580,80 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "doku_görseli",
+        "tooltip": null
+      },
+      "4": {
+        "name": "isteğe_bağlı_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "isteğe_bağlı_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "isteğe_bağlı_roughness",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentModelTo3DUVNode": {
+    "description": "Bir 3D model üzerinde UV açılımı yaparak UV doku oluşturur. Girdi modelinin 30000'den az yüzü olmalıdır.",
+    "display_name": "Hunyuan3D: Modelden UV'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB, OBJ veya FBX)"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentSmartTopologyNode": {
+    "description": "Bir 3D model üzerinde akıllı retopoloji uygular. GLB/OBJ formatlarını destekler; maksimum 200MB; yüksek poligonlu modeller için önerilir.",
+    "display_name": "Hunyuan3D: Akıllı Topoloji",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "face_level": {
+        "name": "yüz seviyesi",
+        "tooltip": "Poligon azaltma seviyesi."
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model girişi (GLB veya OBJ)"
+      },
+      "polygon_type": {
+        "name": "poligon_tipi",
+        "tooltip": "Yüzey bileşimi tipi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -15141,6 +15696,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "doku_görseli",
         "tooltip": null
       }
     }

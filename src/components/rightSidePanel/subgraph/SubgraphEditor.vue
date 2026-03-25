@@ -5,9 +5,11 @@ import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   getPromotableWidgets,
+  getSourceNodeId,
   getWidgetName,
   isRecommendedWidget,
   promoteWidget,
@@ -49,19 +51,29 @@ const activeWidgets = computed<WidgetItem[]>({
     if (!node) return []
 
     return promotionEntries.value.flatMap(
-      ({ interiorNodeId, widgetName }): WidgetItem[] => {
-        if (interiorNodeId === '-1') {
-          const widget = node.widgets.find((w) => w.name === widgetName)
+      ({
+        sourceNodeId,
+        sourceWidgetName,
+        disambiguatingSourceNodeId
+      }): WidgetItem[] => {
+        if (sourceNodeId === '-1') {
+          const widget = node.widgets.find((w) => w.name === sourceWidgetName)
           if (!widget) return []
           return [
             [{ id: -1, title: t('subgraphStore.linked'), type: '' }, widget]
           ]
         }
-        const wNode = node.subgraph._nodes_by_id[interiorNodeId]
+        const wNode = node.subgraph._nodes_by_id[sourceNodeId]
         if (!wNode) return []
-        const widget = getPromotableWidgets(wNode).find(
-          (w) => w.name === widgetName
-        )
+        const widget = getPromotableWidgets(wNode).find((w) => {
+          if (w.name !== sourceWidgetName) return false
+          if (disambiguatingSourceNodeId && isPromotedWidgetView(w))
+            return (
+              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
+              disambiguatingSourceNodeId
+            )
+          return true
+        })
         if (!widget) return []
         return [[wNode, widget]]
       }
@@ -76,11 +88,16 @@ const activeWidgets = computed<WidgetItem[]>({
     promotionStore.setPromotions(
       node.rootGraph.id,
       node.id,
-      value.map(([n, w]) => ({
-        interiorNodeId: String(n.id),
-        widgetName: getWidgetName(w)
-      }))
+      value.map(([n, w]) => {
+        const sid = getSourceNodeId(w)
+        return {
+          sourceNodeId: String(n.id),
+          sourceWidgetName: getWidgetName(w),
+          ...(sid && { disambiguatingSourceNodeId: sid })
+        }
+      })
     )
+    refreshPromotedWidgetRendering()
   }
 })
 
@@ -103,12 +120,11 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   if (!node) return []
   return interiorWidgets.value.filter(
     ([n, w]: WidgetItem) =>
-      !promotionStore.isPromoted(
-        node.rootGraph.id,
-        node.id,
-        String(n.id),
-        w.name
-      )
+      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
+        sourceNodeId: String(n.id),
+        sourceWidgetName: getWidgetName(w),
+        disambiguatingSourceNodeId: getSourceNodeId(w)
+      })
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
@@ -137,8 +153,20 @@ const filteredActive = computed<WidgetItem[]>(() => {
   )
 })
 
+function refreshPromotedWidgetRendering() {
+  const node = activeNode.value
+  if (!node) return
+
+  node.computeSize(node.size)
+  node.setDirtyCanvas(true, true)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 function toKey(item: WidgetItem) {
-  return `${item[0].id}: ${item[1].name}`
+  const sid = getSourceNodeId(item[1])
+  return sid
+    ? `${item[0].id}: ${item[1].name}:${sid}`
+    : `${item[0].id}: ${item[1].name}`
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
@@ -147,49 +175,26 @@ function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   demoteWidget(node, widget, [subgraphNode])
-  promotionStore.demote(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    String(node.id),
-    getWidgetName(widget)
-  )
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
-  promotionStore.promote(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    String(node.id),
-    widget.name
-  )
 }
 function showAll() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of filteredCandidates.value) {
-    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
+  for (const item of filteredCandidates.value) {
+    promote(item)
   }
 }
 function hideAll() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of filteredActive.value) {
-    if (String(n.id) === '-1') continue
-    promotionStore.demote(
-      node.rootGraph.id,
-      node.id,
-      String(n.id),
-      getWidgetName(w)
-    )
+  for (const item of filteredActive.value) {
+    if (String(item[0].id) === '-1') continue
+    demote(item)
   }
 }
 function showRecommended() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of recommendedWidgets.value) {
-    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
+  for (const item of recommendedWidgets.value) {
+    promote(item)
   }
 }
 
@@ -200,7 +205,7 @@ onMounted(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="px-4 pb-4 pt-1 flex gap-2 border-b border-interface-stroke">
+    <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
       <FormSearchInput v-model="searchQuery" />
     </div>
 
@@ -211,7 +216,7 @@ onMounted(() => {
           filteredActive.length === 0 &&
           filteredCandidates.length === 0
         "
-        class="text-sm text-muted-foreground px-4 py-10 text-center"
+        class="px-4 py-10 text-center text-sm text-muted-foreground"
       >
         {{ $t('rightSidePanel.noneSearchDesc') }}
       </div>
@@ -221,13 +226,13 @@ onMounted(() => {
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+          class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
         >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
+          <div class="line-clamp-1 text-sm font-semibold uppercase">
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
             @click.stop="hideAll"
           >
             {{ $t('subgraphStore.hideAll') }}</a
@@ -252,19 +257,19 @@ onMounted(() => {
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+          class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
         >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
+          <div class="line-clamp-1 text-sm font-semibold uppercase">
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
             @click.stop="showAll"
           >
             {{ $t('subgraphStore.showAll') }}</a
           >
         </div>
-        <div class="pb-2 px-2 space-y-0.5 mt-0.5">
+        <div class="mt-0.5 space-y-0.5 px-2 pb-2">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"

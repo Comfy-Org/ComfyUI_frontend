@@ -8,14 +8,15 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -31,6 +32,7 @@ const canvasStore = useCanvasStore()
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
+const executionErrorStore = useExecutionErrorStore()
 const { t } = useI18n()
 const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
@@ -40,7 +42,7 @@ const { toggle: toggleFullscreen } = useFullscreen(undefined, {
   autoExit: true
 })
 
-const activeIndex = ref(2)
+const activeIndex = ref(1)
 const sliderPaneRef = useTemplateRef('sliderPaneRef')
 const sliderWidth = computed(() => sliderPaneRef.value?.offsetWidth)
 
@@ -73,13 +75,16 @@ function onClick(index: number) {
 }
 
 const workflowsEntries = computed(() => {
-  return workflowStore.openWorkflows.map((w) => ({
-    label: w.filename,
-    icon: w.activeState?.extra?.linearMode
-      ? 'icon-[lucide--panels-top-left] bg-primary-background'
-      : undefined,
-    command: () => workflowService.openWorkflow(w)
-  }))
+  return [
+    ...workflowStore.openWorkflows.map((w) => ({
+      label: w.filename,
+      icon: w.activeState?.extra?.linearMode
+        ? 'icon-[lucide--panels-top-left] bg-primary-background'
+        : undefined,
+      command: () => workflowService.openWorkflow(w),
+      checked: workflowStore.activeWorkflow === w
+    }))
+  ]
 })
 
 const menuEntries = computed<MenuItem[]>(() => [
@@ -149,76 +154,84 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 </script>
 <template>
-  <section class="absolute w-full h-full flex flex-col bg-secondary-background">
+  <section class="absolute flex size-full flex-col bg-secondary-background">
     <header
-      class="w-full h-16 px-4 py-3 flex border-border-subtle border-b items-center gap-3 bg-base-background"
+      class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
     >
       <DropdownMenu :entries="menuEntries" />
-      <Popover
+      <DropdownMenu
         :entries="workflowsEntries"
-        class="w-(--reka-popover-content-available-width)"
+        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width)"
         :collision-padding="20"
       >
         <template #button>
           <!--TODO: Use button here? Probably too much work to destyle-->
           <div
-            class="bg-secondary-background h-10 rounded-sm grow-1 flex items-center p-2 gap-2"
+            class="flex h-10 grow items-center gap-2 rounded-sm bg-secondary-background p-2"
           >
             <i
-              class="shrink-0 icon-[lucide--panels-top-left] bg-primary-background"
+              class="icon-[lucide--panels-top-left] shrink-0 bg-primary-background"
             />
             <span
-              class="truncate contain-size h-full w-full"
+              class="size-full truncate contain-size"
               v-text="workflowStore.activeWorkflow?.filename"
             />
             <i
-              class="shrink-0 icon-[lucide--chevron-down] bg-muted-foreground"
+              class="icon-[lucide--chevron-down] shrink-0 bg-muted-foreground"
             />
           </div>
         </template>
-      </Popover>
+      </DropdownMenu>
       <CurrentUserButton v-if="isLoggedIn" :show-arrow="false" />
     </header>
-    <div class="size-full contain-content rounded-b-4xl">
+    <div class="size-full rounded-b-4xl contain-content">
       <div
         :class="
-          cn('size-full relative', !isSwiping && 'transition-[translate]')
+          cn('relative size-full', !isSwiping && 'transition-[translate]')
         "
         :style="{ translate }"
       >
-        <div class="overflow-y-auto contain-size h-full w-screen absolute">
-          <LinearControls mobile @navigate-assets="activeIndex = 2" />
+        <div class="absolute h-full w-screen overflow-y-auto contain-size">
+          <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
         <div
-          class="w-screen absolute h-full bg-base-background left-[100vw] top-0 flex flex-col"
+          class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
         >
-          <LinearPreview mobile />
+          <MobileError
+            v-if="executionErrorStore.isErrorOverlayOpen"
+            @navigate-controls="activeIndex = 0"
+          />
+          <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
         </div>
         <AssetsSidebarTab
-          class="h-full w-screen absolute bg-base-background left-[200vw] top-0"
+          class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
         />
       </div>
     </div>
     <div
       ref="sliderPaneRef"
-      class="h-22 p-4 w-full flex gap-4 items-center justify-around bg-secondary-background"
+      class="flex h-22 w-full items-center justify-around gap-4 bg-secondary-background p-4"
     >
       <Button
         v-for="([label, icon], index) in tabs"
         :key="label"
         :variant="index === activeIndex ? 'secondary' : 'muted-textonly'"
-        class="flex-col h-14 grow-1"
+        class="h-14 grow flex-col"
         @click="onClick(index)"
       >
         <div class="relative size-4">
           <i :class="cn('size-4', icon)" />
           <div
-            v-if="
+            v-if="index === 1 && executionErrorStore.isErrorOverlayOpen"
+            class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
+          />
+          <div
+            v-else-if="
               index === 1 &&
               (queueStore.runningTasks.length > 0 ||
                 queueStore.pendingTasks.length > 0)
             "
-            class="absolute bg-primary-background size-2 -top-1 -right-1 rounded-full animate-pulse"
+            class="absolute -top-1 -right-1 size-2 animate-pulse rounded-full bg-primary-background"
           />
         </div>
         {{ t(label) }}

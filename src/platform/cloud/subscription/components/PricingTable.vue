@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <div class="flex justify-center">
       <SelectButton
         v-model="currentBillingCycle"
@@ -30,7 +30,7 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="bg-primary-background text-white text-[11px] px-1 py-0.5 rounded-full flex items-center font-bold"
+              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-[11px] font-bold text-white"
             >
               -20%
             </div>
@@ -38,27 +38,27 @@
         </template>
       </SelectButton>
     </div>
-    <div class="flex flex-col xl:flex-row items-stretch gap-6">
+    <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
         :key="tier.id"
         :class="
           cn(
-            'flex-1 flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
+            'flex flex-1 flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
             tier.isPopular ? 'border-muted-foreground' : ''
           )
         "
       >
-        <div class="p-8 pb-0 flex flex-col gap-8">
-          <div class="flex flex-row items-center gap-2 justify-between">
+        <div class="flex flex-col gap-4 p-6 pb-0">
+          <div class="flex flex-row items-center justify-between gap-2">
             <span
-              class="font-inter text-base font-bold leading-normal text-base-foreground"
+              class="font-inter text-base/normal font-bold text-base-foreground"
             >
               {{ tier.name }}
             </span>
             <div
               v-if="tier.isPopular"
-              class="rounded-full bg-base-foreground px-1.5 text-[11px] font-bold uppercase text-base-background h-5 tracking-tight flex items-center"
+              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-[11px] font-bold tracking-tight text-base-background uppercase"
             >
               {{ t('subscription.mostPopular') }}
             </div>
@@ -67,19 +67,17 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[32px] font-semibold leading-normal text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
                   <span
                     v-show="currentBillingCycle === 'yearly'"
-                    class="line-through text-2xl text-muted-foreground"
+                    class="text-2xl text-muted-foreground line-through"
                   >
                     ${{ tier.pricing.monthly }}
                   </span>
                   ${{ getPrice(tier) }}
                 </span>
-                <span
-                  class="font-inter text-xl leading-normal text-base-foreground"
-                >
+                <span class="font-inter text-xl/normal text-base-foreground">
                   {{ t('subscription.usdPerMonth') }}
                 </span>
               </div>
@@ -97,10 +95,25 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-4 pb-0 flex-1">
+          <p
+            role="note"
+            :aria-label="t('subscription.soloUseOnly')"
+            class="m-0 flex h-10 items-center rounded-lg bg-muted-foreground/30 px-3 text-sm text-muted-foreground"
+          >
+            {{ t('subscription.soloUseOnly') }}
+            <span class="mx-1 text-muted-foreground">–</span>
+            <button
+              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              @click="emit('chooseTeamWorkspace')"
+            >
+              {{ t('subscription.needTeamWorkspace') }}
+            </button>
+          </p>
+
+          <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
-                class="font-inter text-sm font-normal leading-normal text-foreground"
+                class="text-foreground font-inter text-sm/normal font-normal"
               >
                 {{
                   currentBillingCycle === 'yearly'
@@ -109,9 +122,9 @@
                 }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-amber-400 text-sm" />
+                <i class="icon-[lucide--component] text-sm text-amber-400" />
                 <span
-                  class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
                   {{ n(getCreditsDisplay(tier)) }}
                 </span>
@@ -119,55 +132,53 @@
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.maxDurationLabel') }}
               </span>
               <span
-                class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                class="font-inter text-sm/normal font-bold text-base-foreground"
               >
                 {{ tier.maxDuration }}
               </span>
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success-foreground" />
+              <i class="pi pi-check text-success-foreground text-xs" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success-foreground" />
+              <i class="pi pi-check text-success-foreground text-xs" />
             </div>
 
             <div class="flex flex-row items-center justify-between">
-              <span class="text-sm font-normal text-foreground">
+              <span class="text-foreground text-sm font-normal">
                 {{ t('subscription.customLoRAsLabel') }}
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-xs text-success-foreground"
+                class="pi pi-check text-success-foreground text-xs"
               />
-              <i v-else class="pi pi-times text-xs text-foreground" />
+              <i v-else class="pi pi-times text-foreground text-xs" />
             </div>
 
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-start justify-between">
                 <div class="flex flex-col gap-2">
-                  <span
-                    class="text-sm font-normal text-foreground leading-relaxed"
-                  >
+                  <span class="text-foreground text-sm/relaxed font-normal">
                     {{ t('subscription.videoEstimateLabel') }}
                   </span>
-                  <div class="flex flex-row items-center gap-2 group pt-2">
+                  <div class="group flex flex-row items-center gap-2 pt-2">
                     <i
                       class="pi pi-question-circle text-xs text-muted-foreground group-hover:text-base-foreground"
                     />
                     <span
-                      class="text-sm font-normal text-muted-foreground cursor-pointer group-hover:text-base-foreground"
+                      class="cursor-pointer text-sm font-normal text-muted-foreground group-hover:text-base-foreground"
                       @click="togglePopover"
                     >
                       {{ t('subscription.videoEstimateHelp') }}
@@ -175,7 +186,7 @@
                   </div>
                 </div>
                 <span
-                  class="font-inter text-sm font-bold leading-normal text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
                   ~{{ n(tier.pricing.videoEstimate) }}
                 </span>
@@ -183,7 +194,7 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col p-8">
+        <div class="flex flex-col p-6">
           <Button
             :variant="getButtonSeverity(tier)"
             :disabled="isLoading || isCurrentPlan(tier.key)"
@@ -193,8 +204,8 @@
                 'h-10 w-full',
                 getButtonTextClass(tier),
                 tier.key === 'creator'
-                  ? 'bg-base-foreground border-transparent hover:bg-inverted-background-hover'
-                  : 'bg-secondary-background border-transparent hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
+                  ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
+                  : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
               )
             "
             @click="() => handleSubscribe(tier.key)"
@@ -222,14 +233,14 @@
       }"
     >
       <div class="flex flex-col gap-2">
-        <p class="text-sm text-base-foreground leading-normal">
+        <p class="text-sm/normal text-base-foreground">
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
           href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
+          class="flex gap-1 text-sm text-azure-600 no-underline hover:text-azure-400"
         >
           <span class="underline">
             {{ t('subscription.videoEstimateTryTemplate') }}
@@ -306,6 +317,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const emit = defineEmits<{
+  chooseTeamWorkspace: []
+}>()
 
 const { t, n } = useI18n()
 

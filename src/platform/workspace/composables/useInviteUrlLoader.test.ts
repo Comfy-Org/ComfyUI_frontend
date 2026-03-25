@@ -151,8 +151,7 @@ describe('useInviteUrlLoader', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Failed to Accept Invite',
-        detail: 'Invalid invite',
-        life: 5000
+        detail: 'Invalid invite'
       })
     })
 
@@ -211,8 +210,7 @@ describe('useInviteUrlLoader', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Failed to Accept Invite',
-        detail: 'Invalid token',
-        life: 5000
+        detail: 'Invalid token'
       })
     })
 

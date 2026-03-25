@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+import { exceedsClickThreshold } from '@/composables/useClickDragGuard'
+
 import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
@@ -19,6 +21,25 @@ import {
   type MaterialMode,
   type UpDirection
 } from './interfaces'
+
+function positionThumbnailCamera(
+  camera: THREE.PerspectiveCamera,
+  model: THREE.Object3D
+) {
+  const box = new THREE.Box3().setFromObject(model)
+  const size = box.getSize(new THREE.Vector3())
+  const center = box.getCenter(new THREE.Vector3())
+  const maxDim = Math.max(size.x, size.y, size.z)
+  const distance = maxDim * 1.5
+
+  camera.position.set(
+    center.x + distance * 0.7,
+    center.y + distance * 0.5,
+    center.z + distance * 0.7
+  )
+  camera.lookAt(center)
+  camera.updateProjectionMatrix()
+}
 
 class Load3d {
   renderer: THREE.WebGLRenderer
@@ -49,9 +70,7 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
-  // Context menu tracking
-  private rightMouseDownX: number = 0
-  private rightMouseDownY: number = 0
+  private rightMouseStart: { x: number; y: number } = { x: 0, y: 0 }
   private rightMouseMoved: boolean = false
   private readonly dragThreshold: number = 5
   private contextMenuAbortController: AbortController | null = null
@@ -178,18 +197,20 @@ class Load3d {
 
     const mousedownHandler = (e: MouseEvent) => {
       if (e.button === 2) {
-        this.rightMouseDownX = e.clientX
-        this.rightMouseDownY = e.clientY
+        this.rightMouseStart = { x: e.clientX, y: e.clientY }
         this.rightMouseMoved = false
       }
     }
 
     const mousemoveHandler = (e: MouseEvent) => {
       if (e.buttons === 2) {
-        const dx = Math.abs(e.clientX - this.rightMouseDownX)
-        const dy = Math.abs(e.clientY - this.rightMouseDownY)
-
-        if (dx > this.dragThreshold || dy > this.dragThreshold) {
+        if (
+          exceedsClickThreshold(
+            this.rightMouseStart,
+            { x: e.clientX, y: e.clientY },
+            this.dragThreshold
+          )
+        ) {
           this.rightMouseMoved = true
         }
       }
@@ -198,12 +219,13 @@ class Load3d {
     const contextmenuHandler = (e: MouseEvent) => {
       if (this.isViewerMode) return
 
-      const dx = Math.abs(e.clientX - this.rightMouseDownX)
-      const dy = Math.abs(e.clientY - this.rightMouseDownY)
       const wasDragging =
         this.rightMouseMoved ||
-        dx > this.dragThreshold ||
-        dy > this.dragThreshold
+        exceedsClickThreshold(
+          this.rightMouseStart,
+          { x: e.clientX, y: e.clientY },
+          this.dragThreshold
+        )
 
       this.rightMouseMoved = false
 
@@ -781,25 +803,18 @@ class Load3d {
         this.cameraManager.toggleCamera('perspective')
       }
 
-      const box = new THREE.Box3().setFromObject(this.modelManager.currentModel)
-      const size = box.getSize(new THREE.Vector3())
-      const center = box.getCenter(new THREE.Vector3())
-
-      const maxDim = Math.max(size.x, size.y, size.z)
-      const distance = maxDim * 1.5
-
-      const cameraPosition = new THREE.Vector3(
-        center.x - distance * 0.8,
-        center.y + distance * 0.4,
-        center.z + distance * 0.3
+      positionThumbnailCamera(
+        this.cameraManager.perspectiveCamera,
+        this.modelManager.currentModel
       )
 
-      this.cameraManager.perspectiveCamera.position.copy(cameraPosition)
-      this.cameraManager.perspectiveCamera.lookAt(center)
-      this.cameraManager.perspectiveCamera.updateProjectionMatrix()
-
       if (this.controlsManager.controls) {
-        this.controlsManager.controls.target.copy(center)
+        const box = new THREE.Box3().setFromObject(
+          this.modelManager.currentModel
+        )
+        this.controlsManager.controls.target.copy(
+          box.getCenter(new THREE.Vector3())
+        )
         this.controlsManager.controls.update()
       }
 

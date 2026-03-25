@@ -121,12 +121,6 @@ const buttonsDisabled = computed(() => {
   )
 })
 
-function updateValueBy(delta: number) {
-  const max = filteredProps.value.max ?? Number.MAX_VALUE
-  const min = filteredProps.value.min ?? -Number.MAX_VALUE
-  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
-}
-
 const buttonTooltip = computed(() => {
   if (buttonsDisabled.value) {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
@@ -170,18 +164,14 @@ const inputAriaAttrs = computed(() => ({
       :hide-buttons="buttonsDisabled"
       :parse-value="parseWidgetValue"
       :input-attrs="inputAriaAttrs"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
-      @keydown.up.prevent="updateValueBy(stepValue)"
-      @keydown.down.prevent="updateValueBy(-stepValue)"
-      @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
-      @keydown.page-down.prevent="updateValueBy(-10 * stepValue)"
+      :class="cn(WidgetInputBaseClass, 'relative flex h-7 grow text-xs')"
     >
       <template #background>
         <div
-          class="absolute size-full rounded-lg pointer-events-none overflow-clip"
+          class="pointer-events-none absolute size-full overflow-clip rounded-lg"
         >
           <div
-            class="bg-primary-background/15 size-full"
+            class="size-full bg-primary-background/15"
             :style="{ width: `${sliderWidth}%` }"
           />
         </div>

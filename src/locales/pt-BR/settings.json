@@ -25,6 +25,10 @@
     },
     "tooltip": "Personalizado: Substitui a barra de título do sistema pelo menu superior do ComfyUI"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "Desativar animações",
+    "tooltip": "Desativa a maioria das animações e transições CSS. Acelera a inferência quando a GPU de exibição também é usada para geração."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Imagem de fundo do canvas",
     "tooltip": "URL da imagem para o fundo do canvas. Você pode clicar com o botão direito em uma imagem no painel de saídas e selecionar \"Definir como fundo\" para usá-la, ou enviar sua própria imagem usando o botão de upload."
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "Casas decimais de arredondamento do widget float [0 = auto].",
     "tooltip": "(requer recarregar a página)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Velocidade de auto-deslocamento",
+    "tooltip": "Velocidade máxima ao auto-deslocar arrastando até a borda da tela. Defina como 0 para desativar o auto-deslocamento."
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "Mostrar informações do canvas no canto inferior esquerdo (fps, etc.)"
@@ -400,7 +408,7 @@
     "name": "Layout da Barra de Abas",
     "options": {
       "Default": "Padrão",
-      "Integrated": "Integrado"
+      "Legacy": "Legado"
     },
     "tooltip": "Controla o layout da barra de abas. \"Integrado\" move os controles de Ajuda e Usuário para a área da barra de abas."
   },
@@ -454,9 +462,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Mostrar aviso de modelos ausentes"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Mostrar aviso de nós ausentes"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs dos nós ao salvar fluxo de trabalho"
   },
@@ -480,6 +485,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Escalar menus de combinação de nós (listas) ao dar zoom"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Selecionar filhos do grupo ao clicar",
+    "tooltip": "Quando ativado, clicar em um grupo seleciona todos os nós e itens dentro dele"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Sempre reduzir novos nós",

@@ -6,7 +6,7 @@
     <!-- Card header - flush with top, approximately 15% of height -->
     <div class="flex w-full items-center justify-between px-4 py-3">
       <div class="flex items-center">
-        <div class="flex h-6 w-6 items-center justify-center">
+        <div class="flex size-6 items-center justify-center">
           <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
         </div>
         <Skeleton width="5rem" height="1rem" class="ml-2" />

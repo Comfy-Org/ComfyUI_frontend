@@ -56,9 +56,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      ctrl: true,
-      shift: true,
-      key: 'a'
+      alt: true,
+      key: 'm'
     },
     commandId: 'Comfy.ToggleLinear'
   },
@@ -179,7 +178,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   {
     combo: {
       key: 'm',
-      alt: true
+      alt: true,
+      shift: true
     },
     commandId: 'Comfy.Canvas.ToggleMinimap'
   },
@@ -208,5 +208,36 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'Escape'
     },
     commandId: 'Comfy.Graph.ExitSubgraph'
+  },
+  {
+    combo: {
+      ctrl: true,
+      key: 'a'
+    },
+    commandId: 'Comfy.Canvas.SelectAll',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      ctrl: true,
+      shift: true,
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.PasteFromClipboardWithConnect',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      key: 'Delete'
+    },
+    commandId: 'Comfy.Canvas.DeleteSelectedItems',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      key: 'Backspace'
+    },
+    commandId: 'Comfy.Canvas.DeleteSelectedItems',
+    targetElementId: 'graph-canvas-container'
   }
 ]

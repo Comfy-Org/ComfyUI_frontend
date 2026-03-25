@@ -16,9 +16,15 @@ import type { FocusCallback } from './tagsInputContext'
 
 const {
   disabled = false,
+  alwaysEditing = false,
   class: className,
   ...restProps
-} = defineProps<TagsInputRootProps<T> & { class?: HTMLAttributes['class'] }>()
+} = defineProps<
+  TagsInputRootProps<T> & {
+    class?: HTMLAttributes['class']
+    alwaysEditing?: boolean
+  }
+>()
 const emits = defineEmits<TagsInputRootEmits<T>>()
 
 const isEditing = ref(false)
@@ -28,9 +34,10 @@ const focusInput = ref<FocusCallback>()
 provide(tagsInputFocusKey, (callback: FocusCallback) => {
   focusInput.value = callback
 })
-provide(tagsInputIsEditingKey, isEditing)
+const isEditingEnabled = computed(() => alwaysEditing || isEditing.value)
+provide(tagsInputIsEditingKey, isEditingEnabled)
 
-const internalDisabled = computed(() => disabled || !isEditing.value)
+const internalDisabled = computed(() => disabled || !isEditingEnabled.value)
 
 const delegatedProps = computed(() => ({
   ...restProps,
@@ -40,7 +47,7 @@ const delegatedProps = computed(() => ({
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
 async function enableEditing() {
-  if (!disabled && !isEditing.value) {
+  if (!disabled && !alwaysEditing && !isEditing.value) {
     isEditing.value = true
     await nextTick()
     focusInput.value?.()
@@ -48,7 +55,9 @@ async function enableEditing() {
 }
 
 onClickOutside(rootEl, () => {
-  isEditing.value = false
+  if (!alwaysEditing) {
+    isEditing.value = false
+  }
 })
 </script>
 
@@ -60,8 +69,8 @@ onClickOutside(rootEl, () => {
       cn(
         'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
         !internalDisabled &&
-          'hover:bg-modal-card-background-hovered focus-within:bg-modal-card-background-hovered',
-        !disabled && !isEditing && 'cursor-pointer',
+          'focus-within:bg-modal-card-background-hovered hover:bg-modal-card-background-hovered',
+        !disabled && !isEditingEnabled && 'cursor-pointer',
         className
       )
     "
@@ -69,9 +78,9 @@ onClickOutside(rootEl, () => {
   >
     <slot :is-empty="modelValue.length === 0" />
     <i
-      v-if="!disabled && !isEditing"
+      v-if="!disabled && !isEditingEnabled"
       aria-hidden="true"
-      class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground transition-opacity opacity-0 group-hover:opacity-100"
+      class="absolute right-2 bottom-2 icon-[lucide--square-pen] size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
     />
   </TagsInputRoot>
 </template>

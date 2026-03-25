@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group relative flex flex-col items-center justify-center py-3 px-2 rounded-lg cursor-pointer select-none transition-colors duration-150 box-content bg-component-node-background hover:bg-secondary-background-hover"
+    class="group relative box-content flex cursor-pointer flex-col items-center justify-center rounded-lg bg-component-node-background px-2 py-3 transition-colors duration-150 select-none hover:bg-secondary-background-hover"
     :data-node-name="node.label"
     draggable="true"
     @click="handleClick"
@@ -12,7 +12,7 @@
     <i :class="cn(nodeIcon, 'size-6 text-muted-foreground')" />
 
     <TextTickerMultiLine
-      class="shrink-0 h-7 w-full text-xs font-normal text-foreground leading-normal mt-2"
+      class="text-foreground mt-2 h-7 w-full shrink-0 text-xs/normal font-normal"
     >
       {{ node.label }}
     </TextTickerMultiLine>
@@ -39,6 +39,7 @@ import { computed, inject } from 'vue'
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import { resolveBlueprintIcon } from '@/constants/essentialsDisplayNames'
 import { ESSENTIALS_ICON_OVERRIDES } from '@/constants/essentialsNodes'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -73,6 +74,10 @@ const nodeIcon = computed(() => {
   const nodeName = node.data?.name
   if (nodeName && nodeName in ESSENTIALS_ICON_OVERRIDES)
     return ESSENTIALS_ICON_OVERRIDES[nodeName]
+  if (nodeName) {
+    const blueprintIcon = resolveBlueprintIcon(nodeName)
+    if (blueprintIcon) return blueprintIcon
+  }
   const iconName = nodeName ? kebabCase(nodeName) : 'node'
   return `icon-[comfy--${iconName}]`
 })

@@ -46,6 +46,13 @@ interface QueuedJob {
   workflow?: ComfyWorkflow
 }
 
+/**
+ * Maximum number of job entries retained in {@link nodeProgressStatesByJob}.
+ * When exceeded, the oldest entries (by insertion order) are evicted to
+ * prevent unbounded memory growth in long-running sessions.
+ */
+export const MAX_PROGRESS_JOBS = 1000
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -72,6 +79,24 @@ export const useExecutionStore = defineStore('execution', () => {
   const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
 
   const initializingJobIds = ref<Set<string>>(new Set())
+
+  /**
+   * Cache for executionIdToNodeLocatorId lookups.
+   * Avoids redundant graph traversals during a single execution run.
+   * Cleared at execution start and end to ensure fresh graph state.
+   */
+  const executionIdToLocatorCache = new Map<string, NodeLocatorId | undefined>()
+
+  function cachedExecutionIdToLocator(
+    executionId: string
+  ): NodeLocatorId | undefined {
+    if (executionIdToLocatorCache.has(executionId)) {
+      return executionIdToLocatorCache.get(executionId)
+    }
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+    executionIdToLocatorCache.set(executionId, locatorId)
+    return locatorId
+  }
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -112,7 +137,7 @@ export const useExecutionStore = defineStore('execution', () => {
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
-        const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+        const locatorId = cachedExecutionIdToLocator(executionId)
         if (!locatorId) continue
 
         result[locatorId] = mergeExecutionProgressStates(
@@ -220,6 +245,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
+    executionIdToLocatorCache.clear()
     executionErrorStore.clearAllErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
@@ -278,6 +304,34 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  /**
+   * Evicts the oldest entries from {@link nodeProgressStatesByJob} when the
+   * map exceeds {@link MAX_PROGRESS_JOBS}, preventing unbounded memory
+   * growth in long-running sessions.
+   *
+   * Relies on ES2015+ object key insertion order: the first keys returned
+   * by `Object.keys` are the oldest entries.
+   *
+   * @example
+   * ```ts
+   * // Given 105 entries, evicts the 5 oldest:
+   * evictOldProgressJobs()
+   * Object.keys(nodeProgressStatesByJob.value).length // => 100
+   * ```
+   */
+  function evictOldProgressJobs() {
+    const current = nodeProgressStatesByJob.value
+    const keys = Object.keys(current)
+    if (keys.length <= MAX_PROGRESS_JOBS) return
+
+    const pruned: Record<string, Record<string, NodeProgressState>> = {}
+    const keysToKeep = keys.slice(keys.length - MAX_PROGRESS_JOBS)
+    for (const key of keysToKeep) {
+      pruned[key] = current[key]
+    }
+    nodeProgressStatesByJob.value = pruned
+  }
+
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: jobId } = e.detail
 
@@ -300,6 +354,7 @@ export const useExecutionStore = defineStore('execution', () => {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
+    evictOldProgressJobs()
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
@@ -437,6 +492,7 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: string | null) {
+    executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     if (jobId) {
@@ -461,11 +517,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text } = e.detail
+    const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
+
+    // Filter: only accept progress for the active prompt
+    if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
+      return
 
     // Handle execution node IDs for subgraphs
     const currentId = getNodeIdIfExecuting(nodeId)
+    if (!currentId) return
     const node = canvasStore.getCanvas().graph?.getNodeById(currentId)
     if (!node) return
 
@@ -549,6 +610,13 @@ export const useExecutionStore = defineStore('execution', () => {
     () => runningJobIds.value.length
   )
 
+  const isActiveWorkflowRunning = computed(() => {
+    if (!activeJobId.value) return false
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return false
+    return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
+  })
+
   return {
     isIdle,
     clientId,
@@ -568,6 +636,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
+    isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,

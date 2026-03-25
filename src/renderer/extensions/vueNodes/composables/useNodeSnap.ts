@@ -57,7 +57,7 @@ export function useNodeSnap() {
     if (!gridSizeValue) return { ...size }
 
     const sizeArray: [number, number] = [size.width, size.height]
-    if (snapPoint(sizeArray, gridSizeValue)) {
+    if (snapPoint(sizeArray, gridSizeValue, 'ceil')) {
       return { width: sizeArray[0], height: sizeArray[1] }
     }
     return { ...size }

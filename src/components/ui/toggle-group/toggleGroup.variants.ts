@@ -33,9 +33,9 @@ export const toggleGroupItemVariants = cva({
   variants: {
     variant: {
       default:
-        'bg-transparent hover:bg-interface-menu-component-surface-selected/50 text-text-secondary',
+        'bg-transparent text-text-secondary hover:bg-interface-menu-component-surface-selected/50',
       outline:
-        'border border-border-default bg-transparent hover:bg-secondary-background text-text-secondary'
+        'border border-border-default bg-transparent text-text-secondary hover:bg-secondary-background'
     },
     size: {
       default: 'h-7 px-3 text-sm',

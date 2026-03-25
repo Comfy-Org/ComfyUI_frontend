@@ -38,8 +38,8 @@
         <Button variant="muted-textonly" size="lg" @click="$emit('viewApp')">
           {{ $t('builderToolbar.viewApp') }}
         </Button>
-        <Button variant="secondary" size="lg" @click="$emit('close')">
-          {{ $t('g.close') }}
+        <Button variant="secondary" size="lg" @click="$emit('exitToWorkflow')">
+          {{ $t('builderToolbar.exitToWorkflow') }}
         </Button>
       </template>
     </template>
@@ -58,5 +58,6 @@ defineProps<{
 defineEmits<{
   viewApp: []
   close: []
+  exitToWorkflow: []
 }>()
 </script>

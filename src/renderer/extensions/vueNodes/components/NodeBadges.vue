@@ -15,18 +15,18 @@ defineProps<{
   >
     <div
       v-if="hasComfyBadge"
-      class="rounded-full bg-component-node-widget-background size-6 flex justify-center items-center"
+      class="flex size-6 items-center justify-center rounded-full bg-component-node-widget-background"
     >
       <i class="icon-[comfy--comfy-c] size-3" />
     </div>
     <div
       v-if="core.length"
-      class="rounded-full bg-component-node-widget-background h-6 flex justify-center items-center overflow-clip"
+      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-component-node-widget-background"
     >
       <template v-for="(badge, index) of core" :key="badge.text">
         <div
           v-if="index !== 0"
-          class="border-muted-foreground border-r h-4 mr-0.5 pr-0.5"
+          class="mr-0.5 h-4 border-r border-muted-foreground pr-0.5"
         />
         <NodeBadge
           bg-color="transparent"
@@ -37,12 +37,12 @@ defineProps<{
     </div>
     <div
       v-if="extension.length"
-      class="rounded-full bg-component-node-widget-background h-6 flex justify-center items-center overflow-clip"
+      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-component-node-widget-background"
     >
       <template v-for="(badge, index) of extension" :key="badge.text">
         <div
           v-if="index !== 0"
-          class="border-muted-foreground border-r h-4 mr-0.5 pr-0.5"
+          class="mr-0.5 h-4 border-r border-muted-foreground pr-0.5"
         />
         <NodeBadge
           bg-color="transparent"
