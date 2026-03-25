@@ -223,6 +223,7 @@ onMounted(() => {
 
       <div
         v-if="filteredActive.length"
+        data-testid="subgraph-editor-shown-section"
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
@@ -254,6 +255,7 @@ onMounted(() => {
 
       <div
         v-if="filteredCandidates.length"
+        data-testid="subgraph-editor-hidden-section"
         class="flex flex-col border-b border-interface-stroke"
       >
         <div

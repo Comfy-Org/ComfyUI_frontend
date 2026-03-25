@@ -52,6 +52,13 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel'
   },
+  subgraphEditor: {
+    toggle: 'subgraph-editor-toggle',
+    shownSection: 'subgraph-editor-shown-section',
+    hiddenSection: 'subgraph-editor-hidden-section',
+    widgetToggle: 'subgraph-widget-toggle',
+    widgetLabel: 'subgraph-widget-label'
+  },
   node: {
     titleInput: 'node-title-input'
   },
