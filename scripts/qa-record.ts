@@ -250,7 +250,7 @@ ${diff ? `## PR Diff\n\`\`\`\n${diff.slice(0, 3000)}\n\`\`\`` : ''}
 - Always include at least one screenshot
 - Do NOT include login steps (handled automatically)
 - The default workflow is already loaded when your steps start
-- Menu navigation pattern: openMenu → hoverMenuItem → clickMenuItem (or screenshot)
+- CRITICAL menu navigation: You MUST use ALL THREE steps in order: openMenu → hoverMenuItem("File") → clickMenuItem("Save As"). NEVER use clickMenuItem without openMenu and hoverMenuItem first — the menu items are NOT visible until you open the menu and hover the correct submenu. The top-level menu items are: "File", "Edit", "View", "Theme", "Help". Example: [{"action":"openMenu"},{"action":"hoverMenuItem","label":"File"},{"action":"clickMenuItem","label":"Save As"}]
 - For node interactions: right-click a node to get its context menu, double-click canvas to add nodes
 - Take screenshots BEFORE and AFTER critical actions to capture the bug state
 ${qaGuide ? '- Follow the QA Analysis Guide steps closely — they are well-researched and specific' : diff ? '- Pick test steps from the QA test plan categories that are most relevant to the diff' : '- Pick test steps from the QA test plan categories most likely to reveal bugs'}
