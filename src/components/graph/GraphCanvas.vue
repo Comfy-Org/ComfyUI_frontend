@@ -318,7 +318,8 @@ const { mountedNodeIds } = useViewportCulling({
     const rect = canvasStore.canvas?.canvas?.getBoundingClientRect()
     return { width: rect?.width ?? 0, height: rect?.height ?? 0 }
   },
-  isTransforming
+  isTransforming,
+  canvasElement
 })
 
 const allNodes = computed(() =>

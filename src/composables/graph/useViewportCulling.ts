@@ -9,7 +9,12 @@
  * Visibility checks are throttled during active pan/zoom interactions
  * to avoid turning culling into a per-frame reactive hotspot.
  */
-import { useDebounceFn, useEventListener, useThrottleFn } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useEventListener,
+  useResizeObserver,
+  useThrottleFn
+} from '@vueuse/core'
 import { shallowRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 
@@ -31,13 +36,15 @@ interface UseViewportCullingOptions {
   nodeLayouts: ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
   getViewportSize: () => { width: number; height: number }
   isTransforming: Ref<boolean>
+  canvasElement?: Ref<HTMLElement | undefined | null>
 }
 
 export function useViewportCulling({
   rawNodes,
   nodeLayouts,
   getViewportSize,
-  isTransforming
+  isTransforming,
+  canvasElement
 }: UseViewportCullingOptions) {
   const { isNodeInViewport } = useTransformState()
   const mountedNodeIds = shallowRef(new Set<string>())
@@ -132,6 +139,10 @@ export function useViewportCulling({
   })
 
   useEventListener(window, 'resize', refreshMountedNodes)
+
+  if (canvasElement) {
+    useResizeObserver(canvasElement, refreshMountedNodes)
+  }
 
   return {
     mountedNodeIds
