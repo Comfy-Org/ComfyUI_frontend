@@ -5,12 +5,13 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
+import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
+
 vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
   resolvePromotedWidgetSource: vi.fn()
 }))
 
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
 
 const mockedResolve = vi.mocked(resolvePromotedWidgetSource)
 
@@ -99,7 +100,7 @@ describe('renameWidget', () => {
     expect(widget.label).toBeUndefined()
   })
 
-  it('renames promoted widget source when parents are provided', () => {
+  it('renames promoted widget source when node is a subgraph without explicit parents', () => {
     const sourceWidget = makeWidget({ name: 'innerSeed' })
     const interiorInput = {
       name: 'innerSeed',
@@ -118,16 +119,8 @@ describe('renameWidget', () => {
       sourceWidgetName: 'innerSeed'
     })
     const subgraphNode = makeNode({ isSubgraph: true })
-    const parents = [subgraphNode] as unknown as Parameters<
-      typeof renameWidget
-    >[3]
 
-    const result = renameWidget(
-      promotedWidget,
-      subgraphNode,
-      'Renamed',
-      parents
-    )
+    const result = renameWidget(promotedWidget, subgraphNode, 'Renamed')
 
     expect(result).toBe(true)
     expect(sourceWidget.label).toBe('Renamed')
@@ -157,21 +150,6 @@ describe('renameWidget', () => {
       sourceWidgetName: 'innerSeed'
     })
     const node = makeNode({ isSubgraph: false })
-
-    const result = renameWidget(promotedWidget, node, 'Renamed')
-
-    expect(result).toBe(true)
-    expect(mockedResolve).not.toHaveBeenCalled()
-    expect(promotedWidget.label).toBe('Renamed')
-  })
-
-  it('does not resolve promoted widget source for subgraph node without parents', () => {
-    const promotedWidget = makeWidget({
-      name: 'seed',
-      sourceNodeId: '5',
-      sourceWidgetName: 'innerSeed'
-    })
-    const node = makeNode({ isSubgraph: true })
 
     const result = renameWidget(promotedWidget, node, 'Renamed')
 
