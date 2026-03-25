@@ -19,10 +19,7 @@ const props = defineProps<{
 
 const queryString = computed(() => props.errorMessage + ' is:issue')
 
-/**
- * Open GitHub issues search and track telemetry.
- */
-const openGitHubIssues = () => {
+function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'error_dialog_find_existing_issues_clicked'
   })

@@ -34,193 +34,7 @@ vi.mock(
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
-
-describe('executionErrorStore — missing node operations', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
-  describe('setMissingNodeTypes', () => {
-    it('sets missingNodesError with provided types', () => {
-      const store = useExecutionErrorStore()
-      const types: MissingNodeType[] = [
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ]
-      store.setMissingNodeTypes(types)
-
-      expect(store.missingNodesError).not.toBeNull()
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-      expect(store.hasMissingNodes).toBe(true)
-    })
-
-    it('clears missingNodesError when given empty array', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-      expect(store.missingNodesError).not.toBeNull()
-
-      store.setMissingNodeTypes([])
-      expect(store.missingNodesError).toBeNull()
-      expect(store.hasMissingNodes).toBe(false)
-    })
-
-    it('deduplicates string entries by value', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        'NodeA',
-        'NodeA',
-        'NodeB'
-      ] as MissingNodeType[])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
-    })
-
-    it('deduplicates object entries by nodeId when present', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeA', nodeId: '2', isReplaceable: false }
-      ])
-
-      // Same nodeId='1' deduplicated, nodeId='2' kept
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
-    })
-
-    it('deduplicates object entries by type when nodeId is absent', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', isReplaceable: false },
-        { type: 'NodeA', isReplaceable: true }
-      ] as MissingNodeType[])
-
-      // Same type, no nodeId → deduplicated
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-    })
-
-    it('keeps distinct nodeIds even when type is the same', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeA', nodeId: '2', isReplaceable: false },
-        { type: 'NodeA', nodeId: '3', isReplaceable: false }
-      ])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(3)
-    })
-  })
-
-  describe('surfaceMissingNodes', () => {
-    beforeEach(() => {
-      mockShowErrorsTab.value = false
-    })
-
-    it('stores missing node types when called', () => {
-      const store = useExecutionErrorStore()
-      const types: MissingNodeType[] = [
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ]
-      store.surfaceMissingNodes(types)
-
-      expect(store.missingNodesError).not.toBeNull()
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-      expect(store.hasMissingNodes).toBe(true)
-    })
-
-    it('opens error overlay when ShowErrorsTab setting is true', () => {
-      mockShowErrorsTab.value = true
-      const store = useExecutionErrorStore()
-      store.surfaceMissingNodes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-
-      expect(store.isErrorOverlayOpen).toBe(true)
-    })
-
-    it('does not open error overlay when ShowErrorsTab setting is false', () => {
-      mockShowErrorsTab.value = false
-      const store = useExecutionErrorStore()
-      store.surfaceMissingNodes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-
-      expect(store.isErrorOverlayOpen).toBe(false)
-    })
-
-    it('deduplicates node types', () => {
-      const store = useExecutionErrorStore()
-      store.surfaceMissingNodes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeB', nodeId: '2', isReplaceable: false }
-      ])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(2)
-    })
-  })
-
-  describe('removeMissingNodesByType', () => {
-    it('removes matching types from the missing nodes list', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeB', nodeId: '2', isReplaceable: false },
-        { type: 'NodeC', nodeId: '3', isReplaceable: false }
-      ])
-
-      store.removeMissingNodesByType(['NodeA', 'NodeC'])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-      const remaining = store.missingNodesError?.nodeTypes[0]
-      expect(typeof remaining !== 'string' && remaining?.type).toBe('NodeB')
-    })
-
-    it('clears missingNodesError when all types are removed', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-
-      store.removeMissingNodesByType(['NodeA'])
-
-      expect(store.missingNodesError).toBeNull()
-      expect(store.hasMissingNodes).toBe(false)
-    })
-
-    it('does nothing when missingNodesError is null', () => {
-      const store = useExecutionErrorStore()
-      expect(store.missingNodesError).toBeNull()
-
-      // Should not throw
-      store.removeMissingNodesByType(['NodeA'])
-      expect(store.missingNodesError).toBeNull()
-    })
-
-    it('does nothing when removing non-existent types', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-
-      store.removeMissingNodesByType(['NonExistent'])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-    })
-
-    it('handles removing from string entries', () => {
-      const store = useExecutionErrorStore()
-      store.setMissingNodeTypes([
-        'StringNodeA',
-        'StringNodeB'
-      ] as MissingNodeType[])
-
-      store.removeMissingNodesByType(['StringNodeA'])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-    })
-  })
-})
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
 describe('executionErrorStore — node error operations', () => {
   beforeEach(() => {
@@ -537,16 +351,18 @@ describe('executionErrorStore — node error operations', () => {
 })
 
 describe('clearAllErrors', () => {
-  let store: ReturnType<typeof useExecutionErrorStore>
+  let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
+  let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    store = useExecutionErrorStore()
+    executionErrorStore = useExecutionErrorStore()
+    missingNodesStore = useMissingNodesErrorStore()
   })
 
   it('resets all error categories and closes error overlay', () => {
-    store.lastExecutionError = {
+    executionErrorStore.lastExecutionError = {
       prompt_id: 'test',
       timestamp: 0,
       node_id: '1',
@@ -556,8 +372,12 @@ describe('clearAllErrors', () => {
       exception_type: 'RuntimeError',
       traceback: []
     }
-    store.lastPromptError = { type: 'execution', message: 'fail', details: '' }
-    store.lastNodeErrors = {
+    executionErrorStore.lastPromptError = {
+      type: 'execution',
+      message: 'fail',
+      details: ''
+    }
+    executionErrorStore.lastNodeErrors = {
       '1': {
         errors: [
           {
@@ -571,19 +391,18 @@ describe('clearAllErrors', () => {
         class_type: 'Test'
       }
     }
-    store.missingNodesError = {
-      message: 'Missing nodes',
-      nodeTypes: [{ type: 'MissingNode', hint: '' }]
-    }
-    store.showErrorOverlay()
+    missingNodesStore.setMissingNodeTypes([
+      { type: 'MissingNode', hint: '' }
+    ] as unknown as MissingNodeType[])
+    executionErrorStore.showErrorOverlay()
 
-    store.clearAllErrors()
+    executionErrorStore.clearAllErrors()
 
-    expect(store.lastExecutionError).toBeNull()
-    expect(store.lastPromptError).toBeNull()
-    expect(store.lastNodeErrors).toBeNull()
-    expect(store.missingNodesError).toBeNull()
-    expect(store.isErrorOverlayOpen).toBe(false)
-    expect(store.hasAnyError).toBe(false)
+    expect(executionErrorStore.lastExecutionError).toBeNull()
+    expect(executionErrorStore.lastPromptError).toBeNull()
+    expect(executionErrorStore.lastNodeErrors).toBeNull()
+    expect(missingNodesStore.missingNodesError).toBeNull()
+    expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    expect(executionErrorStore.hasAnyError).toBe(false)
   })
 })

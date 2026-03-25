@@ -307,7 +307,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       class="flex h-15 shrink-0 items-start gap-0.5"
     >
       <OutputHistoryActiveQueueItem
-        v-if="queueCount > 1"
+        v-if="queueCount > 1 || queueStore.pendingTasks.length"
         class="mr-3"
         :queue-count="queueCount"
       />

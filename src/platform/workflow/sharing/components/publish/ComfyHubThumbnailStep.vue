@@ -1,9 +1,9 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
-    <fieldset class="flex flex-col gap-2">
-      <legend class="text-sm text-base-foreground">
+    <div class="flex flex-col gap-2">
+      <span class="text-sm text-base-foreground select-none">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
-      </legend>
+      </span>
       <ToggleGroup
         type="single"
         :model-value="thumbnailType"
@@ -14,18 +14,19 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="h-auto w-full rounded-sm bg-node-component-surface p-2 data-[state=on]:bg-muted-background"
+          class="flex h-auto w-full gap-2 rounded-sm bg-node-component-surface p-2 font-inter text-base-foreground data-[state=on]:bg-muted-background"
         >
-          <span class="text-center text-sm font-bold text-base-foreground">
+          <i :class="cn('size-4', option.icon)" />
+          <span class="text-center text-sm font-bold">
             {{ option.label }}
           </span>
         </ToggleGroupItem>
       </ToggleGroup>
-    </fieldset>
+    </div>
 
     <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-base-foreground">
+        <span class="text-sm text-base-foreground select-none">
           {{ uploadSectionLabel }}
         </span>
         <Button
@@ -40,7 +41,7 @@
 
       <template v-if="thumbnailType === 'imageComparison'">
         <div
-          class="grid flex-1 grid-cols-1 grid-rows-1 place-content-center-safe"
+          class="grid flex-1 grid-cols-1 grid-rows-1 place-content-center-safe overflow-hidden"
         >
           <div
             v-if="hasBothComparisonImages"
@@ -69,7 +70,7 @@
           <div
             :class="
               cn(
-                'col-span-full row-span-full flex gap-2',
+                'col-span-full row-span-full flex items-center-safe justify-center-safe gap-2',
                 hasBothComparisonImages && 'invisible'
               )
             "
@@ -80,8 +81,10 @@
               :ref="(el) => (comparisonDropRefs[slot.key] = el as HTMLElement)"
               :class="
                 cn(
-                  'flex max-w-1/2 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
-                  comparisonPreviewUrls[slot.key] ? 'self-start' : 'flex-1',
+                  'flex aspect-square h-full min-h-0 flex-[0_1_auto] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition-colors',
+                  comparisonPreviewUrls[slot.key]
+                    ? 'self-start'
+                    : 'flex-[0_1_1]',
                   comparisonOverStates[slot.key]
                     ? 'border-muted-foreground'
                     : 'border-border-default hover:border-muted-foreground'
@@ -123,7 +126,7 @@
           ref="singleDropRef"
           :class="
             cn(
-              'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors',
+              'm-auto flex aspect-square min-h-0 w-full max-w-48 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition-colors',
               thumbnailPreviewUrl ? 'self-center p-1' : 'flex-1',
               isOverSingleDrop
                 ? 'border-muted-foreground'
@@ -239,15 +242,18 @@ const uploadDropText = computed(() =>
 const thumbnailOptions = [
   {
     value: 'image' as const,
-    label: t('comfyHubPublish.thumbnailImage')
+    label: t('comfyHubPublish.thumbnailImage'),
+    icon: 'icon-[lucide--image]'
   },
   {
     value: 'video' as const,
-    label: t('comfyHubPublish.thumbnailVideo')
+    label: t('comfyHubPublish.thumbnailVideo'),
+    icon: 'icon-[lucide--video]'
   },
   {
     value: 'imageComparison' as const,
-    label: t('comfyHubPublish.thumbnailImageComparison')
+    label: t('comfyHubPublish.thumbnailImageComparison'),
+    icon: 'icon-[lucide--diff]'
   }
 ]
 

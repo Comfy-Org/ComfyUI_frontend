@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "숫자 변환",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "스위치",
     "inputs": {
@@ -1736,6 +1752,10 @@
         "name": "closed_loop",
         "tooltip": "컨텍스트 윈도우 루프를 닫을지 여부입니다. 루프 스케줄에만 적용됩니다."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "각 윈도우의 conditioning 텐서에서 유지할 latent 인덱스 목록입니다. 예를 들어 '0'으로 설정하면 각 윈도우에 대해 초기 시작 이미지를 사용합니다."
+      },
       "context_length": {
         "name": "context_length",
         "tooltip": "컨텍스트 윈도우의 길이입니다."
@@ -1767,6 +1787,10 @@
       "model": {
         "name": "model",
         "tooltip": "샘플링 중 컨텍스트 윈도우를 적용할 모델입니다."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "여러 개의 conditioning(ConditionCombine에서 생성됨)을 영역 인덱스에 따라 각 윈도우로 분할할지 여부입니다."
       }
     },
     "outputs": {
@@ -2206,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "곡선 편집기",
+    "inputs": {
+      "curve": {
+        "name": "곡선"
+      },
+      "histogram": {
+        "name": "히스토그램"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "곡선",
         "tooltip": null
       }
     }
@@ -3815,6 +3856,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "모델의 사고 과정에서 생성된 첫 번째 이미지입니다. thinking_level이 HIGH이고 IMAGE+TEXT 모달리티일 때만 제공됩니다."
       }
     }
   },
@@ -4080,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 비디오를 자연스럽게 이어서 확장합니다.",
+    "display_name": "Grok 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 확장에 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오에서 다음에 일어나야 할 일을 설명하는 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "확장할 원본 비디오입니다. MP4 형식, 2-15초."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "프롬프트 또는 이미지를 통해 비디오를 생성합니다",
     "display_name": "Grok 비디오",
@@ -4108,6 +4186,41 @@
       "resolution": {
         "name": "해상도",
         "tooltip": "출력 비디오의 해상도입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "참조 이미지를 스타일 및 콘텐츠 참조로 사용하여 비디오를 생성합니다.",
+    "display_name": "Grok 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오를 설명하는 텍스트입니다."
       },
       "seed": {
         "name": "시드",
@@ -6732,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "출력 이미지",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA 화자 정체성 전이를 위한 참조 오디오를 설정합니다. 참조 오디오 clip을 컨디셔닝에 인코딩하고, 선택적으로 모델에 정체성 가이던스를 적용합니다(참조 없이 추가로 한 번 더 forward pass를 실행하여 화자 정체성 효과를 증폭).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "인코딩을 위한 LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "정체성 가이던스가 활성화되는 sigma 범위의 끝 지점입니다."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "정체성 가이던스의 강도입니다. 각 단계마다 참조 없이 추가로 forward pass를 실행하여 화자 정체성을 증폭합니다. 0으로 설정하면 비활성화됩니다(추가 pass 없음)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "전이할 화자 정체성을 가진 참조 오디오 clip입니다. 약 5초(학습 시간)를 권장합니다. 더 짧거나 긴 clip은 음성 정체성 전이 품질이 저하될 수 있습니다."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "정체성 가이던스가 활성화되는 sigma 범위의 시작 지점입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11941,6 +12102,91 @@
       },
       "clip_name4": {
         "name": "clip 이름 4"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverImageToSVGNode": {
+    "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
+    "display_name": "Quiver 이미지 → SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "주요 피사체에 맞게 자동으로 자릅니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "벡터화할 입력 이미지입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG 벡터화에 사용할 모델입니다."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Quiver AI를 사용하여 텍스트 프롬프트로부터 SVG를 생성합니다.",
+    "display_name": "Quiver 텍스트 → SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "추가 스타일 또는 포맷팅 가이드라인입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG 생성에 사용할 모델입니다."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 SVG 출력에 대한 텍스트 설명입니다."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "생성을 안내할 최대 4개의 참조 이미지입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
       }
     },
     "outputs": {
