@@ -129,10 +129,12 @@ function onBranchSelectorCreated(this: LGraphNode) {
 
   this.widgets?.pop()
   const values = () =>
-    this.inputs.slice(0, -2).map((i) => i.label ?? i.localized_name ?? i.name)
+    this.inputs.slice(0, -1).map((i) => i.label ?? i.localized_name ?? i.name)
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
     values
   })
+  comboWidget.serializeValue = () =>
+    values().findIndex((e) => e === comboWidget.value)
   this.onConnectionsChange = useChainCallback(this.onConnectionsChange, () =>
     requestAnimationFrame(() => {
       const vals = values()
