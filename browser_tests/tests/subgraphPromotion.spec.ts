@@ -8,7 +8,8 @@ import { fitToViewInstant } from '../helpers/fitToView'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCount,
-  getPromotedWidgets
+  getPromotedWidgets,
+  getPseudoPreviewWidgets
 } from '../helpers/promotedWidgets'
 
 test.describe(
@@ -92,6 +93,33 @@ test.describe(
 
         // SaveImage is in the recommendedNodes list, so filename_prefix is promoted
         expect(promotedNames).toContain('filename_prefix')
+      })
+
+      test('LoadImage node gets $$canvas-image-preview pseudo-widget promoted', async ({
+        comfyPage
+      }) => {
+        // Add a LoadImage node to the graph
+        const loadImageNodeId = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          const node = window.LiteGraph!.createNode('LoadImage')!
+          node.pos = [300, 300]
+          graph.add(node)
+          return String(node.id)
+        })
+        await comfyPage.nextFrame()
+
+        const loadImageNode =
+          await comfyPage.nodeOps.getNodeRefById(loadImageNodeId)
+        await loadImageNode.click('title')
+        const subgraphNode = await loadImageNode.convertToSubgraph()
+        await comfyPage.nextFrame()
+
+        const nodeId = String(subgraphNode.id)
+        const pseudoWidgets = await getPseudoPreviewWidgets(comfyPage, nodeId)
+        expect(pseudoWidgets.length).toBeGreaterThan(0)
+        expect(
+          pseudoWidgets.some(([, name]) => name === '$$canvas-image-preview')
+        ).toBe(true)
       })
     })
 
