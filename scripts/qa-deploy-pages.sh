@@ -57,7 +57,7 @@ for os in Linux macOS Windows; do
   REPORT_FILES=""
   REPORT_LINK=""
   REPORT_HTML=""
-  for rpt in "video-reviews/${OS_LOWER}-qa-video-report.md" video-reviews/${OS_LOWER}-pass*-qa-video-report.md; do
+  for rpt in "video-reviews/${OS_LOWER}-qa-video-report.md" "video-reviews/${OS_LOWER}-pass"*-qa-video-report.md; do
     [ -f "$rpt" ] && REPORT_FILES="${REPORT_FILES} ${rpt}"
   done
 
@@ -66,11 +66,11 @@ for os in Linux macOS Windows; do
     COMBINED_MD=""
     for rpt in $REPORT_FILES; do
       cp "$rpt" "$DEPLOY_DIR/$(basename "$rpt")"
-      RPT_MD=$(cat "$rpt" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+      RPT_MD=$(sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' "$rpt")
       [ -n "$COMBINED_MD" ] && COMBINED_MD="${COMBINED_MD}&#10;&#10;---&#10;&#10;"
       COMBINED_MD="${COMBINED_MD}${RPT_MD}"
     done
-    FIRST_REPORT=$(echo $REPORT_FILES | awk '{print $1}')
+    FIRST_REPORT=$(echo "$REPORT_FILES" | awk '{print $1}')
     FIRST_BASENAME=$(basename "$FIRST_REPORT")
     REPORT_LINK="<a class=dl href=${FIRST_BASENAME}><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14 2 14 8 20 8'/><line x1=16 y1=13 x2=8 y2=13/><line x1=16 y1=17 x2=8 y2=17'/></svg>Report</a>"
     REPORT_HTML="<details class=report open><summary><svg width=14 height=14 viewBox='0 0 24 24' fill=none stroke=currentColor stroke-width=2><circle cx=12 cy=12 r=10/><line x1=12 y1=16 x2=12 y2=12/><line x1=12 y1=8 x2=12.01 y2=8'/></svg> AI Comparative Review</summary><div class=report-body data-md>${COMBINED_MD}</div></details>"
