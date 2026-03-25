@@ -1,10 +1,10 @@
 import type { FullConfig } from '@playwright/test'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { writePerfReport } from './helpers/perfReporter'
 import { restorePath } from './utils/backupUtils'
 
-dotenv.config()
+dotenvConfig()
 
 export default function globalTeardown(_config: FullConfig) {
   writePerfReport()
