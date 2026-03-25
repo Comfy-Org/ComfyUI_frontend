@@ -61,7 +61,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getWidgetStateMap(graphId)
     const key = makeKey(state.nodeId, state.name)
     widgetStates.set(key, state)
-    return widgetStates.get(key) as WidgetState<TValue>
+    return widgetStates.get(key)!
   }
 
   function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
@@ -99,7 +99,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       options: {}
     }
     widgetStates.set(key, state)
-    return widgetStates.get(key) as WidgetState
+    return widgetStates.get(key)!
   }
 
   function beginHydration(nodeId: NodeId): void {
