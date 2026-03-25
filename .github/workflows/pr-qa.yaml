@@ -499,9 +499,9 @@ jobs:
           # Create badge generator script
           cat > /tmp/gen-badge.sh <<'BADGESCRIPT'
           #!/bin/bash
-          # Usage: gen-badge.sh <status> <color> <output-path>
+          # Usage: gen-badge.sh <status> <color> <output-path> [label]
           STATUS="$1" COLOR="$2" OUT="$3"
-          LABEL="QA Bot"
+          LABEL="${4:-QA Bot}"
           LABEL_W=$(( ${#LABEL} * 7 + 12 ))
           STATUS_W=$(( ${#STATUS} * 7 + 12 ))
           TOTAL_W=$(( LABEL_W + STATUS_W ))
@@ -548,8 +548,9 @@ jobs:
         run: |
           cat > /tmp/gen-badge-dual.sh <<'DUALBADGE'
           #!/bin/bash
+          # Usage: gen-badge-dual.sh <repro> <repro_color> <fix> <fix_color> <output-path> [label]
           BUG="$1" BUG_C="$2" FIX="Fix: $3" FIX_C="$4" OUT="$5"
-          LABEL="QA Bot"
+          LABEL="${6:-QA Bot}"
           LW=$(( ${#LABEL} * 7 + 12 ))
           BW=$(( ${#BUG} * 7 + 12 ))
           FW=$(( ${#FIX} * 7 + 12 ))
@@ -936,7 +937,7 @@ jobs:
           ${COMMENT_MARKER}
           ## QA ${MODE_BADGE}
 
-          ![QA Badge](${VIDEO_BASE}/badge.svg)
+          [![QA Badge](${VIDEO_BASE}/badge.svg)](${VIDEO_BASE}/)
 
           ${VIDEO_SECTION}
           **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
