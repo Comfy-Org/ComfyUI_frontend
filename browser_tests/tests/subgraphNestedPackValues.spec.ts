@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 /**
  * Regression test for PR #10532:
@@ -38,7 +39,9 @@ test.describe(
       const widthWidget = nodeLocator.getByLabel('width', { exact: true })
       const heightWidget = nodeLocator.getByLabel('height', { exact: true })
       const stepsWidget = nodeLocator.getByLabel('steps', { exact: true })
-      const textWidget = nodeLocator.getByTestId('dom-widget-textarea')
+      const textWidget = nodeLocator.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
 
       await expect(widthWidget).toBeVisible()
       await expect(heightWidget).toBeVisible()
@@ -97,7 +100,7 @@ test.describe(
       const widthAfter = nodeAfter.getByLabel('width', { exact: true })
       const heightAfter = nodeAfter.getByLabel('height', { exact: true })
       const stepsAfter = nodeAfter.getByLabel('steps', { exact: true })
-      const textAfter = nodeAfter.getByTestId('dom-widget-textarea')
+      const textAfter = nodeAfter.getByTestId(TestIds.widgets.domWidgetTextarea)
 
       const widthControlsAfter = comfyPage.vueNodes.getInputNumberControls(
         widthAfter.first()
