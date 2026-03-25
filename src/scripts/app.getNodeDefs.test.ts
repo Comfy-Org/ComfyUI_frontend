@@ -65,7 +65,6 @@ describe('ComfyApp.getNodeDefs', () => {
 
     const result = await comfyApp.getNodeDefs()
 
-    // When display_name is empty, should fall back to name
     expect(result.TestNode.display_name).toBe('TestNode')
   })
 
@@ -84,7 +83,6 @@ describe('ComfyApp.getNodeDefs', () => {
     }
 
     vi.mocked(api.getNodeDefs).mockResolvedValue(mockNodeDefs)
-    // Mock st to return a translation instead of fallback
     vi.mocked(st).mockReturnValue('Translated Display Name')
 
     const result = await comfyApp.getNodeDefs()
