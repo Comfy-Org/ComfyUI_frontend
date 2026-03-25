@@ -10,11 +10,9 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { setWorkflowDefaultView } from './builderViewOptions'
-import BuilderSaveConfirmDialogContent from './BuilderSaveConfirmDialogContent.vue'
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
 
 const SAVE_DIALOG_KEY = 'builder-save'
-const CONFIRM_DIALOG_KEY = 'builder-save-confirm'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 export function useBuilderSave() {
@@ -30,25 +28,7 @@ export function useBuilderSave() {
     dialogStore.closeDialog({ key })
   }
 
-  function save() {
-    const workflow = workflowStore.activeWorkflow
-    if (!workflow) return
-
-    dialogService.showLayoutDialog({
-      key: CONFIRM_DIALOG_KEY,
-      component: BuilderSaveConfirmDialogContent,
-      props: {
-        onSave: () => handleConfirmSave(),
-        onSaveAsNew: () => {
-          closeDialog(CONFIRM_DIALOG_KEY)
-          saveAs()
-        },
-        onClose: () => closeDialog(CONFIRM_DIALOG_KEY)
-      }
-    })
-  }
-
-  async function handleConfirmSave() {
+  async function save() {
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return
 
@@ -57,8 +37,6 @@ export function useBuilderSave() {
       showSuccessDialog()
     } catch (e) {
       toastErrorHandler(e)
-    } finally {
-      closeDialog(CONFIRM_DIALOG_KEY)
     }
   }
 

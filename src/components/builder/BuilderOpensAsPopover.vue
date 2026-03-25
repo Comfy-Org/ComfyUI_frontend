@@ -2,6 +2,7 @@
   <PopoverRoot>
     <PopoverAnchor as-child>
       <div
+        data-testid="builder-opens-as"
         class="flex h-8 min-w-64 items-center justify-center gap-2 rounded-t-2xl bg-interface-builder-mode-footer-background px-4 text-sm text-interface-builder-mode-button-foreground"
       >
         <i :class="cn(currentModeIcon, 'size-4')" aria-hidden="true" />

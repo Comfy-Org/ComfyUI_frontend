@@ -37,20 +37,58 @@
         :is-select-active="isSelectStep"
         @switch="navigateToStep('builder:outputs')"
       >
-        <Button
-          size="lg"
-          class="bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground opacity-50 hover:bg-interface-builder-mode-button-background/80"
-        >
-          {{ saveButtonLabel }}
+        <Button size="lg" :class="cn('w-24', disabledSaveClasses)">
+          {{ isSaved ? t('g.save') : t('builderToolbar.saveAs') }}
         </Button>
       </ConnectOutputPopover>
-      <Button
-        v-else
-        size="lg"
-        class="bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/80"
-        @click="isSaved ? save() : saveAs()"
+      <ButtonGroup
+        v-else-if="isSaved"
+        class="w-24 rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
       >
-        {{ saveButtonLabel }}
+        <Button
+          size="lg"
+          :disabled="!isModified"
+          class="flex-1"
+          :class="isModified ? activeSaveClasses : disabledSaveClasses"
+          @click="save()"
+        >
+          {{ t('g.save') }}
+        </Button>
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger as-child>
+            <Button
+              size="lg"
+              :aria-label="t('builderToolbar.saveAs')"
+              data-save-chevron
+              class="w-6 rounded-l-none border-l border-border-default px-0"
+            >
+              <i
+                class="icon-[lucide--chevron-down] size-4"
+                aria-hidden="true"
+              />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              align="end"
+              :side-offset="4"
+              class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+            >
+              <DropdownMenuItem as-child @select="saveAs()">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  class="w-full justify-start font-normal"
+                >
+                  {{ t('builderToolbar.saveAs') }}
+                </Button>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
+      </ButtonGroup>
+      <Button v-else size="lg" :class="activeSaveClasses" @click="saveAs()">
+        {{ t('builderToolbar.saveAs') }}
       </Button>
     </nav>
   </div>
@@ -60,13 +98,22 @@
 import { computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import BuilderOpensAsPopover from './BuilderOpensAsPopover.vue'
 import { setWorkflowDefaultView } from './builderViewOptions'
@@ -92,14 +139,21 @@ const {
 })
 const { save, saveAs } = useBuilderSave()
 
-const isSaved = computed(() => !workflowStore.activeWorkflow?.isTemporary)
+const isSaved = computed(
+  () => workflowStore.activeWorkflow?.isTemporary === false
+)
+
+const activeSaveClasses =
+  'bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/80'
+const disabledSaveClasses =
+  'bg-secondary-background text-muted-foreground/50 disabled:opacity-100'
+
+const isModified = computed(
+  () => workflowStore.activeWorkflow?.isModified === true
+)
 
 const isAppMode = computed(
   () => workflowStore.activeWorkflow?.initialMode !== 'graph'
-)
-
-const saveButtonLabel = computed(() =>
-  isSaved.value ? t('g.save') : t('builderToolbar.saveAs')
 )
 
 useEventListener(window, 'keydown', (e: KeyboardEvent) => {

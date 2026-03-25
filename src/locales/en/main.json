@@ -3690,9 +3690,6 @@
     "opensAsGraph": "Open as a {mode}"
   },
   "builderSave": {
-    "confirmTitle": "Save your changes?",
-    "confirmBody": "Save changes to this app, or save as a new app to keep both versions.",
-    "saveAsNew": "Save as new",
     "successTitle": "Successfully saved",
     "successBody": "Would you like to view it now?",
     "successBodyApp": "This workflow will open in App Mode by default from now on.\n\nWould you like to view it now?",

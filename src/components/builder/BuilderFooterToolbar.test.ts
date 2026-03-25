@@ -44,6 +44,7 @@ vi.mock('@/stores/dialogStore', () => ({
 const mockActiveWorkflow = ref<{
   isTemporary: boolean
   initialMode?: string
+  isModified?: boolean
   changeTracker?: { checkState: () => void }
 } | null>({
   isTemporary: true,
@@ -135,15 +136,6 @@ describe('BuilderFooterToolbar', () => {
     }
   }
 
-  function findSaveButton(wrapper: ReturnType<typeof mountComponent>) {
-    const nav = wrapper.find('nav')
-    const btn = nav
-      .findAll('button')
-      .find((b) => b.text().trim().startsWith('Save'))
-    if (!btn) throw new Error('Save button not found')
-    return btn
-  }
-
   it('disables back on the first step', () => {
     mockState.mode = 'builder:inputs'
     const { back } = getNavButtons(mountComponent())
@@ -203,34 +195,38 @@ describe('BuilderFooterToolbar', () => {
 
   it('shows "Save as" when workflow is temporary', () => {
     mockActiveWorkflow.value = { isTemporary: true }
-    const save = findSaveButton(mountComponent())
-    expect(save.text()).toBe('Save as')
+    const wrapper = mountComponent()
+    expect(findButtonByText(wrapper, 'Save as')).toBeDefined()
   })
 
   it('shows "Save" when workflow is saved', () => {
     mockActiveWorkflow.value = { isTemporary: false }
-    const save = findSaveButton(mountComponent())
-    expect(save.text()).toBe('Save')
+    const wrapper = mountComponent()
+    expect(findButtonByText(wrapper, 'Save')).toBeDefined()
   })
 
   it('calls saveAs when workflow is temporary', async () => {
     mockActiveWorkflow.value = { isTemporary: true }
-    const save = findSaveButton(mountComponent())
-    await save.trigger('click')
+    await findButtonByText(mountComponent(), 'Save as').trigger('click')
     expect(mockSaveAs).toHaveBeenCalledOnce()
   })
 
-  it('calls save when workflow is saved', async () => {
-    mockActiveWorkflow.value = { isTemporary: false }
-    const save = findSaveButton(mountComponent())
-    await save.trigger('click')
+  it('calls save when workflow is saved and modified', async () => {
+    mockActiveWorkflow.value = { isTemporary: false, isModified: true }
+    await findButtonByText(mountComponent(), 'Save').trigger('click')
     expect(mockSave).toHaveBeenCalledOnce()
+  })
+
+  it('disables save button when workflow has no unsaved changes', () => {
+    mockActiveWorkflow.value = { isTemporary: false, isModified: false }
+    const save = findButtonByText(mountComponent(), 'Save')
+    expect(save.attributes('disabled')).toBeDefined()
   })
 
   it('does not call save when no outputs', async () => {
     mockHasOutputs.value = false
-    const save = findSaveButton(mountComponent())
-    await save.trigger('click')
+    const wrapper = mountComponent()
+    await findButtonByText(wrapper, 'Save as').trigger('click')
     expect(mockSave).not.toHaveBeenCalled()
     expect(mockSaveAs).not.toHaveBeenCalled()
   })
