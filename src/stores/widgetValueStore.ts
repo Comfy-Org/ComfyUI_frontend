@@ -61,7 +61,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getWidgetStateMap(graphId)
     const key = makeKey(state.nodeId, state.name)
     widgetStates.set(key, state)
-    return widgetStates.get(key)!
+    // Return the reactive proxy from the map (not the raw input) so that
+    // callers who hold a reference see Vue-tracked mutations.
+    return widgetStates.get(key) as WidgetState<TValue>
   }
 
   function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
