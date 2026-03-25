@@ -108,7 +108,8 @@ for num in "${NUMBERS[@]}"; do
 done
 
 # Deduplicate
-mapfile -t NUMBERS < <(printf '%s\n' "${NUMBERS[@]}" | sort -un)
+# shellcheck disable=SC2207 # mapfile not available on macOS default bash
+NUMBERS=($(printf '%s\n' "${NUMBERS[@]}" | sort -un))
 
 # --- Push branches ---
 echo "Triggering QA for: ${NUMBERS[*]}"
