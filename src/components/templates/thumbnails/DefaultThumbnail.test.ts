@@ -63,8 +63,7 @@ describe('DefaultThumbnail', () => {
       isVideo: true
     })
     expect(screen.getByRole('img')).toHaveClass(
-      'w-full',
-      'h-full',
+      'size-full',
       'object-cover'
     )
   })
