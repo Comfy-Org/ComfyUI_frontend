@@ -1076,7 +1076,7 @@ jobs:
           elif grep -riq 'partially reproduced\|partial' video-reviews/ 2>/dev/null; then
             REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
           elif grep -riq 'reproduced\|confirmed' video-reviews/ 2>/dev/null; then
-            REPRO_RESULT="REPRODUCED" REPRO_COLOR="#e05d44"
+            REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
           fi
 
           if [ "$TARGET_TYPE" = "issue" ]; then
