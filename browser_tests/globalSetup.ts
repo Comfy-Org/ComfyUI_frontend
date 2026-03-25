@@ -1,8 +1,8 @@
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { backupPath } from './utils/backupUtils'
 
-dotenv.config()
+dotenvConfig()
 
 export default function globalSetup() {
   if (!process.env.CI) {
