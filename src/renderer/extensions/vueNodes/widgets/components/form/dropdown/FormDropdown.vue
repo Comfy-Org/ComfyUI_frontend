@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computedAsync, onClickOutside, refDebounced } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import type {
   FilterOption,
@@ -138,8 +139,15 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
+const MENU_HEIGHT = 640 + 8
+const openUpward = ref(false)
+
 function toggleDropdown() {
   if (disabled) return
+  if (!isOpen.value && triggerRef.value) {
+    const rect = triggerRef.value.getBoundingClientRect()
+    openUpward.value = rect.bottom + MENU_HEIGHT > window.innerHeight
+  }
   isOpen.value = !isOpen.value
 }
 
@@ -207,7 +215,12 @@ function handleSelection(item: FormDropdownItem, index: number) {
     />
     <div
       v-if="isOpen"
-      class="absolute top-full left-0 z-50 rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg"
+      :class="
+        cn(
+          'absolute left-0 z-50 rounded-lg border-none bg-transparent p-0 shadow-lg',
+          openUpward ? 'bottom-full pb-2' : 'top-full pt-2'
+        )
+      "
     >
       <FormDropdownMenu
         v-model:filter-selected="filterSelected"
