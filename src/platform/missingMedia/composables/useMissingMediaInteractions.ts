@@ -138,7 +138,15 @@ export function useMissingMediaInteractions() {
         : mediaType === 'video'
           ? 'video/'
           : 'image/'
-    if (!file.type || !file.type.startsWith(expectedPrefix)) return
+    if (!file.type || !file.type.startsWith(expectedPrefix)) {
+      useToastStore().addAlert(
+        st(
+          'toastMessages.unsupportedFileType',
+          'Unsupported file type. Please select a valid file.'
+        )
+      )
+      return
+    }
 
     store.uploadState[name] = { fileName: file.name, status: 'uploading' }
 

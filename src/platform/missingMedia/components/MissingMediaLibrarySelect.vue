@@ -52,7 +52,7 @@
             <img
               v-if="mediaType === 'image'"
               :src="getPreviewUrl(option.value)"
-              :alt="option.name"
+              alt=""
               class="size-8 shrink-0 rounded-sm object-cover"
               loading="lazy"
             />

@@ -48,7 +48,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
 
       if (!systemStatsStore.systemStats) {
         if (systemStatsStore.isLoading) {
-          await until(systemStatsStore.isLoading).toBe(false)
+          await until(() => systemStatsStore.isLoading).toBe(false)
         } else {
           try {
             await systemStatsStore.refetchSystemStats()
