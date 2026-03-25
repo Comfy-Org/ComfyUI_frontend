@@ -106,6 +106,7 @@ watch(canvasTransformActive, (active) => {
   for (const element of transformDeferredElements) {
     if (element.isConnected) {
       markElementForFreshMeasurement(element)
+      resizeObserver.unobserve(element)
       resizeObserver.observe(element)
     }
   }
