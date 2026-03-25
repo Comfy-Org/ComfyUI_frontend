@@ -111,10 +111,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function commitHydration(nodeId: NodeId): void {
     hydratingNodes.delete(nodeId)
     const callbacks = hydrationCallbacks.get(nodeId)
-    if (callbacks) {
-      hydrationCallbacks.delete(nodeId)
-      for (const cb of callbacks) cb()
-    }
+    if (!callbacks) return
+
+    hydrationCallbacks.delete(nodeId)
+    for (const cb of callbacks) cb()
   }
 
   function isHydrating(nodeId: NodeId): boolean {
