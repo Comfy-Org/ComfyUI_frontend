@@ -41,11 +41,6 @@ const MockFormDropdownInput = {
     '<button class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
-const MockPopover = {
-  name: 'Popover',
-  template: '<div><slot /></div>'
-}
-
 interface MountDropdownOptions {
   searcher?: (
     query: string,
@@ -65,11 +60,15 @@ function mountDropdown(
       plugins: [PrimeVue, i18n],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
         FormDropdownMenu: MockFormDropdownMenu
       }
     }
   })
+}
+
+async function openDropdown(wrapper: ReturnType<typeof mountDropdown>) {
+  await wrapper.find('.mock-dropdown-trigger').trigger('click')
+  await flushPromises()
 }
 
 function getMenuItems(
@@ -87,7 +86,7 @@ describe('FormDropdown', () => {
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await flushPromises()
+      await openDropdown(wrapper)
 
       expect(getMenuItems(wrapper)).toHaveLength(2)
 
@@ -106,7 +105,7 @@ describe('FormDropdown', () => {
 
     it('updates when items change but IDs stay the same', async () => {
       const wrapper = mountDropdown([createItem('1', 'alpha')])
-      await flushPromises()
+      await openDropdown(wrapper)
 
       await wrapper.setProps({ items: [createItem('1', 'beta')] })
       await flushPromises()
@@ -116,7 +115,7 @@ describe('FormDropdown', () => {
 
     it('updates when switching between empty and non-empty items', async () => {
       const wrapper = mountDropdown([])
-      await flushPromises()
+      await openDropdown(wrapper)
 
       expect(getMenuItems(wrapper)).toHaveLength(0)
 
@@ -154,7 +153,10 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems(wrapper).map((item) => item.id)).toEqual(['3', '4'])
+
+    await openDropdown(wrapper)
+
+    expect(searcher).toHaveBeenCalled()
   })
 
   it('runs filtering when dropdown opens', async () => {
@@ -169,8 +171,7 @@ describe('FormDropdown', () => {
     )
     await flushPromises()
 
-    await wrapper.find('.mock-dropdown-trigger').trigger('click')
-    await flushPromises()
+    await openDropdown(wrapper)
 
     expect(searcher).toHaveBeenCalled()
     expect(getMenuItems(wrapper).map((item) => item.id)).toEqual(['keep'])

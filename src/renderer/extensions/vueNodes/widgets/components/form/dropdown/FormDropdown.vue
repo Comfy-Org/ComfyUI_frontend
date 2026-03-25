@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computedAsync, refDebounced } from '@vueuse/core'
-import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computedAsync, onClickOutside, refDebounced } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
@@ -51,7 +49,6 @@ interface Props {
 }
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 const {
   placeholder,
@@ -95,7 +92,6 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
-const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
 
 const maxSelectable = computed(() => {
@@ -142,18 +138,20 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (event: Event) => {
+function toggleDropdown() {
   if (disabled) return
-  if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle?.(event, triggerRef.value)
-    isOpen.value = !isOpen.value
-  }
+  isOpen.value = !isOpen.value
 }
 
-const closeDropdown = () => {
-  if (popoverRef.value) {
-    popoverRef.value.hide?.()
-    isOpen.value = false
+function closeDropdown() {
+  isOpen.value = false
+}
+
+onClickOutside(triggerRef, closeDropdown)
+
+function handleEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeDropdown()
   }
 }
 
@@ -192,7 +190,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
 </script>
 
 <template>
-  <div ref="triggerRef">
+  <div ref="triggerRef" class="relative" @keydown="handleEscape">
     <FormDropdownInput
       :files
       :is-open
@@ -207,21 +205,9 @@ function handleSelection(item: FormDropdownItem, index: number) {
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
-    <Popover
-      ref="popoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isOpen = false"
+    <div
+      v-if="isOpen"
+      class="absolute top-full left-0 z-50 rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg"
     >
       <FormDropdownMenu
         v-model:filter-selected="filterSelected"
@@ -243,6 +229,6 @@ function handleSelection(item: FormDropdownItem, index: number) {
         @close="closeDropdown"
         @item-click="handleSelection"
       />
-    </Popover>
+    </div>
   </div>
 </template>
