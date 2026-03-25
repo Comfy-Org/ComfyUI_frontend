@@ -780,6 +780,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "조건",
     "CONTROL_NET": "컨트롤넷",
+    "CURVE": "곡선",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -793,6 +794,7 @@
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
     "GLIGEN": "GLIGEN",
     "GUIDER": "가이드",
+    "HISTOGRAM": "히스토그램",
     "HOOKS": "후크",
     "HOOK_KEYFRAMES": "후크 키프레임",
     "IMAGE": "이미지",
@@ -884,13 +886,13 @@
     "resume": "다운로드 재개"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "오류가 발생했습니다",
     "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
     "loadWorkflowTitle": "워크플로 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
-    "promptExecutionError": "프롬프트 실행 실패",
-    "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "promptExecutionError": "프롬프트 실행 실패"
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",
@@ -933,6 +935,19 @@
     "textTo3DModel": "텍스트 → 3D 모델",
     "textToImage": "텍스트 → 이미지",
     "textToVideo": "텍스트 → 비디오"
+  },
+  "execution": {
+    "decoding": "디코딩 중…",
+    "encoding": "인코딩 중…",
+    "generating": "생성 중…",
+    "generatingVideo": "비디오 생성 중…",
+    "loading": "불러오는 중…",
+    "processing": "처리 중…",
+    "processingVideo": "비디오 처리 중…",
+    "resizing": "크기 조정 중…",
+    "running": "실행 중…",
+    "saving": "저장 중…",
+    "training": "학습 중…"
   },
   "exportToast": {
     "allExportsCompleted": "모든 내보내기 완료",
@@ -1090,6 +1105,7 @@
     "icon": "아이콘",
     "imageDoesNotExist": "이미지가 존재하지 않습니다",
     "imageFailedToLoad": "이미지를 로드하지 못했습니다.",
+    "imageGallery": "이미지 갤러리",
     "imageLightbox": "이미지 미리보기",
     "imagePreview": "이미지 미리보기 - 화살표 키를 사용하여 이미지 간 이동",
     "imageUrl": "이미지 URL",
@@ -1104,7 +1120,6 @@
     "installed": "설치됨",
     "installing": "설치 중",
     "interrupted": "중단됨",
-    "itemSelected": "{selectedCount}개 선택됨",
     "itemsCopiedToClipboard": "항목이 클립보드에 복사되었습니다",
     "itemsSelected": "{selectedCount}개 선택됨",
     "job": "작업",
@@ -1310,6 +1325,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} 업데이트 지침은 https://docs.comfy.org/installation/update_comfyui#common-update-issues 를 방문하세요.",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
     "videoPreview": "비디오 미리보기 - 화살표 키를 사용하여 비디오 간 이동",
+    "viewGrid": "그리드 보기",
     "viewImageOfTotal": "이미지 {index}/{total} 보기",
     "viewVideoOfTotal": "비디오 {index}/{total} 보기",
     "volume": "볼륨",

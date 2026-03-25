@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "数字转换",
+    "inputs": {
+      "value": {
+        "name": "数值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切换",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "曲线编辑器",
+    "inputs": {
+      "curve": {
+        "name": "曲线"
+      },
+      "histogram": {
+        "name": "直方图"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "曲线",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "根据文本提示无缝扩展现有视频。",
+    "display_name": "Grok 视频扩展",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频扩展的模型。"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频接下来内容的文本。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是不确定的。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要扩展的视频源。MP4 格式，2-15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "根据提示或图像生成视频",
     "display_name": "Grok 视频",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "根据参考图像的风格和内容生成视频。",
+    "display_name": "Grok 参考生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述期望视频的文本。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是不确定的。"
       }
     },
     "outputs": {
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "输出图像",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "设置参考音频用于 ID-LoRA 说话人身份迁移。将参考音频 clip 编码为条件，并可选地通过身份引导修补模型（每步额外进行一次无参考的前向传播，以增强说话人身份效果）。",
+    "display_name": "LTXV 参考音频（ID-LoRA）",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "用于编码的 LTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "身份引导激活的 sigma 区间结束百分比。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "身份引导强度。每步会额外进行一次无参考的前向传播以增强说话人身份。设置为 0 可禁用（无额外前向传播）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "要迁移说话人身份的参考音频 clip。建议时长约 5 秒（训练时长）。过短或过长的音频可能会降低声音身份迁移效果。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "身份引导激活的 sigma 区间起始百分比。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }

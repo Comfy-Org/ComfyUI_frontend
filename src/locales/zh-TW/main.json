@@ -780,6 +780,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "條件設定",
     "CONTROL_NET": "ControlNet",
+    "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -793,6 +794,7 @@
     "GEMINI_INPUT_FILES": "Gemini輸入檔案",
     "GLIGEN": "GLIGEN",
     "GUIDER": "引導器",
+    "HISTOGRAM": "直方圖",
     "HOOKS": "掛鉤",
     "HOOK_KEYFRAMES": "關鍵影格掛鉤",
     "IMAGE": "影像",
@@ -884,13 +886,13 @@
     "resume": "繼續下載"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "發生錯誤",
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
     "noStackTrace": "沒有可用的堆疊追蹤",
-    "promptExecutionError": "提示執行失敗",
-    "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "promptExecutionError": "提示執行失敗"
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
@@ -933,6 +935,19 @@
     "textTo3DModel": "文字轉 3D 模型",
     "textToImage": "文字轉圖片",
     "textToVideo": "文字轉影片"
+  },
+  "execution": {
+    "decoding": "正在解碼…",
+    "encoding": "正在編碼…",
+    "generating": "正在生成…",
+    "generatingVideo": "正在生成影片…",
+    "loading": "正在載入…",
+    "processing": "正在處理…",
+    "processingVideo": "正在處理影片…",
+    "resizing": "正在調整大小…",
+    "running": "正在執行…",
+    "saving": "正在儲存…",
+    "training": "正在訓練…"
   },
   "exportToast": {
     "allExportsCompleted": "所有匯出已完成",
@@ -1090,6 +1105,7 @@
     "icon": "圖示",
     "imageDoesNotExist": "圖像不存在",
     "imageFailedToLoad": "無法載入圖片",
+    "imageGallery": "圖片庫",
     "imageLightbox": "圖像預覽",
     "imagePreview": "圖片預覽 - 使用方向鍵在圖片間導航",
     "imageUrl": "圖片網址",
@@ -1104,7 +1120,6 @@
     "installed": "已安裝",
     "installing": "安裝中",
     "interrupted": "已中斷",
-    "itemSelected": "已選取 {selectedCount} 項",
     "itemsCopiedToClipboard": "已複製項目到剪貼簿",
     "itemsSelected": "已選取 {selectedCount} 項",
     "job": "工作",
@@ -1310,6 +1325,7 @@
     "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
     "videoFailedToLoad": "無法載入影片",
     "videoPreview": "影片預覽 - 使用方向鍵在影片間導航",
+    "viewGrid": "網格檢視",
     "viewImageOfTotal": "檢視第 {index} 張圖片（共 {total} 張）",
     "viewVideoOfTotal": "檢視第 {index} 個影片（共 {total} 個）",
     "volume": "音量",

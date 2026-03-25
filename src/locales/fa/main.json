@@ -780,6 +780,7 @@
     "COMFY_MATCHTYPE_V3": "Comfy MatchType V3",
     "CONDITIONING": "شرط‌گذاری",
     "CONTROL_NET": "controlnet",
+    "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -793,6 +794,7 @@
     "GEMINI_INPUT_FILES": "فایل‌های ورودی Gemini",
     "GLIGEN": "GLIGEN",
     "GUIDER": "راهنما",
+    "HISTOGRAM": "HISTOGRAM",
     "HOOKS": "hookها",
     "HOOK_KEYFRAMES": "کلیدفریم‌های hook",
     "IMAGE": "تصویر",
@@ -884,13 +886,13 @@
     "resume": "ادامه دانلود"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "خطایی رخ داد",
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
-    "promptExecutionError": "اجرای prompt با شکست مواجه شد",
-    "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "promptExecutionError": "اجرای prompt با شکست مواجه شد"
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
@@ -933,6 +935,19 @@
     "textTo3DModel": "تبدیل متن به مدل سه‌بعدی",
     "textToImage": "تبدیل متن به تصویر",
     "textToVideo": "تبدیل متن به ویدیو"
+  },
+  "execution": {
+    "decoding": "در حال رمزگشایی…",
+    "encoding": "در حال کدگذاری…",
+    "generating": "در حال تولید…",
+    "generatingVideo": "در حال تولید ویدیو…",
+    "loading": "در حال بارگذاری…",
+    "processing": "در حال پردازش…",
+    "processingVideo": "در حال پردازش ویدیو…",
+    "resizing": "در حال تغییر اندازه…",
+    "running": "در حال اجرا…",
+    "saving": "در حال ذخیره‌سازی…",
+    "training": "در حال آموزش…"
   },
   "exportToast": {
     "allExportsCompleted": "همه خروجی‌ها تکمیل شد",
@@ -1090,6 +1105,7 @@
     "icon": "آیکون",
     "imageDoesNotExist": "تصویر وجود ندارد",
     "imageFailedToLoad": "بارگذاری تصویر ناموفق بود",
+    "imageGallery": "گالری تصاویر",
     "imageLightbox": "پیش‌نمایش تصویر",
     "imagePreview": "پیش‌نمایش تصویر - برای جابجایی بین تصاویر از کلیدهای جهت‌دار استفاده کنید",
     "imageUrl": "آدرس تصویر",
@@ -1104,7 +1120,6 @@
     "installed": "نصب شده",
     "installing": "در حال نصب",
     "interrupted": "متوقف شده",
-    "itemSelected": "{selectedCount} مورد انتخاب شد",
     "itemsCopiedToClipboard": "موارد در کلیپ‌بورد کپی شدند",
     "itemsSelected": "{selectedCount} مورد انتخاب شدند",
     "job": "وظیفه",
@@ -1310,6 +1325,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} برای راهنمای به‌روزرسانی به https://docs.comfy.org/installation/update_comfyui#common-update-issues مراجعه کنید.",
     "videoFailedToLoad": "بارگذاری ویدیو ناموفق بود",
     "videoPreview": "پیش‌نمایش ویدیو - برای جابجایی بین ویدیوها از کلیدهای جهت‌دار استفاده کنید",
+    "viewGrid": "نمای شبکه‌ای",
     "viewImageOfTotal": "مشاهده تصویر {index} از {total}",
     "viewVideoOfTotal": "مشاهده ویدیو {index} از {total}",
     "volume": "حجم صدا",

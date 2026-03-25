@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "숫자 변환",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "스위치",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "곡선 편집기",
+    "inputs": {
+      "curve": {
+        "name": "곡선"
+      },
+      "histogram": {
+        "name": "히스토그램"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "곡선",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 비디오를 자연스럽게 이어서 확장합니다.",
+    "display_name": "Grok 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 확장에 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "비디오에서 다음에 일어나야 할 일을 설명하는 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "확장할 원본 비디오입니다. MP4 형식, 2-15초."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "프롬프트 또는 이미지를 통해 비디오를 생성합니다",
     "display_name": "Grok 비디오",
@@ -4120,6 +4186,41 @@
       "resolution": {
         "name": "해상도",
         "tooltip": "출력 비디오의 해상도입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "참조 이미지를 스타일 및 콘텐츠 참조로 사용하여 비디오를 생성합니다.",
+    "display_name": "Grok 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오를 설명하는 텍스트입니다."
       },
       "seed": {
         "name": "시드",
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "출력 이미지",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA 화자 정체성 전이를 위한 참조 오디오를 설정합니다. 참조 오디오 clip을 컨디셔닝에 인코딩하고, 선택적으로 모델에 정체성 가이던스를 적용합니다(참조 없이 추가로 한 번 더 forward pass를 실행하여 화자 정체성 효과를 증폭).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "인코딩을 위한 LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "정체성 가이던스가 활성화되는 sigma 범위의 끝 지점입니다."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "정체성 가이던스의 강도입니다. 각 단계마다 참조 없이 추가로 forward pass를 실행하여 화자 정체성을 증폭합니다. 0으로 설정하면 비활성화됩니다(추가 pass 없음)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "전이할 화자 정체성을 가진 참조 오디오 clip입니다. 약 5초(학습 시간)를 권장합니다. 더 짧거나 긴 clip은 음성 정체성 전이 품질이 저하될 수 있습니다."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "정체성 가이던스가 활성화되는 sigma 범위의 시작 지점입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }

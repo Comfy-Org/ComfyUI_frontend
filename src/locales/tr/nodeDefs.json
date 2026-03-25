@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Sayı Dönüştürme",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Eğri Düzenleyici",
+    "inputs": {
+      "curve": {
+        "name": "eğri"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "eğri",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Bir metin istemine dayalı olarak mevcut bir videoyu sorunsuz bir şekilde devam ettirin.",
+    "display_name": "Grok Video Uzatma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video uzatma için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Videoda sonraki adımda ne olacağını açıklayan metin."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Uzatılacak kaynak video. MP4 formatında, 2-15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Bir istem veya görüntüden video oluştur",
     "display_name": "Grok Video",
@@ -4120,6 +4186,41 @@
       "resolution": {
         "name": "çözünürlük",
         "tooltip": "Çıktı videonun çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Stil ve içerik referansı olarak referans görsellerle yönlendirilen video oluşturun.",
+    "display_name": "Grok Referans-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen videonun metin açıklaması."
       },
       "seed": {
         "name": "tohum",
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "çıktı_görüntüsü",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA konuşmacı kimliği aktarımı için referans ses ayarlayın. Bir referans ses klibini koşullandırmaya kodlar ve isteğe bağlı olarak modeli kimlik rehberliğiyle yamalar (referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliği etkisini artırır).",
+    "display_name": "LTXV Referans Ses (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Kodlama için LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının sonu."
+      },
+      "identity_guidance_scale": {
+        "name": "kimlik_rehberliği_ölçeği",
+        "tooltip": "Kimlik rehberliği gücü. Her adımda referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliğini güçlendirir. Devre dışı bırakmak için 0 olarak ayarlayın (ekstra geçiş yok)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_audio": {
+        "name": "referans_ses",
+        "tooltip": "Konuşmacı kimliğinin aktarılacağı referans ses klibi. ~5 saniye önerilir (eğitim süresi). Daha kısa veya uzun klipler ses kimliği aktarımını bozabilir."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının başlangıcı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
         "tooltip": null
       }
     }
