@@ -1,9 +1,9 @@
 import type { FullConfig } from '@playwright/test'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { backupPath } from './utils/backupUtils'
 
-dotenv.config()
+dotenvConfig()
 
 export default function globalSetup(_config: FullConfig) {
   if (!process.env.CI) {
