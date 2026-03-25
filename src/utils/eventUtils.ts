@@ -1,3 +1,30 @@
+const MIME_TO_EXT: Record<string, string> = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/svg+xml': '.svg',
+  'image/bmp': '.bmp',
+  'audio/mpeg': '.mp3',
+  'audio/wav': '.wav',
+  'audio/ogg': '.ogg',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm'
+}
+
+function extractFilenameFromUri(uri: string, mimeType: string): string {
+  try {
+    const pathname = new URL(uri).pathname
+    const basename = pathname.split('/').pop()
+    if (basename && basename.includes('.')) return basename
+  } catch {
+    // Not a valid URL, fall through
+  }
+
+  const ext = MIME_TO_EXT[mimeType] ?? ''
+  return `downloaded${ext}`
+}
+
 export async function extractFilesFromDragEvent(
   event: DragEvent
 ): Promise<File[]> {
@@ -23,7 +50,8 @@ export async function extractFilesFromDragEvent(
   try {
     const response = await fetch(uri)
     const blob = await response.blob()
-    return [new File([blob], uri, { type: blob.type })]
+    const filename = extractFilenameFromUri(uri, blob.type)
+    return [new File([blob], filename, { type: blob.type })]
   } catch {
     return []
   }

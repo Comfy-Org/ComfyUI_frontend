@@ -108,8 +108,8 @@ describe('eventUtils', () => {
       expect(actual).toEqual([file1, file2])
     })
 
-    it('should fetch URI and return as File when text/uri-list is present', async () => {
-      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+    it('should fetch URI and return as File with extracted filename', async () => {
+      const uri = 'https://example.com/images/photo.png?w=1200&format=auto'
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
@@ -126,6 +126,25 @@ describe('eventUtils', () => {
       expect(actual).toHaveLength(1)
       expect(actual[0]).toBeInstanceOf(File)
       expect(actual[0].type).toBe('image/png')
+      expect(actual[0].name).toBe('photo.png')
+    })
+
+    it('should use fallback filename when URL path has no extension', async () => {
+      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(imageBlob))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual).toHaveLength(1)
+      expect(actual[0].name).toBe('downloaded.png')
     })
 
     it('should handle text/x-moz-url type', async () => {
