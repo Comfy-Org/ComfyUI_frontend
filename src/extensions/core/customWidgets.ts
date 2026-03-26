@@ -64,6 +64,7 @@ function onCustomComboCreated(this: LGraphNode) {
       ).map((w) => `${w.value}`)
     )
     if (app.configuringGraph || !this.graph) return
+    if (useWidgetValueStore().isHydrating(this.id)) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -92,12 +93,17 @@ function onCustomComboCreated(this: LGraphNode) {
       },
       set(v: string) {
         localValue = v
-        const state = useWidgetValueStore().getWidget(
+        const store = useWidgetValueStore()
+
+        store.getOrCreateWidget(
           app.rootGraph.id,
           node.id,
-          widgetName
-        )
-        if (state) state.value = v
+          widgetName,
+          v
+        ).value = v
+
+        if (store.isHydrating(node.id)) return
+
         updateCombo()
         if (!node.widgets) return
         const lastWidget = node.widgets.at(-1)
@@ -126,6 +132,13 @@ function onCustomComboCreated(this: LGraphNode) {
     y: 0
   })
   addOption(this)
+
+  this.onConfigure = useChainCallback(
+    this.onConfigure,
+    function (this: LGraphNode) {
+      useWidgetValueStore().onHydrationComplete(this.id, updateCombo)
+    }
+  )
 }
 
 function onCustomIntCreated(this: LGraphNode) {

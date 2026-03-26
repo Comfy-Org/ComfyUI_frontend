@@ -8,6 +8,9 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { getActivePinia } from 'pinia'
+
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -897,44 +900,54 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
-    if (this.widgets) {
-      for (const w of this.widgets) {
-        if (!w) continue
+    // Hydration transaction: suppress derived-state callbacks (e.g.
+    // CustomCombo's updateCombo) until all widget values are restored.
+    // onConfigure handlers may commit early (CustomCombo does); the
+    // final commitHydration is idempotent in that case.
+    const store = getActivePinia() ? useWidgetValueStore() : null
+    store?.beginHydration(this.id)
+    try {
+      if (this.widgets) {
+        for (const w of this.widgets) {
+          if (!w) continue
 
-        const input = this.inputs.find((i) => i.widget?.name === w.name)
-        if (input?.label) w.label = input.label
+          const input = this.inputs.find((i) => i.widget?.name === w.name)
+          if (input?.label) w.label = input.label
 
-        if (
-          w.options?.property &&
-          this.properties[w.options.property] != undefined
-        )
-          w.value = JSON.parse(
-            JSON.stringify(this.properties[w.options.property])
+          if (
+            w.options?.property &&
+            this.properties[w.options.property] != undefined
           )
-      }
+            w.value = JSON.parse(
+              JSON.stringify(this.properties[w.options.property])
+            )
+        }
 
-      if (info.widgets_values) {
-        let i = 0
-        for (const widget of this.widgets ?? []) {
-          if (widget.serialize === false) continue
-          if (i >= info.widgets_values.length) break
-          widget.value = info.widgets_values[i++]
+        if (info.widgets_values) {
+          let i = 0
+          for (const widget of this.widgets ?? []) {
+            if (widget.serialize === false) continue
+            if (i >= info.widgets_values.length) break
+            widget.value = info.widgets_values[i++]
+          }
         }
       }
+
+      // Sync the state of this.resizable.
+      if (this.pinned) this.resizable = false
+
+      if (this.widgets_up) {
+        console.warn(
+          `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+            'This property is unsupported and will be removed. ' +
+            'Use "widgets_start_y" or a custom arrange() override instead.'
+        )
+      }
+
+      this.onConfigure?.(info)
+    } finally {
+      store?.commitHydration(this.id)
     }
-
-    // Sync the state of this.resizable.
-    if (this.pinned) this.resizable = false
-
-    if (this.widgets_up) {
-      console.warn(
-        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
-          'This property is unsupported and will be removed. ' +
-          'Use "widgets_start_y" or a custom arrange() override instead.'
-      )
-    }
-
-    this.onConfigure?.(info)
   }
 
   /**

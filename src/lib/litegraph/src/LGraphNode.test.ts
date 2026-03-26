@@ -14,6 +14,7 @@ import {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
@@ -585,6 +586,76 @@ describe('LGraphNode', () => {
 
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
+    })
+  })
+
+  describe('configure hydration transaction', () => {
+    test('wraps widget-value restoration in hydration transaction', () => {
+      const store = useWidgetValueStore()
+      const hydrationLog: boolean[] = []
+
+      const testNode = new LGraphNode('TestNode')
+      testNode.serialize_widgets = true
+      testNode.addWidget('number', 'a', 0, null)
+      testNode.addWidget('number', 'b', 0, null)
+
+      // Spy on widget value setters to record hydration state
+      const storage = new Map<string, unknown>()
+      for (const widget of testNode.widgets!) {
+        Object.defineProperty(widget, 'value', {
+          get: () => storage.get(widget.name),
+          set(v) {
+            hydrationLog.push(store.isHydrating(testNode.id))
+            storage.set(widget.name, v)
+          },
+          configurable: true
+        })
+      }
+
+      testNode.configure(
+        getMockISerialisedNode({
+          id: 42,
+          widgets_values: [10, 20]
+        })
+      )
+
+      // Both widget setters ran while hydration was active
+      expect(hydrationLog.every(Boolean)).toBe(true)
+      // Hydration is complete after configure returns
+      expect(store.isHydrating(42)).toBe(false)
+    })
+
+    test('fires onHydrationComplete callbacks after configure', () => {
+      const store = useWidgetValueStore()
+      const calls: string[] = []
+
+      const testNode = new LGraphNode('TestNode')
+      testNode.serialize_widgets = true
+      testNode.addWidget('number', 'a', 0, null)
+
+      testNode.onConfigure = function () {
+        store.onHydrationComplete(this.id, () => calls.push('done'))
+      }
+
+      testNode.configure(
+        getMockISerialisedNode({ id: 99, widgets_values: [42] })
+      )
+
+      expect(calls).toEqual(['done'])
+    })
+
+    test('commitHydration is safe even if onConfigure throws', () => {
+      const store = useWidgetValueStore()
+
+      const testNode = new LGraphNode('TestNode')
+      testNode.onConfigure = () => {
+        throw new Error('boom')
+      }
+
+      expect(() =>
+        testNode.configure(getMockISerialisedNode({ id: 7 }))
+      ).toThrow('boom')
+      expect(store.isHydrating(7)).toBe(false)
     })
   })
 
