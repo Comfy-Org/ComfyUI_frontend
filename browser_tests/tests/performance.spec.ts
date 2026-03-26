@@ -306,54 +306,22 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     // nodes synchronously — this is the bottleneck we're measuring.
     await comfyPage.workflow.loadWorkflow('subgraphs/large-subgraph-80-nodes')
 
-    // Wait for initial render to stabilize
-    for (let i = 0; i < 30; i++) {
-      await comfyPage.nextFrame()
-    }
+    await comfyPage.idleFrames(30)
 
-    // Enter the subgraph via the footer button
     await comfyPage.vueNodes.enterSubgraph()
+    await comfyPage.vueNodes.waitForNodes(80)
+    await comfyPage.idleFrames(30)
 
-    // Wait for subgraph to fully mount
-    await expect(async () => {
-      const nodeCount = await comfyPage.vueNodes.getNodeCount()
-      expect(nodeCount).toBeGreaterThanOrEqual(80)
-    }).toPass({ timeout: 10000 })
-
-    // Let it settle
-    for (let i = 0; i < 30; i++) {
-      await comfyPage.nextFrame()
-    }
-
-    // Now measure a fresh enter/exit cycle
-    // Exit back to root graph first
-    await comfyPage.command.executeCommand('Comfy.Graph.ExitSubgraph')
-    await expect(async () => {
-      const isRoot = await comfyPage.page.evaluate(
-        () => !('inputNode' in window.app!.canvas.graph!)
-      )
-      expect(isRoot).toBe(true)
-    }).toPass({ timeout: 5000 })
-
-    for (let i = 0; i < 10; i++) {
-      await comfyPage.nextFrame()
-    }
+    // Exit back to root graph before measuring a fresh enter/exit cycle
+    await comfyPage.subgraph.exitViaBreadcrumb()
+    await comfyPage.idleFrames(10)
 
     // Start measuring the enter transition
     await comfyPage.perf.startMeasuring()
 
     await comfyPage.vueNodes.enterSubgraph()
-
-    // Wait for all 80 nodes to mount
-    await expect(async () => {
-      const nodeCount = await comfyPage.vueNodes.getNodeCount()
-      expect(nodeCount).toBeGreaterThanOrEqual(80)
-    }).toPass({ timeout: 10000 })
-
-    // Let layout settle
-    for (let i = 0; i < 30; i++) {
-      await comfyPage.nextFrame()
-    }
+    await comfyPage.vueNodes.waitForNodes(80)
+    await comfyPage.idleFrames(30)
 
     const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
     recordMeasurement(m)
