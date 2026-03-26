@@ -102,3 +102,4 @@ vitest.config.*.timestamp*
 .amp
 .playwright-cli/
 .playwright/
+.claude/scheduled_tasks.lock
