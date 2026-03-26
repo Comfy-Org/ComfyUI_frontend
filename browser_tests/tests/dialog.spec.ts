@@ -28,7 +28,9 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = errorOverlay.getByText(/Missing Node Packs/)
+    const missingNodesTitle = errorOverlay.getByTestId(
+      TestIds.dialogs.errorOverlayMessages
+    )
     await expect(missingNodesTitle).toBeVisible()
   })
 
@@ -42,7 +44,9 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = errorOverlay.getByText(/Missing Node Packs/)
+    const missingNodesTitle = errorOverlay.getByTestId(
+      TestIds.dialogs.errorOverlayMessages
+    )
     await expect(missingNodesTitle).toBeVisible()
 
     // Click "See Errors" to open the errors tab and verify subgraph node content
@@ -102,7 +106,7 @@ test('Does not resurface missing nodes on undo/redo', async ({ comfyPage }) => {
   await expect(errorOverlay).toBeVisible()
 
   // Dismiss the error overlay
-  await errorOverlay.getByRole('button', { name: 'Dismiss' }).click()
+  await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
   await expect(errorOverlay).not.toBeVisible()
 
   // Make a change to the graph by moving a node
@@ -210,7 +214,9 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
+    const missingModelsTitle = errorOverlay.getByTestId(
+      TestIds.dialogs.errorOverlayMessages
+    )
     await expect(missingModelsTitle).toBeVisible()
   })
 
@@ -226,7 +232,9 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
+    const missingModelsTitle = errorOverlay.getByTestId(
+      TestIds.dialogs.errorOverlayMessages
+    )
     await expect(missingModelsTitle).toBeVisible()
   })
 
@@ -240,7 +248,9 @@ test.describe('Missing models in Error Tab', () => {
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).not.toBeVisible()
-    await expect(comfyPage.page.getByText(/Missing Models/)).not.toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlayMessages)
+    ).not.toBeVisible()
   })
 
   // Flaky test after parallelization
