@@ -28,10 +28,11 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = errorOverlay.getByTestId(
+    const messages = errorOverlay.getByTestId(
       TestIds.dialogs.errorOverlayMessages
     )
-    await expect(missingNodesTitle).toBeVisible()
+    await expect(messages).toBeVisible()
+    await expect(messages).toHaveText(/missing.*installed/i)
   })
 
   test('Should show error overlay when loading a workflow with missing nodes in subgraphs', async ({
@@ -44,10 +45,11 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = errorOverlay.getByTestId(
+    const messages = errorOverlay.getByTestId(
       TestIds.dialogs.errorOverlayMessages
     )
-    await expect(missingNodesTitle).toBeVisible()
+    await expect(messages).toBeVisible()
+    await expect(messages).toHaveText(/missing.*installed/i)
 
     // Click "See Errors" to open the errors tab and verify subgraph node content
     await errorOverlay
@@ -214,10 +216,11 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = errorOverlay.getByTestId(
+    const messages = errorOverlay.getByTestId(
       TestIds.dialogs.errorOverlayMessages
     )
-    await expect(missingModelsTitle).toBeVisible()
+    await expect(messages).toBeVisible()
+    await expect(messages).toHaveText(/required model.*missing/i)
   })
 
   test('Should show missing models from node properties', async ({
@@ -232,10 +235,11 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = errorOverlay.getByTestId(
+    const messages = errorOverlay.getByTestId(
       TestIds.dialogs.errorOverlayMessages
     )
-    await expect(missingModelsTitle).toBeVisible()
+    await expect(messages).toBeVisible()
+    await expect(messages).toHaveText(/required model.*missing/i)
   })
 
   test('Should not show missing models when widget values have changed', async ({

@@ -75,7 +75,7 @@
                       'outline-1 outline-destructive-background'
                   )
                 "
-                type="secondary"
+                variant="secondary"
                 size="icon"
                 :aria-label="t('rightSidePanel.togglePanel')"
                 @click="rightSidePanelStore.togglePanel"
