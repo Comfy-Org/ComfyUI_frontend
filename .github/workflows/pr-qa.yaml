@@ -16,6 +16,8 @@ on:
   pull_request:
     types: [labeled]
     branches: [main]
+  issues:
+    types: [labeled]
   workflow_dispatch:
     inputs:
       mode:
@@ -53,7 +55,7 @@ jobs:
 
           # Only run on label events if it's one of our labels
           if [ "$EVENT_ACTION" = "labeled" ] && \
-             [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ]; then
+             [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ] && [ "$LABEL" != "qa-issue" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -80,10 +82,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUM: ${{ github.event.pull_request.number }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
           BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          if [ -n "$PR_NUM" ]; then
+          if [ -n "$ISSUE_NUM" ]; then
+            NUM="$ISSUE_NUM"
+          elif [ -n "$PR_NUM" ]; then
             NUM="$PR_NUM"
           else
             NUM=$(gh pr list --repo "$REPO" \
@@ -244,7 +249,7 @@ jobs:
         run: |
           gh issue view ${{ needs.resolve-matrix.outputs.number }} \
             --repo ${{ github.repository }} \
-            --json title,body --jq '.title + "\n\n" + .body' \
+            --json title,body,labels --jq '"Labels: \([.labels[].name] | join(", "))\nTitle: \(.title)\n\n\(.body)"' \
             > "${{ runner.temp }}/issue-body.txt"
           echo "Issue body saved ($(wc -c < "${{ runner.temp }}/issue-body.txt") bytes)"
 
@@ -768,7 +773,7 @@ jobs:
             {
               echo "### Issue #${TARGET_NUM}"
               gh issue view "$TARGET_NUM" --repo "$REPO" \
-                --json title,body --jq '"Title: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
+                --json title,body,labels --jq '"Labels: \([.labels[].name] | join(", "))\nTitle: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
               echo ""
               echo "### Comments"
               # Filter out QA bot comments to prevent INCONCLUSIVE feedback loop
@@ -1019,14 +1024,20 @@ jobs:
       - name: Remove QA label
         if: >-
           github.event.label.name == 'qa-changes' ||
-          github.event.label.name == 'qa-full'
+          github.event.label.name == 'qa-full' ||
+          github.event.label.name == 'qa-issue'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LABEL_NAME: ${{ github.event.label.name }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
           REPO: ${{ github.repository }}
         run: |
-          [ -n "$PR_NUMBER" ] && gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "$LABEL_NAME"
+          if [ "$TARGET_TYPE" = "issue" ]; then
+            [ -n "$TARGET_NUM" ] && gh issue edit "$TARGET_NUM" --repo "$REPO" --remove-label "$LABEL_NAME" || true
+          else
+            [ -n "$TARGET_NUM" ] && gh pr edit "$TARGET_NUM" --repo "$REPO" --remove-label "$LABEL_NAME" || true
+          fi
 
       - name: Deploy FAILED badge on error
         if: failure()
