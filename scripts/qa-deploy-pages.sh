@@ -77,15 +77,15 @@ for os in Linux macOS Windows; do
   fi
 
   if [ "$HAS_BEFORE" = "1" ]; then
-    CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=card-header><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links>${REPORT_LINK}</span></div><div class=comparison><div class=comp-panel><div class=comp-label>Before <span class=comp-tag>main</span></div><div class=video-wrap><video controls muted preload=metadata><source src=qa-before-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-before-${os}.mp4 download>${DL_ICON}Before</a></div></div><div class=comp-panel><div class=comp-label>After <span class=comp-tag>PR</span></div><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}.mp4 download>${DL_ICON}After</a></div></div></div>${REPORT_HTML}</div>"
+    CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=card-header><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links>${REPORT_LINK}</span></div><div class=comparison><div class=comp-panel><div class=comp-label>Before <span class=comp-tag>main</span></div><div class=video-wrap><video controls muted preload=auto><source src=qa-before-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-before-${os}.mp4 download>${DL_ICON}Before</a></div></div><div class=comp-panel><div class=comp-label>After <span class=comp-tag>PR</span></div><div class=video-wrap><video controls muted preload=auto><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}.mp4 download>${DL_ICON}After</a></div></div></div>${REPORT_HTML}</div>"
   elif [ -f "$DEPLOY_DIR/qa-${os}.mp4" ]; then
-    CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download>${DL_ICON}Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
+    CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=video-wrap><video controls muted preload=auto><source src=qa-${os}.mp4 type=video/mp4></video></div><div class=card-body><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links><a class=dl href=qa-${os}.mp4 download>${DL_ICON}Download</a>${REPORT_LINK}</span></div>${REPORT_HTML}</div>"
   else
     PASS_VIDEOS=""
     for pass_vid in "$DEPLOY_DIR/qa-${os}-pass"[0-9].mp4; do
       [ -f "$pass_vid" ] || continue
       PASS_NUM=$(basename "$pass_vid" | sed "s/qa-${os}-pass\([0-9]\).mp4/\1/")
-      PASS_VIDEOS="${PASS_VIDEOS}<div class=comp-panel><div class=comp-label>Pass ${PASS_NUM}</div><div class=video-wrap><video controls muted preload=metadata><source src=qa-${os}-pass${PASS_NUM}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}-pass${PASS_NUM}.mp4 download>${DL_ICON}Pass ${PASS_NUM}</a></div></div>"
+      PASS_VIDEOS="${PASS_VIDEOS}<div class=comp-panel><div class=comp-label>Pass ${PASS_NUM}</div><div class=video-wrap><video controls muted preload=auto><source src=qa-${os}-pass${PASS_NUM}.mp4 type=video/mp4></video></div><div class=comp-dl><a class=dl href=qa-${os}-pass${PASS_NUM}.mp4 download>${DL_ICON}Pass ${PASS_NUM}</a></div></div>"
     done
     CARDS="${CARDS}<div class='card reveal' style='--i:${CARD_COUNT}'><div class=card-header><span class=platform><span class=icon>${ICON}</span>${os}</span><span class=links>${REPORT_LINK}</span></div><div class=comparison>${PASS_VIDEOS}</div>${REPORT_HTML}</div>"
   fi
@@ -124,6 +124,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TEMPLATE="$SCRIPT_DIR/qa-report-template.html"
 
 # Write dynamic content to temp files for safe substitution
+# Cloudflare Pages _headers file — enable range requests for video seeking
+cat > "$DEPLOY_DIR/_headers" <<'HEADERSEOF'
+/*.mp4
+  Accept-Ranges: bytes
+  Cache-Control: public, max-age=86400
+HEADERSEOF
+
 echo -n "$COMMIT_HTML" > "$DEPLOY_DIR/.commit_html"
 echo -n "$CARDS" > "$DEPLOY_DIR/.cards_html"
 echo -n "$RUN_LINK" > "$DEPLOY_DIR/.run_link"
