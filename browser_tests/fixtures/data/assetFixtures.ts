@@ -300,8 +300,8 @@ export function generateOutputAssets(count: number): AssetItem[] {
       size: 3_000_000 + i * 200_000,
       mime_type: 'image/png',
       tags: ['output'],
-      created_at: `2025-03-10T${String(12 + Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`,
-      updated_at: `2025-03-10T${String(12 + Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`
+      created_at: `2025-03-10T${String((12 + Math.floor(i / 60)) % 24).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`,
+      updated_at: `2025-03-10T${String((12 + Math.floor(i / 60)) % 24).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`
     })
   )
 }
