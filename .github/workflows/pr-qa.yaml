@@ -356,10 +356,15 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Always run setup-frontend first to install node/pnpm
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
       # When triggered via sno-qa-* push, the checkout above gets sno-skills
-      # (the scripts branch), not the actual PR. Build the PR frontend in a
-      # worktree so the QA scripts from sno-skills remain available.
-      - name: Build PR frontend for sno-qa-* triggers
+      # (the scripts branch), not the actual PR. Rebuild with PR code.
+      - name: Rebuild with PR frontend for sno-qa-* triggers
         if: >-
           !github.head_ref &&
           needs.resolve-matrix.outputs.target_type == 'pr' &&
@@ -368,30 +373,19 @@ jobs:
         env:
           PR_NUM: ${{ needs.resolve-matrix.outputs.number }}
         run: |
-          # Save the sno-skills ref for later
           SNO_REF=$(git rev-parse HEAD)
 
-          # Fetch and checkout the PR to build its frontend
           git fetch origin "refs/pull/${PR_NUM}/head"
           git checkout FETCH_HEAD
           echo "Building PR #${PR_NUM} frontend at $(git rev-parse --short HEAD)"
 
-          # Install and build the PR frontend
           pnpm install --frozen-lockfile || pnpm install
           pnpm build
 
           # Switch back to sno-skills so QA scripts are available
           git checkout "$SNO_REF"
+          pnpm install --frozen-lockfile || pnpm install
           echo "Restored sno-skills scripts at $(git rev-parse --short HEAD)"
-
-      - name: Setup frontend (PR branch, non-sno-qa triggers)
-        if: >-
-          github.head_ref ||
-          needs.resolve-matrix.outputs.target_type != 'pr' ||
-          !needs.resolve-matrix.outputs.number
-        uses: ./.github/actions/setup-frontend
-        with:
-          include_build_step: true
 
       - name: Setup ComfyUI server (no launch)
         uses: ./.github/actions/setup-comfyui-server
