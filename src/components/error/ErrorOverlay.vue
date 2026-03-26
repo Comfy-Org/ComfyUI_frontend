@@ -94,17 +94,21 @@ const singleErrorType = computed(() => {
   return types.size === 1 ? [...types][0] : null
 })
 
-function toFriendlyMessage(group: (typeof allErrorGroups.value)[number]) {
-  if (group.type === 'missing_node') return t('errorOverlay.missingNodes')
-  if (group.type === 'swap_nodes') return t('errorOverlay.swapNodes')
-  if (group.type === 'missing_model') {
+const friendlyMessageMap: Record<string, () => string> = {
+  missing_node: () => t('errorOverlay.missingNodes'),
+  swap_nodes: () => t('errorOverlay.swapNodes'),
+  missing_media: () => t('errorOverlay.missingMedia'),
+  missing_model: () => {
     const modelCount = missingModelGroups.value.reduce(
       (count, g) => count + g.models.length,
       0
     )
     return t('errorOverlay.missingModels', { count: modelCount }, modelCount)
   }
-  return null
+}
+
+function toFriendlyMessage(group: (typeof allErrorGroups.value)[number]) {
+  return friendlyMessageMap[group.type]?.() ?? null
 }
 
 const overlayMessages = computed<string[]>(() => {
@@ -128,7 +132,8 @@ const seeErrorsLabel = computed(() => {
   const labelMap: Record<string, string> = {
     missing_node: t('errorOverlay.showMissingNodes'),
     missing_model: t('errorOverlay.showMissingModels'),
-    swap_nodes: t('errorOverlay.showSwapNodes')
+    swap_nodes: t('errorOverlay.showSwapNodes'),
+    missing_media: t('errorOverlay.showMissingMedia')
   }
   if (singleErrorType.value) {
     return labelMap[singleErrorType.value] ?? t('errorOverlay.seeErrors')

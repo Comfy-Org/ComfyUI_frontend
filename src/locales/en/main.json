@@ -3534,9 +3534,11 @@
     "showMissingNodes": "Show missing nodes",
     "showMissingModels": "Show missing models",
     "showSwapNodes": "Show swap nodes",
+    "showMissingMedia": "Show missing inputs",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
-    "swapNodes": "Some nodes can be replaced with alternatives"
+    "swapNodes": "Some nodes can be replaced with alternatives",
+    "missingMedia": "Some nodes are missing required inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
