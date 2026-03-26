@@ -148,7 +148,12 @@ test.describe("Workflow Persistence Regressions", () => {
     // Switch to A and verify
     await tab.switchToWorkflow("rapid-A");
     await comfyPage.page.waitForFunction(
-      () => !(window.app?.extensionManager as any)?.workflow?.isBusy,
+      () => {
+        const em = window.app?.extensionManager as
+          | Record<string, { isBusy?: boolean }>
+          | undefined
+        return !em?.workflow?.isBusy
+      },
       undefined,
       { timeout: 5000 },
     );
@@ -196,8 +201,11 @@ test.describe("Workflow Persistence Regressions", () => {
 
     // Trigger changeTracker to store the state (including outputs)
     await comfyPage.page.evaluate(() => {
-      const wfStore = (window.app!.extensionManager as any).workflow;
-      wfStore?.activeWorkflow?.changeTracker?.checkState();
+      const em = window.app!.extensionManager as Record<
+        string,
+        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+      >
+      em.workflow?.activeWorkflow?.changeTracker?.checkState()
     });
     await comfyPage.nextFrame();
 
@@ -510,8 +518,15 @@ test.describe("Workflow Persistence Regressions", () => {
     // Verify isLoadingGraph is false during normal operation
     const isLoadingNormally = await comfyPage.page.evaluate(() => {
       // Access ChangeTracker through the module system
-      const wfStore = (window.app!.extensionManager as any).workflow;
-      const activeWf = wfStore?.activeWorkflow;
+      const em = window.app!.extensionManager as Record<
+        string,
+        {
+          activeWorkflow?: {
+            changeTracker?: { undoQueue: unknown[]; isLoadingGraph?: boolean }
+          }
+        }
+      >
+      const activeWf = em.workflow?.activeWorkflow;
       if (!activeWf?.changeTracker) return null;
       // checkState should work normally (isLoadingGraph should be false)
       const undoBefore = activeWf.changeTracker.undoQueue.length;
@@ -532,7 +547,12 @@ test.describe("Workflow Persistence Regressions", () => {
     // Save modified state (workflow already named, use Ctrl+S to avoid dialog)
     await comfyPage.page.keyboard.press("Control+s");
     await comfyPage.page.waitForFunction(
-      () => !(window.app?.extensionManager as any)?.workflow?.isBusy,
+      () => {
+        const em = window.app?.extensionManager as
+          | Record<string, { isBusy?: boolean }>
+          | undefined
+        return !em?.workflow?.isBusy
+      },
       undefined,
       { timeout: 3000 },
     );
@@ -587,7 +607,12 @@ test.describe("Workflow Persistence Regressions", () => {
 
     await tab.switchToWorkflow("links-test");
     await comfyPage.page.waitForFunction(
-      () => !(window.app?.extensionManager as any)?.workflow?.isBusy,
+      () => {
+        const em = window.app?.extensionManager as
+          | Record<string, { isBusy?: boolean }>
+          | undefined
+        return !em?.workflow?.isBusy
+      },
       undefined,
       { timeout: 5000 },
     );
