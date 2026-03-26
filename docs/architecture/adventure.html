@@ -6,7 +6,7 @@
     <title>Codebase Caverns — ComfyUI Architecture Adventure</title>
     <meta
       name="description"
-      content="An interactive choose-your-own-adventure game exploring the ComfyUI frontend architecture. Navigate 10 rooms, face 8 real architectural challenges, and learn the ECS migration strategy."
+      content="An interactive choose-your-own-adventure game exploring the ComfyUI frontend architecture. Navigate 10 rooms, face 9 real architectural challenges, and learn the ECS migration strategy."
     />
 
     <!-- Open Graph -->
@@ -38,7 +38,7 @@
     />
     <meta
       name="twitter:description"
-      content="An interactive adventure game exploring the ComfyUI frontend architecture. 10 rooms, 8 challenges, 4 endings."
+      content="An interactive adventure game exploring the ComfyUI frontend architecture. 10 rooms, 9 challenges, 4 endings."
     />
     <meta
       name="twitter:image"
@@ -1581,7 +1581,7 @@
 
       let state = loadState() || createInitialState()
 
-      const TOTAL_CHALLENGES = 8
+      const TOTAL_CHALLENGES = 9
       const GH = 'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main'
 
       // --- Image prompts per room ---
@@ -1718,8 +1718,8 @@
             },
             {
               key: '2',
-              label: 'Open the Right Side Panel',
-              hint: 'Node Browser & Properties',
+              label: 'Enter the Command Forge',
+              hint: 'Commands & Intent',
               room: 'sidepanel'
             },
             {
@@ -1832,13 +1832,25 @@
           and toasts on demand.<br><br>
           <a href="${GH}/src/services/extensionService.ts" target="_blank">extensionService.ts</a> loads third-party extensions, while
           <a href="${GH}/src/services/nodeSearchService.ts" target="_blank">nodeSearchService.ts</a> powers Algolia-backed discovery. Every service
-          here bridges the presentation layer above with the stores below.
+          here bridges the presentation layer above with the stores below.<br><br>
+          Extension authors face their own migration path. The bridge keeps legacy
+          callbacks working, but each has a modern ECS equivalent:
+          <code>node.widgets?.find()</code> becomes <code>world.widgetIndex.getByNodeAndName()</code>;
+          <code>onConnectionsChange</code> becomes <code>lifecycleEvents.on('connection.changed')</code>;
+          <code>onRemoved</code> becomes <code>lifecycleEvents.on('entity.removed')</code>.
+          See the <a href="${GH}/docs/architecture/ecs-migration-plan.md" target="_blank">migration plan</a>
+          for the full set of examples.
         `,
           artifacts: [
             {
               name: 'litegraphService.ts',
               type: 'Service',
               icon: 'litegraphservice'
+            },
+            {
+              name: 'Extension Migration Guide',
+              type: 'Design Pattern',
+              icon: 'extension-migration'
             }
           ],
           challenge: {
@@ -2351,17 +2363,85 @@
         },
 
         sidepanel: {
-          title: 'The Right Side Panel',
-          layer: 'Presentation',
+          title: 'The Command Forge',
+          layer: 'Commands & Intent',
           description: `
-          A multi-tabbed interface reveals itself. The Node Browser tab lets you search
-          and drag nodes onto the canvas. The Properties tab shows details of the selected
-          node. The Model panel catalogs available AI models.<br><br>
-          Everything here is wired to stores: <a href="${GH}/src/stores/nodeDefStore.ts" target="_blank">nodeDefStore</a> feeds the browser,
-          <a href="${GH}/src/stores/modelStore.ts" target="_blank">modelStore</a> powers the model panel, and <a href="${GH}/src/stores/workspaceStore.ts" target="_blank">workspaceStore</a>
-          controls which panels are visible.
+          You enter a forge where raw user intent is shaped into structured commands.
+          Scrolls on the walls describe the architectural layering:
+          <code>Caller &rarr; Command &rarr; System (handler) &rarr; World (store) &rarr; Y.js (sync)</code>.<br><br>
+          A command is a plain object: a <code>type</code> discriminator and an
+          <code>execute(world)</code> method. The <a href="${GH}/docs/architecture/ecs-world-command-api.md" target="_blank">World Command API</a>
+          shows how commands wrap system calls &mdash; <code>ConnectSlots</code>,
+          <code>MoveNode</code>, <code>RemoveNode</code>, <code>SetWidgetValue</code>,
+          <code>Paste</code> (a batch). Each execution opens a World transaction:
+          one undo step, atomic rollback on failure.<br><br>
+          A familiar analogy echoes: the World is to commands what a Redux store is
+          to actions. The store's internal mutation is imperative. That doesn't make it
+          incompatible with serializable actions.
         `,
-          artifacts: [],
+          artifacts: [
+            {
+              name: 'CommandExecutor',
+              type: 'ECS Core',
+              icon: 'command-executor'
+            },
+            {
+              name: 'Command Interface',
+              type: 'Design Pattern',
+              icon: 'command-interface'
+            }
+          ],
+          challenge: {
+            title: 'The Mutation Gateway',
+            recommended: 'A',
+            docLink: {
+              label: 'World API and Command Layer',
+              url: `${GH}/docs/architecture/ecs-world-command-api.md`
+            },
+            description: `
+            A heated debate blocks the forge entrance. One faction argues the World's imperative
+            API (<code>world.setComponent()</code>) conflicts with the command pattern requirement
+            from ADR 0003. Another faction says commands and the World serve different layers.<br><br>
+            How should external callers mutate the World?
+          `,
+            choices: [
+              {
+                key: 'A',
+                label: 'Commands as intent; systems as handlers; World as store',
+                icon: 'sidepanel-a',
+                hint: 'Caller \u2192 Command \u2192 System \u2192 World \u2192 Y.js. Commands are serializable. The World\u2019s imperative API is internal, called only by systems inside transactions.',
+                effects: {
+                  techDebt: -10,
+                  quality: 15,
+                  morale: 5,
+                  migrationProgress: 1
+                },
+                rating: 'good',
+                feedback:
+                  'The layering clicks. Commands are serializable intent. Systems are command handlers. The World is the store \u2014 its imperative API is internal, just like Redux\u2019s state mutations inside reducers. ADR 0003 and ADR 0008 are complementary layers.'
+              },
+              {
+                key: 'B',
+                label: 'Make World.setComponent() itself serializable',
+                icon: 'sidepanel-b',
+                hint: 'Log every World mutation as a serializable operation. The World IS the command system.',
+                effects: { techDebt: 5, quality: 5, morale: -5 },
+                rating: 'ok',
+                feedback:
+                  'This conflates the store with the command layer. Every internal implementation detail becomes part of the public API. Batch operations like Paste become dozens of logged mutations instead of one intent.'
+              },
+              {
+                key: 'C',
+                label: 'Skip commands \u2014 let callers mutate directly',
+                icon: 'sidepanel-c',
+                hint: 'External code calls world.setComponent() directly. Simpler. No ceremony.',
+                effects: { techDebt: 15, quality: -10 },
+                rating: 'bad',
+                feedback:
+                  'Without a command layer, there is no undo/redo log, no replay, no CRDT sync, and no way to audit what changed. Every caller becomes responsible for transaction management.'
+              }
+            ]
+          },
           choices: [
             {
               key: '1',
