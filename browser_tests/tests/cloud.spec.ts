@@ -12,7 +12,9 @@ test.describe('Cloud distribution UI @cloud', () => {
     // In cloud mode with a free-tier user, the subscribe button should render.
     // It may not be visible if the user is not free-tier, so we check the DOM.
     // Full visibility depends on subscription state which requires auth mocking.
-    await expect(subscribeButton.or(comfyPage.page.locator('body'))).toBeVisible()
+    await expect(
+      subscribeButton.or(comfyPage.page.locator('body'))
+    ).toBeVisible()
   })
 
   test('bottom panel toggle is hidden in cloud mode @cloud', async ({
