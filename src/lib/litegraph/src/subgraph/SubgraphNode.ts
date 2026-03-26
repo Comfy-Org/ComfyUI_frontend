@@ -515,6 +515,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const prunedEntries: PromotedWidgetSource[] = []
 
     for (const entry of fallbackStoredEntries) {
+      if (!this.subgraph.getNodeById(entry.sourceNodeId)) continue
+
       const concreteKey = this._resolveConcretePromotionEntryKey(entry)
       if (concreteKey && linkedConcreteKeys.has(concreteKey)) continue
 
@@ -882,8 +884,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           usePromotionStore().demote(this.rootGraph.id, this.id, source)
         }
 
-        const didSetWidgetFromEvent = !input._widget
-        if (didSetWidgetFromEvent)
+        const boundWidget =
+          input._widget && isPromotedWidgetView(input._widget)
+            ? input._widget
+            : undefined
+        const hasStaleBoundWidget =
+          boundWidget &&
+          this.subgraph
+            .getNodeById(boundWidget.sourceNodeId)
+            ?.widgets?.some(
+              (widget) => widget.name === boundWidget.sourceWidgetName
+            ) !== true
+
+        const shouldSetWidgetFromEvent = !input._widget || hasStaleBoundWidget
+        if (shouldSetWidgetFromEvent)
           this._setWidget(
             subgraphInput,
             input,
@@ -1063,6 +1077,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           }
           return null
         }
+        if (!this.subgraph.getNodeById(nodeId)) return null
         const entry: PromotedWidgetSource = {
           sourceNodeId: nodeId,
           sourceWidgetName: widgetName,
@@ -1074,8 +1089,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     store.setPromotions(this.rootGraph.id, this.id, entries)
 
-    // Write back resolved entries so legacy -1 format doesn't persist
-    if (raw.some(([id]) => id === '-1')) {
+    // Write back resolved entries so legacy or stale entries don't persist
+    if (entries.length !== raw.length) {
       this.properties.proxyWidgets = this._serializeEntries(entries)
     }
 
@@ -1106,6 +1121,27 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (store.isPromoted(this.rootGraph.id, this.id, source)) continue
       store.promote(this.rootGraph.id, this.id, source)
     }
+  }
+
+  /**
+   * Clears all cached promoted widget views and re-resolves `input._widget`
+   * bindings from the current subgraph connections.  Called after ancestor
+   * promotions are repointed during nested subgraph packing.
+   */
+  rebuildInputWidgetBindings(): void {
+    this._promotedViewManager.clear()
+    this._invalidatePromotedViewsCache()
+
+    for (const input of this.inputs) {
+      delete input.widget
+      delete input.pos
+      input._widget = undefined
+      const subgraphInput = input._subgraphSlot
+      if (!subgraphInput) continue
+      this._resolveInputWidget(subgraphInput, input)
+    }
+
+    this._syncPromotions()
   }
 
   private _resolveInputWidget(

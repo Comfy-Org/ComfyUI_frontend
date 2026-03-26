@@ -15910,8 +15910,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -15954,8 +15961,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -16224,6 +16238,10 @@
       "lora_dtype": {
         "name": "lora_dtype",
         "tooltip": "The dtype to use for lora."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "When using training_dtype 'none' and training on quantized model, doing backward with quantized matmul when enabled."
       },
       "algorithm": {
         "name": "algorithm",

@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p 值"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "Top-P"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
       }
     },
     "outputs": {
@@ -16239,6 +16253,10 @@
       "positive": {
         "name": "正向條件",
         "tooltip": "用於訓練的正向條件。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "當 training_dtype 設為 'none' 並在量化模型上訓練時，啟用後將以量化矩陣相乘進行反向傳播。"
       },
       "rank": {
         "name": "秩",

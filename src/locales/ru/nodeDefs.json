@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "штраф за повторение"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "мышление",
+        "tooltip": "Работать в режиме мышления, если модель это поддерживает."
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "минимальное p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "штраф за повторение"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "мышление",
+        "tooltip": "Работать в режиме мышления, если модель это поддерживает."
       }
     },
     "outputs": {
@@ -16239,6 +16253,10 @@
       "positive": {
         "name": "позитивное условие",
         "tooltip": "Позитивное условие, используемое для обучения."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "При использовании training_dtype 'none' и обучении на квантизированной модели, при включении выполняется обратное распространение с квантизированным матричным умножением."
       },
       "rank": {
         "name": "ранг",
