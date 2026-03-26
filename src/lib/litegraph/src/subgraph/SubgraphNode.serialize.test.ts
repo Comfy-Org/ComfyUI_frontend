@@ -91,8 +91,8 @@ describe('SubgraphNode.serialize() state isolation (#9976)', () => {
     // The SubgraphNode should have promotions registered (from _setWidget)
     const promotions = store.getPromotions(rootGraph.id, subgraphNode.id)
     expect(promotions).toHaveLength(1)
-    expect(promotions[0].interiorNodeId).toBe(String(interiorNode.id))
-    expect(promotions[0].widgetName).toBe('seed')
+    expect(promotions[0].sourceNodeId).toBe(String(interiorNode.id))
+    expect(promotions[0].sourceWidgetName).toBe('seed')
 
     // Serialize — should write proxyWidgets from promotionStore
     const serialized = subgraphNode.serialize()
