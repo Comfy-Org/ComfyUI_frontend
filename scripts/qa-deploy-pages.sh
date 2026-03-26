@@ -171,12 +171,19 @@ if [ "$TARGET_TYPE" = "issue" ]; then
   BADGE_STATUS="${REPRO_RESULT:-FINISHED}"
   /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
 else
+  # Extract the Overall Risk section for fix quality verdict.
+  # Only look at the "## Overall Risk" section to avoid false matches from
+  # severity labels (e.g. `MAJOR`) or negated phrases ("no regressions").
+  RISK_TEXT=""
+  if [ -d video-reviews ]; then
+    RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | head -20)
+  fi
   SOLN_RESULT="" SOLN_COLOR="#4c1"
-  if grep -riq 'major.*issue\|critical\|breaking\|regression' video-reviews/ 2>/dev/null; then
+  if echo "$RISK_TEXT" | grep -iq 'high\|critical\|breaking'; then
     SOLN_RESULT="MAJOR ISSUES" SOLN_COLOR="#e05d44"
-  elif grep -riq 'minor.*issue\|cosmetic\|nitpick' video-reviews/ 2>/dev/null; then
+  elif echo "$RISK_TEXT" | grep -iq 'medium\|moderate'; then
     SOLN_RESULT="MINOR ISSUES" SOLN_COLOR="#dfb317"
-  elif grep -riq 'no.*issue\|looks good\|approved\|pass' video-reviews/ 2>/dev/null; then
+  elif echo "$RISK_TEXT" | grep -iq 'low\|minimal\|none\|no.*risk\|approved'; then
     SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
   fi
   BADGE_STATUS="${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
