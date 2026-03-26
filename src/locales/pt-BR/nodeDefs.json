@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Conversão de Número",
+    "inputs": {
+      "value": {
+        "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Alternar",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Editor de Curva",
+    "inputs": {
+      "curve": {
+        "name": "curva"
+      },
+      "histogram": {
+        "name": "histograma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curva",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Estenda um vídeo existente com uma continuação perfeita baseada em um prompt de texto.",
+    "display_name": "Grok Video Extend",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para extensão de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do que deve acontecer a seguir no vídeo."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de origem para estender. Formato MP4, 2-15 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Gere vídeo a partir de um prompt ou de uma imagem",
     "display_name": "Grok Video",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Gere vídeo guiado por imagens de referência como referências de estilo e conteúdo.",
+    "display_name": "Grok Referência-para-Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Defina o áudio de referência para transferência de identidade de locutor com ID-LoRA. Codifica um clipe de áudio de referência no condicionamento e, opcionalmente, ajusta o modelo com orientação de identidade (passagem extra sem referência, amplificando o efeito de identidade do locutor).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE para codificação."
+      },
+      "end_percent": {
+        "name": "percentual_final",
+        "tooltip": "Fim do intervalo sigma onde a orientação de identidade está ativa."
+      },
+      "identity_guidance_scale": {
+        "name": "escala_de_orientação_de_identidade",
+        "tooltip": "Intensidade da orientação de identidade. Executa uma passagem extra sem referência a cada etapa para amplificar a identidade do locutor. Defina como 0 para desativar (sem passagem extra)."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "reference_audio": {
+        "name": "áudio_de_referência",
+        "tooltip": "Clipe de áudio de referência cuja identidade do locutor será transferida. Recomenda-se cerca de 5 segundos (duração do treinamento). Clipe mais curto ou mais longo pode prejudicar a transferência da identidade vocal."
+      },
+      "start_percent": {
+        "name": "percentual_inicial",
+        "tooltip": "Início do intervalo sigma onde a orientação de identidade está ativa."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
         "tooltip": null
       }
     }
@@ -16090,6 +16239,10 @@
       "positive": {
         "name": "positivo",
         "tooltip": "O condicionamento positivo a ser usado para o treinamento."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Ao usar 'training_dtype' como 'none' e treinar em um modelo quantizado, realiza o backward com matmul quantizado quando ativado."
       },
       "rank": {
         "name": "rank",
