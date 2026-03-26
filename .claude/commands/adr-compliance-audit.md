@@ -10,6 +10,7 @@ Audit the current changes (or a specified PR) for compliance with Architecture D
 ## Step 2: Priority 1 — ECS and Command-Pattern Compliance
 
 Read these documents for context:
+
 ```
 docs/adr/0003-crdt-based-layout-system.md
 docs/adr/0008-entity-component-system.md
@@ -23,6 +24,7 @@ docs/architecture/appendix-critical-analysis.md
 Every entity state mutation must be a **serializable, idempotent, deterministic command** — replayable, undoable, transmittable over CRDT.
 
 Flag:
+
 1. **Direct spatial mutation** — `node.pos = ...`, `node.size = ...`, `group.pos = ...` outside a store/command
 2. **Imperative fire-and-forget APIs** — Functions that mutate entity state as side effects rather than producing serializable command objects. Systems should produce command batches, not execute mutations directly.
 3. **Void-returning mutation APIs** — Entity mutations returning `void` instead of `{ status: 'applied' | 'rejected' | 'no-op' }`
@@ -32,6 +34,7 @@ Flag:
 ### Check B: ECS Architecture (ADR 0008)
 
 Flag:
+
 1. **God-object growth** — New methods/properties on `LGraphNode`, `LGraphCanvas`, `LGraph`, `Subgraph`
 2. **Mixed data/behavior** — Component-like structures with methods or back-references
 3. **OOP instance patterns** — New `node.someProperty` or `node.someMethod()` for data that should be a World component
@@ -42,6 +45,7 @@ Flag:
 ### Check C: Extension Ecosystem Impact
 
 If any of these patterns are changed, flag and require migration guidance:
+
 - `onConnectionsChange`, `onRemoved`, `onAdded`, `onConfigure` callbacks
 - `onConnectInput` / `onConnectOutput` validation hooks
 - `onWidgetChanged` handlers
