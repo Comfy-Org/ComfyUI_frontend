@@ -247,12 +247,13 @@ Each step is an object with an "action" field:
 - { "action": "screenshot", "name": "step-name" } — takes a screenshot
 - { "action": "annotate", "text": "Look here!", "x": 640, "y": 400 } — shows a floating label at coordinates for 2s (use to draw viewer attention to important UI state)
 - { "action": "annotate", "text": "Bug: tab still dirty", "x": 100, "y": 20, "durationMs": 3000 } — annotation with custom duration
+- { "action": "reload" } — reloads the page (use for testing state persistence across page loads)
 ${qaGuideSection}${testPlanSection}
 ${diff ? `## PR Diff\n\`\`\`\n${diff.slice(0, 3000)}\n\`\`\`` : ''}
 
 ## Rules
 - Output ONLY a valid JSON array of actions, no markdown fences or explanation
-- ${mode === 'reproduce' ? 'You MUST follow the reproduction steps from the issue closely. Generate 8-15 steps that actually trigger the bug. Do NOT just open a menu and take a screenshot — perform the FULL reproduction sequence including node interactions, context menus, keyboard shortcuts, and canvas operations' : mode === 'before' ? 'Keep it minimal — just show the old/missing behavior' : 'Test the specific behavior that changed in the PR'}
+- ${mode === 'reproduce' ? 'You MUST follow the reproduction steps from the issue closely. Generate 8-15 steps that actually trigger the bug. Do NOT just open a menu and take a screenshot — perform the FULL reproduction sequence including node interactions, context menus, keyboard shortcuts, and canvas operations' : mode === 'before' ? 'Keep it minimal — just show the old/missing behavior' : 'CRITICAL: Test the EXACT behavior changed by the PR. Read the diff carefully to understand what UI feature was modified. Do NOT just open menus and take screenshots — you must TRIGGER the specific scenario the PR fixes. For example: if the PR fixes "tabs lost on restart", actually create tabs AND reload the page. If the PR fixes "widget disappears on collapse", create a subgraph with widgets AND collapse it. Generic UI walkthrough is USELESS — demonstrate the actual fix working.'}
 - Always include at least one screenshot
 - Do NOT include login steps (handled automatically)
 - The default workflow is already loaded when your steps start
