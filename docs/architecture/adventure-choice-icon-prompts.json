@@ -97,6 +97,18 @@
     "subgraph-c": {
       "label": "Keep the current three-layer system",
       "prompt": "Pixel art icon of three stacked translucent layers with proxy shadows underneath, red complex glow, dark background, game UI icon"
+    },
+    "sidepanel-a": {
+      "label": "Commands as intent; systems as handlers; World as store",
+      "prompt": "Pixel art icon of a layered architectural diagram with arrows flowing top-to-bottom through five labeled tiers, green glow, dark background, game UI icon"
+    },
+    "sidepanel-b": {
+      "label": "Make World.setComponent() itself serializable",
+      "prompt": "Pixel art icon of a database with every cell being logged into a scroll, amber overflow glow, dark background, game UI icon"
+    },
+    "sidepanel-c": {
+      "label": "Skip commands — let callers mutate directly",
+      "prompt": "Pixel art icon of multiple hands reaching into a glowing orb simultaneously causing cracks, red chaos glow, dark background, game UI icon"
     }
   }
 }

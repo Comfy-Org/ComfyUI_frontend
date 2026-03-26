@@ -70,6 +70,21 @@
       "name": "Typed Interface Contracts",
       "type": "Architecture",
       "prompt": "Pixel art icon of a sealed scroll with a glowing typed signature stamp and interface brackets, gold and blue accent, dark background, game inventory item"
+    },
+    "command-executor": {
+      "name": "CommandExecutor",
+      "type": "ECS Core",
+      "prompt": "Pixel art icon of a glowing anvil with a gear and execute arrow symbol, blue-purple forge glow, dark background, game inventory item"
+    },
+    "command-interface": {
+      "name": "Command Interface",
+      "type": "Design Pattern",
+      "prompt": "Pixel art icon of a sealed scroll with a type discriminator tag and execute method seal, blue glow, dark background, game inventory item"
+    },
+    "extension-migration": {
+      "name": "Extension Migration Guide",
+      "type": "Design Pattern",
+      "prompt": "Pixel art icon of a scroll with legacy code on left transforming via arrow to ECS code on right, green transition glow, dark background, game inventory item"
     }
   }
 }

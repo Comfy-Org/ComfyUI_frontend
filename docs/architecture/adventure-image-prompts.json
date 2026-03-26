@@ -53,8 +53,8 @@
       "path": "images/composables.png"
     },
     "sidepanel": {
-      "title": "The Right Side Panel",
-      "prompt": "Pixel art multi-tabbed control panel glowing in the dark, a node browser search bar at top, properties inspector in the middle, model catalog below, all connected by wires to vault doors",
+      "title": "The Command Forge",
+      "prompt": "Pixel art anvil forge where glowing command scrolls are being hammered into structured objects, a layered diagram on the wall showing five architectural tiers connected by arrows, blue and purple forge light, dark background",
       "path": "images/sidepanel.png"
     }
   }

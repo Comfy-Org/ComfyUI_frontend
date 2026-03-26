@@ -34,7 +34,7 @@
 
   Codebase Caverns is an interactive choose-your-own-adventure game that
   teaches you the architecture of the ComfyUI frontend codebase. You explore
-  10 rooms representing different architectural layers, face 8 real engineering
+  10 rooms representing different architectural layers, face 9 real engineering
   challenges, collect artifacts, and reach one of 4 endings based on your
   decisions.
 
@@ -76,7 +76,7 @@
 
   CHALLENGES
   ==========
-  8 of the 10 rooms contain a one-time challenge - an architectural dilemma
+  9 of the 10 rooms contain a one-time challenge - an architectural dilemma
   with 2-3 options. Each option has a rating:
 
     [GOOD]   Best practice. Matches the real migration strategy.
@@ -144,8 +144,9 @@
   +------+-------+
          |
   +------v-------+
-  |  SIDE PANEL  |
-  |  (no chal.)  |
+  | COMMAND      |
+  |   FORGE      |
+  | [Challenge]  |
   +--------------+
 
   ROOM DETAILS:
@@ -158,7 +159,7 @@
   2. THE COMPONENT GALLERY [Presentation]
      Challenge: The Circular Dependency
      Artifacts: GraphView.vue
-     Exits: Litegraph (1), Side Panel (2), Entry (3)
+     Exits: Litegraph (1), Command Forge (2), Entry (3)
 
   3. THE STORE VAULTS [State]
      Challenge: The Scattered Mutations
@@ -167,7 +168,7 @@
 
   4. THE SERVICE CORRIDORS [Services]
      Challenge: The Migration Question
-     Artifacts: litegraphService.ts
+     Artifacts: litegraphService.ts, Extension Migration Guide
      Exits: Composables (1), Entry (2)
 
   5. THE LITEGRAPH ENGINE ROOM [Graph Engine]
@@ -195,8 +196,9 @@
      Artifacts: useCoreCommands.ts
      Exits: Stores (1), Entry (2)
 
- 10. THE RIGHT SIDE PANEL [Presentation]
-     No challenge. No artifacts. Dead end / lore room.
+ 10. THE COMMAND FORGE [Commands & Intent]
+     Challenge: The Mutation Gateway
+     Artifacts: CommandExecutor, Command Interface
      Exits: Components (1), Stores (2), Entry (3)
 
 ===============================================================================
@@ -379,6 +381,28 @@
   |     Pragmatic delay but cloud team won't be happy.                 |
   '--------------------------------------------------------------------'
 
+  .--------------------------------------------------------------------.
+  | CHALLENGE 9: The Mutation Gateway        | Room: Command Forge     |
+  |------------------------------------------------------------------  |
+  | The World's imperative API (world.setComponent()) vs. the command  |
+  | pattern requirement from ADR 0003. How should external callers     |
+  | mutate the World?                                                  |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Commands as intent; systems as handlers; World as store <<< |
+  |     Debt -10, Quality +15, Morale +5, ECS +1               [GOOD] |
+  |     Caller -> Command -> System -> World -> Y.js. Commands are     |
+  |     serializable. ADR 0003 and ADR 0008 are complementary.        |
+  |                                                                    |
+  |   B. Make World.setComponent() itself serializable  [OK]           |
+  |     Debt +5, Quality +5, Morale -5                                |
+  |     Conflates store with command layer. Batch ops become noisy.   |
+  |                                                                    |
+  |   C. Skip commands - let callers mutate directly  [BAD]            |
+  |     Debt +15, Quality -10                                         |
+  |     No undo/redo, no replay, no CRDT sync, no audit trail.       |
+  '--------------------------------------------------------------------'
+
 ===============================================================================
  V.  OPTIMAL ROUTE - "THE ECS ENLIGHTENMENT" SPEEDRUN
 ===============================================================================
@@ -395,30 +419,32 @@
     COMPONENT GALLERY
       Challenge: The Circular Dependency -> Press A (Composition)
       [Debt 40, Quality 45, Morale 65, ECS 1/5]
-      Press 2 -> Side Panel
+      Press 2 -> Command Forge
 
-    SIDE PANEL (lore room, no challenge)
+    THE COMMAND FORGE
+      Challenge: The Mutation Gateway -> Press A (Commands as intent)
+      [Debt 30, Quality 60, Morale 70, ECS 2/5]
       Press 2 -> Store Vaults
 
     STORE VAULTS
       Challenge: The Scattered Mutations -> Press A (Centralize)
-      [Debt 25, Quality 60, Morale 65, ECS 2/5]
+      [Debt 15, Quality 75, Morale 70, ECS 3/5]
       Press 1 -> ECS Chamber
 
     ECS ARCHITECT'S CHAMBER
       Challenge: The ID Crossroads -> Press A (Branded types)
-      [Debt 10, Quality 80, Morale 65, ECS 3/5]
+      [Debt 0, Quality 95, Morale 70, ECS 4/5]
       Press 1 -> Subgraph Depths
 
     SUBGRAPH DEPTHS
       Challenge: The Widget Promotion Decision -> Press A (Connections-only)
-      [Debt 0, Quality 95, Morale 70, ECS 4/5]
+      [Debt 0, Quality 100, Morale 75, ECS 5/5]
       Press 1 -> ECS Chamber
       Press 2 -> Renderer
 
     RENDERER OVERLOOK
       Challenge: The Render-Time Mutation -> Press A (Separate phases)
-      [Debt 0, Quality 100, Morale 70, ECS 5/5]
+      [Debt 0, Quality 100, Morale 75, ECS 5/5]
       Press 2 -> Entry Point
 
     ENTRY POINT
@@ -426,12 +452,12 @@
 
     SERVICE CORRIDORS
       Challenge: The Migration Question -> Press A (5-phase plan)
-      [Debt 0, Quality 100, Morale 80, ECS 5/5]
+      [Debt 0, Quality 100, Morale 85, ECS 5/5]
       Press 1 -> Composables
 
     COMPOSABLES WORKSHOP
       Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
-      [Debt 0, Quality 100, Morale 90, ECS 5/5]
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
       Press 2 -> Entry Point
 
     ENTRY POINT
@@ -440,16 +466,16 @@
 
     LITEGRAPH ENGINE ROOM
       Challenge: The God Object Dilemma -> Press B (Extract incrementally)
-      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      [Debt 0, Quality 100, Morale 100, ECS 5/5]
 
-  FINAL STATS: Debt 0 | Quality 100 | Morale 95 | ECS 5/5
+  FINAL STATS: Debt 0 | Quality 100 | Morale 100 | ECS 5/5
 
   *** ENDING: THE ECS ENLIGHTENMENT ***
 
-  Total key presses: 27 (including challenge answers)
+  Total key presses: 28 (including challenge answers)
   Rooms visited: 10/10
-  Artifacts: 13/13
-  Challenges: 8/8 correct
+  Artifacts: 16/16
+  Challenges: 9/9 correct
 
 ===============================================================================
  VI.  ALL FOUR ENDINGS
@@ -534,20 +560,22 @@
   To hit Debt >= 70 you must pick options that ADD debt or leave it
   alone. Here's the proven path (starting at Debt 50):
 
-    Components:  B (Barrel file reordering)    Debt +10 -> 60
-    Stores:      C (Leave it as-is)            Debt +10 -> 70
-    Services:    C (Strangler fig)             Debt  +0 -> 70
-    Litegraph:   C (Add a facade)              Debt  +5 -> 75
-    ECS:         C (Keep plain numbers)        Debt +15 -> 90
-    Subgraph:    C (Keep three-layer system)   Debt +10 -> 100
-    Renderer:    B (Dirty flags)               Debt  -5 -> 95
-    Composables: B (Polling-based sync)        Debt +10 -> 100
+    Components:    B (Barrel file reordering)    Debt +10 -> 60
+    Command Forge: C (Skip commands)             Debt +15 -> 75
+    Stores:        C (Leave it as-is)            Debt +10 -> 85
+    Services:      C (Strangler fig)             Debt  +0 -> 85
+    Litegraph:     C (Add a facade)              Debt  +5 -> 90
+    ECS:           C (Keep plain numbers)        Debt +15 -> 100
+    Subgraph:      C (Keep three-layer system)   Debt +10 -> 100
+    Renderer:      B (Dirty flags)               Debt  -5 -> 95
+    Composables:   B (Polling-based sync)        Debt +10 -> 100
 
-  Final: Debt 100 / Quality 25 / Morale 60 -> SPAGHETTI SINGULARITY
+  Final: Debt 100 / Quality 10 / Morale 50 -> SPAGHETTI SINGULARITY
 
   WARNING: Picking "all bad-rated answers" does NOT work! The bad
-  answers for Litegraph (A: Rewrite) and Services (B: Big bang) have
-  negative debt effects that pull you back under 70.
+  answers for Litegraph (A: Rewrite, Debt -20) and Services (B: Big
+  bang, Debt -10) have negative debt effects that pull you back
+  under 70.
 
 ===============================================================================
  VIII.  ARTIFACTS CHECKLIST
@@ -559,6 +587,7 @@
   Store Vaults      | widgetValueStore.ts        | Proto-ECS Store
   Store Vaults      | layoutStore.ts             | Proto-ECS Store
   Service Corridors | litegraphService.ts        | Service
+  Service Corridors | Extension Migration Guide  | Design Pattern
   Litegraph Engine  | LGraphCanvas.ts            | God Object
   Litegraph Engine  | LGraphNode.ts              | God Object
   ECS Chamber       | World Registry             | ECS Core
@@ -568,9 +597,11 @@
   Renderer Overlook | QuadTree Spatial Index     | Data Structure
   Renderer Overlook | Y.js CRDT Layout           | Collaboration
   Composables       | useCoreCommands.ts         | Composable
+  Command Forge     | CommandExecutor            | ECS Core
+  Command Forge     | Command Interface          | Design Pattern
 
-  Total: 13 artifacts across 8 rooms.
-  Entry Point and Side Panel have no artifacts.
+  Total: 16 artifacts across 9 rooms.
+  Entry Point has no artifacts.
 
 ===============================================================================
  IX.  PRO TIPS & SECRETS
@@ -597,18 +628,18 @@
   * Room navigation preloads images for adjacent rooms, so transitions
     should be instant after the first visit.
 
-  * The Side Panel room is the only room with no challenge and no
-    artifacts. It's pure lore - describing how nodeDefStore, modelStore,
-    and workspaceStore wire the UI together. Worth visiting once.
+  * The Command Forge (formerly the Side Panel) teaches the Command
+    Pattern - how commands relate to systems and the World. Its challenge
+    covers the architectural layering from ADR 0003 and ADR 0008.
 
   * The ECS Migration Progress stat maxes at 5, matching the 5 phases
-    of the real migration plan. But 8 challenges can give +1 each
-    (7 of the 8 GOOD answers grant +1 ECS). The Services challenge
+    of the real migration plan. But 9 challenges can give +1 each
+    (8 of the 9 GOOD answers grant +1 ECS). The Services challenge
     ("5-phase plan") gives +1 ECS but no debt reduction - it's pure
     planning, not implementation.
 
   * There are between 2-3 choices per challenge, giving
-    3*3*3*3*3*3*2*3 = 4,374 possible playthroughs. But only 4
+    3*3*3*3*3*3*2*3*3 = 13,122 possible playthroughs. But only 4
     distinct endings. Most paths lead to "The Clean Architecture"
     or "The Eternal Refactor."
 
@@ -618,10 +649,11 @@
     2. src/views/GraphView.vue (main canvas)
     3. src/stores/ (state management)
     4. src/ecs/ (the future)
-    5. src/renderer/core/ (canvas pipeline)
-    6. docs/architecture/ecs-migration-plan.md (the plan)
-    7. src/composables/ (Vue logic hooks)
-    8. src/lib/litegraph/src/ (the legacy engine)
+    5. docs/architecture/ecs-world-command-api.md (command layer)
+    6. src/renderer/core/ (canvas pipeline)
+    7. docs/architecture/ecs-migration-plan.md (the plan)
+    8. src/composables/ (Vue logic hooks)
+    9. src/lib/litegraph/src/ (the legacy engine)
 
   * The pixel art images were generated using the Z-Image Turbo
     pipeline on the same ComfyUI that this frontend controls.
