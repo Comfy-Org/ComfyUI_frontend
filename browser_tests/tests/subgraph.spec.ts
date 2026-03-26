@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 // Constants
 const RENAMED_INPUT_NAME = 'renamed_input'
@@ -654,6 +655,28 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
       expect(await isInSubgraph(comfyPage)).toBe(false)
     })
+
+    test('Breadcrumb disappears after switching workflows while inside subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
+
+      const breadcrumb = comfyPage.page
+        .getByTestId(TestIds.breadcrumb.subgraph)
+        .locator('.p-breadcrumb')
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.nextFrame()
+
+      await expect(breadcrumb).toBeVisible()
+
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+
+      await expect(breadcrumb).toBeHidden()
+    })
   })
 
   test.describe('DOM Widget Promotion', () => {
@@ -767,11 +790,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       })
 
       // Click breadcrumb to navigate back to parent graph
-      const homeBreadcrumb = comfyPage.page.getByRole('link', {
-        // In the subgraph navigation breadcrumbs, the home/top level
-        // breadcrumb is just the workflow name without the folder path
-        name: 'subgraph-with-promoted-text-widget'
-      })
+      const homeBreadcrumb = comfyPage.page.locator(
+        '.p-breadcrumb-list > :first-child'
+      )
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()

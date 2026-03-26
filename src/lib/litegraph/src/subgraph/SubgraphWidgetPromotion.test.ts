@@ -8,6 +8,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import {
   createEventCapture,
@@ -147,37 +148,6 @@ describe('SubgraphWidgetPromotion', () => {
       eventCapture.cleanup()
     })
 
-    // BUG: removeWidgetByName calls demote but widgets getter rebuilds from
-    // promotionStore which still has the entry.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/10174
-    it.skip('should fire widget-demoted event when removing promoted widget', () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'input', type: 'number' }]
-      })
-
-      const { node } = createNodeWithWidget('Test Node')
-      const subgraphNode = setupPromotedWidget(subgraph, node)
-      expect(subgraphNode.widgets).toHaveLength(1)
-
-      const eventCapture = createEventCapture(subgraph.events, [
-        'widget-demoted'
-      ])
-
-      // Remove the widget
-      subgraphNode.removeWidgetByName('input')
-
-      // Check event was fired
-      const demotedEvents = eventCapture.getEventsByType('widget-demoted')
-      expect(demotedEvents).toHaveLength(1)
-      expect(demotedEvents[0].detail.widget).toBeDefined()
-      expect(demotedEvents[0].detail.subgraphNode).toBe(subgraphNode)
-
-      // Widget should be removed
-      expect(subgraphNode.widgets).toHaveLength(0)
-
-      eventCapture.cleanup()
-    })
-
     it('should handle multiple widgets on same node', () => {
       const subgraph = createTestSubgraph({
         inputs: [
@@ -291,6 +261,62 @@ describe('SubgraphWidgetPromotion', () => {
 
       // Widget should be removed (through event listeners)
       expect(subgraphNode.widgets).toHaveLength(0)
+    })
+  })
+
+  describe('Nested Subgraph Widget Promotion', () => {
+    it('should prune proxyWidgets referencing nodes not in subgraph on configure', () => {
+      // Reproduces the bug where packing nodes into a nested subgraph leaves
+      // stale proxyWidgets on the outer subgraph node referencing grandchild
+      // node IDs that no longer exist directly in the outer subgraph.
+      // Uses 3 inputs with only 1 having a linked widget entry, matching the
+      // real workflow structure where model/vae inputs don't resolve widgets.
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'clip', type: 'CLIP' },
+          { name: 'model', type: 'MODEL' },
+          { name: 'vae', type: 'VAE' }
+        ]
+      })
+
+      const { node: samplerNode } = createNodeWithWidget(
+        'Sampler',
+        'number',
+        42,
+        'number'
+      )
+      subgraph.add(samplerNode)
+      subgraph.inputNode.slots[1].connect(samplerNode.inputs[0], samplerNode)
+
+      // Add nodes without widget-connected inputs for the other slots
+      const modelNode = new LGraphNode('ModelNode')
+      modelNode.addInput('model', 'MODEL')
+      subgraph.add(modelNode)
+
+      const vaeNode = new LGraphNode('VAENode')
+      vaeNode.addInput('vae', 'VAE')
+      subgraph.add(vaeNode)
+
+      const outerNode = createTestSubgraphNode(subgraph)
+
+      // Inject stale proxyWidgets referencing nodes that don't exist in
+      // this subgraph (they were packed into a nested subgraph)
+      outerNode.properties.proxyWidgets = [
+        ['999', 'text'],
+        ['998', 'text'],
+        [String(samplerNode.id), 'widget']
+      ]
+
+      outerNode.configure(outerNode.serialize())
+
+      // Check widgets getter — stale entries should not produce views
+      const widgetSourceIds = outerNode.widgets
+        .filter(isPromotedWidgetView)
+        .filter((w) => !w.name.startsWith('$$'))
+        .map((w) => w.sourceNodeId)
+
+      expect(widgetSourceIds).not.toContain('999')
+      expect(widgetSourceIds).not.toContain('998')
     })
   })
 

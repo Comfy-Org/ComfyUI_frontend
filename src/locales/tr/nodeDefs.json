@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Sayı Dönüştürme",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -1736,6 +1752,10 @@
         "name": "kapalı döngü",
         "tooltip": "Bağlam penceresi döngüsünün kapatılıp kapatılmayacağı; sadece döngülü çizelgeler için geçerlidir."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Her pencere için koşullandırma tensörlerinde tutulacak latent indekslerin listesi; örneğin, bunu '0' olarak ayarlamak, her pencere için başlangıç görselini kullanır."
+      },
       "context_length": {
         "name": "bağlam uzunluğu",
         "tooltip": "Bağlam penceresinin uzunluğu."
@@ -1767,6 +1787,10 @@
       "model": {
         "name": "model",
         "tooltip": "Örnekleme sırasında bağlam pencerelerinin uygulanacağı model."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Birden fazla koşullandırmanın (ConditionCombine tarafından oluşturulan) bölge indeksine göre her pencereye bölünüp bölünmeyeceği."
       }
     },
     "outputs": {
@@ -2206,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Eğri Düzenleyici",
+    "inputs": {
+      "curve": {
+        "name": "eğri"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "eğri",
         "tooltip": null
       }
     }
@@ -3815,6 +3856,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Modelin düşünme sürecinden ilk görsel. Sadece thinking_level HIGH ve IMAGE+TEXT modunda kullanılabilir."
       }
     }
   },
@@ -4080,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Bir metin istemine dayalı olarak mevcut bir videoyu sorunsuz bir şekilde devam ettirin.",
+    "display_name": "Grok Video Uzatma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video uzatma için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Videoda sonraki adımda ne olacağını açıklayan metin."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Uzatılacak kaynak video. MP4 formatında, 2-15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Bir istem veya görüntüden video oluştur",
     "display_name": "Grok Video",
@@ -4108,6 +4186,41 @@
       "resolution": {
         "name": "çözünürlük",
         "tooltip": "Çıktı videonun çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Stil ve içerik referansı olarak referans görsellerle yönlendirilen video oluşturun.",
+    "display_name": "Grok Referans-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen videonun metin açıklaması."
       },
       "seed": {
         "name": "tohum",
@@ -6732,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "çıktı_görüntüsü",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA konuşmacı kimliği aktarımı için referans ses ayarlayın. Bir referans ses klibini koşullandırmaya kodlar ve isteğe bağlı olarak modeli kimlik rehberliğiyle yamalar (referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliği etkisini artırır).",
+    "display_name": "LTXV Referans Ses (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Kodlama için LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının sonu."
+      },
+      "identity_guidance_scale": {
+        "name": "kimlik_rehberliği_ölçeği",
+        "tooltip": "Kimlik rehberliği gücü. Her adımda referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliğini güçlendirir. Devre dışı bırakmak için 0 olarak ayarlayın (ekstra geçiş yok)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_audio": {
+        "name": "referans_ses",
+        "tooltip": "Konuşmacı kimliğinin aktarılacağı referans ses klibi. ~5 saniye önerilir (eğitim süresi). Daha kısa veya uzun klipler ses kimliği aktarımını bozabilir."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının başlangıcı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
         "tooltip": null
       }
     }
@@ -11949,6 +12110,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "description": "Bir raster görseli Quiver AI kullanarak SVG'ye vektörleştirir.",
+    "display_name": "Quiver Görselden SVG'ye",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Baskın nesneye otomatik kırp."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Vektörleştirilecek giriş görseli."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG vektörleştirme için kullanılacak model."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Quiver AI kullanarak bir metin isteminden SVG oluşturur.",
+    "display_name": "Quiver Metinden SVG'ye",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Ek stil veya biçimlendirme yönergeleri."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "SVG üretimi için kullanılacak model."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen SVG çıktısının metin açıklaması."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Üretime rehberlik etmek için en fazla 4 referans görsel."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -15993,6 +16239,10 @@
       "positive": {
         "name": "pozitif",
         "tooltip": "Eğitim için kullanılacak pozitif koşullandırma."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Eğer training_dtype 'none' olarak ayarlanmışsa ve quantized bir modelde eğitim yapılıyorsa, etkinleştirildiğinde backward işlemi quantized matmul ile yapılır."
       },
       "rank": {
         "name": "rütbe",

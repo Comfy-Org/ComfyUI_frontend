@@ -7,9 +7,10 @@ import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+
+import { useLitegraphService } from '@/services/litegraphService'
 
 import {
   createTestSubgraph,
@@ -154,6 +155,16 @@ describe('useSubgraphStore', () => {
       name: 'SubgraphBlueprint.test'
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
+  })
+  it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    const first = store.getBlueprint(store.typePrefix + 'test')
+    first.nodes[0].id = -1
+    first.definitions!.subgraphs![0].id = 'corrupted'
+
+    const second = store.getBlueprint(store.typePrefix + 'test')
+    expect(second.nodes[0].id).not.toBe(-1)
+    expect(second.definitions!.subgraphs![0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })

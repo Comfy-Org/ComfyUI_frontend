@@ -22,6 +22,7 @@ interface PerfMeasurement {
   layoutDurationMs: number
   taskDurationMs: number
   heapDeltaBytes: number
+  heapUsedBytes: number
   domNodes: number
   jsHeapTotalBytes: number
   scriptDurationMs: number
@@ -43,22 +44,46 @@ const HISTORY_DIR = 'temp/perf-history'
 
 type MetricKey =
   | 'styleRecalcs'
+  | 'styleRecalcDurationMs'
   | 'layouts'
+  | 'layoutDurationMs'
   | 'taskDurationMs'
   | 'domNodes'
   | 'scriptDurationMs'
   | 'eventListeners'
   | 'totalBlockingTimeMs'
   | 'frameDurationMs'
-const REPORTED_METRICS: { key: MetricKey; label: string; unit: string }[] = [
-  { key: 'styleRecalcs', label: 'style recalcs', unit: '' },
-  { key: 'layouts', label: 'layouts', unit: '' },
+  | 'heapUsedBytes'
+
+interface MetricDef {
+  key: MetricKey
+  label: string
+  unit: string
+  /** Minimum absolute delta to consider meaningful (effect size gate) */
+  minAbsDelta?: number
+}
+
+const REPORTED_METRICS: MetricDef[] = [
+  { key: 'layoutDurationMs', label: 'layout duration', unit: 'ms' },
+  {
+    key: 'styleRecalcDurationMs',
+    label: 'style recalc duration',
+    unit: 'ms'
+  },
+  { key: 'layouts', label: 'layout count', unit: '', minAbsDelta: 5 },
+  {
+    key: 'styleRecalcs',
+    label: 'style recalc count',
+    unit: '',
+    minAbsDelta: 5
+  },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
-  { key: 'domNodes', label: 'DOM nodes', unit: '' },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
-  { key: 'eventListeners', label: 'event listeners', unit: '' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
-  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' }
+  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' },
+  { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
+  { key: 'domNodes', label: 'DOM nodes', unit: '', minAbsDelta: 5 },
+  { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
 
 function groupByName(
@@ -134,7 +159,9 @@ function computeCV(stats: MetricStats): number {
 }
 
 function formatValue(value: number, unit: string): string {
-  return unit === 'ms' ? `${value.toFixed(0)}ms` : `${value.toFixed(0)}`
+  if (unit === 'ms') return `${value.toFixed(0)}ms`
+  if (unit === 'bytes') return formatBytes(value)
+  return `${value.toFixed(0)}`
 }
 
 function formatDelta(pct: number | null): string {
@@ -159,6 +186,21 @@ function meanMetric(samples: PerfMeasurement[], key: MetricKey): number | null {
   return values.reduce((sum, v) => sum + v, 0) / values.length
 }
 
+function medianMetric(
+  samples: PerfMeasurement[],
+  key: MetricKey
+): number | null {
+  const values = samples
+    .map((s) => getMetricValue(s, key))
+    .filter((v): v is number => v !== null)
+    .sort((a, b) => a - b)
+  if (values.length === 0) return null
+  const mid = Math.floor(values.length / 2)
+  return values.length % 2 === 0
+    ? (values[mid - 1] + values[mid]) / 2
+    : values[mid]
+}
+
 function formatBytes(bytes: number): string {
   if (Math.abs(bytes) < 1024) return `${bytes} B`
   if (Math.abs(bytes) < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -173,7 +215,7 @@ function renderFullReport(
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   const tableHeader = [
-    '| Metric | Baseline | PR (n=3) | Δ | Sig |',
+    '| Metric | Baseline | PR (median) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
   ]
 
@@ -183,36 +225,38 @@ function renderFullReport(
   for (const [testName, prSamples] of prGroups) {
     const baseSamples = baselineGroups.get(testName)
 
-    for (const { key, label, unit } of REPORTED_METRICS) {
-      const prMean = meanMetric(prSamples, key)
-      if (prMean === null) continue
+    for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
+      // Use median for PR values — robust to outlier runs in CI
+      const prVal = medianMetric(prSamples, key)
+      if (prVal === null) continue
       const histStats = getHistoricalStats(historical, testName, key)
       const cv = computeCV(histStats)
 
       if (!baseSamples?.length) {
         allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new | — |`
+          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
         )
         continue
       }
 
-      const baseVal = meanMetric(baseSamples, key)
+      const baseVal = medianMetric(baseSamples, key)
       if (baseVal === null) {
         allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new | — |`
+          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
         )
         continue
       }
+      const absDelta = prVal - baseVal
       const deltaPct =
         baseVal === 0
-          ? prMean === 0
+          ? prVal === 0
             ? 0
             : null
-          : ((prMean - baseVal) / baseVal) * 100
-      const z = zScore(prMean, histStats)
-      const sig = classifyChange(z, cv)
+          : ((prVal - baseVal) / baseVal) * 100
+      const z = zScore(prVal, histStats)
+      const sig = classifyChange(z, cv, absDelta, minAbsDelta)
 
-      const row = `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prMean, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
+      const row = `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
       allRows.push(row)
       if (isNoteworthy(sig)) {
         flaggedRows.push(row)
@@ -299,7 +343,7 @@ function renderColdStartReport(
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   lines.push(
-    `> ℹ️ Collecting baseline variance data (${historicalCount}/5 runs). Significance will appear after 2 main branch runs.`,
+    `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
     '| Metric | Baseline | PR | Δ |',
     '|--------|----------|-----|---|'
@@ -309,31 +353,31 @@ function renderColdStartReport(
     const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prMean = meanMetric(prSamples, key)
-      if (prMean === null) continue
+      const prVal = medianMetric(prSamples, key)
+      if (prVal === null) continue
 
       if (!baseSamples?.length) {
         lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new |`
+          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
         )
         continue
       }
 
-      const baseVal = meanMetric(baseSamples, key)
+      const baseVal = medianMetric(baseSamples, key)
       if (baseVal === null) {
         lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prMean, unit)} | new |`
+          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
         )
         continue
       }
       const deltaPct =
         baseVal === 0
-          ? prMean === 0
+          ? prVal === 0
             ? 0
             : null
-          : ((prMean - baseVal) / baseVal) * 100
+          : ((prVal - baseVal) / baseVal) * 100
       lines.push(
-        `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prMean, unit)} | ${formatDelta(deltaPct)} |`
+        `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} |`
       )
     }
   }
@@ -352,14 +396,10 @@ function renderNoBaselineReport(
   )
   for (const [testName, prSamples] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prMean = meanMetric(prSamples, key)
-      if (prMean === null) continue
-      lines.push(`| ${testName}: ${label} | ${formatValue(prMean, unit)} |`)
+      const prVal = medianMetric(prSamples, key)
+      if (prVal === null) continue
+      lines.push(`| ${testName}: ${label} | ${formatValue(prVal, unit)} |`)
     }
-    const heapMean =
-      prSamples.reduce((sum, s) => sum + (s.heapDeltaBytes ?? 0), 0) /
-      prSamples.length
-    lines.push(`| ${testName}: heap delta | ${formatBytes(heapMean)} |`)
   }
   return lines
 }

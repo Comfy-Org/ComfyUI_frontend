@@ -53,8 +53,8 @@ export function useWorkflowPersistenceV2() {
   const toast = useToast()
   const { onUserLogout } = useCurrentUser()
 
-  // Run migration on module load
-  migrateV1toV2()
+  // Run migration on module load, passing clientId for tab state migration
+  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
 
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {

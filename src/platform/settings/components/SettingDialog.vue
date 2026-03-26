@@ -1,5 +1,5 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="md">
+  <BaseModalLayout content-title="" data-testid="settings-dialog" size="sm">
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -12,6 +12,7 @@
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
+          autofocus
           @search="handleSearch"
         />
       </div>
@@ -41,7 +42,20 @@
       </nav>
     </template>
 
-    <template #header />
+    <template #header>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-header"
+        class="flex-1"
+      />
+    </template>
+
+    <template #header-right-area>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-actions"
+      />
+    </template>
 
     <template #content>
       <template v-if="activePanel">

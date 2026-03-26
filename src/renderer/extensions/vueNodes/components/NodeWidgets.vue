@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    data-testid="node-widgets"
     :class="
       cn(
         'lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3',
@@ -24,6 +25,7 @@
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
+        data-testid="node-widget"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
@@ -361,10 +363,13 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
+    const hostNodeId = String(nodeId ?? '')
     const bareWidgetId = String(
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
-    const isPromotedView = !!widget.nodeId
+    const promotionSourceNodeId = widget.storeName
+      ? String(bareWidgetId)
+      : undefined
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -384,8 +389,11 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const borderStyle =
       graphId &&
-      !isPromotedView &&
-      promotionStore.isPromotedByAny(graphId, String(bareWidgetId), widget.name)
+      promotionStore.isPromotedByAny(graphId, {
+        sourceNodeId: hostNodeId,
+        sourceWidgetName: widget.storeName ?? widget.name,
+        disambiguatingSourceNodeId: promotionSourceNodeId
+      })
         ? 'ring ring-component-node-widget-promoted'
         : mergedOptions.advanced
           ? 'ring ring-component-node-widget-advanced'
@@ -406,7 +414,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       borderStyle,
       callback: widget.callback,
       controlWidget: widget.controlWidget,
-      label: widgetState?.label,
+      label: widget.promotedLabel ?? widgetState?.label,
       linkedUpstream,
       options: widgetOptions,
       spec: widget.spec
