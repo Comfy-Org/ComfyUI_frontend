@@ -28,7 +28,7 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = comfyPage.page.getByText(/Missing Node Packs/)
+    const missingNodesTitle = errorOverlay.getByText(/Missing Node Packs/)
     await expect(missingNodesTitle).toBeVisible()
   })
 
@@ -42,11 +42,13 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingNodesTitle = comfyPage.page.getByText(/Missing Node Packs/)
+    const missingNodesTitle = errorOverlay.getByText(/Missing Node Packs/)
     await expect(missingNodesTitle).toBeVisible()
 
     // Click "See Errors" to open the errors tab and verify subgraph node content
-    await errorOverlay.getByRole('button', { name: 'See Errors' }).click()
+    await errorOverlay
+      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+      .click()
     await expect(errorOverlay).not.toBeVisible()
 
     const missingNodeCard = comfyPage.page.getByTestId(
@@ -75,7 +77,9 @@ test.describe('Missing nodes in Error Overlay', { tag: '@ui' }, () => {
     await expect(errorOverlay).toBeVisible()
 
     // Click "See Errors" to open the right side panel errors tab
-    await errorOverlay.getByRole('button', { name: 'See Errors' }).click()
+    await errorOverlay
+      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+      .click()
     await expect(errorOverlay).not.toBeVisible()
 
     // Verify MissingNodeCard is rendered in the errors tab
@@ -165,17 +169,19 @@ test.describe('Error actions in Errors Tab', { tag: '@ui' }, () => {
       TestIds.dialogs.errorOverlay
     )
     await expect(errorOverlay).toBeVisible()
-    await errorOverlay.getByRole('button', { name: 'See Errors' }).click()
+    await errorOverlay
+      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+      .click()
     await expect(errorOverlay).not.toBeVisible()
 
     // Verify Find on GitHub button is present in the error card
-    const findOnGithubButton = comfyPage.page.getByRole('button', {
-      name: 'Find on GitHub'
-    })
+    const findOnGithubButton = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorCardFindOnGithub
+    )
     await expect(findOnGithubButton).toBeVisible()
 
     // Verify Copy button is present in the error card
-    const copyButton = comfyPage.page.getByRole('button', { name: 'Copy' })
+    const copyButton = comfyPage.page.getByTestId(TestIds.dialogs.errorCardCopy)
     await expect(copyButton).toBeVisible()
   })
 })
@@ -204,7 +210,7 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
     await expect(missingModelsTitle).toBeVisible()
   })
 
@@ -220,7 +226,7 @@ test.describe('Missing models in Error Tab', () => {
     )
     await expect(errorOverlay).toBeVisible()
 
-    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
+    const missingModelsTitle = errorOverlay.getByText(/Missing Models/)
     await expect(missingModelsTitle).toBeVisible()
   })
 
@@ -231,13 +237,10 @@ test.describe('Missing models in Error Tab', () => {
       'missing/model_metadata_widget_mismatch'
     )
 
-    const missingModelsTitle = comfyPage.page.getByText(/Missing Models/)
-    await expect(missingModelsTitle).not.toBeVisible()
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+    ).not.toBeVisible()
+    await expect(comfyPage.page.getByText(/Missing Models/)).not.toBeVisible()
   })
 
   // Flaky test after parallelization
