@@ -156,17 +156,21 @@ cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 ERROREOF
 
 # Generate badge SVGs into deploy dir
-# Verdict detection: check AI review reports for reproduction outcome.
-# Patterns are ordered from most specific to least specific.
+# Verdict detection: extract the ## Summary section from AI reviews,
+# then check for verdict keywords. This avoids false matches from headings
+# or neutral mentions like "reproduce Issue #1234".
+SUMMARY_TEXT=""
+if [ -d video-reviews ]; then
+  SUMMARY_TEXT=$(sed -n '/^## Summary/,/^## /p' video-reviews/*.md 2>/dev/null | head -30)
+fi
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
-if grep -riq 'INCONCLUSIVE' video-reviews/ 2>/dev/null; then
+if echo "$SUMMARY_TEXT" | grep -iq 'INCONCLUSIVE'; then
   REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
-elif grep -riq 'not reproduced\|could not reproduce\|unable to reproduce' video-reviews/ 2>/dev/null; then
+elif echo "$SUMMARY_TEXT" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|was NOT\|NOT visible\|not observed'; then
   REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
-elif grep -riq 'partially reproduced' video-reviews/ 2>/dev/null; then
+elif echo "$SUMMARY_TEXT" | grep -iq 'partially reproduced'; then
   REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
-# Match "reproduced", "confirmed", "confirms", "reproducible" in body text (not headings)
-elif grep -ri 'reproduc\|confirm' video-reviews/ 2>/dev/null | grep -vq '^[^:]*:##'; then
+elif echo "$SUMMARY_TEXT" | grep -iq 'reproduc\|confirm'; then
   REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
 fi
 
@@ -183,7 +187,8 @@ else
   # severity labels (e.g. `MAJOR`) or negated phrases ("no regressions").
   RISK_TEXT=""
   if [ -d video-reviews ]; then
-    RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | head -20)
+    # Strip markdown bold/italic so **High** matches as "High"
+    RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20)
   fi
   SOLN_RESULT="" SOLN_COLOR="#4c1"
   if echo "$RISK_TEXT" | grep -iq 'high\|critical\|breaking'; then
