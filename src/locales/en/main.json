@@ -3530,7 +3530,13 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORS",
-    "seeErrors": "See Errors"
+    "seeErrors": "See Errors",
+    "showMissingNodes": "Show missing nodes",
+    "showMissingModels": "Show missing models",
+    "showSwapNodes": "Show swap nodes",
+    "missingNodes": "Some nodes are missing and need to be installed",
+    "missingModels": "{count} required model is missing | {count} required models are missing",
+    "swapNodes": "Some nodes can be replaced with alternatives"
   },
   "help": {
     "recentReleases": "Recent releases",
