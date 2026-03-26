@@ -189,7 +189,7 @@ describe('TaskItemImpl', () => {
     })
   })
 
-  it.skip('should parse text outputs', () => {
+  it('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
       preview_output: {

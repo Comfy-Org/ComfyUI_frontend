@@ -141,6 +141,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -160,7 +161,8 @@ import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
-type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
+const MEDIA_TYPES = ['video', 'audio', 'image', '3D', 'text', 'other'] as const
+type PreviewKind = (typeof MEDIA_TYPES)[number]
 
 const mediaComponents = {
   top: {
@@ -221,7 +223,15 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+function isValidMediaType(val: string): val is PreviewKind {
+  return MEDIA_TYPES.includes(val as PreviewKind)
+}
+
 const previewKind = computed((): PreviewKind => {
+  const type = getOutputAssetMetadata(asset?.user_metadata)?.allOutputs?.at(
+    -1
+  )?.mediaType
+  if (type && isValidMediaType(type)) return type
   return getMediaTypeFromFilename(asset?.name || '')
 })
 

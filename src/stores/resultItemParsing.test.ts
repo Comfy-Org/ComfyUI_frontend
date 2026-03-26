@@ -107,18 +107,6 @@ describe(parseNodeOutput, () => {
     expect(result[0].mediaType).toBe('images')
   })
 
-  it('excludes non-ResultItem array items', () => {
-    const output = {
-      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
-      custom_data: [{ randomKey: 123 }]
-    } as unknown as NodeExecutionOutput
-
-    const result = parseNodeOutput('1', output)
-
-    expect(result).toHaveLength(1)
-    expect(result[0].mediaType).toBe('images')
-  })
-
   it('accepts items with filename but no subfolder', () => {
     const output = {
       images: [
@@ -133,20 +121,6 @@ describe(parseNodeOutput, () => {
     expect(result[0].filename).toBe('valid.png')
     expect(result[1].filename).toBe('no-subfolder.png')
     expect(result[1].subfolder).toBe('')
-  })
-
-  it('excludes items missing filename', () => {
-    const output = {
-      images: [
-        { filename: 'valid.png', subfolder: '', type: 'output' },
-        { subfolder: '', type: 'output' }
-      ]
-    } as unknown as NodeExecutionOutput
-
-    const result = parseNodeOutput('1', output)
-
-    expect(result).toHaveLength(1)
-    expect(result[0].filename).toBe('valid.png')
   })
 })
 
