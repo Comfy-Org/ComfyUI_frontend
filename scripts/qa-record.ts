@@ -975,6 +975,69 @@ async function captureScreenshotForGemini(page: Page): Promise<string> {
   return buffer.toString('base64')
 }
 
+function buildIssueSpecificHints(context: string): string {
+  const ctx = context.toLowerCase()
+  const hints: string[] = []
+
+  if (/clone|z.?index|overlap|above.*origin|layering/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow first, then cloneNode at (~750,350) to clone KSampler, then dragCanvas the clone on top of the original to test z-index/overlap.'
+    )
+  if (/copy.*paste|paste.*offset|ctrl\+c|ctrl\+v|clipboard/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow, then clickCanvas on a node (~450,250), then use copyPaste to copy+paste it. Check if pasted nodes are offset or misaligned.'
+    )
+  if (/group.*paste|paste.*group/.test(ctx))
+    hints.push(
+      'MUST: Select multiple nodes by drag-selecting, then copyPaste. Check if the group frame and nodes align after paste.'
+    )
+  if (/numeric.*drag|drag.*numeric|drag.*value|widget.*drag|slider/.test(ctx))
+    hints.push(
+      'MUST: Enable Nodes 2.0 via setSetting("Comfy.UseNewMenu","Top"), then loadDefaultWorkflow, then try dragCanvas starting from a numeric widget value (e.g. KSampler seed at ~750,300) — drag left/right to change value.'
+    )
+  if (
+    /sidebar.*file|file.*extension|workflow.*sidebar|workflow.*tree/.test(ctx)
+  )
+    hints.push(
+      'MUST: Click the "Workflows" button in the left sidebar to open the file tree. Take a screenshot of the file list to check for missing extensions.'
+    )
+  if (/spacebar|space.*pan|pan.*space|space.*drag/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow, then use holdKeyAndDrag with key=" " (Space) from (640,400) to (400,300) to test spacebar panning.'
+    )
+  if (/resize.*node|node.*resize|gap.*widget|widget.*gap/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow, then use resizeNode on the bottom-right corner of a node (e.g. KSampler at ~830,430 with dx=100,dy=50) to resize it. Screenshot before and after.'
+    )
+  if (/new.*tab|open.*tab|tab.*open/.test(ctx))
+    hints.push(
+      'MUST: Right-click on a workflow tab in the topbar, then look for "Open in new tab" option in the context menu.'
+    )
+  if (/hover.*image|zoom.*button|asset.*column|thumbnail/.test(ctx))
+    hints.push(
+      'MUST: Open the sidebar, navigate to assets/models, hover over image thumbnails to trigger the zoom button overlay. Screenshot the hover state.'
+    )
+  if (/scroll.*leak|scroll.*text|text.*widget.*scroll|scroll.*canvas/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow, click on a text widget (e.g. CLIP Text Encode prompt at ~450,250), type some text, then use scrollCanvas inside the widget area to test if scroll leaks to canvas zoom.'
+    )
+  if (/middle.*click|mmb|reroute/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow, then use middleClick on a link/wire between two nodes to test reroute creation.'
+    )
+  if (/node.*shape|change.*shape/.test(ctx))
+    hints.push(
+      'MUST: loadDefaultWorkflow, then rightClickCanvas on a node (~750,350), look for "Shape" or "Properties" in context menu to change node shape.'
+    )
+  if (/nodes.*2\.0|vue.*node|new.*node/.test(ctx))
+    hints.push(
+      'MUST: Enable Nodes 2.0 via setSetting("Comfy.UseNewMenu","Top") and setSetting("Comfy.NodeBeta.Enabled",true) FIRST before testing.'
+    )
+
+  if (hints.length === 0) return ''
+  return `\n## Issue-Specific Action Plan\nBased on keyword analysis of this issue, you MUST follow these steps:\n${hints.map((h, i) => `${i + 1}. ${h}`).join('\n')}\nDo NOT skip these steps. They are the minimum required to attempt reproduction.\n`
+}
+
 function buildAgenticSystemPrompt(
   issueContext: string,
   subIssueFocus?: string,
@@ -987,6 +1050,8 @@ function buildAgenticSystemPrompt(
   const qaSection = qaGuide
     ? `\n## QA Analysis\nA deep analysis of this issue produced the following guide. Follow it closely:\n${qaGuide}\n`
     : ''
+
+  const issueHints = buildIssueSpecificHints(issueContext)
 
   return `You are an AI QA agent controlling a ComfyUI browser session to reproduce reported bugs.
 You see the ACTUAL screen after each action and decide what to do next.
@@ -1062,7 +1127,7 @@ Return { "reasoning": "...", "action": { "action": "done", "reason": "..." } } w
 - For node resize bugs: use resizeNode on the bottom-right corner of a node.
 - For reroute/middle-click bugs: use middleClick on a link or slot.
 - Do NOT waste turns on generic exploration. Focus on reproducing the specific bug.
-${focusSection}${qaSection}
+${issueHints}${focusSection}${qaSection}
 ## Issue to Reproduce
 ${issueContext}`
 }
