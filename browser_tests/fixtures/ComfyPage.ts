@@ -347,6 +347,12 @@ export class ComfyPage {
     })
   }
 
+  async idleFrames(count: number) {
+    for (let i = 0; i < count; i++) {
+      await this.nextFrame()
+    }
+  }
+
   async delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
