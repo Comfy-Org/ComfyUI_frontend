@@ -166,7 +166,7 @@ fi
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
 if echo "$SUMMARY_TEXT" | grep -iq 'INCONCLUSIVE'; then
   REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
-elif echo "$SUMMARY_TEXT" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|was NOT\|NOT visible\|not observed'; then
+elif echo "$SUMMARY_TEXT" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed'; then
   REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
 elif echo "$SUMMARY_TEXT" | grep -iq 'partially reproduced'; then
   REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
