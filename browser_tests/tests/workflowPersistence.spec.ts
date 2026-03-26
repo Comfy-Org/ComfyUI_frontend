@@ -63,11 +63,16 @@ test.describe("Workflow Persistence Regressions", () => {
       window.app!.registerExtension({
         name: "test-checkstate-during-load",
         async afterConfigureGraph() {
-          const wfStore = (window.app!.extensionManager as any).workflow;
-          const activeWorkflow = wfStore?.activeWorkflow;
-          if (activeWorkflow?.changeTracker) {
-            activeWorkflow.changeTracker.checkState();
-          }
+          const wfStore = (
+            window.app!.extensionManager as unknown as Record<string, unknown>
+          ).workflow as Record<string, unknown> | undefined;
+          const activeWorkflow = wfStore?.activeWorkflow as
+            | Record<string, unknown>
+            | undefined;
+          const changeTracker = activeWorkflow?.changeTracker as
+            | { checkState: () => void }
+            | undefined;
+          changeTracker?.checkState();
         },
       });
     });
@@ -134,7 +139,14 @@ test.describe("Workflow Persistence Regressions", () => {
 
     // Wait for everything to settle
     await comfyPage.page.waitForFunction(
-      () => !(window.app?.extensionManager as any)?.workflow?.isBusy,
+      () => {
+        const wf = (
+          window.app?.extensionManager as unknown as
+            | Record<string, unknown>
+            | undefined
+        )?.workflow as Record<string, unknown> | undefined
+        return !wf?.isBusy
+      },
       undefined,
       { timeout: 5000 },
     );
@@ -201,7 +213,7 @@ test.describe("Workflow Persistence Regressions", () => {
 
     // Trigger changeTracker to store the state (including outputs)
     await comfyPage.page.evaluate(() => {
-      const em = window.app!.extensionManager as Record<
+      const em = window.app!.extensionManager as unknown as Record<
         string,
         { activeWorkflow?: { changeTracker?: { checkState(): void } } }
       >
@@ -289,7 +301,7 @@ test.describe("Workflow Persistence Regressions", () => {
       for (const node of nodes) {
         if (node.widgets && node.widgets.length > 0) {
           results[node.id] = node.widgets.map(
-            (w: { name: string; value: unknown }) => ({
+            (w) => ({
               name: w.name,
               value: w.value,
             }),
@@ -317,7 +329,7 @@ test.describe("Workflow Persistence Regressions", () => {
       for (const node of nodes) {
         if (node.widgets && node.widgets.length > 0) {
           results[node.id] = node.widgets.map(
-            (w: { name: string; value: unknown }) => ({
+            (w) => ({
               name: w.name,
               value: w.value,
             }),
@@ -518,7 +530,7 @@ test.describe("Workflow Persistence Regressions", () => {
     // Verify isLoadingGraph is false during normal operation
     const isLoadingNormally = await comfyPage.page.evaluate(() => {
       // Access ChangeTracker through the module system
-      const em = window.app!.extensionManager as Record<
+      const em = window.app!.extensionManager as unknown as Record<
         string,
         {
           activeWorkflow?: {
