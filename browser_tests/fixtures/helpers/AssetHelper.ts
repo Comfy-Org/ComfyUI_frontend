@@ -201,13 +201,11 @@ export class AssetHelper {
       // POST /assets — upload
       if (method === 'POST' && /\/assets\/?$/.test(path)) {
         const response = this.uploadResponse ?? {
-          type: 'sync',
-          asset: {
-            id: `upload-${Date.now()}`,
-            name: 'uploaded_file.safetensors',
-            tags: ['models', 'checkpoints'],
-            created_at: new Date().toISOString()
-          }
+          id: `upload-${Date.now()}`,
+          name: 'uploaded_file.safetensors',
+          tags: ['models', 'checkpoints'],
+          created_at: new Date().toISOString(),
+          created_new: true
         }
         return route.fulfill({ status: 201, json: response })
       }
@@ -235,6 +233,8 @@ export class AssetHelper {
 
   /**
    * Mock a specific error response for any asset endpoint.
+   * Note: Call this before mock() or use clearMocks() first, as Playwright
+   * executes route handlers in LIFO registration order.
    */
   async mockError(
     statusCode: number,
@@ -305,7 +305,7 @@ export class AssetHelper {
     if (tags.length === 0) return assets
 
     return assets.filter((asset) =>
-      tags.every((tag) => asset.tags.includes(tag))
+      tags.every((tag) => (asset.tags ?? []).includes(tag))
     )
   }
 }
