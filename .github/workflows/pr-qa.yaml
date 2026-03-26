@@ -537,22 +537,39 @@ jobs:
           BADGESCRIPT
           chmod +x /tmp/gen-badge.sh
 
-          # Create badge deploy script
-          cat > /tmp/deploy-badge.sh <<DEPLOYSCRIPT
+          # Create badge deploy script — deploys badge + placeholder status page
+          cat > /tmp/deploy-badge.sh <<'DEPLOYBADGE'
           #!/bin/bash
-          # Usage: deploy-badge.sh <status> [color]
-          STATUS="\$1"
-          COLOR="\${2:-#555}"
-          DIR=\$(mktemp -d)
-          /tmp/gen-badge.sh "\$STATUS" "\$COLOR" "\$DIR/badge.svg"
-          # Also create a minimal redirect page
-          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=badge.svg"></head></html>' > "\$DIR/index.html"
+          # Usage: deploy-badge.sh <status> <color> [label] [run_url]
+          STATUS="$1" COLOR="${2:-#555}" LABEL="${3:-QA}" RUN_URL="$4"
+          DIR=$(mktemp -d)
+          /tmp/gen-badge.sh "$STATUS" "$COLOR" "$DIR/badge.svg" "$LABEL"
+          RUN_LINK=""
+          [ -n "$RUN_URL" ] && RUN_LINK="<a href=\"${RUN_URL}\" style=\"color:#7c8aff;text-decoration:none;font-size:.8rem\">View CI run &rarr;</a>"
+          cat > "$DIR/index.html" <<PAGEEOF
+          <!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+          <title>${LABEL} — ${STATUS}</title>
+          <meta http-equiv="refresh" content="30">
+          <style>:root{--bg:#0d0f14;--fg:#e8e8ec;--muted:#8b8fa3;--primary:#7c8aff}*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+          .wrap{max-width:420px;padding:2rem}.badge{margin:1.5rem 0}.status{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin:.5rem 0}
+          .hint{color:var(--muted);font-size:.85rem;line-height:1.6;margin-top:1rem}
+          @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.5s ease-in-out infinite;margin-right:.5rem;vertical-align:middle}
+          </style></head><body><div class=wrap>
+          <div class=badge><img src=badge.svg alt="${LABEL}: ${STATUS}"></div>
+          <p class=status><span class=dot></span>${STATUS}</p>
+          <p class=hint>QA pipeline is running. This page auto-refreshes every 30 seconds.<br>Results will appear here when analysis is complete.</p>
+          <p style="margin-top:1rem">${RUN_LINK}</p>
+          </div></body></html>
+          PAGEEOF
+          DEPLOYBADGE
+          # Append the wrangler deploy (uses outer BRANCH variable)
+          cat >> /tmp/deploy-badge.sh <<DEPLOYWRANGLER
           wrangler pages deploy "\$DIR" \
             --project-name="comfy-qa" \
             --branch="${BRANCH}" 2>&1 | tail -3
           rm -rf "\$DIR"
-          echo "Badge deployed: ${STATUS}"
-          DEPLOYSCRIPT
+          echo "Deployed: \${STATUS}"
+          DEPLOYWRANGLER
           chmod +x /tmp/deploy-badge.sh
 
       - name: Setup dual badge generator
@@ -590,12 +607,6 @@ jobs:
           DUALBADGE
           chmod +x /tmp/gen-badge-dual.sh
 
-      - name: Deploy badge — PREPARING
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: /tmp/deploy-badge.sh "PREPARING" "#2196f3"
-
       - name: Resolve target number and type
         id: pr
         env:
@@ -623,6 +634,19 @@ jobs:
               echo "target_type=issue" >> "$GITHUB_OUTPUT"
             fi
           fi
+
+          # Badge label with target number
+          LABEL="QA"
+          [ -n "$NUM" ] && LABEL="#${NUM} QA"
+          echo "badge_label=${LABEL}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy placeholder page — PREPARING
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BADGE_LABEL: ${{ steps.pr.outputs.badge_label || 'QA' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: /tmp/deploy-badge.sh "PREPARING" "#2196f3" "$BADGE_LABEL" "$RUN_URL"
 
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -726,7 +750,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: /tmp/deploy-badge.sh "ANALYZING" "#ff9800"
+        run: /tmp/deploy-badge.sh "ANALYZING" "#ff9800" "${{ steps.pr.outputs.badge_label || 'QA' }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Build context for video review
         env:
@@ -747,8 +771,9 @@ jobs:
                 --json title,body --jq '"Title: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
               echo ""
               echo "### Comments"
+              # Filter out QA bot comments to prevent INCONCLUSIVE feedback loop
               gh api "repos/${REPO}/issues/${TARGET_NUM}/comments" \
-                --jq '.[].body' 2>/dev/null | head -200 || true
+                --jq '.[] | select(.user.login != "github-actions[bot]") | .body' 2>/dev/null | head -200 || true
               echo ""
               echo "This video attempts to reproduce a reported bug on the main branch."
             } > pr-context.txt
@@ -1002,3 +1027,10 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           [ -n "$PR_NUMBER" ] && gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label "$LABEL_NAME"
+
+      - name: Deploy FAILED badge on error
+        if: failure()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: /tmp/deploy-badge.sh "FAILED" "#e05d44" "${{ steps.pr.outputs.badge_label || 'QA' }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
