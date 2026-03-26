@@ -298,13 +298,14 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.add(vaeNode)
 
       const outerNode = createTestSubgraphNode(subgraph)
+      const keptSamplerNodeId = String(samplerNode.id)
 
       // Inject stale proxyWidgets referencing nodes that don't exist in
       // this subgraph (they were packed into a nested subgraph)
       outerNode.properties.proxyWidgets = [
         ['999', 'text'],
         ['998', 'text'],
-        [String(samplerNode.id), 'widget']
+        [keptSamplerNodeId, 'widget']
       ]
 
       outerNode.configure(outerNode.serialize())
@@ -317,6 +318,7 @@ describe('SubgraphWidgetPromotion', () => {
 
       expect(widgetSourceIds).not.toContain('999')
       expect(widgetSourceIds).not.toContain('998')
+      expect(widgetSourceIds).toContain(keptSamplerNodeId)
     })
   })
 
