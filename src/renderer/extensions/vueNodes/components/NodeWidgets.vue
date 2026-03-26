@@ -125,7 +125,10 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
-import { getExecutionIdFromNodeData } from '@/utils/graphTraversalUtil'
+import {
+  getExecutionIdFromNodeData,
+  getLocatorIdFromNodeData
+} from '@/utils/graphTraversalUtil'
 import { app } from '@/scripts/app'
 
 import InputSlot from './InputSlot.vue'
@@ -407,6 +410,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
           }
         : undefined
 
+    const nodeLocatorId = widget.nodeId
+      ? widget.nodeId
+      : nodeData
+        ? getLocatorIdFromNodeData(nodeData)
+        : undefined
+
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
@@ -416,6 +425,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       controlWidget: widget.controlWidget,
       label: widget.promotedLabel ?? widgetState?.label,
       linkedUpstream,
+      nodeLocatorId,
       options: widgetOptions,
       spec: widget.spec
     }
