@@ -447,7 +447,23 @@ function restoreDescriptor(
   if (descriptor) {
     Object.defineProperty(node, prop, descriptor)
   } else {
-    delete (node as unknown as Record<string, unknown>)[prop]
+    // The property did not exist before instrumentation.
+    // If it now holds a plain data value (e.g. an array populated while
+    // instrumented), preserve it instead of deleting — otherwise lazily
+    // created widgets/inputs/outputs arrays would be silently dropped.
+    const live = Object.getOwnPropertyDescriptor(node, prop)
+    if (live && !live.get && !live.set && live.value != null) {
+      // Replace the reactive getter/setter with a plain data descriptor
+      // so the value survives without Vue reactivity overhead.
+      Object.defineProperty(node, prop, {
+        value: live.value,
+        writable: true,
+        configurable: true,
+        enumerable: true
+      })
+    } else {
+      delete (node as unknown as Record<string, unknown>)[prop]
+    }
   }
 }
 
