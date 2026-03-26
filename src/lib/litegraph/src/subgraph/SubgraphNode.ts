@@ -884,8 +884,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           usePromotionStore().demote(this.rootGraph.id, this.id, source)
         }
 
-        const didSetWidgetFromEvent = !input._widget
-        if (didSetWidgetFromEvent)
+        const boundWidget =
+          input._widget && isPromotedWidgetView(input._widget)
+            ? input._widget
+            : undefined
+        const hasStaleBoundWidget =
+          boundWidget &&
+          this.subgraph
+            .getNodeById(boundWidget.sourceNodeId)
+            ?.widgets?.some(
+              (widget) => widget.name === boundWidget.sourceWidgetName
+            ) !== true
+
+        const shouldSetWidgetFromEvent = !input._widget || hasStaleBoundWidget
+        if (shouldSetWidgetFromEvent)
           this._setWidget(
             subgraphInput,
             input,
