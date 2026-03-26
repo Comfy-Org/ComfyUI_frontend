@@ -10,6 +10,14 @@ target architecture, see [ECS Target Architecture](ecs-target-architecture.md).
 For verified accuracy of these documents, see
 [Appendix: Critical Analysis](appendix-critical-analysis.md).
 
+## Planning assumptions
+
+- The bridge period is expected to span 2-3 release cycles.
+- Bridge work is treated as transitional debt with explicit owners and sunset
+  checkpoints, not as a permanent architecture layer.
+- Phase 5 is entered only by explicit go/no-go review against the criteria in
+  this document.
+
 ## Phase 0: Foundation
 
 Zero behavioral risk. Prepares the codebase for extraction without changing
@@ -164,6 +172,10 @@ component represents a subgraph. The `scopes` map tracks the graph nesting DAG.
 See [Subgraph Boundaries](subgraph-boundaries-and-promotion.md) for the full
 model.
 
+World scope is per workflow instance. Linked subgraph definitions can be reused
+across instances, but mutable runtime state (widget values, execution state,
+selection/transient view state) remains instance-scoped through `graphId`.
+
 Initial implementation: plain `Map`-backed. No reactivity, no CRDT, no
 persistence. The World exists but nothing populates it yet.
 
@@ -246,6 +258,18 @@ A bridge can move from "transitional" to "removal candidate" only when:
 - Extension compatibility tests pass without bridge-only fallback paths.
 
 These criteria prevent the bridge from becoming permanent by default.
+
+### Bridge duration and maintenance controls
+
+To contain dual-path maintenance cost during Phases 2-4:
+
+- Every bridge concern has a named owner and target sunset release.
+- Every PR touching bridge-covered data paths must include parity tests for both
+  legacy and World-driven execution.
+- Bridge fallback usage is instrumented in integration/e2e and reviewed every
+  milestone; upward trends block new bridge expansion.
+- Any bridge that misses its target sunset release requires an explicit risk
+  review and revised removal plan.
 
 ---
 
@@ -354,6 +378,33 @@ source of truth; WidgetValueStore becomes a read-through cache or is removed.
 **Risk:** Medium. WidgetValueStore is already well-abstracted. The main
 change is routing writes through the World instead of the store.
 
+### 4d. Layout write path and render decoupling
+
+Remove layout side effects from render incrementally by node family.
+
+**Approach:**
+
+1. Inventory `drawNode()` call paths that still trigger `arrange()`.
+2. For one node family at a time, run `LayoutSystem` in update phase and mark
+   entities as layout-clean before render.
+3. Keep a temporary compatibility fallback that runs legacy layout only for
+   non-migrated families.
+4. Delete fallback once parity tests and frame-time budgets are met.
+
+**Risk:** High. Mixed-mode operation must avoid stale layout reads. Requires
+family-level rollout and targeted regression tests.
+
+### Render hot-path performance gate
+
+Before enabling ECS render reads as default for any migrated family:
+
+- Benchmark representative workflows (200-node and 500-node minimum).
+- Compare legacy vs ECS p95 frame time and mean draw cost.
+- Block rollout on statistically significant regression beyond agreed budget
+  (default budget: 5% p95 frame-time regression ceiling).
+- Capture profiler traces proving the dominant cost is not repeated
+  `world.getComponent()` lookups.
+
 ### Phase 3 -> 4 gate (required)
 
 Phase 4 starts only when all of the following are true:
@@ -367,6 +418,10 @@ Phase 4 starts only when all of the following are true:
 - A representative extension suite passes, including `rgthree-comfy`.
 - Write bridge re-entrancy tests prove there is no World <-> legacy feedback
   loop.
+- Layout migration for any enabled node family passes read-only render checks
+  (no `arrange()` writes during draw).
+- Render hot-path benchmark gate passes for every family moving to ECS-first
+  reads.
 
 ---
 
@@ -408,6 +463,20 @@ Legacy removal starts only when all of the following are true:
 - Bridge instrumentation shows zero fallback-path usage in integration and e2e
   suites.
 - A rollback plan exists for each removal PR until the release is cut.
+- ECS write path has run as default behind a kill switch for at least one full
+  release cycle.
+- No unresolved P0/P1 extension regressions are attributed to ECS migration in
+  that cycle.
+
+### Phase 5 trigger packet (required before first legacy-removal PR)
+
+The team prepares a single go/no-go packet containing:
+
+- Phase 4 -> 5 criteria checklist with links to evidence.
+- Extension compatibility matrix results.
+- Bridge fallback usage report (must be zero for the target concern).
+- Performance gate report for ECS render/read paths.
+- Rollback owner, rollback steps, and release coordination sign-off.
 
 ---
 
@@ -567,6 +636,9 @@ state between these calls.
 - Mutating systems run inside `world.transaction(label, fn)`.
 - The bridge maps one World transaction to one `beforeChange()` /
   `afterChange()` bracket.
+- Operations with multiple component writes (for example `connect()` touching
+  slots, links, and node metadata) still commit as one transaction and therefore
+  one undo entry.
 - Failed transactions do not publish partial writes, lifecycle events, or
   version increments.
 
@@ -627,6 +699,7 @@ Phase 3->4 gate checklist  ──────── depends on 3a, 3b, 3c
 Phase 4a (Position writes)  ────── depends on 2a, 3b
 Phase 4b (Connectivity mutations) ─ depends on 3c, 3->4 gate
 Phase 4c (Widget writes)  ─────── depends on 2b
+Phase 4d (Layout decoupling)  ─── depends on 2a, 3->4 gate
 
 Phase 4->5 exit criteria  ──────── depends on all of Phase 4
 

@@ -139,7 +139,28 @@ A node carrying a subgraph gains these additional components. Subgraphs are not 
 
 ### World
 
-A central registry (the "World") maps entity IDs to their component sets. One World exists per workflow, containing all entities across all nesting levels. Each entity carries a `graphScope` identifier linking it to its containing graph. The World also maintains a scope registry mapping each `graphId` to its parent (or null for the root graph).
+A central registry (the "World") maps entity IDs to their component sets. One
+World exists per workflow instance, containing all entities across all nesting
+levels. Each entity carries a `graphScope` identifier linking it to its
+containing graph. The World also maintains a scope registry mapping each
+`graphId` to its parent (or null for the root graph).
+
+The "single source of truth" claim in this ADR is scoped to one workflow
+instance. In a future linked-subgraph model, shared definitions can be loaded
+into multiple workflow instances, but mutable runtime components
+(`WidgetValue`, execution state, selection, transient layout caches) remain
+instance-scoped unless explicitly declared shareable.
+
+### Subgraph recursion model
+
+The ECS model preserves recursive nesting without inheritance. A subgraph node
+stores `SubgraphStructure.childGraphId`, and the scope registry stores
+`childGraphId -> parentGraphId`. This forms a DAG that can represent arbitrary
+subgraph depth.
+
+Queries such as "all nodes at depth N" run by traversing the scope registry
+from the root, materializing graph IDs at depth `N`, and then filtering entity
+queries by `graphScope`.
 
 ### Systems (future work)
 
@@ -186,7 +207,7 @@ For the full design showing how each lifecycle scenario maps to a command, see [
 - Cross-cutting concerns (undo/redo, CRDT sync, serialization) can be implemented as systems without modifying entity classes
 - Components are independently testable — no need to construct an entire `LGraphNode` to test position logic
 - Branded IDs prevent a class of bugs where IDs are accidentally used across entity kinds
-- The World provides a single source of truth for all entity state, simplifying debugging and state inspection
+- The World provides a single source of truth for runtime entity state inside a workflow instance, simplifying debugging and state inspection
 - Aligns with the CRDT layout system direction from ADR 0003
 
 ### Negative
@@ -206,6 +227,7 @@ Planned mitigations for the ECS render path:
 2. Keep archetype-style buckets for common render signatures (for example: `Node = Position+Dimensions+NodeVisual`, `Reroute = Position+RerouteVisual`) so systems iterate arrays instead of probing unrelated entities.
 3. Allow a hot-path storage upgrade behind the World API (for example, SoA-style typed arrays for `Position` and `Dimensions`) if profiling shows `Map.get()` dominates frame time.
 4. Gate migration of each render concern with profiling parity checks against the legacy path (same workflow, same viewport, same frame budget).
+5. Treat parity as a release gate: ECS render path must stay within agreed frame-time budgets (for example, no statistically significant regression in p95 frame time on representative 200-node and 500-node workflows).
 
 The design goal is to preserve ECS modularity while keeping render throughput within existing frame-time budgets.
 
