@@ -16240,6 +16240,10 @@
         "name": "positif",
         "tooltip": "Le conditionnement positif à utiliser pour l'entraînement."
       },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Lorsque le paramètre training_dtype est défini sur 'none' et que l'entraînement se fait sur un modèle quantifié, effectue la rétropropagation avec une multiplication matricielle quantifiée si activé."
+      },
       "rank": {
         "name": "rang",
         "tooltip": "Le rang des couches LoRA."
