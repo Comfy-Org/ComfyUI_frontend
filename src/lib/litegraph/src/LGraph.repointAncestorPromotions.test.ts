@@ -186,4 +186,102 @@ describe('_repointAncestorPromotions', () => {
     // Converting in root graph should not throw
     rootGraph.convertToSubgraph(new Set<Positionable>([node]))
   })
+
+  it('uses existing disambiguatingSourceNodeId as fallback on repeat packing', () => {
+    const { rootGraph, parentSubgraph, interiorNode, hostNode } =
+      setupParentSubgraphWithWidgets()
+
+    const store = usePromotionStore()
+    store.promote(rootGraph.id, hostNode.id, {
+      sourceNodeId: String(interiorNode.id),
+      sourceWidgetName: 'prompt'
+    })
+
+    // First pack: interior node → nested subgraph
+    const { node: firstNestedNode } = parentSubgraph.convertToSubgraph(
+      new Set<Positionable>([interiorNode])
+    )
+
+    const afterFirstPack = store.getPromotions(rootGraph.id, hostNode.id)
+    expect(afterFirstPack).toHaveLength(1)
+    expect(afterFirstPack[0].sourceNodeId).toBe(String(firstNestedNode.id))
+    expect(afterFirstPack[0].disambiguatingSourceNodeId).toBe(
+      String(interiorNode.id)
+    )
+
+    // Second pack: nested subgraph → another level of nesting
+    const { node: secondNestedNode } = parentSubgraph.convertToSubgraph(
+      new Set<Positionable>([firstNestedNode])
+    )
+
+    // After second pack, promotion should use the disambiguatingSourceNodeId
+    // as fallback and point to the new nested node
+    const afterSecondPack = store.getPromotions(rootGraph.id, hostNode.id)
+    expect(afterSecondPack).toHaveLength(1)
+    expect(afterSecondPack[0].sourceNodeId).toBe(String(secondNestedNode.id))
+    expect(afterSecondPack[0].disambiguatingSourceNodeId).toBe(
+      String(interiorNode.id)
+    )
+  })
+
+  it('repoints promotions for multiple host instances of the same subgraph', () => {
+    const parentSubgraph = createTestSubgraph({
+      name: 'Shared Parent Subgraph',
+      inputs: [{ name: 'input', type: '*' }],
+      outputs: [{ name: 'output', type: '*' }]
+    })
+    const rootGraph = parentSubgraph.rootGraph
+
+    rootGraph.events.addEventListener('subgraph-created', (e) => {
+      const { subgraph } = e.detail
+      registerSubgraphNodeType(subgraph)
+      registeredTypes.push(subgraph.id)
+    })
+
+    const interiorNode = new LGraphNode('Interior Node')
+    interiorNode.addInput('in', '*')
+    interiorNode.addOutput('out', '*')
+    interiorNode.addWidget('text', 'prompt', 'shared', () => {})
+    parentSubgraph.add(interiorNode)
+
+    // Create TWO host SubgraphNodes pointing to the same subgraph
+    registerSubgraphNodeType(parentSubgraph)
+    registeredTypes.push(parentSubgraph.id)
+
+    const hostNode1 = createTestSubgraphNode(parentSubgraph)
+    const hostNode2 = createTestSubgraphNode(parentSubgraph)
+    rootGraph.add(hostNode1)
+    rootGraph.add(hostNode2)
+
+    // Promote on both hosts
+    const store = usePromotionStore()
+    store.promote(rootGraph.id, hostNode1.id, {
+      sourceNodeId: String(interiorNode.id),
+      sourceWidgetName: 'prompt'
+    })
+    store.promote(rootGraph.id, hostNode2.id, {
+      sourceNodeId: String(interiorNode.id),
+      sourceWidgetName: 'prompt'
+    })
+
+    // Pack the interior node
+    const { node: nestedNode } = parentSubgraph.convertToSubgraph(
+      new Set<Positionable>([interiorNode])
+    )
+
+    // Both hosts' promotions should be repointed to the nested node
+    const host1Promotions = store.getPromotions(rootGraph.id, hostNode1.id)
+    expect(host1Promotions).toHaveLength(1)
+    expect(host1Promotions[0].sourceNodeId).toBe(String(nestedNode.id))
+    expect(host1Promotions[0].disambiguatingSourceNodeId).toBe(
+      String(interiorNode.id)
+    )
+
+    const host2Promotions = store.getPromotions(rootGraph.id, hostNode2.id)
+    expect(host2Promotions).toHaveLength(1)
+    expect(host2Promotions[0].sourceNodeId).toBe(String(nestedNode.id))
+    expect(host2Promotions[0].disambiguatingSourceNodeId).toBe(
+      String(interiorNode.id)
+    )
+  })
 })

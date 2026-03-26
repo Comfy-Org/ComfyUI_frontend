@@ -1133,6 +1133,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._invalidatePromotedViewsCache()
 
     for (const input of this.inputs) {
+      delete input.widget
+      delete input.pos
       input._widget = undefined
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
