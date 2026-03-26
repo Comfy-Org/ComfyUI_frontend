@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
       }
     },
     "outputs": {
