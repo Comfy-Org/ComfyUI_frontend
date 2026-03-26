@@ -91,8 +91,8 @@ UI mode features:
 For CI or headless testing:
 
 ```bash
-pnpm  test:browser:local                    # Run all tests
-pnpm  test:browser:local widget.spec.ts     # Run specific test file
+pnpm test:browser:local                    # Run all tests
+pnpm test:browser:local widget.spec.ts     # Run specific test file
 ```
 
 ## Test Structure
