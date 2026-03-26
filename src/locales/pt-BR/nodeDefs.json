@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalidade_de_repetição"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar no modo de pensamento se o modelo suportar."
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalidade_de_repetição"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar no modo de pensamento se o modelo suportar."
       }
     },
     "outputs": {
