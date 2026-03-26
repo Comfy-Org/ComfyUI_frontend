@@ -420,9 +420,7 @@ test.describe('Properties panel', () => {
 
       await comfyPage.canvasOps.clickEmptySpace()
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
-      await expect(panel.panelTitle).toContainText(
-        'CLIP Text Encode (Prompt)'
-      )
+      await expect(panel.panelTitle).toContainText('CLIP Text Encode (Prompt)')
     })
   })
 
