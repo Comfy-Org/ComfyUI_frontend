@@ -5,10 +5,15 @@
     <Badge :label="badge" :class="semanticBadgeClass" />
     {{ text }}
     <button
+      type="button"
+      :aria-label="$t('g.remove')"
       class="inline-flex cursor-pointer items-center justify-center rounded-full p-0.5 hover:bg-surface-600"
       @click="emit('remove', $event)"
     >
-      <i class="icon-[lucide--x] size-3 text-muted-foreground" />
+      <i
+        class="icon-[lucide--x] size-3 text-muted-foreground"
+        aria-hidden="true"
+      />
     </button>
   </span>
 </template>
