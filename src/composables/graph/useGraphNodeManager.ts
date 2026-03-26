@@ -742,6 +742,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       node.onAfterGraphConfigured = useChainCallback(
         node.onAfterGraphConfigured,
         () => {
+          // Guard: if cleanup() already ran, do not recreate instrumentation.
+          if (!nodeRefs.has(id)) return
           // Re-extract data now that configure() has populated title/slots/widgets/etc.
           vueNodeData.set(id, extractVueNodeData(node))
           initializeVueNodeLayout()
