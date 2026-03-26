@@ -264,8 +264,13 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 
+const isErrorsTabEnabled = computed(() =>
+  settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+)
+
 const showErrorIndicatorOnPanelButton = computed(
   () =>
+    isErrorsTabEnabled.value &&
     hasAnyError.value &&
     !isRightSidePanelOpen.value &&
     !isErrorOverlayOpen.value
