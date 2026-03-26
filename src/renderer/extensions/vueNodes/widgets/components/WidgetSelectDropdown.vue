@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { capitalize } from 'es-toolkit'
-import { computed, provide, ref, toRef, watch } from 'vue'
+import { computed, provide, ref, shallowRef, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -31,6 +31,9 @@ import type {
 } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -153,24 +156,82 @@ function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
 }
 
+/**
+ * Per-job cache of resolved outputs for multi-output jobs.
+ * Keyed by jobId, populated lazily via resolveOutputAssetItems which
+ * fetches full outputs through getJobDetail (itself LRU-cached).
+ */
+const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
+const pendingJobIds = new Set<string>()
+
+watch(
+  () => outputMediaAssets.media.value,
+  (assets, _, onCleanup) => {
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
+    })
+    pendingJobIds.clear()
+
+    for (const asset of assets) {
+      const meta = getOutputAssetMetadata(asset.user_metadata)
+      if (!meta) continue
+
+      const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
+      if (
+        outputCount <= 1 ||
+        resolvedByJobId.value.has(meta.jobId) ||
+        pendingJobIds.has(meta.jobId)
+      )
+        continue
+
+      pendingJobIds.add(meta.jobId)
+      void resolveOutputAssetItems(meta, { createdAt: asset.created_at })
+        .then((resolved) => {
+          if (cancelled || !resolved.length) return
+          const next = new Map(resolvedByJobId.value)
+          next.set(meta.jobId, resolved)
+          resolvedByJobId.value = next
+        })
+        .catch((error) => {
+          console.warn('Failed to resolve multi-output job', meta.jobId, error)
+        })
+        .finally(() => {
+          pendingJobIds.delete(meta.jobId)
+        })
+    }
+  },
+  { immediate: true }
+)
+
 const outputItems = computed<FormDropdownItem[]>(() => {
   if (!['image', 'video', 'audio', 'mesh'].includes(props.assetKind ?? ''))
     return []
 
   const targetMediaType = assetKindToMediaType(props.assetKind!)
-  const outputFiles = outputMediaAssets.media.value.filter(
-    (asset) => getMediaTypeFromFilename(asset.name) === targetMediaType
-  )
+  const seen = new Set<string>()
+  const items: FormDropdownItem[] = []
 
-  return outputFiles.map((asset) => {
+  const assets = outputMediaAssets.media.value.flatMap((asset) => {
+    const meta = getOutputAssetMetadata(asset.user_metadata)
+    const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
+    return resolved ?? [asset]
+  })
+
+  for (const asset of assets) {
+    if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+    if (seen.has(asset.id)) continue
+    seen.add(asset.id)
     const annotatedPath = `${asset.name} [output]`
-    return {
+    items.push({
       id: `output-${annotatedPath}`,
       preview_url: asset.preview_url || getMediaUrl(asset.name, 'output'),
       name: annotatedPath,
       label: getDisplayLabel(annotatedPath)
-    }
-  })
+    })
+  }
+
+  return items
 })
 
 /**
