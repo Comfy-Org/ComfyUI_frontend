@@ -1067,7 +1067,8 @@ function buildPreflightActions(context: string): TestAction[] {
 function buildAgenticSystemPrompt(
   issueContext: string,
   subIssueFocus?: string,
-  qaGuide?: string
+  qaGuide?: string,
+  preflightNote?: string
 ): string {
   const focusSection = subIssueFocus
     ? `\n## Current Focus\nYou are reproducing this specific sub-issue: ${subIssueFocus}\nStay focused on this particular bug. When you have demonstrated it, return done.\n`
@@ -1153,7 +1154,7 @@ Return { "reasoning": "...", "action": { "action": "done", "reason": "..." } } w
 - For node resize bugs: use resizeNode on the bottom-right corner of a node.
 - For reroute/middle-click bugs: use middleClick on a link or slot.
 - Do NOT waste turns on generic exploration. Focus on reproducing the specific bug.
-${issueHints}${focusSection}${qaSection}
+${preflightNote || ''}${issueHints}${focusSection}${qaSection}
 ## Issue to Reproduce
 ${issueContext}`
 }
@@ -1220,10 +1221,17 @@ async function runAgenticLoop(
     await sleep(500)
   }
 
+  // Tell the agent what preflight already did so it doesn't repeat
+  const preflightNote =
+    preflight.length > 0
+      ? `\n## Already Done (by preflight)\nThe following actions were ALREADY executed before you started. Do NOT repeat them:\n${preflight.map((a) => `- ${a.action}${('id' in a && `: ${a.id}=${a.value}`) || ''}`).join('\n')}\nThe default workflow is loaded and settings are configured. Start with the REPRODUCTION steps immediately.\n`
+      : ''
+
   const systemInstruction = buildAgenticSystemPrompt(
     issueContext,
     subIssue?.focus,
-    qaGuideSummary
+    qaGuideSummary,
+    preflightNote
   )
 
   const genAI = new GoogleGenerativeAI(opts.apiKey)
