@@ -351,7 +351,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
   })
 
-test(
+  test(
     'subgraph transition (enter and exit)',
     { tag: ['@vue-nodes'] },
     async ({ comfyPage }, testInfo) => {
