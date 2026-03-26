@@ -1038,6 +1038,32 @@ function buildIssueSpecificHints(context: string): string {
   return `\n## Issue-Specific Action Plan\nBased on keyword analysis of this issue, you MUST follow these steps:\n${hints.map((h, i) => `${i + 1}. ${h}`).join('\n')}\nDo NOT skip these steps. They are the minimum required to attempt reproduction.\n`
 }
 
+function buildPreflightActions(context: string): TestAction[] {
+  const ctx = context.toLowerCase()
+  const actions: TestAction[] = []
+
+  // Enable Nodes 2.0 if issue mentions it
+  if (/nodes.*2\.0|vue.*node|new.*node|node.*beta/.test(ctx)) {
+    actions.push({
+      action: 'setSetting',
+      id: 'Comfy.NodeBeta.Enabled',
+      value: true
+    })
+  }
+
+  // Load default workflow for most reproduction scenarios
+  if (
+    /clone|z.?index|overlap|copy.*paste|paste|resize|drag|scroll.*leak|scroll.*text|spacebar|space.*pan|node.*shape|numeric/.test(
+      ctx
+    )
+  ) {
+    actions.push({ action: 'loadDefaultWorkflow' })
+    actions.push({ action: 'screenshot', name: 'preflight-default-workflow' })
+  }
+
+  return actions
+}
+
 function buildAgenticSystemPrompt(
   issueContext: string,
   subIssueFocus?: string,
@@ -1180,6 +1206,18 @@ async function runAgenticLoop(
     } catch {
       console.warn(`Could not load QA guide from ${opts.qaGuideFile}`)
     }
+  }
+
+  // Auto-execute prerequisite actions based on issue keywords BEFORE the
+  // agentic loop starts. This guarantees nodes are on canvas, settings are
+  // correct, etc. — the agent model often ignores prompt-only hints.
+  const preflight = buildPreflightActions(issueContext)
+  if (preflight.length > 0) {
+    console.warn(`Running ${preflight.length} preflight actions...`)
+    for (const action of preflight) {
+      await executeAction(page, action, outputDir)
+    }
+    await sleep(500)
   }
 
   const systemInstruction = buildAgenticSystemPrompt(
