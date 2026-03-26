@@ -653,7 +653,18 @@ export default defineConfig({
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
-      reporter: ['text', 'json', 'html']
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      include: ['src/**/*.{ts,vue}'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/**/*.stories.ts',
+        'src/**/*.d.ts',
+        'src/locales/**',
+        'src/lib/litegraph/**',
+        'src/assets/**'
+      ]
     },
     exclude: [
       '**/node_modules/**',
