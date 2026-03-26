@@ -76,6 +76,9 @@ export interface SimplifiedWidget<
   /** Optional serialization method for custom value handling */
   serializeValue?: () => unknown
 
+  /** NodeLocatorId for the node that owns this widget's execution outputs */
+  nodeLocatorId?: string
+
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
 
