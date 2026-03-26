@@ -22,12 +22,14 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-xs',
+          'comfy-multiline-input size-full resize-none text-xs',
           !hideLayoutField && 'pt-5'
         )
       "
       :placeholder
       :readonly="isReadOnly"
+      :spellcheck
+      data-testid="dom-widget-textarea"
       data-capture-wheel="true"
       @pointerdown.capture.stop="trackFocus"
       @pointermove.capture.stop
@@ -56,6 +58,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -101,6 +104,11 @@ function handleContextMenu(e: MouseEvent) {
   }
   e.preventDefault()
 }
+
+const settingStore = useSettingStore()
+const spellcheck = computed(() =>
+  settingStore.get('Comfy.TextareaWidget.Spellcheck')
+)
 
 function handleCopy() {
   copyToClipboard(modelValue.value)

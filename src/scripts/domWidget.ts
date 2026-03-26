@@ -1,6 +1,8 @@
 import _ from 'es-toolkit/compat'
-import { type Component, toRaw } from 'vue'
+import type { Component } from 'vue'
+import { effectScope, toRaw, watch } from 'vue'
 
+import { useDomValueBridge } from '@/composables/element/useDomValueBridge'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   LGraphNode,
@@ -410,6 +412,38 @@ LGraphNode.prototype.addDOMWidget = function <
       this.callback?.(this.value)
     }
   })
+
+  if (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement
+  ) {
+    let bridgeScope: ReturnType<typeof effectScope> | null = null
+
+    const valueElement = element as HTMLInputElement | HTMLTextAreaElement
+
+    function startBridge() {
+      if (bridgeScope?.active) return
+      bridgeScope = effectScope()
+      bridgeScope.run(() => {
+        const bridgedValue = useDomValueBridge(valueElement)
+        watch(bridgedValue, (newVal) => {
+          if (widget.value !== newVal) {
+            widget.value = newVal as V
+          }
+        })
+      })
+    }
+
+    function stopBridge() {
+      bridgeScope?.stop()
+      bridgeScope = null
+    }
+
+    startBridge()
+
+    this.onAdded = useChainCallback(this.onAdded, startBridge)
+    widget.onRemove = useChainCallback(widget.onRemove, stopBridge)
+  }
 
   return widget
 }

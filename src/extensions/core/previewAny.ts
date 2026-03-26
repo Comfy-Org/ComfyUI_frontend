@@ -57,14 +57,15 @@ useExtensionService().registerExtension({
         showValueWidget.hidden = true
         showValueWidget.options.hidden = true
         showValueWidget.options.read_only = true
-        showValueWidget.element.readOnly = true
+        if (showValueWidget.element) showValueWidget.element.readOnly = true
         showValueWidget.serialize = false
 
         showValueWidgetPlain.label = 'Preview'
         showValueWidgetPlain.hidden = false
         showValueWidgetPlain.options.hidden = false
         showValueWidgetPlain.options.read_only = true
-        showValueWidgetPlain.element.readOnly = true
+        if (showValueWidgetPlain.element)
+          showValueWidgetPlain.element.readOnly = true
         showValueWidgetPlain.serialize = false
       }
 
