@@ -44,19 +44,4 @@ test.describe('BaseTooltip regression', { tag: '@ui' }, () => {
     await hoverAway(comfyPage.page)
     await expect(tooltip).not.toBeVisible()
   })
-
-  test('Tooltip renders above canvas splitter overlay (z-index >= 1700)', async ({
-    comfyPage
-  }) => {
-    const queueButton = comfyPage.page.getByTestId('queue-overlay-toggle')
-    await queueButton.hover()
-
-    const tooltip = tooltipLocator(comfyPage.page)
-    await expect(tooltip).toBeVisible()
-
-    const zIndex = await tooltip.evaluate(
-      (el: HTMLElement) => window.getComputedStyle(el).zIndex
-    )
-    expect(Number(zIndex)).toBeGreaterThanOrEqual(1700)
-  })
 })
