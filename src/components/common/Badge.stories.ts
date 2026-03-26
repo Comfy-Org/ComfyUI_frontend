@@ -100,15 +100,15 @@ export const AllVariants: Story = {
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-center gap-1">
           <Badge label="NEW" variant="label" />
-          <span class="text-xs text-muted">label</span>
+          <span class="text-xs text-muted-foreground">label</span>
         </div>
         <div class="flex flex-col items-center gap-1">
           <Badge variant="dot" severity="danger" />
-          <span class="text-xs text-muted">dot</span>
+          <span class="text-xs text-muted-foreground">dot</span>
         </div>
         <div class="flex flex-col items-center gap-1">
           <Badge label="5" variant="circle" />
-          <span class="text-xs text-muted">circle</span>
+          <span class="text-xs text-muted-foreground">circle</span>
         </div>
       </div>
     `
