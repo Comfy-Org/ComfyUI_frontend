@@ -5,7 +5,7 @@ Audit the current changes (or a specified PR) for compliance with Architecture D
 ## Step 1: Gather the Diff
 
 - If a PR number is provided, run: `gh pr diff $PR_NUMBER`
-- Otherwise, run: `git diff main...HEAD` (or `git diff --cached` for staged changes)
+- Otherwise, run: `git diff origin/main...HEAD` (or `git diff --cached` for staged changes)
 
 ## Step 2: Priority 1 — ECS and Command-Pattern Compliance
 
