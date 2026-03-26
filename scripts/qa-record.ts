@@ -746,22 +746,22 @@ async function executeAction(
         await page.evaluate(
           ({ text, x, y, ms }) => {
             const el = document.createElement('div')
-            el.textContent = text
+            el.textContent = 'QA: ' + text
             Object.assign(el.style, {
               position: 'fixed',
               left: x + 'px',
               top: y + 'px',
               zIndex: '2147483646',
-              padding: '4px 10px',
-              borderRadius: '4px',
-              background: 'rgba(255, 60, 60, 0.9)',
-              color: '#fff',
-              fontSize: '13px',
-              fontWeight: '600',
-              fontFamily: 'system-ui, sans-serif',
+              padding: '3px 8px',
+              borderRadius: '3px',
+              background: 'rgba(0, 0, 0, 0.6)',
+              border: '1.5px dashed rgba(120, 200, 255, 0.8)',
+              color: 'rgba(120, 200, 255, 0.9)',
+              fontSize: '11px',
+              fontWeight: '500',
+              fontFamily: 'monospace',
               pointerEvents: 'none',
               whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
               transform: 'translateY(-100%) translateX(-50%)',
               animation: 'qa-ann-in 200ms ease-out'
             })
