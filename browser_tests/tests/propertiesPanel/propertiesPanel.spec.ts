@@ -174,7 +174,7 @@ test.describe('Properties panel', () => {
     }) => {
       // Clear selection via evaluate to avoid workflow-tab overlay
       await comfyPage.page.evaluate(() => {
-        window.app!.graph.deselectAll()
+        window.app!.canvas.deselectAll()
       })
       await comfyPage.nextFrame()
       await expect(panel.panelTitle).toContainText('Workflow Overview')
@@ -415,7 +415,7 @@ test.describe('Properties panel', () => {
       await expect(panel.panelTitle).toContainText('KSampler')
       // Clear selection via evaluate to avoid workflow-tab overlay
       await comfyPage.page.evaluate(() => {
-        window.app!.graph.deselectAll()
+        window.app!.canvas.deselectAll()
       })
       await comfyPage.nextFrame()
       await expect(panel.panelTitle).toContainText('Workflow Overview')
@@ -429,7 +429,7 @@ test.describe('Properties panel', () => {
 
       // Clear selection via evaluate to avoid workflow-tab overlay
       await comfyPage.page.evaluate(() => {
-        window.app!.graph.deselectAll()
+        window.app!.canvas.deselectAll()
       })
       await comfyPage.nextFrame()
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
