@@ -44,9 +44,9 @@ export class PropertiesPanelHelper {
     return this.root.locator(`[data-testid="${colorName}"]`)
   }
 
-  /** Settings tab: pinned switch */
+  /** Settings tab: pinned toggle (PrimeVue ToggleSwitch wrapper div) */
   get pinnedSwitch(): Locator {
-    return this.root.locator('button[role="switch"]').first()
+    return this.root.locator('[data-p-checked]').first()
   }
 
   /** Subgraph edit button (gear icon in header) */

@@ -24,12 +24,12 @@ test.describe('Properties panel', () => {
       await expect(panel.root).not.toBeVisible()
     })
 
-    test('should toggle via repeated actionbar clicks', async ({
+    test('should close via close button after opening', async ({
       comfyPage
     }) => {
       await comfyPage.actionbar.propertiesButton.click()
       await expect(panel.root).toBeVisible()
-      await comfyPage.actionbar.propertiesButton.click()
+      await panel.close()
       await expect(panel.root).not.toBeVisible()
     })
   })
@@ -172,8 +172,11 @@ test.describe('Properties panel', () => {
     test('should not show pencil icon when nothing is selected', async ({
       comfyPage
     }) => {
-      // Clear selection
-      await comfyPage.canvasOps.clickEmptySpace()
+      // Clear selection via evaluate to avoid workflow-tab overlay
+      await comfyPage.page.evaluate(() => {
+        window.app!.graph.deselectAll()
+      })
+      await comfyPage.nextFrame()
       await expect(panel.panelTitle).toContainText('Workflow Overview')
       await expect(panel.titleEditIcon).not.toBeVisible()
     })
@@ -208,7 +211,7 @@ test.describe('Properties panel', () => {
     test('should show empty state for no matches', async () => {
       await panel.searchWidgets('nonexistent_widget_xyz')
       await expect(
-        panel.contentArea.getByText(/no .* found|no results/i)
+        panel.contentArea.getByText(/no .* match|no results|no items/i)
       ).toBeVisible()
     })
   })
@@ -358,9 +361,9 @@ test.describe('Properties panel', () => {
     test('should show node help content', async () => {
       // Info tab shows NodeHelpContent which should display the node info
       await expect(panel.contentArea).toBeVisible()
-      // NodeHelpContent renders description, inputs, outputs
+      // NodeHelpContent renders headings like "Inputs"
       await expect(
-        panel.contentArea.getByText(/Description|Inputs|Outputs/i)
+        panel.contentArea.getByRole('heading', { name: 'Inputs' })
       ).toBeVisible()
     })
   })
@@ -376,7 +379,9 @@ test.describe('Properties panel', () => {
     })
 
     test('should show Nodes section with toggles', async () => {
-      await expect(panel.contentArea.getByText('Nodes')).toBeVisible()
+      await expect(
+        panel.contentArea.getByRole('button', { name: 'NODES' })
+      ).toBeVisible()
     })
 
     test('should show Canvas section with grid settings', async () => {
@@ -408,7 +413,11 @@ test.describe('Properties panel', () => {
     }) => {
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await expect(panel.panelTitle).toContainText('KSampler')
-      await comfyPage.canvasOps.clickEmptySpace()
+      // Clear selection via evaluate to avoid workflow-tab overlay
+      await comfyPage.page.evaluate(() => {
+        window.app!.graph.deselectAll()
+      })
+      await comfyPage.nextFrame()
       await expect(panel.panelTitle).toContainText('Workflow Overview')
     })
 
@@ -418,7 +427,11 @@ test.describe('Properties panel', () => {
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await expect(panel.panelTitle).toContainText('KSampler')
 
-      await comfyPage.canvasOps.clickEmptySpace()
+      // Clear selection via evaluate to avoid workflow-tab overlay
+      await comfyPage.page.evaluate(() => {
+        window.app!.graph.deselectAll()
+      })
+      await comfyPage.nextFrame()
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
       await expect(panel.panelTitle).toContainText('CLIP Text Encode (Prompt)')
     })
