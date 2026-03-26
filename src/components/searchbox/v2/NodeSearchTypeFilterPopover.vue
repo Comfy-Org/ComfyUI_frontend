@@ -37,7 +37,7 @@
           <span class="text-sm text-muted-foreground">
             {{
               t(
-                'g.itemSelected',
+                'g.itemsSelected',
                 { count: selectedValues.length },
                 selectedValues.length
               )

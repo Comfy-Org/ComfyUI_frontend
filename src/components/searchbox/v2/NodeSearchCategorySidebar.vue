@@ -24,28 +24,6 @@
       </RovingFocusItem>
     </div>
 
-    <!-- Source categories -->
-    <div
-      v-if="!hidePresets && sourceCategories.length > 0"
-      class="my-2 flex flex-col border-y border-border-subtle px-3 py-2"
-    >
-      <RovingFocusItem
-        v-for="preset in sourceCategories"
-        :key="preset.id"
-        as-child
-      >
-        <button
-          type="button"
-          :data-testid="`category-${preset.id}`"
-          :aria-current="selectedCategory === preset.id || undefined"
-          :class="categoryBtnClass(preset.id)"
-          @click="selectCategory(preset.id)"
-        >
-          {{ preset.label }}
-        </button>
-      </RovingFocusItem>
-    </div>
-
     <!-- Category tree -->
     <div
       role="tree"
@@ -53,9 +31,7 @@
       :class="
         cn(
           'flex flex-col px-3',
-          !hidePresets &&
-            !sourceCategories.length &&
-            'mt-2 border-t border-border-subtle pt-2'
+          !hidePresets && 'mt-2 border-t border-border-subtle pt-2'
         )
       "
     >
@@ -121,8 +97,6 @@ const nodeDefStore = useNodeDefStore()
 const topCategories = computed(() => [
   { id: DEFAULT_CATEGORY, label: t('g.mostRelevant') }
 ])
-
-const sourceCategories = computed<{ id: string; label: string }[]>(() => [])
 
 const categoryTree = computed<CategoryNode[]>(() => {
   const defs = nodeDefs ?? nodeDefStore.visibleNodeDefs

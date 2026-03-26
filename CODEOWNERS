@@ -51,6 +51,9 @@
 # Manager
 /src/workbench/extensions/manager/                @viva-jinyi @christian-byrne @ltdrdata
 
+# Model-to-node mappings (cloud team)
+/src/platform/assets/mappings/                    @deepme987
+
 # LLM Instructions (blank on purpose)
 .claude/
 .cursor/

@@ -55,7 +55,8 @@ export const testI18n = createI18n({
         blueprints: 'Blueprints',
         partnerNodes: 'Partner Nodes',
         remove: 'Remove',
-        itemSelected: '{count} item selected | {count} items selected',
+        itemsSelected:
+          'No items selected | {count} item selected | {count} items selected',
         clearAll: 'Clear all'
       }
     }
