@@ -4,7 +4,7 @@ import { basename } from 'path'
 import type { Locator, Page } from '@playwright/test'
 
 import type { KeyboardHelper } from './KeyboardHelper'
-import { getMimeType } from './mimeTypeUtil'
+import { getMimeType } from '../../../src/utils/mimeTypeUtil'
 
 export class ClipboardHelper {
   constructor(

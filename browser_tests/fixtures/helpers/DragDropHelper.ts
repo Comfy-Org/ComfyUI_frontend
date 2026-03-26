@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import type { Page } from '@playwright/test'
 
 import type { Position } from '../types'
-import { getMimeType } from './mimeTypeUtil'
+import { getMimeType } from '../../../src/utils/mimeTypeUtil'
 
 export class DragDropHelper {
   constructor(
