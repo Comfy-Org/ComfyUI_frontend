@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "최소 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "반복 패널티"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "생각 중",
+        "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "최소 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "반복 패널티"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "생각 중",
+        "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
       }
     },
     "outputs": {
