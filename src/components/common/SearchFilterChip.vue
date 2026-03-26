@@ -1,16 +1,27 @@
 <template>
-  <Chip removable @remove="emit('remove', $event)">
-    <Badge size="small" :class="semanticBadgeClass">
-      {{ badge }}
-    </Badge>
+  <span
+    class="inline-flex items-center gap-1 rounded-2xl bg-surface-700 py-0.5 pr-1 pl-2 text-xs"
+  >
+    <Badge :label="badge" :class="semanticBadgeClass" />
     {{ text }}
-  </Chip>
+    <button
+      type="button"
+      :aria-label="$t('g.remove')"
+      class="inline-flex cursor-pointer items-center justify-center rounded-full p-0.5 hover:bg-surface-600"
+      @click="emit('remove', $event)"
+    >
+      <i
+        class="icon-[lucide--x] size-3 text-muted-foreground"
+        aria-hidden="true"
+      />
+    </button>
+  </span>
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
-import Chip from 'primevue/chip'
 import { computed } from 'vue'
+
+import Badge from '@/components/common/Badge.vue'
 
 export interface SearchFilter {
   text: string
