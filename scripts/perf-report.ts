@@ -50,6 +50,7 @@ type MetricKey =
   | 'eventListeners'
   | 'totalBlockingTimeMs'
   | 'frameDurationMs'
+  | 'heapDeltaBytes'
 const REPORTED_METRICS: { key: MetricKey; label: string; unit: string }[] = [
   { key: 'styleRecalcs', label: 'style recalcs', unit: '' },
   { key: 'layouts', label: 'layouts', unit: '' },
@@ -58,7 +59,8 @@ const REPORTED_METRICS: { key: MetricKey; label: string; unit: string }[] = [
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'eventListeners', label: 'event listeners', unit: '' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
-  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' }
+  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' },
+  { key: 'heapDeltaBytes', label: 'heap delta', unit: 'bytes' }
 ]
 
 function groupByName(
@@ -134,7 +136,9 @@ function computeCV(stats: MetricStats): number {
 }
 
 function formatValue(value: number, unit: string): string {
-  return unit === 'ms' ? `${value.toFixed(0)}ms` : `${value.toFixed(0)}`
+  if (unit === 'ms') return `${value.toFixed(0)}ms`
+  if (unit === 'bytes') return formatBytes(value)
+  return `${value.toFixed(0)}`
 }
 
 function formatDelta(pct: number | null): string {
