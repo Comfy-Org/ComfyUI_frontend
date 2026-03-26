@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "最小概率"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重复惩罚"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "Top P"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "如果模型支持，则以思考模式运行。"
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "最小概率"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重复惩罚"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "Top P"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "如果模型支持，则以思考模式运行。"
       }
     },
     "outputs": {
