@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -9,7 +10,10 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { usePromotionStore } from '@/stores/promotionStore'
+import {
+  makePromotionEntryKey,
+  usePromotionStore
+} from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
@@ -1939,6 +1943,15 @@ export class LGraph
     const store = usePromotionStore()
     const nestedNodeId = String(nestedSubgraphNode.id)
     const graphId = this.rootGraph.id
+    const nestedEntries = store.getPromotions(graphId, nestedSubgraphNode.id)
+    const nextNestedEntries = [...nestedEntries]
+    const nestedEntryKeys = new Set(
+      nestedEntries.map((entry) => makePromotionEntryKey(entry))
+    )
+    const hostUpdates: Array<{
+      node: SubgraphNode
+      entries: PromotedWidgetSource[]
+    }> = []
 
     // Find all SubgraphNode instances that host `this` subgraph.
     // They live in any graph and have `type === this.id`.
@@ -1951,14 +1964,20 @@ export class LGraph
         if (!node.isSubgraphNode() || node.type !== this.id) continue
 
         const entries = store.getPromotions(graphId, node.id)
-        let changed = false
+        const movedEntries = entries.filter((entry) =>
+          movedNodeIds.has(entry.sourceNodeId)
+        )
+        if (movedEntries.length === 0) continue
+
+        for (const entry of movedEntries) {
+          const key = makePromotionEntryKey(entry)
+          if (nestedEntryKeys.has(key)) continue
+          nestedEntryKeys.add(key)
+          nextNestedEntries.push(entry)
+        }
+
         const nextEntries = entries.map((entry) => {
           if (!movedNodeIds.has(entry.sourceNodeId)) return entry
-
-          // Ensure the nested node also promotes the moved source
-          store.promote(graphId, nestedSubgraphNode.id, entry)
-
-          changed = true
           return {
             sourceNodeId: nestedNodeId,
             sourceWidgetName: entry.sourceWidgetName,
@@ -1967,11 +1986,16 @@ export class LGraph
           }
         })
 
-        if (changed) {
-          store.setPromotions(graphId, node.id, nextEntries)
-          node.rebuildInputWidgetBindings()
-        }
+        hostUpdates.push({ node, entries: nextEntries })
       }
+    }
+
+    if (nextNestedEntries.length !== nestedEntries.length)
+      store.setPromotions(graphId, nestedSubgraphNode.id, nextNestedEntries)
+
+    for (const { node, entries } of hostUpdates) {
+      store.setPromotions(graphId, node.id, entries)
+      node.rebuildInputWidgetBindings()
     }
   }
 
