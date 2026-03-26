@@ -336,6 +336,7 @@ describe('appModeStore', () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
       await nextTick()
+      vi.mocked(workflow.changeTracker!.checkState).mockClear()
 
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()

@@ -70,7 +70,8 @@ vi.mock('@/platform/telemetry', () => ({
 vi.mock('./useBuilderSave', () => ({
   useBuilderSave: () => ({
     save: mockSave,
-    saveAs: mockSaveAs
+    saveAs: mockSaveAs,
+    isSaving: { value: false }
   })
 }))
 

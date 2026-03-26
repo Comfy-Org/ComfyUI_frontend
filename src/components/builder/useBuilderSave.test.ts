@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useBuilderSave } from './useBuilderSave'
+
 const mockSetMode = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackEnterLinear = vi.hoisted(() => vi.fn())
@@ -80,11 +82,6 @@ vi.mock('./BuilderSaveDialogContent.vue', () => ({
 const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
-async function importComposable() {
-  const { useBuilderSave } = await import('./useBuilderSave')
-  return useBuilderSave()
-}
-
 describe('useBuilderSave', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -93,8 +90,7 @@ describe('useBuilderSave', () => {
 
   describe('save()', () => {
     it('does nothing when there is no active workflow', async () => {
-      mockActiveWorkflow.value = null
-      const { save } = await importComposable()
+      const { save } = useBuilderSave()
 
       await save()
 
@@ -104,7 +100,7 @@ describe('useBuilderSave', () => {
     it('saves workflow directly and shows success dialog', async () => {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
       mockSaveWorkflow.mockResolvedValueOnce(undefined)
-      const { save } = await importComposable()
+      const { save } = useBuilderSave()
 
       await save()
 
@@ -119,28 +115,49 @@ describe('useBuilderSave', () => {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
       const error = new Error('save failed')
       mockSaveWorkflow.mockRejectedValueOnce(error)
-      const { save } = await importComposable()
+      const { save } = useBuilderSave()
 
       await save()
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
       expect(mockShowConfirmDialog).not.toHaveBeenCalled()
     })
+
+    it('prevents concurrent saves', async () => {
+      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
+      let resolveSave!: () => void
+      mockSaveWorkflow.mockReturnValueOnce(
+        new Promise<void>((r) => {
+          resolveSave = r
+        })
+      )
+      const { save, isSaving } = useBuilderSave()
+
+      const firstSave = save()
+      expect(isSaving.value).toBe(true)
+
+      await save()
+      expect(mockSaveWorkflow).toHaveBeenCalledOnce()
+
+      resolveSave()
+      await firstSave
+      expect(isSaving.value).toBe(false)
+    })
   })
 
   describe('saveAs()', () => {
-    it('does nothing when there is no active workflow', async () => {
+    it('does nothing when there is no active workflow', () => {
       mockActiveWorkflow.value = null
-      const { saveAs } = await importComposable()
+      const { saveAs } = useBuilderSave()
 
       saveAs()
 
       expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 
-    it('opens save dialog with correct defaultFilename and defaultOpenAsApp', async () => {
+    it('opens save dialog with correct defaultFilename and defaultOpenAsApp', () => {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
-      const { saveAs } = await importComposable()
+      const { saveAs } = useBuilderSave()
 
       saveAs()
 
@@ -151,12 +168,12 @@ describe('useBuilderSave', () => {
       expect(props.defaultOpenAsApp).toBe(true)
     })
 
-    it('passes defaultOpenAsApp: false when initialMode is graph', async () => {
+    it('passes defaultOpenAsApp: false when initialMode is graph', () => {
       mockActiveWorkflow.value = {
         filename: 'my-workflow',
         initialMode: 'graph'
       }
-      const { saveAs } = await importComposable()
+      const { saveAs } = useBuilderSave()
 
       saveAs()
 
@@ -166,9 +183,9 @@ describe('useBuilderSave', () => {
   })
 
   describe('save dialog callbacks', () => {
-    async function getSaveDialogProps() {
+    function getSaveDialogProps() {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
-      const { saveAs } = await importComposable()
+      const { saveAs } = useBuilderSave()
       saveAs()
       return mockShowLayoutDialog.mock.calls[0][0].props as {
         onSave: (filename: string, openAsApp: boolean) => Promise<void>
@@ -178,7 +195,7 @@ describe('useBuilderSave', () => {
 
     it('onSave calls saveWorkflowAs then setWorkflowDefaultView on success', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = await getSaveDialogProps()
+      const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', true)
 
@@ -194,9 +211,22 @@ describe('useBuilderSave', () => {
       )
     })
 
+    it('onSave uses fresh activeWorkflow reference for setWorkflowDefaultView', async () => {
+      const newWorkflow = { filename: 'new-name', initialMode: 'app' }
+      mockSaveWorkflowAs.mockImplementationOnce(async () => {
+        mockActiveWorkflow.value = newWorkflow
+        return true
+      })
+      const { onSave } = getSaveDialogProps()
+
+      await onSave('new-name', true)
+
+      expect(mockSetWorkflowDefaultView).toHaveBeenCalledWith(newWorkflow, true)
+    })
+
     it('onSave does not mutate or close when saveWorkflowAs returns falsy', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(null)
-      const { onSave } = await getSaveDialogProps()
+      const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', false)
 
@@ -206,7 +236,7 @@ describe('useBuilderSave', () => {
 
     it('onSave closes dialog and shows success dialog after successful save', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = await getSaveDialogProps()
+      const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', true)
 
@@ -218,7 +248,7 @@ describe('useBuilderSave', () => {
 
     it('shows app success message when openAsApp is true', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = await getSaveDialogProps()
+      const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', true)
 
@@ -228,7 +258,7 @@ describe('useBuilderSave', () => {
 
     it('shows graph success message with exit builder button when openAsApp is false', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { onSave } = await getSaveDialogProps()
+      const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', false)
 
@@ -243,12 +273,30 @@ describe('useBuilderSave', () => {
     it('onSave toasts error and closes dialog on failure', async () => {
       const error = new Error('save-as failed')
       mockSaveWorkflowAs.mockRejectedValueOnce(error)
-      const { onSave } = await getSaveDialogProps()
+      const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', false)
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: SAVE_DIALOG_KEY })
+    })
+
+    it('prevents concurrent handleSaveAs calls', async () => {
+      let resolveSaveAs!: (v: boolean) => void
+      mockSaveWorkflowAs.mockReturnValueOnce(
+        new Promise<boolean>((r) => {
+          resolveSaveAs = r
+        })
+      )
+      const { onSave } = getSaveDialogProps()
+
+      const firstSave = onSave('new-name', true)
+
+      await onSave('other-name', true)
+      expect(mockSaveWorkflowAs).toHaveBeenCalledOnce()
+
+      resolveSaveAs(true)
+      await firstSave
     })
   })
 
@@ -256,7 +304,7 @@ describe('useBuilderSave', () => {
     async function getSuccessDialogProps() {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
       mockSaveWorkflow.mockResolvedValueOnce(undefined)
-      const { save } = await importComposable()
+      const { save } = useBuilderSave()
       await save()
       return mockShowConfirmDialog.mock.calls[0][0].footerProps as {
         onConfirm: () => void
@@ -289,7 +337,7 @@ describe('useBuilderSave', () => {
     async function getGraphSuccessDialogProps() {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
-      const { saveAs } = await importComposable()
+      const { saveAs } = useBuilderSave()
       saveAs()
       const { onSave } = mockShowLayoutDialog.mock.calls[0][0].props as {
         onSave: (filename: string, openAsApp: boolean) => Promise<void>

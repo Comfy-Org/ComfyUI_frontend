@@ -8,12 +8,15 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useDialogService } from '@/services/dialogService'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { ref } from 'vue'
 
 import { setWorkflowDefaultView } from './builderViewOptions'
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
 
 const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
+
+const isSaving = ref(false)
 
 export function useBuilderSave() {
   const { toastErrorHandler } = useErrorHandling()
@@ -29,18 +32,23 @@ export function useBuilderSave() {
   }
 
   async function save() {
+    if (isSaving.value) return
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return
 
+    isSaving.value = true
     try {
       await workflowService.saveWorkflow(workflow)
       showSuccessDialog()
     } catch (e) {
       toastErrorHandler(e)
+    } finally {
+      isSaving.value = false
     }
   }
 
   function saveAs() {
+    if (isSaving.value) return
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return
 
@@ -57,6 +65,8 @@ export function useBuilderSave() {
   }
 
   async function handleSaveAs(filename: string, openAsApp: boolean) {
+    if (isSaving.value) return
+    isSaving.value = true
     try {
       const workflow = workflowStore.activeWorkflow
       if (!workflow) return
@@ -66,12 +76,16 @@ export function useBuilderSave() {
       })
 
       if (!saved) return
-      setWorkflowDefaultView(workflow, openAsApp)
+      const activeWorkflow = workflowStore.activeWorkflow
+      if (!activeWorkflow) return
+      setWorkflowDefaultView(activeWorkflow, openAsApp)
       closeDialog(SAVE_DIALOG_KEY)
       showSuccessDialog(openAsApp ? 'app' : 'graph')
     } catch (e) {
       toastErrorHandler(e)
       closeDialog(SAVE_DIALOG_KEY)
+    } finally {
+      isSaving.value = false
     }
   }
 
@@ -120,5 +134,5 @@ export function useBuilderSave() {
     })
   }
 
-  return { save, saveAs }
+  return { save, saveAs, isSaving }
 }
