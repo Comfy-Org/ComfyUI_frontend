@@ -1,16 +1,4 @@
-const MIME_TO_EXT: Record<string, string> = {
-  'image/png': '.png',
-  'image/jpeg': '.jpg',
-  'image/webp': '.webp',
-  'image/gif': '.gif',
-  'image/svg+xml': '.svg',
-  'image/bmp': '.bmp',
-  'audio/mpeg': '.mp3',
-  'audio/wav': '.wav',
-  'audio/ogg': '.ogg',
-  'video/mp4': '.mp4',
-  'video/webm': '.webm'
-}
+import { getExtension } from '@/utils/mimeTypeUtil'
 
 function extractFilenameFromUri(uri: string, mimeType: string): string {
   try {
@@ -21,8 +9,7 @@ function extractFilenameFromUri(uri: string, mimeType: string): string {
     // Not a valid URL, fall through
   }
 
-  const ext = MIME_TO_EXT[mimeType] ?? ''
-  return `downloaded${ext}`
+  return `downloaded${getExtension(mimeType)}`
 }
 
 export async function extractFilesFromDragEvent(
