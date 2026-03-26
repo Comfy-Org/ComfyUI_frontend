@@ -99,6 +99,21 @@ describe('classifyChange', () => {
     expect(classifyChange(2, 10)).toBe('neutral')
     expect(classifyChange(-2, 10)).toBe('neutral')
   })
+
+  it('returns neutral when absDelta below minAbsDelta despite high z', () => {
+    // z=7.2 but only 1 unit change with minAbsDelta=5
+    expect(classifyChange(7.2, 10, 1, 5)).toBe('neutral')
+    expect(classifyChange(-7.2, 10, -1, 5)).toBe('neutral')
+  })
+
+  it('returns regression when absDelta meets minAbsDelta', () => {
+    expect(classifyChange(3, 10, 10, 5)).toBe('regression')
+  })
+
+  it('ignores effect size gate when minAbsDelta not provided', () => {
+    expect(classifyChange(3, 10)).toBe('regression')
+    expect(classifyChange(3, 10, 1)).toBe('regression')
+  })
 })
 
 describe('formatSignificance', () => {
