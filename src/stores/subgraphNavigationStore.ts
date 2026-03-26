@@ -61,13 +61,11 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     /**
-     * Suppression flag to prevent onNavigated from overwriting viewport
-     * state that was already saved by the workflow switch watcher.
-     * Cleared after a rAF cycle (covers the full async workflow load).
+     * Set by saveCurrentViewport() (called from beforeLoadNewGraph) to
+     * prevent onNavigated from re-saving a stale viewport during the
+     * workflow switch transition.
      */
-    let suppressNavigatedSave = false
-    let workflowSwitchCycle = 0
-
+    let isWorkflowSwitching = false
     // ── Helpers ──────────────────────────────────────────────────────
 
     /** Build a workflow-scoped cache key unique per workflow instance. */
@@ -136,19 +134,9 @@ export const useSubgraphNavigationStore = defineStore(
       if (!canvas) return
 
       const expectedKey = cacheKey(graphId)
-      const isStillTarget = () => cacheKey(getActiveGraphId()) === expectedKey
       const viewport = viewportCache.get(expectedKey)
       if (viewport) {
-        if (suppressNavigatedSave) {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              if (!isStillTarget()) return
-              applyViewport(viewport)
-            })
-          })
-        } else {
-          applyViewport(viewport)
-        }
+        applyViewport(viewport)
         return
       }
 
@@ -196,10 +184,10 @@ export const useSubgraphNavigationStore = defineStore(
       subgraph: Subgraph | undefined,
       prevSubgraph: Subgraph | undefined
     ) => {
-      // With flush:'sync', this fires immediately when activeSubgraph
-      // changes — before loadGraphData can overwrite canvas.ds. The
-      // suppressNavigatedSave flag handles the workflow switch watcher.
-      if (!suppressNavigatedSave) {
+      // During a workflow switch, beforeLoadNewGraph already saved the
+      // outgoing viewport — skip the save here to avoid caching stale
+      // canvas state from the transition.
+      if (!isWorkflowSwitching) {
         if (prevSubgraph) {
           saveViewport(prevSubgraph.id)
         } else if (!prevSubgraph && subgraph) {
@@ -210,7 +198,14 @@ export const useSubgraphNavigationStore = defineStore(
       const isInRootGraph = !subgraph
       if (isInRootGraph) {
         idStack.value.length = 0
-        restoreViewport(getCurrentRootGraphId())
+        if (isWorkflowSwitching) {
+          // Defer restore until after loadGraphData applies extra.ds
+          requestAnimationFrame(() => {
+            restoreViewport(getCurrentRootGraphId())
+          })
+        } else {
+          restoreViewport(getCurrentRootGraphId())
+        }
         return
       }
 
@@ -222,42 +217,20 @@ export const useSubgraphNavigationStore = defineStore(
         idStack.value = [subgraph.id]
       }
 
-      restoreViewport(subgraph.id)
+      if (isWorkflowSwitching) {
+        // Defer restore until after loadGraphData applies extra.ds
+        const targetId = subgraph.id
+        requestAnimationFrame(() => {
+          restoreViewport(targetId)
+        })
+      } else {
+        restoreViewport(subgraph.id)
+      }
     }
 
     // ── Watchers ─────────────────────────────────────────────────────
 
-    // Save viewport BEFORE workflow switch corrupts canvas.ds.
-    // Watch the workflow object (not just path) because multiple unsaved
-    // workflows share the same path. flush:'sync' ensures this fires
-    // before loadGraphData overwrites canvas.ds.
-    watch(
-      () => workflowStore.activeWorkflow,
-      (newWorkflow, oldWorkflow) => {
-        if (newWorkflow === oldWorkflow) return
-
-        // Save under the OLD workflow's identity while canvas is still valid.
-        const graphId = getActiveGraphId()
-        const viewport = getCurrentViewport()
-        if (viewport && oldWorkflow) {
-          viewportCache.set(cacheKey(graphId, oldWorkflow), viewport)
-        }
-
-        // Suppress onNavigated saves until the load cycle completes.
-        suppressNavigatedSave = true
-        const cycle = ++workflowSwitchCycle
-        requestAnimationFrame(() => {
-          if (workflowSwitchCycle === cycle) {
-            suppressNavigatedSave = false
-          }
-        })
-      },
-      { flush: 'sync' }
-    )
-
     // React to subgraph navigation (enter/exit/switch).
-    // flush:'sync' fires immediately when activeSubgraph changes (during
-    // setGraph), BEFORE loadGraphData can overwrite canvas.ds with extra.ds.
     watch(
       () => workflowStore.activeSubgraph,
       (newValue, oldValue) => {
@@ -332,6 +305,16 @@ export const useSubgraphNavigationStore = defineStore(
     watch(() => canvasStore.currentGraph, updateHash)
     watch(routeHash, () => navigateToHash(String(routeHash.value)))
 
+    /** Save the current viewport for the active graph/workflow. Called by
+     *  workflowService.beforeLoadNewGraph() before the canvas is overwritten. */
+    const saveCurrentViewport = () => {
+      saveViewport(getActiveGraphId())
+      isWorkflowSwitching = true
+      requestAnimationFrame(() => {
+        isWorkflowSwitching = false
+      })
+    }
+
     return {
       activeSubgraph,
       navigationStack,
@@ -339,6 +322,7 @@ export const useSubgraphNavigationStore = defineStore(
       exportState,
       saveViewport,
       restoreViewport,
+      saveCurrentViewport,
       updateHash,
       viewportCache
     }
