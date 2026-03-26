@@ -59,6 +59,17 @@ type TestAction =
     }
   | { action: 'addNode'; nodeName: string; x?: number; y?: number }
   | { action: 'cloneNode'; x: number; y: number }
+  | { action: 'copyPaste'; x?: number; y?: number }
+  | {
+      action: 'holdKeyAndDrag'
+      key: string
+      fromX: number
+      fromY: number
+      toX: number
+      toY: number
+    }
+  | { action: 'resizeNode'; x: number; y: number; dx: number; dy: number }
+  | { action: 'middleClick'; x: number; y: number }
 
 interface ActionResult {
   action: TestAction
@@ -239,8 +250,12 @@ Each step is an object with an "action" field:
 - { "action": "setSetting", "id": "Comfy.Setting.Id", "value": true } — changes a ComfyUI setting
 
 ### Compound actions (save multiple turns)
-- { "action": "addNode", "nodeName": "KSampler", "x": 640, "y": 400 } — double-clicks canvas to open node search, types name, presses Enter
-- { "action": "cloneNode", "x": 750, "y": 350 } — right-clicks node at coords and clicks Clone in context menu
+- { "action": "addNode", "nodeName": "KSampler", "x": 640, "y": 400 } — double-clicks canvas, types name, presses Enter
+- { "action": "cloneNode", "x": 750, "y": 350 } — right-clicks node, clicks Clone
+- { "action": "copyPaste", "x": 640, "y": 400 } — clicks node at coords, Ctrl+C then Ctrl+V
+- { "action": "holdKeyAndDrag", "key": " ", "fromX": 640, "fromY": 400, "toX": 400, "toY": 300 } — hold key + drag (Space=pan)
+- { "action": "resizeNode", "x": 200, "y": 380, "dx": 100, "dy": 50 } — drag node edge to resize
+- { "action": "middleClick", "x": 640, "y": 400 } — middle mouse button
 
 ### Utility actions
 - { "action": "wait", "ms": 1000 } — waits (use sparingly, max 3000ms)
@@ -787,6 +802,59 @@ async function executeAction(
         console.warn(`  Cloned node at (${step.x}, ${step.y})`)
         break
       }
+      case 'copyPaste': {
+        const cx = step.x ?? 640
+        const cy = step.y ?? 400
+        await page.mouse.click(cx, cy)
+        await sleep(200)
+        await page.keyboard.press('Control+c')
+        await sleep(300)
+        await page.keyboard.press('Control+v')
+        await sleep(500)
+        console.warn(`  Copy-pasted at (${cx}, ${cy})`)
+        break
+      }
+      case 'holdKeyAndDrag': {
+        await page.keyboard.down(step.key)
+        await sleep(100)
+        await page.mouse.move(step.fromX, step.fromY)
+        await page.mouse.down()
+        await sleep(100)
+        const hkSteps = 5
+        for (let i = 1; i <= hkSteps; i++) {
+          const hx = step.fromX + ((step.toX - step.fromX) * i) / hkSteps
+          const hy = step.fromY + ((step.toY - step.fromY) * i) / hkSteps
+          await page.mouse.move(hx, hy)
+          await sleep(50)
+        }
+        await page.mouse.up()
+        await page.keyboard.up(step.key)
+        await sleep(300)
+        console.warn(
+          `  Hold ${step.key} + drag (${step.fromX},${step.fromY})→(${step.toX},${step.toY})`
+        )
+        break
+      }
+      case 'resizeNode': {
+        // Click bottom-right corner of node, then drag
+        await page.mouse.move(step.x, step.y)
+        await page.mouse.down()
+        await sleep(100)
+        await page.mouse.move(step.x + step.dx, step.y + step.dy)
+        await sleep(100)
+        await page.mouse.up()
+        await sleep(300)
+        console.warn(
+          `  Resized node at (${step.x},${step.y}) by (${step.dx},${step.dy})`
+        )
+        break
+      }
+      case 'middleClick': {
+        await page.mouse.click(step.x, step.y, { button: 'middle' })
+        await sleep(300)
+        console.warn(`  Middle-clicked at (${step.x}, ${step.y})`)
+        break
+      }
       default:
         console.warn(`Unknown action: ${JSON.stringify(step)}`)
     }
@@ -960,8 +1028,12 @@ Each action is a JSON object with an "action" field:
 - { "action": "reload" } — reloads the page (for bugs that manifest on load)
 - { "action": "wait", "ms": 1000 } — waits (max 3000ms)
 - { "action": "screenshot", "name": "step-name" } — takes a named screenshot
-- { "action": "addNode", "nodeName": "KSampler", "x": 640, "y": 400 } — double-clicks canvas to open search, types node name, presses Enter (compound action)
+- { "action": "addNode", "nodeName": "KSampler", "x": 640, "y": 400 } — double-clicks canvas to open search, types node name, presses Enter
 - { "action": "cloneNode", "x": 750, "y": 350 } — right-clicks node at coords and clicks Clone
+- { "action": "copyPaste", "x": 640, "y": 400 } — clicks at coords then Ctrl+C, Ctrl+V
+- { "action": "holdKeyAndDrag", "key": " ", "fromX": 640, "fromY": 400, "toX": 400, "toY": 300 } — holds key (e.g. Space for pan) while dragging
+- { "action": "resizeNode", "x": 200, "y": 380, "dx": 100, "dy": 50 } — drags from node edge to resize
+- { "action": "middleClick", "x": 640, "y": 400 } — middle mouse button click
 - { "action": "done", "reason": "..." } — signals you are finished
 
 ## Response Format
@@ -985,6 +1057,10 @@ Return { "reasoning": "...", "action": { "action": "done", "reason": "..." } } w
 - For visual/rendering bugs (z-index, overlap, z-fighting): ALWAYS start with loadDefaultWorkflow to get nodes on canvas. You cannot reproduce visual bugs on an empty canvas.
 - To clone a node: use cloneNode at the node's coordinates (right-clicks → Clone).
 - To overlap nodes for z-index testing: use dragCanvas to move one node on top of another.
+- For copy-paste bugs: use copyPaste to select+copy+paste a node or group.
+- For panning bugs: use holdKeyAndDrag with key=" " (Space) to test spacebar panning.
+- For node resize bugs: use resizeNode on the bottom-right corner of a node.
+- For reroute/middle-click bugs: use middleClick on a link or slot.
 - Do NOT waste turns on generic exploration. Focus on reproducing the specific bug.
 ${focusSection}${qaSection}
 ## Issue to Reproduce
