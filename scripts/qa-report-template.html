@@ -66,6 +66,12 @@ h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em
 .copy-badge{background:oklch(100% 0 0/.06);border:1px solid var(--border);color:var(--fg-muted);padding:.3rem .4rem;border-radius:var(--r);cursor:pointer;display:inline-flex;align-items:center;transition:all var(--dur-base) var(--ease-out)}
 .copy-badge:hover{color:var(--primary-up);border-color:var(--primary);background:oklch(62% 0.21 265/.1)}
 .copy-badge.copied{color:var(--ok);border-color:var(--ok)}
+.vseek{width:100%;padding:0 .75rem;background:oklch(6% 0.01 265);border-top:1px solid var(--border-faint);position:relative;height:24px;display:flex;align-items:center}
+.vseek input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;position:relative;z-index:2}
+.vseek input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 4px oklch(0% 0 0/.3)}
+.vseek input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid var(--bg)}
+.vseek .vbuf{position:absolute;left:.75rem;right:.75rem;height:4px;border-radius:2px;pointer-events:none;top:50%;transform:translateY(-50%)}
+.vseek .vbuf-bar{height:100%;background:oklch(62% 0.21 265/.25);border-radius:2px;transition:width 200ms linear}
 .vctrl{display:flex;align-items:center;gap:.375rem;padding:.5rem .75rem;background:oklch(6% 0.01 265);border-top:1px solid var(--border-faint);flex-wrap:wrap}
 .vctrl button{background:oklch(100% 0 0/.06);border:1px solid var(--border);color:var(--fg-muted);font-size:.6875rem;font-weight:600;font-family:var(--font-mono);padding:.25rem .5rem;border-radius:.25rem;cursor:pointer;transition:all var(--dur-base) var(--ease-out);white-space:nowrap}
 .vctrl button:hover{color:var(--primary-up);border-color:var(--primary);background:oklch(62% 0.21 265/.1)}
@@ -96,8 +102,23 @@ document.querySelectorAll('.video-wrap video').forEach(v=>{
   const spdBtns=SPEEDS.map(s=>{const b=btn(s+'x',()=>{v.playbackRate=s;spdBtns.forEach(x=>x.classList.remove('active'));b.classList.add('active')});if(s===0.5)b.classList.add('active');return b});
   sep();c.appendChild(time);
   const hint=document.createElement('span');hint.className='vhint';hint.textContent='\u2190\u2192 frame \u2022 space play';c.appendChild(hint);
-  v.closest('.video-wrap').after(c);
-  v.ontimeupdate=()=>{const m=Math.floor(v.currentTime/60),s=Math.floor(v.currentTime%60),ms=Math.floor((v.currentTime%1)*1000);time.textContent=m+':'+(s<10?'0':'')+s+'.'+String(ms).padStart(3,'0')};
+  // Custom seekbar — works even without server range request support
+  const seekWrap=document.createElement('div');seekWrap.className='vseek';
+  const seekBar=document.createElement('input');seekBar.type='range';seekBar.min=0;seekBar.max=1000;seekBar.value=0;seekBar.step=1;
+  const bufWrap=document.createElement('div');bufWrap.className='vbuf';
+  const bufBar=document.createElement('div');bufBar.className='vbuf-bar';bufBar.style.width='0%';
+  bufWrap.appendChild(bufBar);seekWrap.appendChild(bufWrap);seekWrap.appendChild(seekBar);
+  let seeking=false;
+  seekBar.oninput=()=>{seeking=true;if(v.duration){v.currentTime=v.duration*(seekBar.value/1000)}};
+  seekBar.onchange=()=>{seeking=false};
+  v.closest('.video-wrap').after(seekWrap);
+  seekWrap.after(c);
+  v.ontimeupdate=()=>{
+    const m=Math.floor(v.currentTime/60),s=Math.floor(v.currentTime%60),ms=Math.floor((v.currentTime%1)*1000);
+    time.textContent=m+':'+(s<10?'0':'')+s+'.'+String(ms).padStart(3,'0');
+    if(!seeking&&v.duration){seekBar.value=Math.round((v.currentTime/v.duration)*1000)}
+  };
+  v.onprogress=v.onloadeddata=()=>{if(v.buffered.length&&v.duration){bufBar.style.width=(v.buffered.end(v.buffered.length-1)/v.duration*100)+'%'}};
   v.onplay=()=>{playBtn.textContent='\u23F8'};v.onpause=()=>{playBtn.textContent='\u25B6'};
   v.parentElement.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft'){e.preventDefault();v.pause();v.currentTime=Math.max(0,v.currentTime-FT)}
