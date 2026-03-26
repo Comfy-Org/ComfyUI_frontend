@@ -504,5 +504,17 @@
   "pysssss_SnapToGrid": {
     "name": "Always snap to grid",
     "tooltip": "When enabled, nodes will automatically align to the grid when moved or resized."
+  },
+  "Comfy_Network_Proxy_HttpUrl": {
+    "name": "HTTP/HTTPS proxy URL",
+    "tooltip": "Proxy URL for all outbound HTTP/HTTPS traffic (e.g. http://127.0.0.1:7890). Applies to model downloads, API calls, git operations, and custom nodes. Requires restart."
+  },
+  "Comfy_Network_Proxy_HttpsUrl": {
+    "name": "HTTPS proxy URL (optional)",
+    "tooltip": "Separate proxy URL for HTTPS traffic only. If empty, the HTTP proxy URL above is used for both HTTP and HTTPS. Requires restart."
+  },
+  "Comfy_Network_Proxy_NoProxy": {
+    "name": "No-proxy hosts",
+    "tooltip": "Comma-separated list of hosts that should bypass the proxy (e.g. localhost,127.0.0.1,*.local). Requires restart."
   }
 }

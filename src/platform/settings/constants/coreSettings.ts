@@ -1308,5 +1308,32 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.42.0'
+  },
+  {
+    id: 'Comfy.Network.Proxy.HttpUrl',
+    category: ['Comfy', 'Network'],
+    name: 'HTTP/HTTPS proxy URL',
+    tooltip:
+      'Proxy URL for all outbound HTTP/HTTPS traffic (e.g. http://127.0.0.1:7890). Applies to model downloads, API calls, git operations, and custom nodes. Requires restart.',
+    type: 'text',
+    defaultValue: ''
+  },
+  {
+    id: 'Comfy.Network.Proxy.HttpsUrl',
+    category: ['Comfy', 'Network'],
+    name: 'HTTPS proxy URL (optional)',
+    tooltip:
+      'Separate proxy URL for HTTPS traffic only. If empty, the HTTP proxy URL above is used for both HTTP and HTTPS. Requires restart.',
+    type: 'text',
+    defaultValue: ''
+  },
+  {
+    id: 'Comfy.Network.Proxy.NoProxy',
+    category: ['Comfy', 'Network'],
+    name: 'No-proxy hosts',
+    tooltip:
+      'Comma-separated list of hosts that should bypass the proxy (e.g. localhost,127.0.0.1,*.local). Requires restart.',
+    type: 'text',
+    defaultValue: ''
   }
 ]

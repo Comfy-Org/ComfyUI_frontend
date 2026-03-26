@@ -472,7 +472,10 @@ const zSettings = z.object({
   'Comfy.RightSidePanel.IsOpen': z.boolean(),
   'Comfy.RightSidePanel.ShowErrorsTab': z.boolean(),
   'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean(),
-  'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
+  'LiteGraph.Group.SelectChildrenOnClick': z.boolean(),
+  'Comfy.Network.Proxy.HttpUrl': z.string(),
+  'Comfy.Network.Proxy.HttpsUrl': z.string(),
+  'Comfy.Network.Proxy.NoProxy': z.string()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
