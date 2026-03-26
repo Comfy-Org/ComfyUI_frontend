@@ -8,6 +8,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import {
   createEventCapture,
@@ -260,6 +261,64 @@ describe('SubgraphWidgetPromotion', () => {
 
       // Widget should be removed (through event listeners)
       expect(subgraphNode.widgets).toHaveLength(0)
+    })
+  })
+
+  describe('Nested Subgraph Widget Promotion', () => {
+    it('should prune proxyWidgets referencing nodes not in subgraph on configure', () => {
+      // Reproduces the bug where packing nodes into a nested subgraph leaves
+      // stale proxyWidgets on the outer subgraph node referencing grandchild
+      // node IDs that no longer exist directly in the outer subgraph.
+      // Uses 3 inputs with only 1 having a linked widget entry, matching the
+      // real workflow structure where model/vae inputs don't resolve widgets.
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'clip', type: 'CLIP' },
+          { name: 'model', type: 'MODEL' },
+          { name: 'vae', type: 'VAE' }
+        ]
+      })
+
+      const { node: samplerNode } = createNodeWithWidget(
+        'Sampler',
+        'number',
+        42,
+        'number'
+      )
+      subgraph.add(samplerNode)
+      subgraph.inputNode.slots[1].connect(samplerNode.inputs[0], samplerNode)
+
+      // Add nodes without widget-connected inputs for the other slots
+      const modelNode = new LGraphNode('ModelNode')
+      modelNode.addInput('model', 'MODEL')
+      subgraph.add(modelNode)
+
+      const vaeNode = new LGraphNode('VAENode')
+      vaeNode.addInput('vae', 'VAE')
+      subgraph.add(vaeNode)
+
+      const outerNode = createTestSubgraphNode(subgraph)
+      const keptSamplerNodeId = String(samplerNode.id)
+
+      // Inject stale proxyWidgets referencing nodes that don't exist in
+      // this subgraph (they were packed into a nested subgraph)
+      outerNode.properties.proxyWidgets = [
+        ['999', 'text'],
+        ['998', 'text'],
+        [keptSamplerNodeId, 'widget']
+      ]
+
+      outerNode.configure(outerNode.serialize())
+
+      // Check widgets getter — stale entries should not produce views
+      const widgetSourceIds = outerNode.widgets
+        .filter(isPromotedWidgetView)
+        .filter((w) => !w.name.startsWith('$$'))
+        .map((w) => w.sourceNodeId)
+
+      expect(widgetSourceIds).not.toContain('999')
+      expect(widgetSourceIds).not.toContain('998')
+      expect(widgetSourceIds).toContain(keptSamplerNodeId)
     })
   })
 

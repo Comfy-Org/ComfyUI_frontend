@@ -138,15 +138,18 @@ describe(createPromotedWidgetView, () => {
     expect(view.name).toBe('myWidget')
   })
 
-  test('name uses displayName when provided', () => {
+  test('name uses identityName when provided, label uses displayName', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(
       subgraphNode,
       '1',
       'myWidget',
-      'Custom Label'
+      'Custom Label',
+      undefined,
+      'my_slot'
     )
-    expect(view.name).toBe('Custom Label')
+    expect(view.name).toBe('my_slot')
+    expect(view.label).toBe('Custom Label')
   })
 
   test('node getter returns the subgraphNode', () => {
@@ -334,11 +337,11 @@ describe(createPromotedWidgetView, () => {
     innerNode.addWidget('text', 'myWidget', 'val', () => {})
     const bareId = String(innerNode.id)
 
-    // No displayName → falls back to widgetName
+    // No displayName → label is undefined (rendering uses widget.label ?? widget.name)
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
-    expect(view1.label).toBe('myWidget')
+    expect(view1.label).toBeUndefined()
 
-    // With displayName → falls back to displayName
+    // With displayName → label falls back to displayName
     const view2 = createPromotedWidgetView(
       subgraphNode,
       bareId,
@@ -748,7 +751,7 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
-  test('full linked coverage does not prune unresolved independent fallback promotions', () => {
+  test('full linked coverage prunes promotions referencing non-existent nodes', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'widgetA', type: '*' }]
     })
@@ -773,9 +776,9 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
+    // Node 9999 does not exist in the subgraph, so its entry is pruned
     expect(promotions).toStrictEqual([
-      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
-      { sourceNodeId: '9999', sourceWidgetName: 'widgetA' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' }
     ])
   })
 
@@ -1012,7 +1015,9 @@ describe('SubgraphNode.widgets getter', () => {
 
     const afterRename = promotedWidgets(subgraphNode)[0]
     if (!afterRename) throw new Error('Expected linked promoted view')
-    expect(afterRename.name).toBe('seed_renamed')
+    // .name stays as identity (subgraph input name), .label updates for display
+    expect(afterRename.name).toBe('seed')
+    expect(afterRename.label).toBe('seed_renamed')
   })
 
   test('caches view objects across getter calls (stable references)', () => {
