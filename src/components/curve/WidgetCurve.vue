@@ -22,19 +22,21 @@
       :model-value="effectiveCurve.points"
       :disabled="isDisabled"
       :interpolation="effectiveCurve.interpolation"
+      :histogram="histogram"
       @update:model-value="onPointsChange"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import {
   singleValueExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
@@ -63,10 +65,26 @@ const modelValue = defineModel<CurveData>({
 
 const isDisabled = computed(() => !!widget.options?.disabled)
 
+const nodeOutputStore = useNodeOutputStore()
+const histogram = computed(() => {
+  const locatorId = widget.nodeLocatorId
+  if (!locatorId) return null
+  const output = nodeOutputStore.nodeOutputs[locatorId]
+  const data = output?.histogram
+  if (!Array.isArray(data) || data.length === 0) return null
+  return new Uint32Array(data)
+})
+
 const upstreamValue = useUpstreamValue(
   () => widget.linkedUpstream,
   singleValueExtractor(isCurveData)
 )
+
+watch(upstreamValue, (upstream) => {
+  if (isDisabled.value && upstream) {
+    modelValue.value = upstream
+  }
+})
 
 const effectiveCurve = computed(() =>
   isDisabled.value && upstreamValue.value
