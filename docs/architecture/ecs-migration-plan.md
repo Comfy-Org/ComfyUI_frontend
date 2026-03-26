@@ -460,6 +460,93 @@ event listeners instead of callbacks.
 - Callback order remains: output validation -> input validation -> commit ->
   output change notification -> input change notification.
 
+### Extension Migration Examples (old -> new)
+
+The bridge keeps legacy callbacks working, but extension authors can migrate
+incrementally to ECS-native patterns.
+
+#### 1) Widget lookup by name
+
+```ts
+// Legacy pattern
+const seedWidget = node.widgets?.find((w) => w.name === 'seed')
+seedWidget?.setValue(42)
+
+// ECS pattern (using the bridge/world widget lookup index)
+const seedWidgetId = world.widgetIndex.getByNodeAndName(nodeId, 'seed')
+if (seedWidgetId) {
+  const widgetValue = world.getComponent(seedWidgetId, WidgetValue)
+  if (widgetValue) {
+    world.setComponent(seedWidgetId, WidgetValue, {
+      ...widgetValue,
+      value: 42
+    })
+  }
+}
+```
+
+#### 2) `onConnectionsChange` callback
+
+```ts
+// Legacy pattern
+nodeType.prototype.onConnectionsChange = function (
+  side,
+  slot,
+  connected,
+  linkInfo
+) {
+  updateExtensionState(this.id, side, slot, connected, linkInfo)
+}
+
+// ECS pattern
+lifecycleEvents.on('connection.changed', (event) => {
+  if (event.nodeId !== nodeId) return
+  updateExtensionState(
+    event.nodeId,
+    event.side,
+    event.slotIndex,
+    event.connected,
+    event.linkInfo
+  )
+})
+```
+
+#### 3) `onRemoved` callback
+
+```ts
+// Legacy pattern
+nodeType.prototype.onRemoved = function () {
+  cleanupExtensionResources(this.id)
+}
+
+// ECS pattern
+lifecycleEvents.on('entity.removed', (event) => {
+  if (event.kind !== 'node' || event.entityId !== nodeId) return
+  cleanupExtensionResources(event.entityId)
+})
+```
+
+#### 4) `graph._version++`
+
+```ts
+// Legacy pattern (do not add new usages)
+graph._version++
+
+// Bridge-safe transitional pattern (Phase 0a)
+graph.incrementVersion()
+
+// ECS-native pattern: mutate through command/system API.
+// VersionSystem bumps once at transaction commit.
+executor.run({
+  type: 'SetWidgetValue',
+  execute(world) {
+    const value = world.getComponent(widgetId, WidgetValue)
+    if (!value) return
+    world.setComponent(widgetId, WidgetValue, { ...value, value: 42 })
+  }
+})
+```
+
 **Question to resolve after compatibility parity:**
 
 - Should ECS-native lifecycle events stay synchronous after bridge removal, or

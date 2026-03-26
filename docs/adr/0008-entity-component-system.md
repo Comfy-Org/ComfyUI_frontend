@@ -69,14 +69,16 @@ Components are plain data objects — no methods, no back-references to parent e
 
 #### Shared Components
 
-- **Position** — `{ pos: Point, size: Size, bounding: Rectangle }` — used by Node, Reroute, Group
+- **Position** — `{ pos: Point }` — used by Node, Reroute, Group
+- **Dimensions** — `{ size: Size, bounding: Rectangle }` — used by Node, Group
 - **Visual** — rendering properties specific to each entity kind (separate interfaces, shared naming convention)
 
 #### Node
 
 | Component         | Data (from `LGraphNode`)                            |
 | ----------------- | --------------------------------------------------- |
-| `Position`        | `pos`, `size`, `_bounding`                          |
+| `Position`        | `pos`                                               |
+| `Dimensions`      | `size`, `_bounding`                                 |
 | `NodeVisual`      | `color`, `bgcolor`, `boxcolor`, `title`             |
 | `NodeType`        | `type`, `category`, `nodeData`, `description`       |
 | `Connectivity`    | slot entity refs (replaces `inputs[]`, `outputs[]`) |
@@ -121,7 +123,7 @@ A node carrying a subgraph gains these additional components. Subgraphs are not 
 
 | Component       | Data (from `Reroute`)             |
 | --------------- | --------------------------------- |
-| `Position`      | (shared)                          |
+| `Position`      | `pos` (shared)                    |
 | `RerouteLinks`  | `parentId`, input/output link IDs |
 | `RerouteVisual` | `color`, badge config             |
 
@@ -129,7 +131,8 @@ A node carrying a subgraph gains these additional components. Subgraphs are not 
 
 | Component       | Data (from `LGraphGroup`)           |
 | --------------- | ----------------------------------- |
-| `Position`      | (shared)                            |
+| `Position`      | `pos` (shared)                      |
+| `Dimensions`    | `size`, `bounding`                  |
 | `GroupMeta`     | `title`, `font`, `font_size`        |
 | `GroupVisual`   | `color`                             |
 | `GroupChildren` | child entity refs (nodes, reroutes) |
@@ -142,11 +145,11 @@ A central registry (the "World") maps entity IDs to their component sets. One Wo
 
 Systems are pure functions that query the World for entities with specific component combinations. Initial candidates:
 
-- **RenderSystem** — queries `Position` + `*Visual` components
+- **RenderSystem** — queries `Position` + `Dimensions` (where present) + `*Visual` components
 - **SerializationSystem** — queries all components to produce/consume workflow JSON
 - **ExecutionSystem** — queries `Execution` + `Connectivity` to determine run order
-- **LayoutSystem** — queries `Position` + structural components for auto-layout
-- **SelectionSystem** — queries `Position` for hit-testing
+- **LayoutSystem** — queries `Position` + `Dimensions` + structural components for auto-layout
+- **SelectionSystem** — queries `Position` for point entities and `Position` + `Dimensions` for box hit-testing
 
 System design is deferred to a future ADR.
 
@@ -192,6 +195,19 @@ For the full design showing how each lifecycle scenario maps to a command, see [
 - Learning curve for contributors unfamiliar with ECS patterns
 - Migration period where both OOP and ECS patterns coexist, increasing cognitive load
 - Widgets and Slots need synthetic IDs, adding ID management complexity
+
+### Render-Loop Performance Implications and Mitigations
+
+Replacing direct property reads (`node.pos`) with component lookups (`world.getComponent(nodeId, Position)`) does add per-read overhead in the hot render path. In modern JS engines, hot `Map.get()` paths are heavily optimized and are often within a low constant factor of object property reads, but this ADR treats render-loop cost as a first-class risk rather than assuming it is free.
+
+Planned mitigations for the ECS render path:
+
+1. Pre-collect render queries into frame-stable caches (`visibleNodeIds`, `visibleLinkIds`, and resolved component references) and rebuild only on topology/layout dirty signals, not on every draw call.
+2. Keep archetype-style buckets for common render signatures (for example: `Node = Position+Dimensions+NodeVisual`, `Reroute = Position+RerouteVisual`) so systems iterate arrays instead of probing unrelated entities.
+3. Allow a hot-path storage upgrade behind the World API (for example, SoA-style typed arrays for `Position` and `Dimensions`) if profiling shows `Map.get()` dominates frame time.
+4. Gate migration of each render concern with profiling parity checks against the legacy path (same workflow, same viewport, same frame budget).
+
+The design goal is to preserve ECS modularity while keeping render throughput within existing frame-time budgets.
 
 ## Notes
 
