@@ -19,7 +19,15 @@
 import { chromium } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { readFileSync, mkdirSync, readdirSync, renameSync, statSync } from 'fs'
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  readdirSync,
+  renameSync,
+  statSync
+} from 'fs'
+import { execSync } from 'child_process'
 
 // ── Types ──
 
@@ -391,6 +399,155 @@ const FALLBACK_STEPS: Record<RecordMode, TestAction[]> = {
 // ── Playwright helpers ──
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+interface NarrationSegment {
+  turn: number
+  timestampMs: number
+  text: string
+}
+
+// Collected during recording, used for TTS post-processing
+const narrationSegments: NarrationSegment[] = []
+let recordingStartMs = 0
+
+async function showSubtitle(page: Page, text: string, turn: number) {
+  const safeText = text.slice(0, 120).replace(/'/g, "\\'").replace(/\n/g, ' ')
+  const encoded = encodeURIComponent(safeText)
+
+  // Track for TTS post-processing
+  narrationSegments.push({
+    turn,
+    timestampMs: Date.now() - recordingStartMs,
+    text: safeText
+  })
+
+  await page.addScriptTag({
+    content: `(function(){
+      var id='qa-subtitle';
+      var el=document.getElementById(id);
+      if(!el){
+        el=document.createElement('div');
+        el.id=id;
+        Object.assign(el.style,{position:'fixed',bottom:'32px',left:'50%',transform:'translateX(-50%)',zIndex:'2147483646',maxWidth:'90%',padding:'6px 14px',borderRadius:'6px',background:'rgba(0,0,0,0.8)',color:'rgba(255,255,255,0.95)',fontSize:'12px',fontFamily:'system-ui,sans-serif',fontWeight:'400',lineHeight:'1.4',pointerEvents:'none',textAlign:'center',transition:'opacity 0.3s',whiteSpace:'normal'});
+        document.body.appendChild(el);
+      }
+      var msg=decodeURIComponent('${encoded}');
+      el.textContent='['+${turn}+'] '+msg;
+      el.style.opacity='1';
+    })()`
+  })
+}
+
+async function generateNarrationAudio(
+  segments: NarrationSegment[],
+  outputDir: string,
+  apiKey: string
+): Promise<string | null> {
+  if (segments.length === 0) return null
+
+  const narrationDir = `${outputDir}/narration`
+  mkdirSync(narrationDir, { recursive: true })
+
+  // Save narration metadata
+  writeFileSync(
+    `${narrationDir}/segments.json`,
+    JSON.stringify(segments, null, 2)
+  )
+
+  // Generate TTS using OpenAI API (high quality, fast)
+  const ttsKey = process.env.OPENAI_API_KEY
+  if (!ttsKey) {
+    console.warn('  OPENAI_API_KEY not set, skipping TTS narration')
+    return null
+  }
+
+  const audioFiles: Array<{ path: string; offsetMs: number }> = []
+
+  for (const seg of segments) {
+    const audioPath = `${narrationDir}/turn-${seg.turn}.mp3`
+    try {
+      const resp = await fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${ttsKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'tts-1',
+          voice: 'nova',
+          input: seg.text,
+          speed: 1.15
+        })
+      })
+      if (!resp.ok)
+        throw new Error(`TTS API ${resp.status}: ${await resp.text()}`)
+      const audioBuffer = Buffer.from(await resp.arrayBuffer())
+      writeFileSync(audioPath, audioBuffer)
+      audioFiles.push({ path: audioPath, offsetMs: seg.timestampMs })
+      console.warn(
+        `  TTS [${seg.turn}]: ${audioPath} (${audioBuffer.length} bytes)`
+      )
+    } catch (e) {
+      console.warn(
+        `  TTS [${seg.turn}] failed: ${e instanceof Error ? e.message.slice(0, 80) : e}`
+      )
+    }
+  }
+
+  if (audioFiles.length === 0) return null
+
+  // Build ffmpeg filter to mix all audio clips at correct timestamps
+  const inputArgs: string[] = []
+  const filterParts: string[] = []
+
+  for (let i = 0; i < audioFiles.length; i++) {
+    inputArgs.push('-i', audioFiles[i].path)
+    const delaySec = (audioFiles[i].offsetMs / 1000).toFixed(3)
+    filterParts.push(
+      `[${i}]adelay=${audioFiles[i].offsetMs}|${audioFiles[i].offsetMs}[a${i}]`
+    )
+  }
+
+  const mixInputs = audioFiles.map((_, i) => `[a${i}]`).join('')
+  const filter = `${filterParts.join(';')};${mixInputs}amix=inputs=${audioFiles.length}:normalize=0[aout]`
+
+  const mixedAudio = `${narrationDir}/mixed.mp3`
+  try {
+    execSync(
+      `ffmpeg -y ${inputArgs.join(' ')} -filter_complex "${filter}" -map "[aout]" "${mixedAudio}" 2>/dev/null`,
+      { timeout: 30000 }
+    )
+    console.warn(`  TTS mixed: ${mixedAudio}`)
+    return mixedAudio
+  } catch (e) {
+    console.warn(
+      `  TTS mix failed: ${e instanceof Error ? e.message.slice(0, 80) : e}`
+    )
+    return null
+  }
+}
+
+function mergeAudioIntoVideo(
+  videoPath: string,
+  audioPath: string,
+  outputPath: string
+): boolean {
+  try {
+    execSync(
+      `ffmpeg -y -i "${videoPath}" -i "${audioPath}" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest "${outputPath}" 2>/dev/null`,
+      { timeout: 60000 }
+    )
+    // Replace original with narrated version
+    renameSync(outputPath, videoPath)
+    console.warn(`  Narrated video: ${videoPath}`)
+    return true
+  } catch (e) {
+    console.warn(
+      `  Audio merge failed: ${e instanceof Error ? e.message.slice(0, 80) : e}`
+    )
+    return false
+  }
+}
 
 async function openComfyMenu(page: Page) {
   const menuTrigger = page.locator('.comfy-menu-button-wrapper')
@@ -1354,6 +1511,8 @@ async function runAgenticLoop(
       const parsed = JSON.parse(responseText)
       if (parsed.reasoning) {
         console.warn(`  Reasoning: ${parsed.reasoning.slice(0, 150)}`)
+        // Show reasoning as subtitle overlay in the video
+        await showSubtitle(page, parsed.reasoning, turn)
       }
       actionObj = parsed.action || parsed.actions?.[0] || parsed
       if (!actionObj?.action) {
@@ -1552,7 +1711,15 @@ async function launchSessionAndLogin(
   >
   page: Page
 }> {
-  const browser = await chromium.launch({ headless: true })
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-gpu',
+      '--disable-dev-shm-usage'
+    ]
+  })
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
     recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } }
@@ -1658,6 +1825,8 @@ async function main() {
           path: `${opts.outputDir}/debug-after-login-reproduce${sessionLabel}.png`
         })
         console.warn('Editor ready — starting agentic loop')
+        recordingStartMs = Date.now()
+        narrationSegments.length = 0
         await runAgenticLoop(page, opts, opts.outputDir, subIssue)
         await sleep(2000)
       } finally {
@@ -1667,6 +1836,28 @@ async function main() {
 
       knownNames.add(videoName)
       renameLatestWebm(opts.outputDir, videoName, knownNames)
+
+      // Post-process: add TTS narration audio to the video
+      if (narrationSegments.length > 0) {
+        const videoPath = `${opts.outputDir}/${videoName}`
+        if (statSync(videoPath, { throwIfNoEntry: false })) {
+          console.warn(
+            `Generating TTS narration for ${narrationSegments.length} segments...`
+          )
+          const audioPath = await generateNarrationAudio(
+            narrationSegments,
+            opts.outputDir,
+            opts.apiKey
+          )
+          if (audioPath) {
+            mergeAudioIntoVideo(
+              videoPath,
+              audioPath,
+              `${opts.outputDir}/${videoName.replace('.webm', '-narrated.webm')}`
+            )
+          }
+        }
+      }
     }
   } else {
     // Before/after batch mode (unchanged)
