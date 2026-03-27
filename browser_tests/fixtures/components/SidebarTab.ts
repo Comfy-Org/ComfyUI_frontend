@@ -197,3 +197,35 @@ export class AssetsSidebarTab extends SidebarTab {
     await this.generatedTab.waitFor({ state: 'visible' })
   }
 }
+
+export class JobHistorySidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'job-history')
+  }
+
+  get root() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  get list() {
+    return this.page.getByTestId('job-assets-list')
+  }
+
+  get jobRows() {
+    return this.root.locator('[data-job-id]')
+  }
+
+  jobRow(jobId: string) {
+    return this.root.locator(`[data-job-id="${jobId}"]`)
+  }
+
+  override async open() {
+    await super.open()
+    await this.list.waitFor({ state: 'visible' })
+  }
+
+  override async close() {
+    await super.close()
+    await this.list.waitFor({ state: 'hidden' })
+  }
+}

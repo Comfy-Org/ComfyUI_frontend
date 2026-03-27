@@ -2,6 +2,7 @@
   <div
     :ref="containerProps.ref"
     :style="containerProps.style"
+    data-testid="job-assets-list"
     class="h-full overflow-y-auto"
     @scroll="onListScroll"
   >
