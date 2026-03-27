@@ -2,7 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import { expectWidgetBelowHeader } from '../helpers/subgraphTestUtils'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 
 const WORKFLOW = 'subgraphs/test-values-input-subgraph'
 const RENAMED_LABEL = 'my_seed'
@@ -41,7 +41,7 @@ test.describe(
       await expect(seedWidget).toBeVisible()
 
       // Verify widget is in the node body, not the header
-      await expectWidgetBelowHeader(sgNode, seedWidget)
+      await SubgraphHelper.expectWidgetBelowHeader(sgNode, seedWidget)
 
       // 3. Enter the subgraph and rename the seed slot.
       //    The subgraph IO rename uses canvas.prompt() which requires the
@@ -98,7 +98,7 @@ test.describe(
       const seedWidgetAfter = sgNodeAfter.getByLabel('seed', { exact: true })
       await expect(seedWidgetAfter).toBeVisible()
 
-      await expectWidgetBelowHeader(sgNodeAfter, seedWidgetAfter)
+      await SubgraphHelper.expectWidgetBelowHeader(sgNodeAfter, seedWidgetAfter)
     })
   }
 )

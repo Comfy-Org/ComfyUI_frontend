@@ -2,7 +2,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import { packAllInteriorNodes } from '../helpers/subgraphTestUtils'
 
 /**
  * Regression test for PR #10532:
@@ -62,7 +61,7 @@ test.describe(
       }).toPass({ timeout: 5000 })
 
       // 2. Pack all interior nodes into a nested subgraph
-      await packAllInteriorNodes(comfyPage, HOST_NODE_ID)
+      await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
 
       // 6. Re-enable Vue nodes and verify values are preserved
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -104,7 +103,7 @@ test.describe(
       await expect(nodeLocator).toBeVisible()
 
       // Pack all interior nodes into a nested subgraph
-      await packAllInteriorNodes(comfyPage, HOST_NODE_ID)
+      await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
 
       // Verify all proxyWidgets entries resolve
       await expect(async () => {

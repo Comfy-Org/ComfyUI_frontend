@@ -2,10 +2,10 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { convertDefaultKSamplerToSubgraph } from '../helpers/subgraphTestUtils'
 
 async function createSubgraphAndNavigateInto(comfyPage: ComfyPage) {
-  const subgraphNode = await convertDefaultKSamplerToSubgraph(comfyPage)
+  const subgraphNode =
+    await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
   await subgraphNode.navigateIntoSubgraph()
   return subgraphNode
 }

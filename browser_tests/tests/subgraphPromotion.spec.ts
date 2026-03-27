@@ -8,7 +8,6 @@ import {
   getPromotedWidgetCount,
   getPromotedWidgets
 } from '../helpers/promotedWidgets'
-import { serializeAndReload } from '../helpers/subgraphTestUtils'
 
 test.describe(
   'Subgraph Widget Promotion',
@@ -513,7 +512,7 @@ test.describe(
         const beforePromoted = await getPromotedWidgetNames(comfyPage, '11')
         expect(beforePromoted).toContain('text')
 
-        await serializeAndReload(comfyPage)
+        await comfyPage.subgraph.serializeAndReload()
 
         const afterPromoted = await getPromotedWidgetNames(comfyPage, '11')
         expect(afterPromoted).toContain('text')
@@ -533,7 +532,7 @@ test.describe(
         const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
         expect(beforeSnapshot.length).toBeGreaterThan(0)
 
-        await serializeAndReload(comfyPage)
+        await comfyPage.subgraph.serializeAndReload()
 
         const afterSnapshot = await getPromotedWidgets(comfyPage, '11')
         expect(afterSnapshot).toEqual(beforeSnapshot)

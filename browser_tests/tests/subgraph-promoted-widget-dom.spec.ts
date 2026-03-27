@@ -1,11 +1,8 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
-import {
-  convertDefaultKSamplerToSubgraph,
-  expectWidgetBelowHeader
-} from '../helpers/subgraphTestUtils'
 
 test.describe(
   'Subgraph promoted widget DOM position',
@@ -18,7 +15,8 @@ test.describe(
     test('Promoted seed widget renders in node body, not header', async ({
       comfyPage
     }) => {
-      const subgraphNode = await convertDefaultKSamplerToSubgraph(comfyPage)
+      const subgraphNode =
+        await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
 
       // Enable Vue nodes now that the subgraph has been created
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -41,7 +39,7 @@ test.describe(
       await expect(seedWidget).toBeVisible()
 
       // Verify widget is inside the node body, not the header
-      await expectWidgetBelowHeader(nodeLocator, seedWidget)
+      await SubgraphHelper.expectWidgetBelowHeader(nodeLocator, seedWidget)
     })
   }
 )

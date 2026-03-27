@@ -10,7 +10,6 @@ import {
   getPseudoPreviewWidgets,
   getNonPreviewPromotedWidgets
 } from '../helpers/promotedWidgets'
-import { serializeAndReload } from '../helpers/subgraphTestUtils'
 
 const domPreviewSelector = '.image-preview'
 
@@ -82,7 +81,7 @@ test.describe(
           initialWidgets
         )
 
-        await serializeAndReload(comfyPage)
+        await comfyPage.subgraph.serializeAndReload()
 
         const afterFirst = await getPromotedWidgets(comfyPage, '11')
         await expectPromotedWidgetsToResolveToInteriorNodes(
@@ -91,7 +90,7 @@ test.describe(
           afterFirst
         )
 
-        await serializeAndReload(comfyPage)
+        await comfyPage.subgraph.serializeAndReload()
 
         const afterSecond = await getPromotedWidgets(comfyPage, '11')
         await expectPromotedWidgetsToResolveToInteriorNodes(

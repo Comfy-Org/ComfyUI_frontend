@@ -2,8 +2,8 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 import { TestIds } from '../fixtures/selectors'
-import { collectConsoleWarnings } from '../helpers/subgraphTestUtils'
 
 /**
  * Regression test for legacy-prefixed proxyWidget normalization.
@@ -31,7 +31,7 @@ test.describe(
     test('Loads without console warnings about failed widget resolution', async ({
       comfyPage
     }) => {
-      const { warnings } = collectConsoleWarnings(comfyPage.page)
+      const { warnings } = SubgraphHelper.collectConsoleWarnings(comfyPage.page)
 
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
