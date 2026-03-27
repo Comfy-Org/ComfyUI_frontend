@@ -29,6 +29,8 @@ export const TestIds = {
     confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
+    errorOverlayDismiss: 'error-overlay-dismiss',
+    errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     errorCardFindOnGithub: 'error-card-find-on-github',
@@ -62,6 +64,8 @@ export const TestIds = {
     colorRed: 'red'
   },
   widgets: {
+    container: 'node-widgets',
+    widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',

@@ -5,7 +5,7 @@ import type {
   Page
 } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { TestIds } from './selectors'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
@@ -40,7 +40,7 @@ import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
 import type { WorkspaceStore } from '../types/globals'
 
-dotenv.config()
+dotenvConfig()
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -452,12 +452,13 @@ export const comfyPageFixture = base.extend<{
 
     await comfyPage.setup()
 
-    const isPerf = testInfo.tags.includes('@perf')
-    if (isPerf) await comfyPage.perf.init()
+    const needsPerf =
+      testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
+    if (needsPerf) await comfyPage.perf.init()
 
     await use(comfyPage)
 
-    if (isPerf) await comfyPage.perf.dispose()
+    if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

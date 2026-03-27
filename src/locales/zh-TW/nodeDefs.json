@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "數值轉換",
+    "inputs": {
+      "value": {
+        "name": "數值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "切換",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "曲線編輯器",
+    "inputs": {
+      "curve": {
+        "name": "曲線"
+      },
+      "histogram": {
+        "name": "直方圖"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "曲線",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "根據文字提示，為現有影片無縫延伸內容。",
+    "display_name": "Grok 影片延伸",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片延伸的模型。"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述影片接下來應該發生什麼的文字說明。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定是否重新執行節點的種子值；實際結果無論種子如何都不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要延伸的來源影片。MP4 格式，2-15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "從提示或圖像生成影片",
     "display_name": "Grok 影片",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "根據參考圖像作為風格與內容指引生成影片。",
+    "display_name": "Grok 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於影片生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述所需影片的文字說明。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定是否重新執行節點的種子值；實際結果無論種子如何都不具決定性。"
       }
     },
     "outputs": {
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "設定參考音訊以進行 ID-LoRA 說話人身份轉換。將參考音訊 clip 編碼為條件，並可選擇性地以身份指引修補模型（額外進行一次無參考的前向傳遞，以強化說話人身份效果）。",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "用於編碼的 LTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "身份指引啟用的 sigma 範圍結束百分比。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "身份指引強度。每一步會額外進行一次無參考的前向傳遞以強化說話人身份。設為 0 可停用（不進行額外傳遞）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "要轉換說話人身份的參考音訊 clip。建議長度約 5 秒（訓練時長）。過短或過長的 clip 可能會降低聲音身份轉換效果。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "身份指引啟用的 sigma 範圍起始百分比。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -15764,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15778,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
       }
     },
     "outputs": {
@@ -15808,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p 值"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15822,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "Top-P"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
       }
     },
     "outputs": {
@@ -16090,6 +16253,10 @@
       "positive": {
         "name": "正向條件",
         "tooltip": "用於訓練的正向條件。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "當 training_dtype 設為 'none' 並在量化模型上訓練時，啟用後將以量化矩陣相乘進行反向傳播。"
       },
       "rank": {
         "name": "秩",

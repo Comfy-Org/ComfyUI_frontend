@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Number Convert",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Switch",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Curve Editor",
+    "inputs": {
+      "curve": {
+        "name": "curve"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curve",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "display_name": "Grok Video Extend",
+    "description": "Extend an existing video with a seamless continuation based on a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of what should happen next in the video."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Source video to extend. MP4 format, 2-15 seconds."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video extension."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "display_name": "Grok Video",
     "description": "Generate video from a prompt or an image",
@@ -4124,6 +4190,41 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "display_name": "Grok Reference-to-Video",
+    "description": "Generate video guided by reference images as style and content references.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired video."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -7619,6 +7720,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "description": "Set reference audio for ID-LoRA speaker identity transfer. Encodes a reference audio clip into the conditioning and optionally patches the model with identity guidance (extra forward pass without reference, amplifying the speaker identity effect).",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Reference audio clip whose speaker identity to transfer. ~5 seconds recommended (training duration). Shorter or longer clips may degrade voice identity transfer."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE for encoding."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Strength of identity guidance. Runs an extra forward pass without reference each step to amplify speaker identity. Set to 0 to disable (no extra pass)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Start of the sigma range where identity guidance is active."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "End of the sigma range where identity guidance is active."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -15761,8 +15910,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -15805,8 +15961,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -16075,6 +16238,10 @@
       "lora_dtype": {
         "name": "lora_dtype",
         "tooltip": "The dtype to use for lora."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "When using training_dtype 'none' and training on quantized model, doing backward with quantized matmul when enabled."
       },
       "algorithm": {
         "name": "algorithm",

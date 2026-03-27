@@ -1,8 +1,18 @@
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {
+    let fetchSpy: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
     it('should return empty array when no dataTransfer', async () => {
       const actual = await extractFilesFromDragEvent(new FakeDragEvent('drop'))
       expect(actual).toEqual([])
@@ -98,19 +108,56 @@ describe('eventUtils', () => {
       expect(actual).toEqual([file1, file2])
     })
 
-    // Skip until we can setup MSW
-    it.skip('should handle drops with URLs', async () => {
-      const urlWithWorkflow = 'https://fakewebsite.notreal/fake_workflow.json'
+    it('should fetch URI and return as File when text/uri-list is present', async () => {
+      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(imageBlob))
 
       const dataTransfer = new DataTransfer()
-      dataTransfer.setData('text/uri-list', urlWithWorkflow)
-      dataTransfer.setData('text/x-moz-url', urlWithWorkflow)
+      dataTransfer.setData('text/uri-list', uri)
 
       const actual = await extractFilesFromDragEvent(
         new FakeDragEvent('drop', { dataTransfer })
       )
-      expect(actual.length).toBe(1)
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(actual).toHaveLength(1)
       expect(actual[0]).toBeInstanceOf(File)
+      expect(actual[0].type).toBe('image/png')
+    })
+
+    it('should handle text/x-moz-url type', async () => {
+      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(imageBlob))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/x-moz-url', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(actual).toHaveLength(1)
+    })
+
+    it('should return empty array when URI fetch fails', async () => {
+      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData('text/uri-list', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual).toEqual([])
     })
   })
 })
