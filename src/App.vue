@@ -10,7 +10,7 @@
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { TooltipProvider } from 'reka-ui'
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
