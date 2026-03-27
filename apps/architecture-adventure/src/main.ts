@@ -7,10 +7,20 @@ import './style/sidebar.css'
 import './style/map.css'
 import './style/animations.css'
 
+import { isV1Save, loadSave } from '@/state/gameState'
+import { enterRoom, initGameState, subscribe } from '@/engine/stateMachine'
+import { mountApp, render } from '@/ui/renderer'
+
 function main(): void {
-  const app = document.getElementById('app')
-  if (!app) throw new Error('Missing #app element')
-  app.textContent = 'Codebase Caverns v2 — Loading...'
+  if (isV1Save()) {
+    console.warn('Codebase Caverns v1 save detected. Starting fresh for v2.')
+  }
+
+  const save = loadSave()
+  mountApp()
+  initGameState(save)
+  subscribe(render)
+  enterRoom(save.currentRun.currentRoom)
 }
 
 main()
