@@ -17,6 +17,7 @@ test.describe(
 
       test('Single filter chip renders correctly', async ({ comfyPage }) => {
         await comfyPage.canvasOps.doubleClick()
+        await expect(comfyPage.searchBox.input).toBeVisible()
         await comfyPage.searchBox.addFilter('CONDITIONING', 'Input Type')
 
         const searchContainer = comfyPage.page.locator(
@@ -29,6 +30,7 @@ test.describe(
 
       test('Multiple filter chips render correctly', async ({ comfyPage }) => {
         await comfyPage.canvasOps.doubleClick()
+        await expect(comfyPage.searchBox.input).toBeVisible()
         await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
         await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
 
@@ -44,6 +46,7 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.canvasOps.doubleClick()
+        await expect(comfyPage.searchBox.input).toBeVisible()
         await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
         await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
 
