@@ -102,10 +102,10 @@ const socials = [
             <span
               class="inline-block h-5 w-5 bg-current"
               :style="{
-                maskImage: \`url(\${social.icon})\`,
+                maskImage: `url(${social.icon})`,
                 maskSize: 'contain',
                 maskRepeat: 'no-repeat',
-                WebkitMaskImage: \`url(\${social.icon})\`,
+                WebkitMaskImage: `url(${social.icon})`,
                 WebkitMaskSize: 'contain',
                 WebkitMaskRepeat: 'no-repeat'
               }"

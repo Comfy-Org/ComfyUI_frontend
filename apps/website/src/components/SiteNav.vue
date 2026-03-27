@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 
 const mobileMenuOpen = ref(false)
+const currentPath = ref('')
 
 const navLinks = [
   { label: 'ENTERPRISE', href: '/enterprise' },
@@ -31,11 +32,13 @@ function onKeydown(e: KeyboardEvent) {
 
 function onAfterSwap() {
   mobileMenuOpen.value = false
+  currentPath.value = window.location.pathname
 }
 
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('astro:after-swap', onAfterSwap)
+  currentPath.value = window.location.pathname
 })
 
 onUnmounted(() => {
@@ -61,6 +64,7 @@ onUnmounted(() => {
           v-for="link in navLinks"
           :key="link.href"
           :href="link.href"
+          :aria-current="currentPath === link.href ? 'page' : undefined"
           class="text-sm font-medium tracking-wide text-white transition-colors hover:text-brand-yellow"
         >
           {{ link.label }}
@@ -117,6 +121,7 @@ onUnmounted(() => {
           v-for="link in navLinks"
           :key="link.href"
           :href="link.href"
+          :aria-current="currentPath === link.href ? 'page' : undefined"
           class="text-sm font-medium tracking-wide text-white transition-colors hover:text-brand-yellow"
           @click="mobileMenuOpen = false"
         >
