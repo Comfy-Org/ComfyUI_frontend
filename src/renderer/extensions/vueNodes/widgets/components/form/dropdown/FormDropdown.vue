@@ -178,11 +178,10 @@ function toggleDropdown() {
       spaceBelow < MENU_HEIGHT_WITH_GAP && spaceAbove > spaceBelow
 
     if (shouldTeleport) {
-      if (openUpward.value && rect.top < MENU_HEIGHT_WITH_GAP) {
-        openUpward.value = false
-      }
       fixedPosition.value = {
-        top: openUpward.value ? rect.top : rect.bottom,
+        top: openUpward.value
+          ? Math.max(MENU_HEIGHT_WITH_GAP, rect.top)
+          : Math.min(rect.bottom, window.innerHeight - MENU_HEIGHT_WITH_GAP),
         left: Math.min(rect.right, window.innerWidth - MENU_WIDTH)
       }
     }
