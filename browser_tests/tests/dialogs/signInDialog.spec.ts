@@ -37,9 +37,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
     await expect(dialog.locator('#comfy-org-sign-in-password')).toBeVisible()
 
     // Sign in submit button is present
-    await expect(
-      dialog.getByRole('button', { name: 'Sign in' })
-    ).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Sign in' })).toBeVisible()
   })
 
   test('Should toggle from sign-in to sign-up form', async ({ comfyPage }) => {
@@ -97,9 +95,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
     await dialog.getByRole('button', { name: 'Comfy API Key' }).click()
 
     // API Key form heading and input are visible
-    await expect(
-      dialog.getByRole('heading', { name: 'API Key' })
-    ).toBeVisible()
+    await expect(dialog.getByRole('heading', { name: 'API Key' })).toBeVisible()
     await expect(dialog.locator('#comfy-org-api-key')).toBeVisible()
 
     // Back button returns to the main sign-in view
