@@ -7,9 +7,11 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
+import OutputGrid from '@/renderer/extensions/linearMode/OutputGrid.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
@@ -17,6 +19,23 @@ const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 const nodeOutputStore = useNodeOutputStore()
 const { nodeIdToNodeLocatorId } = useWorkflowStore()
+
+const isMultiOutput = computed(() => appModeStore.selectedOutputs.length > 1)
+
+const outputsByNode = computed(() => {
+  const map = new Map<string, ResultItemImpl | undefined>()
+  for (const nodeId of appModeStore.selectedOutputs) {
+    const locatorId = nodeIdToNodeLocatorId(nodeId)
+    const nodeOutput = nodeOutputStore.nodeOutputs[locatorId]
+    if (!nodeOutput) {
+      map.set(String(nodeId), undefined)
+      continue
+    }
+    const results = flattenNodeOutput([nodeId, nodeOutput])
+    map.set(String(nodeId), results[0])
+  }
+  return map
+})
 
 const existingOutput = computed(() => {
   for (const nodeId of appModeStore.selectedOutputs) {
@@ -28,11 +47,25 @@ const existingOutput = computed(() => {
   }
   return undefined
 })
+
+function handleReorder(fromIndex: number, toIndex: number) {
+  const outputs = [...appModeStore.selectedOutputs]
+  const [moved] = outputs.splice(fromIndex, 1)
+  outputs.splice(toIndex, 0, moved)
+  appModeStore.selectedOutputs = outputs
+}
 </script>
 
 <template>
+  <OutputGrid
+    v-if="isMultiOutput && hasOutputs"
+    :outputs-by-node="outputsByNode"
+    :output-count="appModeStore.selectedOutputs.length"
+    builder-mode
+    @reorder="handleReorder"
+  />
   <MediaOutputPreview
-    v-if="existingOutput"
+    v-else-if="existingOutput"
     :output="existingOutput"
     class="px-12 py-24"
   />

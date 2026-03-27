@@ -8,13 +8,12 @@ import type { InProgressItem } from '@/renderer/extensions/linearMode/linearMode
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { useAppModeStore } from '@/stores/appModeStore'
+
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
 export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()
-  const appModeStore = useAppModeStore()
   const executionStore = useExecutionStore()
   const jobPreviewStore = useJobPreviewStore()
   const workflowStore = useWorkflowStore()
@@ -117,13 +116,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const newOutputs = flattenNodeOutput([nodeId, detail.output])
     if (newOutputs.length === 0) return
 
-    // Skip output items for nodes not flagged as output nodes
-    const outputNodeIds = appModeStore.selectedOutputs
-    if (
-      outputNodeIds.length > 0 &&
-      !outputNodeIds.some((id) => String(id) === String(nodeId))
-    )
-      return
+    // Track in-progress items for all output nodes, regardless of
+    // which ones are selected for the grid view. This ensures the
+    // full history shows every generated output.
 
     const skeletonItem = inProgressItems.value.find(
       (i) => i.id === currentSkeletonId.value && i.jobId === jobId

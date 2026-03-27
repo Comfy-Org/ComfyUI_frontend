@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-const { src } = defineProps<{
+const { src, mobile = false } = defineProps<{
   src: string
+  mobile?: boolean
 }>()
 
 const videoRef = useTemplateRef('videoRef')
@@ -23,5 +24,9 @@ const height = ref('')
       }
     "
   />
-  <span class="z-10 self-center" v-text="`${width} x ${height}`" />
+  <span
+    v-if="!mobile"
+    class="z-10 self-end pr-2"
+    v-text="`${width} x ${height}`"
+  />
 </template>

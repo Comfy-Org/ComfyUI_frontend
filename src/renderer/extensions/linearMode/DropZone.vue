@@ -25,9 +25,14 @@ const {
     label?: string
     onClick?: (e: MouseEvent) => void
     onMaskEdit?: () => void
+    onDownload?: () => void
+    onRemove?: () => void
   }
   forceHovered?: boolean
 }>()
+
+const actionButtonClass =
+  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-neutral-800 text-white shadow-md transition-colors hover:bg-neutral-700'
 
 const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
@@ -164,23 +169,44 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
         >
           <button
             type="button"
+            :class="actionButtonClass"
             :aria-label="t('mediaAsset.actions.zoom')"
             :title="t('mediaAsset.actions.zoom')"
-            class="flex cursor-pointer items-center justify-center rounded-lg bg-base-foreground p-2 text-base-background transition-colors hover:bg-base-foreground/90"
             @click.stop="lightboxOpen = true"
           >
-            <i class="icon-[lucide--zoom-in] size-4" />
+            <i class="icon-[lucide--fullscreen] size-4" />
+          </button>
+          <button
+            v-if="dropIndicator.onMaskEdit"
+            type="button"
+            :class="actionButtonClass"
+            :aria-label="t('maskEditor.editMask')"
+            :title="t('maskEditor.editMask')"
+            @click.stop="dropIndicator.onMaskEdit()"
+          >
+            <i class="icon-[comfy--mask] size-4" />
+          </button>
+          <button
+            v-if="dropIndicator.onDownload"
+            type="button"
+            :class="actionButtonClass"
+            :aria-label="t('g.downloadImage')"
+            :title="t('g.downloadImage')"
+            @click.stop="dropIndicator.onDownload()"
+          >
+            <i class="icon-[lucide--download] size-4" />
+          </button>
+          <button
+            v-if="dropIndicator.onRemove"
+            type="button"
+            :class="actionButtonClass"
+            :aria-label="t('g.removeImage')"
+            :title="t('g.removeImage')"
+            @click.stop="dropIndicator.onRemove()"
+          >
+            <i class="icon-[lucide--x] size-4" />
           </button>
         </div>
-        <button
-          v-if="dropIndicator.onMaskEdit"
-          type="button"
-          class="mx-3 flex w-[calc(100%-1.5rem)] cursor-pointer items-center justify-center gap-2 rounded-lg border border-node-component-border bg-component-node-widget-background p-2 text-sm text-component-node-foreground transition-colors hover:bg-component-node-widget-background-hovered"
-          @click.stop="dropIndicator.onMaskEdit()"
-        >
-          <i class="icon-[comfy--mask] size-4" />
-          {{ t('maskEditor.editMask') }}
-        </button>
         <ImageLightbox
           v-if="dropIndicator.imageUrl"
           v-model="lightboxOpen"

@@ -11,13 +11,13 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
-import AppTemplateView from '@/renderer/extensions/linearMode/AppTemplateView.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
 import LinearFeedback from '@/renderer/extensions/linearMode/LinearFeedback.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
+import OutputGrid from '@/renderer/extensions/linearMode/OutputGrid.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
@@ -27,13 +27,8 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
-const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
-const hasAppContent = computed(
-  () =>
-    appModeStore.selectedInputs.length > 0 ||
-    appModeStore.selectedOutputs.length > 0
-)
+const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
@@ -47,8 +42,37 @@ const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
-const lightboxSrc = ref('')
+const lightboxUrl = ref('')
 const lightboxOpen = ref(false)
+
+function openLightbox(url: string) {
+  if (mobile) {
+    document
+      .querySelectorAll<HTMLMediaElement>('video, audio')
+      .forEach((el) => el.pause())
+  }
+  lightboxUrl.value = url
+  lightboxOpen.value = true
+}
+
+const isMultiOutput = computed(() => appModeStore.selectedOutputs.length > 1)
+
+const outputsByNode = computed(() => {
+  const map = new Map<string, ResultItemImpl>()
+  if (!selectedItem.value) return map
+  const outputs = allOutputs(selectedItem.value)
+  const outputLookup = new Map<string, ResultItemImpl>()
+  for (const output of outputs) {
+    if (!outputLookup.has(String(output.nodeId))) {
+      outputLookup.set(String(output.nodeId), output)
+    }
+  }
+  for (const nodeId of appModeStore.selectedOutputs) {
+    const output = outputLookup.get(String(nodeId))
+    if (output) map.set(String(nodeId), output)
+  }
+  return map
+})
 
 function handleSelection(sel: OutputSelection) {
   selectedItem.value = sel.asset
@@ -143,25 +167,31 @@ async function rerun(e: Event) {
       ]"
     />
   </section>
-  <LinearArrange v-if="isArrangeMode" />
-  <AppTemplateView
-    v-else-if="hasAppContent"
-    :selected-output="selectedOutput"
+  <OutputGrid
+    v-if="isMultiOutput && outputsByNode.size > 0"
+    :outputs-by-node="outputsByNode"
+    :output-count="appModeStore.selectedOutputs.length"
+    :show-skeleton="showSkeleton"
+    :mobile
+    @open-lightbox="openLightbox"
   />
-  <template v-else>
-    <ImagePreview
-      v-if="canShowPreview && latentPreview"
-      :mobile
-      :src="latentPreview"
-    />
-    <MediaOutputPreview
-      v-else-if="selectedOutput"
-      :output="selectedOutput"
-      :mobile
-    />
-    <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
-    <LinearWelcome v-else />
-  </template>
+  <ImagePreview
+    v-else-if="canShowPreview && latentPreview"
+    :mobile
+    :src="latentPreview"
+  />
+  <MediaOutputPreview
+    v-else-if="selectedOutput"
+    :output="selectedOutput"
+    :mobile
+    @dblclick="
+      !mobile && selectedOutput.url && openLightbox(selectedOutput.url)
+    "
+    @click="mobile && selectedOutput.url && openLightbox(selectedOutput.url)"
+  />
+  <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
+  <LinearArrange v-else-if="isArrangeMode" />
+  <LinearWelcome v-else />
   <div
     v-if="!mobile"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
@@ -175,12 +205,7 @@ async function rerun(e: Event) {
       v-if="!isBuilderMode"
       class="z-10 min-w-0"
       @update-selection="handleSelection"
-      @open-lightbox="
-        (url) => {
-          lightboxSrc = url
-          lightboxOpen = true
-        }
-      "
+      @open-lightbox="openLightbox"
     />
     <LinearFeedback
       v-if="typeformWidgetId"
@@ -191,12 +216,7 @@ async function rerun(e: Event) {
   <OutputHistory
     v-else-if="!isBuilderMode"
     @update-selection="handleSelection"
-    @open-lightbox="
-      (url) => {
-        lightboxSrc = url
-        lightboxOpen = true
-      }
-    "
+    @open-lightbox="openLightbox"
   />
-  <ImageLightbox v-model="lightboxOpen" :src="lightboxSrc" />
+  <ImageLightbox v-model="lightboxOpen" :src="lightboxUrl" />
 </template>

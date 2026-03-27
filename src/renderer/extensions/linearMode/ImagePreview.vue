@@ -38,7 +38,7 @@ const height = ref('')
   <img
     v-else
     ref="imageRef"
-    class="grow object-contain contain-size"
+    class="min-h-0 flex-1 object-contain"
     :src
     @load="
       () => {
@@ -48,5 +48,9 @@ const height = ref('')
       }
     "
   />
-  <span class="self-center md:z-10" v-text="`${width} x ${height}`" />
+  <span
+    v-if="!mobile"
+    class="self-end pr-2 md:z-10"
+    v-text="`${width} x ${height}`"
+  />
 </template>

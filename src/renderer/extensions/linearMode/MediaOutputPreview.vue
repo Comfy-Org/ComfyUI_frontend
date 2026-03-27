@@ -3,8 +3,8 @@ import { defineAsyncComponent, useAttrs } from 'vue'
 
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
+import type { MediaOutputItem } from '@/renderer/extensions/linearMode/mediaTypes'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const Preview3d = defineAsyncComponent(
@@ -14,7 +14,7 @@ const Preview3d = defineAsyncComponent(
 defineOptions({ inheritAttrs: false })
 
 const { output } = defineProps<{
-  output: ResultItemImpl
+  output: MediaOutputItem
   mobile?: boolean
 }>()
 
@@ -30,6 +30,7 @@ const attrs = useAttrs()
   <VideoPreview
     v-else-if="getMediaType(output) === 'video'"
     :src="output.url"
+    :mobile
     :class="
       cn('flex-1 object-contain md:p-3 md:contain-size', attrs.class as string)
     "

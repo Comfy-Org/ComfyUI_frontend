@@ -30,7 +30,6 @@ export function useOutputHistory(): {
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
-  const appModeStore = useAppModeStore()
   const queueStore = useQueueStore()
 
   function matchesActiveWorkflow(task: { jobId: string | number }): boolean {
@@ -63,14 +62,6 @@ export function useOutputHistory(): {
       hasActiveWorkflowJobs()
   )
 
-  function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
-    const nodeIds = appModeStore.selectedOutputs
-    if (!nodeIds.length) return []
-    return items.filter((r) =>
-      nodeIds.some((id) => String(id) === String(r.nodeId))
-    )
-  }
-
   const sessionMedia = computed(() => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
@@ -101,7 +92,7 @@ export function useOutputHistory(): {
     if (!item?.id) return []
 
     const cached = resolvedCache.get(item.id)
-    if (cached) return filterByOutputNodes(cached)
+    if (cached) return cached
 
     const user_metadata = getOutputAssetMetadata(item.user_metadata)
     if (!user_metadata) return []
@@ -114,7 +105,7 @@ export function useOutputHistory(): {
         .map((i) => i.output!)
       if (ordered.length > 0) {
         resolvedCache.set(item.id, ordered)
-        return filterByOutputNodes(ordered)
+        return ordered
       }
     }
 
@@ -129,13 +120,13 @@ export function useOutputHistory(): {
     ) {
       const reversed = user_metadata.allOutputs.toReversed()
       resolvedCache.set(item.id, reversed)
-      return filterByOutputNodes(reversed)
+      return reversed
     }
 
     // Async fallback for multi-output jobs — fetch full /jobs/{id} detail.
     // This can be hit if the user executes the job then switches tabs.
     const existing = asyncRefs.get(item.id)
-    if (existing) return filterByOutputNodes(existing.value)
+    if (existing) return existing.value
 
     const itemId = item.id
     const outputRef = useAsyncState(
@@ -150,16 +141,26 @@ export function useOutputHistory(): {
       []
     ).state
     asyncRefs.set(item.id, outputRef)
-    return filterByOutputNodes(outputRef.value)
+    return outputRef.value
   }
 
   function selectFirstHistory() {
     const first = outputs.media.value[0]
-    if (first) {
-      linearStore.selectAsLatest(`history:${first.id}:0`)
-    } else {
+    if (!first) {
       linearStore.selectAsLatest(null)
+      return
     }
+    // Prefer the first output that matches a user-selected output node
+    const selectedNodeIds = useAppModeStore().selectedOutputs
+    const outs = allOutputs(first)
+    const preferredIdx = selectedNodeIds.length
+      ? outs.findIndex((o) =>
+          selectedNodeIds.some((id) => String(id) === String(o.nodeId))
+        )
+      : -1
+    linearStore.selectAsLatest(
+      `history:${first.id}:${preferredIdx >= 0 ? preferredIdx : 0}`
+    )
   }
 
   // Resolve in-progress items when history outputs are loaded.
