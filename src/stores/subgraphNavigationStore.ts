@@ -6,10 +6,10 @@ import { useRouter } from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
@@ -40,6 +40,7 @@ export const useSubgraphNavigationStore = defineStore(
       maxSize: VIEWPORT_CACHE_MAX_SIZE
     })
 
+    /** Get the ID of the root graph for the currently active workflow. */
     const getCurrentRootGraphId = () => {
       const canvas = canvasStore.getCanvas()
       return canvas.graph?.rootGraph?.id ?? 'root'
@@ -85,21 +86,34 @@ export const useSubgraphNavigationStore = defineStore(
 
     // ── Navigation stack ─────────────────────────────────────────────
 
+    /**
+     * A stack representing subgraph navigation history from the root graph to
+     * the current opened subgraph.
+     */
     const navigationStack = computed(() =>
       idStack.value
         .map((id) => app.rootGraph.subgraphs.get(id))
         .filter(isNonNullish)
     )
 
+    /**
+     * Restore the navigation stack from a list of subgraph IDs.
+     * @see exportState
+     */
     const restoreState = (subgraphIds: string[]) => {
       idStack.value.length = 0
       for (const id of subgraphIds) idStack.value.push(id)
     }
 
+    /**
+     * Export the navigation stack as a list of subgraph IDs.
+     * @see restoreState
+     */
     const exportState = () => [...idStack.value]
 
     // ── Viewport save / restore ──────────────────────────────────────
 
+    /** Get the current viewport state, or null if the canvas is not available. */
     const getCurrentViewport = (): DragAndScaleState | null => {
       const canvas = canvasStore.getCanvas()
       if (!canvas) return null
@@ -109,16 +123,13 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
+    /** Save the current viewport state for a graph. */
     const saveViewport = (graphId: string, workflowRef?: object | null) => {
       const viewport = getCurrentViewport()
       if (!viewport) return
       viewportCache.set(cacheKey(graphId, workflowRef), viewport)
     }
 
-    /**
-     * Restore viewport for a graph. On cache miss, fit the canvas to
-     * visible content after the browser has completed layout (rAF).
-     */
     /** Apply a viewport state to the canvas. */
     const applyViewport = (viewport: DragAndScaleState) => {
       const canvas = app.canvas
@@ -145,36 +156,7 @@ export const useSubgraphNavigationStore = defineStore(
       const expectedGraphId = graphId
       requestAnimationFrame(() => {
         if (getActiveGraphId() !== expectedGraphId) return
-        if (!canvas.graph) return
-
-        try {
-          const nodes = canvas.graph._nodes
-          if (!nodes?.length) return
-
-          let minX = Infinity
-          let minY = Infinity
-          let maxX = -Infinity
-          let maxY = -Infinity
-          for (const n of nodes) {
-            minX = Math.min(minX, n.pos[0])
-            minY = Math.min(minY, n.pos[1])
-            maxX = Math.max(maxX, n.pos[0] + n.size[0])
-            maxY = Math.max(maxY, n.pos[1] + n.size[1])
-          }
-          if (!Number.isFinite(minX)) return
-
-          const pad = 80
-          const bounds: ReadOnlyRect = [
-            minX - pad,
-            minY - pad,
-            maxX - minX + 2 * pad,
-            maxY - minY + 2 * pad
-          ]
-          canvas.ds.fitToBounds(bounds)
-          canvas.setDirty(true, true)
-        } catch {
-          // graph._nodes can throw if graph is mid-transition
-        }
+        useLitegraphService().fitView()
       })
     }
 
