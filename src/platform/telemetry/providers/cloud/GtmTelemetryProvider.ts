@@ -141,7 +141,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     }
 
     if (metadata.email) {
-      this.hashEmail(metadata.email).then((hashed) => {
+      void this.hashEmail(metadata.email).then((hashed) => {
         if (hashed) {
           window.dataLayer?.push({
             user_data: { sha256_email_address: hashed }
