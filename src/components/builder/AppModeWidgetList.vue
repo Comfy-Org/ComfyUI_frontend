@@ -11,7 +11,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
@@ -151,13 +150,6 @@ function getDropIndicator(node: LGraphNode) {
   })
 }
 
-function inputColorBg(key: string): string | undefined {
-  const [nodeId, widgetName] = key.split(':')
-  const colorName = appModeStore.getInputColor(Number(nodeId), widgetName)
-  if (!colorName) return undefined
-  return LGraphCanvas.node_colors[colorName]?.bgcolor
-}
-
 function nodeToNodeData(node: LGraphNode) {
   const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
@@ -178,14 +170,8 @@ function nodeToNodeData(node: LGraphNode) {
     :class="
       cn(
         builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing',
-        !builderMode && inputColorBg(key) && 'rounded-sm border-l-2'
+          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
       )
-    "
-    :style="
-      !builderMode && inputColorBg(key)
-        ? { borderLeftColor: inputColorBg(key) }
-        : undefined
     "
     :aria-label="
       builderMode

@@ -89,8 +89,6 @@ export interface LinearData {
   presetsEnabled?: boolean
   /** Collapsible input groups per layout template. */
   inputGroupsPerTemplate?: Record<string, InputGroup[]>
-  /** Per-input color names. Keyed by `nodeId:widgetName`. */
-  inputColors?: Record<string, string>
 }
 
 export interface PendingWarnings {

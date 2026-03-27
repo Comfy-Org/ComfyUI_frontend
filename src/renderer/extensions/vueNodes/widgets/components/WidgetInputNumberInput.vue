@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import { evaluateInput, getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -81,8 +81,31 @@ const precision = computed(() => {
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-// Use the same step calculation as the litegraph graph node widget
-const stepValue = computed(() => getWidgetStep(props.widget.options ?? {}))
+// Calculate the step value based on precision or widget options
+const stepValue = computed(() => {
+  // Use step2 (correct input spec value) if available
+  if (props.widget.options?.step2 !== undefined) {
+    return Number(props.widget.options.step2)
+  }
+  // Use step / 10 for custom large step values (> 10) to match litegraph behavior
+  // This is important for extensions like Impact Pack that use custom step values (e.g., 640)
+  // We skip default step values (1, 10) to avoid affecting normal widgets
+  const step = props.widget.options?.step as number | undefined
+  if (step !== undefined && step > 10) {
+    return Number(step) / 10
+  }
+  // Otherwise, derive from precision
+  if (precision.value !== undefined) {
+    if (precision.value === 0) {
+      return 1
+    }
+    // For precision > 0, step = 1 / (10^precision)
+    // precision 1 → 0.1, precision 2 → 0.01, etc.
+    return Number((1 / Math.pow(10, precision.value)).toFixed(precision.value))
+  }
+  // Default to 'any' for unrestricted stepping
+  return 0
+})
 
 // Disable grouping separators by default unless explicitly enabled by the node author
 const useGrouping = computed(() => {

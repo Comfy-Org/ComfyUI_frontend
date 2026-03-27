@@ -158,7 +158,7 @@ function groupPosition(
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
+  <div data-testid="linear-widgets" class="flex h-full flex-col">
     <!-- Inputs area -->
     <div class="flex min-h-0 flex-1 flex-col bg-comfy-menu-bg px-2">
       <!-- === ZONE GRID (always — single or dual) === -->

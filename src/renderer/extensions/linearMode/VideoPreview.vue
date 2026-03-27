@@ -25,7 +25,7 @@ const height = ref('')
       }
     "
   />
-  <span v-if="!mobile" class="z-10 self-center">
+  <span v-if="!mobile" class="z-10 self-end pr-2">
     {{ `${width} x ${height}` }}
     <template v-if="label"> | {{ label }}</template>
   </span>

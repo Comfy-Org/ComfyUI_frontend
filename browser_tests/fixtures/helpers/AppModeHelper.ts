@@ -144,7 +144,7 @@ export class AppModeHelper {
 
   /**
    * Rename a widget by clicking its popover trigger, selecting "Rename",
-   * and filling in the dialog.
+   * and filling in the inline input that appears.
    * @param popoverTrigger The button that opens the widget's actions popover.
    * @param newName The new name to assign.
    */
@@ -152,12 +152,17 @@ export class AppModeHelper {
     await popoverTrigger.click()
     await this.page.getByText('Rename', { exact: true }).click()
 
-    const dialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
-    await dialogInput.fill(newName)
+    // The rename input appears inline — either as an EditableText input
+    // (PrimeVue InputText) inside an IoItem, or as a plain <input> inside
+    // the builder zone in SidebarAppLayout.
+    const renameInput = this.page
+      .locator(
+        '[data-testid="builder-io-item"] .editable-text input, [data-testid="linear-widgets"] input[type="text"]'
+      )
+      .first()
+    await renameInput.fill(newName)
     await this.page.keyboard.press('Enter')
-    await dialogInput.waitFor({ state: 'hidden' })
+    await renameInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
   }
 }

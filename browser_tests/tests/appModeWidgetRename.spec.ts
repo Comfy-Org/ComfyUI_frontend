@@ -142,19 +142,21 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await expect(appMode.linearWidgets.getByText('Preview Seed')).toBeVisible()
   })
 
-  test('Rename from app mode', async ({ comfyPage }) => {
+  test('Rename persists across app mode toggle', async ({ comfyPage }) => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
-    // Enter app mode from builder
+    // Rename via builder inputs step (app mode no longer has inline rename)
+    await appMode.goToInputs()
+    const menu = appMode.getBuilderInputItemMenu('seed')
+    await expect(menu).toBeVisible({ timeout: 5000 })
+    await appMode.renameWidget(menu, 'App Mode Seed')
+
+    // Exit builder and enter app mode
     await appMode.exitBuilder()
     await appMode.toggleAppMode()
 
     await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
-
-    const menu = appMode.getAppModeWidgetMenu('seed')
-    await appMode.renameWidget(menu, 'App Mode Seed')
-
     await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
 
     // Verify persistence after save/reload

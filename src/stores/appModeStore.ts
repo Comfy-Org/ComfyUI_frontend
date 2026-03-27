@@ -66,8 +66,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   const widgetOverrides = reactive<Record<string, WidgetOverride>>({})
   /** Collapsible input groups per layout template. */
   const inputGroupsPerTemplate = reactive<Record<string, InputGroup[]>>({})
-  /** Per-input color names. Keyed by `nodeId:widgetName`. */
-  const inputColors = reactive<Record<string, string>>({})
   /** Saved presets for quick input value switching. */
   const presets = reactive<AppModePreset[]>([])
   /** Whether the preset strip is visible in app mode. */
@@ -282,8 +280,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       presets: data?.presets,
       presetDisplayMode: data?.presetDisplayMode,
       presetsEnabled: data?.presetsEnabled,
-      inputGroupsPerTemplate: data?.inputGroupsPerTemplate,
-      inputColors: data?.inputColors
+      inputGroupsPerTemplate: data?.inputGroupsPerTemplate
     }
   }
 
@@ -323,7 +320,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     replaceReactive(zoneItemOrderPerTemplate, pruned.zoneItemOrderPerTemplate)
     replaceReactive(widgetOverrides, pruned.widgetOverrides)
     replaceReactive(inputGroupsPerTemplate, pruned.inputGroupsPerTemplate)
-    replaceReactive(inputColors, pruned.inputColors)
 
     presets.splice(0, presets.length, ...(pruned.presets ?? []))
     presetDisplayMode.value = pruned.presetDisplayMode ?? 'tabs'
@@ -386,9 +382,6 @@ export const useAppModeStore = defineStore('appMode', () => {
       presetsEnabled: presetsEnabled.value ? undefined : false,
       inputGroupsPerTemplate: Object.keys(inputGroupsPerTemplate).length
         ? deepCloneReactive(inputGroupsPerTemplate)
-        : undefined,
-      inputColors: Object.keys(inputColors).length
-        ? { ...inputColors }
         : undefined
     }
     workflowStore.activeWorkflow?.changeTracker.checkState()
@@ -941,24 +934,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     persistLinearData()
   }
 
-  function setInputColor(
-    nodeId: NodeId,
-    widgetName: string,
-    color: string | null
-  ) {
-    const key = `${nodeId}:${widgetName}`
-    if (color) inputColors[key] = color
-    else delete inputColors[key]
-    persistLinearData()
-  }
-
-  function getInputColor(
-    nodeId: NodeId,
-    widgetName: string
-  ): string | undefined {
-    return inputColors[`${nodeId}:${widgetName}`]
-  }
-
   function reorderWithinGroup(
     groupId: string,
     fromKey: string,
@@ -1057,7 +1032,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     enterBuilder,
     exitBuilder,
     getGroupForItem,
-    getInputColor,
     getZone,
     gridOverrides,
     hasNodes,
@@ -1076,7 +1050,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     renameGroup,
     reorderWithinGroup,
     setGroupColor,
-    setInputColor,
     reorderZoneItem,
     resetSelectedToWorkflow,
     selectedInputs,
