@@ -120,9 +120,16 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     }
 
     const m = await comfyPage.perf.stopMeasuring('large-graph-idle')
+
+    // M2 milestone metric: P5 FPS on 245-node workflow (target: ≥52)
+    const fps = await comfyPage.perf.measureFPS(3000)
+    m.fpsP5 = fps.p5
+    m.fpsP50 = fps.p50
+    m.fpsMean = fps.mean
+
     recordMeasurement(m)
     console.log(
-      `Large graph idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
+      `Large graph idle: ${m.styleRecalcs} recalcs, ${m.layouts} layouts | FPS P5=${fps.p5.toFixed(0)} P50=${fps.p50.toFixed(0)} mean=${fps.mean.toFixed(0)} (${fps.frameCount} frames)`
     )
   })
 
