@@ -230,29 +230,21 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
-    it('pushes hashed email as user_data before auth event when email is provided', async () => {
+    it('pushes normalized email as user_data before auth event', () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
         method: 'email',
         is_new_user: true,
         user_id: 'uid-123',
-        email: 'Test@Example.com'
+        email: '  Test@Example.com  '
       })
-
-      // Wait for async SHA-256 hash
-      await new Promise((resolve) => setTimeout(resolve, 50))
 
       const dl = window.dataLayer as Record<string, unknown>[]
       const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toBeDefined()
-      expect(
-        (userData as { user_data: { sha256_email_address: string } }).user_data
-          .sha256_email_address
-      ).toBe(
-        // SHA-256 of "test@example.com" (normalized: trimmed + lowercased)
-        '973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b'
-      )
+      expect(userData).toMatchObject({
+        user_data: { email: 'test@example.com' }
+      })
 
       // Verify user_data is pushed before the sign_up event
       const userDataIndex = dl.findIndex((entry) => 'user_data' in entry)

@@ -139,38 +139,19 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {})
     }
-    const authEvent = metadata.is_new_user ? 'sign_up' : 'login'
-    const pushAuthEvent = (): void => {
-      this.pushEvent(authEvent, basePayload)
-    }
 
     if (metadata.email) {
-      void this.hashEmail(metadata.email).then((hashed) => {
-        if (hashed) {
-          window.dataLayer?.push({
-            user_data: { sha256_email_address: hashed }
-          })
-        }
-        pushAuthEvent()
+      window.dataLayer?.push({
+        user_data: { email: metadata.email.trim().toLowerCase() }
       })
+    }
+
+    if (metadata.is_new_user) {
+      this.pushEvent('sign_up', basePayload)
       return
     }
 
-    pushAuthEvent()
-  }
-
-  private async hashEmail(email: string): Promise<string | null> {
-    try {
-      const normalized = email.trim().toLowerCase()
-      if (!normalized) return null
-      const encoder = new TextEncoder()
-      const data = encoder.encode(normalized)
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-    } catch {
-      return null
-    }
+    this.pushEvent('login', basePayload)
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
