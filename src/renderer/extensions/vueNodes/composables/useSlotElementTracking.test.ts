@@ -14,6 +14,7 @@ import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/
 import {
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
+  requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
 
@@ -21,12 +22,6 @@ const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
-}))
-
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
-  })
 }))
 
 const NODE_ID = 'test-node'
@@ -50,12 +45,47 @@ function createWrapperComponent(type: 'input' | 'output') {
   })
 }
 
+function createSlotElement(): HTMLElement {
+  const container = document.createElement('div')
+  container.dataset.nodeId = NODE_ID
+  container.getBoundingClientRect = () =>
+    ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 100,
+      width: 200,
+      height: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    }) as DOMRect
+  document.body.appendChild(container)
+
+  const el = document.createElement('div')
+  el.getBoundingClientRect = () =>
+    ({
+      left: 10,
+      top: 30,
+      right: 20,
+      bottom: 40,
+      width: 10,
+      height: 10,
+      x: 10,
+      y: 30,
+      toJSON: () => ({})
+    }) as DOMRect
+  container.appendChild(el)
+
+  return el
+}
+
 /**
  * Mount the wrapper, set the element ref, and wait for slot registration.
  */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
   const wrapper = mount(createWrapperComponent(type))
-  wrapper.vm.el = document.createElement('div')
+  wrapper.vm.el = createSlotElement()
   await nextTick()
   flushScheduledSlotLayoutSync()
   return wrapper
@@ -64,6 +94,7 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    document.body.innerHTML = ''
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',
@@ -134,18 +165,66 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.pendingSlotSync).toBe(true)
   })
 
-  it('skips slot layout writeback when measured slot geometry is unchanged', () => {
+  it('keeps pendingSlotSync when all registered slots are hidden', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
-    const slotEl = document.createElement('div')
-    slotEl.getBoundingClientRect = vi.fn(() => new DOMRect(100, 200, 16, 16))
+    const hiddenSlot = document.createElement('div')
 
     const registryStore = useNodeSlotRegistryStore()
     const node = registryStore.ensureNode(NODE_ID)
     node.slots.set(slotKey, {
+      el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    layoutStore.setPendingSlotSync(true)
+    requestSlotLayoutSyncForAllNodes()
+
+    expect(layoutStore.pendingSlotSync).toBe(true)
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('removes stale slot layouts when slot element is hidden', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const hiddenSlot = document.createElement('div')
+
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+    node.slots.set(slotKey, {
+      el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('skips slot layout writeback when measured slot geometry is unchanged', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = createSlotElement()
+
+    const registryStore = useNodeSlotRegistryStore()
+    const node = registryStore.ensureNode(NODE_ID)
+
+    const expectedX = 15
+    const expectedY = 35 - LiteGraph.NODE_TITLE_HEIGHT
+
+    node.slots.set(slotKey, {
       el: slotEl,
       index: SLOT_INDEX,
       type: 'input',
-      cachedOffset: { x: 108, y: 208 }
+      cachedOffset: { x: expectedX, y: expectedY }
     })
 
     const slotSize = LiteGraph.NODE_SLOT_HEIGHT
@@ -154,10 +233,10 @@ describe('useSlotElementTracking', () => {
       nodeId: NODE_ID,
       index: SLOT_INDEX,
       type: 'input',
-      position: { x: 108, y: 208 },
+      position: { x: expectedX, y: expectedY },
       bounds: {
-        x: 108 - halfSlotSize,
-        y: 208 - halfSlotSize,
+        x: expectedX - halfSlotSize,
+        y: expectedY - halfSlotSize,
         width: slotSize,
         height: slotSize
       }

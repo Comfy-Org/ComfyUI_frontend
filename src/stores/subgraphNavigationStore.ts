@@ -1,14 +1,19 @@
 import QuickLRU from '@alloc/quick-lru'
+import { useRouteHash } from '@vueuse/router'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
-import { isNonNullish } from '@/utils/typeGuardUtil'
+import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
+
+export const VIEWPORT_CACHE_MAX_SIZE = 32
 
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph
@@ -20,6 +25,8 @@ export const useSubgraphNavigationStore = defineStore(
   () => {
     const workflowStore = useWorkflowStore()
     const canvasStore = useCanvasStore()
+    const router = useRouter()
+    const routeHash = useRouteHash()
 
     /** The currently opened subgraph. */
     const activeSubgraph = shallowRef<Subgraph>()
@@ -29,7 +36,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** LRU cache for viewport states. Key: subgraph ID or 'root' for root graph */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
-      maxSize: 32
+      maxSize: VIEWPORT_CACHE_MAX_SIZE
     })
 
     /**
@@ -38,8 +45,6 @@ export const useSubgraphNavigationStore = defineStore(
      */
     const getCurrentRootGraphId = () => {
       const canvas = canvasStore.getCanvas()
-      if (!canvas) return 'root'
-
       return canvas.graph?.rootGraph?.id ?? 'root'
     }
 
@@ -158,6 +163,72 @@ export const useSubgraphNavigationStore = defineStore(
       }
     )
 
+    //Allow navigation with forward/back buttons
+    let blockHashUpdate = false
+    let initialLoad = true
+
+    async function navigateToHash(newHash: string) {
+      const root = app.rootGraph
+      const locatorId = newHash?.slice(1) || root.id
+      const canvas = canvasStore.getCanvas()
+      if (canvas.graph?.id === locatorId) return
+      const targetGraph =
+        (locatorId || root.id) !== root.id
+          ? root.subgraphs.get(locatorId)
+          : root
+      if (targetGraph) return canvas.setGraph(targetGraph)
+
+      //Search all open workflows
+      for (const workflow of workflowStore.openWorkflows) {
+        const { activeState } = workflow
+        if (!activeState) continue
+        const subgraphs = activeState.definitions?.subgraphs ?? []
+        for (const graph of [activeState, ...subgraphs]) {
+          if (graph.id !== locatorId) continue
+          //This will trigger a navigation, which can break forward history
+          try {
+            blockHashUpdate = true
+            await useWorkflowService().openWorkflow(workflow)
+          } finally {
+            blockHashUpdate = false
+          }
+          const targetGraph =
+            app.rootGraph.id === locatorId
+              ? app.rootGraph
+              : app.rootGraph.subgraphs.get(locatorId)
+          if (!targetGraph) {
+            console.error('subgraph poofed after load?')
+            return
+          }
+
+          return canvas.setGraph(targetGraph)
+        }
+      }
+    }
+
+    async function updateHash() {
+      if (blockHashUpdate) return
+      if (initialLoad) {
+        initialLoad = false
+        if (!routeHash.value) return
+        await navigateToHash(routeHash.value)
+        const graph = canvasStore.getCanvas().graph
+        if (isSubgraph(graph)) workflowStore.activeSubgraph = graph
+        return
+      }
+
+      const newId = canvasStore.getCanvas().graph?.id ?? ''
+      if (!routeHash.value) await router.replace('#' + app.rootGraph.id)
+      const currentId = routeHash.value?.slice(1)
+      if (!newId || newId === currentId) return
+
+      await router.push('#' + newId)
+    }
+    //update navigation hash
+    //NOTE: Doesn't apply on workflow load
+    watch(() => canvasStore.currentGraph, updateHash)
+    watch(routeHash, () => navigateToHash(String(routeHash.value)))
+
     return {
       activeSubgraph,
       navigationStack,
@@ -165,6 +236,7 @@ export const useSubgraphNavigationStore = defineStore(
       exportState,
       saveViewport,
       restoreViewport,
+      updateHash,
       viewportCache
     }
   }

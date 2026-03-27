@@ -15,6 +15,14 @@
     "message": "Este flujo de trabajo contiene nodos de API, que requieren que inicies sesión en tu cuenta para poder ejecutar.",
     "title": "Se requiere iniciar sesión para usar los nodos de API"
   },
+  "appBuilder": {
+    "vueNodeSwitch": {
+      "content": "Para la mejor experiencia, el constructor de aplicaciones utiliza Nodes 2.0. Puedes volver después de construir la aplicación desde el menú principal.",
+      "dismiss": "Descartar",
+      "dontShowAgain": "No mostrar de nuevo",
+      "title": "Cambiado a Nodes 2.0"
+    }
+  },
   "assetBrowser": {
     "allCategory": "Todo {category}",
     "allModels": "Todos los modelos",
@@ -389,6 +397,17 @@
   "cloudForgotPassword_passwordResetSent": "Restablecimiento de contraseña enviado",
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
+  "cloudNotification": {
+    "continueLocally": "Continuar Localmente",
+    "exploreCloud": "Probar la Nube Gratis",
+    "feature1Title": "400 Créditos Gratis al Mes",
+    "feature2Title": "Funciona en Cualquier Lugar, al Instante",
+    "feature3Title": "Modelos Listos para Usar",
+    "feature4Title": "Paquetes de Nodos Personalizados Preinstalados",
+    "footer": "ComfyUI sigue siendo gratuito y de código abierto. La nube es opcional.",
+    "message": "De la configuración a la creación en segundos. Modelos populares, extensiones y potentes GPUs — listos cuando los necesites.",
+    "title": "Ejecuta ComfyUI en la Nube"
+  },
   "cloudOnboarding": {
     "authTimeout": {
       "causes": [
@@ -545,19 +564,26 @@
     "uploadCover": "+ Subir una portada",
     "uploadProfilePicture": "+ Subir una foto de perfil",
     "uploadWorkflowButton": "Subir mi flujo de trabajo",
+    "usernameError": "De 3 a 42 caracteres alfanuméricos en minúsculas y guiones, debe comenzar y terminar con una letra o número",
     "usernameLabel": "Tu nombre de usuario (requerido)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "Información adicional",
     "back": "Atrás",
     "createProfileCta": "Crear un perfil",
     "createProfileToPublish": "Crea un perfil para publicar en ComfyHub",
     "exampleImage": "Imagen de ejemplo {index}",
+    "exampleImagePosition": "Imagen de ejemplo {index} de {total}",
     "examplesDescription": "Agrega hasta {total} imágenes de ejemplo adicionales",
     "maxExamples": "Puedes seleccionar hasta {max} ejemplos",
     "next": "Siguiente",
     "publishButton": "Publicar en ComfyHub",
+    "publishFailedDescription": "Ocurrió un error al publicar tu flujo de trabajo. Por favor, inténtalo de nuevo.",
+    "publishFailedTitle": "Error al publicar",
+    "removeExampleImage": "Eliminar imagen de ejemplo",
     "selectAThumbnail": "Selecciona una miniatura",
+    "shareAs": "Compartir como",
     "showLessTags": "Mostrar menos...",
     "showMoreTags": "Mostrar más...",
     "stepDescribe": "Describe tu flujo de trabajo",
@@ -572,6 +598,7 @@
     "thumbnailPreview": "Vista previa de la miniatura",
     "thumbnailVideo": "Video",
     "title": "Publicar en ComfyHub",
+    "unsavedDescription": "Debes guardar tu flujo de trabajo antes de publicarlo en ComfyHub. Guárdalo ahora para continuar.",
     "uploadAnImage": "Haz clic para buscar o arrastra una imagen",
     "uploadComparison": "Subir antes y después",
     "uploadComparisonAfterPrompt": "Después",
@@ -587,13 +614,7 @@
     "workflowDescription": "Descripción del flujo de trabajo",
     "workflowDescriptionPlaceholder": "¿Qué hace que tu flujo de trabajo sea emocionante y especial? Sé específico para que las personas sepan qué esperar.",
     "workflowName": "Nombre del flujo de trabajo",
-    "workflowNamePlaceholder": "Consejo: ingresa un nombre descriptivo y fácil de buscar",
-    "workflowType": "Tipo de flujo de trabajo",
-    "workflowTypeEditing": "Edición",
-    "workflowTypeImageGeneration": "Generación de imágenes",
-    "workflowTypePlaceholder": "Selecciona el tipo",
-    "workflowTypeUpscaling": "Aumento de resolución",
-    "workflowTypeVideoGeneration": "Generación de video"
+    "workflowNamePlaceholder": "Consejo: ingresa un nombre descriptivo y fácil de buscar"
   },
   "commands": {
     "clear": "Limpiar flujo de trabajo",
@@ -653,6 +674,7 @@
     "Open in Mask Editor": "Abrir en Editor de Máscara",
     "Outputs": "Salidas",
     "Paste": "Pegar",
+    "Paste Image": "Pegar imagen",
     "Pin": "Anclar",
     "Properties": "Propiedades",
     "Properties Panel": "Panel de Propiedades",
@@ -737,6 +759,10 @@
     },
     "yourCreditBalance": "Tu saldo de créditos"
   },
+  "curveWidget": {
+    "linear": "Lineal",
+    "monotone_cubic": "Suave"
+  },
   "dataTypes": {
     "*": "*",
     "AUDIO": "AUDIO",
@@ -756,6 +782,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "ACONDICIONAMIENTO",
     "CONTROL_NET": "RED_DE_CONTROL",
+    "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ARCHIVO_3D",
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
@@ -769,6 +796,7 @@
     "GEMINI_INPUT_FILES": "ARCHIVOS_ENTRADA_GEMINI",
     "GLIGEN": "GLIGEN",
     "GUIDER": "GUÍA",
+    "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "GANCHO_FOTOGRAMAS_CLAVE",
     "IMAGE": "IMAGEN",
@@ -860,6 +888,8 @@
     "resume": "Reanudar descarga"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "Ocurrió un error",
     "extensionFileHint": "Esto puede deberse al siguiente script",
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
@@ -907,6 +937,19 @@
     "textTo3DModel": "Texto a modelo 3D",
     "textToImage": "Texto a imagen",
     "textToVideo": "Texto a video"
+  },
+  "execution": {
+    "decoding": "Decodificando…",
+    "encoding": "Codificando…",
+    "generating": "Generando…",
+    "generatingVideo": "Generando video…",
+    "loading": "Cargando…",
+    "processing": "Procesando…",
+    "processingVideo": "Procesando video…",
+    "resizing": "Redimensionando…",
+    "running": "Ejecutando…",
+    "saving": "Guardando…",
+    "training": "Entrenando…"
   },
   "exportToast": {
     "allExportsCompleted": "Todas las exportaciones completadas",
@@ -1048,11 +1091,14 @@
     "filterBy": "Filtrar por:",
     "filterByType": "Filtrar por {type}...",
     "findIssues": "Encontrar problemas",
+    "findOnGithub": "Buscar en GitHub",
     "frameNodes": "Enmarcar Nodos",
     "frontendNewer": "La versión del frontend {frontendVersion} puede no ser compatible con la versión del backend {backendVersion}.",
     "frontendOutdated": "La versión del frontend {frontendVersion} está desactualizada. El backend requiere la versión {requiredVersion} o superior.",
+    "gallery": "Galería",
     "galleryImage": "Imagen de galería",
     "galleryThumbnail": "Miniatura de galería",
+    "getHelpAction": "Obtener ayuda",
     "goToNode": "Ir al nodo",
     "graphNavigation": "Navegación de gráficos",
     "halfSpeed": "0.5x",
@@ -1061,6 +1107,8 @@
     "icon": "Icono",
     "imageDoesNotExist": "La imagen no existe",
     "imageFailedToLoad": "Falló la carga de la imagen",
+    "imageGallery": "galería de imágenes",
+    "imageLightbox": "Vista previa de imagen",
     "imagePreview": "Vista previa de imagen - Usa las teclas de flecha para navegar entre imágenes",
     "imageUrl": "URL de la imagen",
     "import": "Importar",
@@ -1074,13 +1122,38 @@
     "installed": "Instalado",
     "installing": "Instalando",
     "interrupted": "Interrumpido",
-    "itemSelected": "{selectedCount} elemento seleccionado",
     "itemsCopiedToClipboard": "Elementos copiados al portapapeles",
     "itemsSelected": "{selectedCount} elementos seleccionados",
     "job": "Tarea",
     "jobIdCopied": "ID de trabajo copiado al portapapeles",
     "keybinding": "Combinación de teclas",
     "keybindingAlreadyExists": "La combinación de teclas ya existe en",
+    "keybindingPresets": {
+      "default": "Preajuste predeterminado",
+      "deletePreset": "Eliminar preajuste",
+      "deletePresetFailed": "No se pudo eliminar el preajuste \"{name}\"",
+      "deletePresetTitle": "¿Eliminar el preajuste actual?",
+      "deletePresetWarning": "Este preajuste será eliminado. Esto no se puede deshacer.",
+      "discardAndSwitch": "Descartar y cambiar",
+      "exportPreset": "Exportar preajuste",
+      "importKeybindingPreset": "Importar preajuste de atajos",
+      "importPreset": "Importar preajuste",
+      "invalidPresetFile": "El archivo de preajuste debe ser un JSON válido exportado desde ComfyUI",
+      "invalidPresetName": "El nombre del preajuste no debe estar vacío, ser \"default\", comenzar con un punto, contener separadores de ruta o terminar en .json",
+      "loadPresetFailed": "No se pudo cargar el preajuste \"{name}\"",
+      "overwritePresetMessage": "Ya existe un preajuste llamado \"{name}\". ¿Sobrescribirlo?",
+      "overwritePresetTitle": "Sobrescribir preajuste",
+      "presetDeleted": "Preajuste \"{name}\" eliminado",
+      "presetImported": "Preajuste de atajos importado",
+      "presetNamePrompt": "Introduce un nombre para el preajuste",
+      "presetSaved": "Preajuste \"{name}\" guardado",
+      "resetToDefault": "Restablecer a predeterminado",
+      "saveAndSwitch": "Guardar y cambiar",
+      "saveAsNewPreset": "Guardar como nuevo preajuste",
+      "saveChanges": "Guardar cambios",
+      "unsavedChangesMessage": "Tienes cambios no guardados que se perderán si cambias sin guardar.",
+      "unsavedChangesTo": "Cambios no guardados en {name}"
+    },
     "keybindings": "Atajos de teclado",
     "learnMore": "Aprende más",
     "listening": "Escuchando...",
@@ -1137,6 +1210,8 @@
     "output": "Salida",
     "overwrite": "Sobrescribir",
     "partner": "Socio",
+    "pause": "Pausar",
+    "play": "Reproducir",
     "playPause": "Reproducir/Pausar",
     "playRecording": "Reproducir grabación",
     "playbackSpeed": "Velocidad de reproducción",
@@ -1144,6 +1219,7 @@
     "preloadError": "No se pudo cargar un recurso necesario. Por favor, recarga la página.",
     "preloadErrorTitle": "Error de carga",
     "preview": "VISTA PREVIA",
+    "previous": "Anterior",
     "previousImage": "Imagen anterior",
     "profile": "Perfil",
     "progressCountOf": "de",
@@ -1218,6 +1294,8 @@
     "showReport": "Mostrar informe",
     "showRightPanel": "Mostrar panel derecho",
     "singleSelectDropdown": "Menú desplegable de selección única",
+    "skipToEnd": "Ir al final",
+    "skipToStart": "Ir al inicio",
     "sort": "Ordenar",
     "source": "Fuente",
     "startRecording": "Iniciar grabación",
@@ -1249,6 +1327,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} Visita https://docs.comfy.org/installation/update_comfyui#common-update-issues para obtener instrucciones de actualización.",
     "videoFailedToLoad": "Falló la carga del video",
     "videoPreview": "Vista previa de video - Usa las teclas de flecha para navegar entre videos",
+    "viewGrid": "Vista de cuadrícula",
     "viewImageOfTotal": "Ver imagen {index} de {total}",
     "viewVideoOfTotal": "Ver video {index} de {total}",
     "volume": "Volumen",
@@ -1602,7 +1681,8 @@
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nodos principales de la versión {version}:",
     "outdatedVersion": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI ({version}). Es posible que algunos nodos no funcionen correctamente.",
-    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente."
+    "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente.",
+    "unknownVersion": "desconocido"
   },
   "maintenance": {
     "None": "Ninguno",
@@ -1815,6 +1895,7 @@
     "mirrorVertical": "Espejar verticalmente",
     "negative": "Negativo",
     "opacity": "Opacidad",
+    "openMaskEditor": "Abrir en el editor de máscaras",
     "paintBucketSettings": "Configuración del bote de pintura",
     "paintLayer": "Capa de pintura",
     "redo": "Rehacer",
@@ -2129,6 +2210,7 @@
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
+    "Quiver": "Quiver",
     "Recraft": "Recraft",
     "Reve": "Reve",
     "Rodin": "Rodin",
@@ -2404,6 +2486,8 @@
     "favoritesNoneDesc": "Las entradas que marques como favoritas aparecerán aquí",
     "favoritesNoneHint": "En la pestaña Parámetros, haz clic en {moreIcon} en cualquier entrada para añadirla aquí",
     "favoritesNoneTooltip": "Marca widgets con estrella para acceder rápidamente sin seleccionar nodos",
+    "findOnGithubTooltip": "Buscar problemas relacionados en GitHub",
+    "getHelpTooltip": "Informa de este error y te ayudaremos a resolverlo",
     "globalSettings": {
       "canvas": "LIENZO",
       "connectionLinks": "ENLACES DE CONEXIÓN",
@@ -3056,7 +3140,6 @@
       "title": "Tu suscripción ha sido cancelada"
     },
     "changeTo": "Cambiar a {plan}",
-    "chooseBestPlanWorkspace": "Elige el mejor plan para tu espacio de trabajo",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo de Comfy Cloud",
     "contactOwnerToSubscribe": "Contacta al propietario del espacio de trabajo para suscribirte",
@@ -3086,6 +3169,7 @@
     },
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
+    "inviteUpTo": "Invita hasta",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
     "managePayment": "Gestionar pago",
@@ -3111,13 +3195,16 @@
     "monthlyCreditsPerMemberLabel": "Créditos mensuales / miembro",
     "monthlyCreditsRollover": "Estos créditos se transferirán al próximo mes",
     "mostPopular": "Más popular",
+    "needTeamWorkspace": "¿Necesitas un espacio de trabajo en equipo?",
     "nextBillingCycle": "próximo ciclo de facturación",
     "nextMonthInvoice": "Factura del próximo mes",
     "partnerNodesBalance": "Saldo de créditos de \"Nodos de Partners\"",
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "perMonth": "USD / mes",
+    "personalWorkspace": "Espacio de trabajo personal",
     "plansAndPricing": "Planes y precios",
+    "plansForWorkspace": "Planes para {workspace}",
     "prepaidCreditsInfo": "Créditos comprados por separado que no expiran",
     "prepaidDescription": "Créditos prepagados",
     "preview": {
@@ -3153,6 +3240,7 @@
     "resubscribe": "Volver a suscribirse",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "soloUseOnly": "Solo para uso individual",
     "subscribeForMore": "Mejorar",
     "subscribeNow": "Suscribirse Ahora",
     "subscribeTo": "Suscribirse a {plan}",
@@ -3160,6 +3248,7 @@
     "subscribeToRun": "Suscribirse",
     "subscribeToRunFull": "Suscribirse a Ejecutar",
     "subscriptionRequiredMessage": "Se requiere una suscripción para que los miembros ejecuten flujos de trabajo en la nube",
+    "teamWorkspace": "Espacio de trabajo en equipo",
     "tierNameYearly": "{name} Anual",
     "tiers": {
       "creator": {
@@ -3210,6 +3299,18 @@
     "closeTabsToRight": "Cerrar pestañas a la derecha",
     "duplicateTab": "Duplicar pestaña",
     "removeFromBookmarks": "Eliminar de marcadores"
+  },
+  "teamWorkspacesDialog": {
+    "confirmCallbackFailed": "Espacio de trabajo creado pero la configuración está incompleta",
+    "createWorkspace": "Crear espacio de trabajo",
+    "namePlaceholder": "ej. Equipo de Marketing",
+    "nameValidationError": "El nombre debe tener entre 1 y 50 caracteres usando letras, números, espacios o signos de puntuación comunes.",
+    "newWorkspace": "Nuevo espacio de trabajo",
+    "subtitle": "Cambia a uno existente o crea un nuevo espacio de trabajo",
+    "subtitleNoWorkspaces": "Crea un nuevo espacio de trabajo en equipo para compartir créditos",
+    "switch": "Cambiar",
+    "title": "Espacios de trabajo en equipo",
+    "yourTeamWorkspaces": "Tus espacios de trabajo en equipo"
   },
   "templateWidgets": {
     "sort": {
@@ -3597,6 +3698,7 @@
   },
   "workspaceSwitcher": {
     "createWorkspace": "Crear nuevo espacio de trabajo",
+    "failedToSwitch": "No se pudo cambiar el espacio de trabajo",
     "maxWorkspacesReached": "Solo puedes ser propietario de 10 espacios de trabajo. Elimina uno para crear uno nuevo.",
     "personal": "Personal",
     "roleMember": "Miembro",

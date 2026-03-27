@@ -91,6 +91,12 @@ export class CanvasHelper {
     await this.page.mouse.move(10, 10)
   }
 
+  async isReadOnly(): Promise<boolean> {
+    return this.page.evaluate(() => {
+      return window.app!.canvas.state.readOnly
+    })
+  }
+
   async getScale(): Promise<number> {
     return this.page.evaluate(() => {
       return window.app!.canvas.ds.scale

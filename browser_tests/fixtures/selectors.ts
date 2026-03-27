@@ -20,16 +20,33 @@ export const TestIds = {
     main: 'graph-canvas',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
-    toggleLinkVisibilityButton: 'toggle-link-visibility-button'
+    toggleLinkVisibilityButton: 'toggle-link-visibility-button',
+    zoomControlsButton: 'zoom-controls-button',
+    zoomInAction: 'zoom-in-action',
+    zoomOutAction: 'zoom-out-action',
+    zoomToFitAction: 'zoom-to-fit-action',
+    zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
-    missingNodes: 'missing-nodes-warning',
+    errorOverlay: 'error-overlay',
+    errorOverlaySeeErrors: 'error-overlay-see-errors',
+    errorOverlayDismiss: 'error-overlay-dismiss',
+    errorOverlayMessages: 'error-overlay-messages',
+    runtimeErrorPanel: 'runtime-error-panel',
+    missingNodeCard: 'missing-node-card',
+    errorCardFindOnGithub: 'error-card-find-on-github',
+    errorCardCopy: 'error-card-copy',
     about: 'about-panel',
-    whatsNewSection: 'whats-new-section'
+    whatsNewSection: 'whats-new-section',
+    missingNodePacksGroup: 'error-group-missing-node',
+    missingModelsGroup: 'error-group-missing-model'
+  },
+  keybindings: {
+    presetMenu: 'keybinding-preset-menu'
   },
   topbar: {
     queueButton: 'queue-button',
@@ -52,10 +69,17 @@ export const TestIds = {
     colorRed: 'red'
   },
   widgets: {
+    container: 'node-widgets',
+    widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
+  },
+  builder: {
+    ioItem: 'builder-io-item',
+    ioItemTitle: 'builder-io-item-title',
+    widgetActionsMenu: 'widget-actions-menu'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -66,6 +90,10 @@ export const TestIds = {
   },
   user: {
     currentUserIndicator: 'current-user-indicator'
+  },
+  errors: {
+    imageLoadError: 'error-loading-image',
+    videoLoadError: 'error-loading-video'
   }
 } as const
 
@@ -77,15 +105,18 @@ export type TestIdValue =
   | (typeof TestIds.tree)[keyof typeof TestIds.tree]
   | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
   | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
+  | (typeof TestIds.keybindings)[keyof typeof TestIds.keybindings]
   | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
   | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
   | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
   | (typeof TestIds.node)[keyof typeof TestIds.node]
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
+  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.errors)[keyof typeof TestIds.errors]

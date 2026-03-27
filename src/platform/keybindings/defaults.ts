@@ -56,9 +56,15 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      ctrl: true,
-      shift: true,
-      key: 'a'
+      alt: true,
+      key: 'm'
+    },
+    commandId: 'Comfy.ToggleLinear'
+  },
+  {
+    combo: {
+      alt: true,
+      key: 'µ'
     },
     commandId: 'Comfy.ToggleLinear'
   },
@@ -179,7 +185,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   {
     combo: {
       key: 'm',
-      alt: true
+      alt: true,
+      shift: true
     },
     commandId: 'Comfy.Canvas.ToggleMinimap'
   },

@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -50,19 +50,19 @@ describe('UserCredit', () => {
     mockIsFetchingBalance.value = false
   })
 
-  const mountComponent = (props = {}) => {
+  const renderComponent = (props = {}) => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
       messages: { en: enMessages }
     })
 
-    return mount(UserCredit, {
+    return render(UserCredit, {
       props,
       global: {
         plugins: [i18n],
         stubs: {
-          Skeleton: true,
+          Skeleton: { template: '<div data-testid="skeleton" />' },
           Tag: true
         }
       }
@@ -77,8 +77,8 @@ describe('UserCredit', () => {
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('Credits')
+      renderComponent()
+      expect(screen.getByText(/Credits/)).toBeInTheDocument()
     })
 
     it('uses effective_balance_micros when zero', () => {
@@ -88,8 +88,8 @@ describe('UserCredit', () => {
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('0')
+      renderComponent()
+      expect(screen.getByText(/\b0\b/)).toBeInTheDocument()
     })
 
     it('uses effective_balance_micros when negative', () => {
@@ -99,8 +99,8 @@ describe('UserCredit', () => {
         currency: 'usd'
       }
 
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('-')
+      renderComponent()
+      expect(screen.getByText((text) => text.includes('-'))).toBeInTheDocument()
     })
 
     it('falls back to amount_micros when effective_balance_micros is missing', () => {
@@ -109,8 +109,8 @@ describe('UserCredit', () => {
         currency: 'usd'
       } as typeof mockBalance.value
 
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('Credits')
+      renderComponent()
+      expect(screen.getByText(/Credits/)).toBeInTheDocument()
     })
 
     it('falls back to 0 when both effective_balance_micros and amount_micros are missing', () => {
@@ -118,8 +118,8 @@ describe('UserCredit', () => {
         currency: 'usd'
       } as typeof mockBalance.value
 
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('0')
+      renderComponent()
+      expect(screen.getByText(/\b0\b/)).toBeInTheDocument()
     })
   })
 
@@ -127,8 +127,8 @@ describe('UserCredit', () => {
     it('shows skeleton when loading', () => {
       mockIsFetchingBalance.value = true
 
-      const wrapper = mountComponent()
-      expect(wrapper.findComponent({ name: 'Skeleton' }).exists()).toBe(true)
+      renderComponent()
+      expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0)
     })
   })
 })

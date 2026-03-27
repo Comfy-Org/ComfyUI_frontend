@@ -4,7 +4,6 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
@@ -14,6 +13,10 @@ type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -100,17 +103,20 @@ useExtensionService().registerExtension({
 
           const loadFolder = fileInfo.type as 'input' | 'output'
 
-          const onModelLoaded = () => {
-            load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
-            void Load3dUtils.generateThumbnailIfNeeded(
-              load3d,
-              filePath,
-              loadFolder
-            )
-          }
-          load3d.addEventListener('modelLoadingEnd', onModelLoaded)
-
           config.configureForSaveMesh(loadFolder, filePath)
+
+          if (isAssetPreviewSupported()) {
+            const filename = fileInfo.filename ?? ''
+            const onModelLoaded = () => {
+              load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
+              load3d
+                .captureThumbnail(256, 256)
+                .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+                .then((blob) => persistThumbnail(filename, blob))
+                .catch(() => {})
+            }
+            load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+          }
         }
       })
     }

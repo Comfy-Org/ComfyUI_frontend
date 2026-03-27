@@ -4,6 +4,7 @@ packages:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
+  '@astrojs/vue': ^5.0.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
   '@formkit/auto-animate': ^0.9.0
@@ -13,10 +14,10 @@ catalog:
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
-  '@nx/eslint': 22.5.2
-  '@nx/playwright': 22.5.2
-  '@nx/storybook': 22.5.2
-  '@nx/vite': 22.5.2
+  '@nx/eslint': 22.6.1
+  '@nx/playwright': 22.6.1
+  '@nx/storybook': 22.6.1
+  '@nx/vite': 22.6.1
   '@pinia/testing': ^1.0.3
   '@playwright/test': ^1.58.1
   '@primeuix/forms': 0.0.2
@@ -34,6 +35,9 @@ catalog:
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
   '@tailwindcss/vite': ^4.2.0
+  '@testing-library/jest-dom': ^6.9.1
+  '@testing-library/user-event': ^14.6.1
+  '@testing-library/vue': ^8.1.0
   '@tiptap/core': ^2.27.2
   '@tiptap/extension-link': ^2.27.2
   '@tiptap/extension-table': ^2.27.2
@@ -47,6 +51,7 @@ catalog:
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
   '@types/three': ^0.169.0
+  '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
@@ -55,6 +60,7 @@ catalog:
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
+  astro: ^5.10.0
   axios: ^1.13.5
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
@@ -65,8 +71,9 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.1
-  eslint-plugin-oxlint: 1.25.0
+  eslint-plugin-oxlint: 1.55.0
   eslint-plugin-storybook: ^10.2.10
+  eslint-plugin-testing-library: ^7.16.1
   eslint-plugin-unused-imports: ^4.3.0
   eslint-plugin-vue: ^10.6.2
   fast-check: ^4.5.3
@@ -79,14 +86,14 @@ catalog:
   jsdom: ^27.4.0
   jsonata: ^2.1.0
   jsondiffpatch: ^0.7.3
-  knip: ^5.75.1
+  knip: ^6.0.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
-  nx: 22.5.2
-  oxfmt: ^0.34.0
-  oxlint: ^1.49.0
-  oxlint-tsgolint: ^0.14.2
+  nx: 22.6.1
+  oxfmt: ^0.40.0
+  oxlint: ^1.55.0
+  oxlint-tsgolint: ^0.17.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0

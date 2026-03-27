@@ -5,7 +5,7 @@ import type {
   Page
 } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { TestIds } from './selectors'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
@@ -19,25 +19,30 @@ import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
 import {
+  AssetsSidebarTab,
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
+import { AssetsHelper } from './helpers/AssetsHelper'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
+import { QueueHelper } from './helpers/QueueHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
+import { FeatureFlagHelper } from './helpers/FeatureFlagHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
+import { AppModeHelper } from './helpers/AppModeHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
 import type { WorkspaceStore } from '../types/globals'
 
-dotenv.config()
+dotenvConfig()
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -52,6 +57,7 @@ class ComfyPropertiesPanel {
 }
 
 class ComfyMenu {
+  private _assetsTab: AssetsSidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
@@ -73,6 +79,11 @@ class ComfyMenu {
   get nodeLibraryTab() {
     this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
     return this._nodeLibraryTab
+  }
+
+  get assetsTab() {
+    this._assetsTab ??= new AssetsSidebarTab(this.page)
+    return this._assetsTab
   }
 
   get workflowsTab() {
@@ -174,6 +185,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly appMode: AppModeHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
@@ -184,9 +196,12 @@ export class ComfyPage {
   public readonly contextMenu: ContextMenu
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
+  public readonly featureFlags: FeatureFlagHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
+  public readonly assets: AssetsHelper
+  public readonly queue: QueueHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -217,19 +232,23 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
-    this.clipboard = new ClipboardHelper(this.keyboard)
+    this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
     this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
+    this.assets = new AssetsHelper(page)
+    this.queue = new QueueHelper(page)
   }
 
   get visibleToasts() {
@@ -281,9 +300,7 @@ export class ComfyPage {
     clearStorage?: boolean
     mockReleases?: boolean
   } = {}) {
-    await this.goto()
-
-    // Mock release endpoint to prevent changelog popups
+    // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
       await this.page.route('**/releases**', async (route) => {
         const url = route.request().url()
@@ -303,12 +320,16 @@ export class ComfyPage {
     }
 
     if (clearStorage) {
+      // Navigate to a lightweight same-origin endpoint to obtain a page
+      // context for clearing storage without loading the full frontend app.
+      await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
         localStorage.clear()
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
     }
+
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)
@@ -441,12 +462,13 @@ export const comfyPageFixture = base.extend<{
 
     await comfyPage.setup()
 
-    const isPerf = testInfo.tags.includes('@perf')
-    if (isPerf) await comfyPage.perf.init()
+    const needsPerf =
+      testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
+    if (needsPerf) await comfyPage.perf.init()
 
     await use(comfyPage)
 
-    if (isPerf) await comfyPage.perf.dispose()
+    if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

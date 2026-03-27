@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
@@ -21,8 +21,8 @@ vi.mock('@/components/common/LazyImage.vue', () => ({
 }))
 
 describe('DefaultThumbnail', () => {
-  const mountThumbnail = (props = {}) => {
-    return mount(DefaultThumbnail, {
+  function renderThumbnail(props = {}) {
+    return render(DefaultThumbnail, {
       props: {
         src: '/test-image.jpg',
         alt: 'Test Image',
@@ -33,95 +33,69 @@ describe('DefaultThumbnail', () => {
   }
 
   it('renders image with correct src and alt', () => {
-    const wrapper = mountThumbnail()
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    expect(lazyImage.props('src')).toBe('/test-image.jpg')
-    expect(lazyImage.props('alt')).toBe('Test Image')
+    renderThumbnail()
+    const img = screen.getByRole('img')
+    expect(img).toHaveAttribute('src', '/test-image.jpg')
+    expect(img).toHaveAttribute('alt', 'Test Image')
   })
 
   it('applies scale transform when hovered', () => {
-    const wrapper = mountThumbnail({
+    renderThumbnail({
       isHovered: true,
       hoverZoom: 10
     })
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    expect(lazyImage.props('imageStyle')).toEqual({ transform: 'scale(1.1)' })
+    expect(screen.getByRole('img')).toHaveStyle({
+      transform: 'scale(1.1)'
+    })
   })
 
   it('does not apply scale transform when not hovered', () => {
-    const wrapper = mountThumbnail({
+    renderThumbnail({
       isHovered: false
     })
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    expect(lazyImage.props('imageStyle')).toBeUndefined()
+    expect(screen.getByRole('img')).not.toHaveStyle({
+      transform: 'scale(1.1)'
+    })
   })
 
   it('applies video styling for video type', () => {
-    const wrapper = mountThumbnail({
+    renderThumbnail({
       isVideo: true
     })
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    const imageClass = lazyImage.props('imageClass')
-    const classString = Array.isArray(imageClass)
-      ? imageClass.join(' ')
-      : imageClass
-    expect(classString).toContain('w-full')
-    expect(classString).toContain('h-full')
-    expect(classString).toContain('object-cover')
+    expect(screen.getByRole('img')).toHaveClass(
+      'w-full',
+      'h-full',
+      'object-cover'
+    )
   })
 
   it('applies image styling for non-video type', () => {
-    const wrapper = mountThumbnail({
+    renderThumbnail({
       isVideo: false
     })
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    const imageClass = lazyImage.props('imageClass')
-    const classString = Array.isArray(imageClass)
-      ? imageClass.join(' ')
-      : imageClass
-    expect(classString).toContain('max-w-full')
-    expect(classString).toContain('object-contain')
+    expect(screen.getByRole('img')).toHaveClass('max-w-full', 'object-contain')
   })
 
   it('applies correct styling for webp images', () => {
-    const wrapper = mountThumbnail({
+    renderThumbnail({
       src: '/test-video.webp',
       isVideo: true
     })
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    const imageClass = lazyImage.props('imageClass')
-    const classString = Array.isArray(imageClass)
-      ? imageClass.join(' ')
-      : imageClass
-    expect(classString).toContain('object-cover')
+    expect(screen.getByRole('img')).toHaveClass('object-cover')
   })
 
   it('image is not draggable', () => {
-    const wrapper = mountThumbnail()
-    const img = wrapper.find('img')
-    expect(img.attributes('draggable')).toBe('false')
+    renderThumbnail()
+    expect(screen.getByRole('img')).toHaveAttribute('draggable', 'false')
   })
 
   it('applies transition classes', () => {
-    const wrapper = mountThumbnail()
-    const lazyImage = wrapper.findComponent({ name: 'LazyImage' })
-    const imageClass = lazyImage.props('imageClass')
-    const classString = Array.isArray(imageClass)
-      ? imageClass.join(' ')
-      : imageClass
-    expect(classString).toContain('transform-gpu')
-    expect(classString).toContain('transition-transform')
-    expect(classString).toContain('duration-300')
-    expect(classString).toContain('ease-out')
-  })
-
-  it('passes correct props to BaseThumbnail', () => {
-    const wrapper = mountThumbnail({
-      hoverZoom: 20,
-      isHovered: true
-    })
-    const baseThumbnail = wrapper.findComponent({ name: 'BaseThumbnail' })
-    expect(baseThumbnail.props('hoverZoom')).toBe(20)
-    expect(baseThumbnail.props('isHovered')).toBe(true)
+    renderThumbnail()
+    expect(screen.getByRole('img')).toHaveClass(
+      'transform-gpu',
+      'transition-transform',
+      'duration-300',
+      'ease-out'
+    )
   })
 })

@@ -106,7 +106,7 @@
       <Button
         variant="secondary"
         size="md"
-        class="flex w-full flex-1"
+        class="flex w-full flex-1 rounded-lg"
         :disabled="
           comfyManagerStore.isPackInstalled(group.packId) || isInstalling
         "
@@ -161,7 +161,7 @@
       <Button
         variant="secondary"
         size="md"
-        class="flex w-full flex-1"
+        class="flex w-full flex-1 rounded-lg"
         @click="
           openManager({
             initialTab: ManagerTab.All,
@@ -193,7 +193,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import type { MissingNodeType } from '@/types/comfy'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const props = defineProps<{
+const { group, showInfoButton, showNodeIdBadge } = defineProps<{
   group: MissingPackGroup
   showInfoButton: boolean
   showNodeIdBadge: boolean
@@ -211,8 +211,8 @@ const comfyManagerStore = useComfyManagerStore()
 const { shouldShowManagerButtons, openManager } = useManagerState()
 
 const nodePack = computed(() => {
-  if (!props.group.packId) return null
-  return missingNodePacks.value.find((p) => p.id === props.group.packId) ?? null
+  if (!group.packId) return null
+  return missingNodePacks.value.find((p) => p.id === group.packId) ?? null
 })
 
 const { isInstalling, installAllPacks } = usePackInstall(() =>
@@ -220,8 +220,8 @@ const { isInstalling, installAllPacks } = usePackInstall(() =>
 )
 
 function handlePackInstallClick() {
-  if (!props.group.packId) return
-  if (!comfyManagerStore.isPackInstalled(props.group.packId)) {
+  if (!group.packId) return
+  if (!comfyManagerStore.isPackInstalled(group.packId)) {
     void installAllPacks()
   }
 }

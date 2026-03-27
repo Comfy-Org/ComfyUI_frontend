@@ -35,7 +35,7 @@ module.exports = defineConfig({
 })
 ```
 
-#### 1.2 Update `src/constants/coreSettings.ts`
+#### 1.2 Update `src/platform/settings/constants/coreSettings.ts`
 
 Add your language to the dropdown options:
 

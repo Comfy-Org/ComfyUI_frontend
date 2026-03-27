@@ -1,5 +1,6 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
+import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
@@ -280,10 +281,12 @@ export interface ComfyApi extends EventTarget {
 
 export class PromptExecutionError extends Error {
   response: PromptResponse
+  status?: number
 
-  constructor(response: PromptResponse) {
+  constructor(response: PromptResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
+    this.status = status
   }
 
   override toString() {
@@ -379,6 +382,7 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    if (route.startsWith('/api')) return this.api_base + route
     return this.api_base + '/api' + route
   }
 
@@ -414,9 +418,10 @@ export class ComfyApi extends EventTarget {
 
       if (authStore.isInitialized) return
 
+      const { isInitialized } = storeToRefs(authStore)
       try {
         await Promise.race([
-          until(authStore.isInitialized),
+          until(isInitialized).toBe(true),
           promiseTimeout(10000)
         ])
       } catch {
@@ -898,7 +903,7 @@ export class ComfyApi extends EventTarget {
           }
         }
       }
-      throw new PromptExecutionError(errorResponse)
+      throw new PromptExecutionError(errorResponse, res.status)
     }
 
     return await res.json()

@@ -10,8 +10,9 @@
     :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute text-sm',
-        'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
+        'group/node lg-node absolute isolate text-sm',
+        'flex flex-col contain-layout contain-style',
+        isRerouteNode ? 'h-(--node-height)' : 'min-w-(--min-node-width)',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
@@ -32,7 +33,7 @@
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop.stop.prevent="handleDrop"
+    @drop.prevent="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -75,7 +76,8 @@
       :class="
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
-          'min-h-(--node-height) w-(--node-width) min-w-(--min-node-width)',
+          'w-(--node-width)',
+          !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
           {
@@ -129,7 +131,11 @@
         :style="{ width: `${Math.min(progress * 100, 100)}%` }"
       />
 
-      <template v-if="!isCollapsed">
+      <template v-if="!isCollapsed && isRerouteNode">
+        <NodeSlots :node-data="nodeData" />
+      </template>
+
+      <template v-else-if="!isCollapsed">
         <div class="relative">
           <!-- Progress bar for executing state -->
           <div
@@ -166,7 +172,7 @@
             />
             <NodeContent
               v-for="preview in promotedPreviews"
-              :key="`${preview.interiorNodeId}-${preview.widgetName}`"
+              :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data="nodeData"
               :media="preview"
             />
@@ -186,6 +192,7 @@
       </template>
     </div>
     <NodeFooter
+      v-if="!isRerouteNode"
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
@@ -199,7 +206,12 @@
       @toggle-advanced="handleToggleAdvanced"
     />
     <template
-      v-if="!isCollapsed && nodeData.resizable !== false && !isSelectMode"
+      v-if="
+        !isCollapsed &&
+        !isRerouteNode &&
+        nodeData.resizable !== false &&
+        !isSelectMode
+      "
     >
       <div
         v-for="handle in RESIZE_HANDLES"
@@ -257,7 +269,7 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { hasUnpromotedWidgets } from '@/core/graph/subgraph/unpromotedWidgetUtils'
+import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import {
   LGraphCanvas,
@@ -292,6 +304,7 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -343,6 +356,7 @@ const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -356,7 +370,7 @@ const hasAnyError = computed((): boolean => {
     missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
     (lgraphNode.value &&
       (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        executionErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
+        missingNodesErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
         missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
   )
 })
@@ -366,6 +380,8 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+
+const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -811,15 +827,13 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-async function handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
-  if (!node || !node.onDragDrop) {
-    return
-  }
+  if (!node?.onDragDrop) return
 
-  // Forward the drop event to the litegraph node's onDragDrop callback
-  await node.onDragDrop(event)
+  const handled = node.onDragDrop(event)
+  if (handled === true) event.stopPropagation()
 }
 </script>

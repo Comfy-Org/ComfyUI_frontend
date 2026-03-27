@@ -6,14 +6,27 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setActivePinia } from 'pinia'
 
 const mockData = vi.hoisted(() => ({
-  mockExecuting: false
+  mockExecuting: false,
+  mockLgraphNode: null as Record<string, unknown> | null
 }))
+
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
+    getNodeByLocatorId: vi.fn(
+      () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+    )
+  }
+})
 
 vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   return {
@@ -47,16 +60,6 @@ vi.mock('@/scripts/app', () => ({
     canvas: { setDirty: vi.fn() }
   }
 }))
-
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    getNodeByLocatorId: vi.fn(() => ({
-      isSubgraphNode: () => false
-    }))
-  }
-})
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({
@@ -146,6 +149,14 @@ const mockNodeData: VueNodeData = {
   widgets: [],
   selected: false,
   executing: false
+}
+
+const mockRerouteNodeData: VueNodeData = {
+  ...mockNodeData,
+  id: 'reroute-node-1',
+  title: '',
+  type: 'Reroute',
+  titleMode: TitleMode.NO_TITLE
 }
 
 describe('LGraphNode', () => {
@@ -250,5 +261,86 @@ describe('LGraphNode', () => {
       '130px'
     )
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
+  })
+
+  describe('Reroute node sizing', () => {
+    it('should not enforce minimum width for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      const regularWrapper = mountLGraphNode({ nodeData: mockNodeData })
+
+      const rerouteHasMinWidth = wrapper
+        .classes()
+        .some((c) => c.startsWith('min-w-'))
+      const regularHasMinWidth = regularWrapper
+        .classes()
+        .some((c) => c.startsWith('min-w-'))
+
+      expect(rerouteHasMinWidth).toBe(false)
+      expect(regularHasMinWidth).toBe(true)
+    })
+
+    it('should use fixed height for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      const hasFixedHeight = wrapper.classes().some((c) => c.startsWith('h-'))
+      expect(hasFixedHeight).toBe(true)
+    })
+
+    it('should not render resize handle for reroute nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockRerouteNodeData })
+      expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(false)
+    })
+
+    it('should render resize handle for regular nodes', () => {
+      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+      expect(wrapper.find('[role="button"][aria-label]').exists()).toBe(true)
+    })
+  })
+
+  describe('handleDrop', () => {
+    it('should stop propagation when onDragDrop returns true', async () => {
+      const onDragDrop = vi.fn().mockReturnValue(true)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(),
+        isSubgraphNode: () => false
+      }
+
+      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+
+      const parentListener = vi.fn()
+      const parent = wrapper.element.parentElement
+      expect(parent).not.toBeNull()
+      parent!.addEventListener('drop', parentListener)
+
+      wrapper.element.dispatchEvent(
+        new Event('drop', { bubbles: true, cancelable: true })
+      )
+
+      expect(onDragDrop).toHaveBeenCalled()
+      expect(parentListener).not.toHaveBeenCalled()
+    })
+
+    it('should not stop propagation when onDragDrop returns false', async () => {
+      const onDragDrop = vi.fn().mockReturnValue(false)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(),
+        isSubgraphNode: () => false
+      }
+
+      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+
+      const parentListener = vi.fn()
+      const parent = wrapper.element.parentElement
+      expect(parent).not.toBeNull()
+      parent!.addEventListener('drop', parentListener)
+
+      wrapper.element.dispatchEvent(
+        new Event('drop', { bubbles: true, cancelable: true })
+      )
+
+      expect(onDragDrop).toHaveBeenCalled()
+      expect(parentListener).toHaveBeenCalled()
+    })
   })
 })

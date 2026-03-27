@@ -1,4 +1,3 @@
-// TODO: Fix these tests after migration
 import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -497,9 +496,9 @@ describe('SubgraphIO - Empty Slot Connection', () => {
           subgraphNode.rootGraph.id,
           subgraphNode.id
         )
-      ).toStrictEqual([
-        { interiorNodeId: String(firstNode.id), widgetName: 'seed' },
-        { interiorNodeId: String(secondNode.id), widgetName: 'seed' }
+      ).toEqual([
+        { sourceNodeId: String(firstNode.id), sourceWidgetName: 'seed' },
+        { sourceNodeId: String(secondNode.id), sourceWidgetName: 'seed' }
       ])
     }
   )

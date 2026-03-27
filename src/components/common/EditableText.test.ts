@@ -1,140 +1,120 @@
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { beforeAll, describe, expect, it } from 'vitest'
-import { createApp } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import EditableText from './EditableText.vue'
 
 describe('EditableText', () => {
-  beforeAll(() => {
-    // Create a Vue app instance for PrimeVue
-    const app = createApp({})
-    app.use(PrimeVue)
-  })
+  function renderComponent(
+    props: { modelValue: string; isEditing?: boolean },
+    callbacks: {
+      onEdit?: (...args: unknown[]) => void
+      onCancel?: (...args: unknown[]) => void
+    } = {}
+  ) {
+    const user = userEvent.setup()
 
-  // @ts-expect-error fixme ts strict error
-  const mountComponent = (props, options = {}) => {
-    return mount(EditableText, {
+    render(EditableText, {
       global: {
         plugins: [PrimeVue],
         components: { InputText }
       },
-      props,
-      ...options
+      props: {
+        ...props,
+        ...(callbacks.onEdit && { onEdit: callbacks.onEdit }),
+        ...(callbacks.onCancel && { onCancel: callbacks.onCancel })
+      }
     })
+
+    return { user }
   }
 
   it('renders span with modelValue when not editing', () => {
-    const wrapper = mountComponent({
-      modelValue: 'Test Text',
-      isEditing: false
-    })
-    expect(wrapper.find('span').text()).toBe('Test Text')
-    expect(wrapper.findComponent(InputText).exists()).toBe(false)
+    renderComponent({ modelValue: 'Test Text', isEditing: false })
+    expect(screen.getByText('Test Text')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 
   it('renders input with modelValue when editing', () => {
-    const wrapper = mountComponent({
-      modelValue: 'Test Text',
-      isEditing: true
-    })
-    expect(wrapper.find('span').exists()).toBe(false)
-    expect(wrapper.findComponent(InputText).props()['modelValue']).toBe(
-      'Test Text'
-    )
+    renderComponent({ modelValue: 'Test Text', isEditing: true })
+    expect(screen.queryByText('Test Text')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveValue('Test Text')
   })
 
   it('emits edit event when input is submitted', async () => {
-    const wrapper = mountComponent({
-      modelValue: 'Test Text',
-      isEditing: true
-    })
-    await wrapper.findComponent(InputText).setValue('New Text')
-    await wrapper.findComponent(InputText).trigger('keydown.enter')
-    // Blur event should have been triggered
-    expect(wrapper.findComponent(InputText).element).not.toBe(
-      document.activeElement
+    const onEdit = vi.fn()
+    const { user } = renderComponent(
+      { modelValue: 'Test Text', isEditing: true },
+      { onEdit }
     )
+
+    const input = screen.getByRole('textbox')
+    await user.clear(input)
+    await user.type(input, 'New Text')
+    await user.keyboard('{Enter}')
+
+    expect(onEdit).toHaveBeenCalledWith('New Text')
   })
 
   it('finishes editing on blur', async () => {
-    const wrapper = mountComponent({
-      modelValue: 'Test Text',
-      isEditing: true
-    })
-    await wrapper.findComponent(InputText).trigger('blur')
-    expect(wrapper.emitted('edit')).toBeTruthy()
-    // @ts-expect-error fixme ts strict error
-    expect(wrapper.emitted('edit')[0]).toEqual(['Test Text'])
+    const onEdit = vi.fn()
+    renderComponent({ modelValue: 'Test Text', isEditing: true }, { onEdit })
+
+    await fireEvent.blur(screen.getByRole('textbox'))
+
+    expect(onEdit).toHaveBeenCalledWith('Test Text')
   })
 
   it('cancels editing on escape key', async () => {
-    const wrapper = mountComponent({
-      modelValue: 'Original Text',
-      isEditing: true
-    })
-
-    // Change the input value
-    await wrapper.findComponent(InputText).setValue('Modified Text')
-
-    // Press escape
-    await wrapper.findComponent(InputText).trigger('keydown.escape')
-
-    // Should emit cancel event
-    expect(wrapper.emitted('cancel')).toBeTruthy()
-
-    // Should NOT emit edit event
-    expect(wrapper.emitted('edit')).toBeFalsy()
-
-    // Input value should be reset to original
-    expect(wrapper.findComponent(InputText).props()['modelValue']).toBe(
-      'Original Text'
+    const onEdit = vi.fn()
+    const onCancel = vi.fn()
+    const { user } = renderComponent(
+      { modelValue: 'Original Text', isEditing: true },
+      { onEdit, onCancel }
     )
+
+    const input = screen.getByRole('textbox')
+    await user.clear(input)
+    await user.type(input, 'Modified Text')
+    await user.keyboard('{Escape}')
+
+    expect(onCancel).toHaveBeenCalled()
+    expect(onEdit).not.toHaveBeenCalled()
+    expect(input).toHaveValue('Original Text')
   })
 
-  it('does not save changes when escape is pressed and blur occurs', async () => {
-    const wrapper = mountComponent({
-      modelValue: 'Original Text',
-      isEditing: true
-    })
+  it('does not save changes when escape is pressed', async () => {
+    const onEdit = vi.fn()
+    const onCancel = vi.fn()
+    const { user } = renderComponent(
+      { modelValue: 'Original Text', isEditing: true },
+      { onEdit, onCancel }
+    )
 
-    // Change the input value
-    await wrapper.findComponent(InputText).setValue('Modified Text')
+    const input = screen.getByRole('textbox')
+    await user.clear(input)
+    await user.type(input, 'Modified Text')
+    // Escape triggers cancelEditing → blur internally, so no separate blur needed
+    await user.keyboard('{Escape}')
 
-    // Press escape (which triggers blur internally)
-    await wrapper.findComponent(InputText).trigger('keydown.escape')
-
-    // Manually trigger blur to simulate the blur that happens after escape
-    await wrapper.findComponent(InputText).trigger('blur')
-
-    // Should emit cancel but not edit
-    expect(wrapper.emitted('cancel')).toBeTruthy()
-    expect(wrapper.emitted('edit')).toBeFalsy()
+    expect(onCancel).toHaveBeenCalled()
+    expect(onEdit).not.toHaveBeenCalled()
   })
 
   it('saves changes on enter but not on escape', async () => {
-    // Test Enter key saves changes
-    const enterWrapper = mountComponent({
-      modelValue: 'Original Text',
-      isEditing: true
-    })
-    await enterWrapper.findComponent(InputText).setValue('Saved Text')
-    await enterWrapper.findComponent(InputText).trigger('keydown.enter')
-    // Trigger blur that happens after enter
-    await enterWrapper.findComponent(InputText).trigger('blur')
-    expect(enterWrapper.emitted('edit')).toBeTruthy()
-    // @ts-expect-error fixme ts strict error
-    expect(enterWrapper.emitted('edit')[0]).toEqual(['Saved Text'])
+    const onEditEnter = vi.fn()
+    const { user: userEnter } = renderComponent(
+      { modelValue: 'Original Text', isEditing: true },
+      { onEdit: onEditEnter }
+    )
 
-    // Test Escape key cancels changes with a fresh wrapper
-    const escapeWrapper = mountComponent({
-      modelValue: 'Original Text',
-      isEditing: true
-    })
-    await escapeWrapper.findComponent(InputText).setValue('Cancelled Text')
-    await escapeWrapper.findComponent(InputText).trigger('keydown.escape')
-    expect(escapeWrapper.emitted('cancel')).toBeTruthy()
-    expect(escapeWrapper.emitted('edit')).toBeFalsy()
+    const enterInput = screen.getByRole('textbox')
+    await userEnter.clear(enterInput)
+    await userEnter.type(enterInput, 'Saved Text')
+    await userEnter.keyboard('{Enter}')
+
+    expect(onEditEnter).toHaveBeenCalledWith('Saved Text')
   })
 })

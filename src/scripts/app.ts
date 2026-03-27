@@ -6,6 +6,7 @@ import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { st, t } from '@/i18n'
@@ -56,7 +57,6 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
-import { useMissingNodesDialog } from '@/composables/useMissingNodesDialog'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -65,6 +65,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -75,6 +76,7 @@ import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -82,7 +84,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
   scanAllModelCandidates,
@@ -578,6 +580,9 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
+        // Skip if already handled (e.g. file drop onto publish dialog tiles)
+        if (event.defaultPrevented) return
+
         event.preventDefault()
         event.stopPropagation()
 
@@ -1104,13 +1109,9 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    // Remove modal once Node Replacement is implemented in TabErrors.
-    if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      useMissingNodesDialog().show({ missingNodeTypes })
+    if (useMissingNodesErrorStore().surfaceMissingNodes(missingNodeTypes)) {
+      useExecutionErrorStore().showErrorOverlay()
     }
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.surfaceMissingNodes(missingNodeTypes)
   }
 
   async loadGraphData(
@@ -1119,16 +1120,16 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodesDialog?: boolean
-      showMissingModelsDialog?: boolean
+      showMissingNodes?: boolean
+      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
     } = {}
   ) {
     const {
-      showMissingNodesDialog = true,
-      showMissingModelsDialog = true,
+      showMissingNodes = true,
+      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
       deferWarnings = false
@@ -1138,6 +1139,12 @@ export class ComfyApp {
     useMissingModelStore().clearMissingModels()
 
     if (clean !== false) {
+      // Reset canvas context before configuring a new graph so subgraph UI
+      // state from the previous workflow cannot leak into the newly loaded
+      // one, and so `clean()` can clear the root graph even when the user is
+      // currently inside a subgraph.
+      this.canvas.setGraph(this.rootGraph)
+
       this.clean()
     }
 
@@ -1281,6 +1288,7 @@ export class ComfyApp {
 
     ChangeTracker.isLoadingGraph = true
     try {
+      let normalizedMainGraph = false
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
@@ -1290,7 +1298,10 @@ export class ComfyApp {
           this.rootGraph.extra.workflowRendererVersion
 
         // Scale main graph
-        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
+        normalizedMainGraph = ensureCorrectLayoutScale(
+          originalMainGraphRenderer,
+          this.rootGraph
+        )
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)
@@ -1368,6 +1379,10 @@ export class ComfyApp {
         useExtensionService().invokeExtensions('loadedGraphNode', node)
       })
 
+      if (normalizedMainGraph) {
+        syncLayoutStoreNodeBoundsFromGraph(this.rootGraph)
+      }
+
       await useExtensionService().invokeExtensionsAsync(
         'afterConfigureGraph',
         missingNodeTypes
@@ -1397,14 +1412,15 @@ export class ComfyApp {
       await this.runMissingModelPipeline(
         graphData,
         missingNodeTypes,
-        showMissingNodesDialog,
-        showMissingModelsDialog
+        showMissingNodes,
+        showMissingModels
       )
 
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings()
       }
 
+      void useSubgraphNavigationStore().updateHash()
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
@@ -1416,8 +1432,8 @@ export class ComfyApp {
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    showMissingNodesDialog: boolean,
-    showMissingModelsDialog: boolean
+    showMissingNodes: boolean,
+    showMissingModels: boolean
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
@@ -1461,21 +1477,27 @@ export class ComfyApp {
         hash_type: c.hashType
       }))
 
+    const confirmedCandidates = enrichedCandidates.filter(
+      (c) => c.isMissing === true
+    )
+
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
       const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodesDialog) {
+      if (missingNodeTypes.length && showMissingNodes) {
         warnings.missingNodeTypes = missingNodeTypes
       }
-      if (missingModels.length && showMissingModelsDialog) {
-        const paths = await api.getFolderPaths()
-        warnings.missingModels = { missingModels, paths }
+      if (confirmedCandidates.length && showMissingModels) {
+        warnings.missingModelCandidates = confirmedCandidates
       }
-      if (warnings.missingNodeTypes || warnings.missingModels) {
+      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
         activeWf.pendingWarnings = warnings
       }
     }
 
+    // Intentionally runs on every graph load (including tab switches and
+    // undo/redo) because missing model state depends on external asset data
+    // that may change between workflow activations.
     if (enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
@@ -1631,6 +1653,34 @@ export class ComfyApp {
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
+            } else if (
+              error instanceof PromptExecutionError &&
+              error.status === 403
+            ) {
+              // User is authenticated but not authorized (e.g. not whitelisted).
+              // Show a clear message instead of a generic error or sign-in prompt.
+              // The response may be middleware JSON {"message": "..."} or the
+              // standard {"error": {"message": "..."}} shape, so check both.
+              const raw =
+                error.response && typeof error.response === 'object'
+                  ? (error.response as Record<string, unknown>)
+                  : {}
+              const rawError =
+                raw.error && typeof raw.error === 'object'
+                  ? (raw.error as Record<string, unknown>)
+                  : undefined
+              const detail =
+                typeof raw.message === 'string'
+                  ? raw.message
+                  : typeof rawError?.message === 'string'
+                    ? rawError.message
+                    : typeof raw.error === 'string'
+                      ? raw.error
+                      : t('errorDialog.accessRestrictedMessage')
+              useDialogService().showErrorDialog(new Error(detail), {
+                title: t('errorDialog.accessRestrictedTitle'),
+                reportType: 'accessRestrictedError'
+              })
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
               !(error instanceof PromptExecutionError)
