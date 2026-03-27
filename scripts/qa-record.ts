@@ -835,39 +835,29 @@ export async function executeAction(
         break
       }
       case 'clickCanvas':
-        await moveCursorOverlay(page, step.x, step.y)
         await page.mouse.move(step.x, step.y)
         await sleep(300)
-        await clickCursorOverlay(page, true)
         await page.mouse.click(step.x, step.y)
-        await clickCursorOverlay(page, false)
         await sleep(300)
         break
       case 'rightClickCanvas':
-        await moveCursorOverlay(page, step.x, step.y)
         await page.mouse.move(step.x, step.y)
         await sleep(300)
-        await clickCursorOverlay(page, true)
         await page.mouse.click(step.x, step.y, { button: 'right' })
-        await clickCursorOverlay(page, false)
         await sleep(500)
         break
       case 'dragCanvas': {
-        await moveCursorOverlay(page, step.fromX, step.fromY)
         await page.mouse.move(step.fromX, step.fromY)
-        await clickCursorOverlay(page, true)
         await page.mouse.down()
         await sleep(100)
         const dragSteps = 5
         for (let i = 1; i <= dragSteps; i++) {
           const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
           const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
-          await moveCursorOverlay(page, x, y)
           await page.mouse.move(x, y)
           await sleep(50)
         }
         await page.mouse.up()
-        await clickCursorOverlay(page, false)
         await sleep(300)
         break
       }
@@ -1823,6 +1813,50 @@ async function launchSessionAndLogin(
     if (document.body) init()
     else document.addEventListener('DOMContentLoaded', init)
   })
+
+  // Monkey-patch page.mouse to auto-update cursor overlay on ALL mouse ops
+  const origMove = page.mouse.move.bind(page.mouse)
+  const origClick = page.mouse.click.bind(page.mouse)
+  const origDown = page.mouse.down.bind(page.mouse)
+  const origUp = page.mouse.up.bind(page.mouse)
+  const origDblclick = page.mouse.dblclick.bind(page.mouse)
+
+  page.mouse.move = async (
+    x: number,
+    y: number,
+    options?: Parameters<typeof origMove>[2]
+  ) => {
+    await origMove(x, y, options)
+    await moveCursorOverlay(page, x, y)
+  }
+  page.mouse.click = async (
+    x: number,
+    y: number,
+    options?: Parameters<typeof origClick>[2]
+  ) => {
+    await moveCursorOverlay(page, x, y)
+    await clickCursorOverlay(page, true)
+    await origClick(x, y, options)
+    await clickCursorOverlay(page, false)
+  }
+  page.mouse.dblclick = async (
+    x: number,
+    y: number,
+    options?: Parameters<typeof origDblclick>[2]
+  ) => {
+    await moveCursorOverlay(page, x, y)
+    await clickCursorOverlay(page, true)
+    await origDblclick(x, y, options)
+    await clickCursorOverlay(page, false)
+  }
+  page.mouse.down = async (options?: Parameters<typeof origDown>[0]) => {
+    await clickCursorOverlay(page, true)
+    await origDown(options)
+  }
+  page.mouse.up = async (options?: Parameters<typeof origUp>[0]) => {
+    await origUp(options)
+    await clickCursorOverlay(page, false)
+  }
 
   console.warn(`Opening ComfyUI at ${opts.serverUrl}`)
   await page.goto(opts.serverUrl, {
