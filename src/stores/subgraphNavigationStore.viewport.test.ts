@@ -92,27 +92,34 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   })
 
   describe('cache key isolation', () => {
-    it('keys viewport cache by workflow path', () => {
+    it('isolates viewport by workflow — same graphId returns different values', () => {
       const store = useSubgraphNavigationStore()
       const workflowStore = useWorkflowStore()
 
+      // Save viewport under workflow A
       workflowStore.activeWorkflow = {
-        path: 'workflows/test.json'
+        path: 'wfA.json'
       } as typeof workflowStore.activeWorkflow
-
       mockCanvas.ds.state.scale = 2
       mockCanvas.ds.state.offset = [10, 20]
-
       store.saveViewport('root')
 
-      // Key includes instance ID: `path#N:graphId`
-      const keys = [...store.viewportCache.keys()]
-      const matchingKey = keys.find(
-        (k) => k.startsWith('workflows/test.json#') && k.endsWith(':root')
-      )
-      expect(matchingKey).toBeDefined()
-      // Bare key without workflow path should not exist
-      expect(keys.some((k) => k === ':root')).toBe(false)
+      // Save different viewport under workflow B
+      workflowStore.activeWorkflow = {
+        path: 'wfB.json'
+      } as typeof workflowStore.activeWorkflow
+      mockCanvas.ds.state.scale = 5
+      mockCanvas.ds.state.offset = [99, 88]
+      store.saveViewport('root')
+
+      // Restore under A — should get A's values
+      workflowStore.activeWorkflow = {
+        path: 'wfA.json'
+      } as typeof workflowStore.activeWorkflow
+      store.restoreViewport('root')
+
+      expect(mockCanvas.ds.scale).toBe(2)
+      expect(mockCanvas.ds.offset).toEqual([10, 20])
     })
   })
 

@@ -47,34 +47,21 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     /**
-     * Per-workflow-instance counter to disambiguate unsaved workflows
-     * that share the same path. Keyed by workflow object identity.
-     */
-    const workflowInstanceIds = new WeakMap<object, number>()
-    let nextInstanceId = 0
-    const getWorkflowInstanceId = (workflow: object): number => {
-      let id = workflowInstanceIds.get(workflow)
-      if (id === undefined) {
-        id = nextInstanceId++
-        workflowInstanceIds.set(workflow, id)
-      }
-      return id
-    }
-
-    /**
      * Set by saveCurrentViewport() (called from beforeLoadNewGraph) to
      * prevent onNavigated from re-saving a stale viewport during the
-     * workflow switch transition.
+     * workflow switch transition. Uses setTimeout instead of rAF so the
+     * flag resets even when the tab is backgrounded.
      */
     let isWorkflowSwitching = false
     // ── Helpers ──────────────────────────────────────────────────────
 
-    /** Build a workflow-scoped cache key unique per workflow instance. */
-    const cacheKey = (graphId: string, workflowRef?: object | null): string => {
+    /** Build a workflow-scoped cache key. */
+    const cacheKey = (
+      graphId: string,
+      workflowRef?: { path?: string } | null
+    ): string => {
       const wf = workflowRef ?? workflowStore.activeWorkflow
-      const prefix = wf
-        ? `${(wf as { path?: string }).path ?? ''}#${getWorkflowInstanceId(wf)}`
-        : ''
+      const prefix = wf?.path ?? ''
       return `${prefix}:${graphId}`
     }
 
@@ -180,14 +167,7 @@ export const useSubgraphNavigationStore = defineStore(
       const isInRootGraph = !subgraph
       if (isInRootGraph) {
         idStack.value.length = 0
-        if (isWorkflowSwitching) {
-          // Defer restore until after loadGraphData applies extra.ds
-          requestAnimationFrame(() => {
-            restoreViewport(getCurrentRootGraphId())
-          })
-        } else {
-          restoreViewport(getCurrentRootGraphId())
-        }
+        restoreViewport(getCurrentRootGraphId())
         return
       }
 
@@ -199,20 +179,13 @@ export const useSubgraphNavigationStore = defineStore(
         idStack.value = [subgraph.id]
       }
 
-      if (isWorkflowSwitching) {
-        // Defer restore until after loadGraphData applies extra.ds
-        const targetId = subgraph.id
-        requestAnimationFrame(() => {
-          restoreViewport(targetId)
-        })
-      } else {
-        restoreViewport(subgraph.id)
-      }
+      restoreViewport(subgraph.id)
     }
 
     // ── Watchers ─────────────────────────────────────────────────────
 
-    // React to subgraph navigation (enter/exit/switch).
+    // Sync flush ensures we capture the outgoing viewport before any other
+    // watchers or DOM updates from the same state change mutate the canvas.
     watch(
       () => workflowStore.activeSubgraph,
       (newValue, oldValue) => {
@@ -292,9 +265,9 @@ export const useSubgraphNavigationStore = defineStore(
     const saveCurrentViewport = () => {
       saveViewport(getActiveGraphId())
       isWorkflowSwitching = true
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         isWorkflowSwitching = false
-      })
+      }, 0)
     }
 
     return {
@@ -306,6 +279,7 @@ export const useSubgraphNavigationStore = defineStore(
       restoreViewport,
       saveCurrentViewport,
       updateHash,
+      /** @internal Exposed for test assertions only. */
       viewportCache
     }
   }

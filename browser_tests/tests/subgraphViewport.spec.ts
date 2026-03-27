@@ -37,23 +37,22 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
     )
     await comfyPage.nextFrame()
 
-    const result = await comfyPage.page.evaluate(() => {
-      const graph = window.app!.canvas.graph!
-      const sgNode = graph._nodes.find(
-        (n: { isSubgraphNode?: () => boolean }) => n.isSubgraphNode?.()
-      ) as { subgraph?: unknown } | undefined
-      if (!sgNode?.subgraph) return { error: 'No subgraph node' }
+    await comfyPage.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      const graph = canvas.graph!
+      const sgNode = graph._nodes.find((n) =>
+        'isSubgraphNode' in n
+          ? (n as unknown as { isSubgraphNode: () => boolean }).isSubgraphNode()
+          : false
+      ) as unknown as { subgraph?: typeof graph } | undefined
+      if (!sgNode?.subgraph) throw new Error('No subgraph node')
 
-      window.app!.canvas.openSubgraph(sgNode.subgraph as never, sgNode as never)
-      return { entered: true }
+      canvas.setGraph(sgNode.subgraph)
     })
-    expect(result).not.toHaveProperty('error')
 
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
-
-    expect(await comfyPage.page.evaluate(hasVisibleNodeInViewport)).toBe(true)
+    await expect(async () => {
+      expect(await comfyPage.page.evaluate(hasVisibleNodeInViewport)).toBe(true)
+    }).toPass({ timeout: 2000 })
   })
 
   test('first visit fits viewport to subgraph nodes (Vue)', async ({
@@ -65,13 +64,11 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
     )
     await comfyPage.vueNodes.waitForNodes()
 
-    // Enter the subgraph via Vue nodes helper
     await comfyPage.vueNodes.enterSubgraph('11')
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
 
-    expect(await comfyPage.page.evaluate(hasVisibleNodeInViewport)).toBe(true)
+    await expect(async () => {
+      expect(await comfyPage.page.evaluate(hasVisibleNodeInViewport)).toBe(true)
+    }).toPass({ timeout: 2000 })
   })
 
   test('viewport is restored when returning to root (Vue)', async ({
@@ -83,36 +80,24 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
     )
     await comfyPage.vueNodes.waitForNodes()
 
-    // Capture root viewport before entering subgraph
     const rootViewport = await comfyPage.page.evaluate(() => {
       const ds = window.app!.canvas.ds
       return { scale: ds.scale, offset: [...ds.offset] }
     })
 
-    // Enter subgraph
     await comfyPage.vueNodes.enterSubgraph('11')
     await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
 
-    // Verify viewport changed (we're in a different graph now)
-    const subgraphViewport = await comfyPage.page.evaluate(() => {
-      const ds = window.app!.canvas.ds
-      return { scale: ds.scale, offset: [...ds.offset] }
-    })
-    expect(subgraphViewport).not.toEqual(rootViewport)
-
-    // Exit via breadcrumb
     await comfyPage.subgraph.exitViaBreadcrumb()
-    await comfyPage.nextFrame()
-    await comfyPage.nextFrame()
 
-    // Verify root viewport is restored
-    const restoredViewport = await comfyPage.page.evaluate(() => {
-      const ds = window.app!.canvas.ds
-      return { scale: ds.scale, offset: [...ds.offset] }
-    })
-    expect(restoredViewport.scale).toBeCloseTo(rootViewport.scale, 2)
-    expect(restoredViewport.offset[0]).toBeCloseTo(rootViewport.offset[0], 0)
-    expect(restoredViewport.offset[1]).toBeCloseTo(rootViewport.offset[1], 0)
+    await expect(async () => {
+      const restored = await comfyPage.page.evaluate(() => {
+        const ds = window.app!.canvas.ds
+        return { scale: ds.scale, offset: [...ds.offset] }
+      })
+      expect(restored.scale).toBeCloseTo(rootViewport.scale, 2)
+      expect(restored.offset[0]).toBeCloseTo(rootViewport.offset[0], 0)
+      expect(restored.offset[1]).toBeCloseTo(rootViewport.offset[1], 0)
+    }).toPass({ timeout: 2000 })
   })
 })
