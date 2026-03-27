@@ -793,13 +793,14 @@ async function executeAction(
         break
       }
       case 'cloneNode': {
-        await page.mouse.move(step.x, step.y)
+        // Select node then Ctrl+C/Ctrl+V — works in both legacy and Nodes 2.0
+        await page.mouse.click(step.x, step.y)
         await sleep(300)
-        await page.mouse.click(step.x, step.y, { button: 'right' })
+        await page.keyboard.press('Control+c')
+        await sleep(200)
+        await page.keyboard.press('Control+v')
         await sleep(500)
-        await clickSubmenuItem(page, 'Clone')
-        await sleep(500)
-        console.warn(`  Cloned node at (${step.x}, ${step.y})`)
+        console.warn(`  Cloned node at (${step.x}, ${step.y}) via Ctrl+C/V`)
         break
       }
       case 'copyPaste': {
