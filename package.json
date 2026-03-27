@@ -121,6 +121,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "catalog:",
     "@eslint/js": "catalog:",
     "@google/generative-ai": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
