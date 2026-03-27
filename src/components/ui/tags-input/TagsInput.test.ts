@@ -74,10 +74,9 @@ describe('TagsInput with child components', () => {
     expect(screen.getByText('tag1')).toBeInTheDocument()
     expect(screen.getByText('tag2')).toBeInTheDocument()
 
-    const deleteButtons = screen.getAllByRole('button', {
-      name: /remove tag/i
-    })
-    expect(deleteButtons).toHaveLength(tags.length)
+    const deleteButtons = tags.map((tag) =>
+      screen.getByRole('button', { name: tag })
+    )
     expect(deleteButtons).toHaveLength(tags.length)
   })
 
@@ -104,7 +103,7 @@ describe('TagsInput with child components', () => {
     await user.type(input, 'newTag{Enter}')
     await nextTick()
 
-    expect(onUpdate).toHaveBeenCalledWith(expect.arrayContaining(['newTag']))
+    expect(onUpdate).toHaveBeenCalledWith(['existing', 'newTag'])
   })
 
   it('does not enter edit mode when disabled', async () => {

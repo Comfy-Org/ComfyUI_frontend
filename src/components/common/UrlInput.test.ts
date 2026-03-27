@@ -51,8 +51,11 @@ describe('UrlInput', () => {
 
     const input = screen.getByRole('textbox')
     await user.type(input, 'https://test.com/')
+    expect(onUpdate).not.toHaveBeenCalled()
+
     await user.tab()
 
+    expect(onUpdate).toHaveBeenCalledTimes(1)
     expect(onUpdate).toHaveBeenCalledWith('https://test.com/')
   })
 
