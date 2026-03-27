@@ -12,7 +12,7 @@ async function openSignInDialog(page: Page) {
   await page.evaluate(() => {
     void window.app!.extensionManager.dialog.showSignInDialog()
   })
-  const dialog = page.locator('.p-dialog')
+  const dialog = page.getByRole('dialog')
   await dialog.waitFor({ state: 'visible' })
   return dialog
 }
