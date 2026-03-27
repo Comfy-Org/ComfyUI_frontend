@@ -37,6 +37,7 @@ export function useSubgraphDragBridge() {
     state: dragState,
     beginDrag,
     endDrag,
+    clearCompatible,
     setCandidate,
     setCompatibleForKey
   } = useSlotLinkDragUIState()
@@ -58,11 +59,20 @@ export function useSubgraphDragBridge() {
     let pointerTracking: { cleanup: () => void; flush: () => void } | undefined
     let isBridgeDrag = false
 
+    function resetBridgeDrag() {
+      pointerTracking?.cleanup()
+      pointerTracking = undefined
+      if (isBridgeDrag) {
+        endDrag()
+      }
+      clearCompatible()
+      isBridgeDrag = false
+    }
+
     const onConnecting = (
       event: CustomEvent<{ connectingTo: 'input' | 'output' }>
     ) => {
-      pointerTracking?.cleanup()
-      pointerTracking = undefined
+      resetBridgeDrag()
 
       const { connectingTo } = event.detail
 
@@ -128,10 +138,7 @@ export function useSubgraphDragBridge() {
 
     const onReset = () => {
       if (!isBridgeDrag) return
-      pointerTracking?.cleanup()
-      pointerTracking = undefined
-      isBridgeDrag = false
-      endDrag()
+      resetBridgeDrag()
     }
 
     linkConnector.events.addEventListener('connecting', onConnecting)
@@ -148,12 +155,7 @@ export function useSubgraphDragBridge() {
         onBeforeDropOnCanvas
       )
       linkConnector.events.removeEventListener('reset', onReset)
-      pointerTracking?.cleanup()
-      pointerTracking = undefined
-      if (isBridgeDrag) {
-        isBridgeDrag = false
-        endDrag()
-      }
+      resetBridgeDrag()
     }
   }
 

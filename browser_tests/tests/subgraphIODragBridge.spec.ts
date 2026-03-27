@@ -32,10 +32,10 @@ test.describe(
 
       // Before drag: no slots should be dimmed
       const outputSlots = page.locator('.lg-slot--output')
-      const dimmeBefore = await outputSlots.evaluateAll((els) =>
+      const dimmedBefore = await outputSlots.evaluateAll((els) =>
         els.some((el) => el.classList.contains('opacity-40'))
       )
-      expect(dimmeBefore).toBe(false)
+      expect(dimmedBefore).toBe(false)
 
       // Start a drag from the seed SubgraphInput (INT type)
       await page.evaluate(() => {
