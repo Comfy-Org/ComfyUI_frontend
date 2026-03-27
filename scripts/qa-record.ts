@@ -726,7 +726,7 @@ async function waitForEditorReady(page: Page) {
   await sleep(1000)
 }
 
-async function executeAction(
+export async function executeAction(
   page: Page,
   step: TestAction,
   outputDir: string
@@ -1200,13 +1200,14 @@ function buildPreflightActions(context: string): TestAction[] {
   const ctx = context.toLowerCase()
   const actions: TestAction[] = []
 
-  // Enable Nodes 2.0 if issue mentions it
+  // Enable Nodes 2.0 if issue mentions it — requires reload to take effect
   if (/nodes.*2\.0|vue.*node|new.*node|node.*beta/.test(ctx)) {
     actions.push({
       action: 'setSetting',
       id: 'Comfy.NodeBeta.Enabled',
       value: true
     })
+    actions.push({ action: 'reload' })
   }
 
   // Load default workflow for most reproduction scenarios
@@ -1412,18 +1413,25 @@ async function runAgenticLoop(
     preflightNote
   )
 
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  const useHybrid = Boolean(anthropicKey)
+
   const genAI = new GoogleGenerativeAI(opts.apiKey)
-  // Use flash for agentic loop — rapid iteration matters more than reasoning
+  const geminiVisionModel = genAI.getGenerativeModel({
+    model: 'gemini-3-flash-preview'
+  })
+
+  // Gemini-only fallback model (used when no ANTHROPIC_API_KEY)
   const agenticModel = opts.model.includes('flash')
     ? opts.model
     : 'gemini-3-flash-preview'
-  const model = genAI.getGenerativeModel({
+  const geminiOnlyModel = genAI.getGenerativeModel({
     model: agenticModel,
     systemInstruction
   })
 
   console.warn(
-    `Starting agentic loop with ${agenticModel}` +
+    `Starting ${useHybrid ? 'hybrid (Claude planner + Gemini vision)' : 'Gemini-only'} agentic loop` +
       (subIssue ? ` — focus: ${subIssue.title}` : '')
   )
 
@@ -1827,7 +1835,36 @@ async function main() {
         console.warn('Editor ready — starting agentic loop')
         recordingStartMs = Date.now()
         narrationSegments.length = 0
-        await runAgenticLoop(page, opts, opts.outputDir, subIssue)
+
+        // Use hybrid agent (Claude + Gemini) if ANTHROPIC_API_KEY is available
+        const anthropicKey = process.env.ANTHROPIC_API_KEY
+        if (anthropicKey) {
+          const { runHybridAgent } = await import('./qa-agent.js')
+          const issueCtx = opts.diffFile
+            ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
+            : 'No issue context provided'
+          let qaGuideText = ''
+          if (opts.qaGuideFile) {
+            try {
+              qaGuideText = readFileSync(opts.qaGuideFile, 'utf-8')
+            } catch {
+              // QA guide not available
+            }
+          }
+          const result = await runHybridAgent({
+            page,
+            issueContext: issueCtx,
+            qaGuide: qaGuideText,
+            outputDir: opts.outputDir,
+            geminiApiKey: opts.apiKey,
+            anthropicApiKey: anthropicKey
+          })
+          console.warn(
+            `Hybrid agent finished: ${result.verdict} — ${result.summary.slice(0, 100)}`
+          )
+        } else {
+          await runAgenticLoop(page, opts, opts.outputDir, subIssue)
+        }
         await sleep(2000)
       } finally {
         await context.close()
