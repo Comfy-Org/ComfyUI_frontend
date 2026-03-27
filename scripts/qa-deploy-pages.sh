@@ -266,9 +266,10 @@ else
   fi
 fi
 
-# Badge label includes the target number for identification
-BADGE_LABEL="QA"
-[ -n "${TARGET_NUM:-}" ] && BADGE_LABEL="#${TARGET_NUM} QA"
+# Badge label: #NUM QA0327 (with today's date)
+QA_DATE=$(date -u '+%m%d')
+BADGE_LABEL="QA${QA_DATE}"
+[ -n "${TARGET_NUM:-}" ] && BADGE_LABEL="#${TARGET_NUM} QA${QA_DATE}"
 
 # For PRs, also extract fix quality from Overall Risk section
 FIX_RESULT="" FIX_COLOR="#4c1"
