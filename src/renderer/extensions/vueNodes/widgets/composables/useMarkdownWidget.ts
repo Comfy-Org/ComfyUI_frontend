@@ -100,8 +100,8 @@ function addMarkdownWidget(
       return
     }
 
-    // Ctrl+wheel always goes to canvas for zoom
-    if (event.ctrlKey) {
+    // Ctrl+wheel (or Cmd+wheel on macOS) always goes to canvas for zoom
+    if (event.ctrlKey || event.metaKey) {
       event.preventDefault()
       event.stopPropagation()
       app.canvas.processMouseWheel(event)

@@ -79,8 +79,8 @@ function addMultilineWidget(
     const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
     const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
 
-    // Prevent pinch zoom from zooming the page
-    if (event.ctrlKey) {
+    // Prevent pinch zoom from zooming the page (Ctrl on Windows/Linux, Cmd on macOS)
+    if (event.ctrlKey || event.metaKey) {
       event.preventDefault()
       event.stopPropagation()
       app.canvas.processMouseWheel(event)
