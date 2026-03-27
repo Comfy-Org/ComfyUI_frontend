@@ -20,7 +20,12 @@ export const TestIds = {
     main: 'graph-canvas',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
-    toggleLinkVisibilityButton: 'toggle-link-visibility-button'
+    toggleLinkVisibilityButton: 'toggle-link-visibility-button',
+    zoomControlsButton: 'zoom-controls-button',
+    zoomInAction: 'zoom-in-action',
+    zoomOutAction: 'zoom-out-action',
+    zoomToFitAction: 'zoom-to-fit-action',
+    zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
     settings: 'settings-dialog',
@@ -28,10 +33,17 @@ export const TestIds = {
     settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
+    errorOverlaySeeErrors: 'error-overlay-see-errors',
+    errorOverlayDismiss: 'error-overlay-dismiss',
+    errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    errorCardFindOnGithub: 'error-card-find-on-github',
+    errorCardCopy: 'error-card-copy',
     about: 'about-panel',
-    whatsNewSection: 'whats-new-section'
+    whatsNewSection: 'whats-new-section',
+    missingNodePacksGroup: 'error-group-missing-node',
+    missingModelsGroup: 'error-group-missing-model'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -57,6 +69,8 @@ export const TestIds = {
     colorRed: 'red'
   },
   widgets: {
+    container: 'node-widgets',
+    widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
@@ -76,6 +90,10 @@ export const TestIds = {
   },
   user: {
     currentUserIndicator: 'current-user-indicator'
+  },
+  errors: {
+    imageLoadError: 'error-loading-image',
+    videoLoadError: 'error-loading-video'
   }
 } as const
 
@@ -101,3 +119,4 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.errors)[keyof typeof TestIds.errors]

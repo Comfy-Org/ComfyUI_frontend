@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "تحويل الرقم",
+    "inputs": {
+      "value": {
+        "name": "القيمة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "مفتاح التحويل",
     "inputs": {
@@ -2214,6 +2230,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "محرر المنحنى",
+    "inputs": {
+      "curve": {
+        "name": "منحنى"
+      },
+      "histogram": {
+        "name": "مخطط بياني"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "منحنى",
         "tooltip": null
       }
     }
@@ -4092,6 +4125,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "تمديد فيديو موجود باستمرار سلس بناءً على وصف نصي.",
+    "display_name": "تمديد فيديو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتمديد الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "وصف نصي لما يجب أن يحدث بعد ذلك في الفيديو."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "الفيديو المصدر للتمديد. صيغة MP4، من ٢ إلى ١٥ ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "توليد فيديو من مطالبة أو صورة",
     "display_name": "فيديو Grok",
@@ -4124,6 +4190,41 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "توليد فيديو موجه بواسطة صور مرجعية كمرجع للأسلوب والمحتوى.",
+    "display_name": "Grok من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "الوصف النصي",
+        "tooltip": "وصف نصي للفيديو المطلوب."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
       }
     },
     "outputs": {
@@ -6744,6 +6845,54 @@
     "outputs": {
       "0": {
         "name": "صورة الإخراج",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "تعيين صوت مرجعي لنقل هوية المتحدث باستخدام ID-LoRA. يقوم بترميز مقطع صوتي مرجعي إلى التكييف، ويمكنه أيضًا تعديل النموذج بتوجيه الهوية (تمرير إضافي للأمام بدون المرجع، مما يعزز تأثير هوية المتحدث).",
+    "display_name": "LTXV مرجع الصوت (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE للترميز."
+      },
+      "end_percent": {
+        "name": "نسبة النهاية",
+        "tooltip": "نهاية نطاق سيغما حيث يكون توجيه الهوية نشطًا."
+      },
+      "identity_guidance_scale": {
+        "name": "مقياس توجيه الهوية",
+        "tooltip": "قوة توجيه الهوية. ينفذ تمريرًا إضافيًا للأمام بدون المرجع في كل خطوة لتعزيز هوية المتحدث. اضبط على ٠ للتعطيل (بدون تمرير إضافي)."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "reference_audio": {
+        "name": "الصوت_المرجعي",
+        "tooltip": "مقطع صوتي مرجعي لنقل هوية المتحدث. يُوصى بأن يكون حوالي ٥ ثوانٍ (مدة التدريب). المقاطع الأقصر أو الأطول قد تؤثر سلبًا على نقل هوية الصوت."
+      },
+      "start_percent": {
+        "name": "نسبة البداية",
+        "tooltip": "بداية نطاق سيغما حيث يكون توجيه الهوية نشطًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "سلبي",
         "tooltip": null
       }
     }
@@ -15764,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "أقل قيمة p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "عقوبة التكرار"
       },
@@ -15778,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "أعلى p"
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
       }
     },
     "outputs": {
@@ -15808,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "أدنى قيمة p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "عقوبة التكرار"
       },
@@ -15822,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "أعلى p"
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
       }
     },
     "outputs": {
@@ -16090,6 +16253,10 @@
       "positive": {
         "name": "إيجابي",
         "tooltip": "التكييف الإيجابي المستخدم في التدريب."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "عند استخدام نوع التدريب 'none' والتدريب على نموذج كمي، يتم تنفيذ عملية الرجوع للخلف باستخدام ضرب المصفوفات الكمي عند التفعيل."
       },
       "rank": {
         "name": "الرتبة",

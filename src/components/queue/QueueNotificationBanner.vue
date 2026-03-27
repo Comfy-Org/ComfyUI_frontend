@@ -41,6 +41,7 @@
           v-else
           :class="cn(iconClass, 'size-4', iconColorClass)"
           aria-hidden="true"
+          data-testid="notification-icon"
         />
       </div>
       <div class="flex h-full items-center">
