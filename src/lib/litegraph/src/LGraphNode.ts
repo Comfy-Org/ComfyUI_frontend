@@ -247,6 +247,7 @@ export class LGraphNode
     output_node?: boolean
     api_node?: boolean
     name?: string
+    canvas_image_preview?: boolean
   }
 
   static resizeHandleSize = 15

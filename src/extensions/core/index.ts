@@ -1,5 +1,6 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
 
+import './canvasImagePreview'
 import './clipspace'
 import './contextMenuFilter'
 import './customWidgets'

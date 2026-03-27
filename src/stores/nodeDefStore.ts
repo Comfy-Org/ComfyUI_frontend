@@ -90,6 +90,8 @@ export class ComfyNodeDefImpl
   readonly essentials_category?: string
   /** Whether the blueprint is a global/installed blueprint (not user-created). */
   readonly isGlobal?: boolean
+  /** Whether the node supports canvas image preview rendering. */
+  readonly canvas_image_preview?: boolean
   readonly isCoreNode: boolean
 
   // V2 fields
@@ -169,6 +171,7 @@ export class ComfyNodeDefImpl
         ) ?? obj.essentials_category)
       : undefined
     this.isGlobal = obj.isGlobal
+    this.canvas_image_preview = obj.canvas_image_preview
     this.isCoreNode = CORE_NODE_MODULES.includes(
       this.python_module.split('.')[0]
     )

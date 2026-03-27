@@ -139,10 +139,14 @@ describe('pruneDisconnected', () => {
     expect(warnSpy).toHaveBeenCalledOnce()
   })
 
-  it('keeps virtual canvas preview promotions for PreviewImage nodes', () => {
+  it('keeps virtual canvas preview promotions for canvas_image_preview nodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('PreviewImage')
+
+    class PreviewImageNode extends LGraphNode {
+      static override nodeData = { canvas_image_preview: true }
+    }
+    const interiorNode = new PreviewImageNode('PreviewImage')
     interiorNode.type = 'PreviewImage'
     subgraphNode.subgraph.add(interiorNode)
 
@@ -168,8 +172,12 @@ describe('pruneDisconnected', () => {
 })
 
 describe('getPromotableWidgets', () => {
-  it('adds virtual canvas preview widget for PreviewImage nodes', () => {
-    const node = new LGraphNode('PreviewImage')
+  class CanvasPreviewNode extends LGraphNode {
+    static override nodeData = { canvas_image_preview: true }
+  }
+
+  it('adds virtual canvas preview widget when canvas_image_preview is true', () => {
+    const node = new CanvasPreviewNode('PreviewImage')
     node.type = 'PreviewImage'
 
     const widgets = getPromotableWidgets(node)
@@ -179,42 +187,9 @@ describe('getPromotableWidgets', () => {
     ).toBe(true)
   })
 
-  it('adds virtual canvas preview widget for SaveImage nodes', () => {
-    const node = new LGraphNode('SaveImage')
-    node.type = 'SaveImage'
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(true)
-  })
-
-  it('adds virtual canvas preview widget for GLSLShader nodes', () => {
-    const node = new LGraphNode('GLSLShader')
-    node.type = 'GLSLShader'
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(true)
-  })
-
-  it('does not add virtual canvas preview widget for non-image nodes', () => {
+  it('does not add virtual canvas preview widget for non-canvas_image_preview nodes', () => {
     const node = new LGraphNode('TextNode')
     node.addOutput('TEXT', 'STRING')
-
-    const widgets = getPromotableWidgets(node)
-
-    expect(
-      widgets.some((widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET)
-    ).toBe(false)
-  })
-
-  it('does not add virtual canvas preview widget for ImageInvert nodes', () => {
-    const node = new LGraphNode('ImageInvert')
-    node.type = 'ImageInvert'
 
     const widgets = getPromotableWidgets(node)
 
@@ -250,10 +225,14 @@ describe('promoteRecommendedWidgets', () => {
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
 
-  it('eagerly promotes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
+  it('eagerly promotes virtual preview widget for canvas_image_preview nodes', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader')
+
+    class GLSLShaderNode extends LGraphNode {
+      static override nodeData = { canvas_image_preview: true }
+    }
+    const glslNode = new GLSLShaderNode('GLSLShader')
     glslNode.type = 'GLSLShader'
     subgraph.add(glslNode)
 
@@ -269,12 +248,16 @@ describe('promoteRecommendedWidgets', () => {
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
 
-  it('registers $$canvas-image-preview on configure for GLSLShader in saved workflow', () => {
+  it('registers $$canvas-image-preview on configure for canvas_image_preview node in saved workflow', () => {
     // Simulate loading a saved workflow where proxyWidgets does NOT contain
     // the $$canvas-image-preview entry (e.g. blueprint authored before the
     // promotion system, or old workflow save).
     const subgraph = createTestSubgraph()
-    const glslNode = new LGraphNode('GLSLShader')
+
+    class GLSLShaderNode extends LGraphNode {
+      static override nodeData = { canvas_image_preview: true }
+    }
+    const glslNode = new GLSLShaderNode('GLSLShader')
     glslNode.type = 'GLSLShader'
     subgraph.add(glslNode)
 
