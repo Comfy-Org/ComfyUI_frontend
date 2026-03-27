@@ -516,7 +516,7 @@ ${issueContext}`
       prompt:
         'Reproduce the reported bug. Start by reading the issue context in your system prompt, then use your tools to interact with the ComfyUI browser session.',
       options: {
-        model: 'claude-sonnet-4-6-20250514',
+        model: 'claude-sonnet-4-6',
         systemPrompt,
         apiKey: anthropicApiKey,
         maxTurns,
