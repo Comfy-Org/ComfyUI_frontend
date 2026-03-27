@@ -1611,62 +1611,18 @@ async function launchSessionAndLogin(
   await sleep(1000)
 
   // Inject keyboard HUD — shows pressed keys in bottom-right corner of video
-  await page.evaluate(() => {
-    const hud = document.createElement('div')
-    Object.assign(hud.style, {
-      position: 'fixed',
-      bottom: '8px',
-      right: '8px',
-      zIndex: '2147483647',
-      padding: '3px 8px',
-      borderRadius: '4px',
-      background: 'rgba(0,0,0,0.7)',
-      border: '1px solid rgba(120,200,255,0.4)',
-      color: 'rgba(120,200,255,0.9)',
-      fontSize: '11px',
-      fontFamily: 'monospace',
-      fontWeight: '500',
-      pointerEvents: 'none',
-      display: 'none',
-      whiteSpace: 'nowrap'
-    })
-    document.body.appendChild(hud)
-    const held = new Set()
-    const update = () => {
-      if (held.size === 0) {
-        hud.style.display = 'none'
-      } else {
-        hud.style.display = 'block'
-        hud.textContent =
-          '⌨ ' +
-          [...held]
-            .map((k) =>
-              k === ' ' ? 'Space' : k.length === 1 ? k.toUpperCase() : k
-            )
-            .join('+')
-      }
-    }
-    document.addEventListener(
-      'keydown',
-      (e) => {
-        held.add(e.key)
-        update()
-      },
-      true
-    )
-    document.addEventListener(
-      'keyup',
-      (e) => {
-        held.delete(e.key)
-        update()
-      },
-      true
-    )
-    // Also clear on blur (tab switch etc)
-    window.addEventListener('blur', () => {
-      held.clear()
-      update()
-    })
+  // Uses addScriptTag to avoid tsx __name compilation artifacts in page.evaluate
+  await page.addScriptTag({
+    content: `(function(){
+      var hud=document.createElement('div');
+      Object.assign(hud.style,{position:'fixed',bottom:'8px',right:'8px',zIndex:'2147483647',padding:'3px 8px',borderRadius:'4px',background:'rgba(0,0,0,0.7)',border:'1px solid rgba(120,200,255,0.4)',color:'rgba(120,200,255,0.9)',fontSize:'11px',fontFamily:'monospace',fontWeight:'500',pointerEvents:'none',display:'none',whiteSpace:'nowrap'});
+      document.body.appendChild(hud);
+      var held=new Set();
+      function update(){if(held.size===0){hud.style.display='none'}else{hud.style.display='block';hud.textContent=String.fromCharCode(9000)+' '+Array.from(held).map(function(k){return k===' '?'Space':k.length===1?k.toUpperCase():k}).join('+')}}
+      document.addEventListener('keydown',function(e){held.add(e.key);update()},true);
+      document.addEventListener('keyup',function(e){held.delete(e.key);update()},true);
+      window.addEventListener('blur',function(){held.clear();update()});
+    })()`
   })
 
   return { browser, context, page }
