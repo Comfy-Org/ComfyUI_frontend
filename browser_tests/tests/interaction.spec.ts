@@ -10,6 +10,7 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import { TestIds } from '../fixtures/selectors'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { WorkspaceStore } from '../types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -718,6 +719,19 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('inputs/string_input')
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
+  })
+
+  test('Creates initial workflow tab when persistence is disabled', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
+    await comfyPage.setup()
+
+    const openCount = await comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .openWorkflows.length
+    })
+    expect(openCount).toBeGreaterThanOrEqual(1)
   })
 
   test('Restore workflow on reload (switch workflow)', async ({

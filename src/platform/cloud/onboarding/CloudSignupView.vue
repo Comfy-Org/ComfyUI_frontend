@@ -42,7 +42,7 @@
             </Button>
             <span
               v-if="isFreeTierEnabled"
-              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap text-gray-900"
+              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-gray-900"
             >
               {{ t('auth.login.freeTierBadge') }}
             </span>

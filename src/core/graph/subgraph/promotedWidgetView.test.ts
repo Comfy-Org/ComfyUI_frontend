@@ -751,7 +751,7 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
-  test('full linked coverage does not prune unresolved independent fallback promotions', () => {
+  test('full linked coverage prunes promotions referencing non-existent nodes', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'widgetA', type: '*' }]
     })
@@ -776,9 +776,9 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
+    // Node 9999 does not exist in the subgraph, so its entry is pruned
     expect(promotions).toStrictEqual([
-      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
-      { sourceNodeId: '9999', sourceWidgetName: 'widgetA' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' }
     ])
   })
 
