@@ -74,10 +74,10 @@ describe('TagsInput with child components', () => {
     expect(screen.getByText('tag1')).toBeInTheDocument()
     expect(screen.getByText('tag2')).toBeInTheDocument()
 
-    // Delete buttons get their accessible name from aria-labelledby pointing to the tag text
     const deleteButtons = screen.getAllByRole('button', {
-      name: /tag\d/
+      name: /remove tag/i
     })
+    expect(deleteButtons).toHaveLength(tags.length)
     expect(deleteButtons).toHaveLength(tags.length)
   })
 
