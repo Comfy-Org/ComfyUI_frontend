@@ -400,6 +400,27 @@ const FALLBACK_STEPS: Record<RecordMode, TestAction[]> = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+async function moveCursorOverlay(page: Page, x: number, y: number) {
+  await page.evaluate(
+    ([cx, cy]) => {
+      const fn = (window as unknown as Record<string, unknown>).__moveCursor as
+        | ((x: number, y: number) => void)
+        | undefined
+      if (fn) fn(cx, cy)
+    },
+    [x, y]
+  )
+}
+
+async function clickCursorOverlay(page: Page, down: boolean) {
+  await page.evaluate((d) => {
+    const fn = (window as unknown as Record<string, unknown>).__clickCursor as
+      | ((down: boolean) => void)
+      | undefined
+    if (fn) fn(d)
+  }, down)
+}
+
 interface NarrationSegment {
   turn: number
   timestampMs: number
@@ -814,29 +835,39 @@ export async function executeAction(
         break
       }
       case 'clickCanvas':
+        await moveCursorOverlay(page, step.x, step.y)
         await page.mouse.move(step.x, step.y)
         await sleep(300)
+        await clickCursorOverlay(page, true)
         await page.mouse.click(step.x, step.y)
+        await clickCursorOverlay(page, false)
         await sleep(300)
         break
       case 'rightClickCanvas':
+        await moveCursorOverlay(page, step.x, step.y)
         await page.mouse.move(step.x, step.y)
         await sleep(300)
+        await clickCursorOverlay(page, true)
         await page.mouse.click(step.x, step.y, { button: 'right' })
+        await clickCursorOverlay(page, false)
         await sleep(500)
         break
       case 'dragCanvas': {
+        await moveCursorOverlay(page, step.fromX, step.fromY)
         await page.mouse.move(step.fromX, step.fromY)
+        await clickCursorOverlay(page, true)
         await page.mouse.down()
         await sleep(100)
         const dragSteps = 5
         for (let i = 1; i <= dragSteps; i++) {
           const x = step.fromX + ((step.toX - step.fromX) * i) / dragSteps
           const y = step.fromY + ((step.toY - step.fromY) * i) / dragSteps
+          await moveCursorOverlay(page, x, y)
           await page.mouse.move(x, y)
           await sleep(50)
         }
         await page.mouse.up()
+        await clickCursorOverlay(page, false)
         await sleep(300)
         break
       }
@@ -1744,42 +1775,49 @@ async function launchSessionAndLogin(
   })
   const page = await context.newPage()
 
-  // Inject visible cursor overlay (headless Chrome doesn't render system cursor)
+  // Inject visible cursor overlay — controlled directly via window.__moveCursor
+  // (DOM mousemove events don't fire reliably from Playwright CDP in headless)
   await page.addInitScript(() => {
     const style = document.createElement('style')
     style.textContent = `
       #qa-cursor {
         position: fixed; z-index: 2147483647; pointer-events: none;
-        width: 16px; height: 16px; margin: -8px 0 0 -8px;
-        border-radius: 50%; background: rgba(255, 60, 60, 0.7);
-        border: 2px solid rgba(255, 255, 255, 0.9);
-        box-shadow: 0 0 8px rgba(255, 60, 60, 0.5);
-        transition: transform 80ms ease-out, opacity 80ms;
-        transform: scale(1); opacity: 0.85;
+        width: 20px; height: 20px; margin: -2px 0 0 -2px;
+        opacity: 0.95; transition: transform 80ms ease-out;
+        transform: scale(1);
       }
       #qa-cursor.clicking {
-        transform: scale(1.8); opacity: 1;
-        background: rgba(255, 200, 60, 0.8);
-        border-color: rgba(255, 255, 255, 1);
-        box-shadow: 0 0 16px rgba(255, 200, 60, 0.6);
+        transform: scale(1.4);
       }
     `
     const cursor = document.createElement('div')
     cursor.id = 'qa-cursor'
+    // SVG cursor arrow — white with dark outline
+    cursor.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5"><path d="M4 2l14 10-6.5 1.5L15 21l-3.5-1.5L8 21l-1.5-7.5L2 16z"/></svg>'
 
     const init = () => {
       document.head.appendChild(style)
       document.body.appendChild(cursor)
+      // Expose function for Playwright to call directly
+      ;(window as unknown as Record<string, unknown>).__moveCursor = (
+        x: number,
+        y: number
+      ) => {
+        cursor.style.left = x + 'px'
+        cursor.style.top = y + 'px'
+      }
+      ;(window as unknown as Record<string, unknown>).__clickCursor = (
+        down: boolean
+      ) => {
+        if (down) cursor.classList.add('clicking')
+        else cursor.classList.remove('clicking')
+      }
+      // Also listen to DOM events as fallback
       document.addEventListener('mousemove', (e) => {
         cursor.style.left = e.clientX + 'px'
         cursor.style.top = e.clientY + 'px'
       })
-      document.addEventListener('mousedown', () =>
-        cursor.classList.add('clicking')
-      )
-      document.addEventListener('mouseup', () =>
-        cursor.classList.remove('clicking')
-      )
     }
 
     if (document.body) init()
