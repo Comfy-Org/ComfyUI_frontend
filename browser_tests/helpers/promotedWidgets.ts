@@ -2,7 +2,29 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 type PromotedWidgetEntry = [string, string]
 
-function isPromotedWidgetEntry(entry: unknown): entry is PromotedWidgetEntry {
+export interface PromotedWidgetSnapshot {
+  proxyWidgets: PromotedWidgetEntry[]
+  widgetNames: string[]
+}
+
+export function getPiniaStoreInBrowser(storeName: string) {
+  type StoreRecord = Record<string, (...args: unknown[]) => unknown>
+  const el = document.getElementById('vue-app') as HTMLElement & {
+    __vue_app__?: {
+      config: {
+        globalProperties: { $pinia?: { _s: Map<string, StoreRecord> } }
+      }
+    }
+  }
+  const store =
+    el.__vue_app__?.config?.globalProperties?.$pinia?._s.get(storeName)
+  if (!store) throw new Error(`Pinia store "${storeName}" not found`)
+  return store
+}
+
+export function isPromotedWidgetEntry(
+  entry: unknown
+): entry is PromotedWidgetEntry {
   return (
     Array.isArray(entry) &&
     entry.length === 2 &&

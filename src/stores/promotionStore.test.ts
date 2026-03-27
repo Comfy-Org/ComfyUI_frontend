@@ -803,7 +803,7 @@ describe(usePromotionStore, () => {
       ])
     })
 
-    it('appends when no prior position is remembered', () => {
+    it('initial promotes append in order', () => {
       store.promote(graphA, nodeId, {
         sourceNodeId: '10',
         sourceWidgetName: 'seed'

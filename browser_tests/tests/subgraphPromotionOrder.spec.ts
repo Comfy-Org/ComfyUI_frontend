@@ -50,10 +50,12 @@ test.describe(
       const domWidgetCount = await widgetElements.count()
       expect(domWidgetCount).toBeGreaterThanOrEqual(initialOrder.length)
 
-      // Demote then re-promote the first widget via the promotion store
+      // Demote then re-promote the first widget via the promotion store.
+      // Pinia store access pattern: see getPiniaStoreInBrowser in
+      // browser_tests/helpers/promotedWidgets.ts
       const finalOrder = await comfyPage.page.evaluate(
         ([id, widgetName]) => {
-          const el = document.getElementById('vue-app') as HTMLElement & {
+          const el = document.getElementById('vue-app') as never as {
             __vue_app__: {
               config: {
                 globalProperties: {
@@ -73,7 +75,8 @@ test.describe(
 
           const node = window.app!.canvas.graph!.getNodeById(id)
           if (!node) throw new Error(`Node "${id}" not found`)
-          const graphId = (node as { rootGraph?: { id: string } }).rootGraph?.id
+          const graphId = (node as typeof node & { rootGraph?: { id: string } })
+            .rootGraph?.id
 
           const entries = store.getPromotions(graphId, node.id) as {
             sourceWidgetName: string

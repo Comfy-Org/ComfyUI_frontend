@@ -48,6 +48,9 @@ export function isLinkedPromotion(
   })
 }
 
+// Returns only the explicit disambiguatingSourceNodeId (for nested subgraphs).
+// Must NOT fall back to sourceNodeId — callers pass this to promotionStore
+// lookups where undefined must match stored entries without disambiguation.
 export function getSourceNodeId(w: IBaseWidget): string | undefined {
   if (!isPromotedWidgetView(w)) return undefined
   return w.disambiguatingSourceNodeId

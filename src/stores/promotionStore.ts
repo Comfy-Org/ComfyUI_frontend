@@ -19,6 +19,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     new Map<UUID, Map<NodeId, PromotedWidgetSource[]>>()
   )
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
+  // Non-reactive: ephemeral position cache consumed only by promote/demote
   const lastDemotedIndices = new Map<string, number>()
 
   function _getPromotionsForGraph(
@@ -123,6 +124,14 @@ export const usePromotionStore = defineStore('promotion', () => {
     }
   }
 
+  function makePositionKey(
+    graphId: UUID,
+    subgraphNodeId: NodeId,
+    source: PromotedWidgetSource
+  ): string {
+    return `${graphId}:${subgraphNodeId}:${makePromotionEntryKey(source)}`
+  }
+
   function promote(
     graphId: UUID,
     subgraphNodeId: NodeId,
@@ -138,7 +147,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     if (source.disambiguatingSourceNodeId)
       entry.disambiguatingSourceNodeId = source.disambiguatingSourceNodeId
 
-    const positionKey = `${graphId}:${subgraphNodeId}:${makePromotionEntryKey(source)}`
+    const positionKey = makePositionKey(graphId, subgraphNodeId, source)
     const lastIndex = lastDemotedIndices.get(positionKey)
     lastDemotedIndices.delete(positionKey)
 
@@ -164,10 +173,10 @@ export const usePromotionStore = defineStore('promotion', () => {
         e.sourceWidgetName === source.sourceWidgetName &&
         e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
     )
-    if (index !== -1) {
-      const positionKey = `${graphId}:${subgraphNodeId}:${makePromotionEntryKey(source)}`
-      lastDemotedIndices.set(positionKey, index)
-    }
+    if (index === -1) return
+
+    const positionKey = makePositionKey(graphId, subgraphNodeId, source)
+    lastDemotedIndices.set(positionKey, index)
     setPromotions(
       graphId,
       subgraphNodeId,
@@ -204,7 +213,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   function clearGraph(graphId: UUID): void {
     graphPromotions.value.delete(graphId)
     graphRefCounts.value.delete(graphId)
-    for (const key of lastDemotedIndices.keys()) {
+    for (const key of Array.from(lastDemotedIndices.keys())) {
       if (key.startsWith(`${graphId}:`)) lastDemotedIndices.delete(key)
     }
   }

@@ -19,6 +19,7 @@ vi.mock('@/services/litegraphService', () => ({
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   getPromotableWidgets,
+  getSourceNodeId,
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
@@ -103,6 +104,31 @@ describe('isPreviewPseudoWidget', () => {
         widget({ name: 'text', serialize: false, type: 'customtext' })
       )
     ).toBe(false)
+  })
+})
+
+describe('getSourceNodeId', () => {
+  it('returns undefined for a regular widget', () => {
+    expect(getSourceNodeId(widget({ name: 'seed' }))).toBeUndefined()
+  })
+
+  it('returns undefined for a promoted widget without disambiguatingSourceNodeId', () => {
+    const promoted = {
+      ...widget({ name: 'seed' }),
+      sourceNodeId: '3',
+      sourceWidgetName: 'seed'
+    } as IBaseWidget
+    expect(getSourceNodeId(promoted)).toBeUndefined()
+  })
+
+  it('returns disambiguatingSourceNodeId when present', () => {
+    const promoted = {
+      ...widget({ name: 'seed' }),
+      sourceNodeId: '3',
+      sourceWidgetName: 'seed',
+      disambiguatingSourceNodeId: '99'
+    } as IBaseWidget
+    expect(getSourceNodeId(promoted)).toBe('99')
   })
 })
 
