@@ -162,6 +162,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   private async hashEmail(email: string): Promise<string | null> {
     try {
       const normalized = email.trim().toLowerCase()
+      if (!normalized) return null
       const encoder = new TextEncoder()
       const data = encoder.encode(normalized)
       const hashBuffer = await crypto.subtle.digest('SHA-256', data)
