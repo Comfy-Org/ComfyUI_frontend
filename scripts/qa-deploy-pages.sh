@@ -173,17 +173,36 @@ if [ -d video-reviews ]; then
     fi
   done
 fi
-echo "Verdict counts: ${REPRO_COUNT} reproduced, ${NOT_REPRO_COUNT} not-repro, ${INCONC_COUNT} inconclusive out of ${TOTAL_REPORTS} reports"
+FAIL_COUNT=$((TOTAL_REPORTS - REPRO_COUNT - NOT_REPRO_COUNT))
+[ "$FAIL_COUNT" -lt 0 ] && FAIL_COUNT=0
+echo "Verdict: ${REPRO_COUNT}✓ ${NOT_REPRO_COUNT}✗ ${FAIL_COUNT}⚠ / ${TOTAL_REPORTS}"
 
-# Determine badge text — show pass counts when multiple reports exist
+# Badge text:
+#   Single pass: "REPRODUCED" / "NOT REPRODUCIBLE" / "INCONCLUSIVE"
+#   Multi pass:  "2✓ 0✗ 1⚠ / 3" with color based on dominant result
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
-if [ "$REPRO_COUNT" -gt 0 ]; then
-  REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
-  [ "$TOTAL_REPORTS" -gt 1 ] && REPRO_RESULT="${REPRO_COUNT}/${TOTAL_REPORTS} REPRODUCED"
-elif [ "$NOT_REPRO_COUNT" -gt 0 ]; then
-  REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
-elif [ "$INCONC_COUNT" -gt 0 ]; then
-  REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
+if [ "$TOTAL_REPORTS" -le 1 ]; then
+  # Single report — simple label
+  if [ "$REPRO_COUNT" -gt 0 ]; then
+    REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
+  elif [ "$NOT_REPRO_COUNT" -gt 0 ]; then
+    REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
+  elif [ "$FAIL_COUNT" -gt 0 ]; then
+    REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
+  fi
+else
+  # Multi pass — show breakdown: X✓ Y✗ Z⚠ / N
+  PARTS=""
+  [ "$REPRO_COUNT" -gt 0 ] && PARTS="${REPRO_COUNT}✓"
+  [ "$NOT_REPRO_COUNT" -gt 0 ] && PARTS="${PARTS:+${PARTS} }${NOT_REPRO_COUNT}✗"
+  [ "$FAIL_COUNT" -gt 0 ] && PARTS="${PARTS:+${PARTS} }${FAIL_COUNT}⚠"
+  REPRO_RESULT="${PARTS} / ${TOTAL_REPORTS}"
+  # Color based on best outcome
+  if [ "$REPRO_COUNT" -gt 0 ]; then
+    REPRO_COLOR="#2196f3"
+  elif [ "$NOT_REPRO_COUNT" -gt 0 ]; then
+    REPRO_COLOR="#9f9f9f"
+  fi
 fi
 
 # Badge label includes the target number for identification
@@ -191,8 +210,14 @@ BADGE_LABEL="QA"
 [ -n "${TARGET_NUM:-}" ] && BADGE_LABEL="#${TARGET_NUM} QA"
 
 if [ "$TARGET_TYPE" = "issue" ]; then
-  BADGE_STATUS="${REPRO_RESULT:-FINISHED}"
-  /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
+  if [ "$TOTAL_REPORTS" -gt 1 ]; then
+    # Multi-pass: vertical box badge with breakdown
+    /tmp/gen-badge-box.sh "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL" \
+      "$REPRO_COUNT" "$NOT_REPRO_COUNT" "$FAIL_COUNT" "$TOTAL_REPORTS"
+  else
+    BADGE_STATUS="${REPRO_RESULT:-FINISHED}"
+    /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
+  fi
 else
   # Extract the Overall Risk section for fix quality verdict.
   # Only look at the "## Overall Risk" section to avoid false matches from
