@@ -164,13 +164,11 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
     await successDialog.getByText('Close', { exact: true }).click()
     await comfyPage.nextFrame()
 
-    // Now click save again — should save directly and show success
+    // Now click save again — should save directly
     await appMode.clickSave()
 
-    const dialog = page.getByRole('dialog')
-    await expect(dialog.getByText('Successfully saved')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 2000 })
+    await expect(appMode.getFooterButton(/^Save$/)).toBeDisabled()
   })
 
   test('Split button chevron opens save-as for saved workflow', async ({
