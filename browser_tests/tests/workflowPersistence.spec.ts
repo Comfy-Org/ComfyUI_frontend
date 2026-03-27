@@ -539,7 +539,10 @@ test.describe('Workflow Persistence Regressions', () => {
       if (!activeWf?.changeTracker) return null
       // checkState should work normally (isLoadingGraph should be false)
       const undoBefore = activeWf.changeTracker.undoQueue.length
-      return { undoBefore, isLoading: activeWf.changeTracker.isLoadingGraph ?? false }
+      return {
+        undoBefore,
+        isLoading: activeWf.changeTracker.isLoadingGraph ?? false
+      }
     })
     expect(isLoadingNormally).toBeTruthy()
     // During normal operation, isLoadingGraph should be false
