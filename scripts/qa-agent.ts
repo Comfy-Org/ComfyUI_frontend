@@ -125,7 +125,7 @@ async function geminiObserve(
 ): Promise<string> {
   const genAI = new GoogleGenerativeAI(geminiApiKey)
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-preview-05-20'
+    model: 'gemini-3-flash-preview'
   })
 
   // Try video clip first, fall back to last frame
