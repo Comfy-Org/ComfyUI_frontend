@@ -9,6 +9,7 @@
   >
     <i
       v-if="iconClass"
+      data-testid="badge-icon"
       :class="['shrink-0 text-base', iconClass, iconColorClass]"
     />
     <div
@@ -62,6 +63,7 @@
     >
       <i
         v-if="iconClass"
+        data-testid="badge-icon"
         :class="['shrink-0 text-base', iconClass, iconColorClass]"
       />
       <div
@@ -108,6 +110,7 @@
   >
     <i
       v-if="iconClass"
+      data-testid="badge-icon"
       :class="['shrink-0 text-base', iconClass, iconColorClass]"
     />
     <div

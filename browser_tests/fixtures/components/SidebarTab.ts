@@ -168,3 +168,32 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .click()
   }
 }
+
+export class AssetsSidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'assets')
+  }
+
+  get generatedTab() {
+    return this.page.getByRole('tab', { name: 'Generated' })
+  }
+
+  get importedTab() {
+    return this.page.getByRole('tab', { name: 'Imported' })
+  }
+
+  get emptyStateMessage() {
+    return this.page.getByText(
+      'Upload files or generate content to see them here'
+    )
+  }
+
+  emptyStateTitle(title: string) {
+    return this.page.getByText(title)
+  }
+
+  override async open() {
+    await super.open()
+    await this.generatedTab.waitFor({ state: 'visible' })
+  }
+}

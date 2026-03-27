@@ -38,9 +38,9 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/stores/firebaseAuthStore', async () => {
+vi.mock('@/stores/authStore', async () => {
   return {
-    useFirebaseAuthStore: vi.fn(() => ({
+    useAuthStore: vi.fn(() => ({
       getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
     }))
   }

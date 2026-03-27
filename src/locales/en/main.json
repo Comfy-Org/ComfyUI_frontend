@@ -31,8 +31,11 @@
     "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
+    "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
+    "viewGrid": "Grid view",
+    "imageGallery": "image gallery",
     "galleryImage": "Gallery image",
     "galleryThumbnail": "Gallery thumbnail",
     "previousImage": "Previous image",
@@ -104,6 +107,8 @@
     "usageHint": "Usage hint",
     "triggerPhrase": "Trigger phrase",
     "findIssues": "Find Issues",
+    "findOnGithub": "Find on GitHub",
+    "getHelpAction": "Get Help",
     "reportIssue": "Send Report",
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
@@ -273,8 +278,7 @@
     "clearAll": "Clear all",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
-    "itemSelected": "{selectedCount} item selected",
-    "itemsSelected": "{selectedCount} items selected",
+    "itemsSelected": "No items selected | {count} item selected | {count} items selected",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
@@ -284,6 +288,32 @@
     "browserReservedKeybinding": "This shortcut is reserved by some browsers and may have unexpected results.",
     "browserReservedKeybindingTooltip": "This shortcut conflicts with browser-reserved shortcuts",
     "keybindingAlreadyExists": "Keybinding already exists on",
+    "keybindingPresets": {
+      "importPreset": "Import preset",
+      "importKeybindingPreset": "Import keybinding preset",
+      "exportPreset": "Export preset",
+      "saveChanges": "Save Changes",
+      "saveAsNewPreset": "Save as new preset",
+      "resetToDefault": "Reset to default",
+      "deletePreset": "Delete preset",
+      "unsavedChangesTo": "Unsaved changes to {name}",
+      "unsavedChangesMessage": "You have unsaved changes that will be lost if you switch without saving.",
+      "discardAndSwitch": "Discard and Switch",
+      "saveAndSwitch": "Save and Switch",
+      "deletePresetTitle": "Delete the current preset?",
+      "deletePresetWarning": "This preset will be deleted. This cannot be undone.",
+      "presetSaved": "Preset \"{name}\" saved",
+      "presetDeleted": "Preset \"{name}\" deleted",
+      "presetImported": "Keybinding preset imported",
+      "invalidPresetFile": "Preset file must be valid JSON exported from ComfyUI",
+      "invalidPresetName": "Preset name must not be empty, \"default\", start with a dot, contain path separators, or end with .json",
+      "loadPresetFailed": "Failed to load preset \"{name}\"",
+      "deletePresetFailed": "Failed to delete preset \"{name}\"",
+      "overwritePresetTitle": "Overwrite Preset",
+      "overwritePresetMessage": "A preset named \"{name}\" already exists. Overwrite it?",
+      "presetNamePrompt": "Enter a name for the preset",
+      "default": "Default Preset"
+    },
     "commandProhibited": "Command {command} is prohibited. Contact an administrator for more information.",
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
@@ -314,9 +344,13 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "play": "Play",
+    "pause": "Pause",
     "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
+    "skipToStart": "Skip to Start",
+    "skipToEnd": "Skip to End",
     "stopPlayback": "Stop Playback",
     "playbackSpeed": "Playback Speed",
     "volume": "Volume",
@@ -1158,6 +1192,7 @@
   },
   "maskEditor": {
     "title": "Mask Editor",
+    "openMaskEditor": "Open in Mask Editor",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -1686,6 +1721,7 @@
     "photomaker": "photomaker",
     "PixVerse": "PixVerse",
     "primitive": "primitive",
+    "Quiver": "Quiver",
     "Recraft": "Recraft",
     "edit_models": "edit_models",
     "Reve": "Reve",
@@ -1730,6 +1766,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
+    "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -1743,6 +1780,7 @@
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
     "GLIGEN": "GLIGEN",
     "GUIDER": "GUIDER",
+    "HISTOGRAM": "HISTOGRAM",
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
     "IMAGE": "IMAGE",
@@ -1850,7 +1888,9 @@
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
-    "promptExecutionError": "Prompt execution failed"
+    "promptExecutionError": "Prompt execution failed",
+    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "Your account is not authorized for this feature."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -2255,7 +2295,12 @@
     "topupTimeout": "Top-up verification timed out"
   },
   "subscription": {
-    "chooseBestPlanWorkspace": "Choose the best plan for your workspace",
+    "plansForWorkspace": "Plans for {workspace}",
+    "personalWorkspace": "Personal Workspace",
+    "teamWorkspace": "Team Workspace",
+    "soloUseOnly": "Solo use only",
+    "needTeamWorkspace": "Need team workspace?",
+    "inviteUpTo": "Invite up to",
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
@@ -2567,6 +2612,18 @@
       "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
+  "teamWorkspacesDialog": {
+    "title": "Team Workspaces",
+    "subtitle": "Switch to an existing one or create a new workspace",
+    "subtitleNoWorkspaces": "Create a new team workspace to share credits",
+    "confirmCallbackFailed": "Workspace created but setup incomplete",
+    "yourTeamWorkspaces": "Your team workspaces",
+    "switch": "Switch",
+    "newWorkspace": "New workspace",
+    "namePlaceholder": "e.g. Marketing Team",
+    "createWorkspace": "Create workspace",
+    "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
+  },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
@@ -2574,7 +2631,8 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -3109,6 +3167,7 @@
   },
   "comfyHubPublish": {
     "title": "Publish to ComfyHub",
+    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
@@ -3116,12 +3175,6 @@
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
-    "workflowType": "Workflow type",
-    "workflowTypePlaceholder": "Select the type",
-    "workflowTypeImageGeneration": "Image generation",
-    "workflowTypeVideoGeneration": "Video generation",
-    "workflowTypeUpscaling": "Upscaling",
-    "workflowTypeEditing": "Editing",
     "tags": "Tags",
     "tagsDescription": "Select tags so people can find your workflow faster",
     "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
@@ -3148,11 +3201,17 @@
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
     "uploadExampleImage": "Upload example image",
+    "removeExampleImage": "Remove example image",
     "exampleImage": "Example image {index}",
+    "exampleImagePosition": "Example image {index} of {total}",
     "videoPreview": "Video thumbnail preview",
     "maxExamples": "You can select up to {max} examples",
+    "shareAs": "Share as",
+    "additionalInfo": "Additional information",
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
-    "createProfileCta": "Create a profile"
+    "createProfileCta": "Create a profile",
+    "publishFailedTitle": "Publish failed",
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
@@ -3171,6 +3230,7 @@
     "namePlaceholder": "Enter your name here",
     "usernameLabel": "Your username (required)",
     "usernamePlaceholder": "@",
+    "usernameError": "3–42 lowercase alphanumeric characters and hyphens, must start and end with a letter or number",
     "descriptionLabel": "Your description",
     "descriptionPlaceholder": "Tell the community about yourself...",
     "createProfile": "Create profile",
@@ -3197,6 +3257,14 @@
     "title": "Introducing Nodes 2.0",
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
+  },
+  "appBuilder": {
+    "vueNodeSwitch": {
+      "title": "Switched over to Nodes 2.0",
+      "content": "For the best experience, App builder uses Nodes 2.0. You can switch back after building the app from the main menu.",
+      "dontShowAgain": "Don't show again",
+      "dismiss": "Dismiss"
+    }
   },
   "vueNodesMigration": {
     "message": "Prefer the legacy design?",
@@ -3390,6 +3458,8 @@
     "errors": "Errors",
     "noErrors": "No errors",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "findOnGithubTooltip": "Search GitHub issues for related problems",
+    "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
     "promptErrors": {
@@ -3460,7 +3530,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORS",
-    "seeErrors": "See Errors"
+    "seeErrors": "See Errors",
+    "showMissingNodes": "Show missing nodes",
+    "showMissingModels": "Show missing models",
+    "showSwapNodes": "Show swap nodes",
+    "showMissingMedia": "Show missing inputs",
+    "missingNodes": "Some nodes are missing and need to be installed",
+    "missingModels": "{count} required model is missing | {count} required models are missing",
+    "swapNodes": "Some nodes can be replaced with alternatives",
+    "missingMedia": "Some nodes are missing required inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -3640,5 +3718,18 @@
     "footer": "ComfyUI stays free and open source. Cloud is optional.",
     "continueLocally": "Continue Locally",
     "exploreCloud": "Try Cloud for Free"
+  },
+  "execution": {
+    "generating": "Generating…",
+    "saving": "Saving…",
+    "loading": "Loading…",
+    "encoding": "Encoding…",
+    "decoding": "Decoding…",
+    "processing": "Processing…",
+    "resizing": "Resizing…",
+    "generatingVideo": "Generating video…",
+    "training": "Training…",
+    "processingVideo": "Processing video…",
+    "running": "Running…"
   }
 }

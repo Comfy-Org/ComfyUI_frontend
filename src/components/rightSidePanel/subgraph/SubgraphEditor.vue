@@ -5,9 +5,11 @@ import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   getPromotableWidgets,
+  getSourceNodeId,
   getWidgetName,
   isRecommendedWidget,
   promoteWidget,
@@ -49,19 +51,29 @@ const activeWidgets = computed<WidgetItem[]>({
     if (!node) return []
 
     return promotionEntries.value.flatMap(
-      ({ interiorNodeId, widgetName }): WidgetItem[] => {
-        if (interiorNodeId === '-1') {
-          const widget = node.widgets.find((w) => w.name === widgetName)
+      ({
+        sourceNodeId,
+        sourceWidgetName,
+        disambiguatingSourceNodeId
+      }): WidgetItem[] => {
+        if (sourceNodeId === '-1') {
+          const widget = node.widgets.find((w) => w.name === sourceWidgetName)
           if (!widget) return []
           return [
             [{ id: -1, title: t('subgraphStore.linked'), type: '' }, widget]
           ]
         }
-        const wNode = node.subgraph._nodes_by_id[interiorNodeId]
+        const wNode = node.subgraph._nodes_by_id[sourceNodeId]
         if (!wNode) return []
-        const widget = getPromotableWidgets(wNode).find(
-          (w) => w.name === widgetName
-        )
+        const widget = getPromotableWidgets(wNode).find((w) => {
+          if (w.name !== sourceWidgetName) return false
+          if (disambiguatingSourceNodeId && isPromotedWidgetView(w))
+            return (
+              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
+              disambiguatingSourceNodeId
+            )
+          return true
+        })
         if (!widget) return []
         return [[wNode, widget]]
       }
@@ -76,11 +88,16 @@ const activeWidgets = computed<WidgetItem[]>({
     promotionStore.setPromotions(
       node.rootGraph.id,
       node.id,
-      value.map(([n, w]) => ({
-        interiorNodeId: String(n.id),
-        widgetName: getWidgetName(w)
-      }))
+      value.map(([n, w]) => {
+        const sid = getSourceNodeId(w)
+        return {
+          sourceNodeId: String(n.id),
+          sourceWidgetName: getWidgetName(w),
+          ...(sid && { disambiguatingSourceNodeId: sid })
+        }
+      })
     )
+    refreshPromotedWidgetRendering()
   }
 })
 
@@ -103,12 +120,11 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   if (!node) return []
   return interiorWidgets.value.filter(
     ([n, w]: WidgetItem) =>
-      !promotionStore.isPromoted(
-        node.rootGraph.id,
-        node.id,
-        String(n.id),
-        w.name
-      )
+      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
+        sourceNodeId: String(n.id),
+        sourceWidgetName: getWidgetName(w),
+        disambiguatingSourceNodeId: getSourceNodeId(w)
+      })
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
@@ -137,8 +153,20 @@ const filteredActive = computed<WidgetItem[]>(() => {
   )
 })
 
+function refreshPromotedWidgetRendering() {
+  const node = activeNode.value
+  if (!node) return
+
+  node.computeSize(node.size)
+  node.setDirtyCanvas(true, true)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 function toKey(item: WidgetItem) {
-  return `${item[0].id}: ${item[1].name}`
+  const sid = getSourceNodeId(item[1])
+  return sid
+    ? `${item[0].id}: ${item[1].name}:${sid}`
+    : `${item[0].id}: ${item[1].name}`
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
@@ -147,49 +175,26 @@ function demote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   demoteWidget(node, widget, [subgraphNode])
-  promotionStore.demote(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    String(node.id),
-    getWidgetName(widget)
-  )
 }
 function promote([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
-  promotionStore.promote(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    String(node.id),
-    widget.name
-  )
 }
 function showAll() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of filteredCandidates.value) {
-    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
+  for (const item of filteredCandidates.value) {
+    promote(item)
   }
 }
 function hideAll() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of filteredActive.value) {
-    if (String(n.id) === '-1') continue
-    promotionStore.demote(
-      node.rootGraph.id,
-      node.id,
-      String(n.id),
-      getWidgetName(w)
-    )
+  for (const item of filteredActive.value) {
+    if (String(item[0].id) === '-1') continue
+    demote(item)
   }
 }
 function showRecommended() {
-  const node = activeNode.value
-  if (!node) return
-  for (const [n, w] of recommendedWidgets.value) {
-    promotionStore.promote(node.rootGraph.id, node.id, String(n.id), w.name)
+  for (const item of recommendedWidgets.value) {
+    promote(item)
   }
 }
 

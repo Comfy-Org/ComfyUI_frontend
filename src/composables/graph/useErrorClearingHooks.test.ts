@@ -315,6 +315,45 @@ describe('installErrorClearingHooks lifecycle', () => {
     cleanup()
     expect(graph.onNodeAdded).toBe(originalHook)
   })
+
+  it('restores original node callbacks when a node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('clip', 'CLIP')
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+    const originalOnConnectionsChange = vi.fn()
+    const originalOnWidgetChanged = vi.fn()
+    node.onConnectionsChange = originalOnConnectionsChange
+    node.onWidgetChanged = originalOnWidgetChanged
+    graph.add(node)
+
+    installErrorClearingHooks(graph)
+
+    // Callbacks should be chained (not the originals)
+    expect(node.onConnectionsChange).not.toBe(originalOnConnectionsChange)
+    expect(node.onWidgetChanged).not.toBe(originalOnWidgetChanged)
+
+    // Simulate node removal via the graph hook
+    graph.onNodeRemoved!(node)
+
+    // Original callbacks should be restored
+    expect(node.onConnectionsChange).toBe(originalOnConnectionsChange)
+    expect(node.onWidgetChanged).toBe(originalOnWidgetChanged)
+  })
+
+  it('does not double-wrap callbacks when installErrorClearingHooks is called twice', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('clip', 'CLIP')
+    graph.add(node)
+
+    installErrorClearingHooks(graph)
+    const chainedAfterFirst = node.onConnectionsChange
+
+    // Install again on the same graph — should be a no-op for existing nodes
+    installErrorClearingHooks(graph)
+    expect(node.onConnectionsChange).toBe(chainedAfterFirst)
+  })
 })
 
 describe('clearWidgetRelatedErrors parameter routing', () => {

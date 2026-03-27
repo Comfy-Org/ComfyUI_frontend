@@ -11,7 +11,7 @@ export default {
 
   './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
 
-  './**/*.{ts,tsx,vue,mts}': (stagedFiles: string[]) => {
+  './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
     const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
 
     const hasBrowserTestsChanges = stagedFiles

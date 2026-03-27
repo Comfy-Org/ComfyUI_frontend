@@ -61,10 +61,10 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }))
 }))
 
-// Mock the useFirebaseAuthActions composable
+// Mock the useAuthActions composable
 const mockLogout = vi.fn()
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: vi.fn(() => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: vi.fn(() => ({
     fetchBalance: vi.fn().mockResolvedValue(undefined),
     logout: mockLogout
   }))
@@ -77,7 +77,7 @@ vi.mock('@/services/dialogService', () => ({
   }))
 }))
 
-// Mock the firebaseAuthStore with hoisted state for per-test manipulation
+// Mock the authStore with hoisted state for per-test manipulation
 const mockAuthStoreState = vi.hoisted(() => ({
   balance: {
     amount_micros: 100_000,
@@ -91,8 +91,8 @@ const mockAuthStoreState = vi.hoisted(() => ({
   isFetchingBalance: false
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
     getAuthHeader: vi
       .fn()
       .mockResolvedValue({ Authorization: 'Bearer mock-token' }),

@@ -1,160 +1,347 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { PromotedWidgetEntry } from '../helpers/promotedWidgets'
+
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 import {
-  getPromotedWidgetSnapshot,
-  getPromotedWidgets
+  getPromotedWidgets,
+  getPseudoPreviewWidgets,
+  getNonPreviewPromotedWidgets
 } from '../helpers/promotedWidgets'
 
-test.describe('Subgraph Lifecycle', { tag: ['@subgraph', '@widget'] }, () => {
-  test('hydrates legacy proxyWidgets deterministically across reload', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-nested-duplicate-ids'
-    )
-    await comfyPage.nextFrame()
+const domPreviewSelector = '.image-preview'
 
-    const firstSnapshot = await getPromotedWidgetSnapshot(comfyPage, '5')
-    expect(firstSnapshot.proxyWidgets.length).toBeGreaterThan(0)
-    expect(
-      firstSnapshot.proxyWidgets.every(([nodeId]) => nodeId !== '-1')
-    ).toBe(true)
-
-    await comfyPage.page.reload()
-    await comfyPage.setup()
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-nested-duplicate-ids'
-    )
-    await comfyPage.nextFrame()
-
-    const secondSnapshot = await getPromotedWidgetSnapshot(comfyPage, '5')
-    expect(secondSnapshot.proxyWidgets).toEqual(firstSnapshot.proxyWidgets)
-    expect(secondSnapshot.widgetNames).toEqual(firstSnapshot.widgetNames)
-  })
-
-  test('promoted view falls back to disconnected placeholder after source widget removal', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-with-promoted-text-widget'
-    )
-    await comfyPage.nextFrame()
-
-    const projection = await comfyPage.page.evaluate(() => {
+const expectPromotedWidgetsToResolveToInteriorNodes = async (
+  comfyPage: ComfyPage,
+  hostSubgraphNodeId: string,
+  widgets: PromotedWidgetEntry[]
+) => {
+  const interiorNodeIds = widgets.map(([id]) => id)
+  const results = await comfyPage.page.evaluate(
+    ([hostId, ids]) => {
       const graph = window.app!.graph!
-      const hostNode = graph.getNodeById('11')
-      if (
-        !hostNode ||
-        typeof hostNode.isSubgraphNode !== 'function' ||
-        !hostNode.isSubgraphNode()
-      )
-        throw new Error('Expected host subgraph node 11')
+      const hostNode = graph.getNodeById(Number(hostId))
+      if (!hostNode?.isSubgraphNode()) return ids.map(() => false)
 
-      const beforeType = hostNode.widgets?.[0]?.type
-      const proxyWidgets = Array.isArray(hostNode.properties?.proxyWidgets)
-        ? hostNode.properties.proxyWidgets.filter(
-            (entry): entry is [string, string] =>
-              Array.isArray(entry) &&
-              entry.length === 2 &&
-              typeof entry[0] === 'string' &&
-              typeof entry[1] === 'string'
-          )
-        : []
-      const firstPromotion = proxyWidgets[0]
-      if (!firstPromotion)
-        throw new Error('Expected at least one promoted widget entry')
+      return ids.map((id) => {
+        const interiorNode = hostNode.subgraph.getNodeById(Number(id))
+        return interiorNode !== null && interiorNode !== undefined
+      })
+    },
+    [hostSubgraphNodeId, interiorNodeIds] as const
+  )
 
-      const [sourceNodeId, sourceWidgetName] = firstPromotion
-      const subgraph = graph.subgraphs.get(hostNode.type)
-      const sourceNode = subgraph?.getNodeById(Number(sourceNodeId))
-      if (!sourceNode?.widgets)
-        throw new Error('Expected promoted source node widget list')
+  for (const exists of results) {
+    expect(exists).toBe(true)
+  }
+}
 
-      sourceNode.widgets = sourceNode.widgets.filter(
-        (widget) => widget.name !== sourceWidgetName
-      )
+test.describe(
+  'Subgraph Lifecycle Edge Behaviors',
+  { tag: ['@subgraph'] },
+  () => {
+    test.describe('Deterministic Hydrate from Serialized proxyWidgets', () => {
+      test('proxyWidgets entries map to real interior node IDs after load', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.nextFrame()
 
-      return {
-        beforeType,
-        afterType: hostNode.widgets?.[0]?.type
-      }
-    })
+        const widgets = await getPromotedWidgets(comfyPage, '11')
+        expect(widgets.length).toBeGreaterThan(0)
 
-    expect(projection.beforeType).toBe('customtext')
-    expect(projection.afterType).toBe('button')
-  })
-
-  test('unpacking one preview host keeps remaining pseudo-preview promotions resolvable', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-with-multiple-promoted-previews'
-    )
-    await comfyPage.nextFrame()
-
-    const beforeNode8 = await getPromotedWidgets(comfyPage, '8')
-    expect(beforeNode8).toEqual([['6', '$$canvas-image-preview']])
-
-    const cleanupResult = await comfyPage.page.evaluate(() => {
-      const graph = window.app!.graph!
-      const invalidPseudoEntries = () => {
-        const invalid: string[] = []
-        for (const node of graph.nodes) {
-          if (
-            typeof node.isSubgraphNode !== 'function' ||
-            !node.isSubgraphNode()
-          )
-            continue
-
-          const subgraph = graph.subgraphs.get(node.type)
-          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
-            ? node.properties.proxyWidgets.filter(
-                (entry): entry is [string, string] =>
-                  Array.isArray(entry) &&
-                  entry.length === 2 &&
-                  typeof entry[0] === 'string' &&
-                  typeof entry[1] === 'string'
-              )
-            : []
-          for (const entry of proxyWidgets) {
-            if (entry[1] !== '$$canvas-image-preview') continue
-
-            const sourceNodeId = Number(entry[0])
-            const sourceNode = subgraph?.getNodeById(sourceNodeId)
-            if (!sourceNode) invalid.push(`${node.id}:${entry[0]}`)
-          }
+        for (const [interiorNodeId] of widgets) {
+          expect(Number(interiorNodeId)).toBeGreaterThan(0)
         }
-        return invalid
-      }
 
-      const before = invalidPseudoEntries()
-      const hostNode = graph.getNodeById('7')
-      if (
-        !hostNode ||
-        typeof hostNode.isSubgraphNode !== 'function' ||
-        !hostNode.isSubgraphNode()
-      )
-        throw new Error('Expected preview host subgraph node 7')
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          widgets
+        )
+      })
 
-      ;(
-        graph as unknown as { unpackSubgraph: (node: unknown) => void }
-      ).unpackSubgraph(hostNode)
+      test('proxyWidgets entries survive double round-trip without drift', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-multiple-promoted-widgets'
+        )
+        await comfyPage.nextFrame()
 
-      return {
-        before,
-        after: invalidPseudoEntries(),
-        hasNode7: Boolean(graph.getNodeById('7')),
-        hasNode8: Boolean(graph.getNodeById('8'))
-      }
+        const initialWidgets = await getPromotedWidgets(comfyPage, '11')
+        expect(initialWidgets.length).toBeGreaterThan(0)
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          initialWidgets
+        )
+
+        const serialized1 = await comfyPage.page.evaluate(() =>
+          window.app!.graph!.serialize()
+        )
+        await comfyPage.page.evaluate(
+          (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
+          serialized1 as ComfyWorkflowJSON
+        )
+        await comfyPage.nextFrame()
+
+        const afterFirst = await getPromotedWidgets(comfyPage, '11')
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          afterFirst
+        )
+
+        const serialized2 = await comfyPage.page.evaluate(() =>
+          window.app!.graph!.serialize()
+        )
+        await comfyPage.page.evaluate(
+          (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
+          serialized2 as ComfyWorkflowJSON
+        )
+        await comfyPage.nextFrame()
+
+        const afterSecond = await getPromotedWidgets(comfyPage, '11')
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '11',
+          afterSecond
+        )
+
+        expect(afterFirst).toEqual(initialWidgets)
+        expect(afterSecond).toEqual(initialWidgets)
+      })
+
+      test('Compressed target_slot (-1) entries are hydrated to real IDs', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-compressed-target-slot'
+        )
+        await comfyPage.nextFrame()
+
+        const widgets = await getPromotedWidgets(comfyPage, '2')
+        expect(widgets.length).toBeGreaterThan(0)
+
+        for (const [interiorNodeId] of widgets) {
+          expect(interiorNodeId).not.toBe('-1')
+          expect(Number(interiorNodeId)).toBeGreaterThan(0)
+        }
+
+        await expectPromotedWidgetsToResolveToInteriorNodes(
+          comfyPage,
+          '2',
+          widgets
+        )
+      })
     })
 
-    expect(cleanupResult.before).toEqual([])
-    expect(cleanupResult.after).toEqual([])
-    expect(cleanupResult.hasNode7).toBe(false)
-    expect(cleanupResult.hasNode8).toBe(true)
+    test.describe('Cleanup Behavior After Promoted Source Removal', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      })
 
-    const afterNode8 = await getPromotedWidgets(comfyPage, '8')
-    expect(afterNode8).toEqual([['6', '$$canvas-image-preview']])
-  })
-})
+      test('Removing promoted source node inside subgraph cleans up exterior proxyWidgets', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.nextFrame()
+
+        const initialWidgets = await getPromotedWidgets(comfyPage, '11')
+        expect(initialWidgets.length).toBeGreaterThan(0)
+
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await subgraphNode.navigateIntoSubgraph()
+
+        const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
+        await clipNode.click('title')
+        await comfyPage.page.keyboard.press('Delete')
+        await comfyPage.nextFrame()
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        await expect
+          .poll(async () => {
+            return await comfyPage.page.evaluate(() => {
+              const hostNode = window.app!.canvas.graph!.getNodeById('11')
+              const proxyWidgets = hostNode?.properties?.proxyWidgets
+              return {
+                proxyWidgetCount: Array.isArray(proxyWidgets)
+                  ? proxyWidgets.length
+                  : 0,
+                firstWidgetType: hostNode?.widgets?.[0]?.type
+              }
+            })
+          })
+          .toEqual({
+            proxyWidgetCount: 0,
+            firstWidgetType: undefined
+          })
+      })
+
+      test('Promoted widget disappears from DOM after interior node deletion', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.nextFrame()
+
+        const textarea = comfyPage.page.getByTestId(
+          TestIds.widgets.domWidgetTextarea
+        )
+        await expect(textarea).toBeVisible()
+
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await subgraphNode.navigateIntoSubgraph()
+
+        const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
+        await clipNode.click('title')
+        await comfyPage.page.keyboard.press('Delete')
+        await comfyPage.nextFrame()
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        await expect(
+          comfyPage.page.getByTestId(TestIds.widgets.domWidgetTextarea)
+        ).toHaveCount(0)
+      })
+    })
+
+    test.describe('Unpack/Remove Cleanup for Pseudo-Preview Targets', () => {
+      test('Pseudo-preview entries exist in proxyWidgets for preview subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-preview-node'
+        )
+        await comfyPage.nextFrame()
+
+        const pseudoWidgets = await getPseudoPreviewWidgets(comfyPage, '5')
+        expect(pseudoWidgets.length).toBeGreaterThan(0)
+        expect(
+          pseudoWidgets.some(([, name]) => name === '$$canvas-image-preview')
+        ).toBe(true)
+      })
+
+      test('Non-preview widgets coexist with pseudo-preview entries', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-preview-node'
+        )
+        await comfyPage.nextFrame()
+
+        const pseudoWidgets = await getPseudoPreviewWidgets(comfyPage, '5')
+        const nonPreviewWidgets = await getNonPreviewPromotedWidgets(
+          comfyPage,
+          '5'
+        )
+
+        expect(pseudoWidgets.length).toBeGreaterThan(0)
+        expect(nonPreviewWidgets.length).toBeGreaterThan(0)
+        expect(
+          nonPreviewWidgets.some(([, name]) => name === 'filename_prefix')
+        ).toBe(true)
+      })
+
+      test('Unpacking subgraph clears pseudo-preview entries from graph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-preview-node'
+        )
+        await comfyPage.nextFrame()
+
+        const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
+        expect(beforePseudo.length).toBeGreaterThan(0)
+
+        await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          const subgraphNode = graph.nodes.find((n) => n.isSubgraphNode())
+          if (!subgraphNode || !subgraphNode.isSubgraphNode()) return
+          graph.unpackSubgraph(subgraphNode)
+        })
+        await comfyPage.nextFrame()
+
+        const subgraphNodeCount = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          return graph.nodes.filter((n) => n.isSubgraphNode()).length
+        })
+        expect(subgraphNodeCount).toBe(0)
+
+        await expect
+          .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())
+          .toBe(0)
+      })
+
+      test('Removing subgraph node clears pseudo-preview DOM elements', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-preview-node'
+        )
+        await comfyPage.nextFrame()
+
+        const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
+        expect(beforePseudo.length).toBeGreaterThan(0)
+
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
+        expect(await subgraphNode.exists()).toBe(true)
+
+        await subgraphNode.click('title')
+        await comfyPage.page.keyboard.press('Delete')
+        await comfyPage.nextFrame()
+
+        const nodeExists = await comfyPage.page.evaluate(() => {
+          return !!window.app!.canvas.graph!.getNodeById('5')
+        })
+        expect(nodeExists).toBe(false)
+
+        await expect
+          .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())
+          .toBe(0)
+        await expect(comfyPage.page.locator(domPreviewSelector)).toHaveCount(0)
+      })
+
+      test('Unpacking one subgraph does not clear sibling pseudo-preview entries', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-multiple-promoted-previews'
+        )
+        await comfyPage.nextFrame()
+
+        const firstNodeBefore = await getPseudoPreviewWidgets(comfyPage, '7')
+        const secondNodeBefore = await getPseudoPreviewWidgets(comfyPage, '8')
+
+        expect(firstNodeBefore.length).toBeGreaterThan(0)
+        expect(secondNodeBefore.length).toBeGreaterThan(0)
+
+        await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          const subgraphNode = graph.getNodeById('7')
+          if (!subgraphNode || !subgraphNode.isSubgraphNode()) return
+          graph.unpackSubgraph(subgraphNode)
+        })
+        await comfyPage.nextFrame()
+
+        const firstNodeExists = await comfyPage.page.evaluate(() => {
+          return !!window.app!.graph!.getNodeById('7')
+        })
+        expect(firstNodeExists).toBe(false)
+
+        const secondNodeAfter = await getPseudoPreviewWidgets(comfyPage, '8')
+        expect(secondNodeAfter).toEqual(secondNodeBefore)
+      })
+    })
+  }
+)
