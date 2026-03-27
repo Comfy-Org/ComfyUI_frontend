@@ -39,7 +39,6 @@ export function useBuilderSave() {
     isSaving.value = true
     try {
       await workflowService.saveWorkflow(workflow)
-      showSuccessDialog()
     } catch (e) {
       toastErrorHandler(e)
     } finally {
@@ -89,13 +88,11 @@ export function useBuilderSave() {
     }
   }
 
-  function showSuccessDialog(viewType?: 'app' | 'graph') {
+  function showSuccessDialog(viewType: 'app' | 'graph') {
     const promptText =
       viewType === 'app'
         ? t('builderSave.successBodyApp')
-        : viewType === 'graph'
-          ? t('builderSave.successBodyGraph')
-          : t('builderSave.successBody')
+        : t('builderSave.successBodyGraph')
 
     showConfirmDialog({
       key: SUCCESS_DIALOG_KEY,

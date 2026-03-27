@@ -97,7 +97,7 @@ describe('useBuilderSave', () => {
       expect(mockSaveWorkflow).not.toHaveBeenCalled()
     })
 
-    it('saves workflow directly and shows success dialog', async () => {
+    it('saves workflow directly without showing a dialog', async () => {
       mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
       mockSaveWorkflow.mockResolvedValueOnce(undefined)
       const { save } = useBuilderSave()
@@ -105,10 +105,7 @@ describe('useBuilderSave', () => {
       await save()
 
       expect(mockSaveWorkflow).toHaveBeenCalledOnce()
-      expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
-      const successCall = mockShowConfirmDialog.mock.calls[0][0]
-      expect(successCall.key).toBe(SUCCESS_DIALOG_KEY)
-      expect(successCall.props.promptText).toBe('builderSave.successBody')
+      expect(mockShowConfirmDialog).not.toHaveBeenCalled()
     })
 
     it('toasts error on failure', async () => {
@@ -297,39 +294,6 @@ describe('useBuilderSave', () => {
 
       resolveSaveAs(true)
       await firstSave
-    })
-  })
-
-  describe('showSuccessDialog callbacks', () => {
-    async function getSuccessDialogProps() {
-      mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'app' }
-      mockSaveWorkflow.mockResolvedValueOnce(undefined)
-      const { save } = useBuilderSave()
-      await save()
-      return mockShowConfirmDialog.mock.calls[0][0].footerProps as {
-        onConfirm: () => void
-        onCancel: () => void
-      }
-    }
-
-    it('onConfirm closes dialog, tracks telemetry, and sets mode to app', async () => {
-      const { onConfirm } = await getSuccessDialogProps()
-
-      onConfirm()
-
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: SUCCESS_DIALOG_KEY })
-      expect(mockTrackEnterLinear).toHaveBeenCalledWith({
-        source: 'app_builder'
-      })
-      expect(mockSetMode).toHaveBeenCalledWith('app')
-    })
-
-    it('onCancel closes success dialog', async () => {
-      const { onCancel } = await getSuccessDialogProps()
-
-      onCancel()
-
-      expect(mockCloseDialog).toHaveBeenCalledWith({ key: SUCCESS_DIALOG_KEY })
     })
   })
 
