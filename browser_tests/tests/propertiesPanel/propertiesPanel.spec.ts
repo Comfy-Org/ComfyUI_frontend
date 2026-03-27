@@ -109,7 +109,7 @@ test.describe('Properties panel', () => {
         'CLIP Text Encode (Prompt)'
       ])
 
-      await expect(panel.panelTitle).toContainText('items selected')
+      await expect(panel.panelTitle).toContainText('3 items selected')
     })
 
     test('should list all selected nodes in Parameters tab', async ({
