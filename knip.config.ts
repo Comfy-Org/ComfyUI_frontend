@@ -42,7 +42,10 @@ const config: KnipConfig = {
     '@primeuix/utils',
     '@primevue/icons',
     // Used by lucideStrokePlugin.js (CSS @plugin)
-    '@iconify/utils'
+    '@iconify/utils',
+    // Used in design-system CSS — knip can't trace CSS @plugin usage
+    'tailwindcss-primeui',
+    'tw-animate-css'
   ],
   ignore: [
     // Auto generated API types

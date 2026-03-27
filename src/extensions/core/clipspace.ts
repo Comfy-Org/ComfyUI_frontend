@@ -2,6 +2,7 @@ import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes - Used by custom nodes via ComfyApp.clipspace */
 export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {

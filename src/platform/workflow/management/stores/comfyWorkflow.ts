@@ -22,6 +22,21 @@ export interface WidgetOverride {
   displayType?: WidgetDisplayType
 }
 
+/** An item within an input group. */
+export interface InputGroupItem {
+  key: string
+  pairId?: string
+}
+
+/** A named group of inputs that renders as a collapsible accordion. */
+export interface InputGroup {
+  id: string
+  name: string | null
+  items: InputGroupItem[]
+  /** Optional color name from LGraphCanvas.node_colors (e.g. 'red', 'blue'). */
+  color?: string | null
+}
+
 /** Scope determines which widgets a preset targets. */
 type PresetScope = 'app' | 'graph'
 
@@ -63,7 +78,6 @@ export interface LinearData {
   >
   runControlsZoneIdPerTemplate?: Record<string, string>
   zoneItemOrderPerTemplate?: Record<string, Record<string, string[]>>
-  zoneAlignPerTemplate?: Record<string, Record<string, 'top' | 'bottom'>>
   presetStripZoneIdPerTemplate?: Record<string, string>
   /** Per-widget overrides (min/max constraints, display type). Keyed by `nodeId:widgetName`. */
   widgetOverrides?: Record<string, WidgetOverride>
@@ -73,6 +87,10 @@ export interface LinearData {
   presetDisplayMode?: PresetDisplayMode
   /** Whether the preset strip is visible. Defaults to true. */
   presetsEnabled?: boolean
+  /** Collapsible input groups per layout template. */
+  inputGroupsPerTemplate?: Record<string, InputGroup[]>
+  /** Per-input color names. Keyed by `nodeId:widgetName`. */
+  inputColors?: Record<string, string>
 }
 
 export interface PendingWarnings {

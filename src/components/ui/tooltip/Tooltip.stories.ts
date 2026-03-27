@@ -15,6 +15,10 @@ const meta = {
     side: {
       control: 'select',
       options: ['top', 'bottom', 'left', 'right']
+    },
+    size: {
+      control: 'select',
+      options: ['sm', 'lg']
     }
   }
 } satisfies Meta<typeof Tooltip>
@@ -34,8 +38,72 @@ export const Default: Story = {
   }),
   args: {
     text: 'This is a tooltip',
-    side: 'top'
+    side: 'top',
+    size: 'sm'
   }
+}
+
+export const Small: Story = {
+  render: () => ({
+    components: { Tooltip, Button },
+    template: `
+      <div class="flex gap-12 p-20">
+        <Tooltip text="Tool tip left aligned" side="top" size="sm">
+          <Button>Top</Button>
+        </Tooltip>
+        <Tooltip text="Tool tip center aligned" side="bottom" size="sm">
+          <Button>Bottom</Button>
+        </Tooltip>
+        <Tooltip text="Tool tip right aligned" side="left" size="sm">
+          <Button>Left</Button>
+        </Tooltip>
+        <Tooltip text="Tool tip pointing left" side="right" size="sm">
+          <Button>Right</Button>
+        </Tooltip>
+      </div>
+    `
+  })
+}
+
+export const Large: Story = {
+  render: () => ({
+    components: { Tooltip, Button },
+    template: `
+      <div class="flex gap-12 p-20">
+        <Tooltip text="Lorem ipsum dolor sit amet, consectetur dolor si adipiscing elit. Proin maximus nisl nec posuere mattis." side="top" size="lg">
+          <Button>Top</Button>
+        </Tooltip>
+        <Tooltip text="Lorem ipsum dolor sit amet, consectetur dolor si adipiscing elit. Proin maximus nisl nec posuere mattis." side="bottom" size="lg">
+          <Button>Bottom</Button>
+        </Tooltip>
+        <Tooltip text="Lorem ipsum dolor sit amet, consectetur dolor si adipiscing elit. Proin maximus nisl nec posuere mattis." side="left" size="lg">
+          <Button>Left</Button>
+        </Tooltip>
+        <Tooltip text="Lorem ipsum dolor sit amet, consectetur dolor si adipiscing elit. Proin maximus nisl nec posuere mattis." side="right" size="lg">
+          <Button>Right</Button>
+        </Tooltip>
+      </div>
+    `
+  })
+}
+
+export const WithKeybind: Story = {
+  render: () => ({
+    components: { Tooltip, Button },
+    template: `
+      <div class="flex gap-12 p-20">
+        <Tooltip text="Select all" keybind="Ctrl+A" side="top" size="sm">
+          <Button>With keybind</Button>
+        </Tooltip>
+        <Tooltip text="Save" keybind="Ctrl+S" side="bottom" size="sm">
+          <Button>Save</Button>
+        </Tooltip>
+        <Tooltip text="Undo" keybind="Ctrl+Z" side="right" size="sm">
+          <Button>Undo</Button>
+        </Tooltip>
+      </div>
+    `
+  })
 }
 
 export const AllSides: Story = {
@@ -62,13 +130,21 @@ export const AllSides: Story = {
   })
 }
 
-export const LongText: Story = {
+export const WithOffset: Story = {
   render: () => ({
     components: { Tooltip, Button },
     template: `
-      <Tooltip text="The random seed used for creating the noise. This controls the reproducibility of generated images." side="top">
-        <Button>Hover for details</Button>
-      </Tooltip>
+      <div class="flex gap-12 p-20">
+        <Tooltip text="20px offset" side="left" :side-offset="20" size="sm">
+          <Button>Left 20px</Button>
+        </Tooltip>
+        <Tooltip text="20px offset" side="top" :side-offset="20" size="sm">
+          <Button>Top 20px</Button>
+        </Tooltip>
+        <Tooltip text="Default offset" side="left" size="sm">
+          <Button>Left default</Button>
+        </Tooltip>
+      </div>
     `
   })
 }
