@@ -485,6 +485,20 @@ export async function runHybridAgent(opts: AgentOptions): Promise<{
 5. Take screenshots at key moments for the video evidence.
 6. When you've confirmed or ruled out the bug, call done().
 
+## Control/Test Comparison (IMPORTANT)
+When a bug is triggered by a specific setting, mode, or configuration:
+1. **CONTROL phase**: First demonstrate the WORKING state. Disable the trigger (e.g., Nodes 2.0 OFF), perform the action, take a screenshot labeled "control-*", verify it works.
+2. **TEST phase**: Then enable the trigger (e.g., Nodes 2.0 ON), reload if needed, perform the SAME action, take a screenshot labeled "test-*", verify it's broken.
+3. In your done() summary, explicitly compare: "With X OFF, behavior was Y. With X ON, behavior was Z."
+
+This contrast is critical evidence — it proves the bug is caused by the specific setting, not a general issue. Always try to show both states when possible.
+
+Examples of control/test pairs:
+- Nodes 2.0 OFF → ON (for node rendering, widget, drag bugs)
+- Default theme → specific theme (for visual bugs)
+- Single node → multiple overlapping nodes (for z-index bugs)
+- Empty workflow → loaded workflow (for state bugs)
+
 ## ComfyUI Layout (1280×720 viewport)
 - Canvas with node graph centered at ~(640, 400)
 - Hamburger menu top-left (C logo)
