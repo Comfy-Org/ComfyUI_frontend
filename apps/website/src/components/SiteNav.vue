@@ -16,15 +16,18 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
+function onAfterSwap() {
+  mobileMenuOpen.value = false
+}
+
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
-  document.addEventListener('astro:after-swap', () => {
-    mobileMenuOpen.value = false
-  })
+  document.addEventListener('astro:after-swap', onAfterSwap)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', onKeydown)
+  document.removeEventListener('astro:after-swap', onAfterSwap)
 })
 </script>
 
