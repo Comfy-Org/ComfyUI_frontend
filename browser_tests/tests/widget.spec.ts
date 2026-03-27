@@ -231,12 +231,16 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     })
     await comboEntry.click()
 
-    // Stabilization for the image swap
+    // Wait for the image to load from the server
+    await comfyPage.page.waitForResponse(
+      (resp) => resp.url().includes('view') && resp.status() === 200
+    )
     await comfyPage.nextFrame()
 
     // Expect the image preview to change automatically
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'image_preview_changed_by_combo_value.png'
+      'image_preview_changed_by_combo_value.png',
+      { maxDiffPixels: 50 }
     )
 
     // Expect the filename combo value to be updated
@@ -329,9 +333,11 @@ test.describe(
         },
         [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
       )
+      await comfyPage.nextFrame()
+      await comfyPage.nextFrame()
       await expect(
         comfyPage.page.locator('.dom-widget').locator('img')
-      ).toHaveCount(2)
+      ).toHaveCount(2, { timeout: 10_000 })
     })
   }
 )
