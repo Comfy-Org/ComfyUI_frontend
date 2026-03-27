@@ -343,7 +343,9 @@ export class AssetsSidebarTab extends SidebarTab {
   async rightClickAsset(name: string) {
     const card = this.getAssetCardByName(name)
     await card.click({ button: 'right' })
-    await this.page.waitForTimeout(200)
+    await this.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
   }
 
   async waitForAssets(count?: number) {

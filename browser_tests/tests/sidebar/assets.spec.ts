@@ -187,8 +187,8 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.open()
     await tab.switchToImported()
 
-    // Wait for imported assets to load
-    await comfyPage.page.waitForTimeout(500)
+    // Wait for imported assets to render
+    await expect(tab.assetCards.first()).toBeVisible({ timeout: 5000 })
 
     // Imported tab should show the mocked files
     const count = await tab.assetCards.count()
@@ -221,9 +221,7 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.listViewOption.click()
 
     // List view items should now be visible
-    await comfyPage.page.waitForTimeout(300)
-    const listItems = tab.listViewItems
-    await expect(listItems.first()).toBeVisible({ timeout: 5000 })
+    await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('Can switch back to grid view', async ({ comfyPage }) => {
@@ -234,7 +232,6 @@ test.describe('Assets sidebar - view mode toggle', () => {
     // Switch to list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
-    await comfyPage.page.waitForTimeout(300)
     await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
 
     // Switch back to grid by setting localStorage and refreshing the panel
@@ -287,10 +284,12 @@ test.describe('Assets sidebar - search', () => {
 
     // Search for a specific filename that matches only one asset
     await tab.searchInput.fill('landscape')
-    await comfyPage.page.waitForTimeout(500)
 
-    const filteredCount = await tab.assetCards.count()
-    expect(filteredCount).toBeLessThan(initialCount)
+    // Wait for filter to reduce the count
+    await expect(async () => {
+      const filteredCount = await tab.assetCards.count()
+      expect(filteredCount).toBeLessThan(initialCount)
+    }).toPass({ timeout: 5000 })
   })
 
   test('Clearing search restores all assets', async ({ comfyPage }) => {
@@ -302,12 +301,12 @@ test.describe('Assets sidebar - search', () => {
 
     // Filter then clear
     await tab.searchInput.fill('landscape')
-    await comfyPage.page.waitForTimeout(500)
-    await tab.searchInput.fill('')
-    await comfyPage.page.waitForTimeout(500)
+    await expect(async () => {
+      expect(await tab.assetCards.count()).toBeLessThan(initialCount)
+    }).toPass({ timeout: 5000 })
 
-    const restoredCount = await tab.assetCards.count()
-    expect(restoredCount).toBe(initialCount)
+    await tab.searchInput.fill('')
+    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
 
   test('Search with no matches shows empty state', async ({ comfyPage }) => {
@@ -316,9 +315,7 @@ test.describe('Assets sidebar - search', () => {
     await tab.waitForAssets()
 
     await tab.searchInput.fill('nonexistent_file_xyz')
-    await comfyPage.page.waitForTimeout(500)
-
-    await expect(tab.assetCards).toHaveCount(0)
+    await expect(tab.assetCards).toHaveCount(0, { timeout: 5000 })
   })
 })
 
@@ -356,10 +353,7 @@ test.describe('Assets sidebar - selection', () => {
 
     const cards = tab.assetCards
     const cardCount = await cards.count()
-    if (cardCount < 2) {
-      test.skip()
-      return
-    }
+    expect(cardCount).toBeGreaterThanOrEqual(2)
 
     // Click first card
     await cards.first().click()
@@ -396,7 +390,7 @@ test.describe('Assets sidebar - selection', () => {
 
     // Hover over the selection count button to reveal "Deselect all"
     await tab.selectionCountButton.hover()
-    await comfyPage.page.waitForTimeout(200)
+    await expect(tab.deselectAllButton).toBeVisible({ timeout: 3000 })
 
     // Click "Deselect all"
     await tab.deselectAllButton.click()
@@ -444,11 +438,10 @@ test.describe('Assets sidebar - context menu', () => {
 
     // Right-click first asset
     await tab.assetCards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
 
     // Context menu should appear with standard items
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible()
+    await expect(contextMenu).toBeVisible({ timeout: 3000 })
   })
 
   test('Context menu contains Download action for output asset', async ({
@@ -459,7 +452,9 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
+    await comfyPage.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Download')).toBeVisible()
   })
@@ -472,7 +467,9 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
+    await comfyPage.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Inspect asset')).toBeVisible()
   })
@@ -485,7 +482,9 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
+    await comfyPage.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Delete')).toBeVisible()
   })
@@ -498,7 +497,9 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
+    await comfyPage.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Copy job ID')).toBeVisible()
   })
@@ -528,10 +529,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     const cards = tab.assetCards
     const cardCount = await cards.count()
-    if (cardCount < 2) {
-      test.skip()
-      return
-    }
+    expect(cardCount).toBeGreaterThanOrEqual(2)
 
     // Multi-select: click first, then Ctrl/Cmd+click second
     await cards.first().click({ force: true })
@@ -605,10 +603,7 @@ test.describe('Assets sidebar - bulk actions', () => {
     // Select two assets
     const cards = tab.assetCards
     const cardCount = await cards.count()
-    if (cardCount < 2) {
-      test.skip()
-      return
-    }
+    expect(cardCount).toBeGreaterThanOrEqual(2)
 
     await cards.first().click()
     const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
