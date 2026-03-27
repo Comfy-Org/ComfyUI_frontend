@@ -28,6 +28,10 @@ const config: KnipConfig = {
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
+    'apps/architecture-adventure': {
+      project: ['src/**/*.ts'],
+      vite: { config: ['vite.config.ts'] }
+    },
     'apps/website': {
       entry: [
         'src/pages/**/*.astro',
