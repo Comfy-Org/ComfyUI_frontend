@@ -125,27 +125,15 @@ import { cn } from '@/utils/tailwindUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
+import {
+  buildVirtualJobRows,
+  JOB_ROW_HEIGHT,
+  VIRTUAL_JOB_LIST_BOTTOM_PADDING
+} from './buildVirtualJobRows'
+
 defineOptions({
   inheritAttrs: false
 })
-
-const HEADER_ROW_HEIGHT = 20
-const GROUP_ROW_GAP = 16
-const JOB_ROW_HEIGHT = 48
-
-type JobListRow =
-  | {
-      key: string
-      type: 'header'
-      label: string
-      height: number
-    }
-  | {
-      key: string
-      type: 'job'
-      job: JobListItem
-      height: number
-    }
 
 const { displayedJobGroups } = defineProps<{ displayedJobGroups: JobGroup[] }>()
 
@@ -160,34 +148,7 @@ const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
 const popoverPosition = ref<{ top: number; left: number } | null>(null)
-const flatRows = computed<JobListRow[]>(() => {
-  const rows: JobListRow[] = []
-  const lastGroupIndex = displayedJobGroups.length - 1
-
-  displayedJobGroups.forEach((group, groupIndex) => {
-    rows.push({
-      key: `header-${group.key}`,
-      type: 'header',
-      label: group.label,
-      height: HEADER_ROW_HEIGHT
-    })
-
-    group.items.forEach((job, jobIndex) => {
-      const isLastJobInGroup = jobIndex === group.items.length - 1
-      const isLastGroup = groupIndex === lastGroupIndex
-      rows.push({
-        key: `job-${job.id}`,
-        type: 'job',
-        job,
-        height:
-          JOB_ROW_HEIGHT +
-          (isLastJobInGroup && !isLastGroup ? GROUP_ROW_GAP : 0)
-      })
-    })
-  })
-
-  return rows
-})
+const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
 const {
   list: virtualRows,
   containerProps,
@@ -199,7 +160,10 @@ const {
 const virtualWrapperStyle = computed(() => ({
   ...wrapperProps.value.style,
   width: '100%',
-  paddingBottom: flatRows.value.length > 0 ? '16px' : undefined
+  paddingBottom:
+    flatRows.value.length > 0
+      ? `${VIRTUAL_JOB_LIST_BOTTOM_PADDING}px`
+      : undefined
 }))
 const {
   activeDetails,
