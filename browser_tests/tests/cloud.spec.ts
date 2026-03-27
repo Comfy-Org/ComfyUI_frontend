@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from "../fixtures/ComfyPage";
 import { TestIds } from "../fixtures/selectors";
 
 test.describe("Cloud distribution UI @cloud", () => {
-  test("subscribe button is visible for free-tier users @cloud", async ({
+  test("subscribe button is attached in cloud mode @cloud", async ({
     comfyPage,
   }) => {
     const subscribeButton = comfyPage.page.getByTestId(
