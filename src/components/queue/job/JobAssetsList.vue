@@ -1,5 +1,6 @@
 <template>
   <div
+    v-bind="$attrs"
     :ref="containerProps.ref"
     :style="containerProps.style"
     data-testid="job-assets-list"
@@ -123,6 +124,10 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@/utils/tailwindUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
+
+defineOptions({
+  inheritAttrs: false
+})
 
 const HEADER_ROW_HEIGHT = 20
 const GROUP_ROW_GAP = 16

@@ -176,6 +176,33 @@ describe('JobAssetsList', () => {
     expect(wrapper.find('[data-job-id="job-2"]').exists()).toBe(true)
   })
 
+  it('forwards parent attrs to the scroll container', () => {
+    const wrapper = mount(JobAssetsList, {
+      attrs: {
+        class: 'min-h-0 flex-1'
+      },
+      props: {
+        displayedJobGroups: [
+          {
+            key: 'today',
+            label: 'Today',
+            items: [buildJob({ id: 'job-1' })]
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          teleport: true,
+          JobDetailsPopover: JobDetailsPopoverStub
+        }
+      }
+    })
+
+    expect(wrapper.get('[data-testid="job-assets-list"]').classes()).toEqual(
+      expect.arrayContaining(['min-h-0', 'flex-1', 'h-full', 'overflow-y-auto'])
+    )
+  })
+
   it('emits viewItem on preview-click for completed jobs with preview', async () => {
     const job = buildJob()
     const wrapper = mountJobAssetsList([job])
