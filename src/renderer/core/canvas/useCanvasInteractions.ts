@@ -41,9 +41,45 @@ export function useCanvasInteractions() {
     return !!(captureElement && active && captureElement.contains(active))
   }
 
-  const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
-    !wheelCapturedByFocusedElement(event) ||
-    (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
+  /**
+   * Returns true if the wheel event target is inside a scrollable
+   * capture-wheel element that can still scroll in the current direction.
+   * This prevents scroll events from leaking to the canvas when the user
+   * scrolls within a widget's content area, even when the widget is not focused.
+   */
+  const wheelCapturedByScrollableElement = (event: WheelEvent): boolean => {
+    const target = event.target as HTMLElement | null
+    const captureElement = target?.closest(
+      '[data-capture-wheel="true"]'
+    ) as HTMLElement | null
+    if (!captureElement) return false
+
+    const isScrollable =
+      captureElement.scrollHeight > captureElement.clientHeight
+    if (!isScrollable) return false
+
+    const { scrollTop, scrollHeight, clientHeight } = captureElement
+    const tolerance = 1
+    const atTop = scrollTop <= tolerance
+    const atBottom = scrollTop + clientHeight >= scrollHeight - tolerance
+
+    // At boundary scrolling further out — let canvas handle it
+    if (event.deltaY < 0 && atTop) return false
+    if (event.deltaY > 0 && atBottom) return false
+
+    return true
+  }
+
+  const shouldForwardWheelEvent = (event: WheelEvent): boolean => {
+    // Focused capture-wheel elements always block forwarding (except Ctrl+wheel zoom)
+    if (wheelCapturedByFocusedElement(event)) {
+      return isStandardNavMode.value && (event.ctrlKey || event.metaKey)
+    }
+    // Scrollable capture-wheel elements block forwarding when within scroll bounds
+    if (wheelCapturedByScrollableElement(event)) return false
+
+    return true
+  }
 
   /**
    * Handles wheel events from UI components that should be forwarded to canvas

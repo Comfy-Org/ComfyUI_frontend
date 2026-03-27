@@ -111,6 +111,21 @@ function addMultilineWidget(
 
     // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
     if (canScrollY) {
+      const atTop = inputEl.scrollTop <= 0
+      const atBottom =
+        inputEl.scrollTop + inputEl.clientHeight >= inputEl.scrollHeight - 1
+      const scrollingUp = deltaY < 0
+      const scrollingDown = deltaY > 0
+
+      if ((atTop && scrollingUp) || (atBottom && scrollingDown)) {
+        // At boundary — forward to canvas for zoom/pan
+        event.preventDefault()
+        event.stopPropagation()
+        app.canvas.processMouseWheel(event)
+        return
+      }
+
+      // Within scroll range — consume event, let textarea scroll natively
       event.stopPropagation()
       return
     }

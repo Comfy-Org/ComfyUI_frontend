@@ -91,6 +91,39 @@ function addMarkdownWidget(
     event.stopPropagation()
   })
 
+  inputEl.addEventListener('wheel', (event: WheelEvent) => {
+    const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
+    if (!canScrollY) {
+      // Not scrollable — forward to canvas
+      event.preventDefault()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Ctrl+wheel always goes to canvas for zoom
+    if (event.ctrlKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    const atTop = inputEl.scrollTop <= 0
+    const atBottom =
+      inputEl.scrollTop + inputEl.clientHeight >= inputEl.scrollHeight - 1
+
+    if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
+      // At boundary — forward to canvas
+      event.preventDefault()
+      event.stopPropagation()
+      app.canvas.processMouseWheel(event)
+      return
+    }
+
+    // Within scroll range — consume event
+    event.stopPropagation()
+  })
+
   inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
     if (event.button === 1) {
       app.canvas.processMouseDown(event)
