@@ -39,6 +39,17 @@ test.describe(
           'filter-chips-multiple.png'
         )
       })
+
+      test('Filter chip remove button removes the chip', async ({
+        comfyPage
+      }) => {
+        await comfyPage.canvasOps.doubleClick()
+        await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+        await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
+
+        await comfyPage.searchBox.removeFilter(0)
+        await expect(comfyPage.searchBox.filterChips).toHaveCount(0)
+      })
     })
 
     test.describe('Node library tree badge', () => {
