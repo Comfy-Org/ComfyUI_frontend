@@ -25,8 +25,8 @@ const authActionMocks = vi.hoisted(() => ({
   accessBillingPortal: vi.fn()
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => authActionMocks
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => authActionMocks
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({

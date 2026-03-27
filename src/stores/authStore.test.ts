@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
@@ -122,8 +122,8 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
   })
 }))
 
-describe('useFirebaseAuthStore', () => {
-  let store: ReturnType<typeof useFirebaseAuthStore>
+describe('useAuthStore', () => {
+  let store: ReturnType<typeof useAuthStore>
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
 
@@ -182,7 +182,7 @@ describe('useFirebaseAuthStore', () => {
 
     // Initialize Pinia
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useFirebaseAuthStore()
+    store = useAuthStore()
 
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockReset()
@@ -210,8 +210,8 @@ describe('useFirebaseAuthStore', () => {
       )
 
       setActivePinia(createTestingPinia({ stubActions: false }))
-      const storeModule = await import('@/stores/firebaseAuthStore')
-      store = storeModule.useFirebaseAuthStore()
+      const storeModule = await import('@/stores/authStore')
+      store = storeModule.useAuthStore()
     })
 
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {

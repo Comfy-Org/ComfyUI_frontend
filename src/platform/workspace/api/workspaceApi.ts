@@ -2,7 +2,7 @@ import axios from 'axios'
 
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
@@ -288,7 +288,7 @@ const workspaceApiClient = axios.create({
 })
 
 async function getAuthHeaderOrThrow() {
-  const authHeader = await useFirebaseAuthStore().getAuthHeader()
+  const authHeader = await useAuthStore().getAuthHeader()
   if (!authHeader) {
     throw new WorkspaceApiError(
       t('toastMessages.userNotAuthenticated'),
@@ -300,7 +300,7 @@ async function getAuthHeaderOrThrow() {
 }
 
 async function getFirebaseHeaderOrThrow() {
-  const authHeader = await useFirebaseAuthStore().getFirebaseAuthHeader()
+  const authHeader = await useAuthStore().getFirebaseAuthHeader()
   if (!authHeader) {
     throw new WorkspaceApiError(
       t('toastMessages.userNotAuthenticated'),
