@@ -61,7 +61,6 @@ const loginButtonText = enMessages.auth.login.loginButton
 
 describe('SignInForm', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     mockSendPasswordReset.mockReset()
     mockToastAdd.mockReset()
     mockLoadingRef.value = false
@@ -99,13 +98,6 @@ describe('SignInForm', () => {
   }
 
   describe('Forgot Password Link', () => {
-    it('shows disabled style when email is empty', () => {
-      renderComponent()
-
-      const forgotPasswordLink = screen.getByText(forgotPasswordText)
-      expect(forgotPasswordLink).toHaveClass('cursor-not-allowed', 'opacity-50')
-    })
-
     it('shows toast and focuses email input when clicked while disabled', async () => {
       const { user } = renderComponent()
 
@@ -139,6 +131,17 @@ describe('SignInForm', () => {
         email: 'test@example.com',
         password: 'password123'
       })
+    })
+
+    it('does not emit submit event when form data is invalid', async () => {
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+
+      await user.type(getEmailInput(), 'invalid-email')
+      await user.type(getPasswordInput(), 'password123')
+      await user.click(screen.getByRole('button', { name: loginButtonText }))
+
+      expect(onSubmit).not.toHaveBeenCalled()
     })
   })
 

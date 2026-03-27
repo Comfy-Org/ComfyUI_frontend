@@ -130,6 +130,10 @@ describe('SelectionToolbox', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
+    nodeDefMock = {
+      type: 'TestNode',
+      title: 'Test Node'
+    } as unknown
 
     // Mock the canvas to avoid "getCanvas: canvas is null" errors
     canvasStore.canvas = createMockCanvas()
@@ -369,8 +373,9 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = []
       const { container } = renderComponent()
 
-      const panel = container.querySelector('.panel')
-      expect(panel?.children.length).toBeGreaterThan(0) // At least MoreOptions should show
+      expect(
+        container.querySelector('[data-testid="more-options-button"]')
+      ).toBeTruthy()
     })
   })
 

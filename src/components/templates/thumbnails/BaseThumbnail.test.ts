@@ -1,12 +1,15 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { describe, expect, it } from 'vitest'
 
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
 describe('BaseThumbnail', () => {
-  function renderThumbnail(props = {}) {
+  function renderThumbnail(
+    props: Partial<ComponentProps<typeof BaseThumbnail>> = {}
+  ) {
     return render(BaseThumbnail, {
-      props,
+      props: props as ComponentProps<typeof BaseThumbnail>,
       slots: {
         default: '<img src="/test.jpg" alt="test" />'
       }
@@ -19,24 +22,21 @@ describe('BaseThumbnail', () => {
   })
 
   it('applies hover zoom with correct style', () => {
-    const { container } = renderThumbnail({ isHovered: true })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const contentDiv = container.querySelector('.transform-gpu')
+    renderThumbnail({ isHovered: true })
+    const contentDiv = screen.getByTestId('thumbnail-content')
     expect(contentDiv).toHaveStyle({ transform: 'scale(1.04)' })
   })
 
   it('applies custom hover zoom value', () => {
-    const { container } = renderThumbnail({ hoverZoom: 10, isHovered: true })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const contentDiv = container.querySelector('.transform-gpu')
+    renderThumbnail({ hoverZoom: 10, isHovered: true })
+    const contentDiv = screen.getByTestId('thumbnail-content')
     expect(contentDiv).toHaveStyle({ transform: 'scale(1.1)' })
   })
 
   it('does not apply scale when not hovered', () => {
-    const { container } = renderThumbnail({ isHovered: false })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const contentDiv = container.querySelector('.transform-gpu')
-    expect(contentDiv).not.toHaveStyle({ transform: expect.any(String) })
+    renderThumbnail({ isHovered: false })
+    const contentDiv = screen.getByTestId('thumbnail-content')
+    expect(contentDiv).not.toHaveAttribute('style')
   })
 
   it('shows error state when image fails to load', async () => {
