@@ -1,0 +1,168 @@
+#map-dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  max-width: 700px;
+  width: 90%;
+  color: var(--text);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.6);
+  opacity: 0;
+  transform: scale(0.95);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    overlay 0.2s ease allow-discrete,
+    display 0.2s ease allow-discrete;
+}
+
+#map-dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  #map-dialog[open] {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+#map-dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    overlay 0.2s ease allow-discrete,
+    display 0.2s ease allow-discrete;
+}
+
+#map-dialog[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  #map-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+#map-dialog h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+#map {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.map-room {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-room:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.map-room.visited {
+  border-color: var(--green);
+  opacity: 0.7;
+}
+
+.map-room.current {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.map-room .room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-room .room-layer {
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.map-room .challenge-badge {
+  display: inline-block;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.map-room .challenge-badge.pending {
+  background: var(--yellow);
+  color: var(--bg);
+}
+
+.map-room .challenge-badge.done {
+  background: var(--green);
+  color: var(--bg);
+}
+
+.map-node circle {
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.map-node.locked circle {
+  fill: var(--bg);
+  stroke: var(--border);
+}
+
+.map-node.visited circle {
+  fill: var(--surface);
+  stroke: var(--green);
+}
+
+.map-node.current circle {
+  fill: var(--accent-dim);
+  stroke: var(--accent);
+}
+
+.map-edge {
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.map-label {
+  fill: var(--text);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.map-title {
+  fill: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.map-badge {
+  font-size: 10px;
+}
+
+.map-lock {
+  font-size: 12px;
+}
+
+.hidden {
+  display: none !important;
+}

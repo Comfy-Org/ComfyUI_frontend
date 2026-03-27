@@ -1,0 +1,57 @@
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes unlockPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(88 166 255 / 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgb(88 166 255 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(88 166 255 / 0);
+  }
+}
+
+@keyframes nodeUnlock {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#narrative {
+  transition: opacity 0.2s ease;
+}
+
+#narrative.exit,
+#narrative.enter {
+  opacity: 0;
+}
+
+.map-room.newly-unlocked {
+  animation: unlockPulse 0.6s ease-out;
+}
+
+.map-node.newly-unlocked circle {
+  animation: unlockPulse 0.6s ease-out;
+}
+
+.map-node {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
