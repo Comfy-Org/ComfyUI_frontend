@@ -201,28 +201,30 @@ async function handleSwitch(workspaceId: string) {
 async function onCreate() {
   if (!isValidName.value || loading.value) return
   loading.value = true
-  const name = workspaceName.value.trim()
   try {
-    await workspaceStore.createWorkspace(name)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
-    })
+    const name = workspaceName.value.trim()
+    try {
+      await workspaceStore.createWorkspace(name)
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+      return
+    }
+    try {
+      await onConfirm?.(name)
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+    }
+    dialogStore.closeDialog({ key: DIALOG_KEY })
+  } finally {
     loading.value = false
-    return
   }
-  try {
-    await onConfirm?.(name)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
-    })
-  }
-  dialogStore.closeDialog({ key: DIALOG_KEY })
-  loading.value = false
 }
 </script>
