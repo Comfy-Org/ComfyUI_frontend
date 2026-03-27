@@ -2,7 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { getCustomerApiBaseUrl } from '@/config/comfyApi'
 import { d } from '@/i18n'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
@@ -24,7 +24,7 @@ type CustomerEventsResponseQuery =
 export type AuditLog = components['schemas']['AuditLog']
 
 const customerApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
+  baseURL: getCustomerApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -35,7 +35,7 @@ export const useCustomerEventsService = () => {
   const error = ref<string | null>(null)
 
   watch(
-    () => getComfyApiBaseUrl(),
+    () => getCustomerApiBaseUrl(),
     (url) => {
       customerApiClient.defaults.baseURL = url
     }
