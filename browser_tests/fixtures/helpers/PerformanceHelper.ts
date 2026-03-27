@@ -166,8 +166,14 @@ export class PerformanceHelper {
               resolve({ p5: 0, p50: 0, p95: 0, mean: 0, frameCount: 0 })
               return
             }
-            const fps = frameDurations.map((d) => 1000 / d)
+            const fps = frameDurations
+              .map((d) => 1000 / d)
+              .filter((f) => Number.isFinite(f))
             fps.sort((a, b) => a - b)
+            if (fps.length === 0) {
+              resolve({ p5: 0, p50: 0, p95: 0, mean: 0, frameCount: 0 })
+              return
+            }
             function percentile(p: number): number {
               const rank = p * (fps.length - 1)
               const lo = Math.floor(rank)
