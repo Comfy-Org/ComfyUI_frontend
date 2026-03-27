@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
@@ -7,31 +6,13 @@ test.describe(
   'Badge visual regression',
   { tag: ['@screenshot', '@ui'] },
   () => {
-    async function dismissToasts(comfyPage: { page: Page }) {
-      const toastCloseButtons = comfyPage.page.locator('.p-toast-close-button')
-      const count = await toastCloseButtons.count()
-      for (let i = 0; i < count; i++) {
-        await toastCloseButtons
-          .nth(i)
-          .click()
-          .catch(() => {})
-      }
-      if (count > 0) {
-        await comfyPage.page
-          .locator('.p-toast-message')
-          .first()
-          .waitFor({ state: 'hidden', timeout: 3000 })
-          .catch(() => {})
-      }
-    }
-
     test.describe('SearchFilterChip badge', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.settings.setSetting(
           'Comfy.NodeSearchBoxImpl',
           'v1 (legacy)'
         )
-        await dismissToasts(comfyPage)
+        await comfyPage.toast.closeToasts()
       })
 
       test('Single filter chip renders correctly', async ({ comfyPage }) => {
@@ -64,7 +45,7 @@ test.describe(
       test('Folder node count badge renders correctly', async ({
         comfyPage
       }) => {
-        await dismissToasts(comfyPage)
+        await comfyPage.toast.closeToasts()
 
         const sidebarButton = comfyPage.page.getByRole('button', {
           name: 'Node Library'
