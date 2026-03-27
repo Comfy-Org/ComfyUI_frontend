@@ -79,6 +79,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
@@ -198,8 +199,8 @@ async function handleAddCreditCard() {
     if (!planSlug) return
     const response = await subscribe(
       planSlug,
-      'https://www.comfy.org/payment/success',
-      'https://www.comfy.org/payment/failed'
+      `${getComfyPlatformBaseUrl()}/payment/success`,
+      `${getComfyPlatformBaseUrl()}/payment/failed`
     )
 
     if (!response) return
@@ -252,8 +253,8 @@ async function handleConfirmTransition() {
     if (!planSlug) return
     const response = await subscribe(
       planSlug,
-      'https://www.comfy.org/payment/success',
-      'https://www.comfy.org/payment/failed'
+      `${getComfyPlatformBaseUrl()}/payment/success`,
+      `${getComfyPlatformBaseUrl()}/payment/failed`
     )
 
     if (!response) return
