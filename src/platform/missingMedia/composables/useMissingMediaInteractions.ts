@@ -132,13 +132,7 @@ export function useMissingMediaInteractions() {
 
   /** Step 1: Upload file and store result as pending (does not apply yet). */
   async function handleUpload(file: File, name: string, mediaType: MediaType) {
-    const expectedPrefix =
-      mediaType === 'audio'
-        ? 'audio/'
-        : mediaType === 'video'
-          ? 'video/'
-          : 'image/'
-    if (!file.type || !file.type.startsWith(expectedPrefix)) {
+    if (!file.type || !file.type.startsWith(`${mediaType}/`)) {
       useToastStore().addAlert(
         st(
           'toastMessages.unsupportedFileType',

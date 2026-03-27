@@ -185,20 +185,17 @@
     <TransitionCollapse>
       <div v-if="!isPending && !isUploading" class="mt-1 flex flex-col gap-1">
         <!-- Upload dropzone -->
-        <div class="flex w-full flex-col py-1">
+        <div ref="dropZoneRef" class="flex w-full flex-col py-1">
           <button
             data-testid="missing-media-upload-dropzone"
             type="button"
             :class="
               cn(
                 'flex w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-component-node-border bg-transparent px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-base-foreground hover:text-base-foreground',
-                isDragOver && 'border-primary text-primary'
+                isOverDropZone && 'border-primary text-primary'
               )
             "
-            @click="openFilePicker"
-            @dragover.prevent.stop="isDragOver = true"
-            @dragleave.prevent.stop="isDragOver = false"
-            @drop.prevent.stop="handleDrop"
+            @click="openFilePicker()"
           >
             {{
               t('rightSidePanel.missingMedia.uploadFile', {
@@ -219,23 +216,12 @@
         />
       </div>
     </TransitionCollapse>
-
-    <!-- Hidden file input -->
-    <input
-      ref="fileInputRef"
-      type="file"
-      class="sr-only"
-      :aria-label="
-        t('rightSidePanel.missingMedia.uploadFile', { type: extensionHint })
-      "
-      :accept="acceptType"
-      @change="handleFileInputChange"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useDropZone, useFileDialog } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@/utils/tailwindUtil'
@@ -277,16 +263,15 @@ const {
   hasPendingSelection
 } = useMissingMediaInteractions()
 
-const displayName = computed(() => getMediaDisplayName(item.name))
-const isSingleNode = computed(() => item.referencingNodes.length === 1)
-const singleNodeLabel = computed(() => {
-  if (!isSingleNode.value) return ''
-  const ref = item.referencingNodes[0]
-  return getNodeDisplayLabel(String(ref.nodeId), item.name)
-})
+const displayName = getMediaDisplayName(item.name)
+const isSingleNode = item.referencingNodes.length === 1
+const singleNodeLabel = isSingleNode
+  ? getNodeDisplayLabel(String(item.referencingNodes[0].nodeId), item.name)
+  : ''
+const acceptType = getAcceptType(item.mediaType)
+const extensionHint = getExtensionHint(item.mediaType)
 
 const expanded = computed(() => isExpanded(item.name))
-const acceptType = computed(() => getAcceptType(item.mediaType))
 const matchingCandidate = computed(() => {
   const candidates = store.missingMediaCandidates
   if (!candidates?.length) return null
@@ -309,32 +294,25 @@ const pendingDisplayName = computed(() => {
   return pending ? getMediaDisplayName(pending) : ''
 })
 
-const extensionHint = computed(() => getExtensionHint(item.mediaType))
-
-const isDragOver = ref(false)
-const fileInputRef = ref<HTMLInputElement | null>(null)
-
-function openFilePicker() {
-  fileInputRef.value?.click()
-}
-
-async function handleFileInputChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  try {
+const dropZoneRef = ref<HTMLElement | null>(null)
+const { isOverDropZone } = useDropZone(dropZoneRef, {
+  onDrop: (_files, event) => {
+    event?.stopPropagation()
+    const file = _files?.[0]
     if (file) {
-      await handleUpload(file, item.name, item.mediaType)
+      handleUpload(file, item.name, item.mediaType)
     }
-  } finally {
-    input.value = ''
   }
-}
+})
 
-async function handleDrop(e: DragEvent) {
-  isDragOver.value = false
-  const file = e.dataTransfer?.files[0]
+const { open: openFilePicker, onChange: onFileSelected } = useFileDialog({
+  accept: acceptType,
+  multiple: false
+})
+onFileSelected((files) => {
+  const file = files?.[0]
   if (file) {
-    await handleUpload(file, item.name, item.mediaType)
+    handleUpload(file, item.name, item.mediaType)
   }
-}
+})
 </script>

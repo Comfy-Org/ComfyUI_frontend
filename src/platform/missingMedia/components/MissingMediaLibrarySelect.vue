@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-2">
     <div v-if="showDivider" class="flex items-center justify-center py-0.5">
       <span class="text-xs font-bold text-muted-foreground">
-        {{ t('rightSidePanel.missingModels.or') }}
+        {{ t('rightSidePanel.missingMedia.or') }}
       </span>
     </div>
 

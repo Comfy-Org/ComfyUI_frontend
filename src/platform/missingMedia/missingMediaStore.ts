@@ -26,14 +26,10 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     () => missingMediaCandidates.value?.length ?? 0
   )
 
-  const missingMediaNodeIds = computed<Set<string>>(() => {
-    const ids = new Set<string>()
-    if (!missingMediaCandidates.value) return ids
-    for (const m of missingMediaCandidates.value) {
-      ids.add(String(m.nodeId))
-    }
-    return ids
-  })
+  const missingMediaNodeIds = computed(
+    () =>
+      new Set(missingMediaCandidates.value?.map((m) => String(m.nodeId)) ?? [])
+  )
 
   /**
    * Set of all execution ID prefixes derived from missing media node IDs,

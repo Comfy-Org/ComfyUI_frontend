@@ -22,6 +22,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { resolveComboValues } from '@/utils/litegraphUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -49,8 +50,6 @@ export function isModelFileName(name: string): boolean {
   const lower = name.toLowerCase()
   return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
-
-import { resolveComboValues } from '@/utils/litegraphUtil'
 
 /**
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.

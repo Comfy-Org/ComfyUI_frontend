@@ -1,3 +1,4 @@
+import { groupBy } from 'es-toolkit'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   MissingMediaCandidate,
@@ -147,18 +148,12 @@ export function groupCandidatesByName(
 export function groupCandidatesByMediaType(
   candidates: MissingMediaCandidate[]
 ): MissingMediaGroup[] {
-  const typeMap = new Map<MediaType, MissingMediaCandidate[]>()
-  for (const c of candidates) {
-    const list = typeMap.get(c.mediaType)
-    if (list) list.push(c)
-    else typeMap.set(c.mediaType, [c])
-  }
-
+  const grouped = groupBy(candidates, (c) => c.mediaType)
   const order: MediaType[] = ['image', 'video', 'audio']
   return order
-    .filter((t) => typeMap.has(t))
+    .filter((t) => t in grouped)
     .map((mediaType) => ({
       mediaType,
-      items: groupCandidatesByName(typeMap.get(mediaType) ?? [])
+      items: groupCandidatesByName(grouped[mediaType])
     }))
 }

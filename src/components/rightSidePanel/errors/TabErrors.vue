@@ -169,7 +169,7 @@
             v-else-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
             :show-node-id-badge="showNodeIdBadge"
-            @locate-model="handleLocateModel"
+            @locate-model="handleLocateAssetNode"
           />
 
           <!-- Missing Media -->
@@ -177,7 +177,7 @@
             v-else-if="group.type === 'missing_media'"
             :missing-media-groups="missingMediaGroups"
             :show-node-id-badge="showNodeIdBadge"
-            @locate-node="handleLocateModel"
+            @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>
       </TransitionGroup>
@@ -405,7 +405,7 @@ function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
 }
 
-function handleLocateModel(nodeId: string) {
+function handleLocateAssetNode(nodeId: string) {
   focusNode(nodeId)
 }
 

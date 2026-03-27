@@ -3541,7 +3541,8 @@
       "selectedFromLibrary": "Selected from library",
       "useFromLibrary": "Use from Library",
       "confirmSelection": "Confirm selection",
-      "cancelSelection": "Cancel selection"
+      "cancelSelection": "Cancel selection",
+      "or": "OR"
     }
   },
   "errorOverlay": {
