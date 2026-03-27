@@ -13,8 +13,7 @@
 import type { Page } from '@playwright/test'
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-// eslint-disable-next-line import-x/no-unresolved -- zod/v4 is re-exported by claude-agent-sdk
-import { z } from 'zod/v4'
+import { z } from 'zod'
 import { execSync } from 'child_process'
 import { mkdirSync, writeFileSync, readFileSync } from 'fs'
 
