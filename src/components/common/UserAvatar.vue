@@ -3,7 +3,12 @@
     class="aspect-square bg-interface-panel-selected-surface"
     :image="photoUrl ?? undefined"
     :icon="hasAvatar ? undefined : 'icon-[lucide--user]'"
-    :pt:icon:class="{ 'size-4': !hasAvatar }"
+    :pt="{
+      icon: {
+        class: { 'size-4': !hasAvatar },
+        'data-testid': 'avatar-icon'
+      }
+    }"
     shape="circle"
     :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
     @error="handleImageError"

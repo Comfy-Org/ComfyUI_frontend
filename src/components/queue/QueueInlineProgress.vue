@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="shouldShow"
+    data-testid="queue-inline-progress"
     aria-hidden="true"
     :class="
       cn('pointer-events-none absolute inset-0 overflow-hidden', radiusClass)
