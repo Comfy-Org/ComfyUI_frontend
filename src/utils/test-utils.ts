@@ -64,17 +64,20 @@ function renderWithDefaults<C>(
   const { setupUser = true, global: globalOptions, ...rest } = options ?? {}
   const user = setupUser ? userEvent.setup() : undefined
 
-  const result = render(component as Parameters<typeof render>[0], {
-    global: {
-      plugins: [...createDefaultPlugins(), ...(globalOptions?.plugins ?? [])],
-      stubs: globalOptions?.stubs,
-      directives: {
-        ...defaultDirectiveStubs,
-        ...globalOptions?.directives
-      }
-    },
-    ...rest
-  } as Parameters<typeof render>[1])
+  const result = render(
+    component as Parameters<typeof render>[0],
+    {
+      global: {
+        plugins: [...createDefaultPlugins(), ...(globalOptions?.plugins ?? [])],
+        stubs: globalOptions?.stubs,
+        directives: {
+          ...defaultDirectiveStubs,
+          ...globalOptions?.directives
+        }
+      },
+      ...rest
+    } as Parameters<typeof render>[1]
+  )
 
   return { ...result, user }
 }
