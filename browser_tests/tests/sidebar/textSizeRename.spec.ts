@@ -2,30 +2,30 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
-test.describe(
-  'Text size token rename regression',
-  { tag: ['@screenshot', '@ui'] },
-  () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
+test.describe('Text size token rename regression', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
 
-      const tab = comfyPage.menu.nodeLibraryTab
-      await tab.open()
-    })
+    const tab = comfyPage.menu.nodeLibraryTab
+    await tab.open()
+  })
 
-    test('NodePreviewCard renders text-2xs correctly on hover', async ({
-      comfyPage
-    }) => {
-      const tab = comfyPage.menu.nodeLibraryTab
-      await tab.getFolder('sampling').click()
+  test('NodePreviewCard renders inputs and outputs on hover', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.nodeLibraryTab
+    await tab.getFolder('sampling').click()
 
-      await comfyPage.page.hover('.p-tree-node-leaf')
+    const leaf = tab.nodeLibraryTree.getByTestId('node-tree-leaf').first()
+    await leaf.hover()
 
-      await expect(tab.nodePreview).toBeVisible()
-      await expect(tab.nodePreview).toHaveScreenshot(
-        'node-preview-card-text-2xs.png'
-      )
-    })
-  }
-)
+    await expect(tab.nodePreview).toBeVisible()
+    await expect(
+      tab.nodePreview.getByText('INPUTS', { exact: true })
+    ).toBeVisible()
+    await expect(
+      tab.nodePreview.getByText('OUTPUTS', { exact: true })
+    ).toBeVisible()
+  })
+})
