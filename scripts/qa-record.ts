@@ -981,7 +981,7 @@ function buildIssueSpecificHints(context: string): string {
 
   if (/clone|z.?index|overlap|above.*origin|layering/.test(ctx))
     hints.push(
-      'MUST: loadDefaultWorkflow first, then cloneNode at (~750,350) to clone KSampler, then dragCanvas the clone on top of the original to test z-index/overlap.'
+      'Preflight already cloned a node. NOW: take a screenshot to see the cloned node, then dragCanvas from (~800,350) to (~750,350) to overlap the clone on the original. Take screenshot to capture z-index. The clone should be ABOVE the original.'
     )
   if (/copy.*paste|paste.*offset|ctrl\+c|ctrl\+v|clipboard/.test(ctx))
     hints.push(
@@ -993,7 +993,7 @@ function buildIssueSpecificHints(context: string): string {
     )
   if (/numeric.*drag|drag.*numeric|drag.*value|widget.*drag|slider/.test(ctx))
     hints.push(
-      'MUST: Enable Nodes 2.0 via setSetting("Comfy.UseNewMenu","Top"), then loadDefaultWorkflow, then try dragCanvas starting from a numeric widget value (e.g. KSampler seed at ~750,300) — drag left/right to change value.'
+      'Preflight already enabled Nodes 2.0 and loaded the workflow. NOW: take a screenshot, find a numeric widget (e.g. KSampler seed/cfg around ~750,300), then use dragCanvas from that widget value to the right (fromX:750,fromY:300,toX:850,toY:300) to attempt changing the value by dragging. Take screenshot after to compare.'
     )
   if (
     /sidebar.*file|file.*extension|workflow.*sidebar|workflow.*tree/.test(ctx)
@@ -1003,7 +1003,7 @@ function buildIssueSpecificHints(context: string): string {
     )
   if (/spacebar|space.*pan|pan.*space|space.*drag/.test(ctx))
     hints.push(
-      'MUST: loadDefaultWorkflow, then use holdKeyAndDrag with key=" " (Space) from (640,400) to (400,300) to test spacebar panning.'
+      'Preflight already loaded the workflow. NOW: first take a screenshot, then use holdKeyAndDrag with key=" " (Space) fromX:640 fromY:400 toX:400 toY:300 to test spacebar panning. Take screenshot after. Then try: clickCanvas on an output slot (~200,320), then holdKeyAndDrag with key=" " to test panning while connecting.'
     )
   if (/resize.*node|node.*resize|gap.*widget|widget.*gap/.test(ctx))
     hints.push(
@@ -1059,6 +1059,26 @@ function buildPreflightActions(context: string): TestAction[] {
   ) {
     actions.push({ action: 'loadDefaultWorkflow' })
     actions.push({ action: 'screenshot', name: 'preflight-default-workflow' })
+  }
+
+  // Issue-specific preflight: perform the actual reproduction steps
+  // mechanically so the agent starts with the right state
+  if (/clone|z.?index|above.*origin/.test(ctx)) {
+    // #10307: clone a node and check z-index
+    actions.push({ action: 'cloneNode', x: 750, y: 350 })
+    actions.push({ action: 'screenshot', name: 'preflight-after-clone' })
+  }
+
+  if (/numeric.*drag|drag.*numeric|drag.*value|widget.*drag/.test(ctx)) {
+    // #7414: click on a numeric widget value to prepare for drag test
+    actions.push({ action: 'clickCanvas', x: 750, y: 300 })
+    actions.push({ action: 'screenshot', name: 'preflight-numeric-widget' })
+  }
+
+  if (/spacebar.*pan|space.*pan|pan.*space/.test(ctx)) {
+    // #7806: start a connection drag then try spacebar pan
+    // First click an output slot to start dragging a wire
+    actions.push({ action: 'screenshot', name: 'preflight-before-connection' })
   }
 
   return actions
