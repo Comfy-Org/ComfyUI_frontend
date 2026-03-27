@@ -1,10 +1,21 @@
 <template>
   <nav
-    class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
+    ref="toolbarEl"
+    :class="
+      cn(
+        'fixed z-1000 origin-top-left select-none',
+        isDragging && 'cursor-grabbing'
+      )
+    "
+    :style="{
+      left: `${position.x}px`,
+      top: `${position.y}px`,
+      transform: `scale(${toolbarScale})`
+    }"
     :aria-label="t('builderToolbar.label')"
   >
     <div
-      class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+      class="group inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
     >
       <template v-for="(step, index) in steps" :key="step.id">
         <button
@@ -60,12 +71,22 @@
         />
         <StepLabel :step="defaultViewStep" />
       </button>
+
+      <!-- Resize handle -->
+      <div
+        class="ml-1 flex cursor-se-resize items-center opacity-0 transition-opacity group-hover:opacity-40"
+        @pointerdown.stop="startResize"
+      >
+        <i class="icon-[lucide--grip] size-3.5" />
+      </div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
+import { useDraggable } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -83,6 +104,45 @@ const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 const { activeStep, isSelectStep, navigateToStep } = useBuilderSteps()
 
+// ── Draggable positioning ──────────────────────────────────────────
+const toolbarEl = ref<HTMLElement | null>(null)
+const toolbarScale = ref(1)
+
+const { position, isDragging } = useDraggable(toolbarEl, {
+  initialValue: { x: 0, y: 50 },
+  preventDefault: true
+})
+
+onMounted(() => {
+  if (toolbarEl.value) {
+    const rect = toolbarEl.value.getBoundingClientRect()
+    position.value = {
+      x: Math.round((window.innerWidth - rect.width) / 2),
+      y: 50
+    }
+  }
+})
+
+// ── Corner resize (scale) ──────────────────────────────────────────
+function startResize(e: PointerEvent) {
+  const startX = e.clientX
+  const startScale = toolbarScale.value
+  const el = e.currentTarget as HTMLElement
+  el.setPointerCapture(e.pointerId)
+
+  function onMove(ev: PointerEvent) {
+    const delta = ev.clientX - startX
+    toolbarScale.value = Math.max(0.5, Math.min(1.2, startScale + delta / 400))
+  }
+  function onUp() {
+    el.removeEventListener('pointermove', onMove)
+    el.removeEventListener('pointerup', onUp)
+  }
+  el.addEventListener('pointermove', onMove)
+  el.addEventListener('pointerup', onUp)
+}
+
+// ── Step definitions ───────────────────────────────────────────────
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
 

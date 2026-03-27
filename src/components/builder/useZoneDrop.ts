@@ -4,20 +4,14 @@ import {
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import type { Directive } from 'vue'
 
+import { inputItemKey } from '@/components/builder/itemKeyHelper'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { OUTPUT_ZONE_KEY } from '@/components/builder/useZoneWidgets'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 interface WidgetDragData {
   type: 'zone-widget'
   nodeId: NodeId
   widgetName: string
-  sourceZone: string
-}
-
-interface OutputDragData {
-  type: 'zone-output'
-  nodeId: NodeId
   sourceZone: string
 }
 
@@ -37,12 +31,6 @@ function isWidgetDragData(
   return data.type === 'zone-widget'
 }
 
-function isOutputDragData(
-  data: Record<string | symbol, unknown>
-): data is Record<string | symbol, unknown> & OutputDragData {
-  return data.type === 'zone-output'
-}
-
 function isRunControlsDragData(
   data: Record<string | symbol, unknown>
 ): data is Record<string | symbol, unknown> & RunControlsDragData {
@@ -55,14 +43,21 @@ function isPresetStripDragData(
   return data.type === 'zone-preset-strip'
 }
 
+interface GroupDragData {
+  type: 'zone-group'
+  groupId: string
+  sourceZone: string
+}
+
+function isGroupDragData(
+  data: Record<string | symbol, unknown>
+): data is Record<string | symbol, unknown> & GroupDragData {
+  return data.type === 'zone-group'
+}
+
 interface DragBindingValue {
   nodeId: NodeId
   widgetName: string
-  zone: string
-}
-
-interface OutputDragBindingValue {
-  nodeId: NodeId
   zone: string
 }
 
@@ -70,11 +65,6 @@ type DragEl = HTMLElement & {
   __dragCleanup?: () => void
   __dragValue?: DragBindingValue
   __zoneId?: string
-}
-
-type OutputDragEl = HTMLElement & {
-  __dragCleanup?: () => void
-  __dragValue?: OutputDragBindingValue
 }
 
 export const vWidgetDraggable: Directive<HTMLElement, DragBindingValue> = {
@@ -99,78 +89,6 @@ export const vWidgetDraggable: Directive<HTMLElement, DragBindingValue> = {
   }
 }
 
-export const vOutputDraggable: Directive<HTMLElement, OutputDragBindingValue> =
-  {
-    mounted(el, { value }) {
-      const typedEl = el as OutputDragEl
-      typedEl.__dragValue = value
-      typedEl.__dragCleanup = draggable({
-        element: el,
-        getInitialData: () => ({
-          type: 'zone-output',
-          nodeId: typedEl.__dragValue!.nodeId,
-          sourceZone: typedEl.__dragValue!.zone
-        })
-      })
-    },
-    updated(el, { value }) {
-      ;(el as OutputDragEl).__dragValue = value
-    },
-    unmounted(el) {
-      ;(el as OutputDragEl).__dragCleanup?.()
-    }
-  }
-
-type RunControlsDragEl = HTMLElement & {
-  __dragCleanup?: () => void
-  __sourceZone?: string
-}
-
-export const vRunControlsDraggable: Directive<HTMLElement, string> = {
-  mounted(el, { value: sourceZone }) {
-    const typedEl = el as RunControlsDragEl
-    typedEl.__sourceZone = sourceZone
-    typedEl.__dragCleanup = draggable({
-      element: el,
-      getInitialData: () => ({
-        type: 'zone-run-controls',
-        sourceZone: typedEl.__sourceZone!
-      })
-    })
-  },
-  updated(el, { value: sourceZone }) {
-    ;(el as RunControlsDragEl).__sourceZone = sourceZone
-  },
-  unmounted(el) {
-    ;(el as RunControlsDragEl).__dragCleanup?.()
-  }
-}
-
-type PresetStripDragEl = HTMLElement & {
-  __dragCleanup?: () => void
-  __sourceZone?: string
-}
-
-export const vPresetStripDraggable: Directive<HTMLElement, string> = {
-  mounted(el, { value: sourceZone }) {
-    const typedEl = el as PresetStripDragEl
-    typedEl.__sourceZone = sourceZone
-    typedEl.__dragCleanup = draggable({
-      element: el,
-      getInitialData: () => ({
-        type: 'zone-preset-strip',
-        sourceZone: typedEl.__sourceZone!
-      })
-    })
-  },
-  updated(el, { value: sourceZone }) {
-    ;(el as PresetStripDragEl).__sourceZone = sourceZone
-  },
-  unmounted(el) {
-    ;(el as PresetStripDragEl).__dragCleanup?.()
-  }
-}
-
 export const vZoneDropTarget: Directive<HTMLElement, string> = {
   mounted(el, { value: zoneId }) {
     const typedEl = el as DragEl
@@ -181,26 +99,39 @@ export const vZoneDropTarget: Directive<HTMLElement, string> = {
       canDrop: ({ source }) => {
         const data = source.data
         if (isWidgetDragData(data)) return data.sourceZone !== typedEl.__zoneId
-        if (isOutputDragData(data)) return data.sourceZone !== typedEl.__zoneId
         if (isRunControlsDragData(data))
           return data.sourceZone !== typedEl.__zoneId
         if (isPresetStripDragData(data))
           return data.sourceZone !== typedEl.__zoneId
+        if (isGroupDragData(data)) return data.sourceZone !== typedEl.__zoneId
         return false
       },
       onDragEnter: () => el.classList.add('zone-drag-over'),
       onDragLeave: () => el.classList.remove('zone-drag-over'),
-      onDrop: ({ source }) => {
+      onDrop: ({ source, location, self }) => {
         el.classList.remove('zone-drag-over')
+        // Skip if a nested drop target (e.g. group body) is the innermost target
+        const innermost = location.current.dropTargets[0]
+        if (innermost && innermost.element !== self.element) return
+
         const data = source.data
         if (isWidgetDragData(data)) {
+          const itemKey = inputItemKey(data.nodeId, data.widgetName)
+          appModeStore.moveWidgetItem(itemKey, {
+            kind: 'zone',
+            zoneId: typedEl.__zoneId!
+          })
           appModeStore.setZone(data.nodeId, data.widgetName, typedEl.__zoneId!)
-        } else if (isOutputDragData(data)) {
-          appModeStore.setZone(data.nodeId, OUTPUT_ZONE_KEY, typedEl.__zoneId!)
         } else if (isRunControlsDragData(data)) {
           appModeStore.setRunControlsZone(typedEl.__zoneId!)
         } else if (isPresetStripDragData(data)) {
           appModeStore.setPresetStripZone(typedEl.__zoneId!)
+        } else if (isGroupDragData(data)) {
+          appModeStore.moveGroupToZone(
+            data.groupId,
+            data.sourceZone,
+            typedEl.__zoneId!
+          )
         }
       }
     })

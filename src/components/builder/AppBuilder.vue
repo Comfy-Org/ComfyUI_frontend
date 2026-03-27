@@ -264,41 +264,6 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           />
         </DraggableList>
       </PropertiesAccordionItem>
-      <!-- Presets toggle — listed alongside inputs -->
-      <div
-        v-if="isSelectInputsMode"
-        :class="
-          cn(
-            'my-2 flex items-center gap-2 rounded-lg p-2',
-            appModeStore.presetsEnabled
-              ? 'bg-primary-background/30'
-              : 'bg-primary-background/10 opacity-50'
-          )
-        "
-      >
-        <i class="icon-[lucide--layers] size-4 shrink-0" />
-        <span class="flex-1 truncate text-sm">
-          {{ t('linearMode.presets.label') }}
-        </span>
-        <button
-          class="flex size-6 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 text-muted-foreground hover:text-base-foreground"
-          @click="
-            () => {
-              appModeStore.presetsEnabled = !appModeStore.presetsEnabled
-              appModeStore.persistLinearData()
-            }
-          "
-        >
-          <i
-            :class="
-              appModeStore.presetsEnabled
-                ? 'icon-[lucide--eye]'
-                : 'icon-[lucide--eye-off]'
-            "
-            class="size-4"
-          />
-        </button>
-      </div>
       <div
         v-if="isSelectInputsMode && !appModeStore.selectedInputs.length"
         class="m-4 flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-primary-background bg-primary-background/20 text-center text-sm text-primary-background"

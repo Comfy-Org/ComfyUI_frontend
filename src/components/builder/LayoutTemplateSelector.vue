@@ -16,9 +16,10 @@ const selected = defineModel<LayoutTemplateId>({ required: true })
     <button
       v-for="template in LAYOUT_TEMPLATES"
       :key="template.id"
+      v-tooltip.right="t(template.description)"
       :class="
         cn(
-          'flex cursor-pointer flex-col items-center gap-0.5 rounded-lg border-2 px-2.5 py-1.5 transition-colors',
+          'flex cursor-pointer items-center justify-center rounded-lg border-2 p-2 transition-colors',
           selected === template.id
             ? 'border-primary-background bg-primary-background/10'
             : 'border-transparent bg-transparent hover:bg-secondary-background'
@@ -29,7 +30,6 @@ const selected = defineModel<LayoutTemplateId>({ required: true })
       @click="selected = template.id"
     >
       <i :class="cn(template.icon, 'size-5')" />
-      <span class="text-[10px]">{{ t(template.label) }}</span>
     </button>
   </div>
 </template>

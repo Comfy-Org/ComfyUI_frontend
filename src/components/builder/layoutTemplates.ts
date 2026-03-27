@@ -1,11 +1,10 @@
-export type LayoutTemplateId = 'focus' | 'grid' | 'sidebar'
+export type LayoutTemplateId = 'single' | 'dual'
 
 export interface LayoutZone {
   id: string
   /** i18n key for the zone label */
   label: string
   gridArea: string
-  isOutput?: boolean
 }
 
 export interface LayoutTemplate {
@@ -21,99 +20,51 @@ export interface LayoutTemplate {
   defaultRunControlsZone: string
   /** Zone ID where preset strip goes by default */
   defaultPresetStripZone: string
-  /** Zone IDs that default to bottom alignment */
-  defaultBottomAlignZones?: string[]
 }
 
 export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
   {
-    id: 'focus',
-    label: 'linearMode.layout.templates.focus',
-    description: 'linearMode.layout.templates.focusDesc',
-    icon: 'icon-[lucide--layout-panel-left]',
+    id: 'single',
+    label: 'linearMode.layout.templates.single',
+    description: 'linearMode.layout.templates.singleDesc',
+    icon: 'icon-[lucide--panel-right]',
     gridTemplate: `
-      "main side1" 1fr
-      "main side2" 1fr
-      / 2fr 1fr
+      "main" 1fr
+      / 1fr
     `,
     zones: [
       {
         id: 'main',
         label: 'linearMode.layout.zones.main',
-        gridArea: 'main',
-        isOutput: true
-      },
-      {
-        id: 'side1',
-        label: 'linearMode.layout.zones.topRight',
-        gridArea: 'side1'
-      },
-      {
-        id: 'side2',
-        label: 'linearMode.layout.zones.bottomRight',
-        gridArea: 'side2'
+        gridArea: 'main'
       }
     ],
-    defaultRunControlsZone: 'side2',
-    defaultPresetStripZone: 'side1',
-    defaultBottomAlignZones: ['side2']
+    defaultRunControlsZone: 'main',
+    defaultPresetStripZone: 'main'
   },
   {
-    id: 'grid',
-    label: 'linearMode.layout.templates.grid',
-    description: 'linearMode.layout.templates.gridDesc',
-    icon: 'icon-[lucide--grid-3x3]',
+    id: 'dual',
+    label: 'linearMode.layout.templates.dual',
+    description: 'linearMode.layout.templates.dualDesc',
+    icon: 'icon-[lucide--columns-2]',
     gridTemplate: `
-      "z1 z2 z3" 1fr
-      "z4 z5 z6" 1fr
-      / 1fr 1fr 1fr
+      "left right" 1fr
+      / 1fr 1fr
     `,
     zones: [
-      { id: 'z1', label: 'linearMode.layout.zones.zone1', gridArea: 'z1' },
-      { id: 'z2', label: 'linearMode.layout.zones.zone2', gridArea: 'z2' },
-      { id: 'z3', label: 'linearMode.layout.zones.zone3', gridArea: 'z3' },
-      { id: 'z4', label: 'linearMode.layout.zones.zone4', gridArea: 'z4' },
       {
-        id: 'z5',
-        label: 'linearMode.layout.zones.zone5',
-        gridArea: 'z5',
-        isOutput: true
+        id: 'left',
+        label: 'linearMode.layout.zones.left',
+        gridArea: 'left'
       },
-      { id: 'z6', label: 'linearMode.layout.zones.zone6', gridArea: 'z6' }
-    ],
-    defaultRunControlsZone: 'z6',
-    defaultPresetStripZone: 'z3',
-    defaultBottomAlignZones: ['z6']
-  },
-  {
-    id: 'sidebar',
-    label: 'linearMode.layout.templates.sidebar',
-    description: 'linearMode.layout.templates.sidebarDesc',
-    icon: 'icon-[lucide--panel-right]',
-    gridTemplate: `
-      "z1 z2 sb" 1fr
-      "z3 z4 sb" 1fr
-      / 1fr 1fr minmax(240px, 0.8fr)
-    `,
-    zones: [
-      { id: 'z1', label: 'linearMode.layout.zones.zone1', gridArea: 'z1' },
       {
-        id: 'z2',
-        label: 'linearMode.layout.zones.zone2',
-        gridArea: 'z2',
-        isOutput: true
-      },
-      { id: 'z3', label: 'linearMode.layout.zones.zone3', gridArea: 'z3' },
-      { id: 'z4', label: 'linearMode.layout.zones.zone4', gridArea: 'z4' },
-      {
-        id: 'sb',
-        label: 'linearMode.layout.zones.sidebar',
-        gridArea: 'sb'
+        id: 'right',
+        label: 'linearMode.layout.zones.right',
+        gridArea: 'right'
       }
     ],
-    defaultRunControlsZone: 'sb',
-    defaultPresetStripZone: 'sb',
-    defaultBottomAlignZones: ['sb']
+    defaultRunControlsZone: 'right',
+    defaultPresetStripZone: 'left'
   }
 ]
 
@@ -163,13 +114,6 @@ export function buildGridTemplate(
   // Apply zone order reordering if provided
   let reorderedRows = rows
   if (zoneOrder && zoneOrder.length > 0) {
-    const zoneToArea = new Map<string, string>()
-    for (const row of rows) {
-      for (const area of row.areas) {
-        zoneToArea.set(area, area)
-      }
-    }
-
     // Build a mapping from old position to new position
     const allAreas = rows.flatMap((r) => r.areas)
     const uniqueAreas = [...new Set(allAreas)]

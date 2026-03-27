@@ -3,8 +3,6 @@ import { useEventListener } from '@vueuse/core'
 import { computed, provide, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
 import { buildDropIndicator } from '@/components/builder/dropIndicatorUtil'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
@@ -13,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
@@ -21,7 +20,6 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
-import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
   key: string
@@ -31,9 +29,18 @@ interface WidgetEntry {
   action: { widget: IBaseWidget; node: LGraphNode }
 }
 
-const { mobile = false, builderMode = false } = defineProps<{
+const {
+  mobile = false,
+  builderMode = false,
+  zoneId,
+  itemKeys
+} = defineProps<{
   mobile?: boolean
   builderMode?: boolean
+  /** When set, only show inputs assigned to this zone. */
+  zoneId?: string
+  /** When set, only render these specific input keys in the given order. */
+  itemKeys?: string[]
 }>()
 
 const { t } = useI18n()
@@ -44,12 +51,60 @@ const maskEditor = useMaskEditor()
 provide(HideLayoutFieldKey, true)
 provide(OverlayAppendToKey, 'body')
 
-const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
+const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph?.nodes ?? [])
 useEventListener(
-  app.rootGraph.events,
+  () => app.rootGraph?.events,
   'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
+  () => (graphNodes.value = app.rootGraph?.nodes ?? [])
 )
+
+const groupedItemKeys = computed(() => {
+  const keys = new Set<string>()
+  for (const group of appModeStore.inputGroups) {
+    for (const item of group.items) keys.add(item.key)
+  }
+  return keys
+})
+
+function resolveInputEntry(
+  nodeId: string | number,
+  widgetName: string,
+  nodeDataByNode: Map<LGraphNode, ReturnType<typeof nodeToNodeData>>
+): WidgetEntry | null {
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+  if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return null
+
+  if (!nodeDataByNode.has(node)) {
+    nodeDataByNode.set(node, nodeToNodeData(node))
+  }
+  const fullNodeData = nodeDataByNode.get(node)!
+
+  const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
+    if (vueWidget.slotMetadata?.linked) return false
+
+    if (!node.isSubgraphNode()) return vueWidget.name === widget.name
+
+    const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+    return (
+      isPromotedWidgetView(widget) &&
+      widget.sourceNodeId == storeNodeId &&
+      widget.sourceWidgetName === vueWidget.storeName
+    )
+  })
+  if (!matchingWidget) return null
+
+  matchingWidget.slotMetadata = undefined
+  matchingWidget.nodeId = String(node.id)
+
+  return {
+    key: `${nodeId}:${widgetName}`,
+    nodeData: {
+      ...fullNodeData,
+      widgets: [matchingWidget]
+    },
+    action: { widget, node }
+  }
+}
 
 const mappedSelections = computed((): WidgetEntry[] => {
   void graphNodes.value
@@ -58,43 +113,34 @@ const mappedSelections = computed((): WidgetEntry[] => {
     ReturnType<typeof nodeToNodeData>
   >()
 
-  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName]) => {
-    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-    if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
-
-    if (!nodeDataByNode.has(node)) {
-      nodeDataByNode.set(node, nodeToNodeData(node))
+  if (itemKeys) {
+    const results: WidgetEntry[] = []
+    for (const key of itemKeys) {
+      if (!key.startsWith('input:')) continue
+      const parts = key.split(':')
+      const nodeId = parts[1]
+      const widgetName = parts.slice(2).join(':')
+      const entry = resolveInputEntry(nodeId, widgetName, nodeDataByNode)
+      if (entry) results.push(entry)
     }
-    const fullNodeData = nodeDataByNode.get(node)!
+    return results
+  }
 
-    const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
-      if (vueWidget.slotMetadata?.linked) return false
-
-      if (!node.isSubgraphNode()) return vueWidget.name === widget.name
-
-      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
-      return (
-        isPromotedWidgetView(widget) &&
-        widget.sourceNodeId == storeNodeId &&
-        widget.sourceWidgetName === vueWidget.storeName
+  const inputs = zoneId
+    ? appModeStore.selectedInputs.filter(
+        ([nId, wName]) => appModeStore.getZone(nId, wName) === zoneId
       )
+    : appModeStore.selectedInputs
+
+  return inputs
+    .filter(
+      ([nodeId, widgetName]) =>
+        !groupedItemKeys.value.has(`input:${nodeId}:${widgetName}`)
+    )
+    .flatMap(([nodeId, widgetName]) => {
+      const entry = resolveInputEntry(nodeId, widgetName, nodeDataByNode)
+      return entry ? [entry] : []
     })
-    if (!matchingWidget) return []
-
-    matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
-
-    return [
-      {
-        key: `${nodeId}:${widgetName}`,
-        nodeData: {
-          ...fullNodeData,
-          widgets: [matchingWidget]
-        },
-        action: { widget, node }
-      }
-    ]
-  })
 })
 
 function getDropIndicator(node: LGraphNode) {
@@ -103,6 +149,13 @@ function getDropIndicator(node: LGraphNode) {
     videoLabel: mobile ? undefined : t('linearMode.dragAndDropVideo'),
     openMaskEditor: maskEditor.openMaskEditor
   })
+}
+
+function inputColorBg(key: string): string | undefined {
+  const [nodeId, widgetName] = key.split(':')
+  const colorName = appModeStore.getInputColor(Number(nodeId), widgetName)
+  if (!colorName) return undefined
+  return LGraphCanvas.node_colors[colorName]?.bgcolor
 }
 
 function nodeToNodeData(node: LGraphNode) {
@@ -125,8 +178,14 @@ function nodeToNodeData(node: LGraphNode) {
     :class="
       cn(
         builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
+          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing',
+        !builderMode && inputColorBg(key) && 'rounded-sm border-l-2'
       )
+    "
+    :style="
+      !builderMode && inputColorBg(key)
+        ? { borderLeftColor: inputColorBg(key) }
+        : undefined
     "
     :aria-label="
       builderMode
@@ -137,12 +196,13 @@ function nodeToNodeData(node: LGraphNode) {
     <div
       :class="
         cn(
-          'mt-1.5 flex min-h-8 items-center gap-1 px-3',
+          'flex min-h-8 items-center gap-1 px-3 pt-1.5',
           builderMode && 'drag-handle'
         )
       "
     >
       <span
+        v-tooltip.top="action.widget.label || action.widget.name"
         :class="cn('truncate text-sm/8', builderMode && 'pointer-events-none')"
       >
         {{ action.widget.label || action.widget.name }}
@@ -154,36 +214,6 @@ function nodeToNodeData(node: LGraphNode) {
         {{ action.node.title }}
       </span>
       <div v-else class="flex-1" />
-      <Popover
-        :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
-          {
-            label: t('g.rename'),
-            icon: 'icon-[lucide--pencil]',
-            command: () => promptRenameWidget(action.widget, action.node, t)
-          },
-          {
-            label: t('g.remove'),
-            icon: 'icon-[lucide--x]',
-            command: () => {
-              const idx = appModeStore.selectedInputs.findIndex(
-                ([nId, wName]) => `${nId}:${wName}` === key
-              )
-              if (idx !== -1) appModeStore.selectedInputs.splice(idx, 1)
-            }
-          }
-        ]"
-      >
-        <template #button>
-          <Button
-            variant="textonly"
-            size="icon"
-            data-testid="widget-actions-menu"
-          >
-            <i class="icon-[lucide--ellipsis]" />
-          </Button>
-        </template>
-      </Popover>
     </div>
     <div
       :class="builderMode && 'pointer-events-none'"
@@ -206,5 +236,14 @@ function nodeToNodeData(node: LGraphNode) {
         />
       </DropZone>
     </div>
+    <div
+      v-if="!builderMode"
+      :class="
+        cn(
+          'mx-3 border-b border-border-subtle/30',
+          key === mappedSelections.at(-1)?.key && 'hidden'
+        )
+      "
+    />
   </div>
 </template>

@@ -1,3 +1,4 @@
+import { downloadFile } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -5,13 +6,15 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
-export interface DropIndicatorData {
+interface DropIndicatorData {
   iconClass: string
   imageUrl?: string
   videoUrl?: string
   label?: string
   onClick?: (e: MouseEvent) => void
   onMaskEdit?: () => void
+  onDownload?: () => void
+  onRemove?: () => void
 }
 
 /**
@@ -66,7 +69,17 @@ function buildImageDropIndicator(
     onMaskEdit:
       imageUrl && options.openMaskEditor
         ? () => options.openMaskEditor!(node)
-        : undefined
+        : undefined,
+    onDownload: imageUrl ? () => downloadFile(imageUrl) : undefined,
+    onRemove: imageUrl
+      ? () => {
+          const imageWidget = node.widgets?.find((w) => w.name === 'image')
+          if (imageWidget) {
+            imageWidget.value = ''
+            imageWidget.callback?.(undefined)
+          }
+        }
+      : undefined
   }
 }
 
