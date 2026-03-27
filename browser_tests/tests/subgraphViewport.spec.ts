@@ -50,9 +50,11 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
       canvas.setGraph(sgNode.subgraph)
     })
 
-    await expect(async () => {
-      expect(await comfyPage.page.evaluate(hasVisibleNodeInViewport)).toBe(true)
-    }).toPass({ timeout: 2000 })
+    await expect
+      .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
+        timeout: 2000
+      })
+      .toBe(true)
   })
 
   test('first visit fits viewport to subgraph nodes (Vue)', async ({
@@ -66,9 +68,11 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
 
     await comfyPage.vueNodes.enterSubgraph('11')
 
-    await expect(async () => {
-      expect(await comfyPage.page.evaluate(hasVisibleNodeInViewport)).toBe(true)
-    }).toPass({ timeout: 2000 })
+    await expect
+      .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
+        timeout: 2000
+      })
+      .toBe(true)
   })
 
   test('viewport is restored when returning to root (Vue)', async ({
@@ -90,14 +94,21 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
 
     await comfyPage.subgraph.exitViaBreadcrumb()
 
-    await expect(async () => {
-      const restored = await comfyPage.page.evaluate(() => {
-        const ds = window.app!.canvas.ds
-        return { scale: ds.scale, offset: [...ds.offset] }
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate(() => {
+            const ds = window.app!.canvas.ds
+            return { scale: ds.scale, offset: [...ds.offset] }
+          }),
+        { timeout: 2000 }
+      )
+      .toEqual({
+        scale: expect.closeTo(rootViewport.scale, 2),
+        offset: [
+          expect.closeTo(rootViewport.offset[0], 0),
+          expect.closeTo(rootViewport.offset[1], 0)
+        ]
       })
-      expect(restored.scale).toBeCloseTo(rootViewport.scale, 2)
-      expect(restored.offset[0]).toBeCloseTo(rootViewport.offset[0], 0)
-      expect(restored.offset[1]).toBeCloseTo(rootViewport.offset[1], 0)
-    }).toPass({ timeout: 2000 })
   })
 })
