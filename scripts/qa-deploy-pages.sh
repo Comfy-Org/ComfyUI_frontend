@@ -270,42 +270,30 @@ fi
 BADGE_LABEL="QA"
 [ -n "${TARGET_NUM:-}" ] && BADGE_LABEL="#${TARGET_NUM} QA"
 
-if [ "$TARGET_TYPE" = "issue" ]; then
-  if [ "$TOTAL_REPORTS" -gt 1 ]; then
-    # Multi-pass: vertical box badge with breakdown
-    /tmp/gen-badge-box.sh "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL" \
-      "$REPRO_COUNT" "$NOT_REPRO_COUNT" "$FAIL_COUNT" "$TOTAL_REPORTS"
-  else
-    BADGE_STATUS="${REPRO_RESULT:-FINISHED}"
-    /tmp/gen-badge.sh "$BADGE_STATUS" "${REPRO_COLOR}" "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
-  fi
-else
-  # Extract the Overall Risk section for fix quality verdict.
-  # Only look at the "## Overall Risk" section to avoid false matches from
-  # severity labels (e.g. `MAJOR`) or negated phrases ("no regressions").
+# For PRs, also extract fix quality from Overall Risk section
+FIX_RESULT="" FIX_COLOR="#4c1"
+if [ "$TARGET_TYPE" != "issue" ]; then
   RISK_TEXT=""
   if [ -d video-reviews ]; then
-    # Strip markdown bold/italic so **High** matches as "High"
     RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20)
   fi
-  # Check LOW first — "high confidence" contains "high" but means low risk
-  SOLN_RESULT="" SOLN_COLOR="#4c1"
   RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
   if [ -n "$RISK_FIRST" ]; then
     case "$RISK_FIRST" in
-      *low*|*minimal*) SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1" ;;
-      *medium*|*moderate*) SOLN_RESULT="MINOR ISSUES" SOLN_COLOR="#dfb317" ;;
-      *high*|*critical*) SOLN_RESULT="MAJOR ISSUES" SOLN_COLOR="#e05d44" ;;
+      *low*|*minimal*) FIX_RESULT="APPROVED" FIX_COLOR="#4c1" ;;
+      *medium*|*moderate*) FIX_RESULT="MINOR ISSUES" FIX_COLOR="#dfb317" ;;
+      *high*|*critical*) FIX_RESULT="MAJOR ISSUES" FIX_COLOR="#e05d44" ;;
     esac
   elif echo "$RISK_TEXT" | grep -iq 'no.*risk\|approved\|looks good'; then
-    SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
+    FIX_RESULT="APPROVED" FIX_COLOR="#4c1"
   fi
-  BADGE_STATUS="${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
-  /tmp/gen-badge-dual.sh \
-    "${REPRO_RESULT:-UNKNOWN}" "${REPRO_COLOR}" \
-    "${SOLN_RESULT:-UNKNOWN}" "${SOLN_COLOR}" \
-    "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL"
 fi
+
+# Always use vertical box badge
+/tmp/gen-badge-box.sh "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL" \
+  "$REPRO_COUNT" "$NOT_REPRO_COUNT" "$FAIL_COUNT" "$TOTAL_REPORTS" \
+  "$FIX_RESULT" "$FIX_COLOR"
+BADGE_STATUS="${REPRO_RESULT:-UNKNOWN}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}"
 echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
 BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
