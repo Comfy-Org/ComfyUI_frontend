@@ -19,10 +19,12 @@ import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
 import {
+  AssetsSidebarTab,
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
+import { AssetsHelper } from './helpers/AssetsHelper'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
 import { QueueHelper } from './helpers/QueueHelper'
@@ -55,6 +57,7 @@ class ComfyPropertiesPanel {
 }
 
 class ComfyMenu {
+  private _assetsTab: AssetsSidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
@@ -76,6 +79,11 @@ class ComfyMenu {
   get nodeLibraryTab() {
     this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
     return this._nodeLibraryTab
+  }
+
+  get assetsTab() {
+    this._assetsTab ??= new AssetsSidebarTab(this.page)
+    return this._assetsTab
   }
 
   get workflowsTab() {
@@ -192,6 +200,7 @@ export class ComfyPage {
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
+  public readonly assets: AssetsHelper
   public readonly queue: QueueHelper
 
   /** Worker index to test user ID */
@@ -238,6 +247,7 @@ export class ComfyPage {
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
+    this.assets = new AssetsHelper(page)
     this.queue = new QueueHelper(page)
   }
 
