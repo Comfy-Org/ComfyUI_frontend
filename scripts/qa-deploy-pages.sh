@@ -164,12 +164,13 @@ if [ -d video-reviews ]; then
     [ -f "$rpt" ] || continue
     TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
     SUMM=$(sed -n '/^## Summary/,/^## /p' "$rpt" 2>/dev/null | head -15)
-    if echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
-      REPRO_COUNT=$((REPRO_COUNT + 1))
-    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed'; then
-      NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
-    elif echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
+    # Check negatives FIRST — "fails to reproduce" contains "reproduce" but is negative
+    if echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
       INCONC_COUNT=$((INCONC_COUNT + 1))
+    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate'; then
+      NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
+    elif echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
+      REPRO_COUNT=$((REPRO_COUNT + 1))
     fi
   done
 fi
