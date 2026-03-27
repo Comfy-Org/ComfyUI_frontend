@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && tsx scripts/inline-build.ts",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
   },
@@ -30,7 +31,7 @@
         "executor": "nx:run-commands",
         "cache": true,
         "options": {
-          "command": "vite build --config apps/architecture-adventure/vite.config.ts"
+          "command": "tsc --noEmit && vite build --config apps/architecture-adventure/vite.config.ts && tsx apps/architecture-adventure/scripts/inline-build.ts"
         },
         "outputs": [
           "{projectRoot}/dist"
