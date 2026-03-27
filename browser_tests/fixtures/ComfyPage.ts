@@ -462,12 +462,13 @@ export const comfyPageFixture = base.extend<{
 
     await comfyPage.setup()
 
-    const isPerf = testInfo.tags.includes('@perf')
-    if (isPerf) await comfyPage.perf.init()
+    const needsPerf =
+      testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
+    if (needsPerf) await comfyPage.perf.init()
 
     await use(comfyPage)
 
-    if (isPerf) await comfyPage.perf.dispose()
+    if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
