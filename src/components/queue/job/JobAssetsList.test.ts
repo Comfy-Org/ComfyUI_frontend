@@ -8,6 +8,30 @@ import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 import JobAssetsList from './JobAssetsList.vue'
 
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
+  const vue = await import('vue')
+
+  return {
+    ...actual,
+    useVirtualList: (rows: unknown) => ({
+      list: vue.computed(() =>
+        vue.unref(rows as readonly unknown[]).map((data: unknown, index) => ({
+          data,
+          index
+        }))
+      ),
+      scrollTo: vi.fn(),
+      containerProps: {
+        ref: vue.ref(null),
+        onScroll: vi.fn(),
+        style: {}
+      },
+      wrapperProps: vue.computed(() => ({ style: {} }))
+    })
+  }
+})
+
 const JobDetailsPopoverStub = defineComponent({
   name: 'JobDetailsPopover',
   props: {
@@ -122,6 +146,36 @@ afterEach(() => {
 })
 
 describe('JobAssetsList', () => {
+  it('renders grouped headers alongside job rows', () => {
+    const wrapper = mount(JobAssetsList, {
+      props: {
+        displayedJobGroups: [
+          {
+            key: 'today',
+            label: 'Today',
+            items: [buildJob({ id: 'job-1' })]
+          },
+          {
+            key: 'yesterday',
+            label: 'Yesterday',
+            items: [buildJob({ id: 'job-2', title: 'Job 2' })]
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          teleport: true,
+          JobDetailsPopover: JobDetailsPopoverStub
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('Today')
+    expect(wrapper.text()).toContain('Yesterday')
+    expect(wrapper.find('[data-job-id="job-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-job-id="job-2"]').exists()).toBe(true)
+  })
+
   it('emits viewItem on preview-click for completed jobs with preview', async () => {
     const job = buildJob()
     const wrapper = mountJobAssetsList([job])
