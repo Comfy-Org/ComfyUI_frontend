@@ -25,7 +25,7 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }] }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
   }
 }))
 
@@ -45,6 +45,29 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
   useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
+}))
+
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const mod = (await importOriginal()) as Record<string, unknown>
+  return { ...mod, useEventListener: vi.fn() }
+})
+
+const mockSettings = vi.hoisted(() => {
+  const store: Record<string, unknown> = {}
+  return {
+    store,
+    get: vi.fn((key: string) => store[key] ?? false),
+    set: vi.fn(async (key: string, value: unknown) => {
+      store[key] = value
+    }),
+    reset() {
+      for (const key of Object.keys(store)) delete store[key]
+    }
+  }
+})
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => mockSettings
 }))
 
 import { useAppModeStore } from './appModeStore'
@@ -72,6 +95,7 @@ describe('appModeStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     mockResolveNode.mockReturnValue(undefined)
+    mockSettings.reset()
     vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
@@ -239,6 +263,32 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = workflowWithLinearData([], [1, 99])
       await nextTick()
 
+      expect(store.selectedOutputs).toEqual([1])
+    })
+
+    it('reloads selections on configured event', async () => {
+      const node1 = mockNode(1)
+
+      // Initially nodes are not resolvable — pruning removes them
+      mockResolveNode.mockReturnValue(undefined)
+      const inputs: [number, string][] = [[1, 'seed']]
+      workflowStore.activeWorkflow = workflowWithLinearData(inputs, [1])
+      store.loadSelections({ inputs })
+      await nextTick()
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+
+      // After graph configures, nodes become resolvable
+      mockResolveNode.mockImplementation((id) =>
+        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+      )
+      ;(app.rootGraph.events as EventTarget).dispatchEvent(
+        new Event('configured')
+      )
+      await nextTick()
+
+      expect(store.selectedInputs).toEqual([[1, 'seed']])
       expect(store.selectedOutputs).toEqual([1])
     })
 
@@ -738,6 +788,71 @@ describe('appModeStore', () => {
       store.setZone(1, 'prompt', 'z2')
 
       expect(store.getZone(1, 'prompt')).toBe('z2')
+    })
+  })
+
+  describe('autoEnableVueNodes', () => {
+    it('enables Vue nodes when entering select mode with them disabled', async () => {
+      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+
+      expect(mockSettings.set).toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+    })
+
+    it('does not enable Vue nodes when already enabled', async () => {
+      mockSettings.store['Comfy.VueNodes.Enabled'] = true
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+
+      expect(mockSettings.set).not.toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        expect.anything()
+      )
+    })
+
+    it('shows popup when Vue nodes are switched on and not dismissed', async () => {
+      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      mockSettings.store['Comfy.AppBuilder.VueNodeSwitchDismissed'] = false
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+
+      expect(store.showVueNodeSwitchPopup).toBe(true)
+    })
+
+    it('does not show popup when previously dismissed', async () => {
+      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      mockSettings.store['Comfy.AppBuilder.VueNodeSwitchDismissed'] = true
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+
+      store.enterBuilder()
+      await nextTick()
+
+      expect(store.showVueNodeSwitchPopup).toBe(false)
+    })
+
+    it('does not enable Vue nodes when entering builder:arrange', async () => {
+      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      workflowStore.activeWorkflow = createBuilderWorkflow('app')
+      store.selectedOutputs.push(1)
+
+      store.enterBuilder()
+      await nextTick()
+
+      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:arrange')
+      expect(mockSettings.set).not.toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        expect.anything()
+      )
     })
   })
 })

@@ -30,10 +30,18 @@ async function setupSubgraphBuilder(comfyPage: ComfyPage) {
   await appMode.enterBuilder()
   await appMode.goToInputs()
 
+  // Reset zoom to 1 and center on the subgraph node so click coords are accurate
+  await comfyPage.canvasOps.setScale(1)
+  await subgraphNode.centerOnNode()
+
   // Click the promoted seed widget on the canvas to select it
   const seedWidgetRef = await subgraphNode.getWidget(0)
   const seedPos = await seedWidgetRef.getPosition()
-  await page.mouse.click(seedPos.x, seedPos.y)
+  const titleHeight = await page.evaluate(
+    () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
+  )
+
+  await page.mouse.click(seedPos.x, seedPos.y + titleHeight)
   await comfyPage.nextFrame()
 
   // Select an output node
@@ -48,9 +56,15 @@ async function setupSubgraphBuilder(comfyPage: ComfyPage) {
     )
   )
   const saveImageRef = await comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-  const saveImagePos = await saveImageRef.getPosition()
-  // Click left edge — the right side is hidden by the builder panel
-  await page.mouse.click(saveImagePos.x + 10, saveImagePos.y - 10)
+  await saveImageRef.centerOnNode()
+
+  // Node is centered on screen, so click the canvas center
+  const canvasBox = await page.locator('#graph-canvas').boundingBox()
+  if (!canvasBox) throw new Error('Canvas not found')
+  await page.mouse.click(
+    canvasBox.x + canvasBox.width / 2,
+    canvasBox.y + canvasBox.height / 2
+  )
   await comfyPage.nextFrame()
 
   return subgraphNode
@@ -80,6 +94,10 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
       }
     })
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.AppBuilder.VueNodeSwitchDismissed',
+      true
+    )
   })
 
   test('Rename from builder input-select sidebar', async ({ comfyPage }) => {

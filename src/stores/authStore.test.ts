@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
@@ -85,9 +85,18 @@ vi.mock('firebase/auth', async (importOriginal) => {
       addScope = vi.fn()
       setCustomParameters = vi.fn()
     },
+    getAdditionalUserInfo: vi.fn(),
     setPersistence: vi.fn().mockResolvedValue(undefined)
   }
 })
+
+// Mock telemetry
+const mockTrackAuth = vi.fn()
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackAuth: mockTrackAuth
+  })
+}))
 
 // Mock useToastStore
 vi.mock('@/stores/toastStore', () => ({
@@ -113,8 +122,8 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
   })
 }))
 
-describe('useFirebaseAuthStore', () => {
-  let store: ReturnType<typeof useFirebaseAuthStore>
+describe('useAuthStore', () => {
+  let store: ReturnType<typeof useAuthStore>
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
 
@@ -173,7 +182,7 @@ describe('useFirebaseAuthStore', () => {
 
     // Initialize Pinia
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useFirebaseAuthStore()
+    store = useAuthStore()
 
     // Reset and set up getIdToken mock
     mockUser.getIdToken.mockReset()
@@ -201,8 +210,8 @@ describe('useFirebaseAuthStore', () => {
       )
 
       setActivePinia(createTestingPinia({ stubActions: false }))
-      const storeModule = await import('@/stores/firebaseAuthStore')
-      store = storeModule.useFirebaseAuthStore()
+      const storeModule = await import('@/stores/authStore')
+      store = storeModule.useAuthStore()
     })
 
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
@@ -571,6 +580,82 @@ describe('useFirebaseAuthStore', () => {
       await Promise.all([googleLoginPromise, githubLoginPromise])
 
       expect(store.loading).toBe(false)
+    })
+
+    describe('sign-up telemetry OR logic', () => {
+      const mockUserCredential = {
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential
+
+      beforeEach(() => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+          mockUserCredential
+        )
+      })
+
+      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s should track is_new_user=true when Firebase says new user',
+        async (method) => {
+          vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+            isNewUser: true,
+            providerId: 'google.com',
+            profile: null
+          })
+
+          await store[method]()
+
+          expect(mockTrackAuth).toHaveBeenCalledWith(
+            expect.objectContaining({ is_new_user: true })
+          )
+        }
+      )
+
+      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s should track is_new_user=true when UI options say new user',
+        async (method) => {
+          vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+            isNewUser: false,
+            providerId: 'google.com',
+            profile: null
+          })
+
+          await store[method]({ isNewUser: true })
+
+          expect(mockTrackAuth).toHaveBeenCalledWith(
+            expect.objectContaining({ is_new_user: true })
+          )
+        }
+      )
+
+      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s should track is_new_user=false when neither source says new user',
+        async (method) => {
+          vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+            isNewUser: false,
+            providerId: 'google.com',
+            profile: null
+          })
+
+          await store[method]()
+
+          expect(mockTrackAuth).toHaveBeenCalledWith(
+            expect.objectContaining({ is_new_user: false })
+          )
+        }
+      )
+
+      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+        '%s should track is_new_user=false when getAdditionalUserInfo returns null',
+        async (method) => {
+          vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue(null)
+
+          await store[method]()
+
+          expect(mockTrackAuth).toHaveBeenCalledWith(
+            expect.objectContaining({ is_new_user: false })
+          )
+        }
+      )
     })
   })
 

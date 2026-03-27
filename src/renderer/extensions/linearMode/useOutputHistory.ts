@@ -42,10 +42,7 @@ export function useOutputHistory(): {
 
   function hasActiveWorkflowJobs(): boolean {
     if (!workflowStore.activeWorkflow?.path) return false
-    return (
-      queueStore.runningTasks.some(matchesActiveWorkflow) ||
-      queueStore.pendingTasks.some(matchesActiveWorkflow)
-    )
+    return queueStore.runningTasks.some(matchesActiveWorkflow)
   }
 
   // True when there are queued/running jobs for the active workflow but no

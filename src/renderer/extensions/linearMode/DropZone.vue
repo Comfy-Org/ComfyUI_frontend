@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
+import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { cn } from '@/utils/tailwindUtil'
 
 defineOptions({ inheritAttrs: false })
@@ -36,26 +37,17 @@ const actionButtonClass =
 
 const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
-const pointerStart = ref<{ x: number; y: number } | null>(null)
+const clickGuard = useClickDragGuard(5)
 const lightboxOpen = ref(false)
 
 function onPointerDown(e: PointerEvent) {
-  pointerStart.value = { x: e.clientX, y: e.clientY }
+  clickGuard.recordStart(e)
 }
 
 function onIndicatorClick(e: MouseEvent) {
-  if (e.detail !== 0) {
-    const start = pointerStart.value
-    if (start) {
-      const dx = e.clientX - start.x
-      const dy = e.clientY - start.y
-      if (dx * dx + dy * dy > 25) {
-        pointerStart.value = null
-        return
-      }
-    }
-  }
-  pointerStart.value = null
+  const dragged = e.detail !== 0 && clickGuard.wasDragged(e)
+  clickGuard.reset()
+  if (dragged) return
   dropIndicator?.onClick?.(e)
 }
 

@@ -247,7 +247,7 @@ test.describe('Workflows sidebar', () => {
     await expect(errorOverlay).toBeVisible()
 
     // Dismiss the error overlay
-    await errorOverlay.getByRole('button', { name: 'Dismiss' }).click()
+    await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
     await expect(errorOverlay).not.toBeVisible()
 
     // Load blank workflow

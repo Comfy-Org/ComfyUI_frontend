@@ -18,8 +18,8 @@ import ApiKeyForm from './ApiKeyForm.vue'
 const mockStoreApiKey = vi.fn()
 const mockLoading = vi.fn(() => false)
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
     loading: mockLoading()
   }))
 }))

@@ -49,14 +49,14 @@ export type BillingPortalTargetTier = NonNullable<
   >['application/json']
 >['target_tier']
 
-export class FirebaseAuthStoreError extends Error {
+export class AuthStoreError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'FirebaseAuthStoreError'
+    this.name = 'AuthStoreError'
   }
 }
 
-export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
+export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
 
   // State
@@ -241,9 +241,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     try {
       const authHeader = await getAuthHeader()
       if (!authHeader) {
-        throw new FirebaseAuthStoreError(
-          t('toastMessages.userNotAuthenticated')
-        )
+        throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
 
       const response = await fetch(buildApiUrl('/customers/balance'), {
@@ -259,7 +257,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
           return null
         }
         const errorData = await response.json()
-        throw new FirebaseAuthStoreError(
+        throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
             error: errorData.message
           })
@@ -279,7 +277,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const createCustomer = async (): Promise<CreateCustomerResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     const createCustomerRes = await fetch(buildApiUrl('/customers'), {
@@ -290,7 +288,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     })
     if (!createCustomerRes.ok) {
-      throw new FirebaseAuthStoreError(
+      throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
         })
@@ -300,7 +298,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     const createCustomerResJson: CreateCustomerResponse =
       await createCustomerRes.json()
     if (!createCustomerResJson?.id) {
-      throw new FirebaseAuthStoreError(
+      throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: 'No customer ID returned'
         })
@@ -378,7 +376,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return result
   }
 
-  const loginWithGoogle = async (): Promise<UserCredential> => {
+  const loginWithGoogle = async (options?: {
+    isNewUser?: boolean
+  }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
       { createCustomer: true }
@@ -386,10 +386,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
-      const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user: isNewUser,
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid
       })
     }
@@ -397,7 +397,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return result
   }
 
-  const loginWithGithub = async (): Promise<UserCredential> => {
+  const loginWithGithub = async (options?: {
+    isNewUser?: boolean
+  }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
       { createCustomer: true }
@@ -405,10 +407,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
-      const isNewUser = additionalUserInfo?.isNewUser ?? false
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user: isNewUser,
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid
       })
     }
@@ -427,7 +429,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   /** Update password for current user */
   const _updatePassword = async (newPassword: string): Promise<void> => {
     if (!currentUser.value) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
     await updatePassword(currentUser.value, newPassword)
   }
@@ -437,7 +439,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   ): Promise<CreditPurchaseResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     // Ensure customer was created during login/registration
@@ -457,7 +459,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (!response.ok) {
       const errorData = await response.json()
-      throw new FirebaseAuthStoreError(
+      throw new AuthStoreError(
         t('toastMessages.failedToInitiateCreditPurchase', {
           error: errorData.message
         })
@@ -477,7 +479,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   ): Promise<AccessBillingPortalResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
     const response = await fetch(buildApiUrl('/customers/billing'), {
@@ -493,7 +495,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (!response.ok) {
       const errorData = await response.json()
-      throw new FirebaseAuthStoreError(
+      throw new AuthStoreError(
         t('toastMessages.failedToAccessBillingPortal', {
           error: errorData.message
         })

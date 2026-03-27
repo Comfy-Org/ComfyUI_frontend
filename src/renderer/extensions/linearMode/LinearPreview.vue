@@ -179,6 +179,7 @@ async function rerun(e: Event) {
     v-else-if="canShowPreview && latentPreview"
     :mobile
     :src="latentPreview"
+    :show-size="false"
   />
   <MediaOutputPreview
     v-else-if="selectedOutput"

@@ -197,14 +197,16 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
 
-    // Create a PromotedWidgetView with displayName="value" (subgraph input
+    // Create a PromotedWidgetView with identityName="value" (subgraph input
     // slot name) and sourceWidgetName="prompt" (interior widget name).
-    // PromotedWidgetView.name returns "value", but safeWidgetMapper sets
-    // SafeWidgetData.name to sourceWidgetName ("prompt").
+    // PromotedWidgetView.name returns "value" (identity), safeWidgetMapper
+    // sets SafeWidgetData.name to sourceWidgetName ("prompt").
     const promotedView = createPromotedWidgetView(
       subgraphNode,
       '10',
       'prompt',
+      'value',
+      undefined,
       'value'
     )
 

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { reactive, computed, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import {
@@ -11,6 +12,8 @@ import type {
   LayoutTemplateId
 } from '@/components/builder/layoutTemplates'
 import { useAppMode } from '@/composables/useAppMode'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   AppModePreset,
@@ -20,6 +23,7 @@ import type {
   PresetDisplayMode,
   WidgetOverride
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -41,8 +45,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isBuilderMode, isAppMode, isSelectMode } = useAppMode()
+  const settingStore = useSettingStore()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
+  const showVueNodeSwitchPopup = ref(false)
   const selectedInputs = ref<[NodeId, string][]>([])
   const selectedOutputs = ref<NodeId[]>([])
   const layoutTemplateId = ref<LayoutTemplateId>('single')
@@ -345,6 +351,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     { immediate: true }
   )
 
+  useEventListener(
+    () => app.rootGraph?.events,
+    'configured',
+    resetSelectedToWorkflow
+  )
+
   function persistLinearData() {
     if (
       (!isBuilderMode.value && !isAppMode.value) ||
@@ -396,17 +408,33 @@ export const useAppModeStore = defineStore('appMode', () => {
     { deep: true }
   )
 
-  let unwatch: (() => void) | undefined
-  watch(isSelectMode, (inSelect) => {
+  let unwatchReadOnly: (() => void) | undefined
+  function enforceReadOnly(inSelect: boolean) {
     const { state } = getCanvas()
     if (!state) return
     state.readOnly = inSelect
-    unwatch?.()
+    unwatchReadOnly?.()
     if (inSelect)
-      unwatch = watch(
+      unwatchReadOnly = watch(
         () => state.readOnly,
         () => (state.readOnly = true)
       )
+  }
+
+  function autoEnableVueNodes(inSelect: boolean) {
+    if (!inSelect) return
+    if (!settingStore.get('Comfy.VueNodes.Enabled')) {
+      void settingStore.set('Comfy.VueNodes.Enabled', true)
+
+      if (!settingStore.get('Comfy.AppBuilder.VueNodeSwitchDismissed')) {
+        showVueNodeSwitchPopup.value = true
+      }
+    }
+  }
+
+  watch(isSelectMode, (inSelect) => {
+    enforceReadOnly(inSelect)
+    autoEnableVueNodes(inSelect)
   })
 
   function enterBuilder() {
@@ -1010,6 +1038,17 @@ export const useAppModeStore = defineStore('appMode', () => {
     persistLinearData()
   }
 
+  function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
+    const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+    const storeName = isPromotedWidgetView(widget)
+      ? widget.sourceWidgetName
+      : widget.name
+    const index = selectedInputs.value.findIndex(
+      ([id, name]) => storeId == id && storeName === name
+    )
+    if (index !== -1) selectedInputs.value.splice(index, 1)
+  }
+
   return {
     addItemToGroup,
     autoAssignInputs,
@@ -1025,6 +1064,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     hasOutputs,
     inputGroups,
     layoutTemplateId,
+    loadSelections,
     moveGroupToZone,
     moveWidgetItem,
     getZoneItems,
@@ -1032,6 +1072,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     persistLinearData,
     pruneLinearData,
     removeItemFromGroup,
+    removeSelectedInput,
     renameGroup,
     reorderWithinGroup,
     setGroupColor,
@@ -1040,6 +1081,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs,
+    showVueNodeSwitchPopup,
     runControlsZoneId,
     setGridOverrides,
     setRunControlsZone,
