@@ -156,27 +156,34 @@ cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 ERROREOF
 
 # Generate badge SVGs into deploy dir
-# Verdict detection: extract the ## Summary section from AI reviews,
-# then check for verdict keywords. This avoids false matches from headings
-# or neutral mentions like "reproduce Issue #1234".
-SUMMARY_TEXT=""
+# Verdict detection: check each report file's ## Summary section individually,
+# then aggregate across passes for a "X/Y REPRODUCED" badge.
+REPRO_COUNT=0 INCONC_COUNT=0 NOT_REPRO_COUNT=0 TOTAL_REPORTS=0
 if [ -d video-reviews ]; then
-  SUMMARY_TEXT=$(sed -n '/^## Summary/,/^## /p' video-reviews/*.md 2>/dev/null | head -30)
+  for rpt in video-reviews/*-qa-video-report.md; do
+    [ -f "$rpt" ] || continue
+    TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
+    SUMM=$(sed -n '/^## Summary/,/^## /p' "$rpt" 2>/dev/null | head -15)
+    if echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
+      REPRO_COUNT=$((REPRO_COUNT + 1))
+    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed'; then
+      NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
+    elif echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
+      INCONC_COUNT=$((INCONC_COUNT + 1))
+    fi
+  done
 fi
-# Priority: REPRODUCED wins over INCONCLUSIVE (multi-pass: if ANY pass
-# confirms the bug, the overall verdict should be REPRODUCED even if
-# another pass was inconclusive).
+echo "Verdict counts: ${REPRO_COUNT} reproduced, ${NOT_REPRO_COUNT} not-repro, ${INCONC_COUNT} inconclusive out of ${TOTAL_REPORTS} reports"
+
+# Determine badge text — show pass counts when multiple reports exist
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
-if echo "$SUMMARY_TEXT" | grep -iq 'reproduc\|confirm'; then
+if [ "$REPRO_COUNT" -gt 0 ]; then
   REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
-elif echo "$SUMMARY_TEXT" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed'; then
+  [ "$TOTAL_REPORTS" -gt 1 ] && REPRO_RESULT="${REPRO_COUNT}/${TOTAL_REPORTS} REPRODUCED"
+elif [ "$NOT_REPRO_COUNT" -gt 0 ]; then
   REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
-elif echo "$SUMMARY_TEXT" | grep -iq 'INCONCLUSIVE'; then
+elif [ "$INCONC_COUNT" -gt 0 ]; then
   REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
-elif echo "$SUMMARY_TEXT" | grep -iq 'partially reproduced'; then
-  REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
-elif echo "$SUMMARY_TEXT" | grep -iq 'reproduc\|confirm'; then
-  REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
 fi
 
 # Badge label includes the target number for identification
