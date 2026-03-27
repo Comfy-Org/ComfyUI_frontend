@@ -163,11 +163,16 @@ SUMMARY_TEXT=""
 if [ -d video-reviews ]; then
   SUMMARY_TEXT=$(sed -n '/^## Summary/,/^## /p' video-reviews/*.md 2>/dev/null | head -30)
 fi
+# Priority: REPRODUCED wins over INCONCLUSIVE (multi-pass: if ANY pass
+# confirms the bug, the overall verdict should be REPRODUCED even if
+# another pass was inconclusive).
 REPRO_RESULT="" REPRO_COLOR="#9f9f9f"
-if echo "$SUMMARY_TEXT" | grep -iq 'INCONCLUSIVE'; then
-  REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
+if echo "$SUMMARY_TEXT" | grep -iq 'reproduc\|confirm'; then
+  REPRO_RESULT="REPRODUCED" REPRO_COLOR="#2196f3"
 elif echo "$SUMMARY_TEXT" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed'; then
   REPRO_RESULT="NOT REPRODUCIBLE" REPRO_COLOR="#9f9f9f"
+elif echo "$SUMMARY_TEXT" | grep -iq 'INCONCLUSIVE'; then
+  REPRO_RESULT="INCONCLUSIVE" REPRO_COLOR="#9f9f9f"
 elif echo "$SUMMARY_TEXT" | grep -iq 'partially reproduced'; then
   REPRO_RESULT="PARTIAL" REPRO_COLOR="#dfb317"
 elif echo "$SUMMARY_TEXT" | grep -iq 'reproduc\|confirm'; then
