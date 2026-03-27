@@ -2,7 +2,10 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
+import {
+  canvasTransformActive,
+  useTransformSettling
+} from '@/renderer/core/layout/transform/useTransformSettling'
 
 describe('useTransformSettling', () => {
   let element: HTMLDivElement
@@ -11,6 +14,7 @@ describe('useTransformSettling', () => {
     vi.useFakeTimers()
     element = document.createElement('div')
     document.body.appendChild(element)
+    canvasTransformActive.value = false
   })
 
   afterEach(() => {
@@ -196,5 +200,19 @@ describe('useTransformSettling', () => {
       expect.any(Function),
       expect.objectContaining({ passive: true, capture: true })
     )
+  })
+
+  it('should set canvasTransformActive during interaction and clear on settle', async () => {
+    useTransformSettling(element, { settleDelay: 200 })
+
+    expect(canvasTransformActive.value).toBe(false)
+
+    element.dispatchEvent(new WheelEvent('wheel', { bubbles: true }))
+    await nextTick()
+
+    expect(canvasTransformActive.value).toBe(true)
+
+    vi.advanceTimersByTime(200)
+    expect(canvasTransformActive.value).toBe(false)
   })
 })

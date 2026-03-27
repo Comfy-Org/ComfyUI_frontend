@@ -1,6 +1,6 @@
 import { useDebounceFn, useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
 interface TransformSettlingOptions {
   /**
@@ -14,6 +14,16 @@ interface TransformSettlingOptions {
    */
   passive?: boolean
 }
+
+/**
+ * Module-level flag shared across the application.
+ * `true` while the canvas is actively being zoomed or panned;
+ * `false` once the interaction settles.
+ *
+ * Used by the shared ResizeObserver to skip expensive `getBoundingClientRect()`
+ * calls during transform interactions.
+ */
+export const canvasTransformActive: Ref<boolean> = ref(false)
 
 /**
  * Tracks when canvas transforms (zoom or pan) are actively changing vs settled.
@@ -52,10 +62,12 @@ export function useTransformSettling(
 
   const markTransformSettled = useDebounceFn(() => {
     isTransforming.value = false
+    canvasTransformActive.value = false
   }, settleDelay)
 
   function markInteracting() {
     isTransforming.value = true
+    canvasTransformActive.value = true
     void markTransformSettled()
   }
 

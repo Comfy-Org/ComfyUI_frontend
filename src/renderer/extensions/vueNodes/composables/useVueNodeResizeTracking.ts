@@ -17,6 +17,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { canvasTransformActive } from '@/renderer/core/layout/transform/useTransformSettling'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -73,6 +74,8 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Elements whose ResizeObserver fired while the tab was hidden
 const deferredElements = new Set<HTMLElement>()
+// Elements deferred because a canvas transform (zoom/pan) was active
+const transformDeferredElements = new Set<HTMLElement>()
 const elementsNeedingFreshMeasurement = new WeakSet<HTMLElement>()
 const cachedNodeMeasurements = new WeakMap<HTMLElement, CachedNodeMeasurement>()
 const visibility = useDocumentVisibility()
@@ -95,6 +98,21 @@ watch(visibility, (state) => {
   deferredElements.clear()
 })
 
+// When a canvas transform settles, flush one accurate measurement for all
+// elements that were deferred during the interaction.
+watch(canvasTransformActive, (active) => {
+  if (active || transformDeferredElements.size === 0) return
+
+  for (const element of transformDeferredElements) {
+    if (element.isConnected) {
+      markElementForFreshMeasurement(element)
+      resizeObserver.unobserve(element)
+      resizeObserver.observe(element)
+    }
+  }
+  transformDeferredElements.clear()
+})
+
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
   if (useCanvasStore().linearMode) return
@@ -106,6 +124,18 @@ const resizeObserver = new ResizeObserver((entries) => {
         deferredElements.add(entry.target)
         markElementForFreshMeasurement(entry.target)
         resizeObserver.unobserve(entry.target)
+      }
+    }
+    return
+  }
+
+  // Skip measurements during active zoom/pan — border-box hasn't truly
+  // changed, the browser just recomputes layout after the scale transform.
+  // Defer elements so they get one accurate measurement after settling.
+  if (canvasTransformActive.value) {
+    for (const entry of entries) {
+      if (entry.target instanceof HTMLElement) {
+        transformDeferredElements.add(entry.target)
       }
     }
     return
