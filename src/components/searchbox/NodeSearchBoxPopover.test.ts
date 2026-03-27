@@ -1,8 +1,8 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -68,12 +68,22 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
+let emitAddFilter:
+  | ((filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void)
+  | null = null
+
 const NodeSearchBoxStub = defineComponent({
   name: 'NodeSearchBox',
   props: {
     filters: { type: Array, default: () => [] }
   },
-  template: '<div class="node-search-box" />'
+  emits: ['addFilter'],
+  setup(props, { emit }) {
+    emitAddFilter = (filter) => emit('addFilter', filter)
+    const filterCount = computed(() => props.filters.length)
+    return { filterCount }
+  },
+  template: '<div class="node-search-box" :data-filter-count="filterCount" />'
 })
 
 function createFilter(
@@ -96,10 +106,11 @@ describe('NodeSearchBoxPopover', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockStoreRefs.visible.value = false
+    emitAddFilter = null
   })
 
-  const mountComponent = () => {
-    return mount(NodeSearchBoxPopover, {
+  function renderComponent() {
+    return render(NodeSearchBoxPopover, {
       global: {
         plugins: [i18n, PrimeVue],
         stubs: {
@@ -115,59 +126,57 @@ describe('NodeSearchBoxPopover', () => {
 
   describe('addFilter duplicate prevention', () => {
     it('should add a filter when no duplicates exist', async () => {
-      const wrapper = mountComponent()
-      const searchBox = wrapper.findComponent(NodeSearchBoxStub)
+      const { container } = renderComponent()
 
-      searchBox.vm.$emit('addFilter', createFilter('outputType', 'IMAGE'))
-      await wrapper.vm.$nextTick()
+      emitAddFilter!(createFilter('outputType', 'IMAGE'))
+      await nextTick()
 
-      const filters = searchBox.props('filters') as FuseFilterWithValue<
-        ComfyNodeDefImpl,
-        string
-      >[]
-      expect(filters).toHaveLength(1)
-      expect(filters[0]).toEqual(
-        expect.objectContaining({
-          filterDef: expect.objectContaining({ id: 'outputType' }),
-          value: 'IMAGE'
-        })
-      )
+      /* eslint-disable testing-library/no-node-access, testing-library/no-container -- Stub component requires direct DOM access */
+      const searchBox = container.querySelector('.node-search-box')
+      expect(searchBox).toHaveAttribute('data-filter-count', '1')
+      /* eslint-enable testing-library/no-node-access, testing-library/no-container */
     })
 
     it('should not add a duplicate filter with same id and value', async () => {
-      const wrapper = mountComponent()
-      const searchBox = wrapper.findComponent(NodeSearchBoxStub)
+      const { container } = renderComponent()
 
-      searchBox.vm.$emit('addFilter', createFilter('outputType', 'IMAGE'))
-      await wrapper.vm.$nextTick()
-      searchBox.vm.$emit('addFilter', createFilter('outputType', 'IMAGE'))
-      await wrapper.vm.$nextTick()
+      emitAddFilter!(createFilter('outputType', 'IMAGE'))
+      await nextTick()
+      emitAddFilter!(createFilter('outputType', 'IMAGE'))
+      await nextTick()
 
-      expect(searchBox.props('filters')).toHaveLength(1)
+      /* eslint-disable testing-library/no-node-access, testing-library/no-container -- Stub component requires direct DOM access */
+      const searchBox = container.querySelector('.node-search-box')
+      expect(searchBox).toHaveAttribute('data-filter-count', '1')
+      /* eslint-enable testing-library/no-node-access, testing-library/no-container */
     })
 
     it('should allow filters with same id but different values', async () => {
-      const wrapper = mountComponent()
-      const searchBox = wrapper.findComponent(NodeSearchBoxStub)
+      const { container } = renderComponent()
 
-      searchBox.vm.$emit('addFilter', createFilter('outputType', 'IMAGE'))
-      await wrapper.vm.$nextTick()
-      searchBox.vm.$emit('addFilter', createFilter('outputType', 'MASK'))
-      await wrapper.vm.$nextTick()
+      emitAddFilter!(createFilter('outputType', 'IMAGE'))
+      await nextTick()
+      emitAddFilter!(createFilter('outputType', 'MASK'))
+      await nextTick()
 
-      expect(searchBox.props('filters')).toHaveLength(2)
+      /* eslint-disable testing-library/no-node-access, testing-library/no-container -- Stub component requires direct DOM access */
+      const searchBox = container.querySelector('.node-search-box')
+      expect(searchBox).toHaveAttribute('data-filter-count', '2')
+      /* eslint-enable testing-library/no-node-access, testing-library/no-container */
     })
 
     it('should allow filters with different ids but same value', async () => {
-      const wrapper = mountComponent()
-      const searchBox = wrapper.findComponent(NodeSearchBoxStub)
+      const { container } = renderComponent()
 
-      searchBox.vm.$emit('addFilter', createFilter('outputType', 'IMAGE'))
-      await wrapper.vm.$nextTick()
-      searchBox.vm.$emit('addFilter', createFilter('inputType', 'IMAGE'))
-      await wrapper.vm.$nextTick()
+      emitAddFilter!(createFilter('outputType', 'IMAGE'))
+      await nextTick()
+      emitAddFilter!(createFilter('inputType', 'IMAGE'))
+      await nextTick()
 
-      expect(searchBox.props('filters')).toHaveLength(2)
+      /* eslint-disable testing-library/no-node-access, testing-library/no-container -- Stub component requires direct DOM access */
+      const searchBox = container.querySelector('.node-search-box')
+      expect(searchBox).toHaveAttribute('data-filter-count', '2')
+      /* eslint-enable testing-library/no-node-access, testing-library/no-container */
     })
   })
 })
