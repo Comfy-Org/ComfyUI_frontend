@@ -53,6 +53,7 @@
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
+          :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="getGroupSize(group)"
@@ -209,12 +210,9 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCommandStore } from '@/stores/commandStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -238,6 +236,7 @@ import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useErrorActions } from './useErrorActions'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
@@ -246,7 +245,7 @@ import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacemen
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
-const { staticUrls } = useExternalLink()
+const { openGitHubIssues, contactSupport } = useErrorActions()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
@@ -372,13 +371,13 @@ watch(
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
     for (const group of allErrorGroups.value) {
-      const hasMatch =
-        group.type === 'execution' &&
-        group.cards.some(
-          (card) =>
-            card.graphNodeId === graphNodeId ||
-            (card.nodeId?.startsWith(prefix) ?? false)
-        )
+      if (group.type !== 'execution') continue
+
+      const hasMatch = group.cards.some(
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
+      )
       setSectionCollapsed(group.title, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
@@ -417,21 +416,5 @@ function handleReplaceAll() {
 
 function handleEnterSubgraph(nodeId: string) {
   enterSubgraph(nodeId, errorNodeCache.value)
-}
-
-function openGitHubIssues() {
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_tab_github_issues_clicked'
-  })
-  window.open(staticUrls.githubIssues, '_blank', 'noopener,noreferrer')
-}
-
-async function contactSupport() {
-  useTelemetry()?.trackHelpResourceClicked({
-    resource_type: 'help_feedback',
-    is_external: true,
-    source: 'error_dialog'
-  })
-  useCommandStore().execute('Comfy.ContactSupport')
 }
 </script>

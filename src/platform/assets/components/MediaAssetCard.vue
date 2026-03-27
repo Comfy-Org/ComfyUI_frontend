@@ -141,6 +141,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -279,7 +280,8 @@ const formattedDuration = computed(() => {
 // Get metadata info based on file kind
 const metaInfo = computed(() => {
   if (!asset) return ''
-  if (fileKind.value === 'image' && imageDimensions.value) {
+  // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
+  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
     return `${imageDimensions.value.width}x${imageDimensions.value.height}`
   }
   if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {

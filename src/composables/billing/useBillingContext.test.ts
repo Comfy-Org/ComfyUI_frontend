@@ -70,8 +70,8 @@ vi.mock(
   })
 )
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
     balance: { amount_micros: 5000000 },
     fetchBalance: vi.fn().mockResolvedValue({ amount_micros: 5000000 })
   })

@@ -20,7 +20,7 @@
       </div>
       <div
         v-if="showDescription"
-        class="flex items-center gap-1 text-[11px] text-muted-foreground"
+        class="flex items-center gap-1 text-2xs text-muted-foreground"
       >
         <span
           v-if="

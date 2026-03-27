@@ -8,8 +8,8 @@ import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
     isInitialized: mockIsInitialized,
     currentUser: mockCurrentUser
   })
@@ -50,6 +50,20 @@ vi.mock('@/platform/distribution/types', () => ({
     return mockIsCloud.value
   }
 }))
+
+const mockResumePendingPricingFlow = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({
+      show: vi.fn(),
+      showPricingTable: vi.fn(),
+      hide: vi.fn(),
+      startTeamWorkspaceUpgradeFlow: vi.fn(),
+      resumePendingPricingFlow: mockResumePendingPricingFlow
+    })
+  })
+)
 
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
@@ -140,6 +154,16 @@ describe('WorkspaceAuthGate', () => {
 
       expect(mockWorkspaceStoreInitialize).toHaveBeenCalled()
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(true)
+    })
+
+    it('calls resumePendingPricingFlow after successful workspace init', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockWorkspaceStoreInitState.value = 'ready'
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockResumePendingPricingFlow).toHaveBeenCalled()
     })
 
     it('skips workspace init when store is already initialized', async () => {
