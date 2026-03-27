@@ -51,10 +51,22 @@ export function usePromotedPreviews(
       )
       const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
       const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
+      console.warn('[PROMOTED-PREVIEW]', {
+        locatorId,
+        hasOutputs: !!reactiveOutputs?.images?.length,
+        hasPreviews: !!reactivePreviews?.length,
+        entry
+      })
       if (!reactiveOutputs?.images?.length && !reactivePreviews?.length)
         continue
 
       const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
+      console.warn(
+        '[PROMOTED-PREVIEW] urls:',
+        urls?.length,
+        'type:',
+        interiorNode.previewMediaType
+      )
       if (!urls?.length) continue
 
       const type =
