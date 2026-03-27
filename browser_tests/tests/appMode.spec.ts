@@ -1,0 +1,60 @@
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
+
+test.describe('App mode usage', () => {
+  test('Drag and Drop', async ({ comfyPage }) => {
+    const { centerPanel } = comfyPage.appMode
+    await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+    await expect(centerPanel).toBeVisible()
+    //an app without an image input will load the workflow
+    await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
+    await expect(centerPanel).not.toBeVisible()
+
+    //prep a load image
+    await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
+    const loadImage = await comfyPage.vueNodes.getNodeLocator('12')
+    await expect(loadImage).toBeVisible()
+
+    await comfyPage.appMode.enterAppModeWithInputs([['12', 'image']])
+    await expect(centerPanel).toBeVisible()
+    //an app with an image input will upload the image to the input
+    await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
+    await expect(centerPanel).toBeVisible()
+    //an app with an image input can load from a uri-source
+    await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
+    await expect(centerPanel).toBeVisible()
+  })
+  test('Widget Interaction', async ({ comfyPage }) => {
+    await comfyPage.appMode.enterAppModeWithInputs([
+      ['4', 'seed'],
+      ['4', 'sampler_name'],
+      ['6', 'text']
+    ])
+  })
+  test.describe('Mobile', { tag: ['@mobile'] }, () => {
+    test('smoke', async ({ comfyPage }) => {
+      const { mobileView } = comfyPage.appMode
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await expect(mobileView).toBeVisible()
+
+      const navigation = comfyPage.page
+        .getByRole('tablist')
+        .filter({ hasText: 'Assets' })
+      const panel = comfyPage.page.getByRole('tabpanel')
+      await expect(navigation).toBeVisible()
+      const buttons = await navigation.getByRole('tab').all()
+      await buttons[2].click()
+      await expect(panel).toContainClass('left-[200vw]')
+      //expect
+      await buttons[0].dragTo(buttons[2], { steps: 5 })
+      await expect(panel).toContainClass('left-[100vw]')
+
+      await navigation.getByRole('tab', { name: 'Edit & Run' }).click()
+      const widgets = mobileView.getByTestId(TestIds.linear.widgetContainer)
+      await expect(widgets).toBeInViewport({ ratio: 1 })
+    })
+  })
+})
