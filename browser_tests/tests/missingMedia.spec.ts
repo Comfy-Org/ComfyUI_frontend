@@ -67,7 +67,12 @@ test.describe('Missing media inputs in Error Tab', () => {
         TestIds.dialogs.errorOverlay
       )
       await expect(errorOverlay).toBeVisible()
-      await expect(errorOverlay.getByText(/Missing Inputs/)).toBeVisible()
+
+      const messages = errorOverlay.getByTestId(
+        TestIds.dialogs.errorOverlayMessages
+      )
+      await expect(messages).toBeVisible()
+      await expect(messages).toHaveText(/missing required inputs/i)
     })
 
     test('Shows missing media group in errors tab after clicking See Errors', async ({
