@@ -978,6 +978,8 @@ jobs:
           for os in Linux macOS Windows; do
             GIF_URL="${VIDEO_BASE}/qa-${os}-thumb.gif"
             VID_URL="${VIDEO_BASE}/qa-${os}.mp4"
+            # Fallback to pass1 for multi-pass recordings
+            curl -sf --head "$VID_URL" >/dev/null 2>&1 || VID_URL="${VIDEO_BASE}/qa-${os}-pass1.mp4"
             if curl -sf --head "$VID_URL" >/dev/null 2>&1; then
               if curl -sf --head "$GIF_URL" >/dev/null 2>&1; then
                 VIDEO_SECTION="${VIDEO_SECTION}[![${os} QA](${GIF_URL})](${VID_URL})"$'\n'
