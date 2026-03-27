@@ -14,6 +14,7 @@
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
+            :aria-label="$t('mediaAsset.actions.copyJobId')"
             @click="copyJobId"
           >
             <i class="icon-[lucide--copy] text-sm"></i>
@@ -143,11 +144,16 @@
             <Button
               v-if="shouldShowDeleteButton"
               size="icon"
+              :aria-label="$t('mediaAsset.selection.deleteSelected')"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button size="icon" @click="handleDownloadSelected">
+            <Button
+              size="icon"
+              :aria-label="$t('mediaAsset.selection.downloadSelected')"
+              @click="handleDownloadSelected"
+            >
               <i class="icon-[lucide--download] size-4" />
             </Button>
           </template>

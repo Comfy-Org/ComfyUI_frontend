@@ -174,6 +174,10 @@ export class AssetsSidebarTab extends SidebarTab {
     super(page, 'assets')
   }
 
+  get root() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
   get generatedTab() {
     return this.page.getByRole('tab', { name: 'Generated' })
   }
@@ -188,12 +192,143 @@ export class AssetsSidebarTab extends SidebarTab {
     )
   }
 
+  get searchInput() {
+    return this.root.getByPlaceholder(/Search Assets/i)
+  }
+
+  get viewSettingsButton() {
+    return this.root.getByLabel('View settings')
+  }
+
+  get listViewButton() {
+    return this.page.getByRole('button', { name: 'List view' })
+  }
+
+  get gridViewButton() {
+    return this.page.getByRole('button', { name: 'Grid view' })
+  }
+
+  get backButton() {
+    return this.page.getByRole('button', { name: 'Back to all assets' })
+  }
+
+  get copyJobIdButton() {
+    return this.page.getByRole('button', { name: 'Copy job ID' })
+  }
+
+  get previewDialog() {
+    return this.page.getByRole('dialog', { name: 'Gallery' })
+  }
+
+  get selectionCountButton() {
+    return this.root.getByRole('button', { name: /Assets Selected:/ })
+  }
+
+  get downloadSelectionButton() {
+    return this.page.getByRole('button', { name: 'Download' })
+  }
+
+  get deleteSelectionButton() {
+    return this.page.getByRole('button', { name: 'Delete' })
+  }
+
   emptyStateTitle(title: string) {
     return this.page.getByText(title)
   }
 
+  previewImage(filename: string) {
+    return this.previewDialog.getByRole('img', { name: filename })
+  }
+
+  asset(name: string) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return this.root.getByRole('button', {
+      name: new RegExp(`^${escaped} - .* asset$`)
+    })
+  }
+
+  contextMenuAction(name: string) {
+    return this.page.getByRole('button', { name })
+  }
+
+  async showGenerated() {
+    await this.generatedTab.click()
+  }
+
+  async showImported() {
+    await this.importedTab.click()
+  }
+
+  async search(query: string) {
+    await this.searchInput.fill(query)
+  }
+
+  async switchToListView() {
+    await this.viewSettingsButton.click()
+    await this.listViewButton.click()
+  }
+
+  async switchToGridView() {
+    await this.viewSettingsButton.click()
+    await this.gridViewButton.click()
+  }
+
+  async openContextMenuForAsset(name: string) {
+    await this.asset(name).click({ button: 'right' })
+  }
+
+  async runContextMenuAction(assetName: string, actionName: string) {
+    await this.openContextMenuForAsset(assetName)
+    await this.contextMenuAction(actionName).click()
+  }
+
+  async openAssetPreview(name: string) {
+    const asset = this.asset(name)
+    await asset.hover()
+
+    const zoomButton = asset.getByLabel('Zoom in')
+    if (await zoomButton.isVisible().catch(() => false)) {
+      await zoomButton.click()
+      return
+    }
+
+    await asset.dblclick()
+  }
+
+  async openOutputFolder(name: string) {
+    await this.asset(name)
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+
+    await this.page
+      .getByRole('button', { name: 'Back to all assets' })
+      .waitFor({ state: 'visible' })
+  }
+
+  async toggleStack(name: string) {
+    await this.asset(name)
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+  }
+
+  async selectAssets(names: string[]) {
+    if (names.length === 0) {
+      return
+    }
+
+    await this.asset(names[0]).click()
+
+    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
+    for (const name of names.slice(1)) {
+      await this.asset(name).click({
+        modifiers: [modifier]
+      })
+    }
+  }
+
   override async open() {
     await super.open()
+    await this.root.waitFor({ state: 'visible' })
     await this.generatedTab.waitFor({ state: 'visible' })
   }
 }

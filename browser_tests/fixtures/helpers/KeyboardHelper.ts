@@ -14,8 +14,9 @@ export class KeyboardHelper {
     keyToPress: string,
     locator: Locator | null = this.canvas
   ): Promise<void> {
+    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
     const target = locator ?? this.page.keyboard
-    await target.press(`Control+${keyToPress}`)
+    await target.press(`${modifier}+${keyToPress}`)
     await this.nextFrame()
   }
 
