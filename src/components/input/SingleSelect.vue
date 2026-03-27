@@ -1,23 +1,15 @@
 <template>
-  <SelectRoot v-model="selectedItem" :disabled>
+  <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
       v-bind="$attrs"
       :aria-label="label || t('g.singleSelectDropdown')"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
-        cn(
-          'relative inline-flex cursor-pointer items-center select-none',
-          size === 'md' ? 'h-8' : 'h-10',
-          'rounded-lg',
-          'bg-secondary-background text-base-foreground',
-          'transition-all duration-200 ease-in-out',
-          'hover:bg-secondary-background-hover',
-          'border-[2.5px] border-solid',
-          invalid ? 'border-destructive-background' : 'border-transparent',
-          'focus:border-node-component-border focus:outline-none',
-          'disabled:cursor-default disabled:opacity-30 disabled:hover:bg-secondary-background'
-        )
+        selectTriggerVariants({
+          size,
+          border: invalid ? 'invalid' : 'none'
+        })
       "
     >
       <div
@@ -35,9 +27,7 @@
         <slot v-else name="icon" />
         <SelectValue :placeholder="label" class="truncate" />
       </div>
-      <div
-        class="flex shrink-0 cursor-pointer items-center justify-center px-3"
-      >
+      <div :class="selectDropdownClass">
         <i class="icon-[lucide--chevron-down] text-muted-foreground" />
       </div>
     </SelectTrigger>
@@ -48,20 +38,8 @@
         :side-offset="8"
         align="start"
         :style="optionStyle"
-        :class="
-          cn(
-            'z-3000 overflow-hidden',
-            'rounded-lg p-2',
-            'bg-base-background text-base-foreground',
-            'border border-solid border-border-default',
-            'shadow-md',
-            'min-w-(--reka-select-trigger-width)',
-            'data-[state=closed]:animate-out data-[state=open]:animate-in',
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-            'data-[side=bottom]:slide-in-from-top-2'
-          )
-        "
+        :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
+        @keydown="onContentKeydown"
       >
         <SelectViewport
           :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
@@ -71,16 +49,7 @@
             v-for="opt in options"
             :key="opt.value"
             :value="opt.value"
-            :class="
-              cn(
-                'relative flex w-full cursor-pointer items-center justify-between select-none',
-                'gap-3 rounded-sm px-2 py-3 text-sm outline-none',
-                'hover:bg-secondary-background-hover',
-                'focus:bg-secondary-background-hover',
-                'data-[state=checked]:bg-secondary-background-selected',
-                'data-[state=checked]:hover:bg-secondary-background-selected'
-              )
-            "
+            :class="selectItemVariants({ layout: 'single' })"
           >
             <SelectItemText class="truncate">
               {{ opt.name }}
@@ -112,11 +81,19 @@ import {
   SelectValue,
   SelectViewport
 } from 'reka-ui'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
+import {
+  selectContentClass,
+  selectDropdownClass,
+  selectItemVariants,
+  selectTriggerVariants,
+  stopEscapeToDocument
+} from './select.variants'
 import type { SelectOption } from './types'
 
 defineOptions({
@@ -155,6 +132,14 @@ const {
 const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
+const isOpen = ref(false)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
 
 const optionStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
