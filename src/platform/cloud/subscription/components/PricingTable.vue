@@ -30,7 +30,7 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-[11px] font-bold text-white"
+              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
             >
               -20%
             </div>
@@ -58,7 +58,7 @@
             </span>
             <div
               v-if="tier.isPopular"
-              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-[11px] font-bold tracking-tight text-base-background uppercase"
+              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
             >
               {{ t('subscription.mostPopular') }}
             </div>
