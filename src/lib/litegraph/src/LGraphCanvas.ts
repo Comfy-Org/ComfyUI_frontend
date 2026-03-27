@@ -97,6 +97,7 @@ import {
   LinkDirection,
   LinkMarkerShape,
   LinkRenderType,
+  NodeSlotType,
   RenderShape,
   TitleMode
 } from './types/globalEnums'
@@ -8803,6 +8804,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (input?.value) {
             if (slot_info) {
               slot_info.label = input.value
+              node.graph?.trigger('node:slot-label:changed', {
+                nodeId: node.id,
+                slotType: info.input ? NodeSlotType.INPUT : NodeSlotType.OUTPUT
+              })
             }
             setDirty()
           }

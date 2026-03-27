@@ -128,22 +128,54 @@ function onBranchSelectorCreated(this: LGraphNode) {
   this.applyToGraph = applyToGraph
 
   this.widgets?.pop()
-  const values = () =>
-    this.inputs.slice(0, -1).map((i) => i.label ?? i.localized_name ?? i.name)
+  const values = shallowReactive<string[]>([])
+  const node = this
+
+  function getInputLabels(): string[] {
+    return node.inputs
+      .slice(0, -1)
+      .map((i) => i.label ?? i.localized_name ?? i.name)
+  }
+
+  function refreshBranchValues() {
+    const next = getInputLabels()
+    values.splice(0, values.length, ...next)
+  }
+
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
     values
   })
+
+  function syncComboSelection() {
+    if (app.configuringGraph) return
+    if (values.includes(`${comboWidget.value}`)) return
+    comboWidget.value = values[0] ?? ''
+    comboWidget.callback?.(comboWidget.value)
+  }
+
   comboWidget.serializeValue = () =>
-    values().findIndex((e) => e === comboWidget.value)
+    values.findIndex((e) => e === comboWidget.value)
+
+  // Refresh on connection changes (add/remove inputs)
   this.onConnectionsChange = useChainCallback(this.onConnectionsChange, () =>
     requestAnimationFrame(() => {
-      const vals = values()
-      if (app.configuringGraph) return
-      if (vals.includes(`${comboWidget.value}`)) return
-      comboWidget.value = vals[0] ?? ''
-      comboWidget.callback?.(comboWidget.value)
+      refreshBranchValues()
+      syncComboSelection()
     })
   )
+
+  // Check for label changes on each draw frame so renames propagate
+  let lastLabels = ''
+  this.onDrawForeground = useChainCallback(this.onDrawForeground, () => {
+    const current = getInputLabels().join('\0')
+    if (current !== lastLabels) {
+      lastLabels = current
+      refreshBranchValues()
+      syncComboSelection()
+    }
+  })
+
+  refreshBranchValues()
 }
 
 function onCustomIntCreated(this: LGraphNode) {
