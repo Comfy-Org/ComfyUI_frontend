@@ -139,6 +139,10 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {})
     }
+    const authEvent = metadata.is_new_user ? 'sign_up' : 'login'
+    const pushAuthEvent = (): void => {
+      this.pushEvent(authEvent, basePayload)
+    }
 
     if (metadata.email) {
       void this.hashEmail(metadata.email).then((hashed) => {
@@ -147,15 +151,12 @@ export class GtmTelemetryProvider implements TelemetryProvider {
             user_data: { sha256_email_address: hashed }
           })
         }
+        pushAuthEvent()
       })
-    }
-
-    if (metadata.is_new_user) {
-      this.pushEvent('sign_up', basePayload)
       return
     }
 
-    this.pushEvent('login', basePayload)
+    pushAuthEvent()
   }
 
   private async hashEmail(email: string): Promise<string | null> {

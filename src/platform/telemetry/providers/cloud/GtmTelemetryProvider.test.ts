@@ -230,7 +230,7 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
-    it('pushes hashed email as user_data when email is provided', async () => {
+    it('pushes hashed email as user_data before auth event when email is provided', async () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
@@ -253,6 +253,13 @@ describe('GtmTelemetryProvider', () => {
         // SHA-256 of "test@example.com" (normalized: trimmed + lowercased)
         '973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b'
       )
+
+      // Verify user_data is pushed before the sign_up event
+      const userDataIndex = dl.findIndex((entry) => 'user_data' in entry)
+      const signUpIndex = dl.findIndex(
+        (entry) => (entry as Record<string, unknown>).event === 'sign_up'
+      )
+      expect(userDataIndex).toBeLessThan(signUpIndex)
     })
 
     it('does not push user_data when email is absent', () => {
