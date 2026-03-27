@@ -58,6 +58,13 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 }))
 vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
+const { mockFitView } = vi.hoisted(() => ({
+  mockFitView: vi.fn()
+}))
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ fitView: mockFitView })
+}))
+
 const mockCanvas = app.canvas
 
 let rafCallbacks: FrameRequestCallback[] = []
@@ -77,6 +84,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockCanvas.ds.state.scale = 1
     mockCanvas.ds.state.offset = [0, 0]
     mockSetDirty.mockClear()
+    mockFitView.mockClear()
   })
 
   afterEach(() => {
@@ -162,6 +170,38 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(mockSetDirty).not.toHaveBeenCalled()
       // But should have scheduled a rAF
       expect(rafCallbacks).toHaveLength(1)
+    })
+
+    it('calls fitView on cache miss after rAF fires', () => {
+      const store = useSubgraphNavigationStore()
+      // Ensure no cached entry
+      store.viewportCache.delete(':root')
+
+      // Use the root graph ID so the stale-guard passes
+      store.restoreViewport('root')
+
+      expect(mockFitView).not.toHaveBeenCalled()
+      expect(rafCallbacks).toHaveLength(1)
+
+      // Simulate rAF firing — active graph still matches
+      rafCallbacks[0](performance.now())
+
+      expect(mockFitView).toHaveBeenCalledOnce()
+    })
+
+    it('skips fitView if active graph changed before rAF fires', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+
+      store.restoreViewport('root')
+      expect(rafCallbacks).toHaveLength(1)
+
+      // Simulate graph switching away before rAF fires
+      mockCanvas.subgraph = { id: 'different-graph' } as never
+
+      rafCallbacks[0](performance.now())
+
+      expect(mockFitView).not.toHaveBeenCalled()
     })
   })
 
