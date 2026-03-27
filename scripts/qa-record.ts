@@ -1631,7 +1631,7 @@ async function launchSessionAndLogin(
       whiteSpace: 'nowrap'
     })
     document.body.appendChild(hud)
-    const held = new Set<string>()
+    const held = new Set()
     const update = () => {
       if (held.size === 0) {
         hud.style.display = 'none'
