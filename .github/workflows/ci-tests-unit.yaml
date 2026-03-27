@@ -1,4 +1,4 @@
-# Description: Unit and component testing with Vitest
+# Description: Unit and component testing with Vitest + coverage reporting
 name: 'CI: Tests Unit'
 
 on:
@@ -23,5 +23,12 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Run Vitest tests
-        run: pnpm test:unit
+      - name: Run Vitest tests with coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@1af5884a68e4e1e6e97bfab47b002e3cbc5c9027 # v5.5.3
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
