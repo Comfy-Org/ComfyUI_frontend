@@ -360,8 +360,7 @@ test.describe('Assets sidebar - selection', () => {
     await expect(tab.selectedCards).toHaveCount(1)
 
     // Ctrl+click second card
-    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
-    await cards.nth(1).click({ modifiers: [modifier] })
+    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
     await expect(tab.selectedCards).toHaveCount(2)
   })
 
@@ -533,8 +532,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     // Multi-select: click first, then Ctrl/Cmd+click second
     await cards.first().click({ force: true })
-    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
-    await cards.nth(1).click({ modifiers: [modifier], force: true })
+    await cards.nth(1).click({ modifiers: ['ControlOrMeta'], force: true })
 
     // Verify multi-selection took effect before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
@@ -606,8 +604,7 @@ test.describe('Assets sidebar - bulk actions', () => {
     expect(cardCount).toBeGreaterThanOrEqual(2)
 
     await cards.first().click()
-    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
-    await cards.nth(1).click({ modifiers: [modifier] })
+    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
 
     // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })

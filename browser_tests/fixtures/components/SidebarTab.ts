@@ -269,13 +269,17 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   get deleteSelectedButton() {
-    // Matches both normal ("Delete" text) and compact (icon-only) modes
-    return this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last()
+    return this.page
+      .getByTestId('assets-delete-selected')
+      .or(this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
+      .first()
   }
 
   get downloadSelectedButton() {
-    // Matches both normal ("Download" text) and compact (icon-only) modes
-    return this.page.locator('button:has(.icon-\\[lucide--download\\])').last()
+    return this.page
+      .getByTestId('assets-download-selected')
+      .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
+      .first()
   }
 
   // --- Context menu ---
@@ -305,17 +309,24 @@ export class AssetsSidebarTab extends SidebarTab {
     await this.generatedTab.waitFor({ state: 'visible' })
   }
 
-  /** Remove all visible toast notifications from the DOM. */
+  /** Dismiss all visible toast notifications by clicking their close buttons. */
   async dismissToasts() {
+    const closeButtons = this.page.locator('.p-toast-close-button')
+    for (const btn of await closeButtons.all()) {
+      await btn.click({ force: true }).catch(() => {})
+    }
+    // Wait for toast containers to animate out after close
     await this.page
-      .evaluate(() =>
-        document.querySelectorAll('.p-toast').forEach((el) => el.remove())
-      )
+      .locator('.p-toast')
+      .first()
+      .waitFor({ state: 'hidden', timeout: 5000 })
       .catch(() => {})
   }
 
   async switchToImported() {
     await this.dismissToasts()
+    // Use evaluate click because toast overlay can intercept force clicks
+    // during fade-out animation (browser hit-test still routes to overlay)
     await this.importedTab.evaluate((el: HTMLElement) => el.click())
     await expect(this.importedTab).toHaveAttribute('aria-selected', 'true', {
       timeout: 3000
