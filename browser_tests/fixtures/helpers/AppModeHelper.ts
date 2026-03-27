@@ -142,6 +142,29 @@ export class AppModeHelper {
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
 
+  /** The builder footer nav containing save/navigation buttons. */
+  private get builderFooterNav(): Locator {
+    return this.page
+      .getByRole('button', { name: 'Exit app builder' })
+      .locator('..')
+  }
+
+  /** Get a button in the builder footer by its accessible name. */
+  getFooterButton(name: string | RegExp): Locator {
+    return this.builderFooterNav.getByRole('button', { name })
+  }
+
+  /** Click the save/save-as button in the builder footer. */
+  async clickSave() {
+    await this.getFooterButton(/^Save/).first().click()
+    await this.comfyPage.nextFrame()
+  }
+
+  /** The "Opens as" popover tab above the builder footer. */
+  get opensAsPopover(): Locator {
+    return this.page.getByTestId(TestIds.builder.opensAs)
+  }
+
   /**
    * Rename a widget by clicking its popover trigger, selecting "Rename",
    * and filling in the dialog.
