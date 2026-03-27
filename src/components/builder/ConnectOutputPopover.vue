@@ -5,7 +5,8 @@
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
-      :side-offset="8"
+      align="end"
+      :side-offset="18"
       :collision-padding="10"
       class="data-[state=open]:data-[side=bottom]:animate-slideUpAndFade z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity]"
     >
