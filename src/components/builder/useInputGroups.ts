@@ -5,7 +5,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputGroup } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 
-export interface ResolvedGroupItem {
+interface ResolvedGroupItem {
   key: string
   pairId?: string
   node: LGraphNode
@@ -15,7 +15,7 @@ export interface ResolvedGroupItem {
 }
 
 /** Row of items to render — single or side-by-side pair. */
-export type GroupRow =
+type GroupRow =
   | { type: 'single'; item: ResolvedGroupItem }
   | { type: 'pair'; items: [ResolvedGroupItem, ResolvedGroupItem] }
 
