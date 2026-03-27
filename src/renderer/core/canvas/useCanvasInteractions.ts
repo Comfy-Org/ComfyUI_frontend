@@ -76,7 +76,10 @@ export function useCanvasInteractions() {
       return isStandardNavMode.value && (event.ctrlKey || event.metaKey)
     }
     // Scrollable capture-wheel elements block forwarding when within scroll bounds
-    if (wheelCapturedByScrollableElement(event)) return false
+    // (except Ctrl/Cmd+wheel which should always reach canvas for zoom)
+    if (wheelCapturedByScrollableElement(event)) {
+      return isStandardNavMode.value && (event.ctrlKey || event.metaKey)
+    }
 
     return true
   }
