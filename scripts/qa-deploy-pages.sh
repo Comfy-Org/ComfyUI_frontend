@@ -112,11 +112,22 @@ if [ -n "${AFTER_SHA:-}" ]; then
   [ -n "${TARGET_NUM:-}" ] && AFTER_LABEL="#${TARGET_NUM}"
   COMMIT_HTML="${COMMIT_HTML:+${COMMIT_HTML} &middot; }<a href=${REPO_URL}/commit/${AFTER_SHA} class=sha title='PR head commit'>${AFTER_LABEL} @ ${SHORT_AFTER}</a>"
 fi
+if [ -n "${PIPELINE_SHA:-}" ]; then
+  SHORT_PIPE="${PIPELINE_SHA:0:7}"
+  COMMIT_HTML="${COMMIT_HTML:+${COMMIT_HTML} &middot; }<a href=${REPO_URL}/commit/${PIPELINE_SHA} class=sha title='QA pipeline version'>QA @ ${SHORT_PIPE}</a>"
+fi
 [ -n "$COMMIT_HTML" ] && COMMIT_HTML=" &middot; ${COMMIT_HTML}"
 
 RUN_LINK=""
 if [ -n "${RUN_URL:-}" ]; then
   RUN_LINK=" &middot; <a href=\"${RUN_URL}\" class=sha title=\"GitHub Actions run\">CI Job</a>"
+fi
+
+# Timing info
+DEPLOY_TIME=$(date -u '+%Y-%m-%d %H:%M UTC')
+TIMING_HTML=""
+if [ -n "${RUN_START_TIME:-}" ]; then
+  TIMING_HTML=" &middot; <span class=sha title='Pipeline timing'>${RUN_START_TIME} &rarr; ${DEPLOY_TIME}</span>"
 fi
 
 # Generate index.html from template
@@ -180,6 +191,7 @@ echo -n "$CARDS" > "$DEPLOY_DIR/.cards_html"
 echo -n "$RUN_LINK" > "$DEPLOY_DIR/.run_link"
 # Badge HTML with copy button (placeholder URL filled after deploy)
 echo -n '<div class="badge-bar"><img src="badge.svg" alt="QA Badge" class="badge-img"/><button class="copy-badge" title="Copy badge markdown" onclick="copyBadge()"><svg width=14 height=14 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2><rect x=9 y=9 width=13 height=13 rx=2/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' > "$DEPLOY_DIR/.badge_html"
+echo -n "${TIMING_HTML:-}" > "$DEPLOY_DIR/.timing_html"
 echo -n "$PURPOSE_HTML" > "$DEPLOY_DIR/.purpose_html"
 python3 -c "
 import sys, pathlib
@@ -189,10 +201,11 @@ t = t.replace('{{COMMIT_HTML}}', (d / '.commit_html').read_text())
 t = t.replace('{{CARDS}}', (d / '.cards_html').read_text())
 t = t.replace('{{RUN_LINK}}', (d / '.run_link').read_text())
 t = t.replace('{{BADGE_HTML}}', (d / '.badge_html').read_text())
+t = t.replace('{{TIMING_HTML}}', (d / '.timing_html').read_text())
 t = t.replace('{{PURPOSE_HTML}}', (d / '.purpose_html').read_text())
 sys.stdout.write(t)
 " "$DEPLOY_DIR" "$TEMPLATE" > "$DEPLOY_DIR/index.html"
-rm -f "$DEPLOY_DIR/.commit_html" "$DEPLOY_DIR/.cards_html" "$DEPLOY_DIR/.run_link" "$DEPLOY_DIR/.badge_html" "$DEPLOY_DIR/.purpose_html"
+rm -f "$DEPLOY_DIR/.commit_html" "$DEPLOY_DIR/.cards_html" "$DEPLOY_DIR/.run_link" "$DEPLOY_DIR/.badge_html" "$DEPLOY_DIR/.timing_html" "$DEPLOY_DIR/.purpose_html"
 
 cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 <!DOCTYPE html><html lang=en><head><meta charset=utf-8><title>404</title>
