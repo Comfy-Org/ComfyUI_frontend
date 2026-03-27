@@ -1,7 +1,7 @@
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
-export const HEADER_ROW_HEIGHT = 20
-export const GROUP_ROW_GAP = 16
+const HEADER_ROW_HEIGHT = 20
+const GROUP_ROW_GAP = 16
 export const JOB_ROW_HEIGHT = 48
 export const VIRTUAL_JOB_LIST_BOTTOM_PADDING = 16
 
