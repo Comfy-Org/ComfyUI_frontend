@@ -3,6 +3,7 @@ import {
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
+import { collectConsoleWarnings } from '../helpers/subgraphTestUtils'
 
 /**
  * Regression test for legacy-prefixed proxyWidget normalization.
@@ -30,17 +31,7 @@ test.describe(
     test('Loads without console warnings about failed widget resolution', async ({
       comfyPage
     }) => {
-      const warnings: string[] = []
-      comfyPage.page.on('console', (msg) => {
-        const text = msg.text()
-        if (
-          text.includes('Failed to resolve legacy -1') ||
-          text.includes('No link found') ||
-          text.includes('No inner link found')
-        ) {
-          warnings.push(text)
-        }
-      })
+      const warnings = collectConsoleWarnings(comfyPage.page)
 
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 

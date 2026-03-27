@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { PromotedWidgetEntry } from '../helpers/promotedWidgets'
 
@@ -11,6 +10,7 @@ import {
   getPseudoPreviewWidgets,
   getNonPreviewPromotedWidgets
 } from '../helpers/promotedWidgets'
+import { serializeAndReload } from '../helpers/subgraphTestUtils'
 
 const domPreviewSelector = '.image-preview'
 
@@ -82,14 +82,7 @@ test.describe(
           initialWidgets
         )
 
-        const serialized1 = await comfyPage.page.evaluate(() =>
-          window.app!.graph!.serialize()
-        )
-        await comfyPage.page.evaluate(
-          (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
-          serialized1 as ComfyWorkflowJSON
-        )
-        await comfyPage.nextFrame()
+        await serializeAndReload(comfyPage)
 
         const afterFirst = await getPromotedWidgets(comfyPage, '11')
         await expectPromotedWidgetsToResolveToInteriorNodes(
@@ -98,14 +91,7 @@ test.describe(
           afterFirst
         )
 
-        const serialized2 = await comfyPage.page.evaluate(() =>
-          window.app!.graph!.serialize()
-        )
-        await comfyPage.page.evaluate(
-          (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
-          serialized2 as ComfyWorkflowJSON
-        )
-        await comfyPage.nextFrame()
+        await serializeAndReload(comfyPage)
 
         const afterSecond = await getPromotedWidgets(comfyPage, '11')
         await expectPromotedWidgetsToResolveToInteriorNodes(
@@ -162,9 +148,7 @@ test.describe(
         await subgraphNode.navigateIntoSubgraph()
 
         const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
-        await clipNode.click('title')
-        await comfyPage.page.keyboard.press('Delete')
-        await comfyPage.nextFrame()
+        await clipNode.delete()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
@@ -204,9 +188,7 @@ test.describe(
         await subgraphNode.navigateIntoSubgraph()
 
         const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
-        await clipNode.click('title')
-        await comfyPage.page.keyboard.press('Delete')
-        await comfyPage.nextFrame()
+        await clipNode.delete()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
@@ -297,14 +279,9 @@ test.describe(
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
         expect(await subgraphNode.exists()).toBe(true)
 
-        await subgraphNode.click('title')
-        await comfyPage.page.keyboard.press('Delete')
-        await comfyPage.nextFrame()
+        await subgraphNode.delete()
 
-        const nodeExists = await comfyPage.page.evaluate(() => {
-          return !!window.app!.canvas.graph!.getNodeById('5')
-        })
-        expect(nodeExists).toBe(false)
+        expect(await subgraphNode.exists()).toBe(false)
 
         await expect
           .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())

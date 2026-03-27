@@ -413,4 +413,49 @@ export class SubgraphHelper {
       return window.app!.canvas.graph!.nodes?.length || 0
     })
   }
+
+  async getSlotCount(type: 'inputs' | 'outputs'): Promise<number> {
+    return this.page.evaluate((slotType: 'inputs' | 'outputs') => {
+      const graph = window.app!.canvas.graph
+      if (!graph || !('inputNode' in graph)) return 0
+      return graph[slotType]?.length || 0
+    }, type)
+  }
+
+  async getSlotLabel(
+    type: 'inputs' | 'outputs',
+    index = 0
+  ): Promise<string | null> {
+    return this.page.evaluate(
+      ([slotType, idx]) => {
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        const slot = graph[slotType]?.[idx]
+        return slot?.label || slot?.name || null
+      },
+      [type, index] as const
+    )
+  }
+
+  async removeSlot(type: 'input' | 'output', slotName?: string): Promise<void> {
+    if (type === 'input') {
+      await this.rightClickInputSlot(slotName)
+    } else {
+      await this.rightClickOutputSlot(slotName)
+    }
+    await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+    await this.comfyPage.nextFrame()
+  }
+
+  async findSubgraphNodeId(): Promise<string> {
+    const id = await this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const node = graph.nodes.find(
+        (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+      )
+      return node ? String(node.id) : null
+    })
+    if (!id) throw new Error('No subgraph node found in current graph')
+    return id
+  }
 }
