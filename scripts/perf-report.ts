@@ -235,11 +235,11 @@ function renderHeadlineSummary(
     const p5Fps = p95Frame !== null ? frameTimeToFps(p95Frame) : null
 
     const parts: string[] = [`**${testName}**:`]
-    if (avgFps !== null) parts.push(`${avgFps.toFixed(0)} avg FPS`)
+    if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
     if (p5Fps !== null) {
       const pass = p5Fps >= TARGET_P5_FPS
       parts.push(
-        `${p5Fps.toFixed(0)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
+        `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
       )
     }
     if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
