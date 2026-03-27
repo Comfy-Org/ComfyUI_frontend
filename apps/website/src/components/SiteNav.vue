@@ -10,6 +10,19 @@ const navLinks = [
   { label: 'CAREERS', href: '/careers' }
 ]
 
+const ctaLinks = [
+  {
+    label: 'COMFY CLOUD',
+    href: 'https://app.comfy.org',
+    primary: true
+  },
+  {
+    label: 'COMFY HUB',
+    href: 'https://hub.comfy.org',
+    primary: false
+  }
+]
+
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && mobileMenuOpen.value) {
     mobileMenuOpen.value = false
@@ -53,19 +66,19 @@ onUnmounted(() => {
           {{ link.label }}
         </a>
 
-        <!-- CTA buttons -->
         <div class="flex items-center gap-3">
           <a
-            href="https://app.comfy.org"
-            class="rounded-full bg-brand-yellow px-5 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+            v-for="cta in ctaLinks"
+            :key="cta.href"
+            :href="cta.href"
+            :class="
+              cta.primary
+                ? 'bg-brand-yellow text-black hover:opacity-90 transition-opacity'
+                : 'border border-brand-yellow text-brand-yellow hover:bg-brand-yellow hover:text-black transition-colors'
+            "
+            class="rounded-full px-5 py-2 text-sm font-semibold"
           >
-            COMFY CLOUD
-          </a>
-          <a
-            href="https://hub.comfy.org"
-            class="rounded-full border border-brand-yellow px-5 py-2 text-sm font-semibold text-brand-yellow transition-colors hover:bg-brand-yellow hover:text-black"
-          >
-            COMFY HUB
+            {{ cta.label }}
           </a>
         </div>
       </div>
@@ -112,16 +125,17 @@ onUnmounted(() => {
 
         <div class="flex flex-col gap-3 pt-2">
           <a
-            href="https://app.comfy.org"
-            class="rounded-full bg-brand-yellow px-5 py-2 text-center text-sm font-semibold text-black transition-opacity hover:opacity-90"
+            v-for="cta in ctaLinks"
+            :key="cta.href"
+            :href="cta.href"
+            :class="
+              cta.primary
+                ? 'bg-brand-yellow text-black hover:opacity-90 transition-opacity'
+                : 'border border-brand-yellow text-brand-yellow hover:bg-brand-yellow hover:text-black transition-colors'
+            "
+            class="rounded-full px-5 py-2 text-center text-sm font-semibold"
           >
-            COMFY CLOUD
-          </a>
-          <a
-            href="https://hub.comfy.org"
-            class="rounded-full border border-brand-yellow px-5 py-2 text-center text-sm font-semibold text-brand-yellow transition-colors hover:bg-brand-yellow hover:text-black"
-          >
-            COMFY HUB
+            {{ cta.label }}
           </a>
         </div>
       </div>
