@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestRootGraph,
+  createTestSubgraph
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -137,6 +141,21 @@ describe('useImageUploadWidget', () => {
       'missing.png',
       fileComboWidget
     )
+  })
+
+  it('dirties the subgraph and root canvas after an upload', () => {
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({ rootGraph })
+    const { node } = createUploadNode()
+    subgraph.add(node)
+    construct(node)
+    const subgraphDirtySpy = vi.spyOn(subgraph, 'setDirtyCanvas')
+    const rootGraphDirtySpy = vi.spyOn(rootGraph, 'setDirtyCanvas')
+
+    mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
+
+    expect(subgraphDirtySpy).toHaveBeenCalledWith(true)
+    expect(rootGraphDirtySpy).toHaveBeenCalledWith(true)
   })
 
   it('previews the combo value once the initial frame runs', () => {
