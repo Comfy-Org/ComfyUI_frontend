@@ -140,12 +140,35 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       ...(metadata.user_id ? { user_id: metadata.user_id } : {})
     }
 
+    if (metadata.email) {
+      this.hashEmail(metadata.email).then((hashed) => {
+        if (hashed) {
+          window.dataLayer?.push({
+            user_data: { sha256_email_address: hashed }
+          })
+        }
+      })
+    }
+
     if (metadata.is_new_user) {
       this.pushEvent('sign_up', basePayload)
       return
     }
 
     this.pushEvent('login', basePayload)
+  }
+
+  private async hashEmail(email: string): Promise<string | null> {
+    try {
+      const normalized = email.trim().toLowerCase()
+      const encoder = new TextEncoder()
+      const data = encoder.encode(normalized)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+    } catch {
+      return null
+    }
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
