@@ -19,6 +19,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     new Map<UUID, Map<NodeId, PromotedWidgetSource[]>>()
   )
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
+  const lastDemotedIndices = new Map<string, number>()
 
   function _getPromotionsForGraph(
     graphId: UUID
@@ -136,7 +137,19 @@ export const usePromotionStore = defineStore('promotion', () => {
     }
     if (source.disambiguatingSourceNodeId)
       entry.disambiguatingSourceNodeId = source.disambiguatingSourceNodeId
-    setPromotions(graphId, subgraphNodeId, [...entries, entry])
+
+    const positionKey = `${graphId}:${subgraphNodeId}:${makePromotionEntryKey(source)}`
+    const lastIndex = lastDemotedIndices.get(positionKey)
+    lastDemotedIndices.delete(positionKey)
+
+    const nextEntries = [...entries]
+    if (lastIndex !== undefined) {
+      const insertAt = Math.min(lastIndex, nextEntries.length)
+      nextEntries.splice(insertAt, 0, entry)
+    } else {
+      nextEntries.push(entry)
+    }
+    setPromotions(graphId, subgraphNodeId, nextEntries)
   }
 
   function demote(
@@ -145,17 +158,20 @@ export const usePromotionStore = defineStore('promotion', () => {
     source: PromotedWidgetSource
   ): void {
     const entries = getPromotionsRef(graphId, subgraphNodeId)
+    const index = entries.findIndex(
+      (e) =>
+        e.sourceNodeId === source.sourceNodeId &&
+        e.sourceWidgetName === source.sourceWidgetName &&
+        e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
+    )
+    if (index !== -1) {
+      const positionKey = `${graphId}:${subgraphNodeId}:${makePromotionEntryKey(source)}`
+      lastDemotedIndices.set(positionKey, index)
+    }
     setPromotions(
       graphId,
       subgraphNodeId,
-      entries.filter(
-        (e) =>
-          !(
-            e.sourceNodeId === source.sourceNodeId &&
-            e.sourceWidgetName === source.sourceWidgetName &&
-            e.disambiguatingSourceNodeId === source.disambiguatingSourceNodeId
-          )
-      )
+      entries.filter((_, i) => i !== index)
     )
   }
 
@@ -188,6 +204,9 @@ export const usePromotionStore = defineStore('promotion', () => {
   function clearGraph(graphId: UUID): void {
     graphPromotions.value.delete(graphId)
     graphRefCounts.value.delete(graphId)
+    for (const key of lastDemotedIndices.keys()) {
+      if (key.startsWith(`${graphId}:`)) lastDemotedIndices.delete(key)
+    }
   }
 
   return {

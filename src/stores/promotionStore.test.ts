@@ -711,6 +711,148 @@ describe(usePromotionStore, () => {
     })
   })
 
+  describe('demote then re-promote preserves position', () => {
+    it('restores a middle entry to its original index', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '12',
+        sourceWidgetName: 'cfg'
+      })
+
+      store.demote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { sourceNodeId: '10', sourceWidgetName: 'seed' },
+        { sourceNodeId: '11', sourceWidgetName: 'steps' },
+        { sourceNodeId: '12', sourceWidgetName: 'cfg' }
+      ])
+    })
+
+    it('restores the first entry to index 0', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+
+      store.demote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { sourceNodeId: '10', sourceWidgetName: 'seed' },
+        { sourceNodeId: '11', sourceWidgetName: 'steps' }
+      ])
+    })
+
+    it('clamps index when list has shrunk', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '12',
+        sourceWidgetName: 'cfg'
+      })
+
+      // Demote last (index 2), then demote middle (index 1)
+      store.demote(graphA, nodeId, {
+        sourceNodeId: '12',
+        sourceWidgetName: 'cfg'
+      })
+      store.demote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+
+      // Re-promote cfg (was index 2, but list now has length 1)
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '12',
+        sourceWidgetName: 'cfg'
+      })
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { sourceNodeId: '10', sourceWidgetName: 'seed' },
+        { sourceNodeId: '12', sourceWidgetName: 'cfg' }
+      ])
+    })
+
+    it('appends when no prior position is remembered', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { sourceNodeId: '10', sourceWidgetName: 'seed' },
+        { sourceNodeId: '11', sourceWidgetName: 'steps' }
+      ])
+    })
+
+    it('clearGraph resets remembered positions', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+
+      store.demote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+
+      store.clearGraph(graphA)
+
+      // Re-promote after clear — no remembered position, should append
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '11',
+        sourceWidgetName: 'steps'
+      })
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '10',
+        sourceWidgetName: 'seed'
+      })
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        { sourceNodeId: '11', sourceWidgetName: 'steps' },
+        { sourceNodeId: '10', sourceWidgetName: 'seed' }
+      ])
+    })
+  })
+
   describe('sourceNodeId disambiguation', () => {
     it('promote with disambiguatingSourceNodeId is found by matching isPromoted', () => {
       store.promote(graphA, nodeId, {

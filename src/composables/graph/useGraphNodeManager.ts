@@ -802,14 +802,14 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
         // Force shallowReactive to detect the deep property change
         // by re-assigning the affected array through the defineProperty setter.
+        // This triggers safeWidgets recomputation, which picks up updated
+        // promotedLabel via safeWidgetMapper reading widget.label.
         if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
           nodeRef.inputs = [...nodeRef.inputs]
         }
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
-        // Re-extract widget data so promotedLabel reflects the rename
-        vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }
 

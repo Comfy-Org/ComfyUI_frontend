@@ -50,7 +50,7 @@ export function isLinkedPromotion(
 
 export function getSourceNodeId(w: IBaseWidget): string | undefined {
   if (!isPromotedWidgetView(w)) return undefined
-  return w.disambiguatingSourceNodeId ?? w.sourceNodeId
+  return w.disambiguatingSourceNodeId
 }
 
 function toPromotionSource(
