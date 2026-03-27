@@ -20,7 +20,6 @@ import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
 import {
   AssetsSidebarTab,
-  JobHistorySidebarTab,
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
@@ -59,7 +58,6 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
-  private _jobHistoryTab: JobHistorySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
@@ -86,11 +84,6 @@ class ComfyMenu {
   get assetsTab() {
     this._assetsTab ??= new AssetsSidebarTab(this.page)
     return this._assetsTab
-  }
-
-  get jobHistoryTab() {
-    this._jobHistoryTab ??= new JobHistorySidebarTab(this.page)
-    return this._jobHistoryTab
   }
 
   get workflowsTab() {

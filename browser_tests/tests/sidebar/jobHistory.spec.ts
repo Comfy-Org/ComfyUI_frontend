@@ -47,25 +47,34 @@ test.describe('Job history sidebar', () => {
   })
 
   test('virtualizes large job history lists', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.jobHistoryTab
+    const tabButton = comfyPage.page.locator('.job-history-tab-button')
+    const list = comfyPage.page.getByTestId('job-assets-list')
+    const jobRows = comfyPage.page.locator(
+      '.sidebar-content-container [data-job-id]'
+    )
+    const jobRow = (jobId: string) =>
+      comfyPage.page.locator(
+        `.sidebar-content-container [data-job-id="${jobId}"]`
+      )
 
-    await tab.open()
+    await tabButton.click()
+    await list.waitFor({ state: 'visible' })
 
-    await expect(tab.jobRow('job-0')).toBeVisible()
-    await expect(tab.jobRow('job-63')).toHaveCount(0)
+    await expect(jobRow('job-0')).toBeVisible()
+    await expect(jobRow('job-63')).toHaveCount(0)
 
-    const initialRenderedRows = await tab.jobRows.count()
+    const initialRenderedRows = await jobRows.count()
     expect(initialRenderedRows).toBeLessThan(VIRTUALIZED_ROW_LIMIT)
 
-    await tab.list.evaluate((element) => {
+    await list.evaluate((element) => {
       element.scrollTop = element.scrollHeight
     })
     await comfyPage.nextFrame()
 
-    await expect(tab.jobRow('job-63')).toBeVisible()
-    await expect(tab.jobRow('job-0')).toHaveCount(0)
+    await expect(jobRow('job-63')).toBeVisible()
+    await expect(jobRow('job-0')).toHaveCount(0)
 
-    const renderedRowsAfterScroll = await tab.jobRows.count()
+    const renderedRowsAfterScroll = await jobRows.count()
     expect(renderedRowsAfterScroll).toBeLessThan(VIRTUALIZED_ROW_LIMIT)
   })
 })
