@@ -136,8 +136,7 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
 
     // Intercept the clear API call to verify it is made
     const clearPromise = comfyPage.page.waitForRequest(
-      (req) =>
-        req.url().includes('/api/history') && req.method() === 'POST'
+      (req) => req.url().includes('/api/history') && req.method() === 'POST'
     )
 
     // Click Clear
