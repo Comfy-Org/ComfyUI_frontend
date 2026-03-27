@@ -762,7 +762,17 @@ export async function executeAction(
         break
       case 'pressKey':
         try {
-          await page.keyboard.press(step.key)
+          // Show key press in subtitle + hold long enough for video frame capture
+          const keyLabel =
+            step.key === ' '
+              ? 'Space'
+              : step.key.length === 1
+                ? step.key.toUpperCase()
+                : step.key
+          await showSubtitle(page, `⌨ ${keyLabel}`, 0)
+          await page.keyboard.down(step.key)
+          await sleep(400) // Hold long enough for HUD + video frame
+          await page.keyboard.up(step.key)
           await sleep(300)
         } catch (e) {
           console.warn(
