@@ -126,6 +126,7 @@
     "save": "Save",
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
+    "yes": "Yes",
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
@@ -3287,11 +3288,16 @@
       "layout": "Layout",
       "dropHere": "Drop inputs here",
       "outputZone": "Output",
-      "alignToBottom": "Align to bottom",
-      "alignToTop": "Align to top",
-      "mobileOrder": "Mobile: stacks top to bottom (#{order})",
       "shiftClickPriority": "Shift+click to prioritize",
       "queueFailed": "Failed to queue prompt"
+    },
+    "groups": {
+      "createGroup": "Create group",
+      "untitled": "Unnamed Group",
+      "confirmUngroup": "Ungroup these inputs?",
+      "ungroupDescription": "These inputs will no longer be grouped together.",
+      "confirmRemove": "Remove this input?",
+      "removeDescription": "This will remove the input from the app. You will need to re-add it in the inputs step."
     },
     "presets": {
       "label": "Presets",
@@ -3317,25 +3323,23 @@
     },
     "layout": {
       "templates": {
-        "focus": "Focus",
-        "focusDesc": "1 large area with 2 smaller zones",
-        "grid": "Grid",
-        "gridDesc": "2x3 equal grid zones",
-        "sidebar": "Sidebar",
-        "sidebarDesc": "4 zones with a sidebar"
+        "single": "Single",
+        "singleDesc": "Single column sidebar",
+        "dual": "Dual",
+        "dualDesc": "Two-column sidebar with resize"
       },
       "zones": {
         "main": "Main",
-        "topRight": "Top Right",
-        "bottomRight": "Bottom Right",
-        "zone1": "Zone 1",
-        "zone2": "Zone 2",
-        "zone3": "Zone 3",
-        "zone4": "Zone 4",
-        "zone5": "Zone 5",
-        "zone6": "Zone 6",
-        "sidebar": "Sidebar"
-      }
+        "left": "Left",
+        "right": "Right"
+      },
+      "group": "Group selected",
+      "ungroup": "Ungroup",
+      "moveToGroup": "Move to group",
+      "removeFromGroup": "Remove from group",
+      "newGroup": "New group...",
+      "groupName": "Group name",
+      "ungrouped": "Ungrouped"
     },
     "builder": {
       "title": "App builder mode",
