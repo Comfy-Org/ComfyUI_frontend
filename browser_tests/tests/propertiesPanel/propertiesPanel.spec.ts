@@ -432,8 +432,8 @@ test.describe('Properties panel', () => {
         window.app!.canvas.deselectAll()
       })
       await comfyPage.nextFrame()
-      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
-      await expect(panel.panelTitle).toContainText('CLIP Text Encode (Prompt)')
+      await comfyPage.nodeOps.selectNodes(['Empty Latent Image'])
+      await expect(panel.panelTitle).toContainText('Empty Latent Image')
     })
   })
 
