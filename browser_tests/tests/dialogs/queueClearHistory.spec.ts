@@ -4,6 +4,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../../fixtures/ComfyPage'
+import { TestIds } from '../../fixtures/selectors'
 
 test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -11,7 +12,7 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
     await comfyPage.setup()
 
     // Expand the queue overlay so the JobHistoryActionsMenu is visible
-    await comfyPage.page.getByTestId('queue-overlay-toggle').click()
+    await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
   })
 
   async function openClearHistoryDialog(page: Page) {
@@ -20,8 +21,8 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
     await moreButton.click()
 
     // Click "Clear history" action
-    const clearHistoryAction = page.locator(
-      '[data-testid="clear-history-action"]'
+    const clearHistoryAction = page.getByTestId(
+      TestIds.queue.clearHistoryAction
     )
     await expect(clearHistoryAction).toBeVisible()
     await clearHistoryAction.click()
