@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "حداقل p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "جریمه تکرار"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "حداقل p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "جریمه تکرار"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
       }
     },
     "outputs": {
@@ -16239,6 +16253,10 @@
       "positive": {
         "name": "شرط مثبت",
         "tooltip": "شرط مثبت مورد استفاده برای آموزش."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "زمانی که training_dtype روی 'none' تنظیم شده و آموزش روی مدل quantized انجام می‌شود، در صورت فعال بودن، عملیات backward با quantized matmul انجام می‌شود."
       },
       "rank": {
         "name": "رتبه",

@@ -15913,6 +15913,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalización_de_presencia"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalización_por_repetición"
       },
@@ -15927,6 +15930,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
       }
     },
     "outputs": {
@@ -15957,6 +15964,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalización_de_presencia"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalización_por_repetición"
       },
@@ -15971,6 +15981,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
       }
     },
     "outputs": {
@@ -16239,6 +16253,10 @@
       "positive": {
         "name": "positivo",
         "tooltip": "El condicionamiento positivo a utilizar para el entrenamiento."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Al usar 'training_dtype' como 'none' y entrenar en un modelo cuantizado, realiza el retropropagado con multiplicación de matrices cuantizadas cuando está activado."
       },
       "rank": {
         "name": "rango",

@@ -65,8 +65,8 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: vi.fn(() => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: vi.fn(() => ({
     reportError: mockReportError,
     accessBillingPortal: mockAccessBillingPortal
   }))
@@ -106,14 +106,14 @@ vi.mock('@/services/dialogService', () => ({
   }))
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
     getAuthHeader: mockGetAuthHeader,
     get userId() {
       return mockUserId.value
     }
   })),
-  FirebaseAuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {}
 }))
 
 // Mock fetch

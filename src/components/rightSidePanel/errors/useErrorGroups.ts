@@ -709,7 +709,6 @@ export function useErrorGroups(
           }
         }
       } else {
-        // Groups without cards (e.g. missing_node) surface their title as the message.
         messages.add(group.title)
       }
     }

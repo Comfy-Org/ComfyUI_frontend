@@ -32,7 +32,7 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="m-0 text-[11px] leading-normal font-normal text-muted-foreground"
+        class="m-0 text-2xs/normal font-normal text-muted-foreground"
       >
         {{ nodeDef.description }}
       </p>

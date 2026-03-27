@@ -35,15 +35,15 @@ vi.mock('firebase/auth', () => ({
 
 // Mock the auth composables and stores
 const mockSendPasswordReset = vi.fn()
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: vi.fn(() => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: vi.fn(() => ({
     sendPasswordReset: mockSendPasswordReset
   }))
 }))
 
 let mockLoading = false
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
     get loading() {
       return mockLoading
     }
