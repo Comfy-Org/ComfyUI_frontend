@@ -101,6 +101,10 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  maskEditor: {
+    dialog: 'mask-editor-dialog',
+    uiContainer: 'mask-editor-ui-container'
   }
 } as const
 
@@ -127,3 +131,4 @@ export type TestIdValue =
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.maskEditor)[keyof typeof TestIds.maskEditor]

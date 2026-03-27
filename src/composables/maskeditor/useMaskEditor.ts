@@ -29,7 +29,8 @@ export function useMaskEditor() {
         closable: true,
         pt: {
           root: {
-            class: 'mask-editor-dialog flex flex-col'
+            class: 'mask-editor-dialog flex flex-col',
+            'data-testid': 'mask-editor-dialog'
           },
           content: {
             class: 'flex flex-col min-h-0 flex-1 !p-0'
