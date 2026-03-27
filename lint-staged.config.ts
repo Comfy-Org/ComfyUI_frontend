@@ -12,7 +12,11 @@ export default {
   './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
 
   './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
-    const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
+    const lintable = stagedFiles.filter((f) => !f.endsWith('lock.yaml'))
+    const commands = [
+      ...(lintable.length > 0 ? formatAndEslint(lintable) : []),
+      'pnpm typecheck'
+    ]
 
     const hasBrowserTestsChanges = stagedFiles
       .map((f) => path.relative(process.cwd(), f).replace(/\\/g, '/'))

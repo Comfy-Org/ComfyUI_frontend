@@ -831,6 +831,9 @@ importers:
 
   apps/architecture-adventure:
     devDependencies:
+      tsx:
+        specifier: 'catalog:'
+        version: 4.19.4
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

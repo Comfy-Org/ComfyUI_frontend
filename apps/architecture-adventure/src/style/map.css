@@ -119,7 +119,9 @@
 }
 
 .map-node circle {
-  transition: fill 0.3s ease, stroke 0.3s ease;
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease;
 }
 
 .map-node.locked circle {
