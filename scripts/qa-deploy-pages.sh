@@ -176,6 +176,7 @@ if [ -d video-reviews ]; then
 fi
 FAIL_COUNT=$((TOTAL_REPORTS - REPRO_COUNT - NOT_REPRO_COUNT))
 [ "$FAIL_COUNT" -lt 0 ] && FAIL_COUNT=0
+echo "DEBUG verdict: repro=${REPRO_COUNT} not_repro=${NOT_REPRO_COUNT} inconc=${INCONC_COUNT} fail=${FAIL_COUNT} total=${TOTAL_REPORTS}"
 echo "Verdict: ${REPRO_COUNT}✓ ${NOT_REPRO_COUNT}✗ ${FAIL_COUNT}⚠ / ${TOTAL_REPORTS}"
 
 # Badge text:
