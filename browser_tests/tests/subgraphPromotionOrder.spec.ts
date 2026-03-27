@@ -19,18 +19,22 @@ test.describe(
 
       // Create a subgraph from the KSampler node which has multiple
       // auto-promoted widgets (seed, steps, cfg, etc.)
-      const ksampler = comfyPage.vueNodes.getNodeByTitle('KSampler')
       await comfyPage.vueNodes.waitForNodes()
-      await expect(ksampler).toBeVisible()
 
-      // Select and convert to subgraph
-      const ksamplerRef = await comfyPage.nodeOps.getNodeRefById('3')
-      await ksamplerRef.click('title')
-      const subgraphNode = await ksamplerRef.convertToSubgraph()
+      // Select KSampler and convert to subgraph via evaluate
+      // (LG nodeRef helpers don't work reliably in Vue nodes mode)
+      const nodeId = await comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph!
+        const ksampler = graph._nodes.find((n) => n.type === 'KSampler')
+        if (!ksampler) throw new Error('KSampler not found')
+
+        window.app!.canvas.selectNode(ksampler)
+        const result = graph.convertToSubgraph(new Set([ksampler]))
+        if (!result) throw new Error('convertToSubgraph failed')
+        return String(result.node.id)
+      })
       await comfyPage.nextFrame()
       await comfyPage.vueNodes.waitForNodes()
-
-      const nodeId = String(subgraphNode.id)
 
       // Verify promoted widgets render in the Vue node body
       const subgraphVueNode = comfyPage.vueNodes.getNodeLocator(nodeId)
