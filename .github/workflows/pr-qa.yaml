@@ -953,6 +953,8 @@ jobs:
           TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          PIPELINE_SHA: ${{ github.sha }}
+          RUN_START_TIME: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at || '' }}
         run: bash scripts/qa-deploy-pages.sh
 
       - name: Post unified QA comment
