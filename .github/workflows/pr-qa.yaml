@@ -614,12 +614,13 @@ jobs:
           DUALBADGE
           chmod +x /tmp/gen-badge-dual.sh
 
-          # Vertical box badge for multi-pass results
+          # Universal vertical box badge — used for all badges (issues + PRs)
           cat > /tmp/gen-badge-box.sh <<'BOXBADGE'
           #!/bin/bash
-          # Usage: gen-badge-box.sh <output-path> <label> <repro> <not_repro> <fail> <total>
+          # Usage: gen-badge-box.sh <output-path> <label> <repro> <not_repro> <fail> <total> [fix_result] [fix_color]
           OUT="$1" LABEL="$2" REPRO="$3" NOREPRO="$4" FAIL="$5" TOTAL="$6"
-          W=140
+          FIX_RESULT="${7:-}" FIX_COLOR="${8:-#4c1}"
+          W=160
           ROW=18
           HEADER=22
           ROWS=0
@@ -627,26 +628,28 @@ jobs:
           [ "$NOREPRO" -gt 0 ] 2>/dev/null && ROWS=$((ROWS+1))
           [ "$FAIL" -gt 0 ] 2>/dev/null && ROWS=$((ROWS+1))
           [ "$ROWS" -eq 0 ] && ROWS=1
+          # Add fix quality row for PRs
+          [ -n "$FIX_RESULT" ] && ROWS=$((ROWS+1))
           H=$((HEADER + ROWS * ROW + 4))
           Y=$((HEADER + 2))
           cat > "$OUT" <<SVGEOF
-          <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" role="img" aria-label="${LABEL}: ${REPRO}/${TOTAL}">
-            <title>${LABEL}: ${REPRO} reproduced, ${NOREPRO} not-repro, ${FAIL} inconclusive / ${TOTAL}</title>
+          <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" role="img" aria-label="${LABEL}">
+            <title>${LABEL}: ${REPRO} reproduced, ${NOREPRO} not-repro, ${FAIL} inconclusive / ${TOTAL}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}</title>
             <rect width="${W}" height="${H}" rx="4" fill="#2a2d35"/>
             <rect width="${W}" height="${HEADER}" rx="4" fill="#555"/>
             <rect y="$((HEADER-4))" width="${W}" height="4" fill="#555"/>
             <text x="$((W/2))" y="15" fill="#fff" text-anchor="middle" font-family="Verdana,sans-serif" font-size="11" font-weight="bold">${LABEL}</text>
           SVGEOF
           add_row() {
-            local count="$1" icon="$2" text="$3" color="$4"
-            [ "$count" -gt 0 ] || return
+            local icon="$1" text="$2" color="$3"
             echo "  <rect x='4' y='${Y}' width='$((W-8))' height='$((ROW-2))' rx='3' fill='${color}' opacity='.15'/>" >> "$OUT"
-            echo "  <text x='10' y='$((Y+13))' fill='${color}' font-family='Verdana,sans-serif' font-size='11'>${icon} ${count} ${text}</text>" >> "$OUT"
+            echo "  <text x='10' y='$((Y+13))' fill='${color}' font-family='Verdana,sans-serif' font-size='11'>${icon} ${text}</text>" >> "$OUT"
             Y=$((Y+ROW))
           }
-          add_row "$REPRO" "✓" "reproduced" "#58a6ff"
-          add_row "$NOREPRO" "✗" "not reproducible" "#8b949e"
-          add_row "$FAIL" "⚠" "inconclusive" "#d29922"
+          [ "$REPRO" -gt 0 ] 2>/dev/null && add_row "✓" "${REPRO} reproduced" "#58a6ff"
+          [ "$NOREPRO" -gt 0 ] 2>/dev/null && add_row "✗" "${NOREPRO} not reproducible" "#8b949e"
+          [ "$FAIL" -gt 0 ] 2>/dev/null && add_row "⚠" "${FAIL} inconclusive" "#d29922"
+          [ -n "$FIX_RESULT" ] && add_row "⚙" "Fix: ${FIX_RESULT}" "$FIX_COLOR"
           echo "</svg>" >> "$OUT"
           BOXBADGE
           chmod +x /tmp/gen-badge-box.sh
