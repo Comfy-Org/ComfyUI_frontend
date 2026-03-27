@@ -17,6 +17,7 @@ import type {
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import { defaultSearcher, getDefaultSortOptions } from './shared'
+import { MENU_HEIGHT, MENU_WIDTH } from './types'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
@@ -98,8 +99,7 @@ const toastStore = useToastStore()
 const triggerRef = useTemplateRef('triggerRef')
 const dropdownRef = useTemplateRef('dropdownRef')
 
-const injectedAppendTo = inject(OverlayAppendToKey, undefined)
-const shouldTeleport = computed(() => injectedAppendTo === 'body')
+const shouldTeleport = inject(OverlayAppendToKey, undefined) === 'body'
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
@@ -145,12 +145,12 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const MENU_HEIGHT = 640 + 8
+const MENU_HEIGHT_WITH_GAP = MENU_HEIGHT + 8
 const openUpward = ref(false)
 const fixedPosition = ref({ top: 0, left: 0 })
 
 const teleportStyle = computed<CSSProperties | undefined>(() => {
-  if (!shouldTeleport.value) return undefined
+  if (!shouldTeleport) return undefined
   const pos = fixedPosition.value
   return openUpward.value
     ? {
@@ -174,10 +174,10 @@ function toggleDropdown() {
 
     const spaceBelow = window.innerHeight - rect.bottom
     const spaceAbove = rect.top
-    openUpward.value = spaceBelow < MENU_HEIGHT && spaceAbove > spaceBelow
+    openUpward.value =
+      spaceBelow < MENU_HEIGHT_WITH_GAP && spaceAbove > spaceBelow
 
-    if (shouldTeleport.value) {
-      const MENU_WIDTH = 412
+    if (shouldTeleport) {
       fixedPosition.value = {
         top: openUpward.value ? rect.top : rect.bottom,
         left: Math.min(rect.right, window.innerWidth - MENU_WIDTH)

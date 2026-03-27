@@ -28,5 +28,10 @@ export interface SortOption<TId extends string = string> {
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'
 
+/** Height of FormDropdownMenu in pixels (matches h-[640px] in template). */
+export const MENU_HEIGHT = 640
+/** Width of FormDropdownMenu in pixels (matches w-103 = 26rem = 416px in template). */
+export const MENU_WIDTH = 412
+
 export const AssetKindKey: InjectionKey<ComputedRef<AssetKind | undefined>> =
   Symbol('assetKind')
