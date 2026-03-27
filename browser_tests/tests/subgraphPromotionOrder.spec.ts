@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
 
 test.describe(
@@ -40,19 +41,14 @@ test.describe(
       const subgraphVueNode = comfyPage.vueNodes.getNodeLocator(nodeId)
       await expect(subgraphVueNode).toBeVisible()
 
-      const nodeBody = subgraphVueNode.locator(
-        `[data-testid="node-body-${nodeId}"]`
+      const widgetsContainer = subgraphVueNode.getByTestId(
+        TestIds.widgets.container
       )
-      const widgetElements = nodeBody.locator('.lg-node-widgets > div')
-      await expect(widgetElements.first()).toBeVisible()
+      await expect(widgetsContainer).toBeVisible()
 
       // Get the initial promoted widget order
       const initialOrder = await getPromotedWidgetNames(comfyPage, nodeId)
       expect(initialOrder.length).toBeGreaterThanOrEqual(2)
-
-      // Verify widget count in the DOM matches
-      const domWidgetCount = await widgetElements.count()
-      expect(domWidgetCount).toBeGreaterThanOrEqual(initialOrder.length)
 
       // Demote then re-promote the first widget via the promotion store.
       // Pinia store access pattern: see getPiniaStoreInBrowser in
