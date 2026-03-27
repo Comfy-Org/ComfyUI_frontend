@@ -12,6 +12,7 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import {
   createEventCapture,
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
@@ -298,13 +299,14 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.add(vaeNode)
 
       const outerNode = createTestSubgraphNode(subgraph)
+      const keptSamplerNodeId = String(samplerNode.id)
 
       // Inject stale proxyWidgets referencing nodes that don't exist in
       // this subgraph (they were packed into a nested subgraph)
       outerNode.properties.proxyWidgets = [
         ['999', 'text'],
         ['998', 'text'],
-        [String(samplerNode.id), 'widget']
+        [keptSamplerNodeId, 'widget']
       ]
 
       outerNode.configure(outerNode.serialize())
@@ -317,6 +319,64 @@ describe('SubgraphWidgetPromotion', () => {
 
       expect(widgetSourceIds).not.toContain('999')
       expect(widgetSourceIds).not.toContain('998')
+      expect(widgetSourceIds).toContain(keptSamplerNodeId)
+    })
+
+    it('should normalize legacy prefixed proxyWidgets on configure', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+
+      const samplerNode = new LGraphNode('Sampler')
+      const samplerInput = samplerNode.addInput('seed', 'number')
+      samplerNode.addWidget('number', 'noise_seed', 123, () => {})
+      samplerInput.widget = { name: 'noise_seed' }
+      innerSubgraph.add(samplerNode)
+      innerSubgraph.inputNode.slots[0].connect(
+        samplerNode.inputs[0],
+        samplerNode
+      )
+
+      const outerSubgraph = createTestSubgraph({ rootGraph })
+      const nestedNode = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph
+      })
+      outerSubgraph.add(nestedNode)
+
+      const hostNode = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph
+      })
+
+      const serializedHostNode = hostNode.serialize()
+      serializedHostNode.properties = {
+        ...serializedHostNode.properties,
+        proxyWidgets: [
+          [
+            String(nestedNode.id),
+            `${nestedNode.id}: ${samplerNode.id}: noise_seed`
+          ]
+        ]
+      }
+
+      hostNode.configure(serializedHostNode)
+
+      const promotedWidgets = hostNode.widgets
+        .filter(isPromotedWidgetView)
+        .filter((widget) => !widget.name.startsWith('$$'))
+
+      expect(promotedWidgets).toHaveLength(1)
+      expect(promotedWidgets[0].type).toBe('number')
+      expect(promotedWidgets[0].value).toBe(123)
+      expect(promotedWidgets[0].sourceWidgetName).toBe('noise_seed')
+      expect(promotedWidgets[0].disambiguatingSourceNodeId).toBe(
+        String(samplerNode.id)
+      )
+      expect(hostNode.properties.proxyWidgets).toStrictEqual([
+        [String(nestedNode.id), 'noise_seed', String(samplerNode.id)]
+      ])
     })
   })
 

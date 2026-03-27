@@ -17,6 +17,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0005](0005-remove-importmap-for-vue-extensions.md)      | Remove Import Map for Vue Extensions     | Accepted | 2025-12-13 |
 | [0006](0006-primitive-node-copy-paste-lifecycle.md)      | PrimitiveNode Copy/Paste Lifecycle       | Proposed | 2026-02-22 |
 | [0007](0007-node-execution-output-passthrough-schema.md) | NodeExecutionOutput Passthrough Schema   | Accepted | 2026-03-11 |
+| [0008](0008-entity-component-system.md)                  | Entity Component System                  | Proposed | 2026-03-23 |
 
 ## Creating a New ADR
 
