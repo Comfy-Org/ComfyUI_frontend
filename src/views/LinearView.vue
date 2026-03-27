@@ -5,8 +5,8 @@ import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed, useTemplateRef } from 'vue'
 
-import ArrangeLayout from '@/components/builder/ArrangeLayout.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
+import SidebarAppLayout from '@/components/builder/SidebarAppLayout.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -15,9 +15,11 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
 import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
+import { cn } from '@/utils/tailwindUtil'
 import {
   CENTER_PANEL_SIZE,
   SIDEBAR_MIN_SIZE,
@@ -26,7 +28,8 @@ import {
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const { isBuilderMode } = useAppMode()
+const { isBuilderMode, isAppMode } = useAppMode()
+const appModeStore = useAppModeStore()
 
 const mobileDisplay = useBreakpoints(breakpointsTailwind).smaller('md')
 const activeTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
@@ -35,11 +38,23 @@ const sidebarOnLeft = computed(
 )
 const hasLeftPanel = computed(() => sidebarOnLeft.value && activeTab.value)
 const hasRightPanel = computed(() => !sidebarOnLeft.value && activeTab.value)
+const hasAppInputsPanel = computed(
+  () => (isAppMode.value && appModeStore.hasOutputs) || isBuilderMode.value
+)
+const isDualLayout = computed(() => appModeStore.layoutTemplateId === 'dual')
+const appInputsPanelSize = computed(() =>
+  isDualLayout.value ? 33 : SIDE_PANEL_SIZE
+)
+const appInputsMinSize = computed(() =>
+  isDualLayout.value ? 20 : SIDEBAR_MIN_SIZE
+)
 
 const splitterKey = computed(() => {
   const left = hasLeftPanel.value ? 'L' : ''
   const right = hasRightPanel.value ? 'R' : ''
-  return `app-${left}${right}`
+  const inputs = hasAppInputsPanel.value ? 'I' : ''
+  const dual = isDualLayout.value ? 'D' : 'S'
+  return `app-${left}${right}${inputs}${dual}`
 })
 
 const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
@@ -90,8 +105,7 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
         <LinearProgressBar
           class="absolute top-0 left-0 z-21 h-1 w-[calc(100%+16px)]"
         />
-        <ArrangeLayout v-if="isBuilderMode" />
-        <LinearPreview v-else />
+        <LinearPreview />
         <div class="pointer-events-none absolute top-2 left-4.5 z-21">
           <AppModeToolbar v-if="!isBuilderMode" class="pointer-events-auto" />
         </div>
@@ -105,6 +119,23 @@ const { onResizeEnd } = useStablePrimeVueSplitterSizer(
       >
         <div class="h-full overflow-x-hidden border-l border-border-subtle">
           <ExtensionSlot v-if="activeTab" :extension="activeTab" />
+        </div>
+      </SplitterPanel>
+      <SplitterPanel
+        v-if="hasAppInputsPanel"
+        :size="appInputsPanelSize"
+        :min-size="appInputsMinSize"
+        :class="
+          cn(
+            'overflow-hidden outline-none',
+            isDualLayout
+              ? 'max-w-[min(50vw,936px)] min-w-156'
+              : 'max-w-117 min-w-78'
+          )
+        "
+      >
+        <div class="h-full overflow-x-hidden border-l border-border-subtle">
+          <SidebarAppLayout />
         </div>
       </SplitterPanel>
     </Splitter>

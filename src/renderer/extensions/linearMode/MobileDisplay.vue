@@ -12,11 +12,9 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AppTemplateView from '@/renderer/extensions/linearMode/AppTemplateView.vue'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -30,11 +28,7 @@ const tabs = [
   ['sideToolbar.assets', 'icon-[lucide--images]']
 ]
 
-const appModeStore = useAppModeStore()
 const canvasStore = useCanvasStore()
-const useTemplateLayout = computed(
-  () => Object.keys(appModeStore.zoneAssignments).length > 0
-)
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
@@ -198,8 +192,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         :style="{ translate }"
       >
         <div class="absolute h-full w-screen overflow-y-auto contain-size">
-          <AppTemplateView v-if="useTemplateLayout" />
-          <LinearControls v-else mobile @navigate-outputs="activeIndex = 1" />
+          <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"

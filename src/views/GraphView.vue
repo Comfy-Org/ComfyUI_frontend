@@ -13,13 +13,14 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
+    <LayoutTemplateSelector
+      v-if="isBuilderMode"
+      :model-value="appModeStore.layoutTemplateId"
+      @update:model-value="appModeStore.switchTemplate"
+    />
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
-      <LayoutTemplateSelector
-        :model-value="appModeStore.layoutTemplateId"
-        @update:model-value="appModeStore.switchTemplate"
-      />
       <BuilderFooterToolbar />
     </template>
   </div>

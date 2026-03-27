@@ -1,14 +1,14 @@
 <template>
   <div
     ref="container"
-    class="flex h-7 rounded-lg bg-component-node-widget-background text-xs text-component-node-foreground"
+    class="flex h-8 rounded-lg bg-component-node-widget-background text-xs text-component-node-foreground"
   >
     <slot name="background" />
     <Button
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      class="aspect-8/7 h-full rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
+      class="aspect-square h-full rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
       :disabled="!canDecrement"
       tabindex="-1"
@@ -16,7 +16,7 @@
     >
       <i class="pi pi-minus" />
     </Button>
-    <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
+    <div class="relative my-0.25 min-w-[2ch] flex-1 py-1.5">
       <input
         ref="inputField"
         v-bind="inputAttrs"
@@ -54,7 +54,7 @@
       v-if="!hideButtons"
       :aria-label="t('g.increment')"
       data-testid="increment"
-      class="aspect-8/7 h-full rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
+      class="aspect-square h-full rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
       variant="muted-textonly"
       :disabled="!canIncrement"
       tabindex="-1"
