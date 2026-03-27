@@ -36,14 +36,14 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() =>
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() =>
     reactive({
       getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     })
   ),
-  FirebaseAuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {}
 }))
 
 vi.mock('@/platform/distribution/types', () => ({

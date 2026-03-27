@@ -11,8 +11,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import type { BillingPortalTargetTier } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
@@ -20,8 +20,8 @@ import { usdToMicros } from '@/utils/formatUtil'
  * All actions are wrapped with error handling.
  * @returns {Object} - Object containing all Firebase Auth actions
  */
-export const useFirebaseAuthActions = () => {
-  const authStore = useFirebaseAuthStore()
+export const useAuthActions = () => {
+  const authStore = useAuthStore()
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 

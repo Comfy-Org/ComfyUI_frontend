@@ -37,7 +37,7 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="m-0 max-h-[30vh] overflow-y-auto text-xs/normal font-normal text-muted-foreground"
+        class="m-0 max-h-[30vh] overflow-y-auto text-2xs/normal font-normal text-muted-foreground"
       >
         {{ nodeDef.description }}
       </p>

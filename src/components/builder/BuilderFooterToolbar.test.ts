@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -68,80 +69,75 @@ describe('BuilderFooterToolbar', () => {
     mockState.settingView = false
   })
 
-  function mountComponent() {
-    return mount(BuilderFooterToolbar, {
+  function renderComponent() {
+    const user = userEvent.setup()
+
+    render(BuilderFooterToolbar, {
       global: {
         plugins: [i18n],
         stubs: { Button: false }
       }
     })
-  }
 
-  function getButtons(wrapper: ReturnType<typeof mountComponent>) {
-    const buttons = wrapper.findAll('button')
-    return {
-      exit: buttons[0],
-      back: buttons[1],
-      next: buttons[2]
-    }
+    return { user }
   }
 
   it('disables back on the first step', () => {
     mockState.mode = 'builder:inputs'
-    const { back } = getButtons(mountComponent())
-    expect(back.attributes('disabled')).toBeDefined()
+    renderComponent()
+    expect(screen.getByRole('button', { name: /back/i })).toBeDisabled()
   })
 
   it('enables back on the second step', () => {
     mockState.mode = 'builder:arrange'
-    const { back } = getButtons(mountComponent())
-    expect(back.attributes('disabled')).toBeUndefined()
+    renderComponent()
+    expect(screen.getByRole('button', { name: /back/i })).toBeEnabled()
   })
 
   it('disables next on the setDefaultView step', () => {
     mockState.settingView = true
-    const { next } = getButtons(mountComponent())
-    expect(next.attributes('disabled')).toBeDefined()
+    renderComponent()
+    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
 
   it('disables next on arrange step when no outputs', () => {
     mockState.mode = 'builder:arrange'
     mockHasOutputs.value = false
-    const { next } = getButtons(mountComponent())
-    expect(next.attributes('disabled')).toBeDefined()
+    renderComponent()
+    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
 
   it('enables next on inputs step', () => {
     mockState.mode = 'builder:inputs'
-    const { next } = getButtons(mountComponent())
-    expect(next.attributes('disabled')).toBeUndefined()
+    renderComponent()
+    expect(screen.getByRole('button', { name: /next/i })).toBeEnabled()
   })
 
   it('calls setMode on back click', async () => {
     mockState.mode = 'builder:arrange'
-    const { back } = getButtons(mountComponent())
-    await back.trigger('click')
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: /back/i }))
     expect(mockSetMode).toHaveBeenCalledWith('builder:outputs')
   })
 
   it('calls setMode on next click from inputs step', async () => {
     mockState.mode = 'builder:inputs'
-    const { next } = getButtons(mountComponent())
-    await next.trigger('click')
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: /next/i }))
     expect(mockSetMode).toHaveBeenCalledWith('builder:outputs')
   })
 
   it('opens default view dialog on next click from arrange step', async () => {
     mockState.mode = 'builder:arrange'
-    const { next } = getButtons(mountComponent())
-    await next.trigger('click')
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: /next/i }))
     expect(mockSetMode).toHaveBeenCalledWith('builder:arrange')
     expect(mockShowDialog).toHaveBeenCalledOnce()
   })
 
   it('calls exitBuilder on exit button click', async () => {
-    const { exit } = getButtons(mountComponent())
-    await exit.trigger('click')
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: /exit app builder/i }))
     expect(mockExitBuilder).toHaveBeenCalledOnce()
   })
 })

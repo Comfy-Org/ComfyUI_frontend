@@ -1,0 +1,80 @@
+{
+  "name": "@comfyorg/website",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@comfyorg/design-system": "workspace:*",
+    "@vercel/analytics": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@astrojs/vue": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "astro": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  },
+  "nx": {
+    "tags": [
+      "scope:website",
+      "type:app"
+    ],
+    "targets": {
+      "dev": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/website",
+          "command": "astro dev"
+        }
+      },
+      "serve": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/website",
+          "command": "astro dev"
+        }
+      },
+      "build": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "options": {
+          "cwd": "apps/website",
+          "command": "astro build"
+        },
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      },
+      "preview": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "cwd": "apps/website",
+          "command": "astro preview"
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/website",
+          "command": "astro check"
+        }
+      }
+    }
+  }
+}
