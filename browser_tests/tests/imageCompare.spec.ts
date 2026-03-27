@@ -69,7 +69,10 @@ test.describe('Image Compare', () => {
 
       const handle = node.locator('[role="presentation"]')
       await expect(handle).toBeVisible()
-      await expect(handle).toHaveCSS('left', /50%/)
+
+      expect(
+        await handle.evaluate((el) => (el as HTMLElement).style.left)
+      ).toBe('50%')
       await expect(beforeImg).toHaveCSS('clip-path', /50%/)
 
       await expect(node).toHaveScreenshot('image-compare-default-50.png')
