@@ -57,12 +57,12 @@
         :class="
           cn(
             stepClasses,
-            activeStep === 'setDefaultView'
+            activeStep === 'builder:arrange'
               ? 'bg-interface-builder-mode-background'
               : 'bg-transparent hover:bg-secondary-background'
           )
         "
-        @click="navigateToStep('setDefaultView')"
+        @click="navigateToStep('builder:arrange')"
       >
         <StepBadge
           :step="defaultViewStep"
@@ -167,7 +167,7 @@ const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
   icon: 'icon-[lucide--layout-panel-left]'
 }
 
-const defaultViewStep: BuilderToolbarStep<BuilderStepId> = {
+const defaultViewStep: BuilderToolbarStep<string> = {
   id: 'setDefaultView',
   title: t('builderToolbar.defaultView'),
   subtitle: t('builderToolbar.defaultViewDescription'),
