@@ -70,6 +70,15 @@ function makeImportedAssets(comfyPage: ComfyPage) {
   }
 }
 
+async function makeWorkflowGeneratedAsset(comfyPage: ComfyPage) {
+  return comfyPage.assets.generatedImage({
+    jobId: 'job-workflow-sunrise',
+    filename: 'workflow-sunrise.webp',
+    displayName: 'Workflow Sunrise',
+    workflow: await comfyPage.assets.workflowContainerFromFixture()
+  })
+}
+
 test.describe('Assets sidebar', () => {
   test.describe.configure({ timeout: 30_000 })
 
@@ -185,6 +194,178 @@ test.describe('Assets sidebar', () => {
     await expect(tab.asset('Gallery Main')).toBeVisible()
     await expect(tab.asset('Gallery Alt')).not.toBeVisible()
     await expect(tab.asset('Gallery Detail')).not.toBeVisible()
+  })
+
+  test('shows output asset context-menu actions and can delete an asset', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise, generated.forest]
+    })
+
+    await tab.openContextMenuForAsset('Sunrise')
+
+    await expect(tab.contextMenuAction('Inspect asset')).toBeVisible()
+    await expect(
+      tab.contextMenuAction('Insert as node in workflow')
+    ).toBeVisible()
+    await expect(tab.contextMenuAction('Download')).toBeVisible()
+    await expect(
+      tab.contextMenuAction('Open as workflow in new tab')
+    ).toBeVisible()
+    await expect(tab.contextMenuAction('Export workflow')).toBeVisible()
+    await expect(tab.contextMenuAction('Copy job ID')).toBeVisible()
+    await expect(tab.contextMenuAction('Delete')).toBeVisible()
+
+    await tab.contextMenuAction('Delete').click()
+    await comfyPage.confirmDialog.click('delete')
+
+    await expect(tab.asset('Sunrise')).not.toBeVisible()
+    await expect(tab.asset('Forest')).toBeVisible()
+  })
+
+  test('opens preview from the output asset context menu', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise]
+    })
+
+    await tab.runContextMenuAction('Sunrise', 'Inspect asset')
+
+    await expect(tab.previewDialog).toBeVisible()
+    await expect(tab.previewImage('sunrise.webp')).toBeVisible()
+  })
+
+  test('downloads an output asset from the context menu', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise]
+    })
+
+    const downloadPromise = comfyPage.page.waitForEvent('download')
+
+    await tab.runContextMenuAction('Sunrise', 'Download')
+
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toContain('Sunrise')
+  })
+
+  test('copies an output asset job ID from the context menu', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise]
+    })
+
+    await tab.runContextMenuAction('Sunrise', 'Copy job ID')
+
+    await expect(comfyPage.visibleToasts).toContainText('Copied to clipboard')
+
+    await tab.searchInput.click()
+    await comfyPage.clipboard.paste(tab.searchInput)
+
+    await expect(tab.searchInput).toHaveValue(generated.sunrise.jobId)
+  })
+
+  test('inserts an output asset into the workflow from the context menu', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise]
+    })
+
+    await tab.runContextMenuAction('Sunrise', 'Insert as node in workflow')
+
+    await comfyPage.vueNodes.waitForNodes()
+    await expect(comfyPage.vueNodes.getNodeByTitle('Load Image')).toBeVisible()
+  })
+
+  test('opens a workflow from the output asset context menu', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Sidebar'
+    )
+    const workflowAsset = await makeWorkflowGeneratedAsset(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [workflowAsset]
+    })
+
+    await tab.runContextMenuAction(
+      'Workflow Sunrise',
+      'Open as workflow in new tab'
+    )
+
+    await expect(comfyPage.visibleToasts).toContainText(
+      'Workflow opened in new tab'
+    )
+
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+
+    await expect
+      .poll(async () => {
+        return (await workflowsTab.getOpenedWorkflowNames()).some((name) =>
+          name.includes('workflow-sunrise')
+        )
+      })
+      .toBe(true)
+  })
+
+  test('exports a workflow from the output asset context menu', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.PromptFilename', false)
+    const workflowAsset = await makeWorkflowGeneratedAsset(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      generated: [workflowAsset]
+    })
+
+    const downloadPromise = comfyPage.page.waitForEvent('download')
+
+    await tab.runContextMenuAction('Workflow Sunrise', 'Export workflow')
+
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toContain('workflow-sunrise.json')
+    await expect(comfyPage.visibleToasts).toContainText(
+      'Workflow exported successfully'
+    )
+  })
+
+  test('shows imported asset context-menu actions without output-only actions, and can insert the asset into the workflow', async ({
+    comfyPage
+  }) => {
+    const imported = makeImportedAssets(comfyPage)
+    const tab = await openAssetsSidebar(comfyPage, {
+      imported: [imported.concept]
+    })
+
+    await tab.showImported()
+    await tab.openContextMenuForAsset('concept.png')
+
+    await expect(
+      tab.contextMenuAction('Insert as node in workflow')
+    ).toBeVisible()
+    await expect(tab.contextMenuAction('Download')).toBeVisible()
+    await expect(
+      tab.contextMenuAction('Open as workflow in new tab')
+    ).toBeVisible()
+    await expect(tab.contextMenuAction('Export workflow')).toBeVisible()
+    await expect(tab.contextMenuAction('Copy job ID')).not.toBeVisible()
+    await expect(tab.contextMenuAction('Delete')).not.toBeVisible()
+
+    await tab.contextMenuAction('Insert as node in workflow').click()
+
+    await comfyPage.vueNodes.waitForNodes()
+    await expect(comfyPage.vueNodes.getNodeByTitle('Load Image')).toBeVisible()
   })
 
   test('shows the selection footer, can clear the selection, and can download a selected asset', async ({
