@@ -226,7 +226,7 @@ if [ -d video-reviews ]; then
     # Check negatives FIRST — "fails to reproduce" contains "reproduce" but is negative
     if echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
       INCONC_COUNT=$((INCONC_COUNT + 1))
-    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate\|does not demonstrate\|steps were not performed\|never.*tested\|never.*accessed'; then
+    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|could not be confirmed\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate\|does not demonstrate\|steps were not performed\|never.*tested\|never.*accessed\|not.* confirmed'; then
       NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
     elif echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
       REPRO_COUNT=$((REPRO_COUNT + 1))
