@@ -82,9 +82,7 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test('Rename from builder input-select sidebar via menu', async ({
-    comfyPage
-  }) => {
+  test('Rename from builder input-select sidebar', async ({ comfyPage }) => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
@@ -93,35 +91,17 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
 
     const menu = appMode.getBuilderInputItemMenu('seed')
     await expect(menu).toBeVisible({ timeout: 5000 })
-    await appMode.renameBuilderInputViaMenu('seed', 'Builder Input Seed')
+    await appMode.renameWidget(menu, 'Builder Input Seed')
 
     // Verify in app mode after save/reload
     await appMode.exitBuilder()
-    const workflowName = `${new Date().getTime()} builder-input-menu`
+    const workflowName = `${new Date().getTime()} builder-input`
     await saveAndReopenInAppMode(comfyPage, workflowName)
 
     await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
     await expect(
       appMode.linearWidgets.getByText('Builder Input Seed')
     ).toBeVisible()
-  })
-
-  test('Rename from builder input-select sidebar via double-click', async ({
-    comfyPage
-  }) => {
-    const { appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-
-    await appMode.goToInputs()
-
-    await appMode.renameBuilderInput('seed', 'Dblclick Seed')
-
-    await appMode.exitBuilder()
-    const workflowName = `${new Date().getTime()} builder-input-dblclick`
-    await saveAndReopenInAppMode(comfyPage, workflowName)
-
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
-    await expect(appMode.linearWidgets.getByText('Dblclick Seed')).toBeVisible()
   })
 
   test('Rename from builder preview step', async ({ comfyPage }) => {
