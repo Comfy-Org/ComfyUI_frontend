@@ -9,7 +9,7 @@ test.describe('Nested subgraph configure order', { tag: ['@subgraph'] }, () => {
   test('Loads without "No link found" or "Failed to resolve legacy -1" console warnings', async ({
     comfyPage
   }) => {
-    const warnings = collectConsoleWarnings(comfyPage.page)
+    const { warnings } = collectConsoleWarnings(comfyPage.page)
 
     await comfyPage.workflow.loadWorkflow(WORKFLOW)
 

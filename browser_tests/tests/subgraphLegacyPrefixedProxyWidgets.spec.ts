@@ -31,7 +31,7 @@ test.describe(
     test('Loads without console warnings about failed widget resolution', async ({
       comfyPage
     }) => {
-      const warnings = collectConsoleWarnings(comfyPage.page)
+      const { warnings } = collectConsoleWarnings(comfyPage.page)
 
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 

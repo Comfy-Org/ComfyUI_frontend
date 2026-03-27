@@ -110,16 +110,11 @@ test.describe('Subgraph duplicate ID remapping', { tag: ['@subgraph'] }, () => {
     const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
     await subgraphNode.navigateIntoSubgraph()
 
-    const isInSubgraph = () =>
-      comfyPage.page.evaluate(
-        () => window.app!.canvas.graph?.isRootGraph === false
-      )
-
-    expect(await isInSubgraph()).toBe(true)
+    expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
 
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.nextFrame()
 
-    expect(await isInSubgraph()).toBe(false)
+    expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
   })
 })

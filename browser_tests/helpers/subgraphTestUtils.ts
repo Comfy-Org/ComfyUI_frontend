@@ -1,26 +1,10 @@
 import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
+import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { LGraph, Subgraph } from '../../src/lib/litegraph/src/litegraph'
-import { isSubgraph } from '../../src/utils/typeGuardUtil'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
-
-/**
- * Assertion helper for tests where being in a subgraph is a precondition.
- * Throws a clear error if the graph is not a Subgraph.
- */
-export function assertSubgraph(
-  graph: LGraph | Subgraph | null | undefined
-): asserts graph is Subgraph {
-  if (!isSubgraph(graph)) {
-    throw new Error(
-      'Expected to be in a subgraph context, but graph is not a Subgraph'
-    )
-  }
-}
 
 /**
  * Returns the widget-input slot Y position and the node title height
@@ -50,6 +34,7 @@ export function getTextSlotPosition(page: Page, nodeId: string) {
 }
 
 export async function serializeAndReload(comfyPage: ComfyPage): Promise<void> {
+  // serialize() returns ComfyWorkflowJSON; Playwright JSON-serializes it across the boundary
   const serialized = await comfyPage.page.evaluate(() =>
     window.app!.graph!.serialize()
   )
@@ -79,9 +64,9 @@ export async function expectWidgetBelowHeader(
     .locator('[data-testid^="node-header-"]')
     .boundingBox()
   const widgetBox = await widgetLocator.boundingBox()
-  expect(headerBox).not.toBeNull()
-  expect(widgetBox).not.toBeNull()
-  expect(widgetBox!.y).toBeGreaterThan(headerBox!.y + headerBox!.height)
+  if (!headerBox || !widgetBox)
+    throw new Error('Header or widget bounding box not found')
+  expect(widgetBox.y).toBeGreaterThan(headerBox.y + headerBox.height)
 }
 
 export async function packAllInteriorNodes(
@@ -111,13 +96,14 @@ export function collectConsoleWarnings(
     'Failed to resolve legacy -1',
     'No inner link found'
   ]
-): string[] {
+): { warnings: string[]; dispose: () => void } {
   const warnings: string[] = []
-  page.on('console', (msg) => {
+  const handler = (msg: ConsoleMessage) => {
     const text = msg.text()
     if (patterns.some((p) => text.includes(p))) {
       warnings.push(text)
     }
-  })
-  return warnings
+  }
+  page.on('console', handler)
+  return { warnings, dispose: () => page.off('console', handler) }
 }

@@ -33,7 +33,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialCount = await comfyPage.subgraph.getSlotCount('inputs')
+      const initialCount = await comfyPage.subgraph.getSlotCount('input')
       const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
         'VAEEncode',
         true
@@ -42,7 +42,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('inputs')
+      const finalCount = await comfyPage.subgraph.getSlotCount('input')
       expect(finalCount).toBe(initialCount + 1)
     })
 
@@ -52,7 +52,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialCount = await comfyPage.subgraph.getSlotCount('outputs')
+      const initialCount = await comfyPage.subgraph.getSlotCount('output')
       const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
         'VAEEncode',
         true
@@ -61,7 +61,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('outputs')
+      const finalCount = await comfyPage.subgraph.getSlotCount('output')
       expect(finalCount).toBe(initialCount + 1)
     })
 
@@ -71,7 +71,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialCount = await comfyPage.subgraph.getSlotCount('inputs')
+      const initialCount = await comfyPage.subgraph.getSlotCount('input')
       expect(initialCount).toBeGreaterThan(0)
 
       await comfyPage.subgraph.removeSlot('input')
@@ -80,7 +80,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('inputs')
+      const finalCount = await comfyPage.subgraph.getSlotCount('input')
       expect(finalCount).toBe(initialCount - 1)
     })
 
@@ -90,7 +90,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialCount = await comfyPage.subgraph.getSlotCount('outputs')
+      const initialCount = await comfyPage.subgraph.getSlotCount('output')
       expect(initialCount).toBeGreaterThan(0)
 
       await comfyPage.subgraph.removeSlot('output')
@@ -99,7 +99,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('outputs')
+      const finalCount = await comfyPage.subgraph.getSlotCount('output')
       expect(finalCount).toBe(initialCount - 1)
     })
 
@@ -109,7 +109,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('inputs')
+      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
       await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
@@ -125,7 +125,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('inputs')
+      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
       expect(newInputName).not.toBe(initialInputLabel)
@@ -137,7 +137,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('inputs')
+      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
       await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel!)
 
@@ -151,7 +151,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('inputs')
+      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
       expect(newInputName).not.toBe(initialInputLabel)
@@ -163,8 +163,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialOutputLabel =
-        await comfyPage.subgraph.getSlotLabel('outputs')
+      const initialOutputLabel = await comfyPage.subgraph.getSlotLabel('output')
 
       await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel!)
 
@@ -179,7 +178,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newOutputName = await comfyPage.subgraph.getSlotLabel('outputs')
+      const newOutputName = await comfyPage.subgraph.getSlotLabel('output')
 
       expect(newOutputName).toBe(renamedOutputName)
       expect(newOutputName).not.toBe(initialOutputLabel)
@@ -193,7 +192,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('inputs')
+      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
       // Test that right-click still works for renaming
       await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
@@ -211,7 +210,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('inputs')
+      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
 
       expect(newInputName).toBe(rightClickRenamedName)
       expect(newInputName).not.toBe(initialInputLabel)
@@ -225,7 +224,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('inputs')
+      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
       // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
@@ -283,7 +282,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('inputs')
+      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
 
       expect(newInputName).toBe(labelClickRenamedName)
       expect(newInputName).not.toBe(initialInputLabel)

@@ -414,24 +414,24 @@ export class SubgraphHelper {
     })
   }
 
-  async getSlotCount(type: 'inputs' | 'outputs'): Promise<number> {
-    return this.page.evaluate((slotType: 'inputs' | 'outputs') => {
+  async getSlotCount(type: 'input' | 'output'): Promise<number> {
+    return this.page.evaluate((slotType: 'input' | 'output') => {
       const graph = window.app!.canvas.graph
       if (!graph || !('inputNode' in graph)) return 0
-      return graph[slotType]?.length || 0
+      return graph[`${slotType}s`]?.length ?? 0
     }, type)
   }
 
   async getSlotLabel(
-    type: 'inputs' | 'outputs',
+    type: 'input' | 'output',
     index = 0
   ): Promise<string | null> {
     return this.page.evaluate(
       ([slotType, idx]) => {
         const graph = window.app!.canvas.graph
         if (!graph || !('inputNode' in graph)) return null
-        const slot = graph[slotType]?.[idx]
-        return slot?.label || slot?.name || null
+        const slot = graph[`${slotType}s`]?.[idx]
+        return slot?.label ?? slot?.name ?? null
       },
       [type, index] as const
     )

@@ -25,7 +25,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     await subgraphNode.navigateIntoSubgraph()
 
     // Get initial slot label
-    const initialInputLabel = await comfyPage.subgraph.getSlotLabel('inputs')
+    const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
     if (initialInputLabel === null) {
       throw new Error(
@@ -102,7 +102,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     await comfyPage.nextFrame()
 
     // Verify the second rename worked
-    const afterSecondRename = await comfyPage.subgraph.getSlotLabel('inputs')
+    const afterSecondRename = await comfyPage.subgraph.getSlotLabel('input')
     expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
   })
 
@@ -115,7 +115,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     await subgraphNode.navigateIntoSubgraph()
 
     // Get initial output slot label
-    const initialOutputLabel = await comfyPage.subgraph.getSlotLabel('outputs')
+    const initialOutputLabel = await comfyPage.subgraph.getSlotLabel('output')
 
     if (initialOutputLabel === null) {
       throw new Error(
