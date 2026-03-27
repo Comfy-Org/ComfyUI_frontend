@@ -119,6 +119,13 @@ export const TestIds = {
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
   },
+  linear: {
+    centerPanel: 'linear-center-panel',
+    mobile: 'linear-mobile',
+    mobileNavigation: 'linear-mobile-navigation',
+    outputInfo: 'linear-output-info',
+    widgetContainer: 'linear-widgets'
+  },
   builder: {
     footerNav: 'builder-footer-nav',
     saveButton: 'builder-save-button',

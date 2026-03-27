@@ -146,6 +146,13 @@ export class AppModeHelper {
     await this.toggleAppMode()
   }
 
+  get centerPanel(): Locator {
+    return this.page.getByTestId(TestIds.linear.centerPanel)
+  }
+  get mobileView(): Locator {
+    return this.page.getByTestId(TestIds.linear.mobile)
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").

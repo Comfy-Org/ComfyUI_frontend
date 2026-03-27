@@ -149,6 +149,7 @@ function dragDrop(e: DragEvent) {
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
+        data-testid="linear-center-panel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
         @drop="dragDrop"

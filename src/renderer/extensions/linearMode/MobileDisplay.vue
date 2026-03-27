@@ -154,7 +154,10 @@ const menuEntries = computed<MenuItem[]>(() => [
 ])
 </script>
 <template>
-  <section class="absolute flex size-full flex-col bg-secondary-background">
+  <section
+    class="absolute flex size-full flex-col bg-secondary-background"
+    data-testid="linear-mobile"
+  >
     <header
       class="flex h-16 w-full items-center gap-3 border-b border-border-subtle bg-base-background px-4 py-3"
     >
@@ -191,11 +194,17 @@ const menuEntries = computed<MenuItem[]>(() => [
         "
         :style="{ translate }"
       >
-        <div class="absolute h-full w-screen overflow-y-auto contain-size">
+        <div
+          class="absolute h-full w-screen overflow-y-auto contain-size"
+          role="tabpanel"
+          :aria-hidden="activeIndex !== 0"
+        >
           <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
         <div
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
+          role="tabpanel"
+          :aria-hidden="activeIndex !== 1"
         >
           <MobileError
             v-if="executionErrorStore.isErrorOverlayOpen"
@@ -205,18 +214,23 @@ const menuEntries = computed<MenuItem[]>(() => [
         </div>
         <AssetsSidebarTab
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
+          role="tabpanel"
+          :aria-hidden="activeIndex !== 2"
         />
       </div>
     </div>
     <div
       ref="sliderPaneRef"
       class="flex h-22 w-full items-center justify-around gap-4 bg-secondary-background p-4"
+      role="tablist"
     >
       <Button
         v-for="([label, icon], index) in tabs"
         :key="label"
         :variant="index === activeIndex ? 'secondary' : 'muted-textonly'"
         class="h-14 grow flex-col"
+        role="tab"
+        :aria-selected="index === activeIndex"
         @click="onClick(index)"
       >
         <div class="relative size-4">
