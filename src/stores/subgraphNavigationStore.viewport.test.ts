@@ -319,17 +319,18 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       // QuickLRU uses double-buffering: effective capacity is up to 2 * maxSize.
       // Fill enough entries so the earliest ones are fully evicted.
+      // Keys use the workflow-scoped format (`:graphId`) matching production.
       for (let i = 0; i < overflowEntryCount; i++) {
-        navigationStore.viewportCache.set(`sub-${i}`, {
+        navigationStore.viewportCache.set(`:sub-${i}`, {
           scale: i + 1,
           offset: [i * 10, i * 20]
         })
       }
 
-      expect(navigationStore.viewportCache.has('sub-0')).toBe(false)
+      expect(navigationStore.viewportCache.has(':sub-0')).toBe(false)
 
       expect(
-        navigationStore.viewportCache.has(`sub-${overflowEntryCount - 1}`)
+        navigationStore.viewportCache.has(`:sub-${overflowEntryCount - 1}`)
       ).toBe(true)
 
       mockCanvas.ds.scale = 99
