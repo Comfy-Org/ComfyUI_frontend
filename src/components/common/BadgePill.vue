@@ -1,5 +1,6 @@
 <template>
   <span
+    data-testid="badge-pill"
     :class="
       cn(
         'flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xxs',
@@ -8,7 +9,11 @@
     "
     :style="customStyle"
   >
-    <i v-if="icon" :class="cn(icon, 'size-2.5', iconClass)" />
+    <i
+      v-if="icon"
+      data-testid="badge-icon"
+      :class="cn(icon, 'size-2.5', iconClass)"
+    />
     <slot>{{ text }}</slot>
   </span>
 </template>

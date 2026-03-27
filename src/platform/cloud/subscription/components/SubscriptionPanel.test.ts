@@ -82,8 +82,8 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: vi.fn(() => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: vi.fn(() => ({
     authActions: vi.fn(() => ({
       accessBillingPortal: vi.fn()
     }))

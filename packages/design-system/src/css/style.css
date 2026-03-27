@@ -25,6 +25,9 @@
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
 
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: calc(1 / 0.625);
+
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
 

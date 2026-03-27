@@ -159,7 +159,7 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -168,7 +168,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const emit = defineEmits<{
   close: []
@@ -178,8 +178,8 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
-const authActions = useFirebaseAuthActions()
-const authStore = useFirebaseAuthStore()
+const authActions = useAuthActions()
+const authStore = useAuthStore()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
