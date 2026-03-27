@@ -117,10 +117,14 @@ test.describe('Vue Nodes Image Preview', () => {
       })
 
       const dialog = await openMaskEditorViaCommand(comfyPage)
+      await expect(dialog).toHaveScreenshot('mask-editor-before-cancel.png')
       await dialog.getByRole('button', { name: /cancel/i }).click()
 
       await expect(dialog).not.toBeVisible()
       expect(uploadRequests).toHaveLength(0)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'mask-editor-cancelled-canvas-state.png'
+      )
     }
   )
 
@@ -150,6 +154,9 @@ test.describe('Vue Nodes Image Preview', () => {
 
       await expect(dialog).not.toBeVisible()
       expect(uploadedPaths.length).toBeGreaterThan(0)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'mask-editor-saved-canvas-state.png'
+      )
     }
   )
 
