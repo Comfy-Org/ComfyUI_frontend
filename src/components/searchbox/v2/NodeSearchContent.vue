@@ -84,6 +84,7 @@
           </div>
           <div
             v-if="displayedResults.length === 0"
+            data-testid="no-results"
             class="px-4 py-8 text-center text-muted-foreground"
           >
             {{ $t('g.noResults') }}

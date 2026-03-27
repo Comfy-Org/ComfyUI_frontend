@@ -33,6 +33,12 @@ export class NodeOperationsHelper {
     })
   }
 
+  async getLinkCount(): Promise<number> {
+    return await this.page.evaluate(() => {
+      return window.app?.rootGraph?.links?.size ?? 0
+    })
+  }
+
   async getSelectedGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
       return (

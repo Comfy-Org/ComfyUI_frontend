@@ -5,8 +5,7 @@ import {
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.searchBoxV2.enableV2Search()
     await comfyPage.settings.setSetting(
       'Comfy.LinkRelease.Action',
       'search box'
@@ -15,15 +14,13 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       'Comfy.LinkRelease.ActionShift',
       'search box'
     )
-    await comfyPage.searchBoxV2.reload(comfyPage)
   })
 
   test('Can open search and add node', async ({ comfyPage }) => {
     const { searchBoxV2 } = comfyPage
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    await comfyPage.canvasOps.doubleClick()
-    await expect(searchBoxV2.input).toBeVisible()
+    await searchBoxV2.open()
 
     await searchBoxV2.input.fill('KSampler')
     await expect(searchBoxV2.results.first()).toBeVisible()
@@ -40,8 +37,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     const { searchBoxV2 } = comfyPage
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    await comfyPage.canvasOps.doubleClick()
-    await expect(searchBoxV2.input).toBeVisible()
+    await searchBoxV2.open()
 
     // Default results should be visible without typing
     await expect(searchBoxV2.results.first()).toBeVisible()
@@ -63,10 +59,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [
         'KSampler'
       ])
-      await searchBoxV2.reload(comfyPage)
-
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
+      await searchBoxV2.open()
 
       await searchBoxV2.filterBarButton('Bookmarked').click()
 
@@ -79,8 +72,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     }) => {
       const { searchBoxV2 } = comfyPage
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
+      await searchBoxV2.open()
 
       await searchBoxV2.categoryButton('sampling').click()
 
@@ -93,8 +85,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     test('Can filter by input type via filter bar', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
+      await searchBoxV2.open()
 
       // Click "Input" filter chip in the filter bar
       await searchBoxV2.filterBarButton('Input').click()
@@ -122,8 +113,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      await comfyPage.canvasOps.doubleClick()
-      await expect(searchBoxV2.input).toBeVisible()
+      await searchBoxV2.open()
 
       await searchBoxV2.input.fill('KSampler')
       const results = searchBoxV2.results
