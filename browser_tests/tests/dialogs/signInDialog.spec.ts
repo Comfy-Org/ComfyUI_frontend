@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
@@ -6,7 +8,7 @@ import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
  * Opens the Sign In dialog via the extensionManager API.
  * Returns a locator scoped to the dialog root.
  */
-async function openSignInDialog(page: import('@playwright/test').Page) {
+async function openSignInDialog(page: Page) {
   await page.evaluate(() => {
     void window.app!.extensionManager.dialog.showSignInDialog()
   })
@@ -60,7 +62,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
 
     // Submit button says "Sign up"
     await expect(
-      dialog.getByRole('button', { name: 'Sign up' })
+      dialog.getByRole('button', { name: 'Sign up', exact: true })
     ).toBeVisible()
   })
 
