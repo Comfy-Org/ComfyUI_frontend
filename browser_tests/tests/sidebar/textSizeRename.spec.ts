@@ -21,11 +21,7 @@ test.describe('Text size token rename regression', { tag: '@ui' }, () => {
     await leaf.hover()
 
     await expect(tab.nodePreview).toBeVisible()
-    await expect(
-      tab.nodePreview.getByText('INPUTS', { exact: true })
-    ).toBeVisible()
-    await expect(
-      tab.nodePreview.getByText('OUTPUTS', { exact: true })
-    ).toBeVisible()
+    await expect(tab.nodePreview.getByText('Inputs')).toBeVisible()
+    await expect(tab.nodePreview.getByText('Outputs')).toBeVisible()
   })
 })
