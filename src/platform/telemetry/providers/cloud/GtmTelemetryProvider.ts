@@ -114,4 +114,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
     this.pushEvent('begin_checkout', metadata)
   }
+
+  trackMonthlySubscriptionSucceeded(): void {
+    this.pushEvent('subscription_success')
+  }
 }
