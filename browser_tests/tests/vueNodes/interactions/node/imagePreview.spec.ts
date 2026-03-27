@@ -43,7 +43,7 @@ test.describe('Vue Nodes Image Preview', () => {
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
-    await imagePreview.locator('[role="img"]').focus()
+    await imagePreview.getByRole('region').hover()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()

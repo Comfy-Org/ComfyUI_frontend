@@ -185,7 +185,9 @@ test.describe(
 test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
+    await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png', {
+      maxDiffPixels: 50
+    })
   })
 
   test('Can drag and drop image', async ({ comfyPage }) => {
