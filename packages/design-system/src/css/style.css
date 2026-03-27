@@ -233,6 +233,7 @@
   --interface-builder-mode-background: var(--color-ocean-300);
   --interface-builder-mode-button-background: var(--color-ocean-600);
   --interface-builder-mode-button-foreground: var(--color-white);
+  --interface-builder-mode-footer-background: var(--color-ocean-900);
 
   --nav-background: var(--color-white);
 
@@ -376,6 +377,7 @@
   --interface-builder-mode-background: var(--color-ocean-900);
   --interface-builder-mode-button-background: var(--color-ocean-600);
   --interface-builder-mode-button-foreground: var(--color-white);
+  --interface-builder-mode-footer-background: var(--color-ocean-900);
 
   --nav-background: var(--color-charcoal-800);
 
@@ -518,6 +520,9 @@
   );
   --color-interface-builder-mode-button-foreground: var(
     --interface-builder-mode-button-foreground
+  );
+  --color-interface-builder-mode-footer-background: var(
+    --interface-builder-mode-footer-background
   );
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
