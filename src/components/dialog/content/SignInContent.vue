@@ -147,7 +147,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
@@ -167,7 +167,7 @@ const { onSuccess } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)

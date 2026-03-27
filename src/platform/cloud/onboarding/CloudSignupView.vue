@@ -133,7 +133,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { isCloud } from '@/platform/distribution/types'
@@ -145,7 +145,7 @@ import { isInChina } from '@/utils/networkUtil'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)

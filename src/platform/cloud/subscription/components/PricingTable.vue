@@ -262,7 +262,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
@@ -279,7 +279,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
@@ -365,8 +365,8 @@ const {
   isYearlySubscription
 } = useSubscription()
 const telemetry = useTelemetry()
-const { userId } = storeToRefs(useFirebaseAuthStore())
-const { accessBillingPortal, reportError } = useFirebaseAuthActions()
+const { userId } = storeToRefs(useAuthStore())
+const { accessBillingPortal, reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
