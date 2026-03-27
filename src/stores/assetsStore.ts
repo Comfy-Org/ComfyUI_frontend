@@ -7,6 +7,7 @@ import {
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { groupAssetsByPromptId } from '@/platform/assets/utils/groupAssetsByPromptId'
@@ -115,6 +116,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const allHistoryItems = ref<AssetItem[]>([])
 
   const loadedIds = shallowReactive(new Set<string>())
+  const loadedPromptIds = shallowReactive(new Set<string>())
 
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -144,6 +146,7 @@ export const useAssetsStore = defineStore('assets', () => {
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
+      loadedPromptIds.clear()
     }
 
     const rawAssets = await assetService.getAssetsByTag('output', false, {
@@ -155,8 +158,26 @@ export const useAssetsStore = defineStore('assets', () => {
 
     if (loadMore) {
       for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) continue
-        loadedIds.add(asset.id)
+        const mergeKey = asset.prompt_id || asset.id
+        if (asset.prompt_id && loadedPromptIds.has(asset.prompt_id)) {
+          const existing = allHistoryItems.value.find(
+            (item) => item.prompt_id === asset.prompt_id
+          )
+          if (existing) {
+            const existingCount =
+              getOutputAssetMetadata(existing.user_metadata)?.outputCount ?? 1
+            const newCount =
+              getOutputAssetMetadata(asset.user_metadata)?.outputCount ?? 1
+            existing.user_metadata = {
+              ...existing.user_metadata,
+              outputCount: existingCount + newCount
+            }
+            continue
+          }
+        }
+        if (loadedIds.has(mergeKey)) continue
+        loadedIds.add(mergeKey)
+        if (asset.prompt_id) loadedPromptIds.add(asset.prompt_id)
 
         const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
@@ -171,7 +192,10 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     } else {
       allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
+      newAssets.forEach((asset) => {
+        loadedIds.add(asset.prompt_id || asset.id)
+        if (asset.prompt_id) loadedPromptIds.add(asset.prompt_id)
+      })
     }
 
     historyOffset.value += BATCH_SIZE

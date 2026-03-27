@@ -309,12 +309,15 @@ const handleOutputCountClick = () => {
   emit('output-count-click')
 }
 function dragStart(e: DragEvent) {
-  if (!asset?.preview_url) return
+  if (!asset) return
+
+  const previewUrl = asset.preview_url || getAssetUrl(asset)
+  if (!previewUrl) return
 
   const { dataTransfer } = e
   if (!dataTransfer) return
 
-  const url = URL.parse(asset.preview_url, location.href)
+  const url = URL.parse(previewUrl, location.href)
   if (!url) return
 
   dataTransfer.items.add(url.toString(), 'text/uri-list')

@@ -108,7 +108,7 @@ export function useMediaAssetActions() {
 
     const hasMultiOutputJobs = assets.some((a) => {
       const count = getOutputAssetMetadata(a.user_metadata)?.outputCount
-      return typeof count === 'number' && count > 1
+      return (typeof count === 'number' && count > 1) || !!a.prompt_id
     })
 
     if (isCloud && (assets.length > 1 || hasMultiOutputJobs)) {
@@ -150,19 +150,20 @@ export function useMediaAssetActions() {
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
-          const jobId = metadata?.jobId || asset.id
+          const jobId = asset.prompt_id || metadata?.jobId || asset.id
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
           // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
+          const filterKey = asset.prompt_id || metadata?.jobId
+          if (filterKey && asset.name && metadata?.outputCount == null) {
+            if (!jobAssetNameFilters[filterKey]) {
+              jobAssetNameFilters[filterKey] = []
             }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
+            if (!jobAssetNameFilters[filterKey].includes(asset.name)) {
+              jobAssetNameFilters[filterKey].push(asset.name)
             }
           }
         } else {

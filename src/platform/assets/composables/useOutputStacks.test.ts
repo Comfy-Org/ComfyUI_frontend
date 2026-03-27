@@ -228,18 +228,29 @@ describe('useOutputStacks', () => {
       ])
     })
 
-    it('uses prompt_id as stack key over metadata.jobId', () => {
-      const asset = createAsset({
+    it('uses prompt_id as stack key over metadata.jobId', async () => {
+      const assetA = createAsset({
         id: 'a',
-        prompt_id: 'prompt-1',
+        prompt_id: 'shared-prompt',
         user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: '' }
       })
+      const assetB = createAsset({
+        id: 'b',
+        prompt_id: 'different-prompt',
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: '' }
+      })
+      const child = createAsset({ id: 'child', name: 'child.png' })
 
-      const { isStackExpanded } = useOutputStacks({
-        assets: ref([asset])
+      mocks.resolveAssetOutputs.mockResolvedValue([child])
+
+      const { isStackExpanded, toggleStack } = useOutputStacks({
+        assets: ref([assetA, assetB])
       })
 
-      expect(isStackExpanded(asset)).toBe(false)
+      await toggleStack(assetA)
+
+      expect(isStackExpanded(assetA)).toBe(true)
+      expect(isStackExpanded(assetB)).toBe(false)
     })
 
     it('ignores asset without prompt_id or metadata', async () => {

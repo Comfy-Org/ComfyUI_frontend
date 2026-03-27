@@ -154,6 +154,17 @@ describe(assetService.getAssetsByJobIds, () => {
     expect(url).not.toContain('offset')
   })
 
+  it('throws on non-OK response', async () => {
+    mockFetchApi.mockResolvedValueOnce({
+      ok: false,
+      status: 500
+    } as unknown as Response)
+
+    await expect(assetService.getAssetsByJobIds(['job-1'])).rejects.toThrow(
+      'Server returned 500'
+    )
+  })
+
   it('returns parsed assets from response', async () => {
     const assets = [
       { id: 'a1', name: 'img.png', tags: ['output'] },
