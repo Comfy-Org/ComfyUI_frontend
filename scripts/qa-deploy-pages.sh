@@ -131,11 +131,30 @@ cat > "$DEPLOY_DIR/_headers" <<'HEADERSEOF'
   Cache-Control: public, max-age=86400
 HEADERSEOF
 
+# Build purpose description from pr-context.txt
+PURPOSE_HTML=""
+if [ -f pr-context.txt ]; then
+  # Extract title line and first paragraph of description
+  PR_TITLE=$(grep -m1 '^Title:' pr-context.txt | sed 's/^Title: //')
+  if [ "$TARGET_TYPE" = "issue" ]; then
+    PURPOSE_LABEL="Issue #${TARGET_NUM}"
+    PURPOSE_VERB="reports"
+  else
+    PURPOSE_LABEL="PR #${TARGET_NUM}"
+    PURPOSE_VERB="aims to"
+  fi
+  # Get first ~300 chars of description body (after "Description:" line)
+  PR_DESC=$(sed -n '/^Description:/,/^###/p' pr-context.txt | grep -v '^Description:\|^###' | head -5 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
+  [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
+  PURPOSE_HTML="<div class=purpose><div class=purpose-label>${PURPOSE_LABEL} ${PURPOSE_VERB}</div><strong>${PR_TITLE}</strong><br>${PR_DESC}</div>"
+fi
+
 echo -n "$COMMIT_HTML" > "$DEPLOY_DIR/.commit_html"
 echo -n "$CARDS" > "$DEPLOY_DIR/.cards_html"
 echo -n "$RUN_LINK" > "$DEPLOY_DIR/.run_link"
 # Badge HTML with copy button (placeholder URL filled after deploy)
 echo -n '<div class="badge-bar"><img src="badge.svg" alt="QA Badge" class="badge-img"/><button class="copy-badge" title="Copy badge markdown" onclick="copyBadge()"><svg width=14 height=14 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2><rect x=9 y=9 width=13 height=13 rx=2/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>' > "$DEPLOY_DIR/.badge_html"
+echo -n "$PURPOSE_HTML" > "$DEPLOY_DIR/.purpose_html"
 python3 -c "
 import sys, pathlib
 d = pathlib.Path(sys.argv[1])
@@ -144,9 +163,10 @@ t = t.replace('{{COMMIT_HTML}}', (d / '.commit_html').read_text())
 t = t.replace('{{CARDS}}', (d / '.cards_html').read_text())
 t = t.replace('{{RUN_LINK}}', (d / '.run_link').read_text())
 t = t.replace('{{BADGE_HTML}}', (d / '.badge_html').read_text())
+t = t.replace('{{PURPOSE_HTML}}', (d / '.purpose_html').read_text())
 sys.stdout.write(t)
 " "$DEPLOY_DIR" "$TEMPLATE" > "$DEPLOY_DIR/index.html"
-rm -f "$DEPLOY_DIR/.commit_html" "$DEPLOY_DIR/.cards_html" "$DEPLOY_DIR/.run_link" "$DEPLOY_DIR/.badge_html"
+rm -f "$DEPLOY_DIR/.commit_html" "$DEPLOY_DIR/.cards_html" "$DEPLOY_DIR/.run_link" "$DEPLOY_DIR/.badge_html" "$DEPLOY_DIR/.purpose_html"
 
 cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 <!DOCTYPE html><html lang=en><head><meta charset=utf-8><title>404</title>
