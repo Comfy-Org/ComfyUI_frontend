@@ -14,6 +14,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'forces order-dependent barrel exports and makes testing impossible in isolation. ' +
       'How do you untangle it?',
     recommended: 'A',
+    tagsGranted: ['composition'],
     docLink: {
       label: 'Entity Problems: Circular Dependencies',
       url: `${GH}/docs/architecture/entity-problems.md`
@@ -67,6 +68,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'SubgraphInputNode.ts, SubgraphOutput.ts. ' +
       'Change tracking depends on this scattered increment. One missed site means silent data loss.',
     recommended: 'A',
+    tagsGranted: ['centralized-mutations'],
     docLink: {
       label: 'Migration Plan: Phase 0a',
       url: `${GH}/docs/architecture/ecs-migration-plan.md`
@@ -119,6 +121,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'branded types, pure systems, and a World registry. ' +
       'How do you get from here to there without breaking production?',
     recommended: 'A',
+    tagsGranted: ['incremental-migration'],
     docLink: {
       label: 'ECS Migration Plan',
       url: `${GH}/docs/architecture/ecs-migration-plan.md`
@@ -172,6 +175,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'serialization, connectivity, execution, layout, and state management. ' +
       "These god objects are the root of most architectural pain. What's your approach?",
     recommended: 'B',
+    tagsGranted: ['responsibility-extraction'],
     docLink: {
       label: 'Entity Problems: God Objects',
       url: `${GH}/docs/architecture/entity-problems.md`
@@ -226,6 +230,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'The six entity kinds \u2014 Node, Link, Widget, Slot, Reroute, Group \u2014 all ' +
       'share the same untyped ID space. How do you bring type safety to this ID chaos?',
     recommended: 'A',
+    tagsGranted: ['branded-types'],
     docLink: {
       label: 'ECS Target Architecture: Entity IDs',
       url: `${GH}/docs/architecture/ecs-target-architecture.md`
@@ -279,6 +284,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'the type-to-widget mapping already does for normal inputs. ' +
       'Two candidates for the ECS future. The team must decide before Phase 3 solidifies.',
     recommended: 'A',
+    tagsGranted: ['typed-contracts'],
     docLink: {
       label: 'Subgraph Boundaries: Widget Promotion',
       url: `${GH}/docs/architecture/subgraph-boundaries-and-promotion.md`
@@ -332,6 +338,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       "Node A's position depends on whether Node B was drawn first. " +
       'How do you fix the pipeline?',
     recommended: 'A',
+    tagsGranted: ['phase-separation'],
     docLink: {
       label: 'Entity Problems: Render-Time Mutations',
       url: `${GH}/docs/architecture/entity-problems.md`
@@ -372,6 +379,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'The layoutStore already extracts position data from litegraph entities. ' +
       'But how do you synchronize positions across users without conflicts?',
     recommended: 'A',
+    tagsGranted: ['crdt-sync'],
     docLink: {
       label: 'Proto-ECS Stores: LayoutStore',
       url: `${GH}/docs/architecture/proto-ecs-stores.md`
@@ -424,6 +432,7 @@ export const challenges: Record<string, ChallengeDefinition> = {
       'from ADR 0003. Another faction says commands and the World serve different layers. ' +
       'How should external callers mutate the World?',
     recommended: 'A',
+    tagsGranted: ['command-layer'],
     docLink: {
       label: 'World API and Command Layer',
       url: `${GH}/docs/architecture/ecs-world-command-api.md`

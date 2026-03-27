@@ -59,6 +59,7 @@ interface ChallengeDefinition {
   description: string
   recommended: string
   docLink?: { label: string; url: string }
+  tagsGranted: string[]
   choices: ChallengeChoice[]
 }
 

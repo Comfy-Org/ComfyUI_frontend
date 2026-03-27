@@ -87,6 +87,7 @@ function resolveChallenge(
     }
   }
 
+  save = grantTags(save, challenge.tagsGranted)
   save = grantTags(save, choice.tagsGranted)
 
   transition('challenge-resolved', save)
