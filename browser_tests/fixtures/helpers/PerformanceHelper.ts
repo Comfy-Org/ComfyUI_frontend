@@ -106,7 +106,9 @@ export class PerformanceHelper {
    * Measure individual frame durations via rAF timing over a sample window.
    * Returns all per-frame durations so callers can compute avg, p95, etc.
    */
-  private async measureFrameDurations(sampleFrames = 10): Promise<number[]> {
+  private async measureFrameDurations(
+    sampleFrames = 30
+  ): Promise<number[]> {
     return this.page.evaluate((frames) => {
       return new Promise<number[]>((resolve) => {
         const timeout = setTimeout(() => resolve([]), 5000)
@@ -195,7 +197,9 @@ export class PerformanceHelper {
 
     const sorted = [...allFrameDurationsMs].sort((a, b) => a - b)
     const p95FrameDurationMs =
-      sorted.length > 0 ? sorted[Math.ceil(sorted.length * 0.95) - 1] : 0
+      sorted.length > 0
+        ? sorted[Math.ceil(sorted.length * 0.95) - 1]
+        : 0
 
     return {
       name,
