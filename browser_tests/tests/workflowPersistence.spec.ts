@@ -454,7 +454,8 @@ test.describe('Workflow Persistence Regressions', () => {
   test('Exported workflow does not contain transient blob: URLs (PR #8715)', async ({
     comfyPage
   }) => {
-    // Load default workflow
+    // Note: For full coverage, this should run against an executed workflow with image outputs.
+    // That requires integration test infra (running model execution). This validates the serialization contract.
     const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow()
 
     // Check all nodes' widget values for blob: URLs
@@ -538,9 +539,11 @@ test.describe('Workflow Persistence Regressions', () => {
       if (!activeWf?.changeTracker) return null
       // checkState should work normally (isLoadingGraph should be false)
       const undoBefore = activeWf.changeTracker.undoQueue.length
-      return { undoBefore, isLoading: false }
+      return { undoBefore, isLoading: activeWf.changeTracker.isLoadingGraph ?? false }
     })
     expect(isLoadingNormally).toBeTruthy()
+    // During normal operation, isLoadingGraph should be false
+    expect(isLoadingNormally!.isLoading).toBe(false)
 
     // Verify that during a workflow load, the graph doesn't get corrupted
     // by making a modification, saving, loading another workflow, then
@@ -664,17 +667,20 @@ test.describe('Workflow Persistence Regressions', () => {
       return raw ? JSON.parse(raw) : null
     })
 
-    // If sizes are stored, they should be valid (sum to ~100, no NaN, no negative)
-    if (storedSizes && Array.isArray(storedSizes)) {
-      for (const size of storedSizes) {
-        expect(typeof size).toBe('number')
-        expect(size).toBeGreaterThanOrEqual(0)
-        expect(size).not.toBeNaN()
-      }
-      const total = storedSizes.reduce((a: number, b: number) => a + b, 0)
-      // Allow some tolerance for rounding
-      expect(total).toBeGreaterThan(90)
-      expect(total).toBeLessThanOrEqual(101)
+    // Sizes must be stored and valid (sum to ~100, no NaN, no negative)
+    expect(storedSizes).toBeTruthy()
+    expect(Array.isArray(storedSizes)).toBe(true)
+    for (const size of storedSizes as number[]) {
+      expect(typeof size).toBe('number')
+      expect(size).toBeGreaterThanOrEqual(0)
+      expect(size).not.toBeNaN()
     }
+    const total = (storedSizes as number[]).reduce(
+      (a: number, b: number) => a + b,
+      0
+    )
+    // Allow some tolerance for rounding
+    expect(total).toBeGreaterThan(90)
+    expect(total).toBeLessThanOrEqual(101)
   })
 })
