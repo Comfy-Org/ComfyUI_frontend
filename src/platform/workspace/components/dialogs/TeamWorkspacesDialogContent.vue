@@ -62,7 +62,7 @@
                 </span>
                 <span
                   v-if="tierLabels.get(workspace.id)"
-                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                 >
                   {{ tierLabels.get(workspace.id) }}
                 </span>
