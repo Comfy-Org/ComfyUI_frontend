@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
@@ -27,9 +27,10 @@ import {
 } from '@/stores/widgetValueStore'
 
 import {
-  cleanupComplexPromotionFixtureNodeType,
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
+  resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
@@ -48,9 +49,14 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
 function setupSubgraph(
   innerNodeCount: number = 0
-): [SubgraphNode, LGraphNode[]] {
+): [SubgraphNode, LGraphNode[], string[]] {
   const subgraph = createTestSubgraph()
   const subgraphNode = createTestSubgraphNode(subgraph)
   subgraphNode._internalConfigureAfterSlots()
@@ -62,7 +68,8 @@ function setupSubgraph(
     subgraph.add(innerNode)
     innerNodes.push(innerNode)
   }
-  return [subgraphNode, innerNodes]
+  const innerIds = innerNodes.map((n) => String(n.id))
+  return [subgraphNode, innerNodes, innerIds]
 }
 
 function setPromotions(
@@ -72,9 +79,9 @@ function setPromotions(
   usePromotionStore().setPromotions(
     subgraphNode.rootGraph.id,
     subgraphNode.id,
-    entries.map(([interiorNodeId, widgetName]) => ({
-      interiorNodeId,
-      widgetName
+    entries.map(([sourceNodeId, sourceWidgetName]) => ({
+      sourceNodeId,
+      sourceWidgetName
     }))
   )
 }
@@ -97,13 +104,8 @@ function callSyncPromotions(node: SubgraphNode) {
   )._syncPromotions()
 }
 
-afterEach(() => {
-  cleanupComplexPromotionFixtureNodeType()
-})
-
 describe(createPromotedWidgetView, () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockDomWidgetStore.widgetStates.clear()
     vi.clearAllMocks()
   })
@@ -113,6 +115,21 @@ describe(createPromotedWidgetView, () => {
     const view = createPromotedWidgetView(subgraphNode, '42', 'myWidget')
     expect(view.sourceNodeId).toBe('42')
     expect(view.sourceWidgetName).toBe('myWidget')
+    expect(view.disambiguatingSourceNodeId).toBeUndefined()
+  })
+
+  test('exposes disambiguatingSourceNodeId when provided', () => {
+    const [subgraphNode] = setupSubgraph()
+    const view = createPromotedWidgetView(
+      subgraphNode,
+      '42',
+      'myWidget',
+      undefined,
+      '99'
+    )
+    expect(view.sourceNodeId).toBe('42')
+    expect(view.sourceWidgetName).toBe('myWidget')
+    expect(view.disambiguatingSourceNodeId).toBe('99')
   })
 
   test('name defaults to widgetName when no displayName given', () => {
@@ -121,15 +138,18 @@ describe(createPromotedWidgetView, () => {
     expect(view.name).toBe('myWidget')
   })
 
-  test('name uses displayName when provided', () => {
+  test('name uses identityName when provided, label uses displayName', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(
       subgraphNode,
       '1',
       'myWidget',
-      'Custom Label'
+      'Custom Label',
+      undefined,
+      'my_slot'
     )
-    expect(view.name).toBe('Custom Label')
+    expect(view.name).toBe('my_slot')
+    expect(view.label).toBe('Custom Label')
   })
 
   test('node getter returns the subgraphNode', () => {
@@ -315,21 +335,13 @@ describe(createPromotedWidgetView, () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
     innerNode.addWidget('text', 'myWidget', 'val', () => {})
-    const store = useWidgetValueStore()
     const bareId = String(innerNode.id)
 
-    // No displayName → falls back to widgetName
+    // No displayName → label is undefined (rendering uses widget.label ?? widget.name)
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
-    // Store label is undefined → falls back to displayName/widgetName
-    const state = store.getWidget(
-      subgraphNode.rootGraph.id,
-      bareId as never,
-      'myWidget'
-    )
-    state!.label = undefined
-    expect(view1.label).toBe('myWidget')
+    expect(view1.label).toBeUndefined()
 
-    // With displayName → falls back to displayName
+    // With displayName → label falls back to displayName
     const view2 = createPromotedWidgetView(
       subgraphNode,
       bareId,
@@ -435,10 +447,6 @@ describe(createPromotedWidgetView, () => {
 })
 
 describe('SubgraphNode.widgets getter', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('defers promotions while subgraph node id is -1 and flushes on add', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'picker_input', type: '*' }]
@@ -465,8 +473,8 @@ describe('SubgraphNode.widgets getter', () => {
       store.getPromotions(subgraphNode.rootGraph.id, subgraphNode.id)
     ).toStrictEqual([
       {
-        interiorNodeId: String(innerNode.id),
-        widgetName: 'picker'
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'picker'
       }
     ])
   })
@@ -508,8 +516,8 @@ describe('SubgraphNode.widgets getter', () => {
 
     expect(promotions).toHaveLength(1)
     expect(promotions[0]).toStrictEqual({
-      interiorNodeId: String(secondNode.id),
-      widgetName: 'picker'
+      sourceNodeId: String(secondNode.id),
+      sourceWidgetName: 'picker'
     })
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].value).toBe('b')
@@ -576,7 +584,7 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
-  test('input-linked same-name widgets share value state while store-promoted peer stays independent', () => {
+  test('input-linked same-name widgets propagate value to all connected nodes while store-promoted peer stays independent', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'string_a', type: '*' }]
     })
@@ -602,18 +610,14 @@ describe('SubgraphNode.widgets getter', () => {
     subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
     subgraph.inputNode.slots[0].connect(linkedInputB, linkedNodeB)
 
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(promotedNode.id),
-      'string_a'
-    )
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(linkedNodeA.id),
-      'string_a'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(promotedNode.id),
+      sourceWidgetName: 'string_a'
+    })
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(linkedNodeA.id),
+      sourceWidgetName: 'string_a'
+    })
 
     const widgets = promotedWidgets(subgraphNode)
     expect(widgets).toHaveLength(2)
@@ -631,53 +635,17 @@ describe('SubgraphNode.widgets getter', () => {
 
     linkedView.value = 'shared-value'
 
-    const widgetStore = useWidgetValueStore()
-    const graphId = subgraphNode.rootGraph.id
-    expect(
-      widgetStore.getWidget(
-        graphId,
-        stripGraphPrefix(String(linkedNodeA.id)),
-        'string_a'
-      )?.value
-    ).toBe('shared-value')
-    expect(
-      widgetStore.getWidget(
-        graphId,
-        stripGraphPrefix(String(linkedNodeB.id)),
-        'string_a'
-      )?.value
-    ).toBe('shared-value')
-    expect(
-      widgetStore.getWidget(
-        graphId,
-        stripGraphPrefix(String(promotedNode.id)),
-        'string_a'
-      )?.value
-    ).toBe('independent')
+    // Both linked nodes share the same SubgraphInput slot, so the value
+    // propagates to all connected widgets via getLinkedInputWidgets().
+    expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
+    expect(linkedNodeB.widgets?.[0]?.value).toBe('shared-value')
+    expect(promotedNode.widgets?.[0]?.value).toBe('independent')
 
     promotedView.value = 'independent-updated'
 
-    expect(
-      widgetStore.getWidget(
-        graphId,
-        stripGraphPrefix(String(linkedNodeA.id)),
-        'string_a'
-      )?.value
-    ).toBe('shared-value')
-    expect(
-      widgetStore.getWidget(
-        graphId,
-        stripGraphPrefix(String(linkedNodeB.id)),
-        'string_a'
-      )?.value
-    ).toBe('shared-value')
-    expect(
-      widgetStore.getWidget(
-        graphId,
-        stripGraphPrefix(String(promotedNode.id)),
-        'string_a'
-      )?.value
-    ).toBe('independent-updated')
+    expect(linkedNodeA.widgets?.[0]?.value).toBe('shared-value')
+    expect(linkedNodeB.widgets?.[0]?.value).toBe('shared-value')
+    expect(promotedNode.widgets?.[0]?.value).toBe('independent-updated')
   })
 
   test('duplicate-name promoted views map slot linkage by view identity', () => {
@@ -698,12 +666,10 @@ describe('SubgraphNode.widgets getter', () => {
     subgraph.add(independentNode)
 
     subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-    usePromotionStore().promote(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      String(independentNode.id),
-      'string_a'
-    )
+    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
+      sourceNodeId: String(independentNode.id),
+      sourceWidgetName: 'string_a'
+    })
 
     const widgets = promotedWidgets(subgraphNode)
     const linkedView = widgets.find(
@@ -780,12 +746,12 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
-      { interiorNodeId: '9999', widgetName: 'widgetB' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
+      { sourceNodeId: '9999', sourceWidgetName: 'widgetB' }
     ])
   })
 
-  test('full linked coverage does not prune unresolved independent fallback promotions', () => {
+  test('full linked coverage prunes promotions referencing non-existent nodes', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'widgetA', type: '*' }]
     })
@@ -810,9 +776,9 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
+    // Node 9999 does not exist in the subgraph, so its entry is pruned
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(liveNode.id), widgetName: 'widgetA' },
-      { interiorNodeId: '9999', widgetName: 'widgetA' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' }
     ])
   })
 
@@ -870,8 +836,8 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { interiorNodeId: String(linkedNodeA.id), widgetName: 'string_a' },
-      { interiorNodeId: String(independentNode.id), widgetName: 'string_a' }
+      { sourceNodeId: String(linkedNodeA.id), sourceWidgetName: 'string_a' },
+      { sourceNodeId: String(independentNode.id), sourceWidgetName: 'string_a' }
     ])
   })
 
@@ -915,8 +881,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(promotions).toStrictEqual([
       {
-        interiorNodeId: linkedEntry[0],
-        widgetName: linkedEntry[1]
+        sourceNodeId: linkedEntry[0],
+        sourceWidgetName: linkedEntry[1]
       }
     ])
   })
@@ -972,8 +938,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(restoredPromotions).toStrictEqual([
       {
-        interiorNodeId: String(activeAliasNode.id),
-        widgetName: 'string_a'
+        sourceNodeId: String(activeAliasNode.id),
+        sourceWidgetName: 'string_a'
       }
     ])
 
@@ -1049,13 +1015,15 @@ describe('SubgraphNode.widgets getter', () => {
 
     const afterRename = promotedWidgets(subgraphNode)[0]
     if (!afterRename) throw new Error('Expected linked promoted view')
-    expect(afterRename.name).toBe('seed_renamed')
+    // .name stays as identity (subgraph input name), .label updates for display
+    expect(afterRename.name).toBe('seed')
+    expect(afterRename.label).toBe('seed_renamed')
   })
 
   test('caches view objects across getter calls (stable references)', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     const first = subgraphNode.widgets[0]
     const second = subgraphNode.widgets[0]
@@ -1063,10 +1031,10 @@ describe('SubgraphNode.widgets getter', () => {
   })
 
   test('memoizes promotion list by reference', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
 
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     const views1 = subgraphNode.widgets
     expect(views1).toHaveLength(1)
@@ -1076,52 +1044,52 @@ describe('SubgraphNode.widgets getter', () => {
     expect(views2[0]).toBe(views1[0])
 
     // New store value with same content → same cached view object
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
     const views3 = subgraphNode.widgets
     expect(views3[0]).toBe(views1[0])
   })
 
   test('cleans stale cache entries when promotions shrink', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
 
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetB']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB']
     ])
     expect(subgraphNode.widgets).toHaveLength(2)
     const viewA = subgraphNode.widgets[0]
 
     // Remove widgetA from promotion list
-    setPromotions(subgraphNode, [['1', 'widgetB']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetB']])
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].name).toBe('widgetB')
 
     // Re-adding widgetA creates a new view (old one was cleaned)
     setPromotions(subgraphNode, [
-      ['1', 'widgetB'],
-      ['1', 'widgetA']
+      [innerIds[0], 'widgetB'],
+      [innerIds[0], 'widgetA']
     ])
     const newViewA = subgraphNode.widgets[1]
     expect(newViewA).not.toBe(viewA)
   })
 
   test('deduplicates entries with same nodeId:widgetName', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
 
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetA']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetA']
     ])
     expect(subgraphNode.widgets).toHaveLength(1)
   })
 
   test('setter is a no-op', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     // Assigning to widgets does nothing
     subgraphNode.widgets = []
@@ -1160,8 +1128,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(entries).toStrictEqual([
       {
-        interiorNodeId: String(innerNodes[0].id),
-        widgetName: 'stringWidget'
+        sourceNodeId: String(innerNodes[0].id),
+        sourceWidgetName: 'stringWidget'
       }
     ])
   })
@@ -1189,8 +1157,8 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(restoredEntries).toStrictEqual([
       {
-        interiorNodeId: String(innerNode.id),
-        widgetName: 'widgetA'
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'widgetA'
       }
     ])
   })
@@ -1327,8 +1295,8 @@ describe('SubgraphNode.widgets getter', () => {
 
     const promotions = usePromotionStore().getPromotions(graph.id, hostNode.id)
     expect(promotions).toStrictEqual([
-      { interiorNodeId: '20', widgetName: 'string_a' },
-      { interiorNodeId: '19', widgetName: 'string_a' }
+      { sourceNodeId: '20', sourceWidgetName: 'string_a' },
+      { sourceNodeId: '19', sourceWidgetName: 'string_a' }
     ])
 
     const linkedView = hostWidgets[0]
@@ -1463,22 +1431,18 @@ describe('SubgraphNode.widgets getter', () => {
     )
     expect(hydratedEntries).toStrictEqual([
       {
-        interiorNodeId: String(innerNode.id),
-        widgetName: 'widgetA'
+        sourceNodeId: String(innerNode.id),
+        sourceWidgetName: 'widgetA'
       }
     ])
   })
 })
 
 describe('widgets getter caching', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('reconciles at most once per canvas frame across repeated widgets reads', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     const fakeCanvas = { frame: 12 } as Pick<LGraphCanvas, 'frame'>
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
@@ -1486,12 +1450,12 @@ describe('widgets getter caching', () => {
     const reconcileSpy = vi.spyOn(
       subgraphNode as unknown as {
         _buildPromotionReconcileState: (
-          entries: Array<{ interiorNodeId: string; widgetName: string }>,
+          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
           linkedEntries: Array<{
             inputName: string
             inputKey: string
-            interiorNodeId: string
-            widgetName: string
+            sourceNodeId: string
+            sourceWidgetName: string
           }>
         ) => unknown
       },
@@ -1506,9 +1470,9 @@ describe('widgets getter caching', () => {
   })
 
   test('does not re-run reconciliation when only canvas frame advances', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     const fakeCanvas = { frame: 24 } as Pick<LGraphCanvas, 'frame'>
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
@@ -1516,12 +1480,12 @@ describe('widgets getter caching', () => {
     const reconcileSpy = vi.spyOn(
       subgraphNode as unknown as {
         _buildPromotionReconcileState: (
-          entries: Array<{ interiorNodeId: string; widgetName: string }>,
+          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
           linkedEntries: Array<{
             inputName: string
             inputKey: string
-            interiorNodeId: string
-            widgetName: string
+            sourceNodeId: string
+            sourceWidgetName: string
           }>
         ) => unknown
       },
@@ -1573,19 +1537,19 @@ describe('widgets getter caching', () => {
   })
 
   test('preserves view identities when promotion order changes', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetB']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB']
     ])
 
     const [viewA, viewB] = subgraphNode.widgets
 
     setPromotions(subgraphNode, [
-      ['1', 'widgetB'],
-      ['1', 'widgetA']
+      [innerIds[0], 'widgetB'],
+      [innerIds[0], 'widgetA']
     ])
 
     expect(subgraphNode.widgets[0]).toBe(viewB)
@@ -1593,15 +1557,15 @@ describe('widgets getter caching', () => {
   })
 
   test('deduplicates by key while preserving first-occurrence order', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
 
     setPromotions(subgraphNode, [
-      ['1', 'widgetB'],
-      ['1', 'widgetA'],
-      ['1', 'widgetB'],
-      ['1', 'widgetA']
+      [innerIds[0], 'widgetB'],
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB'],
+      [innerIds[0], 'widgetA']
     ])
 
     expect(subgraphNode.widgets).toHaveLength(2)
@@ -1610,9 +1574,9 @@ describe('widgets getter caching', () => {
   })
 
   test('returns same array reference when promotions unchanged', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     const result1 = subgraphNode.widgets
     const result2 = subgraphNode.widgets
@@ -1620,16 +1584,16 @@ describe('widgets getter caching', () => {
   })
 
   test('returns new array after promotion change', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
 
     const result1 = subgraphNode.widgets
 
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetB']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB']
     ])
     const result2 = subgraphNode.widgets
 
@@ -1638,12 +1602,12 @@ describe('widgets getter caching', () => {
   })
 
   test('invalidates cache on removeWidget', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetB']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB']
     ])
 
     const result1 = subgraphNode.widgets
@@ -1657,30 +1621,26 @@ describe('widgets getter caching', () => {
 })
 
 describe('promote/demote cycle', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('promoting adds to store and widgets reflects it', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
 
     expect(subgraphNode.widgets).toHaveLength(0)
 
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
     expect(subgraphNode.widgets).toHaveLength(1)
     const view = subgraphNode.widgets[0] as PromotedWidgetView
-    expect(view.sourceNodeId).toBe('1')
+    expect(view.sourceNodeId).toBe(innerIds[0])
     expect(view.sourceWidgetName).toBe('widgetA')
   })
 
   test('demoting via removeWidget removes from store', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
     innerNodes[0].addWidget('text', 'widgetB', 'b', () => {})
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetB']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB']
     ])
 
     const viewA = subgraphNode.widgets[0]
@@ -1693,16 +1653,16 @@ describe('promote/demote cycle', () => {
       subgraphNode.id
     )
     expect(entries).toStrictEqual([
-      { interiorNodeId: '1', widgetName: 'widgetB' }
+      { sourceNodeId: innerIds[0], sourceWidgetName: 'widgetB' }
     ])
   })
 
   test('full promote → demote → re-promote cycle', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'widgetA', 'a', () => {})
 
     // Promote
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
     expect(subgraphNode.widgets).toHaveLength(1)
     const view1 = subgraphNode.widgets[0]
 
@@ -1711,7 +1671,7 @@ describe('promote/demote cycle', () => {
     expect(subgraphNode.widgets).toHaveLength(0)
 
     // Re-promote — creates a new view since the cache was cleared
-    setPromotions(subgraphNode, [['1', 'widgetA']])
+    setPromotions(subgraphNode, [[innerIds[0], 'widgetA']])
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0]).not.toBe(view1)
     expect(
@@ -1721,22 +1681,18 @@ describe('promote/demote cycle', () => {
 })
 
 describe('disconnected state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('view resolves type when interior widget exists', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('number', 'numWidget', 42, () => {})
-    setPromotions(subgraphNode, [['1', 'numWidget']])
+    setPromotions(subgraphNode, [[innerIds[0], 'numWidget']])
 
     expect(subgraphNode.widgets[0].type).toBe('number')
   })
 
   test('keeps promoted entry as disconnected when interior node is removed', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'myWidget', 'val', () => {})
-    setPromotions(subgraphNode, [['1', 'myWidget']])
+    setPromotions(subgraphNode, [[innerIds[0], 'myWidget']])
 
     expect(subgraphNode.widgets[0].type).toBe('text')
 
@@ -1747,9 +1703,9 @@ describe('disconnected state', () => {
   })
 
   test('view recovers when interior widget is re-added', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'myWidget', 'val', () => {})
-    setPromotions(subgraphNode, [['1', 'myWidget']])
+    setPromotions(subgraphNode, [[innerIds[0], 'myWidget']])
 
     // Remove widget
     innerNodes[0].widgets!.pop()
@@ -1765,6 +1721,197 @@ describe('disconnected state', () => {
     setPromotions(subgraphNode, [['999', 'ghost']])
     expect(subgraphNode.widgets).toHaveLength(1)
     expect(subgraphNode.widgets[0].type).toBe('button')
+  })
+})
+
+function createThreeLevelNestedSubgraph() {
+  // Level C (innermost): concrete widget
+  const subgraphC = createTestSubgraph({
+    inputs: [{ name: 'c_input', type: '*' }]
+  })
+  const concreteNode = new LGraphNode('ConcreteNode')
+  const concreteInput = concreteNode.addInput('c_input', '*')
+  const concreteWidget = concreteNode.addWidget(
+    'number',
+    'c_input',
+    100,
+    () => {}
+  )
+  concreteInput.widget = { name: 'c_input' }
+  subgraphC.add(concreteNode)
+  subgraphC.inputNode.slots[0].connect(concreteInput, concreteNode)
+
+  const subgraphNodeC = createTestSubgraphNode(subgraphC, { id: 501 })
+
+  // Level B (middle): wraps C
+  const subgraphB = createTestSubgraph({
+    inputs: [{ name: 'b_input', type: '*' }]
+  })
+  subgraphB.add(subgraphNodeC)
+  subgraphNodeC._internalConfigureAfterSlots()
+  subgraphB.inputNode.slots[0].connect(subgraphNodeC.inputs[0], subgraphNodeC)
+
+  const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 502 })
+
+  // Level A (outermost): wraps B
+  const subgraphA = createTestSubgraph({
+    inputs: [{ name: 'a_input', type: '*' }]
+  })
+  subgraphA.add(subgraphNodeB)
+  subgraphNodeB._internalConfigureAfterSlots()
+  subgraphA.inputNode.slots[0].connect(subgraphNodeB.inputs[0], subgraphNodeB)
+
+  const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 503 })
+  return { concreteNode, concreteWidget, subgraphNodeA }
+}
+
+describe('three-level nested value propagation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('value set at outermost level propagates to concrete widget', () => {
+    const { concreteNode, subgraphNodeA } = createThreeLevelNestedSubgraph()
+
+    expect(subgraphNodeA.widgets).toHaveLength(1)
+    expect(subgraphNodeA.widgets[0].value).toBe(100)
+
+    subgraphNodeA.widgets[0].value = 200
+    expect(concreteNode.widgets![0].value).toBe(200)
+  })
+
+  test('type resolves correctly through all three layers', () => {
+    const { subgraphNodeA } = createThreeLevelNestedSubgraph()
+
+    expect(subgraphNodeA.widgets[0].type).toBe('number')
+  })
+
+  test('concrete value change is visible at the outermost level', () => {
+    const { concreteWidget, subgraphNodeA } = createThreeLevelNestedSubgraph()
+
+    concreteWidget.value = 999
+    expect(subgraphNodeA.widgets[0].value).toBe(999)
+  })
+
+  test('nested duplicate-name promotions resolve and update independently by disambiguating source node id', () => {
+    const rootGraph = createTestRootGraph()
+
+    const innerSubgraph = createTestSubgraph({ rootGraph })
+    const firstTextNode = new LGraphNode('FirstTextNode')
+    firstTextNode.addWidget('text', 'text', '11111111111', () => {})
+    innerSubgraph.add(firstTextNode)
+
+    const secondTextNode = new LGraphNode('SecondTextNode')
+    secondTextNode.addWidget('text', 'text', '22222222222', () => {})
+    innerSubgraph.add(secondTextNode)
+
+    const outerSubgraph = createTestSubgraph({ rootGraph })
+    const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+      id: 3,
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(innerSubgraphNode)
+
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+      id: 4,
+      parentGraph: rootGraph
+    })
+    rootGraph.add(outerSubgraphNode)
+
+    usePromotionStore().setPromotions(
+      innerSubgraphNode.rootGraph.id,
+      innerSubgraphNode.id,
+      [
+        { sourceNodeId: String(firstTextNode.id), sourceWidgetName: 'text' },
+        { sourceNodeId: String(secondTextNode.id), sourceWidgetName: 'text' }
+      ]
+    )
+
+    usePromotionStore().setPromotions(
+      outerSubgraphNode.rootGraph.id,
+      outerSubgraphNode.id,
+      [
+        {
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(firstTextNode.id)
+        },
+        {
+          sourceNodeId: String(innerSubgraphNode.id),
+          sourceWidgetName: 'text',
+          disambiguatingSourceNodeId: String(secondTextNode.id)
+        }
+      ]
+    )
+
+    const widgets = promotedWidgets(outerSubgraphNode)
+    expect(widgets).toHaveLength(2)
+    expect(
+      widgets.map((widget) => widget.disambiguatingSourceNodeId)
+    ).toStrictEqual([String(firstTextNode.id), String(secondTextNode.id)])
+    expect(widgets.map((widget) => widget.value)).toStrictEqual([
+      '11111111111',
+      '22222222222'
+    ])
+
+    widgets[1].value = 'updated-second'
+
+    expect(firstTextNode.widgets?.[0]?.value).toBe('11111111111')
+    expect(secondTextNode.widgets?.[0]?.value).toBe('updated-second')
+    expect(widgets[0].value).toBe('11111111111')
+    expect(widgets[1].value).toBe('updated-second')
+  })
+})
+
+describe('multi-link representative determinism for input-based promotion', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('first link is consistently chosen as representative for reads and writes', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'shared', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 601 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('shared', '*')
+    firstNode.addWidget('text', 'shared', 'first-val', () => {})
+    firstInput.widget = { name: 'shared' }
+    subgraph.add(firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('shared', '*')
+    secondNode.addWidget('text', 'shared', 'second-val', () => {})
+    secondInput.widget = { name: 'shared' }
+    subgraph.add(secondNode)
+
+    const thirdNode = new LGraphNode('ThirdNode')
+    const thirdInput = thirdNode.addInput('shared', '*')
+    thirdNode.addWidget('text', 'shared', 'third-val', () => {})
+    thirdInput.widget = { name: 'shared' }
+    subgraph.add(thirdNode)
+
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    subgraph.inputNode.slots[0].connect(secondInput, secondNode)
+    subgraph.inputNode.slots[0].connect(thirdInput, thirdNode)
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(widgets).toHaveLength(1)
+    expect(widgets[0].sourceNodeId).toBe(String(firstNode.id))
+
+    // Read returns the first link's value
+    expect(widgets[0].value).toBe('first-val')
+
+    // Write propagates to all linked nodes
+    widgets[0].value = 'updated'
+    expect(firstNode.widgets![0].value).toBe('updated')
+    expect(secondNode.widgets![0].value).toBe('updated')
+    expect(thirdNode.widgets![0].value).toBe('updated')
+
+    // Repeated reads are still deterministic
+    expect(widgets[0].value).toBe('updated')
   })
 })
 
@@ -1831,10 +1978,6 @@ function createTwoLevelNestedSubgraph() {
 }
 
 describe('promoted combo rendering', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   test('draw shows value even when interior combo is computedDisabled', () => {
     const [subgraphNode, innerNodes] = setupSubgraph(1)
     const innerNode = firstInnerNode(innerNodes)
@@ -2120,12 +2263,12 @@ describe('promoted combo rendering', () => {
     )
 
     expect(promotions).toContainEqual({
-      interiorNodeId: String(subgraphNodeA.id),
-      widgetName: 'lora_name'
+      sourceNodeId: String(subgraphNodeA.id),
+      sourceWidgetName: 'lora_name'
     })
     expect(promotions).not.toContainEqual({
-      interiorNodeId: String(innerNode.id),
-      widgetName: 'lora_name'
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'lora_name'
     })
   })
 
@@ -2151,7 +2294,6 @@ describe('promoted combo rendering', () => {
 
 describe('DOM widget promotion', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
   })
 
@@ -2175,9 +2317,9 @@ describe('DOM widget promotion', () => {
   }
 
   test('draw registers position override for DOM widgets', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     createMockDOMWidget(innerNodes[0], 'textarea')
-    setPromotions(subgraphNode, [['1', 'textarea']])
+    setPromotions(subgraphNode, [[innerIds[0], 'textarea']])
 
     const view = subgraphNode.widgets[0]
     view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
@@ -2189,9 +2331,9 @@ describe('DOM widget promotion', () => {
   })
 
   test('draw registers position override for component widgets', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     createMockComponentWidget(innerNodes[0], 'compWidget')
-    setPromotions(subgraphNode, [['1', 'compWidget']])
+    setPromotions(subgraphNode, [[innerIds[0], 'compWidget']])
 
     const view = subgraphNode.widgets[0]
     view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
@@ -2203,9 +2345,9 @@ describe('DOM widget promotion', () => {
   })
 
   test('draw does not register override for non-DOM widgets', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'textWidget', 'val', () => {})
-    setPromotions(subgraphNode, [['1', 'textWidget']])
+    setPromotions(subgraphNode, [[innerIds[0], 'textWidget']])
 
     const view = subgraphNode.widgets[0]
     view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30, true)
@@ -2232,14 +2374,14 @@ describe('DOM widget promotion', () => {
   })
 
   test('computeLayoutSize delegates to interior DOM widget', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     const domWidget = createMockDOMWidget(innerNodes[0], 'textarea')
     domWidget.computeLayoutSize = vi.fn(() => ({
       minHeight: 100,
       maxHeight: 300,
       minWidth: 0
     }))
-    setPromotions(subgraphNode, [['1', 'textarea']])
+    setPromotions(subgraphNode, [[innerIds[0], 'textarea']])
 
     const view = subgraphNode.widgets[0]
     const result = view.computeLayoutSize!(subgraphNode)
@@ -2248,9 +2390,9 @@ describe('DOM widget promotion', () => {
   })
 
   test('demoting clears position override for DOM widget', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     createMockDOMWidget(innerNodes[0], 'textarea')
-    setPromotions(subgraphNode, [['1', 'textarea']])
+    setPromotions(subgraphNode, [[innerIds[0], 'textarea']])
 
     const view = subgraphNode.widgets[0]
     subgraphNode.removeWidget(view)
@@ -2261,12 +2403,12 @@ describe('DOM widget promotion', () => {
   })
 
   test('onRemoved clears position overrides for all promoted DOM widgets', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     createMockDOMWidget(innerNodes[0], 'widgetA')
     createMockDOMWidget(innerNodes[0], 'widgetB')
     setPromotions(subgraphNode, [
-      ['1', 'widgetA'],
-      ['1', 'widgetB']
+      [innerIds[0], 'widgetA'],
+      [innerIds[0], 'widgetB']
     ])
 
     // Access widgets to populate cache

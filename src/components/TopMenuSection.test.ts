@@ -71,8 +71,8 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
   })
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
     currentUser: null,
     loading: false
   }))

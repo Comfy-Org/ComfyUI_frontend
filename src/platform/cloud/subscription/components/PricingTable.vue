@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <div class="flex justify-center">
       <SelectButton
         v-model="currentBillingCycle"
@@ -30,7 +30,7 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-[11px] font-bold text-white"
+              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
             >
               -20%
             </div>
@@ -38,7 +38,7 @@
         </template>
       </SelectButton>
     </div>
-    <div class="flex flex-col items-stretch gap-6 xl:flex-row">
+    <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="tier in tiers"
         :key="tier.id"
@@ -49,7 +49,7 @@
           )
         "
       >
-        <div class="flex flex-col gap-8 p-8 pb-0">
+        <div class="flex flex-col gap-4 p-6 pb-0">
           <div class="flex flex-row items-center justify-between gap-2">
             <span
               class="font-inter text-base/normal font-bold text-base-foreground"
@@ -58,7 +58,7 @@
             </span>
             <div
               v-if="tier.isPopular"
-              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-[11px] font-bold tracking-tight text-base-background uppercase"
+              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
             >
               {{ t('subscription.mostPopular') }}
             </div>
@@ -67,7 +67,7 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[32px] leading-normal font-semibold text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
                   <span
                     v-show="currentBillingCycle === 'yearly'"
@@ -95,7 +95,22 @@
             </div>
           </div>
 
-          <div class="flex flex-1 flex-col gap-4 pb-0">
+          <p
+            role="note"
+            :aria-label="t('subscription.soloUseOnly')"
+            class="m-0 flex h-10 items-center rounded-lg bg-muted-foreground/30 px-3 text-sm text-muted-foreground"
+          >
+            {{ t('subscription.soloUseOnly') }}
+            <span class="mx-1 text-muted-foreground">–</span>
+            <button
+              class="text-primary-foreground cursor-pointer border-none bg-transparent p-0 text-sm font-medium underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              @click="emit('chooseTeamWorkspace')"
+            >
+              {{ t('subscription.needTeamWorkspace') }}
+            </button>
+          </p>
+
+          <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span
                 class="text-foreground font-inter text-sm/normal font-normal"
@@ -179,7 +194,7 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col p-8">
+        <div class="flex flex-col p-6">
           <Button
             :variant="getButtonSeverity(tier)"
             :disabled="isLoading || isCurrentPlan(tier.key)"
@@ -247,7 +262,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
@@ -264,7 +279,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
@@ -302,6 +317,10 @@ interface PricingTierConfig {
   customLoRAs: boolean
   isPopular?: boolean
 }
+
+const emit = defineEmits<{
+  chooseTeamWorkspace: []
+}>()
 
 const { t, n } = useI18n()
 
@@ -346,8 +365,8 @@ const {
   isYearlySubscription
 } = useSubscription()
 const telemetry = useTelemetry()
-const { userId } = storeToRefs(useFirebaseAuthStore())
-const { accessBillingPortal, reportError } = useFirebaseAuthActions()
+const { userId } = storeToRefs(useAuthStore())
+const { accessBillingPortal, reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)

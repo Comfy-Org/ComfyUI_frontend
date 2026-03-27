@@ -58,7 +58,7 @@
         :entries="jobMenuEntries"
         @action="onJobMenuAction"
       />
-      <ResultGallery
+      <MediaLightbox
         v-model:active-index="galleryActiveIndex"
         :all-gallery-items="galleryItems"
       />
@@ -83,7 +83,7 @@ import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHis
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'

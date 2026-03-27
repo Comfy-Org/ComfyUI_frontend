@@ -29,7 +29,9 @@ The ComfyUI Frontend project uses **colocated tests** - test files are placed al
 Our tests use the following frameworks and libraries:
 
 - [Vitest](https://vitest.dev/) - Test runner and assertion library
-- [@vue/test-utils](https://test-utils.vuejs.org/) - Vue component testing utilities
+- [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) - Preferred for user-centric component testing
+- [@testing-library/user-event](https://testing-library.com/docs/user-event/intro/) - Realistic user interaction simulation
+- [@vue/test-utils](https://test-utils.vuejs.org/) - Vue component testing utilities (also accepted)
 - [Pinia](https://pinia.vuejs.org/cookbook/testing.html) - For store testing
 
 ## Getting Started

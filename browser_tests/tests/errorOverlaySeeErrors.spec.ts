@@ -4,6 +4,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -29,14 +30,14 @@ test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
     await triggerExecutionError(comfyPage)
 
     await expect(
-      comfyPage.page.locator('[data-testid="error-overlay"]')
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).toBeVisible()
   })
 
   test('Error overlay shows error message', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     await expect(overlay).toBeVisible()
     await expect(overlay).toHaveText(/\S/)
   })
@@ -44,10 +45,10 @@ test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
   test('"See Errors" opens right side panel', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     await expect(overlay).toBeVisible()
 
-    await overlay.getByRole('button', { name: /See Errors/i }).click()
+    await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
     await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
   })
@@ -55,10 +56,10 @@ test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
   test('"See Errors" dismisses the overlay', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     await expect(overlay).toBeVisible()
 
-    await overlay.getByRole('button', { name: /See Errors/i }).click()
+    await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
     await expect(overlay).not.toBeVisible()
   })
@@ -68,10 +69,10 @@ test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
   }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     await expect(overlay).toBeVisible()
 
-    await overlay.getByRole('button', { name: /Dismiss/i }).click()
+    await overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
 
     await expect(overlay).not.toBeVisible()
     await expect(
@@ -82,7 +83,7 @@ test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
   test('Close button (X) dismisses overlay', async ({ comfyPage }) => {
     await triggerExecutionError(comfyPage)
 
-    const overlay = comfyPage.page.locator('[data-testid="error-overlay"]')
+    const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     await expect(overlay).toBeVisible()
 
     await overlay.getByRole('button', { name: /close/i }).click()

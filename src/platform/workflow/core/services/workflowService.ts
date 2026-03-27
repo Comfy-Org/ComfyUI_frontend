@@ -21,7 +21,10 @@ import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -42,6 +45,7 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const executionErrorStore = useExecutionErrorStore()
+  const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
   function confirmOverwrite(targetPath: string) {
@@ -378,6 +382,9 @@ export const useWorkflowService = () => {
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
+
+      // Save subgraph viewport before the canvas gets overwritten
+      useSubgraphNavigationStore().saveCurrentViewport()
     }
   }
 
@@ -403,6 +410,7 @@ export const useWorkflowService = () => {
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
+    useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
       if (!wasAppMode && workflow.initialMode === 'app') {
@@ -540,7 +548,9 @@ export const useWorkflowService = () => {
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
-      executionErrorStore.surfaceMissingNodes(missingNodeTypes)
+      if (missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes)) {
+        executionErrorStore.showErrorOverlay()
+      }
     }
   }
 

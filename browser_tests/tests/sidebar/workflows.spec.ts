@@ -232,7 +232,7 @@ test.describe('Workflows sidebar', () => {
       .toEqual('workflow1')
   })
 
-  test('Does not report warning when switching between opened workflows', async ({
+  test('Reports missing nodes warning again when switching back to workflow', async ({
     comfyPage
   }) => {
     await comfyPage.settings.setSetting(
@@ -247,17 +247,18 @@ test.describe('Workflows sidebar', () => {
     await expect(errorOverlay).toBeVisible()
 
     // Dismiss the error overlay
-    await errorOverlay.getByRole('button', { name: 'Dismiss' }).click()
+    await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
     await expect(errorOverlay).not.toBeVisible()
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
-    // Switch back to the missing_nodes workflow — overlay should not reappear
+    // Switch back to the missing_nodes workflow — overlay should reappear
+    // so users can install missing node packs without a page reload
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({

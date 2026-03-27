@@ -35,9 +35,21 @@ function resolvePromotedExecId(
 
 const hookedNodes = new WeakSet<LGraphNode>()
 
+type OriginalCallbacks = {
+  onConnectionsChange: LGraphNode['onConnectionsChange']
+  onWidgetChanged: LGraphNode['onWidgetChanged']
+}
+
+const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
+
 function installNodeHooks(node: LGraphNode): void {
   if (hookedNodes.has(node)) return
   hookedNodes.add(node)
+
+  originalCallbacks.set(node, {
+    onConnectionsChange: node.onConnectionsChange,
+    onWidgetChanged: node.onWidgetChanged
+  })
 
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
@@ -82,11 +94,29 @@ function installNodeHooks(node: LGraphNode): void {
   )
 }
 
+function restoreNodeHooks(node: LGraphNode): void {
+  const originals = originalCallbacks.get(node)
+  if (!originals) return
+  node.onConnectionsChange = originals.onConnectionsChange
+  node.onWidgetChanged = originals.onWidgetChanged
+  originalCallbacks.delete(node)
+  hookedNodes.delete(node)
+}
+
 function installNodeHooksRecursive(node: LGraphNode): void {
   installNodeHooks(node)
   if (node.isSubgraphNode?.()) {
     for (const innerNode of node.subgraph._nodes ?? []) {
       installNodeHooksRecursive(innerNode)
+    }
+  }
+}
+
+function restoreNodeHooksRecursive(node: LGraphNode): void {
+  restoreNodeHooks(node)
+  if (node.isSubgraphNode?.()) {
+    for (const innerNode of node.subgraph._nodes ?? []) {
+      restoreNodeHooksRecursive(innerNode)
     }
   }
 }
@@ -102,7 +132,17 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     originalOnNodeAdded?.call(this, node)
   }
 
+  const originalOnNodeRemoved = graph.onNodeRemoved
+  graph.onNodeRemoved = function (node: LGraphNode) {
+    restoreNodeHooksRecursive(node)
+    originalOnNodeRemoved?.call(this, node)
+  }
+
   return () => {
+    for (const node of graph._nodes ?? []) {
+      restoreNodeHooksRecursive(node)
+    }
     graph.onNodeAdded = originalOnNodeAdded || undefined
+    graph.onNodeRemoved = originalOnNodeRemoved || undefined
   }
 }

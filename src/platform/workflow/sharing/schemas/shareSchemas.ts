@@ -10,6 +10,15 @@ export const zPublishRecordResponse = z.object({
   assets: z.array(zAssetInfo).optional()
 })
 
+export const zHubWorkflowPrefillResponse = z.object({
+  description: z.string().nullish(),
+  tags: z.array(z.string()).nullish(),
+  sample_image_urls: z.array(z.string()).nullish(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).nullish(),
+  thumbnail_url: z.string().nullish(),
+  thumbnail_comparison_url: z.string().nullish()
+})
+
 /**
  * Strips path separators and control characters from a workflow name to prevent
  * path traversal when the name is later used as part of a file path.
@@ -36,9 +45,28 @@ export const zHubProfileResponse = z.preprocess((data) => {
   const d = data as Record<string, unknown>
   return {
     username: d.username,
-    name: d.name,
+    name: d.name ?? d.display_name,
     description: d.description,
     coverImageUrl: d.coverImageUrl ?? d.cover_image_url,
-    profilePictureUrl: d.profilePictureUrl ?? d.profile_picture_url
+    profilePictureUrl:
+      d.profilePictureUrl ?? d.profile_picture_url ?? d.avatar_url
   }
 }, zComfyHubProfile)
+
+export const zHubAssetUploadUrlResponse = z
+  .object({
+    upload_url: z.string(),
+    public_url: z.string(),
+    token: z.string()
+  })
+  .transform((response) => ({
+    uploadUrl: response.upload_url,
+    publicUrl: response.public_url,
+    token: response.token
+  }))
+
+export const zHubWorkflowPublishResponse = z.object({
+  share_id: z.string(),
+  workflow_id: z.string(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional()
+})

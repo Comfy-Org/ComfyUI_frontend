@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
@@ -598,13 +599,13 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   })
 })
 
-describe('useExecutionErrorStore - setMissingNodeTypes', () => {
-  let store: ReturnType<typeof useExecutionErrorStore>
+describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
+  let store: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useExecutionErrorStore()
+    store = useMissingNodesErrorStore()
   })
 
   it('clears missingNodesError when called with an empty array', () => {

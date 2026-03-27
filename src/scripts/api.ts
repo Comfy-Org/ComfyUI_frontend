@@ -60,7 +60,7 @@ import type {
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
@@ -281,10 +281,12 @@ export interface ComfyApi extends EventTarget {
 
 export class PromptExecutionError extends Error {
   response: PromptResponse
+  status?: number
 
-  constructor(response: PromptResponse) {
+  constructor(response: PromptResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
+    this.status = status
   }
 
   override toString() {
@@ -330,7 +332,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Cache Firebase auth store composable function.
    */
-  private authStoreComposable?: typeof useFirebaseAuthStore
+  private authStoreComposable?: typeof useAuthStore
 
   reportedUnknownMessageTypes = new Set<string>()
 
@@ -380,6 +382,7 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    if (route.startsWith('/api')) return this.api_base + route
     return this.api_base + '/api' + route
   }
 
@@ -396,8 +399,8 @@ export class ComfyApi extends EventTarget {
   private async getAuthStore() {
     if (isCloud) {
       if (!this.authStoreComposable) {
-        const module = await import('@/stores/firebaseAuthStore')
-        this.authStoreComposable = module.useFirebaseAuthStore
+        const module = await import('@/stores/authStore')
+        this.authStoreComposable = module.useAuthStore
       }
 
       return this.authStoreComposable()
@@ -900,7 +903,7 @@ export class ComfyApi extends EventTarget {
           }
         }
       }
-      throw new PromptExecutionError(errorResponse)
+      throw new PromptExecutionError(errorResponse, res.status)
     }
 
     return await res.json()

@@ -21,10 +21,12 @@
       )
     "
     :data-selected="selected"
+    :draggable="true"
     @click.stop="$emit('click')"
     @contextmenu.prevent.stop="
       asset ? emit('context-menu', $event, asset) : undefined
     "
+    @dragstart="dragStart"
   >
     <!-- Top Area: Media Preview -->
     <div class="relative aspect-square overflow-hidden p-0">
@@ -139,6 +141,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -277,7 +280,8 @@ const formattedDuration = computed(() => {
 // Get metadata info based on file kind
 const metaInfo = computed(() => {
   if (!asset) return ''
-  if (fileKind.value === 'image' && imageDimensions.value) {
+  // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
+  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
     return `${imageDimensions.value.width}x${imageDimensions.value.height}`
   }
   if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
@@ -303,5 +307,16 @@ const handleImageLoaded = (width: number, height: number) => {
 
 const handleOutputCountClick = () => {
   emit('output-count-click')
+}
+function dragStart(e: DragEvent) {
+  if (!asset?.preview_url) return
+
+  const { dataTransfer } = e
+  if (!dataTransfer) return
+
+  const url = URL.parse(asset.preview_url, location.href)
+  if (!url) return
+
+  dataTransfer.items.add(url.toString(), 'text/uri-list')
 }
 </script>

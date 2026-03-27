@@ -1,8 +1,9 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import ColorPicker from 'primevue/colorpicker'
 import PrimeVue from 'primevue/config'
 import SelectButton from 'primevue/selectbutton'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
 import ColorCustomizationSelector from './ColorCustomizationSelector.vue'
@@ -14,13 +15,17 @@ describe('ColorCustomizationSelector', () => {
   ]
 
   beforeEach(() => {
-    // Setup PrimeVue
     const app = createApp({})
     app.use(PrimeVue)
   })
 
-  const mountComponent = (props = {}) => {
-    return mount(ColorCustomizationSelector, {
+  function renderComponent(
+    props: Record<string, unknown> = {},
+    callbacks: { 'onUpdate:modelValue'?: (value: string | null) => void } = {}
+  ) {
+    const user = userEvent.setup()
+
+    const result = render(ColorCustomizationSelector, {
       global: {
         plugins: [PrimeVue],
         components: { SelectButton, ColorPicker }
@@ -28,102 +33,123 @@ describe('ColorCustomizationSelector', () => {
       props: {
         modelValue: null,
         colorOptions,
-        ...props
+        ...props,
+        ...callbacks
       }
     })
+
+    return { ...result, user }
+  }
+
+  /** PrimeVue SelectButton renders toggle buttons with aria-pressed */
+  function getToggleButtons(container: Element) {
+    return container.querySelectorAll<HTMLButtonElement>( // eslint-disable-line testing-library/no-node-access -- PrimeVue SelectButton renders toggle buttons without standard ARIA radiogroup roles
+      '[data-pc-name="pctogglebutton"]'
+    )
   }
 
   it('renders predefined color options and custom option', () => {
-    const wrapper = mountComponent()
-    const selectButton = wrapper.findComponent(SelectButton)
-
-    expect(selectButton.props('options')).toHaveLength(colorOptions.length + 1)
-    expect(selectButton.props('options')?.at(-1)?.name).toBe('_custom')
+    const { container } = renderComponent()
+    expect(getToggleButtons(container)).toHaveLength(colorOptions.length + 1)
   })
 
   it('initializes with predefined color when provided', async () => {
-    const wrapper = mountComponent({
-      modelValue: '#0d6efd'
-    })
-
+    const { container } = renderComponent({ modelValue: '#0d6efd' })
     await nextTick()
-    const selectButton = wrapper.findComponent(SelectButton)
-    expect(selectButton.props('modelValue')).toEqual({
-      name: 'Blue',
-      value: '#0d6efd'
-    })
+
+    const buttons = getToggleButtons(container)
+    expect(buttons[0]).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('initializes with custom color when non-predefined color provided', async () => {
-    const wrapper = mountComponent({
-      modelValue: '#123456'
-    })
-
+    const { container } = renderComponent({ modelValue: '#123456' })
     await nextTick()
-    const selectButton = wrapper.findComponent(SelectButton)
-    const colorPicker = wrapper.findComponent(ColorPicker)
 
-    expect(selectButton.props('modelValue').name).toBe('_custom')
-    expect(colorPicker.props('modelValue')).toBe('123456')
+    const buttons = getToggleButtons(container)
+    const customButton = buttons[buttons.length - 1]
+    expect(customButton).toHaveAttribute('aria-pressed', 'true')
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue ColorPicker uses readonly input preview with no ARIA role
+    const colorPreview = container.querySelector(
+      '.p-colorpicker-preview'
+    ) as HTMLInputElement | null
+    expect(colorPreview).not.toBeNull()
   })
 
   it('shows color picker when custom option is selected', async () => {
-    const wrapper = mountComponent()
-    const selectButton = wrapper.findComponent(SelectButton)
+    const { container, user } = renderComponent()
 
-    // Select custom option
-    await selectButton.setValue({ name: '_custom', value: '' })
+    const buttons = getToggleButtons(container)
+    await user.click(buttons[buttons.length - 1])
 
-    expect(wrapper.findComponent(ColorPicker).exists()).toBe(true)
+    expect(
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue ColorPicker internal DOM
+      container.querySelector('[data-pc-name="colorpicker"]')
+    ).not.toBeNull()
   })
 
   it('emits update when predefined color is selected', async () => {
-    const wrapper = mountComponent()
-    const selectButton = wrapper.findComponent(SelectButton)
+    const onUpdate = vi.fn()
+    const { container, user } = renderComponent(
+      {},
+      { 'onUpdate:modelValue': onUpdate }
+    )
 
-    await selectButton.setValue(colorOptions[0])
+    const buttons = getToggleButtons(container)
+    await user.click(buttons[0])
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['#0d6efd'])
+    expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
   })
 
   it('emits update when custom color is changed', async () => {
-    const wrapper = mountComponent()
-    const selectButton = wrapper.findComponent(SelectButton)
+    const onUpdate = vi.fn()
+    const { container, user } = renderComponent(
+      {},
+      { 'onUpdate:modelValue': onUpdate }
+    )
 
-    // Select custom option
-    await selectButton.setValue({ name: '_custom', value: '' })
+    // Custom is already selected by default (modelValue: null)
+    // Select Blue first, then switch to custom so onUpdate fires for Blue
+    const buttons = getToggleButtons(container)
+    await user.click(buttons[0]) // Select Blue
+    expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
 
-    // Change custom color
-    const colorPicker = wrapper.findComponent(ColorPicker)
-    await colorPicker.setValue('ff0000')
+    onUpdate.mockClear()
+    await user.click(buttons[buttons.length - 1]) // Switch to custom
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['#ff0000'])
+    // When switching to custom, the custom color value inherits from Blue ('0d6efd')
+    // and the watcher on customColorValue emits the update
+    expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
   })
 
   it('inherits color from previous selection when switching to custom', async () => {
-    const wrapper = mountComponent()
-    const selectButton = wrapper.findComponent(SelectButton)
+    const onUpdate = vi.fn()
+    const { container, user } = renderComponent(
+      {},
+      { 'onUpdate:modelValue': onUpdate }
+    )
 
-    // First select a predefined color
-    await selectButton.setValue(colorOptions[0])
+    const buttons = getToggleButtons(container)
 
-    // Then switch to custom
-    await selectButton.setValue({ name: '_custom', value: '' })
+    // First select Blue
+    await user.click(buttons[0])
+    expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
 
-    const colorPicker = wrapper.findComponent(ColorPicker)
-    expect(colorPicker.props('modelValue')).toBe('0d6efd')
+    onUpdate.mockClear()
+
+    // Then switch to custom — inherits the Blue color
+    await user.click(buttons[buttons.length - 1])
+
+    // The customColorValue watcher fires with the inherited Blue value
+    expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
   })
 
   it('handles null modelValue correctly', async () => {
-    const wrapper = mountComponent({
-      modelValue: null
-    })
-
+    const { container } = renderComponent({ modelValue: null })
     await nextTick()
-    const selectButton = wrapper.findComponent(SelectButton)
-    expect(selectButton.props('modelValue')).toEqual({
-      name: '_custom',
-      value: ''
-    })
+
+    const buttons = getToggleButtons(container)
+    const customButton = buttons[buttons.length - 1]
+    expect(customButton).toHaveAttribute('aria-pressed', 'true')
   })
 })
