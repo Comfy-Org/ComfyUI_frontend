@@ -146,7 +146,33 @@ if [ -f pr-context.txt ]; then
   # Get first ~300 chars of description body (after "Description:" line)
   PR_DESC=$(sed -n '/^Description:/,/^###/p' pr-context.txt | grep -v '^Description:\|^###' | head -5 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
   [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
-  PURPOSE_HTML="<div class=purpose><div class=purpose-label>${PURPOSE_LABEL} ${PURPOSE_VERB}</div><strong>${PR_TITLE}</strong><br>${PR_DESC}</div>"
+  # Build requirements from QA guide JSON
+  REQS_HTML=""
+  QA_GUIDE=$(ls qa-guides/qa-guide-*.json 2>/dev/null | head -1)
+  if [ -f "$QA_GUIDE" ]; then
+    PREREQS=$(python3 -c "
+import json, sys, html
+try:
+  g = json.load(open(sys.argv[1]))
+  prereqs = g.get('prerequisites', [])
+  steps = g.get('steps', [])
+  focus = g.get('test_focus', '')
+  parts = []
+  if focus:
+    parts.append('<strong>Test focus:</strong> ' + html.escape(focus))
+  if prereqs:
+    parts.append('<strong>Prerequisites:</strong> ' + ', '.join(html.escape(p) for p in prereqs))
+  if steps:
+    parts.append('<strong>Steps:</strong> ' + ' → '.join(html.escape(s.get('description', str(s))) for s in steps[:6]))
+    if len(steps) > 6:
+      parts[-1] += ' → ...'
+  print('<br>'.join(parts))
+except: pass
+" "$QA_GUIDE" 2>/dev/null)
+    [ -n "$PREREQS" ] && REQS_HTML="<div class=purpose-reqs>${PREREQS}</div>"
+  fi
+
+  PURPOSE_HTML="<div class=purpose><div class=purpose-label>${PURPOSE_LABEL} ${PURPOSE_VERB}</div><strong>${PR_TITLE}</strong><br>${PR_DESC}${REQS_HTML}</div>"
 fi
 
 echo -n "$COMMIT_HTML" > "$DEPLOY_DIR/.commit_html"
