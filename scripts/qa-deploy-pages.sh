@@ -167,7 +167,7 @@ if [ -d video-reviews ]; then
     # Check negatives FIRST — "fails to reproduce" contains "reproduce" but is negative
     if echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
       INCONC_COUNT=$((INCONC_COUNT + 1))
-    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate'; then
+    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate\|does not demonstrate\|steps were not performed\|never.*tested\|never.*accessed'; then
       NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
     elif echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
       REPRO_COUNT=$((REPRO_COUNT + 1))
@@ -229,12 +229,16 @@ else
     # Strip markdown bold/italic so **High** matches as "High"
     RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20)
   fi
+  # Check LOW first — "high confidence" contains "high" but means low risk
   SOLN_RESULT="" SOLN_COLOR="#4c1"
-  if echo "$RISK_TEXT" | grep -iq 'high\|critical\|breaking'; then
-    SOLN_RESULT="MAJOR ISSUES" SOLN_COLOR="#e05d44"
-  elif echo "$RISK_TEXT" | grep -iq 'medium\|moderate'; then
-    SOLN_RESULT="MINOR ISSUES" SOLN_COLOR="#dfb317"
-  elif echo "$RISK_TEXT" | grep -iq 'low\|minimal\|none\|no.*risk\|approved'; then
+  RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
+  if [ -n "$RISK_FIRST" ]; then
+    case "$RISK_FIRST" in
+      *low*|*minimal*) SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1" ;;
+      *medium*|*moderate*) SOLN_RESULT="MINOR ISSUES" SOLN_COLOR="#dfb317" ;;
+      *high*|*critical*) SOLN_RESULT="MAJOR ISSUES" SOLN_COLOR="#e05d44" ;;
+    esac
+  elif echo "$RISK_TEXT" | grep -iq 'no.*risk\|approved\|looks good'; then
     SOLN_RESULT="APPROVED" SOLN_COLOR="#4c1"
   fi
   BADGE_STATUS="${REPRO_RESULT:-UNKNOWN} | Fix: ${SOLN_RESULT:-UNKNOWN}"
