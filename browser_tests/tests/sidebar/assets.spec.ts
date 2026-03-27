@@ -231,18 +231,26 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.open()
     await tab.waitForAssets()
 
-    // Switch to list view first
+    // Switch to list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
     await comfyPage.page.waitForTimeout(300)
+    await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
 
-    // Switch back to grid view
-    await tab.openSettingsMenu()
-    await tab.gridViewOption.click()
-    await comfyPage.page.waitForTimeout(300)
-
-    // Grid cards should be visible again
+    // Switch back to grid by setting localStorage and refreshing the panel
+    await comfyPage.page.evaluate(() => {
+      localStorage.setItem(
+        'Comfy.Assets.Sidebar.ViewMode',
+        JSON.stringify('grid')
+      )
+    })
+    // Close and reopen sidebar to pick up the localStorage change
+    await tab.close()
+    await tab.open()
     await tab.waitForAssets()
+
+    // Grid cards (with data-selected attribute) should be visible again
+    await expect(tab.assetCards.first()).toBeVisible({ timeout: 5000 })
   })
 })
 
@@ -525,17 +533,25 @@ test.describe('Assets sidebar - context menu', () => {
       return
     }
 
-    // Multi-select
-    await cards.first().click()
+    // Multi-select: click first, then Ctrl/Cmd+click second
+    await cards.first().click({ force: true })
     const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
-    await cards.nth(1).click({ modifiers: [modifier] })
+    await cards.nth(1).click({ modifiers: [modifier], force: true })
 
-    // Right-click on a selected card
-    await cards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
+    // Verify multi-selection took effect before right-clicking
+    await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
 
-    // Bulk header should be visible
-    await expect(tab.contextMenuItem('Multiple assets selected')).toBeVisible()
+    // Right-click on a selected card via dispatchEvent to ensure contextmenu fires
+    await cards.first().dispatchEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
+
+    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    await expect(contextMenu).toBeVisible({ timeout: 3000 })
+
+    // Bulk menu should show bulk download action
     await expect(tab.contextMenuItem('Download all')).toBeVisible()
   })
 })

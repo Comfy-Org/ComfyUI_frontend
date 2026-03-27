@@ -204,9 +204,7 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   get settingsButton() {
-    return this.page.locator('.sidebar-content-container button', {
-      has: this.page.locator('.icon-\\[lucide--settings-2\\]')
-    })
+    return this.page.getByRole('button', { name: 'View settings' })
   }
 
   // --- View mode ---
@@ -271,11 +269,13 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   get deleteSelectedButton() {
-    return this.page.getByRole('button', { name: 'Delete' }).last()
+    // Matches both normal ("Delete" text) and compact (icon-only) modes
+    return this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last()
   }
 
   get downloadSelectedButton() {
-    return this.page.getByRole('button', { name: 'Download' }).last()
+    // Matches both normal ("Download" text) and compact (icon-only) modes
+    return this.page.locator('button:has(.icon-\\[lucide--download\\])').last()
   }
 
   // --- Context menu ---
@@ -299,23 +299,45 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Helpers ---
 
   override async open() {
+    // Remove any toast notifications that may overlay the sidebar button
+    await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
   }
 
+  /** Remove all visible toast notifications from the DOM. */
+  async dismissToasts() {
+    await this.page
+      .evaluate(() =>
+        document.querySelectorAll('.p-toast').forEach((el) => el.remove())
+      )
+      .catch(() => {})
+  }
+
   async switchToImported() {
-    await this.importedTab.click()
-    await this.page.waitForTimeout(300)
+    await this.dismissToasts()
+    await this.importedTab.evaluate((el: HTMLElement) => el.click())
+    await expect(this.importedTab).toHaveAttribute('aria-selected', 'true', {
+      timeout: 3000
+    })
   }
 
   async switchToGenerated() {
-    await this.generatedTab.click()
-    await this.page.waitForTimeout(300)
+    await this.dismissToasts()
+    await this.generatedTab.evaluate((el: HTMLElement) => el.click())
+    await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true', {
+      timeout: 3000
+    })
   }
 
   async openSettingsMenu() {
-    await this.settingsButton.click()
-    await this.page.waitForTimeout(200)
+    await this.dismissToasts()
+    await this.settingsButton.click({ force: true })
+    // Wait for popover content to render
+    await this.listViewOption
+      .or(this.gridViewOption)
+      .first()
+      .waitFor({ state: 'visible', timeout: 3000 })
   }
 
   async rightClickAsset(name: string) {
