@@ -687,6 +687,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Add/update existing nodes
     graph._nodes.forEach((node) => {
       const id = String(node.id)
+      const previousNode = nodeRefs.get(id)
+      if (previousNode && previousNode !== node) {
+        uninstrumentNode(previousNode)
+      }
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
