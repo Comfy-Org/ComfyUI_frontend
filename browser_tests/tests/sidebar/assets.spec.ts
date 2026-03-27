@@ -1,7 +1,9 @@
 import { expect } from '@playwright/test'
 import type { JobEntry } from '@comfyorg/ingest-types'
 
+import type { ComfyPage } from '../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import type { GeneratedJobSeed } from '../../fixtures/helpers/AssetsHelper'
 import {
   createMockJob,
   createMockJobs
@@ -62,6 +64,56 @@ const SAMPLE_IMPORTED_FILES = [
   'audio_clip.wav'
 ]
 
+async function openSeededAssetsSidebar(
+  comfyPage: ComfyPage,
+  seed: Parameters<ComfyPage['assets']['seedAssets']>[0]
+) {
+  await comfyPage.assets.seedAssets(seed)
+  await comfyPage.setup()
+
+  const tab = comfyPage.menu.assetsTab
+  await tab.open()
+
+  return tab
+}
+
+function makeGeneratedAssets(comfyPage: ComfyPage) {
+  const stacked: GeneratedJobSeed = {
+    jobId: 'job-gallery-stack',
+    outputs: [
+      {
+        filename: 'gallery-main.webp',
+        displayName: 'Gallery Main',
+        mediaType: 'images'
+      },
+      {
+        filename: 'gallery-alt.webp',
+        displayName: 'Gallery Alt',
+        mediaType: 'images'
+      },
+      {
+        filename: 'gallery-detail.webp',
+        displayName: 'Gallery Detail',
+        mediaType: 'images'
+      }
+    ]
+  }
+
+  return {
+    sunrise: comfyPage.assets.generatedImage({
+      jobId: 'job-sunrise',
+      filename: 'sunrise.webp',
+      displayName: 'Sunrise'
+    }),
+    forest: comfyPage.assets.generatedImage({
+      jobId: 'job-forest',
+      filename: 'forest.webp',
+      displayName: 'Forest'
+    }),
+    stacked
+  }
+}
+
 // ==========================================================================
 // 1. Empty states
 // ==========================================================================
@@ -71,7 +123,6 @@ test.describe('Assets sidebar - empty states', () => {
     await comfyPage.assets.mockEmptyState()
     await comfyPage.setup()
   })
-
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.assets.clearMocks()
   })
@@ -92,7 +143,6 @@ test.describe('Assets sidebar - empty states', () => {
     await expect(tab.emptyStateTitle('No imported files found')).toBeVisible()
     await expect(tab.emptyStateMessage).toBeVisible()
   })
-
   test('No asset cards are rendered when empty', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -674,5 +724,112 @@ test.describe('Assets sidebar - settings menu', () => {
 
     await expect(tab.listViewOption).toBeVisible()
     await expect(tab.gridViewOption).toBeVisible()
+  })
+})
+
+// ==========================================================================
+// 11. Core journeys
+// ==========================================================================
+
+test.describe('Assets sidebar - core journeys', () => {
+  test.describe.configure({ timeout: 30_000 })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Opens preview from list view and shows the media dialog', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openSeededAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise]
+    })
+
+    await tab.waitForAssets()
+    await tab.switchToListView()
+    await tab.openAssetPreview('Sunrise')
+
+    await expect(tab.previewDialog).toBeVisible()
+    await expect(tab.previewImage('sunrise.webp')).toBeVisible()
+
+    await tab.previewDialog.getByLabel('Close').click()
+    await expect(tab.previewDialog).not.toBeVisible()
+  })
+
+  test('Expands stacked outputs in list view', async ({ comfyPage }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openSeededAssetsSidebar(comfyPage, {
+      generated: [generated.stacked]
+    })
+
+    await tab.waitForAssets()
+    await tab.switchToListView()
+    await expect(tab.asset('Gallery Alt')).not.toBeVisible()
+
+    await tab.toggleStack('Gallery Main')
+
+    await expect(tab.asset('Gallery Alt')).toBeVisible()
+    await expect(tab.asset('Gallery Detail')).toBeVisible()
+  })
+
+  test('Opens folder view for multi-output assets, copies the job ID, and returns back', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    await comfyPage.page
+      .context()
+      .grantPermissions(['clipboard-read', 'clipboard-write'], {
+        origin: comfyPage.url
+      })
+
+    const tab = await openSeededAssetsSidebar(comfyPage, {
+      generated: [generated.stacked]
+    })
+
+    await tab.waitForAssets()
+    await tab.openOutputFolder('Gallery Main')
+
+    await expect(tab.backButton).toBeVisible()
+    await expect(tab.copyJobIdButton).toBeVisible()
+    await expect(tab.asset('Gallery Main')).toBeVisible()
+    await expect(tab.asset('Gallery Alt')).toBeVisible()
+    await expect(tab.asset('Gallery Detail')).toBeVisible()
+
+    await tab.copyJobIdButton.click()
+
+    await expect(comfyPage.visibleToasts).toContainText('Copied')
+    await expect(comfyPage.visibleToasts).toContainText(
+      'Job ID copied to clipboard'
+    )
+    await tab.searchInput.click()
+    await comfyPage.clipboard.paste(tab.searchInput)
+
+    await expect(tab.searchInput).toHaveValue(generated.stacked.jobId)
+
+    await tab.backButton.click()
+    await expect(tab.asset('Gallery Main')).toBeVisible()
+    await expect(tab.asset('Gallery Alt')).not.toBeVisible()
+    await expect(tab.asset('Gallery Detail')).not.toBeVisible()
+  })
+
+  test('Downloads a selected asset from the selection footer', async ({
+    comfyPage
+  }) => {
+    const generated = makeGeneratedAssets(comfyPage)
+    const tab = await openSeededAssetsSidebar(comfyPage, {
+      generated: [generated.sunrise, generated.forest]
+    })
+
+    await tab.waitForAssets()
+    await tab.selectAssets(['Sunrise'])
+    await expect(tab.selectionCountButton).toBeVisible()
+
+    const downloadPromise = comfyPage.page.waitForEvent('download')
+    await tab.downloadSelectionButton.click()
+
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toContain('Sunrise')
+    await expect(tab.selectionCountButton).not.toBeVisible()
   })
 })
