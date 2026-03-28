@@ -87,6 +87,21 @@ Tags are respected by config:
 - Check `browser_tests/assets/` for test data and fixtures
 - Use realistic ComfyUI workflows for E2E tests
 
+## Fixture Data & Schemas
+
+When creating test fixture data, import or reference existing Zod schemas and TypeScript
+types from `src/` instead of inventing ad-hoc shapes. This keeps test data in sync with
+production types.
+
+Key schema locations:
+
+- `src/schemas/apiSchema.ts` — API response types (`PromptResponse`, `SystemStats`, `User`, `UserDataFullInfo`, WebSocket messages)
+- `src/schemas/nodeDefSchema.ts` — Node definition schema (`ComfyNodeDef`, `InputSpec`, `ComboInputSpec`)
+- `src/schemas/nodeDef/nodeDefSchemaV2.ts` — V2 node definition schema
+- `src/platform/remote/comfyui/jobs/jobTypes.ts` — Jobs API Zod schemas (`zJobDetail`, `zJobsListResponse`, `zRawJobListItem`)
+- `src/platform/workflow/validation/schemas/workflowSchema.ts` — Workflow validation (`ComfyWorkflowJSON`, `ComfyApiWorkflow`)
+- `src/types/metadataTypes.ts` — Asset metadata types
+
 ## Running Tests
 
 ```bash
