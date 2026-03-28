@@ -223,8 +223,8 @@ if [ -d video-reviews ]; then
     [ -f "$rpt" ] || continue
     TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
     # Try structured JSON verdict first (from ## Verdict section)
-    VERDICT_JSON=$(grep -oP '\{"verdict":\s*"[^"]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '"[A-Z_]+"$' | tr -d '"')
-    RISK_JSON=$(grep -oP '"risk":\s*"[^"]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '"[a-z]+"$' | tr -d '"')
+    VERDICT_JSON=$(grep -oP '\{"verdict":\s*"[^"]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '"[A-Z_]+"$' | tr -d '"' || true)
+    RISK_JSON=$(grep -oP '"risk":\s*"[^"]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '"[a-z]+"$' | tr -d '"' || true)
 
     if [ -n "$VERDICT_JSON" ]; then
       case "$VERDICT_JSON" in
@@ -287,7 +287,7 @@ BADGE_LABEL="QA${QA_DATE}"
 FIX_RESULT="" FIX_COLOR="#4c1"
 if [ "$TARGET_TYPE" != "issue" ]; then
   # Try structured JSON risk first
-  ALL_RISKS=$(grep -ohP '"risk":\s*"[a-z]+"' video-reviews/*.md 2>/dev/null | grep -oP '"[a-z]+"$' | tr -d '"')
+  ALL_RISKS=$(grep -ohP '"risk":\s*"[a-z]+"' video-reviews/*.md 2>/dev/null | grep -oP '"[a-z]+"$' | tr -d '"' || true)
   if [ -n "$ALL_RISKS" ]; then
     # Use worst risk across all reports
     if echo "$ALL_RISKS" | grep -q 'high'; then
