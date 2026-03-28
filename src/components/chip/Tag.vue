@@ -38,7 +38,7 @@ const tagClass = computed(() =>
       type="button"
       :aria-label="$t('g.remove')"
       class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full p-0.5 hover:bg-white/10"
-      @click="emit('remove', $event)"
+      @click.stop="emit('remove', $event)"
     >
       <i class="icon-[lucide--x] size-3" aria-hidden="true" />
     </button>

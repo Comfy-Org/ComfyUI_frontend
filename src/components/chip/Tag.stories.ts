@@ -62,7 +62,7 @@ export const AllStates: Story = {
           <div class="flex items-center gap-2">
             <Tag label="Default" />
             <Tag label="Unselected" state="unselected" />
-            <Tag label="Selected" removable />
+            <Tag label="Removable" removable />
           </div>
         </div>
         <div>
