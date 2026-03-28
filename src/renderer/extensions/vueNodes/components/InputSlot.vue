@@ -5,7 +5,7 @@
     v-tooltip.left="tooltipConfig"
     :class="
       cn(
-        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+        'lg-slot lg-slot--input group/slot m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
         dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
@@ -35,36 +35,46 @@
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
+      <input
+        v-if="isRenaming"
+        ref="renameInputRef"
+        v-model="renameValue"
+        class="m-0 w-full border-none bg-transparent p-0 text-node-component-slot-text outline-none"
+        @blur="finishRename"
+        @keydown.enter="finishRename"
+        @keydown.escape="cancelRename"
+        @click.stop
+        @pointerdown.stop
+      />
       <span
-        v-if="!props.dotOnly && !hasNoLabel"
+        v-else-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
-            'truncate text-node-component-slot-text',
+            'cursor-text truncate text-node-component-slot-text transition-colors duration-150 hover:text-muted-foreground',
             hasError && 'font-medium text-error'
           )
         "
+        @dblclick.stop="startRename"
       >
-        {{
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Input ${index}`)
-        }}
+        {{ displayLabel }}
       </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
+import { computed, nextTick, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { app } from '@/scripts/app'
 import { cn } from '@/utils/tailwindUtil'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
@@ -82,6 +92,13 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
+
+const displayLabel = computed(
+  () =>
+    props.slotData.label ||
+    props.slotData.localized_name ||
+    (props.slotData.name ?? `Input ${props.index}`)
+)
 
 const hasNoLabel = computed(
   () =>
@@ -142,4 +159,40 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'input'
 })
+
+// ── Inline rename ─────────────────────────────────────────────
+const isRenaming = ref(false)
+const renameValue = ref('')
+const renameInputRef = ref<HTMLInputElement | null>(null)
+
+function startRename() {
+  if (props.slotData.nameLocked) return
+  renameValue.value = displayLabel.value
+  isRenaming.value = true
+  nextTick(() => {
+    renameInputRef.value?.select()
+  })
+}
+
+function finishRename() {
+  if (!isRenaming.value) return
+  isRenaming.value = false
+
+  const newLabel = renameValue.value.trim()
+  if (!newLabel || newLabel === displayLabel.value) return
+
+  const node = app.canvas?.graph?.getNodeById(props.nodeId ?? '')
+  const slot = node?.inputs?.[props.index]
+  if (!slot) return
+  slot.label = newLabel
+  node?.graph?.trigger('node:slot-label:changed', {
+    nodeId: node.id,
+    slotType: NodeSlotType.INPUT
+  })
+  app.canvas?.setDirty(true, true)
+}
+
+function cancelRename() {
+  isRenaming.value = false
+}
 </script>
