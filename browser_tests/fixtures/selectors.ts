@@ -20,6 +20,7 @@ export const TestIds = {
     main: 'graph-canvas',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
+    closeMinimapButton: 'close-minimap-button',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',

@@ -83,7 +83,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const minimap = comfyPage.page.locator('.litegraph-minimap')
     await expect(minimap).toBeVisible()
 
-    await comfyPage.page.getByTestId('close-minmap-button').click()
+    await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
     await expect(minimap).not.toBeVisible()
 
     const toggleButton = comfyPage.page.getByTestId(
@@ -108,9 +108,6 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await comfyPage.nextFrame()
-      await comfyPage.nextFrame()
-
       await expect(minimap).toHaveScreenshot('minimap-after-pan.png')
     }
   )
