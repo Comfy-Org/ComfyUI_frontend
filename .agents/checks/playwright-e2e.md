@@ -41,7 +41,7 @@ Reference docs (read if you need full context):
    - `comfyPage.settings.setSetting()` for settings
    - Component page objects in `browser_tests/fixtures/components/`
 
-9. **Wrong import** — Tests must use `comfyPageFixture as test` and `comfyExpect as expect` from `../fixtures/ComfyPage`, not raw `@playwright/test` imports (exception: `expect` from `@playwright/test` is acceptable when `comfyExpect` doesn't provide needed matchers).
+9. **Wrong import** — Tests must use `comfyPageFixture as test` and `comfyExpect as expect` from the `browser_tests/fixtures/ComfyPage` module (path may vary by file depth), not raw `@playwright/test` imports (exception: `expect` from `@playwright/test` is acceptable when `comfyExpect` doesn't provide needed matchers).
 
 10. **Building workflows programmatically when a JSON asset would work** — Complex `page.evaluate` chains to construct a graph should use a premade JSON workflow in `browser_tests/assets/` loaded via `comfyPage.workflow.loadWorkflow()`.
 
