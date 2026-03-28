@@ -52,10 +52,10 @@ test.describe('Vue Nodes Image Preview', () => {
   test('shows image context menu options', async ({ comfyPage }) => {
     const { nodeId } = await loadImageOnNode(comfyPage)
 
+    await comfyPage.vueNodes.selectNode(nodeId)
     const nodeHeader = comfyPage.vueNodes
       .getNodeLocator(nodeId)
       .locator('.lg-node-header')
-    await nodeHeader.click()
     await nodeHeader.click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')

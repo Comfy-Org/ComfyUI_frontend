@@ -23,7 +23,7 @@ interface LitegraphFixtures {
   reroutesComplexGraph: LGraph
 }
 
-/** These fixtures alter global state, and are difficult to reset. Relies on a single test per-file to reset state. */
+/** LiteGraph test fixtures. Each creates an LGraph from cloned data; LGraph singletons may still share some global state. */
 export const test = baseTest.extend<LitegraphFixtures>({
   minimalGraph: async ({}, use) => {
     // Before each test function

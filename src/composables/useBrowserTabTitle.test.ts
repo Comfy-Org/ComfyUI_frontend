@@ -159,8 +159,6 @@ describe('useBrowserTabTitle', () => {
     scope.stop()
   })
 
-  // Fails when run together with other tests. Suspect to be caused by leaked
-  // state from previous tests.
   it('disables workflow title when menu disabled', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Disabled')
     workflowStore.activeWorkflow = {

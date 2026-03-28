@@ -20,16 +20,18 @@ vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
 
 vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
   const enqueueTaskMock = vi.fn()
-  const isProcessing = ref(false)
 
   return {
-    useManagerQueue: () => ({
-      statusMessage: ref(''),
-      allTasksDone: ref(false),
-      enqueueTask: enqueueTaskMock,
-      isProcessing,
-      isProcessingTasks: isProcessing
-    }),
+    useManagerQueue: () => {
+      const isProcessing = ref(false)
+      return {
+        statusMessage: ref(''),
+        allTasksDone: ref(false),
+        enqueueTask: enqueueTaskMock,
+        isProcessing,
+        isProcessingTasks: isProcessing
+      }
+    },
     enqueueTask: enqueueTaskMock
   }
 })

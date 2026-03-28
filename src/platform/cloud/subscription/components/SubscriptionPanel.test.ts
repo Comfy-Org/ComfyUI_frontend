@@ -230,6 +230,8 @@ describe('SubscriptionPanel', () => {
     mockIsCancelled.value = false
     mockSubscriptionTier.value = 'CREATOR'
     mockIsYearlySubscription.value = false
+    mockCreditsData.isLoadingBalance = false
+    mockActionsData.isLoadingSupport = false
   })
 
   describe('subscription state functionality', () => {
@@ -335,7 +337,7 @@ describe('SubscriptionPanel', () => {
 
     it('should call handleRefresh when refresh button is clicked', async () => {
       const wrapper = createWrapper()
-      const refreshButton = wrapper.find('button.absolute.top-4.right-4')
+      const refreshButton = wrapper.find('button[aria-label]')
 
       await refreshButton.trigger('click')
       expect(mockActionsData.handleRefresh).toHaveBeenCalledOnce()
@@ -356,7 +358,7 @@ describe('SubscriptionPanel', () => {
     it('should show loading state on refresh button when loading balance', () => {
       mockCreditsData.isLoadingBalance = true
       const wrapper = createWrapper()
-      const refreshButton = wrapper.find('button.absolute.top-4.right-4')
+      const refreshButton = wrapper.find('button[aria-label]')
 
       expect(refreshButton.attributes('disabled')).toBeDefined()
     })
