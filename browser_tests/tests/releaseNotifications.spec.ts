@@ -1,7 +1,20 @@
 import { expect } from '@playwright/test'
 
+import type { ReleaseNote } from '../../src/platform/updates/common/releaseService'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
+
+function createMockRelease(overrides?: Partial<ReleaseNote>): ReleaseNote {
+  return {
+    id: 1,
+    project: 'comfyui',
+    version: 'v0.3.44',
+    attention: 'medium',
+    content: '## New Features\n\n- Added awesome feature',
+    published_at: new Date().toISOString(),
+    ...overrides
+  }
+}
 
 test.describe('Release Notifications', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -22,15 +35,10 @@ test.describe('Release Notifications', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            {
-              id: 1,
-              project: 'comfyui',
-              version: 'v0.3.44',
-              attention: 'medium',
+            createMockRelease({
               content:
-                '## New Features\n\n- Added awesome feature\n- Fixed important bug',
-              published_at: new Date().toISOString()
-            }
+                '## New Features\n\n- Added awesome feature\n- Fixed important bug'
+            })
           ])
         })
       } else {
@@ -157,16 +165,7 @@ test.describe('Release Notifications', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([
-            {
-              id: 1,
-              project: 'comfyui',
-              version: 'v0.3.44',
-              attention: 'high',
-              content: '## New Features\n\n- Added awesome feature',
-              published_at: new Date().toISOString()
-            }
-          ])
+          body: JSON.stringify([createMockRelease({ attention: 'high' })])
         })
       } else {
         await route.continue()
@@ -250,16 +249,7 @@ test.describe('Release Notifications', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([
-            {
-              id: 1,
-              project: 'comfyui',
-              version: 'v0.3.44',
-              attention: 'medium',
-              content: '## New Features\n\n- Added awesome feature',
-              published_at: new Date().toISOString()
-            }
-          ])
+          body: JSON.stringify([createMockRelease()])
         })
       } else {
         await route.continue()
@@ -303,14 +293,10 @@ test.describe('Release Notifications', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify([
-            {
-              id: 1,
-              project: 'comfyui',
-              version: 'v0.3.44',
+            createMockRelease({
               attention: 'low',
-              content: '## Bug Fixes\n\n- Fixed minor issue',
-              published_at: new Date().toISOString()
-            }
+              content: '## Bug Fixes\n\n- Fixed minor issue'
+            })
           ])
         })
       } else {

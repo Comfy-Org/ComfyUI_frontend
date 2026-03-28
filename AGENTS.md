@@ -216,6 +216,7 @@ See @docs/testing/\*.md for detailed patterns.
 1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
 2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
 3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
+4. Type all API mock responses in `route.fulfill()` using schemas from `src/schemas/`, `packages/ingest-types`, or `packages/registry-types` — see `docs/guidance/playwright.md` for details
 
 ## External Resources
 

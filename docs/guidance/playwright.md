@@ -87,6 +87,43 @@ Tags are respected by config:
 - Check `browser_tests/assets/` for test data and fixtures
 - Use realistic ComfyUI workflows for E2E tests
 
+## Typed API Mocks
+
+When mocking API responses with `route.fulfill()`, always type the response body
+using existing schemas or generated types. This catches shape mismatches at compile
+time instead of through flaky runtime failures.
+
+### Sources of truth
+
+| Endpoint category                                   | Type source                                              |
+| --------------------------------------------------- | -------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (auto-generated from OpenAPI)   |
+| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (auto-generated from OpenAPI) |
+| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (auto-generated from OpenAPI) |
+| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`         |
+| Node definitions                                    | `src/schemas/nodeDefSchema.ts`                           |
+| Templates                                           | `src/platform/workflow/templates/types/template.ts`      |
+
+### Patterns
+
+```typescript
+// ✅ Import the type and annotate mock data
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+
+const mockRelease: ReleaseNote = {
+  id: 1,
+  project: 'comfyui',
+  version: 'v0.3.44',
+  attention: 'medium',
+  content: '## New Features',
+  published_at: new Date().toISOString()
+}
+body: JSON.stringify([mockRelease])
+
+// ❌ Untyped inline JSON — schema drift goes unnoticed
+body: JSON.stringify([{ id: 1, project: 'comfyui', version: 'v0.3.44', ... }])
+```
+
 ## Running Tests
 
 ```bash
