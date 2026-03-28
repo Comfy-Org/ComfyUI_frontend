@@ -33,6 +33,17 @@ jobs:
           path: dist/
           retention-days: 1
 
+      # Build cloud distribution for @cloud tagged tests
+      - name: Build cloud frontend
+        run: pnpm build:cloud
+
+      - name: Upload cloud frontend
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-dist-cloud
+          path: dist/
+          retention-days: 1
+
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
     needs: setup
@@ -97,14 +108,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome]
+        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: frontend-dist
+          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
