@@ -103,11 +103,28 @@ export const useImageUploadWidget = () => {
 
     // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
+      console.warn(
+        '[IMAGEUPLOAD-CB] value:',
+        fileComboWidget.value,
+        'graphId:',
+        node.graph?.id,
+        'nodeId:',
+        node.id,
+        'inSubgraph:',
+        node.graph !== node.graph?.rootGraph
+      )
       node.imgs = undefined
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
       node.graph?.setDirtyCanvas(true)
+      // When this node is inside a subgraph, also dirty the root canvas so
+      // the parent SubgraphNode redraws and picks up the new preview via
+      // its onDrawBackground → updatePreviews loop.
+      const rootGraph = node.graph?.rootGraph
+      if (rootGraph && rootGraph !== node.graph) {
+        rootGraph.setDirtyCanvas(true)
+      }
     }
 
     // On load if we have a value then render the image
