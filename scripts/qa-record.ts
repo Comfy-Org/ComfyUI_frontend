@@ -1938,35 +1938,36 @@ async function main() {
         recordingStartMs = Date.now()
         narrationSegments.length = 0
 
-        // Use hybrid agent (Claude + Gemini) if ANTHROPIC_API_KEY is available
+        // Hybrid agent (Claude + Gemini) — requires ANTHROPIC_API_KEY
         const anthropicKey = process.env.ANTHROPIC_API_KEY
-        if (anthropicKey) {
-          const { runHybridAgent } = await import('./qa-agent.js')
-          const issueCtx = opts.diffFile
-            ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
-            : 'No issue context provided'
-          let qaGuideText = ''
-          if (opts.qaGuideFile) {
-            try {
-              qaGuideText = readFileSync(opts.qaGuideFile, 'utf-8')
-            } catch {
-              // QA guide not available
-            }
-          }
-          const result = await runHybridAgent({
-            page,
-            issueContext: issueCtx,
-            qaGuide: qaGuideText,
-            outputDir: opts.outputDir,
-            geminiApiKey: opts.apiKey,
-            anthropicApiKey: anthropicKey
-          })
-          console.warn(
-            `Hybrid agent finished: ${result.verdict} — ${result.summary.slice(0, 100)}`
+        if (!anthropicKey) {
+          throw new Error(
+            'ANTHROPIC_API_KEY is required for issue reproduction. The Gemini-only agent has been removed due to low success rate.'
           )
-        } else {
-          await runAgenticLoop(page, opts, opts.outputDir, subIssue)
         }
+        const { runHybridAgent } = await import('./qa-agent.js')
+        const issueCtx = opts.diffFile
+          ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
+          : 'No issue context provided'
+        let qaGuideText = ''
+        if (opts.qaGuideFile) {
+          try {
+            qaGuideText = readFileSync(opts.qaGuideFile, 'utf-8')
+          } catch {
+            // QA guide not available
+          }
+        }
+        const result = await runHybridAgent({
+          page,
+          issueContext: issueCtx,
+          qaGuide: qaGuideText,
+          outputDir: opts.outputDir,
+          geminiApiKey: opts.apiKey,
+          anthropicApiKey: anthropicKey
+        })
+        console.warn(
+          `Hybrid agent finished: ${result.verdict} — ${result.summary.slice(0, 100)}`
+        )
         await sleep(2000)
       } finally {
         await context.close()
