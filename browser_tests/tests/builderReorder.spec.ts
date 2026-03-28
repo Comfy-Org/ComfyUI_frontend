@@ -28,7 +28,7 @@ async function saveCloseAndReopenAsApp(
   await appMode.toggleAppMode()
 }
 
-test.describe('Builder input/output reorder', { tag: '@ui' }, () => {
+test.describe('Builder input reordering', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       window.app!.api.serverFeatureFlags.value = {
