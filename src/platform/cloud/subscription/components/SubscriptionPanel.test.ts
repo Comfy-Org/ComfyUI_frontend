@@ -126,6 +126,7 @@ const i18n = createI18n({
         viewMoreDetailsPlans: 'View more details about plans & pricing',
         learnMore: 'Learn More',
         messageSupport: 'Message Support',
+        refreshCredits: 'Refresh credits',
         invoiceHistory: 'Invoice History',
         partnerNodesCredits: 'Partner nodes pricing',
         renewsDate: 'Renews {date}',
@@ -200,7 +201,7 @@ function createWrapper(overrides = {}) {
         SubscriptionBenefits: true,
         Button: {
           template:
-            '<button @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
+            '<button v-bind="$attrs" @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
           props: ['variant', 'size', 'loading', 'label', 'icon'],
           emits: ['click']
         },
@@ -217,9 +218,11 @@ function findButtonByText(
   wrapper: ReturnType<typeof createWrapper>,
   text: string
 ) {
-  return wrapper
+  const button = wrapper
     .findAll('button')
     .find((button) => button.text().includes(text))
+  if (!button) throw new Error(`Button with text "${text}" not found`)
+  return button
 }
 
 describe('SubscriptionPanel', () => {
@@ -318,9 +321,6 @@ describe('SubscriptionPanel', () => {
     it('should call handleLearnMoreClick when learn more is clicked', async () => {
       const wrapper = createWrapper()
       const learnMoreButton = findButtonByText(wrapper, 'Learn More')
-      expect(learnMoreButton).toBeDefined()
-      if (!learnMoreButton) return
-
       await learnMoreButton.trigger('click')
       expect(mockActionsData.handleLearnMoreClick).toHaveBeenCalledOnce()
     })
@@ -328,17 +328,13 @@ describe('SubscriptionPanel', () => {
     it('should call handleMessageSupport when message support is clicked', async () => {
       const wrapper = createWrapper()
       const supportButton = findButtonByText(wrapper, 'Message Support')
-      expect(supportButton).toBeDefined()
-      if (!supportButton) return
-
       await supportButton.trigger('click')
       expect(mockActionsData.handleMessageSupport).toHaveBeenCalledOnce()
     })
 
     it('should call handleRefresh when refresh button is clicked', async () => {
       const wrapper = createWrapper()
-      const refreshButton = wrapper.find('button[aria-label]')
-
+      const refreshButton = wrapper.find('button[aria-label="Refresh credits"]')
       await refreshButton.trigger('click')
       expect(mockActionsData.handleRefresh).toHaveBeenCalledOnce()
     })
@@ -349,17 +345,13 @@ describe('SubscriptionPanel', () => {
       mockActionsData.isLoadingSupport = true
       const wrapper = createWrapper()
       const supportButton = findButtonByText(wrapper, 'Message Support')
-      expect(supportButton).toBeDefined()
-      if (!supportButton) return
-
       expect(supportButton.attributes('disabled')).toBeDefined()
     })
 
     it('should show loading state on refresh button when loading balance', () => {
       mockCreditsData.isLoadingBalance = true
       const wrapper = createWrapper()
-      const refreshButton = wrapper.find('button[aria-label]')
-
+      const refreshButton = wrapper.find('button[aria-label="Refresh credits"]')
       expect(refreshButton.attributes('disabled')).toBeDefined()
     })
   })

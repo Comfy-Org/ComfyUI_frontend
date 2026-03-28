@@ -271,7 +271,6 @@ test.describe('Workflows sidebar', () => {
       '.comfyui-workflows-open .close-workflow-button'
     )
     await closeButton.click()
-    await comfyPage.nextFrame()
     await expect(async () => {
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()

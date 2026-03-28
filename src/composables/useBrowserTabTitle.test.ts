@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, reactive } from 'vue'
-import type { EffectScope } from 'vue'
 
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 
@@ -88,7 +87,7 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('sets default title when idle and no workflow', () => {
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     expect(document.title).toBe('ComfyUI')
     scope.stop()
@@ -101,7 +100,7 @@ describe('useBrowserTabTitle', () => {
       isModified: false,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
@@ -115,7 +114,7 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('*myFlow - ComfyUI')
@@ -133,7 +132,7 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
@@ -152,7 +151,7 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
@@ -166,7 +165,7 @@ describe('useBrowserTabTitle', () => {
       isModified: false,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('ComfyUI')
@@ -176,7 +175,7 @@ describe('useBrowserTabTitle', () => {
   it('shows execution progress when not idle without workflow', async () => {
     executionStore.isIdle = false
     executionStore.executionProgress = 0.3
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('[30%]ComfyUI')
@@ -198,7 +197,7 @@ describe('useBrowserTabTitle', () => {
         }
       }
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('[40%][50%] Foo')
@@ -218,7 +217,7 @@ describe('useBrowserTabTitle', () => {
       },
       '2': { state: 'running', value: 8, max: 10, node: '2', prompt_id: 'test' }
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('[40%][2 nodes running]')

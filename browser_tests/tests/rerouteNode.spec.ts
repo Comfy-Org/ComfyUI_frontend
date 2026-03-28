@@ -121,12 +121,9 @@ test.describe(
       await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
 
       // Click the "Delete" context menu option.
-      const deleteEntry = comfyPage.page.locator(
-        '.litecontextmenu .litemenu-entry',
-        { hasText: 'Delete' }
-      )
-      await deleteEntry.waitFor({ state: 'visible', timeout: 5000 })
-      await deleteEntry.click()
+      await comfyPage.page
+        .locator('.litecontextmenu .litemenu-entry', { hasText: 'Delete' })
+        .click()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'native_reroute_delete_from_midpoint_context_menu.png'
