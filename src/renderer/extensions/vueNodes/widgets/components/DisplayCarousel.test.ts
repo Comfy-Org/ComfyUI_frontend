@@ -347,11 +347,7 @@ describe('DisplayCarousel Grid Mode', () => {
     await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
     await nextTick()
 
-    // Focus the grid container to reveal toggle
-    await findImageContainer(wrapper).trigger('focusin')
-    await nextTick()
-
-    // Switch back to single
+    // Back button is always visible in grid mode (no hover/focus needed)
     const singleToggle = wrapper.find('[aria-label="Switch to single view"]')
     expect(singleToggle.exists()).toBe(true)
 
