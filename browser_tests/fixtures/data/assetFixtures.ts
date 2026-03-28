@@ -1,8 +1,8 @@
-import type { AssetItem } from '../../../src/platform/assets/schemas/assetSchema'
+import type { Asset } from '@comfyorg/ingest-types'
 
 // ─── Factory Helpers ───────────────────────────────────────────────────────────
 
-function createModelAsset(overrides: Partial<AssetItem> = {}): AssetItem {
+function createModelAsset(overrides: Partial<Asset> = {}): Asset {
   return {
     id: 'test-model-001',
     name: 'model.safetensors',
@@ -19,7 +19,7 @@ function createModelAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-function createInputAsset(overrides: Partial<AssetItem> = {}): AssetItem {
+function createInputAsset(overrides: Partial<Asset> = {}): Asset {
   return {
     id: 'test-input-001',
     name: 'input.png',
@@ -35,7 +35,7 @@ function createInputAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-function createOutputAsset(overrides: Partial<AssetItem> = {}): AssetItem {
+function createOutputAsset(overrides: Partial<Asset> = {}): Asset {
   return {
     id: 'test-output-001',
     name: 'output_00001.png',
@@ -53,7 +53,7 @@ function createOutputAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 // ─── Stable Fixtures (deterministic for screenshot tests) ──────────────────────
 
-export const STABLE_CHECKPOINT: AssetItem = createModelAsset({
+export const STABLE_CHECKPOINT: Asset = createModelAsset({
   id: 'test-checkpoint-001',
   name: 'sd_xl_base_1.0.safetensors',
   size: 6_938_078_208,
@@ -66,7 +66,7 @@ export const STABLE_CHECKPOINT: AssetItem = createModelAsset({
   updated_at: '2025-01-15T10:30:00Z'
 })
 
-export const STABLE_CHECKPOINT_2: AssetItem = createModelAsset({
+export const STABLE_CHECKPOINT_2: Asset = createModelAsset({
   id: 'test-checkpoint-002',
   name: 'v1-5-pruned-emaonly.safetensors',
   size: 4_265_146_304,
@@ -79,7 +79,7 @@ export const STABLE_CHECKPOINT_2: AssetItem = createModelAsset({
   updated_at: '2025-01-20T08:00:00Z'
 })
 
-export const STABLE_LORA: AssetItem = createModelAsset({
+export const STABLE_LORA: Asset = createModelAsset({
   id: 'test-lora-001',
   name: 'detail_enhancer_v1.2.safetensors',
   size: 184_549_376,
@@ -92,7 +92,7 @@ export const STABLE_LORA: AssetItem = createModelAsset({
   updated_at: '2025-02-20T14:00:00Z'
 })
 
-export const STABLE_LORA_2: AssetItem = createModelAsset({
+export const STABLE_LORA_2: Asset = createModelAsset({
   id: 'test-lora-002',
   name: 'add_detail_v2.safetensors',
   size: 226_492_416,
@@ -105,7 +105,7 @@ export const STABLE_LORA_2: AssetItem = createModelAsset({
   updated_at: '2025-02-25T11:00:00Z'
 })
 
-export const STABLE_VAE: AssetItem = createModelAsset({
+export const STABLE_VAE: Asset = createModelAsset({
   id: 'test-vae-001',
   name: 'sdxl_vae.safetensors',
   size: 334_641_152,
@@ -118,7 +118,7 @@ export const STABLE_VAE: AssetItem = createModelAsset({
   updated_at: '2025-01-18T16:00:00Z'
 })
 
-export const STABLE_EMBEDDING: AssetItem = createModelAsset({
+export const STABLE_EMBEDDING: Asset = createModelAsset({
   id: 'test-embedding-001',
   name: 'bad_prompt_v2.pt',
   size: 32_768,
@@ -132,7 +132,7 @@ export const STABLE_EMBEDDING: AssetItem = createModelAsset({
   updated_at: '2025-02-01T09:30:00Z'
 })
 
-export const STABLE_INPUT_IMAGE: AssetItem = createInputAsset({
+export const STABLE_INPUT_IMAGE: Asset = createInputAsset({
   id: 'test-input-001',
   name: 'reference_photo.png',
   size: 2_048_576,
@@ -142,7 +142,7 @@ export const STABLE_INPUT_IMAGE: AssetItem = createInputAsset({
   updated_at: '2025-03-01T09:00:00Z'
 })
 
-export const STABLE_INPUT_IMAGE_2: AssetItem = createInputAsset({
+export const STABLE_INPUT_IMAGE_2: Asset = createInputAsset({
   id: 'test-input-002',
   name: 'mask_layer.png',
   size: 1_048_576,
@@ -152,7 +152,7 @@ export const STABLE_INPUT_IMAGE_2: AssetItem = createInputAsset({
   updated_at: '2025-03-05T10:00:00Z'
 })
 
-export const STABLE_INPUT_VIDEO: AssetItem = createInputAsset({
+export const STABLE_INPUT_VIDEO: Asset = createInputAsset({
   id: 'test-input-003',
   name: 'clip_720p.mp4',
   size: 15_728_640,
@@ -162,7 +162,7 @@ export const STABLE_INPUT_VIDEO: AssetItem = createInputAsset({
   updated_at: '2025-03-08T14:30:00Z'
 })
 
-export const STABLE_OUTPUT: AssetItem = createOutputAsset({
+export const STABLE_OUTPUT: Asset = createOutputAsset({
   id: 'test-output-001',
   name: 'ComfyUI_00001_.png',
   size: 4_194_304,
@@ -172,7 +172,7 @@ export const STABLE_OUTPUT: AssetItem = createOutputAsset({
   updated_at: '2025-03-10T12:00:00Z'
 })
 
-export const STABLE_OUTPUT_2: AssetItem = createOutputAsset({
+export const STABLE_OUTPUT_2: Asset = createOutputAsset({
   id: 'test-output-002',
   name: 'ComfyUI_00002_.png',
   size: 3_670_016,
@@ -184,7 +184,7 @@ export const STABLE_OUTPUT_2: AssetItem = createOutputAsset({
 
 // ─── Preset Collections ────────────────────────────────────────────────────────
 
-export const ALL_MODEL_FIXTURES: AssetItem[] = [
+export const ALL_MODEL_FIXTURES: Asset[] = [
   STABLE_CHECKPOINT,
   STABLE_CHECKPOINT_2,
   STABLE_LORA,
@@ -193,13 +193,13 @@ export const ALL_MODEL_FIXTURES: AssetItem[] = [
   STABLE_EMBEDDING
 ]
 
-export const ALL_INPUT_FIXTURES: AssetItem[] = [
+export const ALL_INPUT_FIXTURES: Asset[] = [
   STABLE_INPUT_IMAGE,
   STABLE_INPUT_IMAGE_2,
   STABLE_INPUT_VIDEO
 ]
 
-export const ALL_OUTPUT_FIXTURES: AssetItem[] = [STABLE_OUTPUT, STABLE_OUTPUT_2]
+export const ALL_OUTPUT_FIXTURES: Asset[] = [STABLE_OUTPUT, STABLE_OUTPUT_2]
 
 // ─── Factories for generating N deterministic assets ───────────────────────────
 
@@ -255,7 +255,7 @@ const INPUT_MIMES: Record<string, string> = {
 export function generateModels(
   count: number,
   category: 'checkpoints' | 'loras' | 'vae' | 'embeddings' = 'checkpoints'
-): AssetItem[] {
+): Asset[] {
   const names = category === 'loras' ? LORA_NAMES : CHECKPOINT_NAMES
   return Array.from({ length: Math.min(count, names.length) }, (_, i) =>
     createModelAsset({
@@ -273,7 +273,7 @@ export function generateModels(
 /**
  * Generate N deterministic input file assets.
  */
-export function generateInputFiles(count: number): AssetItem[] {
+export function generateInputFiles(count: number): Asset[] {
   return Array.from({ length: Math.min(count, INPUT_NAMES.length) }, (_, i) => {
     const name = INPUT_NAMES[i % INPUT_NAMES.length]
     const ext = name.substring(name.lastIndexOf('.'))
@@ -292,7 +292,7 @@ export function generateInputFiles(count: number): AssetItem[] {
 /**
  * Generate N deterministic output assets.
  */
-export function generateOutputAssets(count: number): AssetItem[] {
+export function generateOutputAssets(count: number): Asset[] {
   return Array.from({ length: count }, (_, i) =>
     createOutputAsset({
       id: `gen-output-${String(i + 1).padStart(3, '0')}`,

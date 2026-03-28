@@ -410,6 +410,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:packages/ingest-types
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -9556,6 +9559,9 @@ packages:
 
   vue-component-type-helpers@2.2.12:
     resolution: {integrity: sha512-YbGqHZ5/eW4SnkPNR44mKVc6ZKQoRs/Rux1sxC6rdwXb4qpbOSYfDr9DsTHolOTGmIKgM9j141mZbBeg05R1pw==}
+
+  vue-component-type-helpers@3.2.6:
+    resolution: {integrity: sha512-O02tnvIfOQVmnvoWwuSydwRoHjZVt8UEBR+2p4rT35p8GAy5VTlWP8o5qXfJR/GWCN0nVZoYWsVUvx2jwgdBmQ==}
 
   vue-component-type-helpers@3.2.6:
     resolution: {integrity: sha512-O02tnvIfOQVmnvoWwuSydwRoHjZVt8UEBR+2p4rT35p8GAy5VTlWP8o5qXfJR/GWCN0nVZoYWsVUvx2jwgdBmQ==}
@@ -19847,6 +19853,8 @@ snapshots:
       typescript: 5.9.3
 
   vue-component-type-helpers@2.2.12: {}
+
+  vue-component-type-helpers@3.2.6: {}
 
   vue-component-type-helpers@3.2.6: {}
 

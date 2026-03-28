@@ -1,9 +1,9 @@
 import type { Page, Route } from '@playwright/test'
 
 import type {
-  AssetItem,
-  AssetResponse
-} from '../../../src/platform/assets/schemas/assetSchema'
+  Asset,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 import {
   generateModels,
   generateInputFiles,
@@ -24,7 +24,7 @@ interface PaginationOptions {
 }
 
 export class AssetHelper {
-  private store: Map<string, AssetItem> = new Map()
+  private store: Map<string, Asset> = new Map()
   private paginationOptions: PaginationOptions | null = null
   private routeHandlers: Array<{
     pattern: string
@@ -42,7 +42,7 @@ export class AssetHelper {
    * Accepts a count (generates deterministic fixtures) or an array of assets.
    */
   withModels(
-    countOrAssets: number | AssetItem[],
+    countOrAssets: number | Asset[],
     category: 'checkpoints' | 'loras' | 'vae' | 'embeddings' = 'checkpoints'
   ): this {
     const assets =
@@ -58,7 +58,7 @@ export class AssetHelper {
   /**
    * Add input file assets to the mock store.
    */
-  withInputFiles(countOrAssets: number | AssetItem[]): this {
+  withInputFiles(countOrAssets: number | Asset[]): this {
     const assets =
       typeof countOrAssets === 'number'
         ? generateInputFiles(countOrAssets)
@@ -72,7 +72,7 @@ export class AssetHelper {
   /**
    * Add output assets to the mock store.
    */
-  withOutputAssets(countOrAssets: number | AssetItem[]): this {
+  withOutputAssets(countOrAssets: number | Asset[]): this {
     const assets =
       typeof countOrAssets === 'number'
         ? generateOutputAssets(countOrAssets)
@@ -86,7 +86,7 @@ export class AssetHelper {
   /**
    * Add a single specific asset to the mock store.
    */
-  withAsset(asset: AssetItem): this {
+  withAsset(asset: Asset): this {
     this.store.set(asset.id, asset)
     return this
   }
@@ -150,7 +150,7 @@ export class AssetHelper {
           filtered = filtered.slice(offset, offset + limit)
         }
 
-        const response: AssetResponse = {
+        const response: ListAssetsResponse = {
           assets: filtered,
           total: this.paginationOptions?.total ?? this.store.size,
           has_more: this.paginationOptions?.hasMore ?? false
@@ -264,14 +264,14 @@ export class AssetHelper {
   /**
    * Get the current assets in the mock store.
    */
-  getAssets(): AssetItem[] {
+  getAssets(): Asset[] {
     return [...this.store.values()]
   }
 
   /**
    * Get a single asset from the mock store by ID.
    */
-  getAsset(id: string): AssetItem | undefined {
+  getAsset(id: string): Asset | undefined {
     return this.store.get(id)
   }
 
@@ -300,7 +300,7 @@ export class AssetHelper {
 
   // ─── Internal ─────────────────────────────────────────────────────────────
 
-  private getFilteredAssets(tags: string[]): AssetItem[] {
+  private getFilteredAssets(tags: string[]): Asset[] {
     const assets = [...this.store.values()]
     if (tags.length === 0) return assets
 
