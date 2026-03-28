@@ -234,8 +234,7 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.listViewOption.click()
     await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
 
-    // Switch back to grid view via the settings menu (like a user would)
-    await tab.openSettingsMenu()
+    // Switch back to grid view (settings popover is still open)
     await tab.gridViewOption.click()
     await tab.waitForAssets()
 
@@ -530,8 +529,8 @@ test.describe('Assets sidebar - context menu', () => {
     // Verify multi-selection took effect before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
 
-    // Right-click on a selected card
-    await cards.first().click({ button: 'right' })
+    // Right-click on a selected card (force bypasses overlay interception)
+    await cards.first().click({ button: 'right', force: true })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await expect(contextMenu).toBeVisible({ timeout: 3000 })
