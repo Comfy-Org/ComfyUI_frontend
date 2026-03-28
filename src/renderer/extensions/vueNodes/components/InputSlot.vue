@@ -94,8 +94,10 @@ interface InputSlotProps {
 
 const props = defineProps<InputSlotProps>()
 
+const labelOverride = ref<string | null>(null)
 const displayLabel = computed(
   () =>
+    labelOverride.value ||
     props.slotData.label ||
     props.slotData.localized_name ||
     (props.slotData.name ?? `Input ${props.index}`)
@@ -187,6 +189,7 @@ function finishRename() {
 
   if (newLabel && newLabel !== displayLabel.value && slot) {
     slot.label = newLabel
+    labelOverride.value = newLabel
     node?.graph?.trigger('node:slot-label:changed', {
       nodeId: node.id,
       slotType: NodeSlotType.INPUT
