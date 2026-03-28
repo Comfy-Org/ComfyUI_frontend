@@ -260,6 +260,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
+    if (!isJobForActiveWorkflow(e.detail.prompt_id)) return
     if (!activeJob.value) return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
@@ -275,6 +276,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
+    if (!isJobForActiveWorkflow(e.detail.prompt_id)) return
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
   }
@@ -349,12 +351,15 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
 
-    // Update the progress states for all nodes
+    // Update the per-job progress map (always, regardless of active tab)
     nodeProgressStatesByJob.value = {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
     evictOldProgressJobs()
+
+    // Only update the "current view" progress if this job belongs to the active workflow tab
+    if (!isJobForActiveWorkflow(jobId)) return
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
@@ -370,6 +375,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    if (!isJobForActiveWorkflow(e.detail.prompt_id)) return
     _executingNodeProgress.value = e.detail
   }
 
@@ -617,6 +623,29 @@ export const useExecutionStore = defineStore('execution', () => {
     return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
   })
 
+  /**
+   * Check whether a job (by prompt_id) was initiated from the currently
+   * active workflow tab. Used to filter incoming WS messages so that
+   * visual state (node outputs, previews, progress indicators) only
+   * applies to the workflow the user is looking at.
+   *
+   * Returns `true` (permissive) when:
+   * - promptId is null/undefined (legacy message without prompt_id)
+   * - promptId is not in the session map (job from before this session
+   *   or from another browser tab — graceful degradation)
+   * - No active workflow is open
+   */
+  function isJobForActiveWorkflow(
+    promptId: string | null | undefined
+  ): boolean {
+    if (!promptId) return true
+    const jobPath = jobIdToSessionWorkflowPath.value.get(promptId)
+    if (!jobPath) return true
+    const activePath = workflowStore.activeWorkflow?.path
+    if (!activePath) return true
+    return jobPath === activePath
+  }
+
   return {
     isIdle,
     clientId,
@@ -637,6 +666,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningWorkflowCount,
     initializingJobIds,
     isActiveWorkflowRunning,
+    isJobForActiveWorkflow,
     isJobInitializing,
     clearInitializationByJobId,
     clearInitializationByJobIds,

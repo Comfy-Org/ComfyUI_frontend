@@ -16,6 +16,9 @@ import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
+// Mutable activeWorkflow ref so tests can control the "active tab" path
+const mockActiveWorkflow = { value: null as { path: string } | null }
+
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
@@ -26,7 +29,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: vi.fn(() => ({
       nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+      get activeWorkflow() {
+        return mockActiveWorkflow.value
+      }
     }))
   }
 })
@@ -693,5 +699,324 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
     const input = [{ type: 'NodeA' }, { type: 'NodeB' }]
     store.setMissingNodeTypes(input)
     expect(store.missingNodesError?.nodeTypes).toEqual(input)
+  })
+})
+
+describe('useExecutionStore - isJobForActiveWorkflow', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockActiveWorkflow.value = null
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('should return true when promptId is null (legacy message)', () => {
+    expect(store.isJobForActiveWorkflow(null)).toBe(true)
+  })
+
+  it('should return true when promptId is undefined', () => {
+    expect(store.isJobForActiveWorkflow(undefined)).toBe(true)
+  })
+
+  it('should return true when job is not in the session map (unknown job)', () => {
+    mockActiveWorkflow.value = { path: '/workflow-a' }
+    expect(store.isJobForActiveWorkflow('unknown-job')).toBe(true)
+  })
+
+  it('should return true when no active workflow is open', () => {
+    mockActiveWorkflow.value = null
+    store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+    expect(store.isJobForActiveWorkflow('job-1')).toBe(true)
+  })
+
+  it('should return true when job path matches active workflow', () => {
+    mockActiveWorkflow.value = { path: '/workflow-a' }
+    store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+    expect(store.isJobForActiveWorkflow('job-1')).toBe(true)
+  })
+
+  it('should return false when job path differs from active workflow', () => {
+    mockActiveWorkflow.value = { path: '/workflow-b' }
+    store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+    expect(store.isJobForActiveWorkflow('job-1')).toBe(false)
+  })
+})
+
+describe('useExecutionStore - WS message filtering by workflow tab', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function fireEvent<T>(name: string, detail: T) {
+    const handler = apiEventHandlers.get(name)
+    if (!handler) throw new Error(`${name} handler not bound`)
+    handler(new CustomEvent(name, { detail }))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockActiveWorkflow.value = null
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  describe('handleExecuted filtering', () => {
+    it('should update nodes when job matches active workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      // Start execution to set activeJobId
+      fireEvent('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: Date.now()
+      })
+      expect(store.activeJobId).toBe('job-1')
+
+      // Fire executed for a node
+      fireEvent('executed', {
+        node: 'node-1',
+        display_node: 'node-1',
+        prompt_id: 'job-1',
+        output: { images: [] }
+      })
+
+      expect(store.activeJob?.nodes['node-1']).toBe(true)
+    })
+
+    it('should ignore executed events from a different workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      fireEvent('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: Date.now()
+      })
+
+      fireEvent('executed', {
+        node: 'node-1',
+        display_node: 'node-1',
+        prompt_id: 'job-1',
+        output: { images: [] }
+      })
+
+      // Node should not be marked as executed since we're on workflow-b
+      expect(store.activeJob?.nodes['node-1']).not.toBe(true)
+    })
+  })
+
+  describe('handleExecutionCached filtering', () => {
+    it('should ignore cached events from a different workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      fireEvent('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: Date.now()
+      })
+
+      fireEvent('execution_cached', {
+        prompt_id: 'job-1',
+        timestamp: Date.now(),
+        nodes: ['node-1', 'node-2']
+      })
+
+      expect(store.activeJob?.nodes['node-1']).not.toBe(true)
+      expect(store.activeJob?.nodes['node-2']).not.toBe(true)
+    })
+  })
+
+  describe('handleProgress filtering', () => {
+    it('should ignore progress from a different workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      fireEvent('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: Date.now()
+      })
+
+      fireEvent('progress', {
+        value: 5,
+        max: 10,
+        prompt_id: 'job-1',
+        node: 'node-1'
+      })
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('should update progress when job matches active workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      fireEvent('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: Date.now()
+      })
+
+      fireEvent('progress', {
+        value: 5,
+        max: 10,
+        prompt_id: 'job-1',
+        node: 'node-1'
+      })
+
+      expect(store._executingNodeProgress).toEqual({
+        value: 5,
+        max: 10,
+        prompt_id: 'job-1',
+        node: 'node-1'
+      })
+    })
+  })
+
+  describe('handleProgressState filtering', () => {
+    it('should always update nodeProgressStatesByJob regardless of active workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      const nodes = {
+        'node-1': {
+          value: 5,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-1',
+          display_node_id: 'node-1'
+        }
+      }
+
+      fireEvent('progress_state', { prompt_id: 'job-1', nodes })
+
+      // Per-job map should always be updated
+      expect(store.nodeProgressStatesByJob['job-1']).toBeDefined()
+    })
+
+    it('should NOT update nodeProgressStates when job is for a different workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      const nodes = {
+        'node-1': {
+          value: 5,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-1',
+          display_node_id: 'node-1'
+        }
+      }
+
+      fireEvent('progress_state', { prompt_id: 'job-1', nodes })
+
+      // nodeProgressStates (the "current view") should NOT be updated
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+
+    it('should update nodeProgressStates when job matches active workflow', () => {
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      store.ensureSessionWorkflowPath('job-1', '/workflow-a')
+
+      const nodes = {
+        'node-1': {
+          value: 5,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-1',
+          display_node_id: 'node-1'
+        }
+      }
+
+      fireEvent('progress_state', { prompt_id: 'job-1', nodes })
+
+      expect(store.nodeProgressStates['node-1']).toBeDefined()
+      expect(store.nodeProgressStates['node-1'].state).toBe('running')
+    })
+  })
+
+  describe('multi-tab scenario', () => {
+    it('should isolate progress between two workflows', () => {
+      // Queue jobs from two different workflow tabs
+      store.ensureSessionWorkflowPath('job-a', '/workflow-a')
+      store.ensureSessionWorkflowPath('job-b', '/workflow-b')
+
+      // User is viewing workflow A
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+
+      // Start job-a
+      fireEvent('execution_start', {
+        prompt_id: 'job-a',
+        timestamp: Date.now()
+      })
+
+      // Progress from job-a should show
+      fireEvent('progress', {
+        value: 3,
+        max: 10,
+        prompt_id: 'job-a',
+        node: 'node-1'
+      })
+      expect(store._executingNodeProgress?.value).toBe(3)
+
+      // Progress from job-b should NOT show (different workflow)
+      fireEvent('progress', {
+        value: 7,
+        max: 10,
+        prompt_id: 'job-b',
+        node: 'node-1'
+      })
+      // Should still be 3 from job-a
+      expect(store._executingNodeProgress?.value).toBe(3)
+    })
+
+    it('should show correct progress after switching tabs', () => {
+      store.ensureSessionWorkflowPath('job-a', '/workflow-a')
+      store.ensureSessionWorkflowPath('job-b', '/workflow-b')
+
+      // Start job-a
+      fireEvent('execution_start', {
+        prompt_id: 'job-a',
+        timestamp: Date.now()
+      })
+
+      // User is on workflow A — progress from job-a appears
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      const nodesA = {
+        'node-1': {
+          value: 5,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-a',
+          display_node_id: 'node-1'
+        }
+      }
+      fireEvent('progress_state', { prompt_id: 'job-a', nodes: nodesA })
+      expect(store.nodeProgressStates['node-1']?.value).toBe(5)
+
+      // Switch to workflow B — progress from job-a should no longer update nodeProgressStates
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      const nodesA2 = {
+        'node-1': {
+          value: 8,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-a',
+          display_node_id: 'node-1'
+        }
+      }
+      fireEvent('progress_state', { prompt_id: 'job-a', nodes: nodesA2 })
+      // nodeProgressStates should NOT be updated (still old value from last render)
+      expect(store.nodeProgressStates['node-1']?.value).toBe(5)
+
+      // But nodeProgressStatesByJob should be updated
+      expect(store.nodeProgressStatesByJob['job-a']['node-1'].value).toBe(8)
+    })
   })
 })
