@@ -111,14 +111,15 @@ export class BuilderSelectHelper {
 
   /** Click the first SaveImage/PreviewImage node on the canvas. */
   async selectOutputNode() {
-    const saveImageNodeId = await this.page.evaluate(() =>
-      String(
-        window.app!.rootGraph.nodes.find(
-          (n: { type?: string }) =>
-            n.type === 'SaveImage' || n.type === 'PreviewImage'
-        )?.id
+    const saveImageNodeId = await this.page.evaluate(() => {
+      const node = window.app!.rootGraph.nodes.find(
+        (n: { type?: string }) =>
+          n.type === 'SaveImage' || n.type === 'PreviewImage'
       )
-    )
+      return node ? String(node.id) : null
+    })
+    if (!saveImageNodeId)
+      throw new Error('SaveImage/PreviewImage node not found')
     const saveImageRef =
       await this.comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
     await saveImageRef.centerOnNode()

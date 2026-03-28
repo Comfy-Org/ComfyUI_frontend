@@ -307,6 +307,10 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     const pathAfterFirst = await comfyPage.workflow.getActiveWorkflowPath()
 
     await reSaveAs(appMode, name, 'App')
+
+    await expect(appMode.saveAs.overwriteDialog).toBeVisible({ timeout: 5000 })
+    await appMode.saveAs.overwriteButton.click()
+
     await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
 
     const pathAfterSecond = await comfyPage.workflow.getActiveWorkflowPath()

@@ -62,6 +62,14 @@ export class BuilderSaveAsHelper {
     return this.successDialog.getByRole('button', { name: 'Exit builder' })
   }
 
+  get overwriteDialog(): Locator {
+    return this.page.getByRole('dialog', { name: 'Overwrite existing file?' })
+  }
+
+  get overwriteButton(): Locator {
+    return this.overwriteDialog.getByRole('button', { name: 'Overwrite' })
+  }
+
   async fillAndSave(workflowName: string, viewType: 'App' | 'Node graph') {
     await this.nameInput.fill(workflowName)
     await this.viewTypeRadio(viewType).click()
