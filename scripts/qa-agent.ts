@@ -25,7 +25,7 @@ interface AgentOptions {
   qaGuide: string
   outputDir: string
   geminiApiKey: string
-  anthropicApiKey: string
+  anthropicApiKey?: string // Optional — Agent SDK auto-detects Claude Code session
   maxTurns?: number
   timeBudgetMs?: number
 }
@@ -518,7 +518,7 @@ ${issueContext}`
       options: {
         model: 'claude-sonnet-4-6',
         systemPrompt,
-        apiKey: anthropicApiKey,
+        ...(anthropicApiKey ? { apiKey: anthropicApiKey } : {}),
         maxTurns,
         mcpServers: { 'qa-agent': server },
         allowedTools: [
