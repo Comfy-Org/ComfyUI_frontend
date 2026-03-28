@@ -445,13 +445,11 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
   }
 
-  async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {
+  async loadDefaultAndConvertKSamplerToSubgraph(): Promise<NodeReference> {
     await this.comfyPage.workflow.loadWorkflow('default')
     const ksampler = await this.comfyPage.nodeOps.getNodeRefById('3')
     await ksampler.click('title')
-    const subgraphNode = await ksampler.convertToSubgraph()
-    await this.comfyPage.nextFrame()
-    return subgraphNode
+    return ksampler.convertToSubgraph()
   }
 
   async packAllInteriorNodes(hostNodeId: string): Promise<void> {

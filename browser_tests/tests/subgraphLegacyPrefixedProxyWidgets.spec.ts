@@ -31,11 +31,14 @@ test.describe(
     test('Loads without console warnings about failed widget resolution', async ({
       comfyPage
     }) => {
-      const { warnings } = SubgraphHelper.collectConsoleWarnings(comfyPage.page)
+      const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
+        comfyPage.page
+      )
 
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
       expect(warnings).toEqual([])
+      dispose()
     })
 
     test('Promoted widget renders with normalized name, not legacy prefix', async ({

@@ -5,7 +5,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 async function createSubgraphAndNavigateInto(comfyPage: ComfyPage) {
   const subgraphNode =
-    await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
+    await comfyPage.subgraph.loadDefaultAndConvertKSamplerToSubgraph()
   await subgraphNode.navigateIntoSubgraph()
   return subgraphNode
 }

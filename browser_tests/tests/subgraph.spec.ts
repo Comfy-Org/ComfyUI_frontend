@@ -107,6 +107,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
+      expect(initialInputLabel).not.toBeNull()
 
       await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
@@ -135,6 +136,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
+      expect(initialInputLabel).not.toBeNull()
 
       await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel!)
 
@@ -161,6 +163,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialOutputLabel = await comfyPage.subgraph.getSlotLabel('output')
+      expect(initialOutputLabel).not.toBeNull()
 
       await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel!)
 
@@ -190,6 +193,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
+      expect(initialInputLabel).not.toBeNull()
 
       // Test that right-click still works for renaming
       await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)

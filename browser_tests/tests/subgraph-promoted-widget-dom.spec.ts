@@ -16,7 +16,7 @@ test.describe(
       comfyPage
     }) => {
       const subgraphNode =
-        await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
+        await comfyPage.subgraph.loadDefaultAndConvertKSamplerToSubgraph()
 
       // Enable Vue nodes now that the subgraph has been created
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
