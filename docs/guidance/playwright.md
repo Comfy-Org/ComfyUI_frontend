@@ -81,7 +81,9 @@ When a test depends on an invariant unrelated to what it's actually testing (e.g
 
 ```typescript
 // ✅ Custom message on an unrelated precondition — clear signal when the invariant breaks
-expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(4)
+expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(
+  4
+)
 await node.move(100, 200)
 
 // ✅ Soft assertion — verifies multiple invariants without stopping the test early
