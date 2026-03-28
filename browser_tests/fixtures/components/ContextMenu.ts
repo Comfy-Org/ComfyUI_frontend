@@ -44,7 +44,7 @@ export class ContextMenu {
 
   async openFor(locator: Locator): Promise<this> {
     await locator.click({ button: 'right' })
-    await expect(this.primeVueMenu.or(this.litegraphMenu).first()).toBeVisible()
+    await expect.poll(() => this.isVisible()).toBe(true)
     return this
   }
 
