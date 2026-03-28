@@ -814,11 +814,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
-      const tabs = await comfyPage.menu.topbar.getTabNames()
-      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
 
-      expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames(), { timeout: 5000 })
+        .toEqual(expect.arrayContaining([workflowA, workflowB]))
+
+      const tabs = await comfyPage.menu.topbar.getTabNames()
       expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+
+      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
       expect(activeWorkflowName).toEqual(workflowB)
     })
 
