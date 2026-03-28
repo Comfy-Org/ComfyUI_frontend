@@ -175,32 +175,28 @@ function startRename() {
   })
 }
 
+let renameCommitted = false
+
 function finishRename() {
-  if (!isRenaming.value) return
+  if (!isRenaming.value || renameCommitted) return
+  renameCommitted = true
 
   const newLabel = renameValue.value.trim()
-  if (!newLabel || newLabel === displayLabel.value) {
-    isRenaming.value = false
-    return
-  }
-
   const node = app.canvas?.graph?.getNodeById(props.nodeId ?? '')
   const slot = node?.inputs?.[props.index]
-  if (!slot) {
-    isRenaming.value = false
-    return
+
+  if (newLabel && newLabel !== displayLabel.value && slot) {
+    slot.label = newLabel
+    node?.graph?.trigger('node:slot-label:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT
+    })
+    app.canvas?.setDirty(true, true)
   }
 
-  slot.label = newLabel
-  node?.graph?.trigger('node:slot-label:changed', {
-    nodeId: node.id,
-    slotType: NodeSlotType.INPUT
-  })
-  app.canvas?.setDirty(true, true)
-
-  // Defer hiding the input until after Vue propagates the label update
   nextTick(() => {
     isRenaming.value = false
+    renameCommitted = false
   })
 }
 
