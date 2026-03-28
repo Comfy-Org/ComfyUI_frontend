@@ -299,10 +299,16 @@ describe('SubscriptionPanel', () => {
     })
 
     it('renders refill date with literal slashes', () => {
+      vi.useFakeTimers()
+      vi.stubEnv('TZ', 'UTC')
+
       mockIsActiveSubscription.value = true
       const wrapper = createWrapper()
       expect(wrapper.text()).toMatch(/Included \(Refills \d{2}\/\d{2}\/\d{2}\)/)
       expect(wrapper.text()).not.toContain('&#x2F;')
+
+      vi.useRealTimers()
+      vi.unstubAllEnvs()
     })
   })
 
