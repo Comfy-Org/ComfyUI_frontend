@@ -86,6 +86,7 @@ Tags are respected by config:
 
 - Check `browser_tests/assets/` for test data and fixtures
 - Use realistic ComfyUI workflows for E2E tests
+- When multiple nodes can share the same name (e.g. two "CLIP Text Encode" nodes), use `vueNodes.getNodesByTitle(name).nth(n)` or `vueNodes.getNodeByTitleNth(name, n)`. Never use `getNodeByTitle` for non-unique names — Playwright strict mode will fail.
 
 ## Running Tests
 
