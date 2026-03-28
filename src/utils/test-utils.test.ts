@@ -1,3 +1,4 @@
+/* eslint-disable vue/one-component-per-file, vue/no-reserved-component-names */
 import { describe, expect, it, vi } from 'vitest'
 
 import { render, screen, stubs } from '@/utils/test-utils'

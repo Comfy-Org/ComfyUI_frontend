@@ -1,3 +1,4 @@
+/* eslint-disable vue/multi-word-component-names, vue/one-component-per-file, vue/require-prop-types, vue/no-reserved-component-names */
 import type { RenderResult } from '@testing-library/vue'
 import type { ComponentMountingOptions } from '@vue/test-utils'
 
