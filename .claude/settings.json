@@ -5,5 +5,16 @@
       "Bash(pnpx vitest run \"draftCacheV2.property\")",
       "Bash(node -e \"const fc = require\\(''fast-check''\\); console.log\\(Object.keys\\(fc\\).filter\\(k => k.includes\\(''string''\\)\\).join\\('', ''\\)\\)\")"
     ]
+  },
+  "extraKnownMarketplaces": {
+    "nx-claude-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "nrwl/nx-ai-agents-config"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "nx@nx-claude-plugins": true
   }
 }

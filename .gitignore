@@ -100,3 +100,4 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+.nx/polygraph
