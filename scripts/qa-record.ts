@@ -605,6 +605,13 @@ async function hoverMenuItem(page: Page, label: string) {
     const menuItem = page
       .locator('.comfy-command-menu .p-tieredmenu-item')
       .filter({ has: menuLabel })
+    const box = await menuItem.boundingBox().catch(() => null)
+    if (box)
+      await moveCursorOverlay(
+        page,
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
     await menuItem.hover()
     // Wait for submenu to appear
     try {
@@ -629,9 +636,18 @@ async function clickSubmenuItem(page: Page, label: string) {
     .filter({ hasText: label })
     .first()
   if (await primeItem.isVisible().catch(() => false)) {
+    const box = await primeItem.boundingBox().catch(() => null)
+    if (box)
+      await moveCursorOverlay(
+        page,
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+    if (box) await clickCursorOverlay(page, true)
     await primeItem.click({ timeout: 5000 }).catch(() => {
       console.warn(`Click on PrimeVue menu item "${label}" failed`)
     })
+    if (box) await clickCursorOverlay(page, false)
     await sleep(800)
     return
   }
@@ -642,9 +658,18 @@ async function clickSubmenuItem(page: Page, label: string) {
     .filter({ hasText: label })
     .first()
   if (await liteItem.isVisible().catch(() => false)) {
+    const box = await liteItem.boundingBox().catch(() => null)
+    if (box)
+      await moveCursorOverlay(
+        page,
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+    if (box) await clickCursorOverlay(page, true)
     await liteItem.click({ timeout: 5000 }).catch(() => {
       console.warn(`Click on litegraph menu item "${label}" failed`)
     })
+    if (box) await clickCursorOverlay(page, false)
     await sleep(800)
     return
   }
@@ -721,13 +746,24 @@ async function fillDialogAndConfirm(page: Page, text: string) {
 async function clickByText(page: Page, text: string) {
   const el = page.locator(`text=${text}`).first()
   if (await el.isVisible().catch(() => false)) {
+    // Get element position for cursor overlay
+    const box = await el.boundingBox().catch(() => null)
+    if (box) {
+      await moveCursorOverlay(
+        page,
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+    }
     await el.hover({ timeout: 3000 }).catch(() => {})
     await sleep(400)
+    if (box) await clickCursorOverlay(page, true)
     await el.click({ timeout: 5000 }).catch((e) => {
       console.warn(
         `Click on "${text}" failed: ${e instanceof Error ? e.message.split('\n')[0] : e}`
       )
     })
+    if (box) await clickCursorOverlay(page, false)
     await sleep(500)
   } else {
     console.warn(`Element with text "${text}" not found`)
