@@ -8,6 +8,7 @@ tools: [Read, Grep]
 You are reviewing Playwright E2E test code in `browser_tests/`. Focus on issues a **reviewer** would catch that an author might miss — flakiness risks, fixture misuse, test isolation problems, and convention violations.
 
 Reference docs (read if you need full context):
+
 - `browser_tests/README.md` — setup, patterns, screenshot workflow
 - `browser_tests/AGENTS.md` — directory structure, fixture overview
 - `docs/guidance/playwright.md` — type assertion rules, test tags, forbidden patterns
