@@ -32,9 +32,11 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   })
 
-  // Flaky: thumbnail assets are inconsistently available across CI runs.
-  // FIX: Either commit all thumbnail media to public/templates/ so they are
-  // always present in CI, or mock the template index to a known fixture set.
+  // Flaky: /templates is proxied to an external server, so thumbnail
+  // availability varies across CI runs.
+  // FIX: Make hermetic — fixture index.json and thumbnail responses via
+  // page.route(), and change checkTemplateFileExists to use browser-context
+  // fetch (page.request.head bypasses Playwright routing).
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
   test.skip('should have all required thumbnail media for each template', async ({
     comfyPage
