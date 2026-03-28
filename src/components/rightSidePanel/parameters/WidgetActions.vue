@@ -114,6 +114,7 @@ function handleResetToDefault() {
 <template>
   <MoreButton
     is-vertical
+    data-testid="widget-actions-menu-button"
     class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
     <template #default="{ close }">

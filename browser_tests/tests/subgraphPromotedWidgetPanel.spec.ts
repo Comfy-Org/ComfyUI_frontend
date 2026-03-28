@@ -90,10 +90,14 @@ test.describe(
           'Sub 0'
         )
 
-        const linkIcons = shownSection.locator('.icon-\\[lucide--link\\]')
+        const linkIcons = shownSection.getByTestId(
+          TestIds.subgraphEditor.iconLink
+        )
         await expect(linkIcons.first()).toBeVisible()
 
-        const eyeIcons = shownSection.locator('.icon-\\[lucide--eye\\]')
+        const eyeIcons = shownSection.getByTestId(
+          TestIds.subgraphEditor.iconEye
+        )
         await expect(eyeIcons).toHaveCount(0)
       })
 
@@ -133,7 +137,9 @@ test.describe(
 
         const panel = await ensurePropertiesPanel(comfyPage)
 
-        const moreButtons = panel.locator('.icon-\\[lucide--more-vertical\\]')
+        const moreButtons = panel.getByTestId(
+          TestIds.subgraphEditor.widgetActionsMenuButton
+        )
         await expect(moreButtons.first()).toBeVisible()
         await moreButtons.first().click()
 
