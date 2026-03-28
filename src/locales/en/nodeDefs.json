@@ -3996,11 +3996,19 @@
       },
       "floats": {
         "name": "floats",
-        "tooltip": "Floats are available as u_float0-4 in the shader code"
+        "tooltip": "Floats are available as u_float0-19 in the shader code"
       },
       "ints": {
         "name": "ints",
-        "tooltip": "Ints are available as u_int0-4 in the shader code"
+        "tooltip": "Ints are available as u_int0-19 in the shader code"
+      },
+      "bools": {
+        "name": "bools",
+        "tooltip": "Booleans are available as u_bool0-9 (bool) in the shader code"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Curves are available as u_curve0-3 (sampler2D, 1D LUT) in the shader code. Sample with texture(u_curve0, vec2(x, 0.5)).r"
       }
     },
     "outputs": {

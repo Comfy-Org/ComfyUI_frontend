@@ -3645,6 +3645,14 @@
     "description": "將 GLSL ES 片段著色器應用於影像。u_resolution（vec2）始終可用。",
     "display_name": "GLSL 葉片著色器",
     "inputs": {
+      "bools": {
+        "name": "布林值",
+        "tooltip": "布林值在著色器程式碼中可作為 u_bool0-9（bool）使用"
+      },
+      "curves": {
+        "name": "曲線",
+        "tooltip": "曲線在著色器程式碼中可作為 u_curve0-3（sampler2D，1D LUT）使用。可用 texture(u_curve0, vec2(x, 0.5)).r 取樣"
+      },
       "floats": {
         "name": "浮點數",
         "tooltip": "浮點數在著色器程式碼中以 u_float0-4 提供"
