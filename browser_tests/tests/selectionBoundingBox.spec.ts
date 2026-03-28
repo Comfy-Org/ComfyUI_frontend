@@ -3,7 +3,8 @@ import type { Page } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage';
+import type { ComfyPage } from '../fixtures/ComfyPage';
 
 interface CanvasRect {
   x: number
@@ -19,27 +20,6 @@ interface MeasureResult {
 
 // Must match the padding value passed to createBounds() in selectionBorder.ts
 const SELECTION_PADDING = 10
-
-async function waitForSelectedCount(page: Page, count: number) {
-  await page.waitForFunction(
-    (n) => window.app!.canvas.selectedItems.size === n,
-    count,
-    { timeout: 5000 }
-  )
-}
-
-async function waitForNodeLayout(page: Page, nodeId: string) {
-  await page.waitForFunction(
-    (id) => {
-      const el = document.querySelector(`[data-node-id="${id}"]`)
-      if (!el) return false
-      const rect = el.getBoundingClientRect()
-      return rect.width > 0 && rect.height > 0
-    },
-    nodeId,
-    { timeout: 5000 }
-  )
-}
 
 async function measureBounds(
   page: Page,
@@ -128,11 +108,11 @@ async function loadWithPositions(
 }
 
 async function setNodeCollapsed(
-  page: Page,
+  comfyPage: ComfyPage,
   nodeId: string,
   collapsed: boolean
 ) {
-  await page.evaluate(
+  await comfyPage.page.evaluate(
     ({ id, collapsed }) => {
       const node = window.app!.graph._nodes.find(
         (n: { id: number | string }) => String(n.id) === id
@@ -145,7 +125,7 @@ async function setNodeCollapsed(
     },
     { id: nodeId, collapsed }
   )
-  await waitForNodeLayout(page, nodeId)
+  await comfyPage.vueNodes.getNodeLocator(nodeId).waitFor()
 }
 
 const SUBGRAPH_ID = '2'
@@ -200,15 +180,17 @@ test.describe('Selection bounding box', { tag: ['@canvas', '@node'] }, () => {
             [targetId]: TARGET_POSITIONS[pos]
           })
           await comfyPage.vueNodes.waitForNodes()
-          await waitForNodeLayout(page, targetId)
-          await waitForNodeLayout(page, refId)
+          await comfyPage.vueNodes.getNodeLocator(targetId).waitFor()
+          await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
 
           if (state === 'collapsed') {
-            await setNodeCollapsed(page, targetId, true)
+            await setNodeCollapsed(comfyPage, targetId, true)
           }
 
           await comfyPage.canvas.press('Control+a')
-          await waitForSelectedCount(page, 2)
+          await expect
+            .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+            .toBe(2)
           await comfyPage.nextFrame()
 
           const result = await measureBounds(page, [refId, targetId])
