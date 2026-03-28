@@ -99,9 +99,9 @@
                 </Button>
               </template>
               <template #bottom-right>
-                <Tag label="png" />
-                <Tag label="1.2 MB" />
-                <Tag label="LoRA">
+                <Tag label="png" shape="overlay" />
+                <Tag label="1.2 MB" shape="overlay" />
+                <Tag label="LoRA" shape="overlay">
                   <template #icon>
                     <i class="icon-[lucide--folder]" />
                   </template>

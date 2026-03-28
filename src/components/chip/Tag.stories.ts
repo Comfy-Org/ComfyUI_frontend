@@ -10,7 +10,7 @@ const meta: Meta<typeof Tag> = {
     label: { control: 'text' },
     shape: {
       control: 'select',
-      options: ['square', 'rounded']
+      options: ['square', 'rounded', 'overlay']
     },
     state: {
       control: 'select',
@@ -71,6 +71,13 @@ export const AllStates: Story = {
             <Tag label="Default" shape="rounded" />
             <Tag label="Unselected" shape="rounded" state="unselected" />
             <Tag label="Selected" shape="rounded" removable />
+          </div>
+        </div>
+        <div class="bg-zinc-800 p-2 rounded">
+          <p class="mb-2 text-xs text-muted-foreground">Overlay (on images)</p>
+          <div class="flex items-center gap-2">
+            <Tag label="png" shape="overlay" />
+            <Tag label="1.2 MB" shape="overlay" />
           </div>
         </div>
       </div>

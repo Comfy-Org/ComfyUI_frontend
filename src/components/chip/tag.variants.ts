@@ -6,7 +6,8 @@ export const tagVariants = cva({
   variants: {
     shape: {
       square: 'rounded-sm bg-modal-card-tag-background',
-      rounded: 'rounded-full bg-secondary-background'
+      rounded: 'rounded-full bg-secondary-background',
+      overlay: 'rounded-sm bg-zinc-500/40 text-white/90'
     },
     state: {
       default: 'text-modal-card-tag-foreground',
