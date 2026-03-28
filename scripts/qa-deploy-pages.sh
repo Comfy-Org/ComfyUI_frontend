@@ -222,14 +222,26 @@ if [ -d video-reviews ]; then
   for rpt in video-reviews/*-qa-video-report.md; do
     [ -f "$rpt" ] || continue
     TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
-    SUMM=$(sed -n '/^## Summary/,/^## /p' "$rpt" 2>/dev/null | head -15)
-    # Check negatives FIRST — "fails to reproduce" contains "reproduce" but is negative
-    if echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
-      INCONC_COUNT=$((INCONC_COUNT + 1))
-    elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|could not be confirmed\|unable to reproduce\|fails\? to reproduce\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate\|does not demonstrate\|steps were not performed\|never.*tested\|never.*accessed\|not.* confirmed'; then
-      NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
-    elif echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
-      REPRO_COUNT=$((REPRO_COUNT + 1))
+    # Try structured JSON verdict first (from ## Verdict section)
+    VERDICT_JSON=$(grep -oP '\{"verdict":\s*"[^"]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '"[A-Z_]+"$' | tr -d '"')
+    RISK_JSON=$(grep -oP '"risk":\s*"[^"]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '"[a-z]+"$' | tr -d '"')
+
+    if [ -n "$VERDICT_JSON" ]; then
+      case "$VERDICT_JSON" in
+        REPRODUCED) REPRO_COUNT=$((REPRO_COUNT + 1)) ;;
+        NOT_REPRODUCIBLE) NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1)) ;;
+        INCONCLUSIVE) INCONC_COUNT=$((INCONC_COUNT + 1)) ;;
+      esac
+    else
+      # Fallback: grep Summary section (for older reports without ## Verdict)
+      SUMM=$(sed -n '/^## Summary/,/^## /p' "$rpt" 2>/dev/null | head -15)
+      if echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
+        INCONC_COUNT=$((INCONC_COUNT + 1))
+      elif echo "$SUMM" | grep -iq 'not reproduced\|could not reproduce\|could not be confirmed\|unable to reproduce\|fails\? to reproduce\|fails\? to perform\|was NOT\|NOT visible\|not observed\|fail.* to demonstrate\|does not demonstrate\|steps were not performed\|never.*tested\|never.*accessed\|not.* confirmed'; then
+        NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
+      elif echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
+        REPRO_COUNT=$((REPRO_COUNT + 1))
+      fi
     fi
   done
 fi
@@ -274,19 +286,33 @@ BADGE_LABEL="QA${QA_DATE}"
 # For PRs, also extract fix quality from Overall Risk section
 FIX_RESULT="" FIX_COLOR="#4c1"
 if [ "$TARGET_TYPE" != "issue" ]; then
-  RISK_TEXT=""
-  if [ -d video-reviews ]; then
-    RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20)
-  fi
-  RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
-  if [ -n "$RISK_FIRST" ]; then
-    case "$RISK_FIRST" in
-      *low*|*minimal*) FIX_RESULT="APPROVED" FIX_COLOR="#4c1" ;;
-      *medium*|*moderate*) FIX_RESULT="MINOR ISSUES" FIX_COLOR="#dfb317" ;;
-      *high*|*critical*) FIX_RESULT="MAJOR ISSUES" FIX_COLOR="#e05d44" ;;
-    esac
-  elif echo "$RISK_TEXT" | grep -iq 'no.*risk\|approved\|looks good'; then
-    FIX_RESULT="APPROVED" FIX_COLOR="#4c1"
+  # Try structured JSON risk first
+  ALL_RISKS=$(grep -ohP '"risk":\s*"[a-z]+"' video-reviews/*.md 2>/dev/null | grep -oP '"[a-z]+"$' | tr -d '"')
+  if [ -n "$ALL_RISKS" ]; then
+    # Use worst risk across all reports
+    if echo "$ALL_RISKS" | grep -q 'high'; then
+      FIX_RESULT="MAJOR ISSUES" FIX_COLOR="#e05d44"
+    elif echo "$ALL_RISKS" | grep -q 'medium'; then
+      FIX_RESULT="MINOR ISSUES" FIX_COLOR="#dfb317"
+    elif echo "$ALL_RISKS" | grep -q 'low'; then
+      FIX_RESULT="APPROVED" FIX_COLOR="#4c1"
+    fi
+  else
+    # Fallback: grep Overall Risk section
+    RISK_TEXT=""
+    if [ -d video-reviews ]; then
+      RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20)
+    fi
+    RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
+    if [ -n "$RISK_FIRST" ]; then
+      case "$RISK_FIRST" in
+        *low*|*minimal*) FIX_RESULT="APPROVED" FIX_COLOR="#4c1" ;;
+        *medium*|*moderate*) FIX_RESULT="MINOR ISSUES" FIX_COLOR="#dfb317" ;;
+        *high*|*critical*) FIX_RESULT="MAJOR ISSUES" FIX_COLOR="#e05d44" ;;
+      esac
+    elif echo "$RISK_TEXT" | grep -iq 'no.*risk\|approved\|looks good'; then
+      FIX_RESULT="APPROVED" FIX_COLOR="#4c1"
+    fi
   fi
 fi
 
