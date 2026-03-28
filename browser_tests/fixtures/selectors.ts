@@ -47,7 +47,10 @@ export const TestIds = {
     shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
     widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label'
+    widgetLabel: 'subgraph-widget-label',
+    iconLink: 'icon-link',
+    iconEye: 'icon-eye',
+    widgetActionsMenuButton: 'widget-actions-menu-button'
   },
   node: {
     titleInput: 'node-title-input'
@@ -103,3 +106,4 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]

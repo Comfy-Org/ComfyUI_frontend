@@ -49,7 +49,10 @@ function getIcon() {
       :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >
-      <i :class="getIcon()" />
+      <i
+        :class="getIcon()"
+        :data-testid="isPhysical ? 'icon-link' : 'icon-eye'"
+      />
     </Button>
     <div
       v-if="isDraggable"
