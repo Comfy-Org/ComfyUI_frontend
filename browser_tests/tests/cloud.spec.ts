@@ -13,9 +13,7 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
     await expect(subscribeButton).toBeAttached()
   })
 
-  test('bottom panel toggle is hidden in cloud mode', async ({
-    comfyPage
-  }) => {
+  test('bottom panel toggle is hidden in cloud mode', async ({ comfyPage }) => {
     const sideToolbar = comfyPage.page.getByTestId(TestIds.sidebar.toolbar)
     await expect(sideToolbar).toBeVisible()
 
