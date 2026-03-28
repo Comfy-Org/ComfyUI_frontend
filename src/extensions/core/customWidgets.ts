@@ -131,14 +131,19 @@ function onBranchSelectorCreated(this: LGraphNode) {
   const values = shallowReactive<string[]>([])
   const node = this
 
-  function getInputLabels(): string[] {
+  function getConnectedInputs(): { label: string; index: number }[] {
     return node.inputs
       .slice(0, -1)
-      .map((i) => i.label ?? i.localized_name ?? i.name)
+      .map((inp, i) => ({
+        label: inp.label ?? inp.localized_name ?? inp.name,
+        index: i,
+        connected: inp.link != null
+      }))
+      .filter((inp) => inp.connected)
   }
 
   function refreshBranchValues() {
-    const next = getInputLabels()
+    const next = getConnectedInputs().map((inp) => inp.label)
     values.splice(0, values.length, ...next)
   }
 
@@ -153,8 +158,11 @@ function onBranchSelectorCreated(this: LGraphNode) {
     comboWidget.callback?.(comboWidget.value)
   }
 
-  comboWidget.serializeValue = () =>
-    values.findIndex((e) => e === comboWidget.value)
+  comboWidget.serializeValue = () => {
+    const connected = getConnectedInputs()
+    const idx = connected.findIndex((inp) => inp.label === comboWidget.value)
+    return idx >= 0 ? idx : 0
+  }
 
   // Refresh on connection changes (add/remove inputs)
   this.onConnectionsChange = useChainCallback(this.onConnectionsChange, () =>
@@ -164,12 +172,14 @@ function onBranchSelectorCreated(this: LGraphNode) {
     })
   )
 
-  // Check for label changes on each draw frame so renames propagate
-  let lastLabels = ''
+  // Check for label/connection changes on each draw frame
+  let lastSnapshot = ''
   this.onDrawForeground = useChainCallback(this.onDrawForeground, () => {
-    const current = getInputLabels().join('\0')
-    if (current !== lastLabels) {
-      lastLabels = current
+    const current = getConnectedInputs()
+      .map((inp) => `${inp.index}:${inp.label}`)
+      .join('\0')
+    if (current !== lastSnapshot) {
+      lastSnapshot = current
       refreshBranchValues()
       syncComboSelection()
     }
