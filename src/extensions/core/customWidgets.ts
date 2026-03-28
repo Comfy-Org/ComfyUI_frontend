@@ -1,4 +1,4 @@
-import { shallowReactive } from 'vue'
+import { computed, ref, shallowReactive, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -124,70 +124,39 @@ function onCustomComboCreated(this: LGraphNode) {
   addOption(this)
 }
 
+const renameTrigger = ref(0)
 function onBranchSelectorCreated(this: LGraphNode) {
   this.applyToGraph = applyToGraph
 
+  //FIXME: watchers probably leak since we're not in a vue component
+  const connectionsTrigger = ref(0)
   this.widgets?.pop()
-  const values = shallowReactive<string[]>([])
+  const labels = computed(() => {
+    void renameTrigger.value
+    void connectionsTrigger.value
+    return this.inputs.slice(0, -2).map((inp) => inp.label)
+  })
+  const values = () => labels.value
   const node = this
-
-  function getConnectedInputs(): { label: string; index: number }[] {
-    return node.inputs
-      .slice(0, -1)
-      .map((inp, i) => ({
-        label: inp.label ?? inp.localized_name ?? inp.name,
-        index: i,
-        connected: inp.link != null
-      }))
-      .filter((inp) => inp.connected)
-  }
-
-  function getConnectedLabels(): string[] {
-    return getConnectedInputs().map((inp) => inp.label)
-  }
-
-  function refreshBranchValues() {
-    const next = getConnectedLabels()
-    values.splice(0, values.length, ...next)
-  }
 
   const comboWidget = this.addWidget('combo', 'branch', '', () => {}, {
     values
   })
+  watch([renameTrigger, connectionsTrigger], () => {
+    if (app.configuringGraph || labels.value.includes(`${comboWidget.value}`))
+      return
 
-  // Also expose values as a live getter so Vue dropdowns always read fresh
-  Object.defineProperty(comboWidget.options, 'values', {
-    get: () => {
-      const live = getConnectedLabels()
-      if (
-        live.length !== values.length ||
-        live.some((v, i) => v !== values[i])
-      ) {
-        values.splice(0, values.length, ...live)
-      }
-      return values
-    },
-    configurable: true,
-    enumerable: true
+    comboWidget.value = labels.value[0] ?? ''
+    comboWidget.callback?.(comboWidget.value)
   })
 
-  function syncComboSelection() {
-    if (app.configuringGraph) return
-    refreshBranchValues()
-    if (values.includes(`${comboWidget.value}`)) return
-    comboWidget.value = values[0] ?? ''
-    comboWidget.callback?.(comboWidget.value)
-  }
-
-  comboWidget.serializeValue = () => {
-    const connected = getConnectedInputs()
-    const idx = connected.findIndex((inp) => inp.label === comboWidget.value)
-    return idx >= 0 ? idx : 0
-  }
+  comboWidget.serializeValue = () =>
+    node.inputs.slice(0, -1).findIndex((inp) => inp.label === comboWidget.value)
 
   // Refresh on connection changes (add/remove inputs)
-  this.onConnectionsChange = useChainCallback(this.onConnectionsChange, () =>
-    requestAnimationFrame(() => syncComboSelection())
+  this.onConnectionsChange = useChainCallback(
+    this.onConnectionsChange,
+    () => connectionsTrigger.value++
   )
 
   // Restore renamed labels after configure (autogrow recreates inputs fresh)
@@ -202,20 +171,8 @@ function onBranchSelectorCreated(this: LGraphNode) {
         )
         if (match) match.label = serializedInput.label
       }
-      refreshBranchValues()
     }
   )
-
-  // Allow renaming autogrow input slots via context menu
-  this.getSlotMenuOptions = (slot) => {
-    const menu: { content: string; slot: typeof slot }[] = []
-    if (slot.input) {
-      menu.push({ content: 'Rename Slot', slot })
-    }
-    return menu
-  }
-
-  refreshBranchValues()
 }
 
 function onCustomIntCreated(this: LGraphNode) {
@@ -336,5 +293,11 @@ app.registerExtension({
         nodeType.prototype.onNodeCreated,
         onCustomFloatCreated
       )
+  },
+  init() {
+    app.graph.onTrigger = useChainCallback(app.graph.onTrigger, (e) => {
+      if (e.type !== 'node:slot-label:changed') return
+      renameTrigger.value++
+    })
   }
 })
