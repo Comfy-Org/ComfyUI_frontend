@@ -18,7 +18,11 @@ export class BuilderSelectHelper {
   getInputItemMenu(title: string): Locator {
     return this.page
       .getByTestId(TestIds.builder.ioItem)
-      .filter({ hasText: title })
+      .filter({
+        has: this.page
+          .getByTestId(TestIds.builder.ioItemTitle)
+          .getByText(title, { exact: true })
+      })
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
 
@@ -66,7 +70,7 @@ export class BuilderSelectHelper {
   async renameInput(title: string, newName: string) {
     const titleEl = this.page
       .getByTestId(TestIds.builder.ioItemTitle)
-      .filter({ hasText: title })
+      .getByText(title, { exact: true })
     await titleEl.dblclick()
 
     const input = this.page
