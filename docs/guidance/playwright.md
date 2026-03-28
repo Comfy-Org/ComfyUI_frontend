@@ -87,6 +87,69 @@ Tags are respected by config:
 - Check `browser_tests/assets/` for test data and fixtures
 - Use realistic ComfyUI workflows for E2E tests
 
+## When to Use `page.evaluate`
+
+### Acceptable
+
+Reading internal state that has no UI representation:
+
+```typescript
+// Reading graph/store values
+const nodeCount = await page.evaluate(() => window.app!.graph!.nodes.length)
+const linkSlot = await page.evaluate(() => window.app!.graph!.links.get(1)?.target_slot)
+
+// Reading computed properties or store state
+await page.evaluate(() => useWorkflowStore().activeWorkflow)
+
+// Setting up test fixtures (registering extensions, mock error handlers)
+await page.evaluate(() => {
+  window.app!.registerExtension({ name: 'TestExt', settings: [...] })
+})
+```
+
+### Avoid
+
+Performing actions that have a UI equivalent — use Playwright locators and user
+interactions instead:
+
+```typescript
+// Bad: setting a widget value programmatically
+await page.evaluate(() => { node.widgets![0].value = 512 })
+// Good: click the widget and type the value
+await widgetLocator.click()
+await widgetLocator.fill('512')
+
+// Bad: dispatching synthetic DOM events
+await page.evaluate(() => { btn.dispatchEvent(new MouseEvent('click', ...)) })
+// Good: use Playwright's click
+await page.getByTestId('more-options-button').click()
+
+// Bad: calling store actions that correspond to user interactions
+await page.evaluate(() => { app.queuePrompt(0) })
+// Good: click the Queue button
+await page.getByRole('button', { name: 'Queue' }).click()
+```
+
+### Preferred
+
+Use helper methods from `browser_tests/fixtures/helpers/` that wrap real user
+interactions (e.g., `comfyPage.settings.setSetting`, `comfyPage.nodeOps`,
+`comfyPage.workflow.loadWorkflow`).
+
+### Migration Candidates
+
+Action-oriented `page.evaluate` calls to replace with user interactions or
+fixture helpers:
+
+1. `actionbar.spec.ts` — sets widget value and calls `changeTracker.checkState()` via evaluate instead of interacting with the widget UI
+2. `changeTracker.spec.ts` — calls `emitBeforeChange`/`emitAfterChange` via evaluate instead of performing actual canvas edits
+3. `selectionToolboxSubmenus.spec.ts` — dispatches synthetic `MouseEvent` click instead of using Playwright's `locator.click()`
+4. `dialog.spec.ts:443` — calls `showSignInDialog()` via evaluate instead of triggering it through the UI
+5. `colorPalette.spec.ts:181` — calls `addCustomColorPalette()` via evaluate instead of using the settings UI to import a palette
+6. `menu.spec.ts:156` — registers an extension command via evaluate; could use a test fixture that pre-registers extensions
+7. `groupSelectChildren.spec.ts:115` — deselects all nodes via evaluate instead of clicking an empty canvas area
+8. `widget.spec.ts:128,149,173` — mutates widget values directly via evaluate instead of interacting with widget controls
+
 ## Running Tests
 
 ```bash
