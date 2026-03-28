@@ -1,166 +1,57 @@
 #!/usr/bin/env tsx
 /**
- * Hybrid QA Agent — Claude Sonnet 4.6 brain + Gemini 3.1 Pro eyes
+ * QA Research Phase — Claude Sonnet 4.6 investigates via a11y API
  *
- * Claude plans and reasons. Gemini watches the video buffer and describes
- * what it sees. The agent uses 4 tools:
- *   - observe(seconds, focus) — Gemini reviews last N seconds of video
- *   - inspect(selector) — search accessibility tree for element state
- *   - perform(action, params) — execute Playwright action
- *   - done(verdict, summary) — finish with result
+ * Claude explores the UI using accessibility tree assertions as ground truth.
+ * NO video, NO Gemini vision — only DOM state via page.accessibility.snapshot().
+ *
+ * Tools:
+ *   - inspect(selector) — search a11y tree for element state (source of truth)
+ *   - perform(action, params) — execute Playwright action + auto-log a11y before/after
+ *   - done(verdict, summary, reproductionPlan) — finish with evidence-backed conclusion
  */
 
 import type { Page } from '@playwright/test'
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { z } from 'zod'
-import { execSync } from 'child_process'
-import { mkdirSync, writeFileSync, readFileSync } from 'fs'
+import { mkdirSync, writeFileSync } from 'fs'
 
 // ── Types ──
 
-interface AgentOptions {
+interface ResearchOptions {
   page: Page
   issueContext: string
   qaGuide: string
   outputDir: string
-  geminiApiKey: string
-  anthropicApiKey?: string // Optional — Agent SDK auto-detects Claude Code session
+  anthropicApiKey?: string
   maxTurns?: number
   timeBudgetMs?: number
 }
 
-interface ScreenshotFrame {
+export interface ResearchTurn {
+  turn: number
   timestampMs: number
-  base64: string
+  toolName: string
+  toolInput: unknown
+  toolResult: string
+  a11yBefore?: unknown
+  a11yAfter?: unknown
 }
 
-// ── Video buffer ──
-
-const FRAME_INTERVAL_MS = 2000
-const MAX_BUFFER_FRAMES = 30 // 60 seconds at 2fps
-
-class VideoBuffer {
-  private frames: ScreenshotFrame[] = []
-  private startMs = Date.now()
-  private intervalId: ReturnType<typeof setInterval> | null = null
-  private page: Page
-
-  constructor(page: Page) {
-    this.page = page
-  }
-
-  start() {
-    this.startMs = Date.now()
-    this.intervalId = setInterval(async () => {
-      try {
-        const buf = await this.page.screenshot({
-          type: 'jpeg',
-          quality: 60
-        })
-        this.frames.push({
-          timestampMs: Date.now() - this.startMs,
-          base64: buf.toString('base64')
-        })
-        if (this.frames.length > MAX_BUFFER_FRAMES) {
-          this.frames.shift()
-        }
-      } catch {
-        // page may be navigating
-      }
-    }, FRAME_INTERVAL_MS)
-  }
-
-  stop() {
-    if (this.intervalId) clearInterval(this.intervalId)
-  }
-
-  getLastFrames(seconds: number): ScreenshotFrame[] {
-    const cutoffMs = Date.now() - this.startMs - seconds * 1000
-    return this.frames.filter((f) => f.timestampMs >= cutoffMs)
-  }
-
-  async buildVideoClip(
-    seconds: number,
-    outputDir: string
-  ): Promise<Buffer | null> {
-    const frames = this.getLastFrames(seconds)
-    if (frames.length < 2) return null
-
-    const clipDir = `${outputDir}/.clip-frames`
-    mkdirSync(clipDir, { recursive: true })
-
-    // Write frames as numbered JPEGs
-    for (let i = 0; i < frames.length; i++) {
-      writeFileSync(
-        `${clipDir}/frame-${String(i).padStart(4, '0')}.jpg`,
-        Buffer.from(frames[i].base64, 'base64')
-      )
-    }
-
-    // Compose into video with ffmpeg
-    const clipPath = `${outputDir}/.observe-clip.mp4`
-    try {
-      const fps = Math.max(1, Math.round(frames.length / seconds))
-      execSync(
-        `ffmpeg -y -framerate ${fps} -i "${clipDir}/frame-%04d.jpg" ` +
-          `-c:v libx264 -preset ultrafast -pix_fmt yuv420p "${clipPath}" 2>/dev/null`,
-        { timeout: 10000 }
-      )
-      return readFileSync(clipPath)
-    } catch {
-      return null
-    }
-  }
+export interface ReproductionStep {
+  action: Record<string, unknown> & { action: string }
+  expectedAssertion: string
 }
 
-// ── Gemini Vision ──
-
-async function geminiObserve(
-  videoBuffer: VideoBuffer,
-  seconds: number,
-  focus: string,
-  outputDir: string,
-  geminiApiKey: string
-): Promise<string> {
-  const genAI = new GoogleGenerativeAI(geminiApiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-3-flash-preview'
-  })
-
-  // Try video clip first, fall back to last frame
-  const clip = await videoBuffer.buildVideoClip(seconds, outputDir)
-
-  const parts: Array<
-    { text: string } | { inlineData: { mimeType: string; data: string } }
-  > = [
-    {
-      text: `You are observing a ComfyUI frontend session. Focus on: ${focus}\n\nDescribe what happened in the last ${seconds} seconds. Be specific about UI state, actions taken, and results.`
-    }
-  ]
-
-  if (clip) {
-    parts.push({
-      inlineData: { mimeType: 'video/mp4', data: clip.toString('base64') }
-    })
-  } else {
-    // Fall back to last frame
-    const frames = videoBuffer.getLastFrames(seconds)
-    if (frames.length > 0) {
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: frames[frames.length - 1].base64
-        }
-      })
-    }
-  }
-
-  const result = await model.generateContent(parts)
-  return result.response.text().trim()
+export interface ResearchResult {
+  verdict: 'REPRODUCED' | 'NOT_REPRODUCIBLE' | 'INCONCLUSIVE'
+  summary: string
+  evidence: string
+  reproductionPlan: ReproductionStep[]
+  log: ResearchTurn[]
 }
 
-// ── Accessibility tree helpers ──
+// ── A11y helpers ──
 
 interface A11yNode {
   role: string
@@ -174,16 +65,12 @@ interface A11yNode {
 function searchA11y(node: A11yNode | null, selector: string): A11yNode | null {
   if (!node) return null
   const sel = selector.toLowerCase()
-
-  // Match by name or role
   if (
     node.name?.toLowerCase().includes(sel) ||
     node.role?.toLowerCase().includes(sel)
   ) {
     return node
   }
-
-  // Recurse into children
   if (node.children) {
     for (const child of node.children) {
       const found = searchA11y(child, selector)
@@ -213,174 +100,77 @@ function flattenA11y(node: A11yNode | null, depth = 0): string {
   return parts.filter(Boolean).join('\n')
 }
 
-// ── Subtitle overlay ──
+// ── Main research function ──
 
-async function showSubtitle(page: Page, text: string, turn: number) {
-  const encoded = encodeURIComponent(
-    text.slice(0, 120).replace(/'/g, "\\'").replace(/\n/g, ' ')
-  )
-  await page.addScriptTag({
-    content: `(function(){
-      var id='qa-subtitle';
-      var el=document.getElementById(id);
-      if(!el){
-        el=document.createElement('div');
-        el.id=id;
-        Object.assign(el.style,{position:'fixed',bottom:'32px',left:'50%',transform:'translateX(-50%)',zIndex:'2147483646',maxWidth:'90%',padding:'6px 14px',borderRadius:'6px',background:'rgba(0,0,0,0.8)',color:'rgba(255,255,255,0.95)',fontSize:'12px',fontFamily:'system-ui,sans-serif',fontWeight:'400',lineHeight:'1.4',pointerEvents:'none',textAlign:'center',transition:'opacity 0.3s',whiteSpace:'normal'});
-        document.body.appendChild(el);
-      }
-      var msg=decodeURIComponent('${encoded}');
-      el.textContent='['+${turn}+'] '+msg;
-      el.style.opacity='1';
-    })()`
-  })
-}
+export async function runResearchPhase(
+  opts: ResearchOptions
+): Promise<ResearchResult> {
+  const { page, issueContext, qaGuide, outputDir, anthropicApiKey } = opts
+  const maxTurns = opts.maxTurns ?? 40
+  const timeBudgetMs = opts.timeBudgetMs ?? 180_000
 
-// ── Main agent ──
-
-export async function runHybridAgent(opts: AgentOptions): Promise<{
-  verdict: string
-  summary: string
-}> {
-  const {
-    page,
-    issueContext,
-    qaGuide,
-    outputDir,
-    geminiApiKey,
-    anthropicApiKey
-  } = opts
-  const maxTurns = opts.maxTurns ?? 30
-  const timeBudgetMs = opts.timeBudgetMs ?? 120_000
-
-  // Start video buffer
-  const videoBuffer = new VideoBuffer(page)
-  videoBuffer.start()
-
-  let lastA11ySnapshot: A11yNode | null = null
   let agentDone = false
-  let finalVerdict = 'INCONCLUSIVE'
+  let finalVerdict: ResearchResult['verdict'] = 'INCONCLUSIVE'
   let finalSummary = 'Agent did not complete'
+  let finalEvidence = ''
+  let finalPlan: ReproductionStep[] = []
   let turnCount = 0
   const startTime = Date.now()
+  const researchLog: ResearchTurn[] = []
 
-  // Import executeAction from qa-record.ts (shared Playwright helpers)
-  // For now, inline the action execution
   const { executeAction } = await import('./qa-record.js')
 
-  // Define tools
-  const observeTool = tool(
-    'observe',
-    'Watch the last N seconds of screen recording through Gemini vision. Use this to verify visual state, check if actions had visible effect, or inspect visual bugs. Pass a focused question so Gemini knows what to look for.',
-    {
-      seconds: z
-        .number()
-        .min(3)
-        .max(60)
-        .default(10)
-        .describe('How many seconds to look back'),
-      focus: z
-        .string()
-        .describe(
-          'What to look for — be specific, e.g. "Did the Nodes 2.0 toggle switch to ON?"'
-        )
-    },
-    async (args) => {
-      const description = await geminiObserve(
-        videoBuffer,
-        args.seconds,
-        args.focus,
-        outputDir,
-        geminiApiKey
-      )
-      return { content: [{ type: 'text' as const, text: description }] }
-    }
-  )
-
+  // ── Tool: inspect ──
   const inspectTool = tool(
     'inspect',
-    'Search the accessibility tree for a specific UI element. Returns its role, name, value, checked state. Fast and precise — use this to verify element state without vision.',
+    'Search the accessibility tree for a UI element. Returns role, name, value, checked state. This is your SOURCE OF TRUTH — use it after every action to verify state.',
     {
       selector: z
         .string()
         .describe(
-          'Element name or role to search for, e.g. "Nodes 2.0", "KSampler seed", "Run button"'
+          'Element name or role to search for, e.g. "Settings", "Language", "KSampler seed", "tab"'
         )
     },
     async (args) => {
-      try {
-        const snapshot =
-          (await page.accessibility.snapshot()) as A11yNode | null
-        lastA11ySnapshot = snapshot
-        const found = searchA11y(snapshot, args.selector)
-        if (found) {
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: JSON.stringify({
-                  role: found.role,
-                  name: found.name,
-                  value: found.value,
-                  checked: found.checked,
-                  disabled: found.disabled,
-                  hasChildren: Boolean(found.children?.length)
-                })
-              }
-            ]
-          }
-        }
-        // Return nearby elements if exact match not found
-        const tree = flattenA11y(snapshot, 0).slice(0, 2000)
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Element "${args.selector}" not found. Available elements:\n${tree}`
-            }
-          ]
-        }
-      } catch (e) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `inspect failed: ${e instanceof Error ? e.message : e}`
-            }
-          ]
-        }
-      }
+      const snapshot = (await page.accessibility.snapshot()) as A11yNode | null
+      const found = searchA11y(snapshot, args.selector)
+
+      const resultText = found
+        ? JSON.stringify({
+            role: found.role,
+            name: found.name,
+            value: found.value,
+            checked: found.checked,
+            disabled: found.disabled,
+            hasChildren: Boolean(found.children?.length)
+          })
+        : `Element "${args.selector}" not found. Available:\n${flattenA11y(snapshot, 0).slice(0, 2000)}`
+
+      researchLog.push({
+        turn: turnCount,
+        timestampMs: Date.now() - startTime,
+        toolName: 'inspect',
+        toolInput: args,
+        toolResult: resultText.slice(0, 500)
+      })
+
+      return { content: [{ type: 'text' as const, text: resultText }] }
     }
   )
 
+  // ── Tool: perform ──
   const performTool = tool(
     'perform',
-    `Execute a Playwright action on the ComfyUI page. Available actions:
-- click(text): click element by visible text
-- clickCanvas(x, y): click at coordinates
-- rightClickCanvas(x, y): right-click at coordinates
-- doubleClick(x, y): double-click at coordinates
-- dragCanvas(fromX, fromY, toX, toY): drag between points
-- scrollCanvas(x, y, deltaY): scroll wheel (negative=zoom in)
-- pressKey(key): press keyboard key (Escape, Enter, Delete, Control+c, etc.)
-- fillDialog(text): fill input and press Enter
-- openMenu(): open hamburger menu
-- hoverMenuItem(label): hover menu item
-- clickMenuItem(label): click submenu item
-- setSetting(id, value): change a ComfyUI setting
-- loadDefaultWorkflow(): load the 7-node default workflow
-- openSettings(): open Settings dialog
-- reload(): reload the page
-- addNode(nodeName, x, y): add a node via search
-- copyPaste(x, y): Ctrl+C then Ctrl+V at coords
-- holdKeyAndDrag(key, fromX, fromY, toX, toY): hold key while dragging
-- screenshot(name): take a named screenshot`,
+    `Execute a Playwright action. Auto-captures a11y state before and after.
+Available: click(text), clickCanvas(x,y), rightClickCanvas(x,y), doubleClick(x,y),
+dragCanvas(fromX,fromY,toX,toY), scrollCanvas(x,y,deltaY), pressKey(key),
+fillDialog(text), openMenu(), hoverMenuItem(label), clickMenuItem(label),
+setSetting(id,value), loadDefaultWorkflow(), openSettings(), reload(),
+addNode(nodeName,x,y), copyPaste(x,y), holdKeyAndDrag(key,fromX,fromY,toX,toY),
+screenshot(name)`,
     {
       action: z.string().describe('Action name'),
-      params: z
-        .record(z.unknown())
-        .optional()
-        .describe('Action parameters as key-value pairs')
+      params: z.record(z.unknown()).optional().describe('Action parameters')
     },
     async (args) => {
       turnCount++
@@ -389,152 +179,175 @@ export async function runHybridAgent(opts: AgentOptions): Promise<{
           content: [
             {
               type: 'text' as const,
-              text: `Budget exceeded (${turnCount}/${maxTurns} turns, ${Math.round((Date.now() - startTime) / 1000)}s). Use done() now.`
+              text: `Budget exceeded (${turnCount}/${maxTurns} turns, ${Math.round((Date.now() - startTime) / 1000)}s). Call done() NOW with your current findings.`
             }
           ]
         }
       }
 
-      // Build TestAction object from args
-      const actionObj = { action: args.action, ...args.params } as Parameters<
-        typeof executeAction
-      >[1]
+      // Capture a11y BEFORE
+      const a11yBefore = await page.accessibility.snapshot().catch(() => null)
 
+      const actionObj = {
+        action: args.action,
+        ...args.params
+      } as Parameters<typeof executeAction>[1]
+
+      let resultText: string
       try {
         const result = await executeAction(page, actionObj, outputDir)
-        // Show subtitle
-        await showSubtitle(
-          page,
-          `${args.action}: ${result.success ? 'OK' : result.error}`,
-          turnCount
-        )
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: result.success
-                ? `Action "${args.action}" succeeded.`
-                : `Action "${args.action}" FAILED: ${result.error}`
-            }
-          ]
-        }
+        resultText = result.success
+          ? `Action "${args.action}" succeeded.`
+          : `Action "${args.action}" FAILED: ${result.error}`
       } catch (e) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Action "${args.action}" threw: ${e instanceof Error ? e.message : e}`
-            }
-          ]
-        }
+        resultText = `Action "${args.action}" threw: ${e instanceof Error ? e.message : e}`
       }
-    }
-  )
 
-  const doneTool = tool(
-    'done',
-    'Signal that reproduction is complete. Call this when you have either confirmed the bug or determined it cannot be reproduced.',
-    {
-      verdict: z
-        .enum(['REPRODUCED', 'NOT_REPRODUCIBLE', 'INCONCLUSIVE'])
-        .describe('Final verdict'),
-      summary: z
-        .string()
-        .describe(
-          'One paragraph: what you did, what you observed, and why you reached this verdict'
-        )
-    },
-    async (args) => {
-      agentDone = true
-      finalVerdict = args.verdict
-      finalSummary = args.summary
-      await showSubtitle(page, `DONE: ${args.verdict}`, turnCount)
+      // Capture a11y AFTER
+      const a11yAfter = await page.accessibility.snapshot().catch(() => null)
+
+      researchLog.push({
+        turn: turnCount,
+        timestampMs: Date.now() - startTime,
+        toolName: 'perform',
+        toolInput: args,
+        toolResult: resultText,
+        a11yBefore,
+        a11yAfter
+      })
+
       return {
         content: [
           {
             type: 'text' as const,
-            text: `Agent finished: ${args.verdict}`
+            text: `${resultText}\n\n(a11y state captured before/after — use inspect() to verify specific elements)`
           }
         ]
       }
     }
   )
 
-  // Create MCP server with our tools
+  // ── Tool: done ──
+  const doneTool = tool(
+    'done',
+    'Finish the research with an evidence-backed verdict and a reproduction plan.',
+    {
+      verdict: z
+        .enum(['REPRODUCED', 'NOT_REPRODUCIBLE', 'INCONCLUSIVE'])
+        .describe('Final verdict — MUST be supported by inspect() evidence'),
+      summary: z
+        .string()
+        .describe(
+          'What you did, what inspect() showed, and why you reached this verdict'
+        ),
+      evidence: z
+        .string()
+        .describe(
+          'Cite specific inspect() results: "inspect(X) returned {Y} proving Z"'
+        ),
+      reproductionPlan: z
+        .array(
+          z.object({
+            action: z
+              .record(z.unknown())
+              .describe('Action object with "action" field + params'),
+            expectedAssertion: z
+              .string()
+              .describe(
+                'Expected a11y state after this action, e.g. "Settings dialog: visible" or "tab count: 2"'
+              )
+          })
+        )
+        .describe(
+          'Minimal ordered steps to reproduce the bug. Empty if NOT_REPRODUCIBLE/INCONCLUSIVE.'
+        )
+    },
+    async (args) => {
+      agentDone = true
+      finalVerdict = args.verdict
+      finalSummary = args.summary
+      finalEvidence = args.evidence
+      finalPlan = args.reproductionPlan.map((s) => ({
+        action: s.action as ReproductionStep['action'],
+        expectedAssertion: s.expectedAssertion
+      }))
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Research complete: ${args.verdict}`
+          }
+        ]
+      }
+    }
+  )
+
+  // ── MCP Server ──
   const server = createSdkMcpServer({
-    name: 'qa-agent',
+    name: 'qa-research',
     version: '1.0.0',
-    tools: [observeTool, inspectTool, performTool, doneTool]
+    tools: [inspectTool, performTool, doneTool]
   })
 
-  // Build system prompt
-  const systemPrompt = `You are a senior QA engineer reproducing a reported bug in ComfyUI, a node-based AI image generation tool.
+  // ── System prompt ──
+  const systemPrompt = `You are a senior QA engineer investigating a reported bug in ComfyUI.
 
-## Your tools
-- observe(seconds, focus) — Gemini AI watches the last N seconds of screen recording and answers your focused question. Use for visual verification.
-- inspect(selector) — Search the accessibility tree for a specific element's state. Use for precise state checks (toggle on/off, value, disabled).
-- perform(action, params) — Execute a Playwright action on the browser.
-- done(verdict, summary) — Finish with your conclusion.
+## Your tools (3 only — no vision)
+- inspect(selector) — Search accessibility tree for element state. THIS IS YOUR SOURCE OF TRUTH.
+- perform(action, params) — Execute a Playwright action. Auto-captures a11y before/after.
+- done(verdict, summary, evidence, reproductionPlan) — Finish with evidence-backed conclusion.
+
+## Rules (CRITICAL)
+1. After EVERY perform() call, use inspect() to verify the DOM state changed as expected.
+2. Your verdict MUST cite specific inspect() results as evidence.
+3. NEVER claim REPRODUCED unless inspect() confirms the broken state.
+4. NEVER claim NOT_REPRODUCIBLE unless you actually performed all the reproduction steps and inspect() shows normal behavior.
+5. If you run out of time before completing steps, verdict is INCONCLUSIVE.
+6. Complete ALL reproduction steps. Setup (loading workflow, opening settings) is NOT reproduction — the actual bug trigger is.
+
+## Output
+When you call done(), include:
+- verdict: based on what inspect() showed, not what you expected
+- evidence: "inspect('Settings dialog') returned {role: dialog, name: Settings} — dialog still visible after Escape, proving the bug does NOT exist on this build"
+- reproductionPlan: minimal steps that demonstrate the bug (for the reproduce phase to replay as a clean video)
 
 ## Strategy
-1. Start by understanding the issue, then plan your FULL reproduction sequence before acting.
-2. Use perform() to take actions. After EVERY action, use inspect() to verify the DOM state changed as expected.
-3. If a setting change doesn't seem to take effect, try reload() then verify again.
-4. Focus on the specific bug — don't explore randomly.
-5. Take screenshots at key moments for the video evidence.
-6. When you've confirmed or ruled out the bug, call done().
-7. You MUST complete ALL reproduction steps. Do NOT stop after setup — the actual bug trigger is the most important part.
+1. Read the issue carefully. Plan the FULL reproduction sequence.
+2. Set up prerequisites (load workflow, open settings, etc.)
+3. Perform the actual bug trigger (the specific interaction described in the issue)
+4. Verify the result with inspect() — is the state broken or correct?
+5. If the bug is triggered by a setting/mode, do control/test comparison:
+   - CONTROL: perform action with setting OFF → inspect() → should work
+   - TEST: perform action with setting ON → inspect() → should break
 
-## Verification Rules (CRITICAL — prevents false results)
-- NEVER claim REPRODUCED unless inspect() confirms the expected broken state exists
-- After EVERY action, call inspect() to verify the DOM state. This is your source of truth.
-- Your done() verdict MUST be supported by inspect() results, not by what you think happened
-- If you perform an action but inspect() shows no state change, the action FAILED — try again or adapt
-- Example: if you press Escape and inspect("Settings dialog") still returns visible → the dialog did NOT close → report that honestly
-- ALWAYS include inspect() evidence in your done() summary: "inspect('X') returned {state} confirming Y"
-
-## Control/Test Comparison (IMPORTANT)
-When a bug is triggered by a specific setting, mode, or configuration:
-1. **CONTROL phase**: First demonstrate the WORKING state. Disable the trigger (e.g., Nodes 2.0 OFF), perform the action, take a screenshot labeled "control-*", verify it works.
-2. **TEST phase**: Then enable the trigger (e.g., Nodes 2.0 ON), reload if needed, perform the SAME action, take a screenshot labeled "test-*", verify it's broken.
-3. In your done() summary, explicitly compare: "With X OFF, behavior was Y. With X ON, behavior was Z."
-
-This contrast is critical evidence — it proves the bug is caused by the specific setting, not a general issue. Always try to show both states when possible.
-
-Examples of control/test pairs:
-- Nodes 2.0 OFF → ON (for node rendering, widget, drag bugs)
-- Default theme → specific theme (for visual bugs)
-- Single node → multiple overlapping nodes (for z-index bugs)
-- Empty workflow → loaded workflow (for state bugs)
-
-## ComfyUI Layout (1280×720 viewport)
-- Canvas with node graph centered at ~(640, 400)
-- Hamburger menu top-left (C logo)
+## ComfyUI Layout (1280×720)
+- Canvas centered at ~(640, 400)
+- Hamburger menu (top-left C logo) → File, Edit, View, Theme, Help
 - Sidebar: Workflows, Node Library, Models
-- Default workflow nodes: Load Checkpoint (~150,300), CLIP Text Encode (~450,250/450), Empty Latent (~450,600), KSampler (~750,350), VAE Decode (~1000,350), Save Image (~1200,350)
+- Default workflow: Load Checkpoint (~150,300), CLIP Text Encode (~450,250/450), KSampler (~750,350)
 
 ${qaGuide ? `## QA Guide\n${qaGuide}\n` : ''}
 ## Issue to Reproduce
 ${issueContext}`
 
-  // Run the agent
-  console.warn('Starting hybrid agent (Claude Sonnet 4.6 + Gemini vision)...')
+  // ── Run the agent ──
+  console.warn('Starting research phase (Claude + a11y)...')
 
   try {
     for await (const message of query({
       prompt:
-        'Reproduce the reported bug. Start by reading the issue context in your system prompt, then use your tools to interact with the ComfyUI browser session.',
+        'Investigate the reported bug. Use inspect() after every action to verify state. When done, call done() with evidence from inspect() results and a reproduction plan.',
       options: {
         model: 'claude-sonnet-4-6',
         systemPrompt,
         ...(anthropicApiKey ? { apiKey: anthropicApiKey } : {}),
         maxTurns,
-        mcpServers: { 'qa-agent': server },
+        mcpServers: { 'qa-research': server },
         allowedTools: [
-          'mcp__qa-agent__observe',
-          'mcp__qa-agent__inspect',
-          'mcp__qa-agent__perform',
-          'mcp__qa-agent__done'
+          'mcp__qa-research__inspect',
+          'mcp__qa-research__perform',
+          'mcp__qa-research__done'
         ]
       }
     })) {
@@ -553,10 +366,26 @@ ${issueContext}`
       if (agentDone) break
     }
   } catch (e) {
-    console.warn(`Agent error: ${e instanceof Error ? e.message : e}`)
+    console.warn(`Research error: ${e instanceof Error ? e.message : e}`)
   }
 
-  videoBuffer.stop()
+  // Save research log
+  const result: ResearchResult = {
+    verdict: finalVerdict,
+    summary: finalSummary,
+    evidence: finalEvidence,
+    reproductionPlan: finalPlan,
+    log: researchLog
+  }
 
-  return { verdict: finalVerdict, summary: finalSummary }
+  mkdirSync(`${outputDir}/research`, { recursive: true })
+  writeFileSync(
+    `${outputDir}/research/research-log.json`,
+    JSON.stringify(result, null, 2)
+  )
+  console.warn(
+    `Research complete: ${finalVerdict} (${researchLog.length} tool calls, ${finalPlan.length} reproduction steps)`
+  )
+
+  return result
 }

@@ -429,7 +429,7 @@ interface NarrationSegment {
 
 // Collected during recording, used for TTS post-processing
 const narrationSegments: NarrationSegment[] = []
-let recordingStartMs = 0
+const recordingStartMs = 0
 
 async function showSubtitle(page: Page, text: string, turn: number) {
   const safeText = text.slice(0, 120).replace(/'/g, "\\'").replace(/\n/g, ' ')
@@ -1934,14 +1934,10 @@ async function main() {
         await page.screenshot({
           path: `${opts.outputDir}/debug-after-login-reproduce${sessionLabel}.png`
         })
-        console.warn('Editor ready — starting agentic loop')
-        recordingStartMs = Date.now()
-        narrationSegments.length = 0
-
-        // Hybrid agent (Claude + Gemini)
-        // Uses ANTHROPIC_API_KEY in CI, or Claude Code OAuth session locally
+        // ═══ Phase 1: RESEARCH (Claude + a11y — no video needed) ═══
+        console.warn('Phase 1: Research — Claude investigates via a11y API')
         const anthropicKey = process.env.ANTHROPIC_API_KEY
-        const { runHybridAgent } = await import('./qa-agent.js')
+        const { runResearchPhase } = await import('./qa-agent.js')
         const issueCtx = opts.diffFile
           ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
           : 'No issue context provided'
@@ -1953,17 +1949,39 @@ async function main() {
             // QA guide not available
           }
         }
-        const result = await runHybridAgent({
+        const research = await runResearchPhase({
           page,
           issueContext: issueCtx,
           qaGuide: qaGuideText,
           outputDir: opts.outputDir,
-          geminiApiKey: opts.apiKey,
           anthropicApiKey: anthropicKey
         })
         console.warn(
-          `Hybrid agent finished: ${result.verdict} — ${result.summary.slice(0, 100)}`
+          `Research complete: ${research.verdict} — ${research.summary.slice(0, 100)}`
         )
+        console.warn(`Evidence: ${research.evidence.slice(0, 200)}`)
+        console.warn(
+          `Reproduction plan: ${research.reproductionPlan.length} steps`
+        )
+
+        // ═══ Phase 2: REPRODUCE (deterministic replay + narration) ═══
+        if (
+          research.verdict === 'REPRODUCED' &&
+          research.reproductionPlan.length > 0
+        ) {
+          console.warn('Phase 2: Reproduce — replaying plan with narration')
+          const { runReproducePhase } = await import('./qa-reproduce.js')
+          await runReproducePhase({
+            page,
+            plan: research.reproductionPlan,
+            geminiApiKey: opts.apiKey,
+            outputDir: opts.outputDir
+          })
+        } else {
+          console.warn(
+            `Skipping Phase 2: verdict=${research.verdict}, plan=${research.reproductionPlan.length} steps`
+          )
+        }
         await sleep(2000)
       } finally {
         await context.close()
