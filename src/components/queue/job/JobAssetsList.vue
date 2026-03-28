@@ -1,25 +1,24 @@
 <template>
   <div
+    ref="scrollContainer"
     v-bind="$attrs"
-    :ref="containerProps.ref"
-    :style="containerProps.style"
     data-testid="job-assets-list"
     class="h-full overflow-y-auto"
     @scroll="onListScroll"
   >
     <div :style="virtualWrapperStyle">
-      <template v-for="{ data: row } in virtualRows" :key="row.key">
+      <template v-for="{ row, virtualItem } in virtualRows" :key="row.key">
         <div
           v-if="row.type === 'header'"
           class="box-border px-3 pb-2 text-xs leading-none text-text-secondary"
-          :style="{ height: `${row.height}px` }"
+          :style="getVirtualRowStyle(virtualItem)"
         >
           {{ row.label }}
         </div>
         <div
           v-else-if="row.type === 'job'"
           class="box-border px-3"
-          :style="{ height: `${row.height}px` }"
+          :style="getVirtualRowStyle(virtualItem)"
         >
           <div
             :data-job-id="row.job.id"
@@ -111,7 +110,9 @@
 </template>
 
 <script setup lang="ts">
-import { useVirtualList } from '@vueuse/core'
+import type { VirtualItem } from '@tanstack/vue-virtual'
+import type { CSSProperties } from 'vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useI18n } from 'vue-i18n'
 import { computed, nextTick, ref } from 'vue'
 
@@ -125,11 +126,13 @@ import { cn } from '@/utils/tailwindUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
-import {
-  buildVirtualJobRows,
-  JOB_ROW_HEIGHT,
-  VIRTUAL_JOB_LIST_BOTTOM_PADDING
-} from './buildVirtualJobRows'
+import { buildVirtualJobRows } from './buildVirtualJobRows'
+import type { VirtualJobRow } from './buildVirtualJobRows'
+
+const HEADER_ROW_HEIGHT = 20
+const GROUP_ROW_GAP = 16
+const JOB_ROW_HEIGHT = 48
+const VIRTUAL_JOB_LIST_BOTTOM_PADDING = 16
 
 defineOptions({
   inheritAttrs: false
@@ -145,25 +148,42 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const scrollContainer = ref<HTMLElement | null>(null)
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
 const popoverPosition = ref<{ top: number; left: number } | null>(null)
 const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
-const {
-  list: virtualRows,
-  containerProps,
-  wrapperProps
-} = useVirtualList(flatRows, {
-  itemHeight: (index) => flatRows.value[index]?.height ?? JOB_ROW_HEIGHT,
+const virtualizer = useVirtualizer({
+  get count(): number {
+    return flatRows.value.length
+  },
+  getItemKey(index: number) {
+    return flatRows.value[index]?.key ?? index
+  },
+  estimateSize(index: number) {
+    const row = flatRows.value[index]
+    return row ? getRowHeight(row, index, flatRows.value) : JOB_ROW_HEIGHT
+  },
+  getScrollElement() {
+    return scrollContainer.value
+  },
   overscan: 12
 })
-const virtualWrapperStyle = computed(() => ({
-  ...wrapperProps.value.style,
+const virtualRows = computed(() => {
+  const rows = flatRows.value
+  return virtualizer.value
+    .getVirtualItems()
+    .flatMap((virtualItem: VirtualItem) => {
+      const row = rows[virtualItem.index]
+      return row ? [{ row, virtualItem }] : []
+    })
+})
+const virtualWrapperStyle = computed<CSSProperties>(() => ({
+  position: 'relative',
   width: '100%',
-  paddingBottom:
-    flatRows.value.length > 0
-      ? `${VIRTUAL_JOB_LIST_BOTTOM_PADDING}px`
-      : undefined
+  ...(flatRows.value.length > 0 && {
+    height: `${virtualizer.value.getTotalSize() + VIRTUAL_JOB_LIST_BOTTOM_PADDING}px`
+  })
 }))
 const {
   activeDetails,
@@ -177,8 +197,33 @@ const {
   onReset: clearPopoverAnchor
 })
 
+function getVirtualRowStyle(virtualItem: VirtualItem): CSSProperties {
+  return {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: `${virtualItem.size}px`,
+    transform: `translateY(${virtualItem.start}px)`,
+    overflowAnchor: 'none'
+  }
+}
+
+function getRowHeight(
+  row: VirtualJobRow,
+  index: number,
+  rows: VirtualJobRow[]
+): number {
+  if (row.type === 'header') {
+    return HEADER_ROW_HEIGHT
+  }
+
+  return (
+    JOB_ROW_HEIGHT + (rows[index + 1]?.type === 'header' ? GROUP_ROW_GAP : 0)
+  )
+}
+
 function onListScroll() {
-  containerProps.onScroll()
   hoveredJobId.value = null
   resetActiveDetails()
 }

@@ -2,35 +2,13 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
+import './testUtils/mockTanstackVirtualizer'
+
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { JobListItem as ApiJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 import JobAssetsList from './JobAssetsList.vue'
-
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  const vue = await import('vue')
-
-  return {
-    ...actual,
-    useVirtualList: (rows: unknown) => ({
-      list: vue.computed(() =>
-        vue.unref(rows as readonly unknown[]).map((data: unknown, index) => ({
-          data,
-          index
-        }))
-      ),
-      scrollTo: vi.fn(),
-      containerProps: {
-        ref: vue.ref(null),
-        onScroll: vi.fn(),
-        style: {}
-      },
-      wrapperProps: vue.computed(() => ({ style: {} }))
-    })
-  }
-})
 
 const JobDetailsPopoverStub = defineComponent({
   name: 'JobDetailsPopover',

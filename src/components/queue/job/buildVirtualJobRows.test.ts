@@ -32,37 +32,32 @@ describe('buildVirtualJobRows', () => {
       {
         key: 'header-today',
         type: 'header',
-        label: 'Today',
-        height: 20
+        label: 'Today'
       },
       {
         key: 'job-job-1',
         type: 'job',
-        job: displayedJobGroups[0].items[0],
-        height: 48
+        job: displayedJobGroups[0].items[0]
       },
       {
         key: 'job-job-2',
         type: 'job',
-        job: displayedJobGroups[0].items[1],
-        height: 64
+        job: displayedJobGroups[0].items[1]
       },
       {
         key: 'header-yesterday',
         type: 'header',
-        label: 'Yesterday',
-        height: 20
+        label: 'Yesterday'
       },
       {
         key: 'job-job-3',
         type: 'job',
-        job: displayedJobGroups[1].items[0],
-        height: 48
+        job: displayedJobGroups[1].items[0]
       }
     ])
   })
 
-  it('keeps the last group rows at the base job height', () => {
+  it('keeps a single group flattened without extra row metadata', () => {
     const displayedJobGroups: JobGroup[] = [
       {
         key: 'today',
@@ -75,14 +70,12 @@ describe('buildVirtualJobRows', () => {
       {
         key: 'header-today',
         type: 'header',
-        label: 'Today',
-        height: 20
+        label: 'Today'
       },
       {
         key: 'job-job-1',
         type: 'job',
-        job: displayedJobGroups[0].items[0],
-        height: 48
+        job: displayedJobGroups[0].items[0]
       }
     ])
   })
