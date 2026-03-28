@@ -356,7 +356,7 @@ describe('DisplayCarousel Grid Mode', () => {
     )
   })
 
-  it('shows back arrow in single mode after selecting from grid', async () => {
+  it('shows grid button in single mode after selecting from grid', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
     // Switch to grid
@@ -376,12 +376,9 @@ describe('DisplayCarousel Grid Mode', () => {
     await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
-    // Should show back arrow (Switch to single view label) instead of grid icon
-    expect(wrapper.find('[aria-label="Switch to single view"]').exists()).toBe(
-      true
-    )
+    // Should still show grid view button (same icon always)
     expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      false
+      true
     )
   })
 
@@ -424,10 +421,8 @@ describe('DisplayCarousel Grid Mode', () => {
     await wrapper.setProps({ modelValue: [TEST_IMAGES_SMALL[0]] })
     await nextTick()
 
-    // Should revert to single mode with grid icon (not back arrow)
-    await findImageContainer(wrapper).trigger('focusin')
-    await nextTick()
-    expect(wrapper.find('[aria-label="Switch to single view"]').exists()).toBe(
+    // Should revert to single mode (single image, no grid button)
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
       false
     )
   })

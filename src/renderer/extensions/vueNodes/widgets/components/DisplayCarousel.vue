@@ -28,23 +28,15 @@
             @load="handleImageLoad"
           />
 
-          <!-- Toggle to Grid / Back to Grid (hover, top-left) -->
+          <!-- Toggle to Grid (hover, top-left) -->
           <button
             v-if="showControls && galleryImages.length > 1"
             :class="toggleButtonClass"
             class="absolute top-2 left-2"
-            :aria-label="
-              cameFromGrid ? t('g.switchToSingleView') : t('g.switchToGridView')
-            "
+            :aria-label="t('g.switchToGridView')"
             @click="switchToGrid"
           >
-            <i
-              :class="
-                cameFromGrid
-                  ? 'icon-[lucide--arrow-left] size-4'
-                  : 'icon-[lucide--layout-grid] size-4'
-              "
-            />
+            <i class="icon-[lucide--undo-2] size-4" />
           </button>
 
           <!-- Action Buttons (hover, top-right) -->
@@ -215,7 +207,6 @@ const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
 const isHovered = ref(false)
 const isFocused = ref(false)
-const cameFromGrid = ref(false)
 const imageDimensions = ref<string | null>(null)
 const thumbnailRefs = ref<(HTMLElement | null)[]>([])
 const imageContainerEl = ref<HTMLDivElement>()
@@ -266,7 +257,6 @@ watch(galleryImages, (images) => {
   }
   if (images.length <= 1) {
     displayMode.value = 'single'
-    cameFromGrid.value = false
   }
 })
 
@@ -350,7 +340,6 @@ function selectFromGrid(index: number) {
   activeIndex.value = index
   imageDimensions.value = null
   isHovered.value = false
-  cameFromGrid.value = true
   displayMode.value = 'single'
   scrollToActive()
 }
