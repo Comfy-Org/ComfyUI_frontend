@@ -234,16 +234,9 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.listViewOption.click()
     await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
 
-    // Switch back to grid by setting localStorage and refreshing the panel
-    await comfyPage.page.evaluate(() => {
-      localStorage.setItem(
-        'Comfy.Assets.Sidebar.ViewMode',
-        JSON.stringify('grid')
-      )
-    })
-    // Close and reopen sidebar to pick up the localStorage change
-    await tab.close()
-    await tab.open()
+    // Switch back to grid view via the settings menu (like a user would)
+    await tab.openSettingsMenu()
+    await tab.gridViewOption.click()
     await tab.waitForAssets()
 
     // Grid cards (with data-selected attribute) should be visible again
@@ -537,12 +530,8 @@ test.describe('Assets sidebar - context menu', () => {
     // Verify multi-selection took effect before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
 
-    // Right-click on a selected card via dispatchEvent to ensure contextmenu fires
-    await cards.first().dispatchEvent('contextmenu', {
-      bubbles: true,
-      cancelable: true,
-      button: 2
-    })
+    // Right-click on a selected card
+    await cards.first().click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await expect(contextMenu).toBeVisible({ timeout: 3000 })
