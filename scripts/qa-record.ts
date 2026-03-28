@@ -1938,13 +1938,9 @@ async function main() {
         recordingStartMs = Date.now()
         narrationSegments.length = 0
 
-        // Hybrid agent (Claude + Gemini) — requires ANTHROPIC_API_KEY
+        // Hybrid agent (Claude + Gemini)
+        // Uses ANTHROPIC_API_KEY in CI, or Claude Code OAuth session locally
         const anthropicKey = process.env.ANTHROPIC_API_KEY
-        if (!anthropicKey) {
-          throw new Error(
-            'ANTHROPIC_API_KEY is required for issue reproduction. The Gemini-only agent has been removed due to low success rate.'
-          )
-        }
         const { runHybridAgent } = await import('./qa-agent.js')
         const issueCtx = opts.diffFile
           ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)
