@@ -3645,6 +3645,14 @@
     "description": "اعمال شیدرهای fragment GLSL ES به تصاویر. u_resolution (vec2) همیشه در دسترس است.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "بول‌ها",
+        "tooltip": "بولین‌ها به صورت u_bool0-9 (bool) در کد شیدر در دسترس هستند"
+      },
+      "curves": {
+        "name": "منحنی‌ها",
+        "tooltip": "منحنی‌ها به صورت u_curve0-3 (sampler2D، ۱D LUT) در کد شیدر در دسترس هستند. با texture(u_curve0, vec2(x, 0.5)).r نمونه‌برداری کنید."
+      },
       "floats": {
         "name": "floats",
         "tooltip": "اعداد اعشاری به صورت u_float0-4 در کد شیدر در دسترس هستند"
