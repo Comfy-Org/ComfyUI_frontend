@@ -40,6 +40,7 @@ import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
+import { assetPath } from './utils/paths'
 import type { WorkspaceStore } from '../types/globals'
 
 dotenvConfig()
@@ -242,7 +243,7 @@ export class ComfyPage {
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
-    this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
@@ -344,7 +345,7 @@ export class ComfyPage {
   }
 
   public assetPath(fileName: string) {
-    return `./browser_tests/assets/${fileName}`
+    return assetPath(fileName)
   }
 
   async goto() {
