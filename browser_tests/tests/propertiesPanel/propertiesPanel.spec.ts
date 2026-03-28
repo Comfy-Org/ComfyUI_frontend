@@ -58,10 +58,8 @@ test.describe('Properties panel', () => {
       comfyPage
     }) => {
       await panel.switchToTab('Nodes')
-      // Default workflow has multiple nodes
       const nodeCount = await comfyPage.nodeOps.getNodeCount()
       expect(nodeCount).toBeGreaterThan(0)
-      // The Nodes tab should show at least one node entry
       await expect(panel.contentArea.locator('text=KSampler')).toBeVisible()
     })
 
@@ -92,7 +90,6 @@ test.describe('Properties panel', () => {
     })
 
     test('should display node widgets in Parameters tab', async () => {
-      // KSampler has widgets like seed, steps, cfg, sampler_name, scheduler, denoise
       await expect(panel.contentArea.getByText('seed')).toBeVisible()
       await expect(panel.contentArea.getByText('steps')).toBeVisible()
     })
@@ -172,7 +169,6 @@ test.describe('Properties panel', () => {
     test('should not show pencil icon when nothing is selected', async ({
       comfyPage
     }) => {
-      // Clear selection via evaluate to avoid workflow-tab overlay
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.deselectAll()
       })
@@ -218,6 +214,8 @@ test.describe('Properties panel', () => {
 
   test.describe('Settings tab - Node state', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await panel.switchToTab('Settings')
@@ -232,46 +230,32 @@ test.describe('Properties panel', () => {
     test('should set node to Bypass mode', async ({ comfyPage }) => {
       await panel.getNodeStateButton('Bypass').click()
 
-      const mode = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.mode
-      })
-      // LGraphEventMode.BYPASS = 4
-      expect(mode).toBe(4)
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      await expect(nodeLocator.getByText('Bypassed')).toBeVisible()
     })
 
     test('should set node to Mute mode', async ({ comfyPage }) => {
       await panel.getNodeStateButton('Mute').click()
 
-      const mode = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.mode
-      })
-      // LGraphEventMode.NEVER = 2
-      expect(mode).toBe(2)
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      await expect(nodeLocator.getByText('Muted')).toBeVisible()
     })
 
     test('should restore node to Normal mode', async ({ comfyPage }) => {
       await panel.getNodeStateButton('Bypass').click()
-      await panel.getNodeStateButton('Normal').click()
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      await expect(nodeLocator.getByText('Bypassed')).toBeVisible()
 
-      const mode = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.mode
-      })
-      // LGraphEventMode.ALWAYS = 0
-      expect(mode).toBe(0)
+      await panel.getNodeStateButton('Normal').click()
+      await expect(nodeLocator.getByText('Bypassed')).not.toBeVisible()
+      await expect(nodeLocator.getByText('Muted')).not.toBeVisible()
     })
   })
 
   test.describe('Settings tab - Node color', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await panel.switchToTab('Settings')
@@ -284,36 +268,37 @@ test.describe('Properties panel', () => {
     })
 
     test('should apply color to node', async ({ comfyPage }) => {
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      const initialBg = await nodeLocator.evaluate((el) =>
+        getComputedStyle(el).backgroundColor
+      )
+
       await panel.getColorSwatch('red').click()
 
-      const colorOption = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.getColorOption()
-      })
-      expect(colorOption).not.toBeNull()
-      expect(colorOption?.bgcolor).toBeTruthy()
+      await expect(nodeLocator).not.toHaveCSS('background-color', initialBg)
     })
 
     test('should remove color with noColor swatch', async ({ comfyPage }) => {
-      // First set a color
-      await panel.getColorSwatch('red').click()
-      // Then remove it
-      await panel.getColorSwatch('noColor').click()
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
 
-      const colorOption = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.getColorOption()
-      })
-      expect(colorOption).toBeNull()
+      await panel.getColorSwatch('red').click()
+      await expect(nodeLocator).not.toHaveCSS(
+        'background-color',
+        'rgba(0, 0, 0, 0)'
+      )
+
+      await panel.getColorSwatch('noColor').click()
+      const bgAfterRemove = await nodeLocator.evaluate((el) =>
+        getComputedStyle(el).backgroundColor
+      )
+      expect(bgAfterRemove).not.toContain('red')
     })
   })
 
   test.describe('Settings tab - Pinned state', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.vueNodes.waitForNodes()
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await panel.switchToTab('Settings')
@@ -326,28 +311,24 @@ test.describe('Properties panel', () => {
     test('should toggle pinned state', async ({ comfyPage }) => {
       await panel.pinnedSwitch.click()
 
-      const isPinned = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.pinned
-      })
-      expect(isPinned).toBe(true)
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      await expect(
+        nodeLocator.getByTestId('node-pin-indicator')
+      ).toBeVisible()
     })
 
     test('should unpin previously pinned node', async ({ comfyPage }) => {
-      // Pin
-      await panel.pinnedSwitch.click()
-      // Unpin
-      await panel.pinnedSwitch.click()
+      const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
 
-      const isPinned = await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (n: { type: string }) => n.type === 'KSampler'
-        )
-        return node?.pinned
-      })
-      expect(isPinned).toBe(false)
+      await panel.pinnedSwitch.click()
+      await expect(
+        nodeLocator.getByTestId('node-pin-indicator')
+      ).toBeVisible()
+
+      await panel.pinnedSwitch.click()
+      await expect(
+        nodeLocator.getByTestId('node-pin-indicator')
+      ).not.toBeVisible()
     })
   })
 
@@ -359,9 +340,7 @@ test.describe('Properties panel', () => {
     })
 
     test('should show node help content', async () => {
-      // Info tab shows NodeHelpContent which should display the node info
       await expect(panel.contentArea).toBeVisible()
-      // NodeHelpContent renders headings like "Inputs"
       await expect(
         panel.contentArea.getByRole('heading', { name: 'Inputs' })
       ).toBeVisible()
@@ -413,7 +392,6 @@ test.describe('Properties panel', () => {
     }) => {
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await expect(panel.panelTitle).toContainText('KSampler')
-      // Clear selection via evaluate to avoid workflow-tab overlay
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.deselectAll()
       })
@@ -427,7 +405,6 @@ test.describe('Properties panel', () => {
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await expect(panel.panelTitle).toContainText('KSampler')
 
-      // Clear selection via evaluate to avoid workflow-tab overlay
       await comfyPage.page.evaluate(() => {
         window.app!.canvas.deselectAll()
       })
@@ -447,7 +424,6 @@ test.describe('Properties panel', () => {
       const nodeCount = await comfyPage.nodeOps.getNodeCount()
       expect(nodeCount).toBeGreaterThan(0)
 
-      // Verify key nodes from default workflow appear
       await expect(
         panel.contentArea.getByText('KSampler').first()
       ).toBeVisible()
@@ -480,19 +456,16 @@ test.describe('Properties panel', () => {
         'KSampler',
         'CLIP Text Encode (Prompt)'
       ])
-      // When multiple items selected, the tab label changes from "Parameters" to "Nodes"
       await expect(panel.getTab('Nodes')).toBeVisible()
     })
   })
 
   test.describe('Errors tab', () => {
     test('should show Errors tab when errors exist', async ({ comfyPage }) => {
-      // Enable the errors tab setting
       await comfyPage.settings.setSetting(
         'Comfy.RightSidePanel.ShowErrorsTab',
         true
       )
-      // Load a workflow with missing nodes to trigger errors
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.nextFrame()
@@ -504,7 +477,6 @@ test.describe('Properties panel', () => {
       comfyPage
     }) => {
       await comfyPage.actionbar.propertiesButton.click()
-      // The default fixture disables the errors tab
       await expect(panel.errorsTabIcon).not.toBeVisible()
     })
   })
