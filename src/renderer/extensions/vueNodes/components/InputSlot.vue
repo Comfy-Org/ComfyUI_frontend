@@ -2,7 +2,6 @@
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div
     v-else
-    v-tooltip.left="tooltipConfig"
     :class="
       cn(
         'lg-slot lg-slot--input group/slot m-0 flex items-center rounded-r-lg',
@@ -20,6 +19,7 @@
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
+      v-tooltip.left="tooltipConfig"
       :class="
         cn(
           'w-3 -translate-x-1/2',
