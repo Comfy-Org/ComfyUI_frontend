@@ -28,9 +28,14 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         .poll(() => comfyPage.page.title())
         .toBe(`${workflowName} - ComfyUI`)
 
-      const textBox = comfyPage.widgetTextBox
-      await textBox.fill('Hello World')
-      await textBox.press('Escape')
+      await comfyPage.page.evaluate(async () => {
+        const node = window.app!.graph!.nodes[0]
+        node.pos[0] += 50
+        window.app!.graph!.setDirtyCanvas(true, true)
+        ;(
+          window.app!.extensionManager as WorkspaceStore
+        ).workflow.activeWorkflow?.changeTracker?.checkState()
+      })
       await expect
         .poll(() => comfyPage.page.title())
         .toBe(`*${workflowName} - ComfyUI`)
