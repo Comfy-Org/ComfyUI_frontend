@@ -380,7 +380,16 @@ export class NodeReference {
     await this.comfyPage.nextFrame()
   }
   async delete(): Promise<void> {
-    await this.click('title')
+    const header = this.comfyPage.page
+      .locator(`[data-node-id="${this.id}"] [data-testid^="node-header-"]`)
+      .first()
+
+    if ((await header.count()) > 0) {
+      await header.click({ force: true })
+    } else {
+      await this.click('title')
+    }
+
     await this.comfyPage.page.keyboard.press('Delete')
     await this.comfyPage.nextFrame()
   }

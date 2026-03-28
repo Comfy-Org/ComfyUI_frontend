@@ -317,13 +317,29 @@ export class SubgraphHelper {
 
   async isInSubgraph(): Promise<boolean> {
     const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
-    return breadcrumb.isVisible()
+    if (await breadcrumb.isVisible().catch(() => false)) return true
+
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph
+      return !!graph && 'inputNode' in graph
+    })
   }
 
   async exitViaBreadcrumb(): Promise<void> {
     const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
-    const parentLink = breadcrumb.getByRole('link').first()
-    await parentLink.click()
+    const rootItem = breadcrumb.getByTestId(TestIds.breadcrumb.root)
+
+    if (await rootItem.isVisible().catch(() => false)) {
+      await rootItem.click()
+    } else {
+      await this.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const graph = canvas.graph
+        if (!graph) return
+        canvas.setGraph(graph.rootGraph)
+      })
+    }
+
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
   }
@@ -386,7 +402,12 @@ export class SubgraphHelper {
   }
 
   async getNodeCount(): Promise<number> {
-    return this.page.locator('[data-node-id]').count()
+    const domCount = await this.page.locator('[data-node-id]').count()
+    if (domCount > 0) return domCount
+
+    return this.page.evaluate(() => {
+      return window.app!.canvas.graph!.nodes?.length || 0
+    })
   }
 
   async getSlotCount(type: 'input' | 'output'): Promise<number> {
