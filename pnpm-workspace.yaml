@@ -7,6 +7,7 @@ catalog:
   '@astrojs/vue': ^5.0.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
+  '@faker-js/faker': ^10.4.0
   '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380

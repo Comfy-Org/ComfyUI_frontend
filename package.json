@@ -121,6 +121,7 @@
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
+    "@faker-js/faker": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
     "@lobehub/i18n-cli": "catalog:",
     "@nx/eslint": "catalog:",
