@@ -33,7 +33,7 @@
       "id": 3,
       "type": "EmptyLatentImage",
       "pos": [800, 200],
-      "size": [315, 106],
+      "size": [400, 200],
       "flags": {},
       "order": 1,
       "mode": 0,
