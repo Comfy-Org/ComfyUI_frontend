@@ -11,6 +11,7 @@ import {
   getPromotableWidgets,
   getSourceNodeId,
   getWidgetName,
+  isLinkedPromotion,
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected
@@ -187,8 +188,14 @@ function showAll() {
   }
 }
 function hideAll() {
+  const node = activeNode.value
   for (const item of filteredActive.value) {
     if (String(item[0].id) === '-1') continue
+    if (
+      node &&
+      isLinkedPromotion(node, String(item[0].id), getWidgetName(item[1]))
+    )
+      continue
     demote(item)
   }
 }
@@ -245,8 +252,16 @@ onMounted(() => {
             :key="toKey([node, widget])"
             :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
             :node-title="node.title"
-            :widget-name="widget.name"
-            :is-physical="node.id === -1"
+            :widget-name="widget.label || widget.name"
+            :is-physical="
+              node.id === -1 ||
+              (!!activeNode &&
+                isLinkedPromotion(
+                  activeNode,
+                  String(node.id),
+                  getWidgetName(widget)
+                ))
+            "
             :is-draggable="!searchQuery"
             @toggle-visibility="demote([node, widget])"
           />
