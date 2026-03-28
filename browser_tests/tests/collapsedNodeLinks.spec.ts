@@ -1,67 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 const SLOT_BOUNDS_MARGIN = 20
-
-async function waitForNodeLayout(page: Page, nodeId: string) {
-  await page.waitForFunction(
-    (id) => {
-      const el = document.querySelector(`[data-node-id="${id}"]`)
-      if (!el) return false
-      const rect = el.getBoundingClientRect()
-      return rect.width > 0 && rect.height > 0
-    },
-    nodeId,
-    { timeout: 5000 }
-  )
-}
-
-async function loadWithPositions(
-  page: Page,
-  positions: Record<string, [number, number]>
-) {
-  await page.evaluate(
-    async ({ positions }) => {
-      const data = window.app!.graph.serialize()
-      for (const node of data.nodes) {
-        const pos = positions[String(node.id)]
-        if (pos) node.pos = pos
-      }
-      await window.app!.loadGraphData(
-        data as ComfyWorkflowJSON,
-        true,
-        true,
-        null
-      )
-    },
-    { positions }
-  )
-}
-
-async function setNodeCollapsed(
-  page: Page,
-  nodeId: string,
-  collapsed: boolean
-) {
-  await page.evaluate(
-    ({ id, collapsed }) => {
-      const node = window.app!.graph._nodes.find(
-        (n: { id: number | string }) => String(n.id) === id
-      )
-      if (node) {
-        node.flags = node.flags || {}
-        node.flags.collapsed = collapsed
-        window.app!.canvas.setDirty(true, true)
-      }
-    },
-    { id: nodeId, collapsed }
-  )
-  await waitForNodeLayout(page, nodeId)
-}
+const SUBGRAPH_ID = '2'
+const WORKFLOW = 'selection/subgraph-with-regular-node'
 
 async function assertSlotsWithinNodeBounds(page: Page, nodeId: string) {
   await page
@@ -102,9 +46,6 @@ async function assertSlotsWithinNodeBounds(page: Page, nodeId: string) {
   ).toBe(true)
 }
 
-const SUBGRAPH_ID = '2'
-const WORKFLOW = 'selection/subgraph-with-regular-node'
-
 test.describe(
   'Collapsed node link positions',
   { tag: ['@canvas', '@node'] },
@@ -122,29 +63,46 @@ test.describe(
     test('link endpoints stay within collapsed node bounds', async ({
       comfyPage
     }) => {
-      await setNodeCollapsed(comfyPage.page, SUBGRAPH_ID, true)
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Test Subgraph')
+      await node.toggleCollapse()
+      await comfyPage.nextFrame()
+
       await assertSlotsWithinNodeBounds(comfyPage.page, SUBGRAPH_ID)
     })
 
-    test('links follow collapsed node after position change', async ({
-      comfyPage
-    }) => {
-      const page = comfyPage.page
-      await loadWithPositions(page, { [SUBGRAPH_ID]: [200, 200] })
-      await comfyPage.vueNodes.waitForNodes()
-      await setNodeCollapsed(page, SUBGRAPH_ID, true)
-      await assertSlotsWithinNodeBounds(page, SUBGRAPH_ID)
+    test('links follow collapsed node after drag', async ({ comfyPage }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Test Subgraph')
+      await node.toggleCollapse()
+      await comfyPage.nextFrame()
+
+      const box = await node.boundingBox()
+      expect(box).not.toBeNull()
+      await comfyPage.page.mouse.move(
+        box!.x + box!.width / 2,
+        box!.y + box!.height / 2
+      )
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(
+        box!.x + box!.width / 2 + 200,
+        box!.y + box!.height / 2 + 100,
+        { steps: 10 }
+      )
+      await comfyPage.page.mouse.up()
+      await comfyPage.nextFrame()
+
+      await assertSlotsWithinNodeBounds(comfyPage.page, SUBGRAPH_ID)
     })
 
     test('links recover correct positions after expand', async ({
       comfyPage
     }) => {
-      const page = comfyPage.page
-      await setNodeCollapsed(page, SUBGRAPH_ID, true)
-      await waitForNodeLayout(page, SUBGRAPH_ID)
-      await setNodeCollapsed(page, SUBGRAPH_ID, false)
-      await waitForNodeLayout(page, SUBGRAPH_ID)
-      await assertSlotsWithinNodeBounds(page, SUBGRAPH_ID)
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Test Subgraph')
+      await node.toggleCollapse()
+      await comfyPage.nextFrame()
+      await node.toggleCollapse()
+      await comfyPage.nextFrame()
+
+      await assertSlotsWithinNodeBounds(comfyPage.page, SUBGRAPH_ID)
     })
   }
 )
