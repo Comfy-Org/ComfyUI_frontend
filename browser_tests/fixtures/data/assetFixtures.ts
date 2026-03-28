@@ -1,7 +1,4 @@
 import type { Asset } from '@comfyorg/ingest-types'
-
-// ─── Factory Helpers ───────────────────────────────────────────────────────────
-
 function createModelAsset(overrides: Partial<Asset> = {}): Asset {
   return {
     id: 'test-model-001',
@@ -50,9 +47,6 @@ function createOutputAsset(overrides: Partial<Asset> = {}): Asset {
     ...overrides
   }
 }
-
-// ─── Stable Fixtures (deterministic for screenshot tests) ──────────────────────
-
 export const STABLE_CHECKPOINT: Asset = createModelAsset({
   id: 'test-checkpoint-001',
   name: 'sd_xl_base_1.0.safetensors',
@@ -181,9 +175,6 @@ export const STABLE_OUTPUT_2: Asset = createOutputAsset({
   created_at: '2025-03-10T12:05:00Z',
   updated_at: '2025-03-10T12:05:00Z'
 })
-
-// ─── Preset Collections ────────────────────────────────────────────────────────
-
 export const ALL_MODEL_FIXTURES: Asset[] = [
   STABLE_CHECKPOINT,
   STABLE_CHECKPOINT_2,
@@ -200,9 +191,6 @@ export const ALL_INPUT_FIXTURES: Asset[] = [
 ]
 
 export const ALL_OUTPUT_FIXTURES: Asset[] = [STABLE_OUTPUT, STABLE_OUTPUT_2]
-
-// ─── Factories for generating N deterministic assets ───────────────────────────
-
 const CHECKPOINT_NAMES = [
   'sd_xl_base_1.0.safetensors',
   'v1-5-pruned-emaonly.safetensors',

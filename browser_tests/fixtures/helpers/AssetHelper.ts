@@ -22,9 +22,6 @@ interface PaginationOptions {
   total: number
   hasMore: boolean
 }
-
-// ─── Configuration ──────────────────────────────────────────────────────────
-
 export interface AssetConfig {
   readonly assets: ReadonlyMap<string, Asset>
   readonly pagination: PaginationOptions | null
@@ -47,9 +44,6 @@ function addAssets(
   }
   return { ...config, assets: merged }
 }
-
-// ─── Operators ──────────────────────────────────────────────────────────────
-
 export function withModels(
   countOrAssets: number | Asset[],
   category: 'checkpoints' | 'loras' | 'vae' | 'embeddings' = 'checkpoints'
@@ -100,9 +94,6 @@ export function withUploadResponse(
 ): AssetOperator {
   return (config) => ({ ...config, uploadResponse: response })
 }
-
-// ─── Helper Class ───────────────────────────────────────────────────────────
-
 export class AssetHelper {
   private store: Map<string, Asset>
   private paginationOptions: PaginationOptions | null
@@ -121,9 +112,6 @@ export class AssetHelper {
     this.paginationOptions = config.pagination
     this.uploadResponse = config.uploadResponse
   }
-
-  // ─── Activation ─────────────────────────────────────────────────────────
-
   async mock(): Promise<void> {
     const handler = async (route: Route) => {
       const url = new URL(route.request().url())
@@ -249,9 +237,6 @@ export class AssetHelper {
     this.routeHandlers.push({ pattern, handler })
     await this.page.route(pattern, handler)
   }
-
-  // ─── Inspection ─────────────────────────────────────────────────────────
-
   getMutations(): MutationRecord[] {
     return [...this.mutations]
   }
@@ -267,9 +252,6 @@ export class AssetHelper {
   get assetCount(): number {
     return this.store.size
   }
-
-  // ─── Cleanup ────────────────────────────────────────────────────────────
-
   async clearMocks(): Promise<void> {
     for (const { pattern, handler } of this.routeHandlers) {
       await this.page.unroute(pattern, handler)
@@ -280,9 +262,6 @@ export class AssetHelper {
     this.paginationOptions = null
     this.uploadResponse = null
   }
-
-  // ─── Internal ───────────────────────────────────────────────────────────
-
   private getFilteredAssets(tags: string[]): Asset[] {
     const assets = [...this.store.values()]
     if (tags.length === 0) return assets
@@ -292,9 +271,6 @@ export class AssetHelper {
     )
   }
 }
-
-// ─── Factory ────────────────────────────────────────────────────────────────
-
 export function createAssetHelper(
   page: Page,
   ...operators: AssetOperator[]
