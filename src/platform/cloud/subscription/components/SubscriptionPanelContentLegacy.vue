@@ -80,6 +80,7 @@
                 size="icon-sm"
                 class="absolute top-4 right-4"
                 :loading="isLoadingBalance"
+                :aria-label="$t('subscription.refreshCredits')"
                 @click="handleRefresh"
               >
                 <i class="pi pi-sync text-sm text-text-secondary" />

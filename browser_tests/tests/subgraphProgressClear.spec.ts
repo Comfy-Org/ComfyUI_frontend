@@ -13,14 +13,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // Find the subgraph node
-      const subgraphNodeId = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        const subgraphNode = graph.nodes.find(
-          (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-        )
-        return subgraphNode ? String(subgraphNode.id) : null
-      })
-      expect(subgraphNodeId).not.toBeNull()
+      const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
 
       // Simulate a stale progress value on the subgraph node.
       // This happens when:
@@ -34,26 +27,21 @@ test.describe(
       await comfyPage.page.evaluate((nodeId) => {
         const node = window.app!.canvas.graph!.getNodeById(nodeId)!
         node.progress = 0.5
-      }, subgraphNodeId!)
+      }, subgraphNodeId)
 
       // Verify progress is set
       const progressBefore = await comfyPage.page.evaluate((nodeId) => {
         return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-      }, subgraphNodeId!)
+      }, subgraphNodeId)
       expect(progressBefore).toBe(0.5)
 
       // Navigate into the subgraph
-      const subgraphNode = await comfyPage.nodeOps.getNodeRefById(
-        subgraphNodeId!
-      )
+      const subgraphNode =
+        await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
       await subgraphNode.navigateIntoSubgraph()
 
       // Verify we're inside the subgraph
-      const inSubgraph = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return !!graph && 'inputNode' in graph
-      })
-      expect(inSubgraph).toBe(true)
+      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       // Navigate back to the root graph
       await comfyPage.page.keyboard.press('Escape')
@@ -80,30 +68,18 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
-      const subgraphNodeId = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        const subgraphNode = graph.nodes.find(
-          (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-        )
-        return subgraphNode ? String(subgraphNode.id) : null
-      })
-      expect(subgraphNodeId).not.toBeNull()
+      const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
 
       await comfyPage.page.evaluate((nodeId) => {
         const node = window.app!.canvas.graph!.getNodeById(nodeId)!
         node.progress = 0.7
-      }, subgraphNodeId!)
+      }, subgraphNodeId)
 
-      const subgraphNode = await comfyPage.nodeOps.getNodeRefById(
-        subgraphNodeId!
-      )
+      const subgraphNode =
+        await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
       await subgraphNode.navigateIntoSubgraph()
 
-      const inSubgraph = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return !!graph && 'inputNode' in graph
-      })
-      expect(inSubgraph).toBe(true)
+      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()

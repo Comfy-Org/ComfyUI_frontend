@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 
+import type { AppMode } from '../../../src/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -101,6 +102,40 @@ export class WorkflowHelper {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
       return workflow?.changeTracker.redoQueue.length
+    })
+  }
+
+  async getActiveWorkflowPath(): Promise<string | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.path
+    })
+  }
+
+  async getActiveWorkflowActiveAppMode(): Promise<AppMode | null | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.activeMode
+    })
+  }
+
+  async getActiveWorkflowInitialMode(): Promise<AppMode | null | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.initialMode
+    })
+  }
+
+  async getLinearModeFromGraph(): Promise<boolean | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return window.app!.rootGraph.extra?.linearMode as boolean | undefined
+    })
+  }
+
+  async getOpenWorkflowCount(): Promise<number> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow.workflows
+        .length
     })
   }
 

@@ -60,29 +60,8 @@ test.describe(
         await expect(textWidget).toHaveValue(/Latina female/)
       }).toPass({ timeout: 5000 })
 
-      // 2. Enter the subgraph via Vue node button
-      await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
-
-      // 3. Disable Vue nodes for canvas operations (select all + convert)
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.nextFrame()
-
-      // 4. Select all interior nodes and convert to nested subgraph
-      await comfyPage.canvas.click()
-      await comfyPage.canvas.press('Control+a')
-      await comfyPage.nextFrame()
-
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.graph!.convertToSubgraph(canvas.selectedItems)
-      })
-      await comfyPage.nextFrame()
-
-      // 5. Navigate back to root graph and trigger a checkState cycle
-      await comfyPage.subgraph.exitViaBreadcrumb()
-      await comfyPage.canvas.click()
-      await comfyPage.nextFrame()
+      // 2. Pack all interior nodes into a nested subgraph
+      await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
 
       // 6. Re-enable Vue nodes and verify values are preserved
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -123,24 +102,8 @@ test.describe(
       const nodeLocator = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
       await expect(nodeLocator).toBeVisible()
 
-      // Enter the subgraph via Vue node button, then disable for canvas ops
-      await comfyPage.vueNodes.enterSubgraph(HOST_NODE_ID)
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.nextFrame()
-
-      await comfyPage.canvas.click()
-      await comfyPage.canvas.press('Control+a')
-      await comfyPage.nextFrame()
-
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.graph!.convertToSubgraph(canvas.selectedItems)
-      })
-      await comfyPage.nextFrame()
-
-      await comfyPage.subgraph.exitViaBreadcrumb()
-      await comfyPage.canvas.click()
-      await comfyPage.nextFrame()
+      // Pack all interior nodes into a nested subgraph
+      await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
 
       // Verify all proxyWidgets entries resolve
       await expect(async () => {

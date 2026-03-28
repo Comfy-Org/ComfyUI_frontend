@@ -11,6 +11,7 @@
 
     <!-- Main toolbar -->
     <nav
+      data-testid="builder-footer-nav"
       class="flex items-center gap-2 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
@@ -37,7 +38,11 @@
         :is-select-active="isSelectStep"
         @switch="navigateToStep('builder:outputs')"
       >
-        <Button size="lg" :class="cn('w-24', disabledSaveClasses)">
+        <Button
+          size="lg"
+          :class="cn('w-24', disabledSaveClasses)"
+          data-testid="builder-save-as-button"
+        >
           {{ isSaved ? t('g.save') : t('builderToolbar.saveAs') }}
         </Button>
       </ConnectOutputPopover>
@@ -50,6 +55,7 @@
           :disabled="!isModified"
           class="flex-1"
           :class="isModified ? activeSaveClasses : disabledSaveClasses"
+          data-testid="builder-save-button"
           @click="save()"
         >
           {{ t('g.save') }}
@@ -60,6 +66,7 @@
               size="lg"
               :aria-label="t('builderToolbar.saveAs')"
               data-save-chevron
+              data-testid="builder-save-as-chevron"
               class="w-6 rounded-l-none border-l border-border-default px-0"
             >
               <i
@@ -87,7 +94,13 @@
           </DropdownMenuPortal>
         </DropdownMenuRoot>
       </ButtonGroup>
-      <Button v-else size="lg" :class="activeSaveClasses" @click="saveAs()">
+      <Button
+        v-else
+        size="lg"
+        :class="activeSaveClasses"
+        data-testid="builder-save-as-button"
+        @click="saveAs()"
+      >
         {{ t('builderToolbar.saveAs') }}
       </Button>
     </nav>

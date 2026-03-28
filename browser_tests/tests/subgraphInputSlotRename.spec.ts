@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 
 const WORKFLOW = 'subgraphs/test-values-input-subgraph'
 const RENAMED_LABEL = 'my_seed'
@@ -40,13 +41,7 @@ test.describe(
       await expect(seedWidget).toBeVisible()
 
       // Verify widget is in the node body, not the header
-      const headerBox = await sgNode
-        .locator('[data-testid^="node-header-"]')
-        .boundingBox()
-      const widgetBox = await seedWidget.boundingBox()
-      expect(headerBox).not.toBeNull()
-      expect(widgetBox).not.toBeNull()
-      expect(widgetBox!.y).toBeGreaterThan(headerBox!.y + headerBox!.height)
+      await SubgraphHelper.expectWidgetBelowHeader(sgNode, seedWidget)
 
       // 3. Enter the subgraph and rename the seed slot.
       //    The subgraph IO rename uses canvas.prompt() which requires the
@@ -103,15 +98,7 @@ test.describe(
       const seedWidgetAfter = sgNodeAfter.getByLabel('seed', { exact: true })
       await expect(seedWidgetAfter).toBeVisible()
 
-      const headerAfter = await sgNodeAfter
-        .locator('[data-testid^="node-header-"]')
-        .boundingBox()
-      const widgetAfter = await seedWidgetAfter.boundingBox()
-      expect(headerAfter).not.toBeNull()
-      expect(widgetAfter).not.toBeNull()
-      expect(widgetAfter!.y).toBeGreaterThan(
-        headerAfter!.y + headerAfter!.height
-      )
+      await SubgraphHelper.expectWidgetBelowHeader(sgNodeAfter, seedWidgetAfter)
     })
   }
 )

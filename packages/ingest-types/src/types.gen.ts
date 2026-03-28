@@ -151,6 +151,7 @@ export type HubWorkflowDetail = {
   share_id: string
   workflow_id: string
   name: string
+  status: HubWorkflowStatus
   description?: string
   tags?: Array<LabelRef>
   thumbnail_type?: 'image' | 'video' | 'image_comparison'
@@ -194,9 +195,19 @@ export type LabelRef = {
   display_name: string
 }
 
+/**
+ * Public workflow status. NULL in the database is represented as pending in API responses.
+ */
+export type HubWorkflowStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'deprecated'
+
 export type HubWorkflowSummary = {
   share_id: string
   name: string
+  status: HubWorkflowStatus
   description?: string
   tags?: Array<LabelRef>
   models?: Array<LabelRef>
@@ -245,6 +256,7 @@ export type HubWorkflowTemplateEntry = {
    */
   name: string
   title: string
+  status: HubWorkflowStatus
   description?: string
   tags?: Array<string>
   models?: Array<string>
@@ -1627,6 +1639,28 @@ export type SendUserInviteEmailRequest = {
    * Whether to force send the invite even if user already exists or has been invited
    */
   force?: boolean
+}
+
+export type SetReviewStatusResponse = {
+  /**
+   * The share IDs that were submitted for review
+   */
+  share_ids: Array<string>
+  /**
+   * The applied review status
+   */
+  status: 'approved' | 'rejected'
+}
+
+export type SetReviewStatusRequest = {
+  /**
+   * The share IDs of the hub workflows to review
+   */
+  share_ids: Array<string>
+  /**
+   * The review decision for the workflows
+   */
+  status: 'approved' | 'rejected'
 }
 
 /**
@@ -4457,6 +4491,45 @@ export type SendUserInviteEmailResponses = {
 export type SendUserInviteEmailResponse2 =
   SendUserInviteEmailResponses[keyof SendUserInviteEmailResponses]
 
+export type SetReviewStatusData = {
+  body: SetReviewStatusRequest
+  path?: never
+  query?: never
+  url: '/admin/api/hub/workflows/status'
+}
+
+export type SetReviewStatusErrors = {
+  /**
+   * Bad request - invalid status value or empty share_ids
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type SetReviewStatusError =
+  SetReviewStatusErrors[keyof SetReviewStatusErrors]
+
+export type SetReviewStatusResponses = {
+  /**
+   * Status updated successfully
+   */
+  200: SetReviewStatusResponse
+}
+
+export type SetReviewStatusResponse2 =
+  SetReviewStatusResponses[keyof SetReviewStatusResponses]
+
 export type GetDeletionRequestData = {
   body?: never
   path?: never
@@ -5740,6 +5813,10 @@ export type ListHubWorkflowsData = {
      * When true, returns full HubWorkflowDetail objects in the workflows array instead of summaries. Requires limit <= 20.
      */
     detail?: boolean
+    /**
+     * Filter by status (e.g. ?status=pending,approved). Defaults to approved if omitted.
+     */
+    status?: Array<HubWorkflowStatus>
   }
   url: '/api/hub/workflows'
 }
@@ -5814,7 +5891,12 @@ export type PublishHubWorkflowResponse =
 export type ListHubWorkflowIndexData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Filter by status (e.g. ?status=pending,approved). Defaults to approved if omitted.
+     */
+    status?: Array<HubWorkflowStatus>
+  }
   url: '/api/hub/workflows/index'
 }
 

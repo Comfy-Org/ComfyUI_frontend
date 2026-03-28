@@ -64,6 +64,13 @@ const commonParserOptions = {
   extraFileExtensions
 } as const
 
+const useVirtualListRestriction = {
+  name: '@vueuse/core',
+  importNames: ['useVirtualList'],
+  message:
+    'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
+} as const
+
 export default defineConfig([
   {
     ignores: [
@@ -356,6 +363,14 @@ export default defineConfig([
     }
   },
 
+  // The website app is a marketing site with no vue-i18n setup
+  {
+    files: ['apps/website/**/*.vue'],
+    rules: {
+      '@intlify/vue-i18n/no-raw-text': 'off'
+    }
+  },
+
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
@@ -370,7 +385,8 @@ export default defineConfig([
               importNames: ['t', 'd', 'te'],
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
-            }
+            },
+            useVirtualListRestriction
           ]
         }
       ]
@@ -390,8 +406,21 @@ export default defineConfig([
               importNames: ['useI18n'],
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
-            }
+            },
+            useVirtualListRestriction
           ]
+        }
+      ]
+    }
+  },
+  // Preserve the useVirtualList ban for files excluded from the useI18n rule.
+  {
+    files: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [useVirtualListRestriction]
         }
       ]
     }
