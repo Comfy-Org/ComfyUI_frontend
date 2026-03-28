@@ -242,6 +242,106 @@ describe('VirtualGrid', () => {
     wrapper.unmount()
   })
 
+  it('renders a single item correctly', async () => {
+    const items = createItems(1)
+    mockedWidth.value = 400
+    mockedHeight.value = 200
+    mockedScrollY.value = 0
+
+    const wrapper = mount(VirtualGrid<TestItem>, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 100,
+        defaultItemWidth: 100,
+        maxColumns: 4,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      attachTo: document.body
+    })
+
+    await nextTick()
+
+    const renderedItems = wrapper.findAll('.test-item')
+    expect(renderedItems).toHaveLength(1)
+    expect(renderedItems[0].text()).toBe('Item 0')
+
+    wrapper.unmount()
+  })
+
+  it('renders all items when they exactly fill the viewport', async () => {
+    // 2 rows × 4 cols = 8 items, viewport = 200px, itemHeight = 100px → 2 rows
+    const items = createItems(8)
+    mockedWidth.value = 400
+    mockedHeight.value = 200
+    mockedScrollY.value = 0
+
+    const wrapper = mount(VirtualGrid<TestItem>, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 100,
+        defaultItemWidth: 100,
+        maxColumns: 4,
+        bufferRows: 0
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      attachTo: document.body
+    })
+
+    await nextTick()
+
+    const renderedItems = wrapper.findAll('.test-item')
+    expect(renderedItems).toHaveLength(8)
+
+    wrapper.unmount()
+  })
+
+  it('renders only visible items when items overflow the viewport', async () => {
+    // 4 cols, itemHeight=100, viewport=200 → 2 visible rows = 8 visible items
+    // With bufferRows=0, only those 8 should render out of 100 total
+    const items = createItems(100)
+    mockedWidth.value = 400
+    mockedHeight.value = 200
+    mockedScrollY.value = 0
+
+    const wrapper = mount(VirtualGrid<TestItem>, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 100,
+        defaultItemWidth: 100,
+        maxColumns: 4,
+        bufferRows: 0
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      attachTo: document.body
+    })
+
+    await nextTick()
+
+    const renderedItems = wrapper.findAll('.test-item')
+    // viewRows = ceil(200/100) = 2, cols = 4 → 8 items
+    expect(renderedItems).toHaveLength(8)
+    expect(renderedItems[0].text()).toBe('Item 0')
+    expect(renderedItems[7].text()).toBe('Item 7')
+
+    wrapper.unmount()
+  })
+
   it('forces cols to maxColumns when maxColumns is finite', async () => {
     mockedWidth.value = 100
     mockedHeight.value = 200
