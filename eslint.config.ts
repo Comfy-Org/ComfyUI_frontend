@@ -356,6 +356,14 @@ export default defineConfig([
     }
   },
 
+  // The website app is a marketing site with no vue-i18n setup
+  {
+    files: ['apps/website/**/*.vue'],
+    rules: {
+      '@intlify/vue-i18n/no-raw-text': 'off'
+    }
+  },
+
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
