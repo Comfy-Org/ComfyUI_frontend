@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 
 vi.mock('@tanstack/vue-virtual', async () => {
-  const vue = await import('vue')
+  const { computed } = await import('vue')
 
   return {
     useVirtualizer: (options: {
@@ -9,7 +9,7 @@ vi.mock('@tanstack/vue-virtual', async () => {
       estimateSize: (index: number) => number
       getItemKey?: (index: number) => number | string
     }) =>
-      vue.computed(() => {
+      computed(() => {
         let start = 0
         const items = Array.from({ length: options.count }, (_, index) => {
           const size = options.estimateSize(index)
