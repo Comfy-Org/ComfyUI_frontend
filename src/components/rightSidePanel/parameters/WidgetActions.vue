@@ -9,7 +9,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
-  getSourceNodeId,
+  isLinkedPromotion,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -47,6 +47,11 @@ const promotionStore = usePromotionStore()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
+const isLinked = computed(() => {
+  if (!node.isSubgraphNode() || !isPromotedWidgetView(widget)) return false
+  return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
+})
+const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
   isShownOnParents && hasParents.value ? parents[0] : node
 )
@@ -76,8 +81,6 @@ function handleHideInput() {
   if (!parents?.length) return
 
   if (isPromotedWidgetView(widget)) {
-    const disambiguatingSourceNodeId = getSourceNodeId(widget)
-
     for (const parent of parents) {
       const source: PromotedWidgetSource = {
         sourceNodeId:
@@ -85,7 +88,7 @@ function handleHideInput() {
             ? widget.sourceNodeId
             : String(node.id),
         sourceWidgetName: widget.sourceWidgetName,
-        disambiguatingSourceNodeId
+        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
       }
       promotionStore.demote(parent.rootGraph.id, parent.id, source)
       parent.computeSize(parent.size)
@@ -134,7 +137,7 @@ function handleResetToDefault() {
       </Button>
 
       <Button
-        v-if="hasParents"
+        v-if="canToggleVisibility"
         variant="textonly"
         size="unset"
         class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"
