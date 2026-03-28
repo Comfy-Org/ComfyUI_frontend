@@ -10,10 +10,16 @@ const columns = computed(() => [
   {
     title: t('footer.product', locale),
     links: [
-      { label: t('footer.comfyDesktop', locale), href: localePath('/download', locale) },
+      {
+        label: t('footer.comfyDesktop', locale),
+        href: localePath('/download', locale)
+      },
       { label: t('footer.comfyCloud', locale), href: 'https://app.comfy.org' },
       { label: t('footer.comfyHub', locale), href: 'https://hub.comfy.org' },
-      { label: t('footer.pricing', locale), href: localePath('/pricing', locale) }
+      {
+        label: t('footer.pricing', locale),
+        href: localePath('/pricing', locale)
+      }
     ]
   },
   {
@@ -24,7 +30,10 @@ const columns = computed(() => [
         href: 'https://docs.comfy.org'
       },
       { label: t('footer.blog', locale), href: 'https://blog.comfy.org' },
-      { label: t('footer.gallery', locale), href: localePath('/gallery', locale) },
+      {
+        label: t('footer.gallery', locale),
+        href: localePath('/gallery', locale)
+      },
       {
         label: t('footer.github', locale),
         href: 'https://github.com/comfyanonymous/ComfyUI'
@@ -35,15 +44,27 @@ const columns = computed(() => [
     title: t('footer.company', locale),
     links: [
       { label: t('footer.about', locale), href: localePath('/about', locale) },
-      { label: t('footer.careers', locale), href: localePath('/careers', locale) },
-      { label: t('footer.enterprise', locale), href: localePath('/enterprise', locale) }
+      {
+        label: t('footer.careers', locale),
+        href: localePath('/careers', locale)
+      },
+      {
+        label: t('footer.enterprise', locale),
+        href: localePath('/enterprise', locale)
+      }
     ]
   },
   {
     title: t('footer.legal', locale),
     links: [
-      { label: t('footer.terms', locale), href: localePath('/terms-of-service', locale) },
-      { label: t('footer.privacy', locale), href: localePath('/privacy-policy', locale) }
+      {
+        label: t('footer.terms', locale),
+        href: localePath('/terms-of-service', locale)
+      },
+      {
+        label: t('footer.privacy', locale),
+        href: localePath('/privacy-policy', locale)
+      }
     ]
   }
 ])
@@ -90,7 +111,10 @@ const socials = [
       <!-- Brand -->
       <div class="lg:col-span-1">
         <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
-        <a :href="localePath('/', locale)" class="text-2xl font-bold italic text-brand-yellow">
+        <a
+          :href="localePath('/', locale)"
+          class="text-2xl font-bold text-brand-yellow italic"
+        >
           Comfy
         </a>
         <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
