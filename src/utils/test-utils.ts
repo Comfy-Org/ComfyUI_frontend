@@ -4,6 +4,7 @@ import type { ComponentMountingOptions } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -34,6 +35,90 @@ function createDefaultPlugins() {
 const defaultDirectiveStubs: Record<string, () => void> = {
   tooltip: () => {}
 }
+
+/**
+ * PrimeVue component stubs for unit/component tests.
+ *
+ * Use via `global.stubs` in render options:
+ * ```ts
+ * render(MyComponent, { global: { stubs: { Button: stubs.Button } } })
+ * ```
+ *
+ * Or use `renderWithDefaults` which auto-applies these as defaults.
+ */
+const ButtonStub = defineComponent({
+  name: 'Button',
+  props: ['disabled', 'loading', 'variant', 'size', 'label', 'icon', 'severity'],
+  emits: ['click'],
+  setup(props, { slots, emit }) {
+    return () =>
+      h(
+        'button',
+        {
+          disabled: props.disabled || props.loading,
+          'data-testid': props.label,
+          'data-icon': props.icon,
+          onClick: () => emit('click')
+        },
+        slots.default?.() ?? props.label
+      )
+  }
+})
+
+const SkeletonStub = defineComponent({
+  name: 'Skeleton',
+  setup() {
+    return () => h('div', { 'data-testid': 'skeleton' })
+  }
+})
+
+const TagStub = defineComponent({
+  name: 'Tag',
+  props: ['value', 'severity'],
+  setup(props, { slots }) {
+    return () => h('span', { 'data-testid': 'tag' }, slots.default?.() ?? props.value)
+  }
+})
+
+const BadgeStub = defineComponent({
+  name: 'Badge',
+  props: ['value', 'severity'],
+  setup(props) {
+    return () => h('span', { 'data-testid': 'badge' }, props.value)
+  }
+})
+
+const MessageStub = defineComponent({
+  name: 'Message',
+  props: ['severity', 'closable'],
+  setup(_, { slots }) {
+    return () => h('div', { 'data-testid': 'message', role: 'alert' }, slots.default?.())
+  }
+})
+
+const DialogStub = defineComponent({
+  name: 'Dialog',
+  props: ['visible', 'modal', 'header'],
+  emits: ['update:visible'],
+  setup(props, { slots }) {
+    return () =>
+      props.visible
+        ? h('div', { role: 'dialog', 'data-testid': 'dialog' }, [
+            props.header ? h('div', props.header) : null,
+            slots.default?.()
+          ])
+        : null
+  }
+})
+
+const stubs = {
+  Button: ButtonStub,
+  Skeleton: SkeletonStub,
+  Tag: TagStub,
+  Badge: BadgeStub,
+  Message: MessageStub,
+  Dialog: DialogStub
+} as const
 
 type RenderWithDefaultsResult = RenderResult & {
   user: ReturnType<typeof userEvent.setup> | undefined
@@ -68,8 +153,8 @@ function renderWithDefaults<C>(
     component as Parameters<typeof render>[0],
     {
       global: {
+        ...globalOptions,
         plugins: [...createDefaultPlugins(), ...(globalOptions?.plugins ?? [])],
-        stubs: globalOptions?.stubs,
         directives: {
           ...defaultDirectiveStubs,
           ...globalOptions?.directives
@@ -82,4 +167,4 @@ function renderWithDefaults<C>(
   return { ...result, user }
 }
 
-export { renderWithDefaults as render, screen }
+export { renderWithDefaults as render, screen, stubs }
