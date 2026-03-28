@@ -356,6 +356,36 @@ describe('DisplayCarousel Grid Mode', () => {
     )
   })
 
+  it('always uses undo-2 icon for grid toggle button', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    // Show controls
+    await findImageContainer(wrapper).trigger('focusin')
+    await nextTick()
+
+    const toggleBtn = wrapper.find('[aria-label="Switch to grid view"]')
+    expect(toggleBtn.find('i').classes()).toContain('icon-[lucide--undo-2]')
+
+    // Switch to grid and back
+    await toggleBtn.trigger('click')
+    await nextTick()
+
+    const gridButtons = wrapper
+      .findAll('button')
+      .filter((btn) => btn.find('img').exists())
+    await gridButtons[0].trigger('click')
+    await nextTick()
+
+    await findImageContainer(wrapper).trigger('focusin')
+    await nextTick()
+
+    // Icon should still be undo-2
+    const toggleBtnAfter = wrapper.find('[aria-label="Switch to grid view"]')
+    expect(toggleBtnAfter.find('i').classes()).toContain(
+      'icon-[lucide--undo-2]'
+    )
+  })
+
   it('shows grid button in single mode after selecting from grid', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
