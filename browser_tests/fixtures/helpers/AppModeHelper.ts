@@ -4,17 +4,20 @@ import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
 
 import { BuilderFooterHelper } from './BuilderFooterHelper'
+import { BuilderSaveAsHelper } from './BuilderSaveAsHelper'
 import { BuilderSelectHelper } from './BuilderSelectHelper'
 import { BuilderStepsHelper } from './BuilderStepsHelper'
 
 export class AppModeHelper {
   readonly steps: BuilderStepsHelper
   readonly footer: BuilderFooterHelper
+  readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.steps = new BuilderStepsHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
+    this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
   }
 

@@ -10,39 +10,60 @@ export class BuilderFooterHelper {
     return this.comfyPage.page
   }
 
-  /** The builder footer nav containing save/navigation buttons. */
   get nav(): Locator {
-    return this.page
-      .getByRole('button', { name: 'Exit app builder' })
-      .locator('..')
+    return this.page.getByTestId(TestIds.builder.footerNav)
   }
 
-  /** Get a button in the builder footer by its accessible name. */
-  getButton(name: string | RegExp): Locator {
+  get exitButton(): Locator {
+    return this.buttonByName('Exit app builder')
+  }
+
+  get nextButton(): Locator {
+    return this.buttonByName('Next')
+  }
+
+  get backButton(): Locator {
+    return this.buttonByName('Back')
+  }
+
+  get saveButton(): Locator {
+    return this.page.getByTestId(TestIds.builder.saveButton)
+  }
+
+  get saveAsButton(): Locator {
+    return this.page.getByTestId(TestIds.builder.saveAsButton)
+  }
+
+  get saveAsChevron(): Locator {
+    return this.page.getByTestId(TestIds.builder.saveAsChevron)
+  }
+
+  get opensAsPopover(): Locator {
+    return this.page.getByTestId(TestIds.builder.opensAs)
+  }
+
+  private buttonByName(name: string): Locator {
     return this.nav.getByRole('button', { name })
   }
 
-  /** Click the save/save-as button in the builder footer. */
-  async clickSave() {
-    await this.getButton(/^Save/).first().click()
+  async next() {
+    await this.nextButton.click()
     await this.comfyPage.nextFrame()
   }
 
-  /** Exit builder mode via the footer "Exit app builder" button. */
+  async back() {
+    await this.backButton.click()
+    await this.comfyPage.nextFrame()
+  }
+
   async exitBuilder() {
-    await this.page.getByRole('button', { name: 'Exit app builder' }).click()
+    await this.exitButton.click()
     await this.comfyPage.nextFrame()
   }
 
-  /** Open the save-as dialog via the split button chevron dropdown. */
-  async openSaveAsDropdown() {
-    await this.getButton('Save as').click()
+  async openSaveAsFromChevron() {
+    await this.saveAsChevron.click()
     await this.page.getByRole('menuitem', { name: 'Save as' }).click()
     await this.comfyPage.nextFrame()
-  }
-
-  /** The "Opens as" popover tab above the builder footer. */
-  get opensAsPopover(): Locator {
-    return this.page.getByTestId(TestIds.builder.opensAs)
   }
 }

@@ -32,6 +32,14 @@ export class BuilderSelectHelper {
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
 
+  /** Delete a builder input via its actions menu. */
+  async deleteInput(title: string) {
+    const menu = this.getInputItemMenu(title)
+    await menu.click()
+    await this.page.getByText('Delete', { exact: true }).click()
+    await this.comfyPage.nextFrame()
+  }
+
   /**
    * Rename a builder IoItem via the popover menu "Rename" action.
    * @param title The current widget title shown in the IoItem.

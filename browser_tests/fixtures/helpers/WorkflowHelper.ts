@@ -104,6 +104,20 @@ export class WorkflowHelper {
     })
   }
 
+  async getActiveWorkflowPath(): Promise<string | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.path
+    })
+  }
+
+  async getActiveWorkflowActiveAppMode(): Promise<string | null | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.activeMode
+    })
+  }
+
   async isCurrentWorkflowModified(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow
