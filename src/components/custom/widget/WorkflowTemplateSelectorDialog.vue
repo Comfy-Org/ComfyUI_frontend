@@ -265,7 +265,12 @@
                 </template>
                 <template #bottom-right>
                   <template v-if="template.tags && template.tags.length > 0">
-                    <Tag v-for="tag in template.tags" :key="tag" :label="tag" />
+                    <Tag
+                      v-for="tag in template.tags"
+                      :key="tag"
+                      :label="tag"
+                      shape="overlay"
+                    />
                   </template>
                 </template>
               </CardTop>
