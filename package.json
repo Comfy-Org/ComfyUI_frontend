@@ -205,6 +205,14 @@
   "pnpm": {
     "overrides": {
       "vite": "catalog:"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@firebase/util",
+      "core-js",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver",
+      "vue-demi"
+    ]
   }
 }
