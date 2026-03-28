@@ -185,6 +185,22 @@ function onBranchSelectorCreated(this: LGraphNode) {
     }
   })
 
+  // Restore renamed labels after configure (autogrow recreates inputs fresh)
+  this.onConfigure = useChainCallback(
+    this.onConfigure,
+    (data: { inputs?: Array<{ label?: string; name: string }> }) => {
+      if (!data?.inputs) return
+      for (const serializedInput of data.inputs) {
+        if (!serializedInput.label) continue
+        const match = node.inputs.find(
+          (inp) => inp.name === serializedInput.name
+        )
+        if (match) match.label = serializedInput.label
+      }
+      refreshBranchValues()
+    }
+  )
+
   // Allow renaming autogrow input slots via context menu
   this.getSlotMenuOptions = (slot) => {
     const menu: { content: string; slot: typeof slot }[] = []
