@@ -48,13 +48,16 @@
       </ConnectOutputPopover>
       <ButtonGroup
         v-else-if="isSaved"
+        data-testid="builder-save-group"
         class="w-24 rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
       >
         <Button
           size="lg"
           :disabled="!isModified"
           class="flex-1"
-          :class="isModified ? activeSaveClasses : disabledSaveClasses"
+          :class="
+            cn('w-24', isModified ? activeSaveClasses : disabledSaveClasses)
+          "
           data-testid="builder-save-button"
           @click="save()"
         >
@@ -97,7 +100,7 @@
       <Button
         v-else
         size="lg"
-        :class="activeSaveClasses"
+        :class="cn('w-24', activeSaveClasses)"
         data-testid="builder-save-as-button"
         @click="saveAs()"
       >
