@@ -1818,54 +1818,7 @@ async function launchSessionAndLogin(
   })
   const page = await context.newPage()
 
-  // Inject visible cursor overlay — controlled directly via window.__moveCursor
-  // (DOM mousemove events don't fire reliably from Playwright CDP in headless)
-  await page.addInitScript(() => {
-    const style = document.createElement('style')
-    style.textContent = `
-      #qa-cursor {
-        position: fixed; z-index: 2147483647; pointer-events: none;
-        width: 20px; height: 20px; margin: -2px 0 0 -2px;
-        opacity: 0.95; transition: transform 80ms ease-out;
-        transform: scale(1);
-      }
-      #qa-cursor.clicking {
-        transform: scale(1.4);
-      }
-    `
-    const cursor = document.createElement('div')
-    cursor.id = 'qa-cursor'
-    // SVG cursor arrow — white with dark outline
-    cursor.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5"><path d="M4 2l14 10-6.5 1.5L15 21l-3.5-1.5L8 21l-1.5-7.5L2 16z"/></svg>'
-
-    const init = () => {
-      document.head.appendChild(style)
-      document.body.appendChild(cursor)
-      // Expose function for Playwright to call directly
-      ;(window as unknown as Record<string, unknown>).__moveCursor = (
-        x: number,
-        y: number
-      ) => {
-        cursor.style.left = x + 'px'
-        cursor.style.top = y + 'px'
-      }
-      ;(window as unknown as Record<string, unknown>).__clickCursor = (
-        down: boolean
-      ) => {
-        if (down) cursor.classList.add('clicking')
-        else cursor.classList.remove('clicking')
-      }
-      // Also listen to DOM events as fallback
-      document.addEventListener('mousemove', (e) => {
-        cursor.style.left = e.clientX + 'px'
-        cursor.style.top = e.clientY + 'px'
-      })
-    }
-
-    if (document.body) init()
-    else document.addEventListener('DOMContentLoaded', init)
-  })
+  // Cursor overlay placeholder — injected after login when DOM is stable
 
   // Monkey-patch page.mouse to auto-update cursor overlay on ALL mouse ops
   const origMove = page.mouse.move.bind(page.mouse)
@@ -1919,6 +1872,20 @@ async function launchSessionAndLogin(
   await sleep(2000)
   await loginAsQaCi(page, opts.serverUrl)
   await sleep(1000)
+
+  // Inject cursor overlay AFTER login (addInitScript gets destroyed by Vue mount)
+  await page.addScriptTag({
+    content: `(function(){
+      var s=document.createElement('style');
+      s.textContent='#qa-cursor{position:fixed;z-index:2147483647;pointer-events:none;width:20px;height:20px;margin:-2px 0 0 -2px;opacity:0.95;transition:transform 80ms ease-out;transform:scale(1)}#qa-cursor.clicking{transform:scale(1.4)}';
+      document.head.appendChild(s);
+      var c=document.createElement('div');c.id='qa-cursor';
+      c.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5"><path d="M4 2l14 10-6.5 1.5L15 21l-3.5-1.5L8 21l-1.5-7.5L2 16z"/></svg>';
+      document.body.appendChild(c);
+      window.__moveCursor=function(x,y){c.style.left=x+'px';c.style.top=y+'px'};
+      window.__clickCursor=function(d){if(d)c.classList.add('clicking');else c.classList.remove('clicking')};
+    })()`
+  })
 
   // Inject keyboard HUD — shows pressed keys in bottom-right corner of video
   // Uses addScriptTag to avoid tsx __name compilation artifacts in page.evaluate
