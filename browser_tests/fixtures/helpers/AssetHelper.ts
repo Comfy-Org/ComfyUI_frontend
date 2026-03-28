@@ -23,104 +23,107 @@ interface PaginationOptions {
   hasMore: boolean
 }
 
+// ─── Configuration ──────────────────────────────────────────────────────────
+
+export interface AssetConfig {
+  readonly assets: ReadonlyMap<string, Asset>
+  readonly pagination: PaginationOptions | null
+  readonly uploadResponse: Record<string, unknown> | null
+}
+
+function emptyConfig(): AssetConfig {
+  return { assets: new Map(), pagination: null, uploadResponse: null }
+}
+
+export type AssetOperator = (config: AssetConfig) => AssetConfig
+
+function addAssets(
+  config: AssetConfig,
+  newAssets: Asset[]
+): AssetConfig {
+  const merged = new Map(config.assets)
+  for (const asset of newAssets) {
+    merged.set(asset.id, asset)
+  }
+  return { ...config, assets: merged }
+}
+
+// ─── Operators ──────────────────────────────────────────────────────────────
+
+export function withModels(
+  countOrAssets: number | Asset[],
+  category: 'checkpoints' | 'loras' | 'vae' | 'embeddings' = 'checkpoints'
+): AssetOperator {
+  return (config) => {
+    const assets =
+      typeof countOrAssets === 'number'
+        ? generateModels(countOrAssets, category)
+        : countOrAssets
+    return addAssets(config, assets)
+  }
+}
+
+export function withInputFiles(
+  countOrAssets: number | Asset[]
+): AssetOperator {
+  return (config) => {
+    const assets =
+      typeof countOrAssets === 'number'
+        ? generateInputFiles(countOrAssets)
+        : countOrAssets
+    return addAssets(config, assets)
+  }
+}
+
+export function withOutputAssets(
+  countOrAssets: number | Asset[]
+): AssetOperator {
+  return (config) => {
+    const assets =
+      typeof countOrAssets === 'number'
+        ? generateOutputAssets(countOrAssets)
+        : countOrAssets
+    return addAssets(config, assets)
+  }
+}
+
+export function withAsset(asset: Asset): AssetOperator {
+  return (config) => addAssets(config, [asset])
+}
+
+export function withPagination(options: PaginationOptions): AssetOperator {
+  return (config) => ({ ...config, pagination: options })
+}
+
+export function withUploadResponse(
+  response: Record<string, unknown>
+): AssetOperator {
+  return (config) => ({ ...config, uploadResponse: response })
+}
+
+// ─── Helper Class ───────────────────────────────────────────────────────────
+
 export class AssetHelper {
-  private store: Map<string, Asset> = new Map()
-  private paginationOptions: PaginationOptions | null = null
+  private store: Map<string, Asset>
+  private paginationOptions: PaginationOptions | null
   private routeHandlers: Array<{
     pattern: string
     handler: (route: Route) => Promise<void>
   }> = []
   private mutations: MutationRecord[] = []
-  private uploadResponse: Record<string, unknown> | null = null
+  private uploadResponse: Record<string, unknown> | null
 
-  constructor(private readonly page: Page) {}
-
-  // ─── Builder Methods (return `this` for chaining) ─────────────────────────
-
-  /**
-   * Add model assets to the mock store.
-   * Accepts a count (generates deterministic fixtures) or an array of assets.
-   */
-  withModels(
-    countOrAssets: number | Asset[],
-    category: 'checkpoints' | 'loras' | 'vae' | 'embeddings' = 'checkpoints'
-  ): this {
-    const assets =
-      typeof countOrAssets === 'number'
-        ? generateModels(countOrAssets, category)
-        : countOrAssets
-    for (const asset of assets) {
-      this.store.set(asset.id, asset)
-    }
-    return this
+  constructor(
+    private readonly page: Page,
+    config: AssetConfig = emptyConfig()
+  ) {
+    this.store = new Map(config.assets)
+    this.paginationOptions = config.pagination
+    this.uploadResponse = config.uploadResponse
   }
 
-  /**
-   * Add input file assets to the mock store.
-   */
-  withInputFiles(countOrAssets: number | Asset[]): this {
-    const assets =
-      typeof countOrAssets === 'number'
-        ? generateInputFiles(countOrAssets)
-        : countOrAssets
-    for (const asset of assets) {
-      this.store.set(asset.id, asset)
-    }
-    return this
-  }
+  // ─── Activation ─────────────────────────────────────────────────────────
 
-  /**
-   * Add output assets to the mock store.
-   */
-  withOutputAssets(countOrAssets: number | Asset[]): this {
-    const assets =
-      typeof countOrAssets === 'number'
-        ? generateOutputAssets(countOrAssets)
-        : countOrAssets
-    for (const asset of assets) {
-      this.store.set(asset.id, asset)
-    }
-    return this
-  }
-
-  /**
-   * Add a single specific asset to the mock store.
-   */
-  withAsset(asset: Asset): this {
-    this.store.set(asset.id, asset)
-    return this
-  }
-
-  /**
-   * Set empty state (no assets). Clears any previously added assets.
-   */
-  withEmptyState(): this {
-    this.store.clear()
-    return this
-  }
-
-  /**
-   * Configure pagination behavior for the list response.
-   */
-  withPagination(options: PaginationOptions): this {
-    this.paginationOptions = options
-    return this
-  }
-
-  /**
-   * Configure a custom upload response for POST /assets.
-   */
-  withUploadResponse(response: Record<string, unknown>): this {
-    this.uploadResponse = response
-    return this
-  }
-
-  // ─── Activation ───────────────────────────────────────────────────────────
-
-  /**
-   * Install all route handlers based on current builder state.
-   * Must be called before page.goto().
-   */
   async mock(): Promise<void> {
     const handler = async (route: Route) => {
       const url = new URL(route.request().url())
@@ -231,11 +234,6 @@ export class AssetHelper {
     await this.page.route(pattern, handler)
   }
 
-  /**
-   * Mock a specific error response for any asset endpoint.
-   * Note: Call this before mock() or use clearMocks() first, as Playwright
-   * executes route handlers in LIFO registration order.
-   */
   async mockError(
     statusCode: number,
     error: string = 'Internal Server Error'
@@ -252,41 +250,26 @@ export class AssetHelper {
     await this.page.route(pattern, handler)
   }
 
-  // ─── Inspection ───────────────────────────────────────────────────────────
+  // ─── Inspection ─────────────────────────────────────────────────────────
 
-  /**
-   * Get all recorded mutations (POST, PUT, DELETE requests).
-   */
   getMutations(): MutationRecord[] {
     return [...this.mutations]
   }
 
-  /**
-   * Get the current assets in the mock store.
-   */
   getAssets(): Asset[] {
     return [...this.store.values()]
   }
 
-  /**
-   * Get a single asset from the mock store by ID.
-   */
   getAsset(id: string): Asset | undefined {
     return this.store.get(id)
   }
 
-  /**
-   * Get the number of assets currently in the mock store.
-   */
   get assetCount(): number {
     return this.store.size
   }
 
-  // ─── Cleanup ──────────────────────────────────────────────────────────────
+  // ─── Cleanup ────────────────────────────────────────────────────────────
 
-  /**
-   * Clear all route mocks and reset internal state.
-   */
   async clearMocks(): Promise<void> {
     for (const { pattern, handler } of this.routeHandlers) {
       await this.page.unroute(pattern, handler)
@@ -298,7 +281,7 @@ export class AssetHelper {
     this.uploadResponse = null
   }
 
-  // ─── Internal ─────────────────────────────────────────────────────────────
+  // ─── Internal ───────────────────────────────────────────────────────────
 
   private getFilteredAssets(tags: string[]): Asset[] {
     const assets = [...this.store.values()]
@@ -308,4 +291,17 @@ export class AssetHelper {
       tags.every((tag) => (asset.tags ?? []).includes(tag))
     )
   }
+}
+
+// ─── Factory ────────────────────────────────────────────────────────────────
+
+export function createAssetHelper(
+  page: Page,
+  ...operators: AssetOperator[]
+): AssetHelper {
+  const config = operators.reduce<AssetConfig>(
+    (cfg, op) => op(cfg),
+    emptyConfig()
+  )
+  return new AssetHelper(page, config)
 }
