@@ -116,12 +116,12 @@ export const useWorkflowService = () => {
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
-    options: { filename?: string } = {}
+    options: { filename?: string; isApp?: boolean } = {}
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
-    const isApp = workflow.initialMode === 'app'
+    const isApp = options.isApp ?? workflow.initialMode === 'app'
     const newPath =
       workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
@@ -138,17 +138,26 @@ export const useWorkflowService = () => {
       }
     }
 
-    workflow.changeTracker?.checkState()
-
     if (isSelfOverwrite) {
+      workflow.changeTracker?.checkState()
       await saveWorkflow(workflow)
-    } else if (workflow.isTemporary) {
-      await renameWorkflow(workflow, newPath)
-      await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = workflowStore.saveAs(workflow, newPath)
-      await openWorkflow(tempWorkflow)
-      await workflowStore.saveWorkflow(tempWorkflow)
+      let target: ComfyWorkflow
+      if (workflow.isTemporary) {
+        await renameWorkflow(workflow, newPath)
+        target = workflow
+      } else {
+        target = workflowStore.saveAs(workflow, newPath)
+        await openWorkflow(target)
+      }
+
+      if (options.isApp !== undefined) {
+        app.rootGraph.extra.linearMode = isApp
+        target.initialMode = isApp ? 'app' : 'graph'
+      }
+      target.changeTracker?.checkState()
+
+      await workflowStore.saveWorkflow(target)
     }
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
