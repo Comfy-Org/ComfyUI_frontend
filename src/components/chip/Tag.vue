@@ -9,11 +9,13 @@ import type { TagVariants } from './tag.variants'
 const {
   label,
   shape = 'square',
+  state = 'default',
   removable = false,
   class: className
 } = defineProps<{
   label: string
   shape?: TagVariants['shape']
+  state?: TagVariants['state']
   removable?: boolean
   class?: string
 }>()
@@ -23,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const tagClass = computed(() =>
-  cn(tagVariants({ shape, removable }), className)
+  cn(tagVariants({ shape, state, removable }), className)
 )
 </script>
 

@@ -12,11 +12,16 @@ const meta: Meta<typeof Tag> = {
       control: 'select',
       options: ['square', 'rounded']
     },
+    state: {
+      control: 'select',
+      options: ['default', 'unselected', 'selected']
+    },
     removable: { control: 'boolean' }
   },
   args: {
     label: 'Tag',
     shape: 'square',
+    state: 'default',
     removable: false
   }
 }
@@ -33,6 +38,13 @@ export const Rounded: Story = {
   }
 }
 
+export const Unselected: Story = {
+  args: {
+    label: 'Tag',
+    state: 'unselected'
+  }
+}
+
 export const Removable: Story = {
   args: {
     label: 'Tag',
@@ -40,38 +52,26 @@ export const Removable: Story = {
   }
 }
 
-export const RemovableRounded: Story = {
-  args: {
-    label: 'Tag',
-    shape: 'rounded',
-    removable: true
-  }
-}
-
-export const AllShapes: Story = {
-  render: () => ({
-    components: { Tag },
-    template: `
-      <div class="flex items-center gap-2">
-        <Tag label="Square" shape="square" />
-        <Tag label="Rounded" shape="rounded" />
-      </div>
-    `
-  })
-}
-
 export const AllStates: Story = {
   render: () => ({
     components: { Tag },
     template: `
       <div class="flex flex-col gap-4">
-        <div class="flex items-center gap-2">
-          <Tag label="Default" />
-          <Tag label="Removable" removable />
+        <div>
+          <p class="mb-2 text-xs text-muted-foreground">Square</p>
+          <div class="flex items-center gap-2">
+            <Tag label="Default" />
+            <Tag label="Unselected" state="unselected" />
+            <Tag label="Selected" removable />
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <Tag label="Default" shape="rounded" />
-          <Tag label="Removable" shape="rounded" removable />
+        <div>
+          <p class="mb-2 text-xs text-muted-foreground">Rounded</p>
+          <div class="flex items-center gap-2">
+            <Tag label="Default" shape="rounded" />
+            <Tag label="Unselected" shape="rounded" state="unselected" />
+            <Tag label="Selected" shape="rounded" removable />
+          </div>
         </div>
       </div>
     `
