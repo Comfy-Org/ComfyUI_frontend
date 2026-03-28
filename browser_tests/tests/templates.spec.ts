@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -395,16 +396,14 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
-      const taggedCard = comfyPage.page.locator(
-        '[data-testid="template-workflow-tagged-template"]'
+      const taggedCard = comfyPage.page.getByTestId(
+        TestIds.templates.workflowCard('tagged-template')
       )
       await expect(taggedCard).toBeVisible({ timeout: 5000 })
       await expect(taggedCard.getByText('Relight')).toBeVisible()
       await expect(taggedCard.getByText('Image Edit')).toBeVisible()
 
-      const templateGrid = comfyPage.page.locator(
-        '[data-testid="template-workflows-content"]'
-      )
+      const templateGrid = comfyPage.page.getByTestId(TestIds.templates.content)
       await expect(templateGrid).toHaveScreenshot(
         'template-cards-with-overlay-tags.png'
       )

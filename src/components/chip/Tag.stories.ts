@@ -70,7 +70,7 @@ export const AllStates: Story = {
           <div class="flex items-center gap-2">
             <Tag label="Default" shape="rounded" />
             <Tag label="Unselected" shape="rounded" state="unselected" />
-            <Tag label="Selected" shape="rounded" removable />
+            <Tag label="Removable" shape="rounded" removable />
           </div>
         </div>
         <div class="bg-zinc-800 p-2 rounded">
