@@ -33,7 +33,7 @@
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop.prevent="handleDrop"
+    @drop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -834,6 +834,9 @@ function handleDrop(event: DragEvent) {
   if (!node?.onDragDrop) return
 
   const handled = node.onDragDrop(event)
-  if (handled === true) event.stopPropagation()
+  if (handled === true) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
 }
 </script>
