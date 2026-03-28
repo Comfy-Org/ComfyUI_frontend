@@ -3,7 +3,7 @@
  * QA Research Phase — Claude Sonnet 4.6 investigates via a11y API
  *
  * Claude explores the UI using accessibility tree assertions as ground truth.
- * NO video, NO Gemini vision — only DOM state via page.accessibility.snapshot().
+ * NO video, NO Gemini vision — only DOM state via locator.ariaSnapshot().
  *
  * Tools:
  *   - inspect(selector) — search a11y tree for element state (source of truth)
@@ -132,19 +132,24 @@ export async function runResearchPhase(
         )
     },
     async (args) => {
-      const snapshot = (await page.accessibility.snapshot()) as A11yNode | null
-      const found = searchA11y(snapshot, args.selector)
-
-      const resultText = found
-        ? JSON.stringify({
-            role: found.role,
-            name: found.name,
-            value: found.value,
-            checked: found.checked,
-            disabled: found.disabled,
-            hasChildren: Boolean(found.children?.length)
-          })
-        : `Element "${args.selector}" not found. Available:\n${flattenA11y(snapshot, 0).slice(0, 2000)}`
+      // Use ariaSnapshot (Playwright 1.49+) — page.accessibility was removed
+      let resultText: string
+      try {
+        const ariaText = await page
+          .locator('body')
+          .ariaSnapshot({ timeout: 5000 })
+        const selectorLower = args.selector.toLowerCase()
+        const lines = ariaText.split('\n')
+        const matches = lines.filter((l: string) =>
+          l.toLowerCase().includes(selectorLower)
+        )
+        resultText =
+          matches.length > 0
+            ? `Found "${args.selector}":\n${matches.slice(0, 10).join('\n')}`
+            : `Element "${args.selector}" not found. Available:\n${ariaText.slice(0, 2000)}`
+      } catch (e) {
+        resultText = `inspect failed: ${e instanceof Error ? e.message : e}`
+      }
 
       researchLog.push({
         turn: turnCount,
@@ -186,7 +191,10 @@ screenshot(name)`,
       }
 
       // Capture a11y BEFORE
-      const a11yBefore = await page.accessibility.snapshot().catch(() => null)
+      const a11yBefore = await page
+        .locator('body')
+        .ariaSnapshot({ timeout: 3000 })
+        .catch(() => null)
 
       const actionObj = {
         action: args.action,
@@ -204,7 +212,10 @@ screenshot(name)`,
       }
 
       // Capture a11y AFTER
-      const a11yAfter = await page.accessibility.snapshot().catch(() => null)
+      const a11yAfter = await page
+        .locator('body')
+        .ariaSnapshot({ timeout: 3000 })
+        .catch(() => null)
 
       researchLog.push({
         turn: turnCount,
