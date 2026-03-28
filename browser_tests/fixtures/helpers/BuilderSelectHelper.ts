@@ -32,7 +32,7 @@ export class BuilderSelectHelper {
    */
   getPreviewWidgetMenu(ariaLabel: string): Locator {
     return this.page
-      .locator(`[aria-label="${ariaLabel}"]`)
+      .getByLabel(ariaLabel, { exact: true })
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
 
