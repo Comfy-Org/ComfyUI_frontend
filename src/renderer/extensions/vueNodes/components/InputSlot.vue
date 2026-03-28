@@ -51,7 +51,7 @@
         v-else-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
-            'truncate text-node-component-slot-text transition-colors duration-150 hover:text-muted-foreground',
+            'truncate text-node-component-slot-text hover:text-white',
             hasError && 'font-medium text-error'
           )
         "
