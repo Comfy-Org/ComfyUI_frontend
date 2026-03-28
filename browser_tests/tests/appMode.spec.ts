@@ -37,7 +37,7 @@ test.describe('App mode usage', () => {
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('smoke', async ({ comfyPage }) => {
       const { mobileView } = comfyPage.appMode
-      await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
       await expect(mobileView).toBeVisible()
 
       const navigation = comfyPage.page
@@ -55,6 +55,23 @@ test.describe('App mode usage', () => {
       await navigation.getByRole('tab', { name: 'Edit & Run' }).click()
       const widgets = mobileView.getByTestId(TestIds.linear.widgetContainer)
       await expect(widgets).toBeInViewport({ ratio: 1 })
+
+      const steps = comfyPage.page.getByRole('spinbutton')
+      await expect(steps).toHaveValue('20')
+      await comfyPage.page
+        .getByRole('button', { name: 'increment' })
+        .click({ clickCount: 5 })
+      await expect(steps).toHaveValue('25')
+      await comfyPage.page
+        .getByRole('button', { name: 'decrement' })
+        .click({ clickCount: 3 })
+      await expect(steps).toHaveValue('22')
+    })
+    test('workflow selection', async ({ comfyPage }) => {
+      for (const w of ['default']) await comfyPage.workflow.loadWorkflow(w)
+
+      await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
+      await expect(comfyPage.appMode.mobileView).toBeVisible()
     })
   })
 })
