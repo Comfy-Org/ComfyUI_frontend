@@ -76,8 +76,6 @@ export class PropertiesPanelHelper {
     )
   }
 
-  // ── Actions ──────────────────────────────────────────────
-
   async open(actionbar: Locator): Promise<void> {
     if (!(await this.root.isVisible())) {
       await actionbar.click()
