@@ -57,8 +57,11 @@ test.describe('Workflow Persistence Regressions', () => {
     await comfyPage.menu.topbar.saveWorkflow('workflow-B')
     const workflowBNodeCount = await comfyPage.nodeOps.getNodeCount()
 
-    // Register an extension that forces checkState during graph configuration
-    // This reproduces the exact scenario from PR #9531
+    // Register an extension that forces checkState during graph configuration.
+    // This reproduces the exact scenario from PR #9531.
+    // No unregister needed: each Playwright test gets a fresh page, and the
+    // extension must stay active for the subsequent tab switches to exercise
+    // the isLoadingGraph guard.
     await comfyPage.page.evaluate(() => {
       window.app!.registerExtension({
         name: 'test-checkstate-during-load',
