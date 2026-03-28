@@ -26,7 +26,8 @@ import {
 import { Topbar } from './components/Topbar'
 import { AssetsHelper } from './helpers/AssetsHelper'
 import { CanvasHelper } from './helpers/CanvasHelper'
-import { AssetHelper } from './helpers/AssetHelper'
+import type { AssetHelper } from './helpers/AssetHelper'
+import { createAssetHelper } from './helpers/AssetHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
 import { QueueHelper } from './helpers/QueueHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
@@ -202,8 +203,8 @@ export class ComfyPage {
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
+  public readonly assetApi: AssetHelper
   public readonly queue: QueueHelper
-  public readonly assets: AssetHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -250,8 +251,8 @@ export class ComfyPage {
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
+    this.assetApi = createAssetHelper(page)
     this.queue = new QueueHelper(page)
-    this.assets = new AssetHelper(page)
   }
 
   get visibleToasts() {
@@ -471,6 +472,7 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
+    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
