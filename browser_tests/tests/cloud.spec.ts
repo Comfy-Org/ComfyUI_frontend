@@ -24,8 +24,6 @@ test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
     await page.goto('http://localhost:8188')
     await expect(page).toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
     // Verify cloud-specific login UI is rendered
-    await expect(
-      page.getByRole('button', { name: /google/i })
-    ).toBeVisible()
+    await expect(page.getByRole('button', { name: /google/i })).toBeVisible()
   })
 })
