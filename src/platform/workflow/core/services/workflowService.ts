@@ -152,6 +152,7 @@ export const useWorkflowService = () => {
       }
 
       if (options.isApp !== undefined) {
+        app.rootGraph.extra ??= {}
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
