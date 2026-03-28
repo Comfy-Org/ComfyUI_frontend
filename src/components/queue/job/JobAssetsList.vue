@@ -1,79 +1,92 @@
 <template>
-  <div class="flex flex-col gap-4 px-3 pb-4">
-    <div
-      v-for="group in displayedJobGroups"
-      :key="group.key"
-      class="flex flex-col gap-2"
-    >
-      <div class="text-xs leading-none text-text-secondary">
-        {{ group.label }}
-      </div>
-      <div
-        v-for="job in group.items"
-        :key="job.id"
-        :data-job-id="job.id"
-        @mouseenter="onJobEnter(job, $event)"
-        @mouseleave="onJobLeave(job.id)"
-      >
-        <AssetsListItem
-          :class="
-            cn(
-              'w-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover',
-              job.state === 'running' && 'bg-secondary-background'
-            )
-          "
-          :preview-url="getJobPreviewUrl(job)"
-          :is-video-preview="isVideoPreviewJob(job)"
-          :preview-alt="job.title"
-          :icon-name="job.iconName ?? iconForJobState(job.state)"
-          :icon-class="getJobIconClass(job)"
-          :primary-text="job.title"
-          :secondary-text="job.meta"
-          :progress-total-percent="job.progressTotalPercent"
-          :progress-current-percent="job.progressCurrentPercent"
-          @contextmenu.prevent.stop="$emit('menu', job, $event)"
-          @dblclick.stop="emitViewItem(job)"
-          @preview-click="emitViewItem(job)"
-          @click.stop
+  <div
+    ref="scrollContainer"
+    v-bind="$attrs"
+    data-testid="job-assets-list"
+    class="h-full overflow-y-auto"
+    @scroll="onListScroll"
+  >
+    <div :style="virtualWrapperStyle">
+      <template v-for="{ row, virtualItem } in virtualRows" :key="row.key">
+        <div
+          v-if="row.type === 'header'"
+          class="box-border px-3 pb-2 text-xs leading-none text-text-secondary"
+          :style="getVirtualRowStyle(virtualItem)"
         >
-          <template v-if="hoveredJobId === job.id" #actions>
-            <Button
-              v-if="isCancelable(job)"
-              variant="destructive"
-              size="icon"
-              :aria-label="t('g.cancel')"
-              @click.stop="emitCancelItem(job)"
+          {{ row.label }}
+        </div>
+        <div
+          v-else-if="row.type === 'job'"
+          class="box-border px-3"
+          :style="getVirtualRowStyle(virtualItem)"
+        >
+          <div
+            :data-job-id="row.job.id"
+            class="h-12"
+            @mouseenter="onJobEnter(row.job, $event)"
+            @mouseleave="onJobLeave(row.job.id)"
+          >
+            <AssetsListItem
+              :class="
+                cn(
+                  'size-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover',
+                  row.job.state === 'running' && 'bg-secondary-background'
+                )
+              "
+              :preview-url="getJobPreviewUrl(row.job)"
+              :is-video-preview="isVideoPreviewJob(row.job)"
+              :preview-alt="row.job.title"
+              :icon-name="row.job.iconName ?? iconForJobState(row.job.state)"
+              :icon-class="getJobIconClass(row.job)"
+              :primary-text="row.job.title"
+              :secondary-text="row.job.meta"
+              :progress-total-percent="row.job.progressTotalPercent"
+              :progress-current-percent="row.job.progressCurrentPercent"
+              @contextmenu.prevent.stop="$emit('menu', row.job, $event)"
+              @dblclick.stop="emitViewItem(row.job)"
+              @preview-click="emitViewItem(row.job)"
+              @click.stop
             >
-              <i class="icon-[lucide--x] size-4" />
-            </Button>
-            <Button
-              v-else-if="isFailedDeletable(job)"
-              variant="destructive"
-              size="icon"
-              :aria-label="t('g.delete')"
-              @click.stop="emitDeleteItem(job)"
-            >
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
-            <Button
-              v-else-if="job.state === 'completed'"
-              variant="textonly"
-              size="sm"
-              @click.stop="emitCompletedViewItem(job)"
-            >
-              {{ t('menuLabels.View') }}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('g.more')"
-              @click.stop="$emit('menu', job, $event)"
-            >
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
-          </template>
-        </AssetsListItem>
-      </div>
+              <template v-if="hoveredJobId === row.job.id" #actions>
+                <Button
+                  v-if="isCancelable(row.job)"
+                  variant="destructive"
+                  size="icon"
+                  :aria-label="t('g.cancel')"
+                  @click.stop="emitCancelItem(row.job)"
+                >
+                  <i class="icon-[lucide--x] size-4" />
+                </Button>
+                <Button
+                  v-else-if="isFailedDeletable(row.job)"
+                  variant="destructive"
+                  size="icon"
+                  :aria-label="t('g.delete')"
+                  @click.stop="emitDeleteItem(row.job)"
+                >
+                  <i class="icon-[lucide--trash-2] size-4" />
+                </Button>
+                <Button
+                  v-else-if="row.job.state === 'completed'"
+                  variant="textonly"
+                  size="sm"
+                  @click.stop="emitCompletedViewItem(row.job)"
+                >
+                  {{ t('menuLabels.View') }}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  :aria-label="t('g.more')"
+                  @click.stop="$emit('menu', row.job, $event)"
+                >
+                  <i class="icon-[lucide--ellipsis] size-4" />
+                </Button>
+              </template>
+            </AssetsListItem>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 
@@ -97,8 +110,11 @@
 </template>
 
 <script setup lang="ts">
+import type { VirtualItem } from '@tanstack/vue-virtual'
+import type { CSSProperties } from 'vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useI18n } from 'vue-i18n'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
@@ -110,6 +126,18 @@ import { cn } from '@/utils/tailwindUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 
+import { buildVirtualJobRows } from './buildVirtualJobRows'
+import type { VirtualJobRow } from './buildVirtualJobRows'
+
+const HEADER_ROW_HEIGHT = 20
+const GROUP_ROW_GAP = 16
+const JOB_ROW_HEIGHT = 48
+const VIRTUAL_JOB_LIST_BOTTOM_PADDING = 16
+
+defineOptions({
+  inheritAttrs: false
+})
+
 const { displayedJobGroups } = defineProps<{ displayedJobGroups: JobGroup[] }>()
 
 const emit = defineEmits<{
@@ -120,9 +148,43 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const scrollContainer = ref<HTMLElement | null>(null)
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
 const popoverPosition = ref<{ top: number; left: number } | null>(null)
+const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
+const virtualizer = useVirtualizer({
+  get count(): number {
+    return flatRows.value.length
+  },
+  getItemKey(index: number) {
+    return flatRows.value[index]?.key ?? index
+  },
+  estimateSize(index: number) {
+    const row = flatRows.value[index]
+    return row ? getRowHeight(row, index, flatRows.value) : JOB_ROW_HEIGHT
+  },
+  getScrollElement() {
+    return scrollContainer.value
+  },
+  overscan: 12
+})
+const virtualRows = computed(() => {
+  const rows = flatRows.value
+  return virtualizer.value
+    .getVirtualItems()
+    .flatMap((virtualItem: VirtualItem) => {
+      const row = rows[virtualItem.index]
+      return row ? [{ row, virtualItem }] : []
+    })
+})
+const virtualWrapperStyle = computed<CSSProperties>(() => ({
+  position: 'relative',
+  width: '100%',
+  ...(flatRows.value.length > 0 && {
+    height: `${virtualizer.value.getTotalSize() + VIRTUAL_JOB_LIST_BOTTOM_PADDING}px`
+  })
+}))
 const {
   activeDetails,
   clearHoverTimers,
@@ -134,6 +196,37 @@ const {
   getDisplayedJobGroups: () => displayedJobGroups,
   onReset: clearPopoverAnchor
 })
+
+function getVirtualRowStyle(virtualItem: VirtualItem): CSSProperties {
+  return {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: `${virtualItem.size}px`,
+    transform: `translateY(${virtualItem.start}px)`,
+    overflowAnchor: 'none'
+  }
+}
+
+function getRowHeight(
+  row: VirtualJobRow,
+  index: number,
+  rows: VirtualJobRow[]
+): number {
+  if (row.type === 'header') {
+    return HEADER_ROW_HEIGHT
+  }
+
+  return (
+    JOB_ROW_HEIGHT + (rows[index + 1]?.type === 'header' ? GROUP_ROW_GAP : 0)
+  )
+}
+
+function onListScroll() {
+  hoveredJobId.value = null
+  resetActiveDetails()
+}
 
 function clearPopoverAnchor() {
   activeRowElement.value = null
