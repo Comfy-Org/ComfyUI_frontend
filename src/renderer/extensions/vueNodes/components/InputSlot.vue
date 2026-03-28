@@ -31,6 +31,7 @@
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
+      @contextmenu.stop.prevent="startRename"
     />
 
     <!-- Slot Name -->
@@ -39,10 +40,10 @@
         v-if="isRenaming"
         ref="renameInputRef"
         v-model="renameValue"
-        class="m-0 w-full border-none bg-transparent p-0 text-node-component-slot-text outline-none"
+        class="m-0 w-full truncate border-none bg-transparent p-0 text-[length:inherit] leading-[inherit] text-node-component-slot-text outline-none"
         @blur="finishRename"
-        @keydown.enter="finishRename"
-        @keydown.escape="cancelRename"
+        @keydown.enter.prevent="finishRename"
+        @keydown.escape.prevent="cancelRename"
         @click.stop
         @pointerdown.stop
       />
@@ -176,20 +177,31 @@ function startRename() {
 
 function finishRename() {
   if (!isRenaming.value) return
-  isRenaming.value = false
 
   const newLabel = renameValue.value.trim()
-  if (!newLabel || newLabel === displayLabel.value) return
+  if (!newLabel || newLabel === displayLabel.value) {
+    isRenaming.value = false
+    return
+  }
 
   const node = app.canvas?.graph?.getNodeById(props.nodeId ?? '')
   const slot = node?.inputs?.[props.index]
-  if (!slot) return
+  if (!slot) {
+    isRenaming.value = false
+    return
+  }
+
   slot.label = newLabel
   node?.graph?.trigger('node:slot-label:changed', {
     nodeId: node.id,
     slotType: NodeSlotType.INPUT
   })
   app.canvas?.setDirty(true, true)
+
+  // Defer hiding the input until after Vue propagates the label update
+  nextTick(() => {
+    isRenaming.value = false
+  })
 }
 
 function cancelRename() {
