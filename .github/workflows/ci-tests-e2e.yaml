@@ -34,8 +34,11 @@ jobs:
           retention-days: 1
 
       # Build cloud distribution for @cloud tagged tests
+      # NX_SKIP_NX_CACHE=true is required because `nx build` was already run
+      # for the OSS distribution above. Without skipping cache, Nx returns
+      # the cached OSS build since env vars aren't part of the cache key.
       - name: Build cloud frontend
-        run: pnpm build:cloud
+        run: NX_SKIP_NX_CACHE=true pnpm build:cloud
 
       - name: Upload cloud frontend
         uses: actions/upload-artifact@v6
