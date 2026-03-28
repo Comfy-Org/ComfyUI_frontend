@@ -58,10 +58,21 @@ export const zLabelRef = z.object({
   display_name: z.string()
 })
 
+/**
+ * Public workflow status. NULL in the database is represented as pending in API responses.
+ */
+export const zHubWorkflowStatus = z.enum([
+  'pending',
+  'approved',
+  'rejected',
+  'deprecated'
+])
+
 export const zHubWorkflowDetail = z.object({
   share_id: z.string(),
   workflow_id: z.string(),
   name: z.string(),
+  status: zHubWorkflowStatus,
   description: z.string().optional(),
   tags: z.array(zLabelRef).optional(),
   thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
@@ -81,6 +92,7 @@ export const zHubWorkflowDetail = z.object({
 export const zHubWorkflowSummary = z.object({
   share_id: z.string(),
   name: z.string(),
+  status: zHubWorkflowStatus,
   description: z.string().optional(),
   tags: z.array(zLabelRef).optional(),
   models: z.array(zLabelRef).optional(),
@@ -114,6 +126,7 @@ export const zHubLabelListResponse = z.object({
 export const zHubWorkflowTemplateEntry = z.object({
   name: z.string(),
   title: z.string(),
+  status: zHubWorkflowStatus,
   description: z.string().optional(),
   tags: z.array(z.string()).optional(),
   models: z.array(z.string()).optional(),
@@ -868,6 +881,16 @@ export const zSendUserInviteEmailResponse = z.object({
 export const zSendUserInviteEmailRequest = z.object({
   email: z.string(),
   force: z.boolean().optional().default(false)
+})
+
+export const zSetReviewStatusResponse = z.object({
+  share_ids: z.array(z.string()),
+  status: z.enum(['approved', 'rejected'])
+})
+
+export const zSetReviewStatusRequest = z.object({
+  share_ids: z.array(z.string()).min(1),
+  status: z.enum(['approved', 'rejected'])
 })
 
 /**
@@ -1837,6 +1860,17 @@ export const zSendUserInviteEmailData = z.object({
  */
 export const zSendUserInviteEmailResponse2 = zSendUserInviteEmailResponse
 
+export const zSetReviewStatusData = z.object({
+  body: zSetReviewStatusRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Status updated successfully
+ */
+export const zSetReviewStatusResponse2 = zSetReviewStatusResponse
+
 export const zGetDeletionRequestData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -2258,7 +2292,8 @@ export const zListHubWorkflowsData = z.object({
       search: z.string().optional(),
       tag: z.string().optional(),
       username: z.string().optional(),
-      detail: z.boolean().optional().default(false)
+      detail: z.boolean().optional().default(false),
+      status: z.array(zHubWorkflowStatus).optional()
     })
     .optional()
 })
@@ -2282,7 +2317,11 @@ export const zPublishHubWorkflowResponse = zHubWorkflowDetail
 export const zListHubWorkflowIndexData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
-  query: z.never().optional()
+  query: z
+    .object({
+      status: z.array(zHubWorkflowStatus).optional()
+    })
+    .optional()
 })
 
 /**
