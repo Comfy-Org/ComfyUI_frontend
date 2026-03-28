@@ -18,9 +18,9 @@ describe('extensionStore', () => {
 
     it('throws for extension without name', () => {
       const store = useExtensionStore()
-      expect(() =>
-        store.registerExtension({ name: '' })
-      ).toThrow("Extensions must have a 'name' property.")
+      expect(() => store.registerExtension({ name: '' })).toThrow(
+        "Extensions must have a 'name' property."
+      )
     })
 
     it('throws for duplicate registration', () => {
