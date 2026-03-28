@@ -80,4 +80,50 @@ describe('GtmTelemetryProvider', () => {
       event: 'subscription_success'
     })
   })
+
+  it('pushes normalized email as user_data before auth event', () => {
+    window.__CONFIG__ = {
+      gtm_container_id: 'GTM-TEST123'
+    }
+
+    const provider = new GtmTelemetryProvider()
+
+    provider.trackAuth({
+      method: 'email',
+      is_new_user: true,
+      user_id: 'uid-123',
+      email: '  Test@Example.com  '
+    })
+
+    const dl = window.dataLayer as Record<string, unknown>[]
+    const userData = dl.find((entry) => 'user_data' in entry)
+    expect(userData).toMatchObject({
+      user_data: { email: 'test@example.com' }
+    })
+
+    // Verify user_data is pushed before the sign_up event
+    const userDataIndex = dl.findIndex((entry) => 'user_data' in entry)
+    const signUpIndex = dl.findIndex(
+      (entry) => (entry as Record<string, unknown>).event === 'sign_up'
+    )
+    expect(userDataIndex).toBeLessThan(signUpIndex)
+  })
+
+  it('does not push user_data when email is absent', () => {
+    window.__CONFIG__ = {
+      gtm_container_id: 'GTM-TEST123'
+    }
+
+    const provider = new GtmTelemetryProvider()
+
+    provider.trackAuth({
+      method: 'google',
+      is_new_user: false,
+      user_id: 'uid-456'
+    })
+
+    const dl = window.dataLayer as Record<string, unknown>[]
+    const userData = dl.find((entry) => 'user_data' in entry)
+    expect(userData).toBeUndefined()
+  })
 })
