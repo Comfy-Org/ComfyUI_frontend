@@ -31,27 +31,14 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Get locator for a Vue node by the node's title (displayed name in the header).
-   * Returns all matching nodes — use only when the title is unique.
-   * For non-unique titles, use {@link getNodesByTitle} with `.nth(n)`.
+   * Get locator for Vue nodes by the node's title (displayed name in the header).
+   * Matches against the actual title element, not the full node body.
+   * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
   getNodeByTitle(title: string): Locator {
-    return this.page.locator(`[data-node-id]`).filter({ hasText: title })
-  }
-
-  /**
-   * Get locator matching ALL Vue nodes with the given title.
-   * Callers should use `.nth(0)`, `.nth(1)`, etc. to pick a specific one.
-   */
-  getNodesByTitle(title: string): Locator {
-    return this.page.locator(`[data-node-id]`).filter({ hasText: title })
-  }
-
-  /**
-   * Get locator for the nth Vue node matching the given title (0-indexed).
-   */
-  getNodeByTitleNth(title: string, index: number): Locator {
-    return this.getNodesByTitle(title).nth(index)
+    return this.page.locator('[data-node-id]').filter({
+      has: this.page.locator('[data-testid="node-title"]', { hasText: title })
+    })
   }
 
   /**
