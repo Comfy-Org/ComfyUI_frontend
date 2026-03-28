@@ -3,17 +3,17 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 
-test.describe('Cloud distribution UI @cloud', () => {
-  test('subscribe button is attached in cloud mode @cloud', async ({
-    comfyPage
-  }) => {
+test.describe('Cloud distribution UI', { tag: '@cloud' }, () => {
+  // Precondition: cloud test environment must have a free-tier user authenticated.
+  // The subscribe button only renders when isCloud && isFreeTier.
+  test('subscribe button is attached in cloud mode', async ({ comfyPage }) => {
     const subscribeButton = comfyPage.page.getByTestId(
       TestIds.topbar.subscribeButton
     )
     await expect(subscribeButton).toBeAttached()
   })
 
-  test('bottom panel toggle is hidden in cloud mode @cloud', async ({
+  test('bottom panel toggle is hidden in cloud mode', async ({
     comfyPage
   }) => {
     const sideToolbar = comfyPage.page.getByTestId(TestIds.sidebar.toolbar)
