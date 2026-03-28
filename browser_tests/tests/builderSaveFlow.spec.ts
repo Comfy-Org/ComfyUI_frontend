@@ -164,7 +164,18 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
     await successDialog.getByText('Close', { exact: true }).click()
     await comfyPage.nextFrame()
 
-    // Now click save again — should save directly
+    // Modify the workflow so the save button becomes enabled
+    await appMode.goToInputs()
+    const seedMenu = appMode.getBuilderInputItemMenu('seed')
+    await seedMenu.click()
+    await page.getByText('Delete', { exact: true }).click()
+    await comfyPage.nextFrame()
+    await appMode.goToPreview()
+    await expect(appMode.getFooterButton(/^Save$/)).toBeEnabled({
+      timeout: 5000
+    })
+
+    // Now click save — should save directly without dialog
     await appMode.clickSave()
 
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 2000 })

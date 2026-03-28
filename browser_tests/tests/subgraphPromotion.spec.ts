@@ -351,6 +351,7 @@ test.describe(
         await comfyPage.subgraph.exitViaBreadcrumb()
         await fitToViewInstant(comfyPage)
         await comfyPage.nextFrame()
+        await comfyPage.nextFrame()
 
         const initialWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
         expect(initialWidgetCount).toBeGreaterThan(0)

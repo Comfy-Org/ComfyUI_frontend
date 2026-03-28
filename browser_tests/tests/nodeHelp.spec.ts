@@ -481,6 +481,7 @@ This is English documentation.
       const helpButton = comfyPage.page.locator(
         '.selection-toolbox button[data-testid="info-button"]'
       )
+      await helpButton.waitFor({ state: 'visible', timeout: 10_000 })
       await helpButton.click()
 
       const helpPage = comfyPage.page.locator(

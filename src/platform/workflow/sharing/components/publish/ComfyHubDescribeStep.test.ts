@@ -1,7 +1,15 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
+
+const mockFetchTagLabels = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
+  useComfyHubService: () => ({
+    fetchTagLabels: mockFetchTagLabels
+  })
+}))
 
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 
@@ -66,7 +74,9 @@ function mountStep(
 
 describe('ComfyHubDescribeStep', () => {
   it('emits name and description updates', async () => {
+    mockFetchTagLabels.mockRejectedValue(new Error('offline'))
     const wrapper = mountStep()
+    await flushPromises()
 
     await wrapper.find('[data-testid="name-input"]').setValue('New workflow')
     await wrapper
@@ -77,35 +87,72 @@ describe('ComfyHubDescribeStep', () => {
     expect(wrapper.emitted('update:description')).toEqual([['New description']])
   })
 
-  it('adds a suggested tag when clicked', async () => {
+  it('uses fetched tags from API', async () => {
+    const apiTags = ['Alpha', 'Beta', 'Gamma']
+    mockFetchTagLabels.mockResolvedValue(apiTags)
     const wrapper = mountStep()
-    const suggestionButtons = wrapper.findAll(
-      '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
-    )
+    await flushPromises()
 
-    expect(suggestionButtons.length).toBeGreaterThan(0)
-
-    const firstSuggestion = suggestionButtons[0].attributes('data-value')
-    await suggestionButtons[0].trigger('click')
-
-    const tagUpdates = wrapper.emitted('update:tags')
-    expect(tagUpdates?.at(-1)).toEqual([[firstSuggestion]])
-  })
-
-  it('hides already-selected tags from suggestions', () => {
-    const selectedTag = COMFY_HUB_TAG_OPTIONS[0]
-    const wrapper = mountStep({ tags: [selectedTag] })
     const suggestionValues = wrapper
       .findAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
       .map((button) => button.attributes('data-value'))
 
-    expect(suggestionValues).not.toContain(selectedTag)
+    expect(suggestionValues).toEqual(apiTags)
+  })
+
+  it('falls back to hardcoded tags when API fails', async () => {
+    mockFetchTagLabels.mockRejectedValue(new Error('network error'))
+    const wrapper = mountStep()
+    await flushPromises()
+
+    const suggestionValues = wrapper
+      .findAll(
+        '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
+      )
+      .map((button) => button.attributes('data-value'))
+
+    expect(suggestionValues).toHaveLength(10)
+    expect(suggestionValues[0]).toBe(COMFY_HUB_TAG_OPTIONS[0])
+  })
+
+  it('adds a suggested tag when clicked', async () => {
+    const apiTags = ['Alpha', 'Beta']
+    mockFetchTagLabels.mockResolvedValue(apiTags)
+    const wrapper = mountStep()
+    await flushPromises()
+
+    const suggestionButtons = wrapper.findAll(
+      '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
+    )
+
+    await suggestionButtons[0].trigger('click')
+
+    const tagUpdates = wrapper.emitted('update:tags')
+    expect(tagUpdates?.at(-1)).toEqual([['Alpha']])
+  })
+
+  it('hides already-selected tags from suggestions', async () => {
+    const apiTags = ['Alpha', 'Beta', 'Gamma']
+    mockFetchTagLabels.mockResolvedValue(apiTags)
+    const wrapper = mountStep({ tags: ['Alpha'] })
+    await flushPromises()
+
+    const suggestionValues = wrapper
+      .findAll(
+        '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
+      )
+      .map((button) => button.attributes('data-value'))
+
+    expect(suggestionValues).not.toContain('Alpha')
+    expect(suggestionValues).toEqual(['Beta', 'Gamma'])
   })
 
   it('toggles between default and full suggestion lists', async () => {
+    mockFetchTagLabels.mockRejectedValue(new Error('offline'))
     const wrapper = mountStep()
+    await flushPromises()
 
     const defaultSuggestions = wrapper.findAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'

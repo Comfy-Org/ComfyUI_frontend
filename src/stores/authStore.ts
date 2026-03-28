@@ -348,7 +348,8 @@ export const useAuthStore = defineStore('auth', () => {
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: false,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -369,7 +370,8 @@ export const useAuthStore = defineStore('auth', () => {
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: true,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -390,7 +392,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'google',
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -411,7 +414,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'github',
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
