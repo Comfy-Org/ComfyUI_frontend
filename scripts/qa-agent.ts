@@ -477,12 +477,21 @@ export async function runHybridAgent(opts: AgentOptions): Promise<{
 - done(verdict, summary) — Finish with your conclusion.
 
 ## Strategy
-1. Start by understanding the issue, then plan your reproduction steps.
-2. Use perform() to take actions. After each action, use inspect() to verify state or observe() for visual confirmation.
+1. Start by understanding the issue, then plan your FULL reproduction sequence before acting.
+2. Use perform() to take actions. After EVERY action, use inspect() to verify the DOM state changed as expected.
 3. If a setting change doesn't seem to take effect, try reload() then verify again.
 4. Focus on the specific bug — don't explore randomly.
 5. Take screenshots at key moments for the video evidence.
 6. When you've confirmed or ruled out the bug, call done().
+7. You MUST complete ALL reproduction steps. Do NOT stop after setup — the actual bug trigger is the most important part.
+
+## Verification Rules (CRITICAL — prevents false results)
+- NEVER claim REPRODUCED unless inspect() confirms the expected broken state exists
+- After EVERY action, call inspect() to verify the DOM state. This is your source of truth.
+- Your done() verdict MUST be supported by inspect() results, not by what you think happened
+- If you perform an action but inspect() shows no state change, the action FAILED — try again or adapt
+- Example: if you press Escape and inspect("Settings dialog") still returns visible → the dialog did NOT close → report that honestly
+- ALWAYS include inspect() evidence in your done() summary: "inspect('X') returned {state} confirming Y"
 
 ## Control/Test Comparison (IMPORTANT)
 When a bug is triggered by a specific setting, mode, or configuration:
