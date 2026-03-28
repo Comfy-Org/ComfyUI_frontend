@@ -789,9 +789,12 @@ watchEffect((onCleanup) => {
 
   const needsFooterOffset = hasFooter.value
   const collapsed = isCollapsed.value
+  const previousOnBounding = node.onBounding
 
   if (needsFooterOffset || collapsed) {
-    node.onBounding = (out) => {
+    node.onBounding = function (out) {
+      previousOnBounding?.call(this, out)
+
       if (needsFooterOffset)
         out[3] += collapsed
           ? FOOTER_BOUNDING_OFFSET_COLLAPSED
@@ -800,12 +803,10 @@ watchEffect((onCleanup) => {
       // Must match CSS --min-node-width in the template.
       if (collapsed) out[2] = MIN_NODE_WIDTH
     }
-  } else {
-    node.onBounding = undefined
   }
 
   onCleanup(() => {
-    node.onBounding = undefined
+    node.onBounding = previousOnBounding
   })
 })
 
