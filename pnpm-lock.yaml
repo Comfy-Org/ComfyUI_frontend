@@ -416,9 +416,6 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
-      '@comfyorg/ingest-types':
-        specifier: workspace:*
-        version: link:packages/ingest-types
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -606,6 +603,9 @@ importers:
         specifier: 'catalog:'
         version: 3.3.0(zod@3.25.76)
     devDependencies:
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:packages/ingest-types
       '@eslint/js':
         specifier: 'catalog:'
         version: 9.39.1
