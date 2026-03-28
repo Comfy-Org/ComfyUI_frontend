@@ -3645,6 +3645,14 @@
     "description": "Aplicar shaders de fragmento GLSL ES em imagens. u_resolution (vec2) está sempre disponível.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "booleanos",
+        "tooltip": "Booleanos estão disponíveis como u_bool0-9 (bool) no código do shader"
+      },
+      "curves": {
+        "name": "curvas",
+        "tooltip": "Curvas estão disponíveis como u_curve0-3 (sampler2D, 1D LUT) no código do shader. Amostre com texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Floats estão disponíveis como u_float0-4 no código do shader"
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalidade_de_repetição"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar no modo de pensamento se o modelo suportar."
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalidade_de_repetição"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar no modo de pensamento se o modelo suportar."
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "positivo",
         "tooltip": "O condicionamento positivo a ser usado para o treinamento."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Ao usar 'training_dtype' como 'none' e treinar em um modelo quantizado, realiza o backward com matmul quantizado quando ativado."
       },
       "rank": {
         "name": "rank",

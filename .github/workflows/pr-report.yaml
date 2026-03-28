@@ -180,7 +180,7 @@ jobs:
           if git ls-remote --exit-code origin perf-data >/dev/null 2>&1; then
             git fetch origin perf-data --depth=1
             mkdir -p temp/perf-history
-            for file in $(git ls-tree --name-only origin/perf-data baselines/ 2>/dev/null | sort -r | head -10); do
+            for file in $(git ls-tree --name-only origin/perf-data baselines/ 2>/dev/null | sort -r | head -15); do
               git show "origin/perf-data:${file}" > "temp/perf-history/$(basename "$file")" 2>/dev/null || true
             done
             echo "Loaded $(ls temp/perf-history/*.json 2>/dev/null | wc -l) historical baselines"

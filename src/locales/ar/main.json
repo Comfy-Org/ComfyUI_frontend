@@ -347,9 +347,19 @@
     "share": "مشاركة",
     "workflowActions": "إجراءات سير العمل"
   },
+  "builderFooter": {
+    "opensAsApp": "فتح كـ {mode}",
+    "opensAsGraph": "فتح كـ {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "الدخول إلى وضع التطبيق",
     "exitAppBuilder": "الخروج من مُنشئ التطبيق"
+  },
+  "builderSave": {
+    "successBody": "هل ترغب في عرضها الآن؟",
+    "successBodyApp": "سيتم فتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.\n\nهل ترغب في عرضه الآن؟",
+    "successBodyGraph": "سيتم فتح سير العمل هذا كـ رسم بياني للعقد.",
+    "successTitle": "تم الحفظ بنجاح"
   },
   "builderToolbar": {
     "app": "تطبيق",
@@ -359,18 +369,10 @@
     "connectOutput": "توصيل مخرج",
     "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
     "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
-    "defaultModeAppliedAppBody": "سيفتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
-    "defaultModeAppliedAppPrompt": "هل ترغب في عرضه الآن؟",
-    "defaultModeAppliedGraphBody": "سيفتح سير العمل هذا كـمخطط عقد بشكل افتراضي من الآن فصاعدًا.",
-    "defaultModeAppliedGraphPrompt": "هل ترغب في عرض التطبيق مع ذلك؟",
-    "defaultModeAppliedTitle": "تم التعيين بنجاح",
-    "defaultView": "تعيين العرض الافتراضي",
-    "defaultViewDescription": "اختر كيفية الفتح",
     "defaultViewLabel": "افتراضيًا، سيتم فتح سير العمل هذا كـ:",
-    "defaultViewTitle": "تعيين العرض الافتراضي لهذا سير العمل",
     "emptyWorkflowPrompt": "هل ترغب في البدء بقالب؟",
     "emptyWorkflowTitle": "لا يحتوي سير العمل هذا على أي عقد",
-    "exitToWorkflow": "الخروج إلى سير العمل",
+    "filename": "اسم الملف",
     "inputs": "المدخلات",
     "inputsDescription": "اختر المدخلات",
     "label": "منشئ التطبيقات",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
     "outputs": "المخرجات",
     "outputsDescription": "اختر المخرجات",
+    "saveAs": "حفظ باسم",
     "switchToOutputs": "الانتقال إلى المخرجات",
     "viewApp": "عرض التطبيق"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ رفع صورة الغلاف",
     "uploadProfilePicture": "+ رفع صورة الملف الشخصي",
     "uploadWorkflowButton": "رفع سير عملي",
+    "usernameError": "٣–٤٢ حرفًا صغيرًا أو رقمًا أو شرطة، ويجب أن يبدأ وينتهي بحرف أو رقم",
     "usernameLabel": "اسم المستخدم (إجباري)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "معلومات إضافية",
     "back": "رجوع",
     "createProfileCta": "إنشاء ملف شخصي",
     "createProfileToPublish": "أنشئ ملفًا شخصيًا للنشر على ComfyHub",
     "exampleImage": "صورة نموذجية {index}",
+    "exampleImagePosition": "الصورة النموذجية {index} من {total}",
     "examplesDescription": "أضف حتى {total} صورة نموذجية إضافية",
     "maxExamples": "يمكنك اختيار حتى {max} أمثلة",
     "next": "التالي",
     "publishButton": "النشر على ComfyHub",
+    "publishFailedDescription": "حدث خطأ أثناء نشر سير العمل الخاص بك. يرجى المحاولة مرة أخرى.",
+    "publishFailedTitle": "فشل النشر",
+    "removeExampleImage": "إزالة الصورة النموذجية",
     "selectAThumbnail": "اختر صورة مصغرة",
+    "shareAs": "مشاركة كـ",
     "showLessTags": "عرض أقل...",
     "showMoreTags": "عرض المزيد...",
     "stepDescribe": "وصف سير العمل",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "معاينة الصورة المصغرة",
     "thumbnailVideo": "فيديو",
     "title": "النشر على ComfyHub",
+    "unsavedDescription": "يجب حفظ سير العمل الخاص بك قبل النشر على ComfyHub. احفظه الآن للمتابعة.",
     "uploadAnImage": "انقر للاستعراض أو اسحب صورة",
     "uploadComparison": "رفع صورة قبل وبعد",
     "uploadComparisonAfterPrompt": "بعد",
@@ -606,13 +617,7 @@
     "workflowDescription": "وصف سير العمل",
     "workflowDescriptionPlaceholder": "ما الذي يجعل سير عملك مميزًا ومثيرًا؟ كن محددًا حتى يعرف الآخرون ما يمكن توقعه.",
     "workflowName": "اسم سير العمل",
-    "workflowNamePlaceholder": "نصيحة: أدخل اسمًا وصفيًا يسهل البحث عنه",
-    "workflowType": "نوع سير العمل",
-    "workflowTypeEditing": "تحرير",
-    "workflowTypeImageGeneration": "توليد الصور",
-    "workflowTypePlaceholder": "اختر النوع",
-    "workflowTypeUpscaling": "تحسين الجودة",
-    "workflowTypeVideoGeneration": "توليد الفيديو"
+    "workflowNamePlaceholder": "نصيحة: أدخل اسمًا وصفيًا يسهل البحث عنه"
   },
   "commands": {
     "clear": "مسح سير العمل",
@@ -896,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} خطأ | {count} أخطاء",
-    "seeErrors": "عرض الأخطاء"
+    "missingMedia": "بعض العقد تفتقد إلى مدخلات مطلوبة",
+    "missingModels": "{count} نموذج مطلوب مفقود | {count} نماذج مطلوبة مفقودة",
+    "missingNodes": "بعض العقد مفقودة وتحتاج إلى التثبيت",
+    "seeErrors": "عرض الأخطاء",
+    "showMissingMedia": "عرض المدخلات المفقودة",
+    "showMissingModels": "عرض النماذج المفقودة",
+    "showMissingNodes": "عرض العقد المفقودة",
+    "showSwapNodes": "عرض العقد البديلة",
+    "swapNodes": "يمكن استبدال بعض العقد ببدائل"
   },
   "essentials": {
     "batchImage": "معالجة صور دفعة واحدة",

@@ -3645,6 +3645,14 @@
     "description": "اعمال شیدرهای fragment GLSL ES به تصاویر. u_resolution (vec2) همیشه در دسترس است.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "بول‌ها",
+        "tooltip": "بولین‌ها به صورت u_bool0-9 (bool) در کد شیدر در دسترس هستند"
+      },
+      "curves": {
+        "name": "منحنی‌ها",
+        "tooltip": "منحنی‌ها به صورت u_curve0-3 (sampler2D، ۱D LUT) در کد شیدر در دسترس هستند. با texture(u_curve0, vec2(x, 0.5)).r نمونه‌برداری کنید."
+      },
       "floats": {
         "name": "floats",
         "tooltip": "اعداد اعشاری به صورت u_float0-4 در کد شیدر در دسترس هستند"
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "حداقل p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "جریمه تکرار"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "حداقل p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "جریمه تکرار"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "شرط مثبت",
         "tooltip": "شرط مثبت مورد استفاده برای آموزش."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "زمانی که training_dtype روی 'none' تنظیم شده و آموزش روی مدل quantized انجام می‌شود، در صورت فعال بودن، عملیات backward با quantized matmul انجام می‌شود."
       },
       "rank": {
         "name": "رتبه",

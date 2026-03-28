@@ -24,6 +24,7 @@ export interface AuthMetadata {
   method?: 'email' | 'google' | 'github'
   is_new_user?: boolean
   user_id?: string
+  email?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string

@@ -3645,6 +3645,14 @@
     "description": "GLSL ES 프래그먼트 셰이더를 이미지에 적용합니다. u_resolution(vec2)은 항상 사용 가능합니다.",
     "display_name": "GLSL 셰이더",
     "inputs": {
+      "bools": {
+        "name": "불리언",
+        "tooltip": "불리언은 셰이더 코드에서 u_bool0-9 (bool)로 사용할 수 있습니다"
+      },
+      "curves": {
+        "name": "커브",
+        "tooltip": "커브는 셰이더 코드에서 u_curve0-3 (sampler2D, 1D LUT)로 사용할 수 있습니다. texture(u_curve0, vec2(x, 0.5)).r로 샘플링하세요"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "floats는 셰이더 코드에서 u_float0-4로 사용 가능합니다."
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "최소 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "반복 패널티"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "생각 중",
+        "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "최소 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "반복 패널티"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "생각 중",
+        "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "긍정 조건",
         "tooltip": "학습에 사용할 긍정 조건입니다."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "training_dtype가 'none'이고 양자화된 모델에서 학습할 때, 활성화 시 양자화된 matmul로 역전파를 수행합니다."
       },
       "rank": {
         "name": "랭크",

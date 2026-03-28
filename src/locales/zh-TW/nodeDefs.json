@@ -3645,6 +3645,14 @@
     "description": "將 GLSL ES 片段著色器應用於影像。u_resolution（vec2）始終可用。",
     "display_name": "GLSL 葉片著色器",
     "inputs": {
+      "bools": {
+        "name": "布林值",
+        "tooltip": "布林值在著色器程式碼中可作為 u_bool0-9（bool）使用"
+      },
+      "curves": {
+        "name": "曲線",
+        "tooltip": "曲線在著色器程式碼中可作為 u_curve0-3（sampler2D，1D LUT）使用。可用 texture(u_curve0, vec2(x, 0.5)).r 取樣"
+      },
       "floats": {
         "name": "浮點數",
         "tooltip": "浮點數在著色器程式碼中以 u_float0-4 提供"
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "最小 p 值"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "出現懲罰"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "重複懲罰"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "Top-P"
+      },
+      "thinking": {
+        "name": "思考模式",
+        "tooltip": "若模型支援，則以思考模式運作。"
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "正向條件",
         "tooltip": "用於訓練的正向條件。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "當 training_dtype 設為 'none' 並在量化模型上訓練時，啟用後將以量化矩陣相乘進行反向傳播。"
       },
       "rank": {
         "name": "秩",

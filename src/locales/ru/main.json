@@ -347,9 +347,19 @@
     "share": "Поделиться",
     "workflowActions": "Действия с рабочим процессом"
   },
+  "builderFooter": {
+    "opensAsApp": "Открыть как {mode}",
+    "opensAsGraph": "Открыть как {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Войти в режим приложения",
     "exitAppBuilder": "Выйти из конструктора приложений"
+  },
+  "builderSave": {
+    "successBody": "Хотите просмотреть сейчас?",
+    "successBodyApp": "Этот рабочий процесс теперь будет открываться в режиме приложения по умолчанию.\n\nХотите просмотреть сейчас?",
+    "successBodyGraph": "Этот рабочий процесс будет открыт как граф узлов.",
+    "successTitle": "Успешно сохранено"
   },
   "builderToolbar": {
     "app": "Приложение",
@@ -359,18 +369,10 @@
     "connectOutput": "Подключить выход",
     "connectOutputBody1": "Вашему приложению необходимо подключить хотя бы один выход перед сохранением.",
     "connectOutputBody2": "Переключитесь на шаг «Выбрать» и кликните по выходным узлам, чтобы добавить их сюда.",
-    "defaultModeAppliedAppBody": "Этот рабочий процесс теперь будет открываться в режиме приложения по умолчанию.",
-    "defaultModeAppliedAppPrompt": "Хотите просмотреть его сейчас?",
-    "defaultModeAppliedGraphBody": "Этот рабочий процесс теперь будет открываться как граф узлов по умолчанию.",
-    "defaultModeAppliedGraphPrompt": "Хотите всё равно просмотреть приложение?",
-    "defaultModeAppliedTitle": "Успешно установлено",
-    "defaultView": "Установить вид по умолчанию",
-    "defaultViewDescription": "Выберите, как это будет открываться",
     "defaultViewLabel": "По умолчанию этот рабочий процесс будет открываться как:",
-    "defaultViewTitle": "Установить вид по умолчанию для этого рабочего процесса",
     "emptyWorkflowPrompt": "Хотите начать с шаблона?",
     "emptyWorkflowTitle": "В этом рабочем процессе нет узлов",
-    "exitToWorkflow": "Выйти к рабочему процессу",
+    "filename": "Имя файла",
     "inputs": "Входы",
     "inputsDescription": "Выберите входные данные",
     "label": "Конструктор приложений",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Открывается как граф узлов по умолчанию",
     "outputs": "Выходы",
     "outputsDescription": "Выберите выходные данные",
+    "saveAs": "Сохранить как",
     "switchToOutputs": "Перейти к выводам",
     "viewApp": "Просмотреть приложение"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ Загрузить обложку",
     "uploadProfilePicture": "+ Загрузить фото профиля",
     "uploadWorkflowButton": "Загрузить мой workflow",
+    "usernameError": "От 3 до 42 строчных буквенно-цифровых символов и дефисов, имя должно начинаться и заканчиваться буквой или цифрой",
     "usernameLabel": "Ваш никнейм (обязательно)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "Дополнительная информация",
     "back": "Назад",
     "createProfileCta": "Создать профиль",
     "createProfileToPublish": "Создайте профиль для публикации в ComfyHub",
     "exampleImage": "Пример изображения {index}",
+    "exampleImagePosition": "Пример изображения {index} из {total}",
     "examplesDescription": "Добавьте до {total} дополнительных примеров изображений",
     "maxExamples": "Вы можете выбрать до {max} примеров",
     "next": "Далее",
     "publishButton": "Опубликовать в ComfyHub",
+    "publishFailedDescription": "Произошла ошибка при публикации вашего рабочего процесса. Пожалуйста, попробуйте еще раз.",
+    "publishFailedTitle": "Ошибка публикации",
+    "removeExampleImage": "Удалить пример изображения",
     "selectAThumbnail": "Выберите миниатюру",
+    "shareAs": "Поделиться как",
     "showLessTags": "Показать меньше...",
     "showMoreTags": "Показать больше...",
     "stepDescribe": "Опишите ваш workflow",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "Превью миниатюры",
     "thumbnailVideo": "Видео",
     "title": "Публикация в ComfyHub",
+    "unsavedDescription": "Вы должны сохранить свой рабочий процесс перед публикацией в ComfyHub. Сохраните его сейчас, чтобы продолжить.",
     "uploadAnImage": "Нажмите для выбора или перетащите изображение",
     "uploadComparison": "Загрузить до и после",
     "uploadComparisonAfterPrompt": "После",
@@ -606,13 +617,7 @@
     "workflowDescription": "Описание workflow",
     "workflowDescriptionPlaceholder": "Что делает ваш workflow интересным и особенным? Будьте конкретны, чтобы люди знали, чего ожидать.",
     "workflowName": "Название workflow",
-    "workflowNamePlaceholder": "Совет: введите описательное название, которое легко найти",
-    "workflowType": "Тип workflow",
-    "workflowTypeEditing": "Редактирование",
-    "workflowTypeImageGeneration": "Генерация изображений",
-    "workflowTypePlaceholder": "Выберите тип",
-    "workflowTypeUpscaling": "Увеличение разрешения",
-    "workflowTypeVideoGeneration": "Генерация видео"
+    "workflowNamePlaceholder": "Совет: введите описательное название, которое легко найти"
   },
   "commands": {
     "clear": "Очистить рабочий процесс",
@@ -896,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
-    "seeErrors": "Посмотреть ошибки"
+    "missingMedia": "Некоторым узлам не хватает необходимых входных данных",
+    "missingModels": "{count} необходимая модель отсутствует | {count} необходимых моделей отсутствуют",
+    "missingNodes": "Некоторые узлы отсутствуют и требуют установки",
+    "seeErrors": "Посмотреть ошибки",
+    "showMissingMedia": "Показать отсутствующие входные данные",
+    "showMissingModels": "Показать отсутствующие модели",
+    "showMissingNodes": "Показать отсутствующие узлы",
+    "showSwapNodes": "Показать заменяемые узлы",
+    "swapNodes": "Некоторые узлы можно заменить альтернативами"
   },
   "essentials": {
     "batchImage": "Пакетная обработка изображений",

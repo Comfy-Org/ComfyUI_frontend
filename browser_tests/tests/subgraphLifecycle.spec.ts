@@ -142,12 +142,12 @@ test.describe(
       })
     })
 
-    test.describe('Placeholder Behavior After Promoted Source Removal', () => {
+    test.describe('Cleanup Behavior After Promoted Source Removal', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       })
 
-      test('Removing promoted source node inside subgraph falls back to disconnected placeholder on exterior', async ({
+      test('Removing promoted source node inside subgraph cleans up exterior proxyWidgets', async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(
@@ -182,8 +182,8 @@ test.describe(
             })
           })
           .toEqual({
-            proxyWidgetCount: initialWidgets.length,
-            firstWidgetType: 'button'
+            proxyWidgetCount: 0,
+            firstWidgetType: undefined
           })
       })
 
