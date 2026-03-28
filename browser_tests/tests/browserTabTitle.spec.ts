@@ -19,8 +19,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         .toBe(`*${workflowName} - ComfyUI`)
     })
 
-    // TODO: Flaky in CI — canvas click timeout (element not visible)
-    test.skip('Can display workflow name with unsaved changes', async ({
+    test('Can display workflow name with unsaved changes', async ({
       comfyPage
     }) => {
       const workflowName = `test-${Date.now()}`
@@ -31,7 +30,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
-      await comfyPage.canvasOps.clickEmptySpace()
+      await textBox.press('Escape')
       await expect
         .poll(() => comfyPage.page.title())
         .toBe(`*${workflowName} - ComfyUI`)

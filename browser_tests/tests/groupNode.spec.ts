@@ -94,8 +94,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
     })
   })
-  // TODO: Flaky in CI — screenshot diff (stale golden image)
-  test.skip(
+  test(
     'Can be added to canvas using search',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {

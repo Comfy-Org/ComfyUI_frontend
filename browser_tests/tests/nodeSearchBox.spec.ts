@@ -176,14 +176,13 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expectFilterChips(comfyPage, ['MODEL'])
     })
 
-    // TODO: Flaky in CI — p-dialog-mask intercepts pointer events
-    test.skip('Outer click dismisses filter panel but keeps search box visible', async ({
+    test('Outer click dismisses filter panel but keeps search box visible', async ({
       comfyPage
     }) => {
       await comfyPage.searchBox.filterButton.click()
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
-      await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
+      await comfyPage.page.keyboard.press('Escape')
 
       // Verify the filter selection panel is hidden
       await expect(panel.header).not.toBeVisible()

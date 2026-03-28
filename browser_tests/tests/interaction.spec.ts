@@ -222,10 +222,7 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot('moved-link.png')
     })
 
-    // Shift drag copy link regressed. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/2941
-    test.skip('Can copy link by shift-drag existing link', async ({
-      comfyPage
-    }) => {
+    test('Can copy link by shift-drag existing link', async ({ comfyPage }) => {
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode1InputSlot,
         DefaultGraphPositions.emptySpace
