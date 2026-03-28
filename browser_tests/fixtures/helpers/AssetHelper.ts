@@ -1,9 +1,6 @@
 import type { Page, Route } from '@playwright/test'
 
-import type {
-  Asset,
-  ListAssetsResponse
-} from '@comfyorg/ingest-types'
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import {
   generateModels,
   generateInputFiles,
@@ -34,10 +31,7 @@ function emptyConfig(): AssetConfig {
 
 export type AssetOperator = (config: AssetConfig) => AssetConfig
 
-function addAssets(
-  config: AssetConfig,
-  newAssets: Asset[]
-): AssetConfig {
+function addAssets(config: AssetConfig, newAssets: Asset[]): AssetConfig {
   const merged = new Map(config.assets)
   for (const asset of newAssets) {
     merged.set(asset.id, asset)
@@ -57,9 +51,7 @@ export function withModels(
   }
 }
 
-export function withInputFiles(
-  countOrAssets: number | Asset[]
-): AssetOperator {
+export function withInputFiles(countOrAssets: number | Asset[]): AssetOperator {
   return (config) => {
     const assets =
       typeof countOrAssets === 'number'
