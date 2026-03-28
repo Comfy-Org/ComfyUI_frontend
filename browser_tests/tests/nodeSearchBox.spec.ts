@@ -110,7 +110,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     async ({ comfyPage }) => {
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
-      await comfyPage.page.locator('.p-chip-remove-icon').click()
+      await comfyPage.searchBox.removeFilter(0)
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
         exact: true
       })

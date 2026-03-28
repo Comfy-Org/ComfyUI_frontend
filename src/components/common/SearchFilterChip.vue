@@ -1,16 +1,22 @@
 <template>
-  <Chip removable @remove="emit('remove', $event)">
-    <Badge size="small" :class="semanticBadgeClass">
-      {{ badge }}
-    </Badge>
-    {{ text }}
-  </Chip>
+  <Tag
+    :label="text"
+    shape="rounded"
+    removable
+    class="bg-surface-700"
+    @remove="emit('remove', $event)"
+  >
+    <template #icon>
+      <Badge :label="badge" :class="semanticBadgeClass" />
+    </template>
+  </Tag>
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
-import Chip from 'primevue/chip'
 import { computed } from 'vue'
+
+import Badge from '@/components/common/Badge.vue'
+import Tag from '@/components/chip/Tag.vue'
 
 export interface SearchFilter {
   text: string

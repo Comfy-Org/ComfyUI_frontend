@@ -4,13 +4,12 @@
       {{ getDownloadLabel(download.savePath ?? '') }}
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
-      <Chip
-        class="mt-2 h-6 bg-red-700 text-sm font-light"
+      <Tag
+        :label="t('electronFileDownload.cancelled')"
+        class="mt-2 bg-red-700 text-sm font-light"
         removable
         @remove="handleRemoveDownload"
-      >
-        {{ t('electronFileDownload.cancelled') }}
-      </Chip>
+      />
     </div>
     <div
       v-if="
@@ -67,8 +66,9 @@
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
 import ProgressBar from 'primevue/progressbar'
+
+import Tag from '@/components/chip/Tag.vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
