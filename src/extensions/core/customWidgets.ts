@@ -175,6 +175,15 @@ function onBranchSelectorCreated(this: LGraphNode) {
     }
   })
 
+  // Allow renaming autogrow input slots via context menu
+  this.getSlotMenuOptions = (slot) => {
+    const menu: { content: string; slot: typeof slot }[] = []
+    if (slot.input) {
+      menu.push({ content: 'Rename Slot', slot })
+    }
+    return menu
+  }
+
   refreshBranchValues()
 }
 
