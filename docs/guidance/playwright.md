@@ -75,6 +75,25 @@ await page.evaluate(() => {
 // Keep app.extensionManager typed as ExtensionManager, not WorkspaceStore
 ```
 
+## Assertion Best Practices
+
+```typescript
+// ✅ Custom message — explains why the assertion matters
+expect(items, 'K-Sampler inputs changed — update test fixture').toHaveLength(7)
+
+// ✅ Soft assertion — collects multiple failures without stopping
+expect.soft(menuItem1).toBeVisible()
+expect.soft(menuItem2).toBeVisible()
+expect.soft(menuItem3).toBeVisible()
+
+// ❌ Bad — no context when it fails
+expect(items).toHaveLength(7)
+```
+
+- Use custom messages for precondition/invariant checks
+- Use `expect.soft()` for non-blocking checks where you want to verify multiple things
+- Never use custom error classes for test invariants — just use Playwright's built-in message parameter
+
 ## Test Tags
 
 Tags are respected by config:
