@@ -1,4 +1,4 @@
-/* eslint-disable vue/multi-word-component-names, vue/one-component-per-file, vue/require-prop-types, vue/no-reserved-component-names */
+/* eslint-disable vue/one-component-per-file, vue/require-prop-types, vue/no-reserved-component-names */
 import type { RenderResult } from '@testing-library/vue'
 import type { ComponentMountingOptions } from '@vue/test-utils'
 
@@ -100,7 +100,6 @@ const MessageStub = defineComponent({
 const DialogStub = defineComponent({
   name: 'Dialog',
   props: ['visible', 'modal', 'header'],
-  emits: ['update:visible'],
   setup(props, { slots }) {
     return () =>
       props.visible
