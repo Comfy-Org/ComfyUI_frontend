@@ -68,12 +68,7 @@ test.describe(
       })
     })
 
-    // BUG: @drop.prevent in LGraphNode.vue unconditionally calls preventDefault(),
-    // so when onDragDrop returns false the event bubbles to the document handler in
-    // app.ts but is ignored because defaultPrevented is already true.
-    // FIX: Make preventDefault() conditional in LGraphNode.vue's handleDrop — only
-    // call it when onDragDrop returns true (same pattern as stopPropagation).
-    test.fixme('Load workflow from URL dropped onto Vue node', async ({
+    test('Load workflow from URL dropped onto Vue node', async ({
       comfyPage
     }) => {
       const fakeUrl = 'https://example.com/workflow.png'
