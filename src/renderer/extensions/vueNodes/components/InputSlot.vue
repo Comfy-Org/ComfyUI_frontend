@@ -35,7 +35,7 @@
     />
 
     <!-- Slot Name -->
-    <div class="flex h-full min-w-0 cursor-default items-center">
+    <div class="flex h-full min-w-0 items-center">
       <input
         v-if="isRenaming"
         ref="renameInputRef"
