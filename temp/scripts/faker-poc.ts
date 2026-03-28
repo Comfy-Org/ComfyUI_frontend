@@ -10,7 +10,7 @@ const assets = Array.from({ length: 10 }, () => ({
   size: faker.number.int({ min: 1000, max: 10000000 }),
   type: faker.helpers.arrayElement(['image', 'model', 'checkpoint']),
   path: faker.system.filePath(),
-  modified: faker.date.recent().toISOString(),
+  modified: faker.date.between({ from: '2024-01-01', to: '2024-12-31' }).toISOString(),
 }))
 
 console.log('Assets:', JSON.stringify(assets, null, 2))

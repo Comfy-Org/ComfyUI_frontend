@@ -19,7 +19,7 @@ const modified = Array.from({ length: 5 }, () => ({
 }))
 
 console.log('=== Schema mutation stability test ===')
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < original.length; i++) {
   const nameMatch = original[i].name === modified[i].name
   const sizeMatch = original[i].size === modified[i].size
   const typeMatch = original[i].type === modified[i].type
