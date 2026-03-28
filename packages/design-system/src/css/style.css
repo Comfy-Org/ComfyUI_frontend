@@ -249,6 +249,7 @@
   --node-component-slot-dot-outline-opacity: 5%;
   --node-component-slot-dot-outline: var(--color-black);
   --node-component-slot-text: var(--color-ash-800);
+  --node-component-slot-text-highlight: var(--color-black);
   --node-component-surface-highlight: var(--color-ash-500);
   --node-component-surface-hovered: var(--color-smoke-200);
   --node-component-surface-selected: var(--color-charcoal-200);
@@ -391,6 +392,7 @@
   --node-component-slot-dot-outline-opacity: 10%;
   --node-component-slot-dot-outline: var(--color-white);
   --node-component-slot-text: var(--color-slate-200);
+  --node-component-slot-text-highlight: var(--color-white);
   --node-component-surface-highlight: var(--color-slate-100);
   --node-component-surface-hovered: var(--color-charcoal-600);
   --node-component-surface-selected: var(--color-charcoal-200);
@@ -537,6 +539,9 @@
       )
   );
   --color-node-component-slot-text: var(--node-component-slot-text);
+  --color-node-component-slot-text-highlight: var(
+    --node-component-slot-text-highlight
+  );
   --color-node-component-surface-highlight: var(
     --node-component-surface-highlight
   );
