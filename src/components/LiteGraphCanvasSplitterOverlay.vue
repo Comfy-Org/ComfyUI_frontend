@@ -19,7 +19,11 @@
         :key="splitterRefreshKey"
         class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
         :state-key="
-          isSelectMode ? `builder-splitter-${sidebarLocation}` : sidebarStateKey
+          isSelectMode
+            ? sidebarLocation === 'left'
+              ? 'builder-splitter'
+              : 'builder-splitter-right'
+            : sidebarStateKey
         "
         state-storage="local"
         @resizestart="onResizestart"
@@ -183,11 +187,17 @@ const lastPanelVisible = computed(
  * inconsistent panelSizes array (where untouched panel values are prop-based
  * while resized panels are pixel-derived), which caused one panel's width to
  * drift when the other was resized.
+ *
+ * Uses runtime visibility (not just mount state) because the sidebar panel can
+ * be mounted but hidden via display:none when no tab is active.
  */
+const bothSidePanelsVisible = computed(
+  () =>
+    !focusMode.value && sidebarPanelVisible.value && showOffsideSplitter.value
+)
+
 const centerPanelDefaultSize = computed(() =>
-  firstPanelVisible.value && lastPanelVisible.value
-    ? 100 - 2 * SIDE_PANEL_SIZE
-    : CENTER_PANEL_SIZE
+  bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
 )
 
 const sidebarTabKey = computed(() => {
@@ -199,6 +209,9 @@ const sidebarTabKey = computed(() => {
 
 const sidebarStateKey = computed(() => {
   const base = sidebarTabKey.value
+  if (sidebarLocation.value === 'left' && !showOffsideSplitter.value) {
+    return base
+  }
   const suffix = showOffsideSplitter.value ? '-with-offside' : ''
   return `${base}-${sidebarLocation.value}${suffix}`
 })
@@ -220,15 +233,29 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
  */
 function normalizeSavedSizes() {
   const stateKey = isSelectMode.value
-    ? `builder-splitter-${sidebarLocation.value}`
+    ? sidebarLocation.value === 'left'
+      ? 'builder-splitter'
+      : 'builder-splitter-right'
     : sidebarStateKey.value
   const raw = localStorage.getItem(stateKey)
   if (!raw) return
-  const sizes: number[] = JSON.parse(raw)
-  const sum = sizes.reduce((a, b) => a + b, 0)
-  if (Math.abs(sum - 100) > 0.5) {
-    const normalized = sizes.map((s) => (s / sum) * 100)
-    localStorage.setItem(stateKey, JSON.stringify(normalized))
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      !Array.isArray(parsed) ||
+      parsed.length === 0 ||
+      parsed.some((s) => typeof s !== 'number' || !Number.isFinite(s))
+    ) {
+      return
+    }
+    const sum = parsed.reduce((a, b) => a + b, 0)
+    if (sum <= 0 || Math.abs(sum - 100) <= 0.5) return
+    localStorage.setItem(
+      stateKey,
+      JSON.stringify(parsed.map((s) => (s / sum) * 100))
+    )
+  } catch {
+    return
   }
 }
 

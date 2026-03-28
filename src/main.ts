@@ -74,7 +74,14 @@ Sentry.init({
   replaysOnErrorSampleRate: 0,
   // Only set these for non-cloud builds
   ...(isCloud
-    ? {}
+    ? {
+        integrations: [
+          // Disable event target wrapping to reduce overhead on high-frequency
+          // DOM events (pointermove, mousemove, wheel). Sentry still captures
+          // errors via window.onerror and unhandledrejection.
+          Sentry.browserApiErrorsIntegration({ eventTarget: false })
+        ]
+      }
     : {
         integrations: [],
         autoSessionTracking: false,

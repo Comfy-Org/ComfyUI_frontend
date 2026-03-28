@@ -3645,6 +3645,14 @@
     "description": "Appliquez des shaders de fragments GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
     "display_name": "Shader GLSL",
     "inputs": {
+      "bools": {
+        "name": "booléens",
+        "tooltip": "Les booléens sont disponibles sous u_bool0-9 (bool) dans le code du shader"
+      },
+      "curves": {
+        "name": "courbes",
+        "tooltip": "Les courbes sont disponibles sous u_curve0-3 (sampler2D, LUT 1D) dans le code du shader. Échantillonnez avec texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Les flottants sont disponibles sous u_float0-4 dans le code du shader"

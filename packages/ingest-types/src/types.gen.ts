@@ -4,6 +4,408 @@ export type ClientOptions = {
   baseUrl: `${string}://${string}` | (string & {})
 }
 
+export type HubUsernameCheckResponse = {
+  /**
+   * The username that was checked.
+   */
+  username: string
+  /**
+   * Whether the username is available for the caller's workspace.
+   */
+  available: boolean
+  /**
+   * Up to 5 available alternative usernames (only present when unavailable).
+   */
+  suggestions?: Array<string>
+  /**
+   * If the username format is invalid, describes the format requirement.
+   */
+  validation_error?: string
+}
+
+export type HubAssetUploadUrlResponse = {
+  /**
+   * Presigned R2 URL for uploading the file via PUT.
+   */
+  upload_url: string
+  /**
+   * The public URL where the file will be accessible after upload.
+   */
+  public_url: string
+  /**
+   * Signed token to pass in the publish request. Has a server-determined TTL.
+   */
+  token: string
+}
+
+export type HubAssetUploadUrlRequest = {
+  /**
+   * Original filename for display purposes. Not used in the storage key.
+   */
+  filename: string
+  /**
+   * MIME type of the file (e.g. "image/jpeg", "video/mp4"). Validated against a whitelist; the canonical file extension is derived from this value.
+   *
+   */
+  content_type: string
+}
+
+export type PublishHubWorkflowRequest = {
+  /**
+   * Username of the hub profile to publish under. The authenticated user must belong to the workspace that owns this profile.
+   */
+  username: string
+  /**
+   * Display name for the published workflow on the hub.
+   */
+  name: string
+  /**
+   * Userdata path of the workflow file (e.g. "workflows/my-flow.json").
+   */
+  workflow_filename: string
+  /**
+   * IDs of assets (inputs and models) to snapshot.
+   */
+  asset_ids: Array<string>
+  /**
+   * Workflow description for the hub listing.
+   */
+  description?: string
+  /**
+   * Searchable tag slugs. Must exist in hub_labels.
+   */
+  tags?: Array<string>
+  /**
+   * Model slugs. Must exist in hub_labels.
+   */
+  models?: Array<string>
+  /**
+   * Custom node slugs. Must exist in hub_labels.
+   */
+  custom_nodes?: Array<string>
+  /**
+   * URL to a tutorial for this workflow.
+   */
+  tutorial_url?: string
+  /**
+   * Arbitrary metadata (size, vram, open_source, etc.). Reserved keys (extended_description, meta_description, how_to_use, suggested_use_cases, faq_items, content_template) are backend-managed and will be stripped if supplied.
+   */
+  metadata?: {
+    [key: string]: unknown
+  }
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  /**
+   * Token (from /api/hub/assets/upload-url) for a new upload, or an existing public URL from the previous published version. Omit to have no thumbnail.
+   *
+   */
+  thumbnail_token_or_url?: string
+  /**
+   * Token or existing public URL from the previous published version. Omit to have no comparison image.
+   *
+   */
+  thumbnail_comparison_token_or_url?: string
+  /**
+   * Array of tokens or existing public URLs from the previous published version. Full replacement (PUT semantics). Omit or pass [] to have no sample images.
+   *
+   */
+  sample_image_tokens_or_urls?: Array<string>
+}
+
+export type HubWorkflowListResponse = {
+  /**
+   * Array of HubWorkflowSummary (default) or HubWorkflowDetail (when detail=true).
+   */
+  workflows: Array<HubWorkflowSummary | HubWorkflowDetail>
+  /**
+   * Cursor for the next page, empty if no more results.
+   */
+  next_cursor?: string
+}
+
+export type AssetInfo = {
+  /**
+   * Asset identifier.
+   */
+  id: string
+  name: string
+  /**
+   * Signed URL for previewing the asset.
+   */
+  preview_url: string
+  storage_url: string
+  /**
+   * Whether this asset is a model.
+   */
+  model: boolean
+  /**
+   * Whether this is a public (platform-provided) asset.
+   */
+  public: boolean
+  /**
+   * Whether the caller already owns this asset.
+   */
+  in_library: boolean
+}
+
+export type HubWorkflowDetail = {
+  share_id: string
+  workflow_id: string
+  name: string
+  description?: string
+  tags?: Array<LabelRef>
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  thumbnail_url?: string
+  thumbnail_comparison_url?: string
+  models?: Array<LabelRef>
+  custom_nodes?: Array<LabelRef>
+  tutorial_url?: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  sample_image_urls?: Array<string>
+  publish_time?: string | null
+  workflow_json: {
+    [key: string]: unknown
+  }
+  /**
+   * Published assets. Each asset's id is the published asset ID (not the original private asset ID).
+   */
+  assets: Array<AssetInfo>
+  profile: HubProfileSummary
+}
+
+export type HubProfileSummary = {
+  username: string
+  display_name?: string
+  /**
+   * Public URL of the profile avatar image.
+   */
+  avatar_url?: string
+}
+
+export type LabelRef = {
+  /**
+   * Slug identifier (e.g. "video-generation", "flux").
+   */
+  name: string
+  /**
+   * Human-readable display name (e.g. "Video Generation", "Flux").
+   */
+  display_name: string
+}
+
+export type HubWorkflowSummary = {
+  share_id: string
+  name: string
+  description?: string
+  tags?: Array<LabelRef>
+  models?: Array<LabelRef>
+  custom_nodes?: Array<LabelRef>
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  thumbnail_url?: string
+  thumbnail_comparison_url?: string
+  publish_time?: string | null
+  profile: HubProfileSummary
+  metadata?: {
+    [key: string]: unknown
+  }
+  tutorial_url?: string
+  sample_image_urls?: Array<string>
+}
+
+export type HubLabelInfo = {
+  /**
+   * Slug identifier.
+   */
+  name: string
+  /**
+   * Human-readable display name.
+   */
+  display_name: string
+  /**
+   * Optional description of the label.
+   */
+  description?: string
+  /**
+   * Label category.
+   */
+  type: 'tag' | 'model' | 'custom_node'
+}
+
+export type HubLabelListResponse = {
+  /**
+   * Available labels filtered by type (or all if no type specified).
+   */
+  labels: Array<HubLabelInfo>
+}
+
+export type HubWorkflowTemplateEntry = {
+  /**
+   * Slug identifier for the template
+   */
+  name: string
+  title: string
+  description?: string
+  tags?: Array<string>
+  models?: Array<string>
+  requiresCustomNodes?: Array<string>
+  thumbnailVariant?: string
+  mediaType?: string
+  mediaSubtype?: string
+  size?: number
+  vram?: number
+  openSource?: boolean
+  profile?: HubProfileSummary
+  tutorialUrl?: string
+  logos?: Array<{
+    [key: string]: unknown
+  }>
+  /**
+   * Publication date in YYYY-MM-DD format
+   */
+  date?: string
+  io?: {
+    inputs?: Array<{
+      [key: string]: unknown
+    }>
+    outputs?: Array<{
+      [key: string]: unknown
+    }>
+  }
+  includeOnDistributions?: Array<string>
+  /**
+   * Public URL of the primary thumbnail
+   */
+  thumbnailUrl?: string
+  /**
+   * Public URL of the comparison thumbnail
+   */
+  thumbnailComparisonUrl?: string
+  /**
+   * Share ID for linking to the hub workflow detail
+   */
+  shareId?: string
+  /**
+   * AI-generated extended description of the workflow
+   */
+  extendedDescription?: string
+  /**
+   * AI-generated SEO meta description (under 160 chars)
+   */
+  metaDescription?: string
+  /**
+   * AI-generated step-by-step usage instructions
+   */
+  howToUse?: Array<string>
+  /**
+   * AI-generated suggested use cases
+   */
+  suggestedUseCases?: Array<string>
+  /**
+   * AI-generated FAQ items
+   */
+  faqItems?: Array<{
+    question: string
+    answer: string
+  }>
+  /**
+   * Content template used for generation (tutorial, showcase, comparison, breakthrough)
+   */
+  contentTemplate?: string
+}
+
+export type UpdateHubProfileRequest = {
+  display_name?: string
+  description?: string
+  /**
+   * Token (from /api/hub/assets/upload-url) for a new avatar image. Omit or send null to leave unchanged; send empty string "" to remove.
+   *
+   */
+  avatar_token?: string | null
+  /**
+   * List of website URLs.
+   */
+  website_urls?: Array<string>
+}
+
+export type CreateHubProfileRequest = {
+  /**
+   * ID of the workspace to create the hub profile for. The authenticated user must belong to this workspace.
+   */
+  workspace_id: string
+  /**
+   * Unique URL-safe slug for the hub profile. Immutable after creation.
+   */
+  username: string
+  display_name?: string
+  description?: string
+  /**
+   * Token (from /api/hub/assets/upload-url) for an avatar image. Omit to have no avatar.
+   *
+   */
+  avatar_token?: string
+  /**
+   * List of website URLs.
+   */
+  website_urls?: Array<string>
+}
+
+export type HubProfile = {
+  username: string
+  display_name?: string
+  description?: string
+  /**
+   * Public URL of the profile avatar image.
+   */
+  avatar_url?: string
+  /**
+   * List of website URLs.
+   */
+  website_urls?: Array<string>
+}
+
+export type ImportPublishedAssetsResponse = {
+  assets: Array<AssetInfo>
+}
+
+export type ImportPublishedAssetsRequest = {
+  /**
+   * IDs of published assets (inputs and models) to import.
+   */
+  published_asset_ids: Array<string>
+}
+
+export type PublishedWorkflowDetail = {
+  share_id: string
+  workflow_id: string
+  /**
+   * Human-readable workflow name.
+   */
+  name: string
+  listed: boolean
+  publish_time?: string | null
+  /**
+   * The workflow JSON content at publish time.
+   */
+  workflow_json: {
+    [key: string]: unknown
+  }
+  /**
+   * Published assets with their library status for the caller.
+   */
+  assets: Array<AssetInfo>
+}
+
+export type WorkflowApiAssetsResponse = {
+  assets: Array<AssetInfo>
+}
+
+export type WorkflowApiAssetsRequest = {
+  workflow_api_json: {
+    [key: string]: unknown
+  }
+}
+
 export type ForkWorkflowRequest = {
   /**
    * Version number to fork from
@@ -1911,9 +2313,17 @@ export type ListAssetsData = {
      */
     order?: 'asc' | 'desc'
     /**
+     * Filter assets by job IDs (prompt IDs)
+     */
+    job_ids?: Array<string>
+    /**
      * Whether to include public/shared assets in results
      */
     include_public?: boolean
+    /**
+     * Filter assets by exact content hash
+     */
+    asset_hash?: string
   }
   url: '/api/assets'
 }
@@ -2770,6 +3180,84 @@ export type CheckAssetByHashResponses = {
    */
   200: unknown
 }
+
+export type PostAssetsFromWorkflowData = {
+  body: WorkflowApiAssetsRequest
+  path?: never
+  query?: never
+  url: '/api/assets/from-workflow'
+}
+
+export type PostAssetsFromWorkflowErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type PostAssetsFromWorkflowError =
+  PostAssetsFromWorkflowErrors[keyof PostAssetsFromWorkflowErrors]
+
+export type PostAssetsFromWorkflowResponses = {
+  /**
+   * Success
+   */
+  200: WorkflowApiAssetsResponse
+}
+
+export type PostAssetsFromWorkflowResponse =
+  PostAssetsFromWorkflowResponses[keyof PostAssetsFromWorkflowResponses]
+
+export type ImportPublishedAssetsData = {
+  body: ImportPublishedAssetsRequest
+  path?: never
+  query?: never
+  url: '/api/assets/import'
+}
+
+export type ImportPublishedAssetsErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ImportPublishedAssetsError =
+  ImportPublishedAssetsErrors[keyof ImportPublishedAssetsErrors]
+
+export type ImportPublishedAssetsResponses = {
+  /**
+   * Successfully imported assets
+   */
+  200: ImportPublishedAssetsResponse
+}
+
+export type ImportPublishedAssetsResponse2 =
+  ImportPublishedAssetsResponses[keyof ImportPublishedAssetsResponses]
 
 export type ListSecretsData = {
   body?: never
@@ -4043,10 +4531,6 @@ export type CreateDeletionRequestErrors = {
    */
   403: ErrorResponse
   /**
-   * User not found
-   */
-  404: ErrorResponse
-  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -4059,8 +4543,16 @@ export type CreateDeletionRequestResponses = {
   /**
    * Created - deletion request created or already exists
    */
-  201: unknown
+  201: {
+    /**
+     * Whether the user had a record in the cloud database
+     */
+    user_found_in_cloud: boolean
+  }
 }
+
+export type CreateDeletionRequestResponse =
+  CreateDeletionRequestResponses[keyof CreateDeletionRequestResponses]
 
 export type ReportPartnerUsageData = {
   body: PartnerUsageRequest
@@ -4962,3 +5454,501 @@ export type ForkWorkflowResponses = {
 
 export type ForkWorkflowResponse =
   ForkWorkflowResponses[keyof ForkWorkflowResponses]
+
+export type CreateHubProfileData = {
+  body: CreateHubProfileRequest
+  path?: never
+  query?: never
+  url: '/api/hub/profiles'
+}
+
+export type CreateHubProfileErrors = {
+  /**
+   * Bad request (e.g. invalid username)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+  /**
+   * Username already taken or profile already exists
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateHubProfileError =
+  CreateHubProfileErrors[keyof CreateHubProfileErrors]
+
+export type CreateHubProfileResponses = {
+  /**
+   * Hub profile created
+   */
+  201: HubProfile
+}
+
+export type CreateHubProfileResponse =
+  CreateHubProfileResponses[keyof CreateHubProfileResponses]
+
+export type GetMyHubProfileData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/hub/profiles/me'
+}
+
+export type GetMyHubProfileErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * No hub profile exists
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetMyHubProfileError =
+  GetMyHubProfileErrors[keyof GetMyHubProfileErrors]
+
+export type GetMyHubProfileResponses = {
+  /**
+   * Hub profile
+   */
+  200: HubProfile
+}
+
+export type GetMyHubProfileResponse =
+  GetMyHubProfileResponses[keyof GetMyHubProfileResponses]
+
+export type CheckHubUsernameData = {
+  body?: never
+  path?: never
+  query: {
+    username: string
+  }
+  url: '/api/hub/profiles/check'
+}
+
+export type CheckHubUsernameErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CheckHubUsernameError =
+  CheckHubUsernameErrors[keyof CheckHubUsernameErrors]
+
+export type CheckHubUsernameResponses = {
+  /**
+   * Username availability result
+   */
+  200: HubUsernameCheckResponse
+}
+
+export type CheckHubUsernameResponse =
+  CheckHubUsernameResponses[keyof CheckHubUsernameResponses]
+
+export type GetHubProfileByUsernameData = {
+  body?: never
+  path: {
+    username: string
+  }
+  query?: never
+  url: '/api/hub/profiles/{username}'
+}
+
+export type GetHubProfileByUsernameErrors = {
+  /**
+   * Profile not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetHubProfileByUsernameError =
+  GetHubProfileByUsernameErrors[keyof GetHubProfileByUsernameErrors]
+
+export type GetHubProfileByUsernameResponses = {
+  /**
+   * Hub profile
+   */
+  200: HubProfile
+}
+
+export type GetHubProfileByUsernameResponse =
+  GetHubProfileByUsernameResponses[keyof GetHubProfileByUsernameResponses]
+
+export type UpdateHubProfileData = {
+  body: UpdateHubProfileRequest
+  path: {
+    username: string
+  }
+  query?: never
+  url: '/api/hub/profiles/{username}'
+}
+
+export type UpdateHubProfileErrors = {
+  /**
+   * Bad request (e.g. missing body, invalid avatar token)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * No hub profile exists with this username
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateHubProfileError =
+  UpdateHubProfileErrors[keyof UpdateHubProfileErrors]
+
+export type UpdateHubProfileResponses = {
+  /**
+   * Hub profile updated
+   */
+  200: HubProfile
+}
+
+export type UpdateHubProfileResponse =
+  UpdateHubProfileResponses[keyof UpdateHubProfileResponses]
+
+export type CreateHubAssetUploadUrlData = {
+  body: HubAssetUploadUrlRequest
+  path?: never
+  query?: never
+  url: '/api/hub/assets/upload-url'
+}
+
+export type CreateHubAssetUploadUrlErrors = {
+  /**
+   * Bad request (e.g. unsupported content type)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateHubAssetUploadUrlError =
+  CreateHubAssetUploadUrlErrors[keyof CreateHubAssetUploadUrlErrors]
+
+export type CreateHubAssetUploadUrlResponses = {
+  /**
+   * Presigned upload URL and token
+   */
+  200: HubAssetUploadUrlResponse
+}
+
+export type CreateHubAssetUploadUrlResponse =
+  CreateHubAssetUploadUrlResponses[keyof CreateHubAssetUploadUrlResponses]
+
+export type ListHubLabelsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Filter by label type. Omit to return all labels.
+     */
+    type?: 'tag' | 'model' | 'custom_node'
+  }
+  url: '/api/hub/labels'
+}
+
+export type ListHubLabelsErrors = {
+  /**
+   * Bad request (e.g. invalid type parameter)
+   */
+  400: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListHubLabelsError = ListHubLabelsErrors[keyof ListHubLabelsErrors]
+
+export type ListHubLabelsResponses = {
+  /**
+   * List of labels
+   */
+  200: HubLabelListResponse
+}
+
+export type ListHubLabelsResponse =
+  ListHubLabelsResponses[keyof ListHubLabelsResponses]
+
+export type ListHubWorkflowsData = {
+  body?: never
+  path?: never
+  query?: {
+    cursor?: string
+    limit?: number
+    /**
+     * Search by workflow name
+     */
+    search?: string
+    /**
+     * Filter by tag
+     */
+    tag?: string
+    /**
+     * Filter by profile username
+     */
+    username?: string
+    /**
+     * When true, returns full HubWorkflowDetail objects in the workflows array instead of summaries. Requires limit <= 20.
+     */
+    detail?: boolean
+  }
+  url: '/api/hub/workflows'
+}
+
+export type ListHubWorkflowsErrors = {
+  /**
+   * Bad request (e.g. malformed pagination cursor)
+   */
+  400: ErrorResponse
+  /**
+   * Profile not found (when filtering by username)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListHubWorkflowsError =
+  ListHubWorkflowsErrors[keyof ListHubWorkflowsErrors]
+
+export type ListHubWorkflowsResponses = {
+  /**
+   * Paginated list of hub workflows
+   */
+  200: HubWorkflowListResponse
+}
+
+export type ListHubWorkflowsResponse =
+  ListHubWorkflowsResponses[keyof ListHubWorkflowsResponses]
+
+export type PublishHubWorkflowData = {
+  body: PublishHubWorkflowRequest
+  path?: never
+  query?: never
+  url: '/api/hub/workflows'
+}
+
+export type PublishHubWorkflowErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow or profile not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type PublishHubWorkflowError =
+  PublishHubWorkflowErrors[keyof PublishHubWorkflowErrors]
+
+export type PublishHubWorkflowResponses = {
+  /**
+   * Workflow published to hub
+   */
+  200: HubWorkflowDetail
+}
+
+export type PublishHubWorkflowResponse =
+  PublishHubWorkflowResponses[keyof PublishHubWorkflowResponses]
+
+export type ListHubWorkflowIndexData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/hub/workflows/index'
+}
+
+export type ListHubWorkflowIndexErrors = {
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListHubWorkflowIndexError =
+  ListHubWorkflowIndexErrors[keyof ListHubWorkflowIndexErrors]
+
+export type ListHubWorkflowIndexResponses = {
+  /**
+   * List of hub workflow template entries
+   */
+  200: Array<HubWorkflowTemplateEntry>
+}
+
+export type ListHubWorkflowIndexResponse =
+  ListHubWorkflowIndexResponses[keyof ListHubWorkflowIndexResponses]
+
+export type DeleteHubWorkflowData = {
+  body?: never
+  path: {
+    share_id: string
+  }
+  query?: never
+  url: '/api/hub/workflows/{share_id}'
+}
+
+export type DeleteHubWorkflowErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type DeleteHubWorkflowError =
+  DeleteHubWorkflowErrors[keyof DeleteHubWorkflowErrors]
+
+export type DeleteHubWorkflowResponses = {
+  /**
+   * Successfully unpublished
+   */
+  204: void
+}
+
+export type DeleteHubWorkflowResponse =
+  DeleteHubWorkflowResponses[keyof DeleteHubWorkflowResponses]
+
+export type GetHubWorkflowData = {
+  body?: never
+  path: {
+    share_id: string
+  }
+  query?: never
+  url: '/api/hub/workflows/{share_id}'
+}
+
+export type GetHubWorkflowErrors = {
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Workflow JSON too large
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetHubWorkflowError =
+  GetHubWorkflowErrors[keyof GetHubWorkflowErrors]
+
+export type GetHubWorkflowResponses = {
+  /**
+   * Hub workflow detail
+   */
+  200: HubWorkflowDetail
+}
+
+export type GetHubWorkflowResponse =
+  GetHubWorkflowResponses[keyof GetHubWorkflowResponses]
+
+export type GetPublishedWorkflowData = {
+  body?: never
+  path: {
+    share_id: string
+  }
+  query?: never
+  url: '/api/workflows/published/{share_id}'
+}
+
+export type GetPublishedWorkflowErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Share not found
+   */
+  404: ErrorResponse
+  /**
+   * Workflow JSON too large
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetPublishedWorkflowError =
+  GetPublishedWorkflowErrors[keyof GetPublishedWorkflowErrors]
+
+export type GetPublishedWorkflowResponses = {
+  /**
+   * Published workflow details with asset statuses
+   */
+  200: PublishedWorkflowDetail
+}
+
+export type GetPublishedWorkflowResponse =
+  GetPublishedWorkflowResponses[keyof GetPublishedWorkflowResponses]

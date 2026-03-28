@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 
 /**
@@ -262,6 +263,18 @@ export function createMockChangeTracker(
     ...overrides
   }
   return partial as Partial<ChangeTracker> as ChangeTracker
+}
+
+/**
+ * Creates a mock LoadedComfyWorkflow with sensible defaults
+ */
+export function createMockLoadedWorkflow(
+  overrides: Partial<LoadedComfyWorkflow> | Record<string, unknown> = {}
+): LoadedComfyWorkflow {
+  return {
+    changeTracker: createMockChangeTracker(),
+    ...overrides
+  } as unknown as LoadedComfyWorkflow
 }
 
 /**

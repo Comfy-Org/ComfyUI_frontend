@@ -20,7 +20,12 @@ export const TestIds = {
     main: 'graph-canvas',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
-    toggleLinkVisibilityButton: 'toggle-link-visibility-button'
+    toggleLinkVisibilityButton: 'toggle-link-visibility-button',
+    zoomControlsButton: 'zoom-controls-button',
+    zoomInAction: 'zoom-in-action',
+    zoomOutAction: 'zoom-out-action',
+    zoomToFitAction: 'zoom-to-fit-action',
+    zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
     settings: 'settings-dialog',
@@ -29,6 +34,8 @@ export const TestIds = {
     confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
+    errorOverlayDismiss: 'error-overlay-dismiss',
+    errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     errorCardFindOnGithub: 'error-card-find-on-github',
@@ -72,7 +79,8 @@ export const TestIds = {
   builder: {
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
-    widgetActionsMenu: 'widget-actions-menu'
+    widgetActionsMenu: 'widget-actions-menu',
+    opensAs: 'builder-opens-as'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'

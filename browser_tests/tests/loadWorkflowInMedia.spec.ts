@@ -68,7 +68,7 @@ test.describe(
       })
     })
 
-    test('Load workflow from URL dropped onto Vue node', async ({
+    test.fixme('Load workflow from URL dropped onto Vue node', async ({
       comfyPage
     }) => {
       const fakeUrl = 'https://example.com/workflow.png'

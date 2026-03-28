@@ -34,6 +34,7 @@ import {
   createPromotedWidgetView,
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
+import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -1078,20 +1079,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           return null
         }
         if (!this.subgraph.getNodeById(nodeId)) return null
-        const entry: PromotedWidgetSource = {
-          sourceNodeId: nodeId,
-          sourceWidgetName: widgetName,
-          ...(sourceNodeId && { disambiguatingSourceNodeId: sourceNodeId })
-        }
-        return entry
+
+        return normalizeLegacyProxyWidgetEntry(
+          this,
+          nodeId,
+          widgetName,
+          sourceNodeId
+        )
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
 
     store.setPromotions(this.rootGraph.id, this.id, entries)
 
     // Write back resolved entries so legacy or stale entries don't persist
-    if (entries.length !== raw.length) {
-      this.properties.proxyWidgets = this._serializeEntries(entries)
+    const serialized = this._serializeEntries(entries)
+    if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
+      this.properties.proxyWidgets = serialized
     }
 
     // Check all inputs for connected widgets
