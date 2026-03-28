@@ -4,13 +4,19 @@
       {{ getDownloadLabel(download.savePath ?? '') }}
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
-      <Chip
-        class="mt-2 h-6 bg-red-700 text-sm font-light"
-        removable
-        @remove="handleRemoveDownload"
+      <span
+        class="mt-2 inline-flex h-6 items-center gap-1 rounded-2xl bg-red-700 py-0.5 pr-1 pl-2 text-sm font-light"
       >
         {{ t('electronFileDownload.cancelled') }}
-      </Chip>
+        <button
+          type="button"
+          :aria-label="$t('g.remove')"
+          class="inline-flex cursor-pointer items-center justify-center rounded-full p-0.5 hover:bg-red-600"
+          @click="handleRemoveDownload"
+        >
+          <i class="icon-[lucide--x] size-3 text-white/70" aria-hidden="true" />
+        </button>
+      </span>
     </div>
     <div
       v-if="
@@ -67,7 +73,6 @@
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
 import ProgressBar from 'primevue/progressbar'
 import { useI18n } from 'vue-i18n'
 
