@@ -332,6 +332,16 @@ export class NodeReference {
   async isCollapsed() {
     return !!(await this.getFlags()).collapsed
   }
+  async setCollapsed(collapsed: boolean) {
+    await this.comfyPage.page.evaluate(
+      ([id, collapsed]) => {
+        const node = window.app!.canvas.graph!.getNodeById(id)
+        if (!node) throw new Error('Node not found')
+        if (node.collapsed !== collapsed) node.collapse(true)
+      },
+      [this.id, collapsed] as const
+    )
+  }
   async isBypassed() {
     return (await this.getProperty<number | null | undefined>('mode')) === 4
   }

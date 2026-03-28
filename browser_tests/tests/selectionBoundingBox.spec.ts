@@ -1,10 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
 
 interface CanvasRect {
   x: number
@@ -85,49 +82,6 @@ async function measureBounds(
   ) as Promise<MeasureResult>
 }
 
-async function loadWithPositions(
-  page: Page,
-  positions: Record<string, [number, number]>
-) {
-  await page.evaluate(
-    async ({ positions }) => {
-      const data = window.app!.graph.serialize()
-      for (const node of data.nodes) {
-        const pos = positions[String(node.id)]
-        if (pos) node.pos = pos
-      }
-      await window.app!.loadGraphData(
-        data as ComfyWorkflowJSON,
-        true,
-        true,
-        null
-      )
-    },
-    { positions }
-  )
-}
-
-async function setNodeCollapsed(
-  comfyPage: ComfyPage,
-  nodeId: string,
-  collapsed: boolean
-) {
-  await comfyPage.page.evaluate(
-    ({ id, collapsed }) => {
-      const node = window.app!.graph._nodes.find(
-        (n: { id: number | string }) => String(n.id) === id
-      )
-      if (node) {
-        node.flags = node.flags || {}
-        node.flags.collapsed = collapsed
-        window.app!.canvas.setDirty(true, true)
-      }
-    },
-    { id: nodeId, collapsed }
-  )
-  await comfyPage.vueNodes.getNodeLocator(nodeId).waitFor()
-}
-
 const SUBGRAPH_ID = '2'
 const REGULAR_ID = '3'
 const WORKFLOW = 'selection/subgraph-with-regular-node'
@@ -175,7 +129,7 @@ test.describe('Selection bounding box', { tag: ['@canvas', '@node'] }, () => {
           const targetId = getTargetId(type)
           const refId = getRefId(type)
 
-          await loadWithPositions(page, {
+          await comfyPage.nodeOps.loadWithPositions({
             [refId]: REF_POS,
             [targetId]: TARGET_POSITIONS[pos]
           })
@@ -184,7 +138,8 @@ test.describe('Selection bounding box', { tag: ['@canvas', '@node'] }, () => {
           await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
 
           if (state === 'collapsed') {
-            await setNodeCollapsed(comfyPage, targetId, true)
+            const nodeRef = await comfyPage.nodeOps.getNodeRefById(targetId)
+            await nodeRef.setCollapsed(true)
           }
 
           await comfyPage.canvas.press('Control+a')
