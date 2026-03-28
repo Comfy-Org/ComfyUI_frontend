@@ -344,5 +344,25 @@ export default defineConfig([
         }
       ]
     }
+  },
+
+  // Ban useVirtualList — use TanStack Virtual instead
+  {
+    files: ['**/*.{ts,vue}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vueuse/core',
+              importNames: ['useVirtualList'],
+              message:
+                'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
+            }
+          ]
+        }
+      ]
+    }
   }
 ])
