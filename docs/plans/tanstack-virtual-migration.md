@@ -30,16 +30,16 @@
 
 Files importing `VirtualGrid`:
 
-| File | Usage |
-|------|-------|
-| `src/components/sidebar/tabs/AssetsSidebarGridView.vue` | Grid display for sidebar assets |
-| `src/components/sidebar/tabs/AssetsSidebarListView.vue` | List display for sidebar assets |
-| `src/components/sidebar/tabs/AssetsSidebarListView.test.ts` | Tests for list view |
-| `src/platform/assets/components/AssetGrid.vue` | Asset grid on platform layer |
-| `src/workbench/extensions/manager/components/manager/ManagerDialog.vue` | Manager dialog grid |
-| `src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue` | Dropdown menu virtualisation |
-| `src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.test.ts` | Tests for dropdown |
-| `src/components/common/VirtualGrid.test.ts` | Unit tests for VirtualGrid itself |
+| File                                                                                         | Usage                             |
+| -------------------------------------------------------------------------------------------- | --------------------------------- |
+| `src/components/sidebar/tabs/AssetsSidebarGridView.vue`                                      | Grid display for sidebar assets   |
+| `src/components/sidebar/tabs/AssetsSidebarListView.vue`                                      | List display for sidebar assets   |
+| `src/components/sidebar/tabs/AssetsSidebarListView.test.ts`                                  | Tests for list view               |
+| `src/platform/assets/components/AssetGrid.vue`                                               | Asset grid on platform layer      |
+| `src/workbench/extensions/manager/components/manager/ManagerDialog.vue`                      | Manager dialog grid               |
+| `src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue`     | Dropdown menu virtualisation      |
+| `src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.test.ts` | Tests for dropdown                |
+| `src/components/common/VirtualGrid.test.ts`                                                  | Unit tests for VirtualGrid itself |
 
 **6 consuming components** + **2 test files**.
 
@@ -60,24 +60,24 @@ Replace the custom `VirtualGrid.vue` implementation with a thin composable or co
 
 ### Effort Estimate
 
-| Task | Estimate |
-|------|----------|
-| Add direct dep, create `useVirtualGrid` composable | 2–3 hours |
-| Rewrite `VirtualGrid.vue` internals | 2–3 hours |
-| Update 6 consumers (mostly slot adjustments) | 3–4 hours |
-| Update/add tests | 2–3 hours |
-| Manual QA across all affected views | 1–2 hours |
-| **Total** | **~10–15 hours (2–3 days)** |
+| Task                                               | Estimate                    |
+| -------------------------------------------------- | --------------------------- |
+| Add direct dep, create `useVirtualGrid` composable | 2–3 hours                   |
+| Rewrite `VirtualGrid.vue` internals                | 2–3 hours                   |
+| Update 6 consumers (mostly slot adjustments)       | 3–4 hours                   |
+| Update/add tests                                   | 2–3 hours                   |
+| Manual QA across all affected views                | 1–2 hours                   |
+| **Total**                                          | **~10–15 hours (2–3 days)** |
 
 ### Risks
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| Breaking the slot API forces changes in all 6 consumers | Medium | Design the new VirtualGrid to preserve the existing `#item="{ item, index }"` slot signature |
-| Dynamic row height measurement differs from current DOM-query approach | Low | TanStack Virtual has built-in `measureElement` support for dynamic sizing |
-| `approach-end` infinite-scroll behavior may need reimplementation | Low | Use `useVirtualizer`'s `onChange` callback to detect when the last virtual item is near the viewport |
-| Transitive dep version may drift if reka-ui upgrades | Low | Adding as direct dep pins the version; use `pnpm` catalog for alignment |
-| Performance regression for very large grids | Low | TanStack Virtual is battle-tested; benchmark before/after with ≥10k items |
+| Risk                                                                   | Severity | Mitigation                                                                                           |
+| ---------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| Breaking the slot API forces changes in all 6 consumers                | Medium   | Design the new VirtualGrid to preserve the existing `#item="{ item, index }"` slot signature         |
+| Dynamic row height measurement differs from current DOM-query approach | Low      | TanStack Virtual has built-in `measureElement` support for dynamic sizing                            |
+| `approach-end` infinite-scroll behavior may need reimplementation      | Low      | Use `useVirtualizer`'s `onChange` callback to detect when the last virtual item is near the viewport |
+| Transitive dep version may drift if reka-ui upgrades                   | Low      | Adding as direct dep pins the version; use `pnpm` catalog for alignment                              |
+| Performance regression for very large grids                            | Low      | TanStack Virtual is battle-tested; benchmark before/after with ≥10k items                            |
 
 ### Recommendation
 
