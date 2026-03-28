@@ -1,20 +1,25 @@
 #!/usr/bin/env tsx
 /**
- * QA Research Phase — Claude Sonnet 4.6 investigates via a11y API
+ * QA Research Phase — Claude writes & debugs E2E tests to reproduce bugs
  *
- * Claude explores the UI using accessibility tree assertions as ground truth.
- * NO video, NO Gemini vision — only DOM state via locator.ariaSnapshot().
+ * Instead of driving a browser interactively, Claude:
+ * 1. Reads the issue + a11y snapshot of the UI
+ * 2. Writes a Playwright E2E test (.spec.ts) that reproduces the bug
+ * 3. Runs the test → reads errors → rewrites → repeats until it works
+ * 4. Outputs the passing test + verdict
  *
  * Tools:
- *   - inspect(selector) — search a11y tree for element state (source of truth)
- *   - perform(action, params) — execute Playwright action + auto-log a11y before/after
- *   - done(verdict, summary, reproductionPlan) — finish with evidence-backed conclusion
+ *   - inspect(selector) — read a11y tree to understand UI state
+ *   - writeTest(code) — write a Playwright test file
+ *   - runTest() — execute the test and get results
+ *   - done(verdict, summary, testCode) — finish with the working test
  */
 
 import type { Page } from '@playwright/test'
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import { mkdirSync, writeFileSync } from 'fs'
+import { execSync } from 'child_process'
 
 // ── Types ──
 
@@ -23,81 +28,24 @@ interface ResearchOptions {
   issueContext: string
   qaGuide: string
   outputDir: string
+  serverUrl: string
   anthropicApiKey?: string
   maxTurns?: number
   timeBudgetMs?: number
-}
-
-export interface ResearchTurn {
-  turn: number
-  timestampMs: number
-  toolName: string
-  toolInput: unknown
-  toolResult: string
-  a11yBefore?: unknown
-  a11yAfter?: unknown
-}
-
-export interface ReproductionStep {
-  action: Record<string, unknown> & { action: string }
-  expectedAssertion: string
 }
 
 export interface ResearchResult {
   verdict: 'REPRODUCED' | 'NOT_REPRODUCIBLE' | 'INCONCLUSIVE'
   summary: string
   evidence: string
-  reproductionPlan: ReproductionStep[]
-  log: ResearchTurn[]
-}
-
-// ── A11y helpers ──
-
-interface A11yNode {
-  role: string
-  name: string
-  value?: string
-  checked?: boolean
-  disabled?: boolean
-  children?: A11yNode[]
-}
-
-function searchA11y(node: A11yNode | null, selector: string): A11yNode | null {
-  if (!node) return null
-  const sel = selector.toLowerCase()
-  if (
-    node.name?.toLowerCase().includes(sel) ||
-    node.role?.toLowerCase().includes(sel)
-  ) {
-    return node
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      const found = searchA11y(child, selector)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-function flattenA11y(node: A11yNode | null, depth = 0): string {
-  if (!node || depth > 3) return ''
-  const parts: string[] = []
-  const indent = '  '.repeat(depth)
-  const attrs: string[] = []
-  if (node.value !== undefined) attrs.push(`value="${node.value}"`)
-  if (node.checked !== undefined) attrs.push(`checked=${node.checked}`)
-  if (node.disabled) attrs.push('disabled')
-  const attrStr = attrs.length ? ` [${attrs.join(', ')}]` : ''
-  if (node.name || attrs.length) {
-    parts.push(`${indent}${node.role}: ${node.name || '(unnamed)'}${attrStr}`)
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      parts.push(flattenA11y(child, depth + 1))
-    }
-  }
-  return parts.filter(Boolean).join('\n')
+  testCode: string
+  log: Array<{
+    turn: number
+    timestampMs: number
+    toolName: string
+    toolInput: unknown
+    toolResult: string
+  }>
 }
 
 // ── Main research function ──
@@ -105,48 +53,63 @@ function flattenA11y(node: A11yNode | null, depth = 0): string {
 export async function runResearchPhase(
   opts: ResearchOptions
 ): Promise<ResearchResult> {
-  const { page, issueContext, qaGuide, outputDir, anthropicApiKey } = opts
+  const { page, issueContext, qaGuide, outputDir, serverUrl, anthropicApiKey } =
+    opts
   const maxTurns = opts.maxTurns ?? 40
-  const timeBudgetMs = opts.timeBudgetMs ?? 180_000
+  const timeBudgetMs = opts.timeBudgetMs ?? 300_000
 
   let agentDone = false
   let finalVerdict: ResearchResult['verdict'] = 'INCONCLUSIVE'
   let finalSummary = 'Agent did not complete'
   let finalEvidence = ''
-  let finalPlan: ReproductionStep[] = []
+  let finalTestCode = ''
   let turnCount = 0
   const startTime = Date.now()
-  const researchLog: ResearchTurn[] = []
+  const researchLog: ResearchResult['log'] = []
 
-  const { executeAction } = await import('./qa-record.js')
+  const testDir = `${outputDir}/research`
+  mkdirSync(testDir, { recursive: true })
+  const testPath = `${testDir}/reproduce.spec.ts`
+
+  // Get initial a11y snapshot for context
+  let initialA11y = ''
+  try {
+    initialA11y = await page.locator('body').ariaSnapshot({ timeout: 5000 })
+    initialA11y = initialA11y.slice(0, 3000)
+  } catch {
+    initialA11y = '(could not capture initial a11y snapshot)'
+  }
 
   // ── Tool: inspect ──
   const inspectTool = tool(
     'inspect',
-    'Search the accessibility tree for a UI element. Returns role, name, value, checked state. This is your SOURCE OF TRUTH — use it after every action to verify state.',
+    'Read the current accessibility tree to understand UI state. Use this to discover element names, roles, and selectors for your test.',
     {
       selector: z
         .string()
+        .optional()
         .describe(
-          'Element name or role to search for, e.g. "Settings", "Language", "KSampler seed", "tab"'
+          'Optional filter — only show elements matching this name/role. Omit for full tree.'
         )
     },
     async (args) => {
-      // Use ariaSnapshot (Playwright 1.49+) — page.accessibility was removed
       let resultText: string
       try {
         const ariaText = await page
           .locator('body')
           .ariaSnapshot({ timeout: 5000 })
-        const selectorLower = args.selector.toLowerCase()
-        const lines = ariaText.split('\n')
-        const matches = lines.filter((l: string) =>
-          l.toLowerCase().includes(selectorLower)
-        )
-        resultText =
-          matches.length > 0
-            ? `Found "${args.selector}":\n${matches.slice(0, 10).join('\n')}`
-            : `Element "${args.selector}" not found. Available:\n${ariaText.slice(0, 2000)}`
+        if (args.selector) {
+          const lines = ariaText.split('\n')
+          const matches = lines.filter((l: string) =>
+            l.toLowerCase().includes(args.selector!.toLowerCase())
+          )
+          resultText =
+            matches.length > 0
+              ? `Found "${args.selector}":\n${matches.slice(0, 15).join('\n')}`
+              : `"${args.selector}" not found. Full tree:\n${ariaText.slice(0, 2000)}`
+        } else {
+          resultText = ariaText.slice(0, 3000)
+        }
       } catch (e) {
         resultText = `inspect failed: ${e instanceof Error ? e.message : e}`
       }
@@ -163,114 +126,88 @@ export async function runResearchPhase(
     }
   )
 
-  // ── Tool: perform ──
-  const performTool = tool(
-    'perform',
-    `Execute a Playwright action. Auto-captures a11y state before and after.
-Available: click(text), clickCanvas(x,y), rightClickCanvas(x,y), doubleClick(x,y),
-dragCanvas(fromX,fromY,toX,toY), scrollCanvas(x,y,deltaY), pressKey(key),
-fillDialog(text), openMenu(), hoverMenuItem(label), clickMenuItem(label),
-setSetting(id,value), loadDefaultWorkflow(), openSettings(), reload(),
-addNode(nodeName,x,y), copyPaste(x,y), holdKeyAndDrag(key,fromX,fromY,toX,toY),
-screenshot(name)`,
+  // ── Tool: writeTest ──
+  const writeTestTool = tool(
+    'writeTest',
+    'Write a Playwright E2E test file that reproduces the bug. The test should assert the broken behavior exists.',
     {
-      action: z.string().describe('Action name'),
-      params: z.record(z.unknown()).optional().describe('Action parameters')
+      code: z
+        .string()
+        .describe('Complete Playwright test file content (.spec.ts)')
     },
     async (args) => {
-      turnCount++
-      if (turnCount > maxTurns || Date.now() - startTime > timeBudgetMs) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Budget exceeded (${turnCount}/${maxTurns} turns, ${Math.round((Date.now() - startTime) / 1000)}s). Call done() NOW with your current findings.`
-            }
-          ]
-        }
-      }
-
-      // Capture a11y BEFORE
-      const a11yBefore = await page
-        .locator('body')
-        .ariaSnapshot({ timeout: 3000 })
-        .catch(() => null)
-
-      const actionObj = {
-        action: args.action,
-        ...args.params
-      } as Parameters<typeof executeAction>[1]
-
-      let resultText: string
-      try {
-        const result = await executeAction(page, actionObj, outputDir)
-        resultText = result.success
-          ? `Action "${args.action}" succeeded.`
-          : `Action "${args.action}" FAILED: ${result.error}`
-      } catch (e) {
-        resultText = `Action "${args.action}" threw: ${e instanceof Error ? e.message : e}`
-      }
-
-      // Capture a11y AFTER
-      const a11yAfter = await page
-        .locator('body')
-        .ariaSnapshot({ timeout: 3000 })
-        .catch(() => null)
+      writeFileSync(testPath, args.code)
 
       researchLog.push({
         turn: turnCount,
         timestampMs: Date.now() - startTime,
-        toolName: 'perform',
-        toolInput: args,
-        toolResult: resultText,
-        a11yBefore,
-        a11yAfter
+        toolName: 'writeTest',
+        toolInput: { path: testPath, codeLength: args.code.length },
+        toolResult: `Test written to ${testPath} (${args.code.length} chars)`
       })
 
       return {
         content: [
           {
             type: 'text' as const,
-            text: `${resultText}\n\n(a11y state captured before/after — use inspect() to verify specific elements)`
+            text: `Test written to ${testPath}. Use runTest() to execute it.`
           }
         ]
       }
     }
   )
 
+  // ── Tool: runTest ──
+  const runTestTool = tool(
+    'runTest',
+    'Run the Playwright test and get results. Returns stdout/stderr including assertion errors.',
+    {},
+    async () => {
+      turnCount++
+      let resultText: string
+      try {
+        const output = execSync(
+          `cd "${process.cwd()}" && npx playwright test "${testPath}" --reporter=list --timeout=30000 2>&1`,
+          {
+            timeout: 60000,
+            encoding: 'utf-8',
+            env: {
+              ...process.env,
+              COMFYUI_BASE_URL: serverUrl
+            }
+          }
+        )
+        resultText = `TEST PASSED:\n${output.slice(-1500)}`
+      } catch (e) {
+        const err = e as { stdout?: string; stderr?: string; message?: string }
+        const output = (err.stdout || '') + '\n' + (err.stderr || '')
+        resultText = `TEST FAILED:\n${output.slice(-2000)}`
+      }
+
+      researchLog.push({
+        turn: turnCount,
+        timestampMs: Date.now() - startTime,
+        toolName: 'runTest',
+        toolInput: { testPath },
+        toolResult: resultText.slice(0, 1000)
+      })
+
+      return { content: [{ type: 'text' as const, text: resultText }] }
+    }
+  )
+
   // ── Tool: done ──
   const doneTool = tool(
     'done',
-    'Finish the research with an evidence-backed verdict and a reproduction plan.',
+    'Finish research with verdict and the final test code.',
     {
-      verdict: z
-        .enum(['REPRODUCED', 'NOT_REPRODUCIBLE', 'INCONCLUSIVE'])
-        .describe('Final verdict — MUST be supported by inspect() evidence'),
-      summary: z
+      verdict: z.enum(['REPRODUCED', 'NOT_REPRODUCIBLE', 'INCONCLUSIVE']),
+      summary: z.string().describe('What you found and why'),
+      evidence: z.string().describe('Test output that proves the verdict'),
+      testCode: z
         .string()
         .describe(
-          'What you did, what inspect() showed, and why you reached this verdict'
-        ),
-      evidence: z
-        .string()
-        .describe(
-          'Cite specific inspect() results: "inspect(X) returned {Y} proving Z"'
-        ),
-      reproductionPlan: z
-        .array(
-          z.object({
-            action: z
-              .record(z.unknown())
-              .describe('Action object with "action" field + params'),
-            expectedAssertion: z
-              .string()
-              .describe(
-                'Expected a11y state after this action, e.g. "Settings dialog: visible" or "tab count: 2"'
-              )
-          })
-        )
-        .describe(
-          'Minimal ordered steps to reproduce the bug. Empty if NOT_REPRODUCIBLE/INCONCLUSIVE.'
+          'Final Playwright test code. If REPRODUCED, this test asserts the bug exists and passes.'
         )
     },
     async (args) => {
@@ -278,17 +215,11 @@ screenshot(name)`,
       finalVerdict = args.verdict
       finalSummary = args.summary
       finalEvidence = args.evidence
-      finalPlan = args.reproductionPlan.map((s) => ({
-        action: s.action as ReproductionStep['action'],
-        expectedAssertion: s.expectedAssertion
-      }))
-
+      finalTestCode = args.testCode
+      writeFileSync(testPath, args.testCode)
       return {
         content: [
-          {
-            type: 'text' as const,
-            text: `Research complete: ${args.verdict}`
-          }
+          { type: 'text' as const, text: `Research complete: ${args.verdict}` }
         ]
       }
     }
@@ -298,57 +229,55 @@ screenshot(name)`,
   const server = createSdkMcpServer({
     name: 'qa-research',
     version: '1.0.0',
-    tools: [inspectTool, performTool, doneTool]
+    tools: [inspectTool, writeTestTool, runTestTool, doneTool]
   })
 
   // ── System prompt ──
-  const systemPrompt = `You are a senior QA engineer investigating a reported bug in ComfyUI.
+  const systemPrompt = `You are a senior QA engineer who writes Playwright E2E tests to reproduce reported bugs.
 
-## Your tools (3 only — no vision)
-- inspect(selector) — Search accessibility tree for element state. THIS IS YOUR SOURCE OF TRUTH.
-- perform(action, params) — Execute a Playwright action. Auto-captures a11y before/after.
-- done(verdict, summary, evidence, reproductionPlan) — Finish with evidence-backed conclusion.
+## Your tools
+- inspect(selector?) — Read the accessibility tree to understand the current UI. Use to discover selectors, element names, and UI state.
+- writeTest(code) — Write a Playwright test file (.spec.ts)
+- runTest() — Execute the test and get results (pass/fail + errors)
+- done(verdict, summary, evidence, testCode) — Finish with the final test
 
-## Rules (CRITICAL)
-1. After EVERY perform() call, use inspect() to verify the DOM state changed as expected.
-2. Your verdict MUST cite specific inspect() results as evidence.
-3. NEVER claim REPRODUCED unless inspect() confirms the broken state.
-4. NEVER claim NOT_REPRODUCIBLE unless you actually performed all the reproduction steps and inspect() shows normal behavior.
-5. If you run out of time before completing steps, verdict is INCONCLUSIVE.
-6. Complete ALL reproduction steps. Setup (loading workflow, opening settings) is NOT reproduction — the actual bug trigger is.
+## Workflow
+1. Read the issue description carefully
+2. Use inspect() to understand the current UI state and discover element selectors
+3. Write a Playwright test that:
+   - Navigates to ${serverUrl}
+   - Performs the exact reproduction steps from the issue
+   - Asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
+4. Run the test with runTest()
+5. If it fails: read the error, fix the test, run again (max 5 attempts)
+6. Call done() with the final verdict and test code
 
-## Output
-When you call done(), include:
-- verdict: based on what inspect() showed, not what you expected
-- evidence: "inspect('Settings dialog') returned {role: dialog, name: Settings} — dialog still visible after Escape, proving the bug does NOT exist on this build"
-- reproductionPlan: minimal steps that demonstrate the bug (for the reproduce phase to replay as a clean video)
+## Test writing guidelines
+- Use \`import { test, expect } from '@playwright/test'\`
+- URL: \`${serverUrl}\`
+- Wait for the app to load: \`await page.waitForSelector('.comfy-menu-button-wrapper', { timeout: 15000 })\`
+- Skip tutorial: \`await page.evaluate(() => localStorage.setItem('Comfy.TutorialCompleted', 'true'))\`
+- Dismiss template gallery: \`await page.keyboard.press('Escape')\`
+- Menu: click \`.comfy-menu-button-wrapper\` → hover menu items → click submenu
+- Use \`page.locator()\` with role/text selectors — never raw CSS when possible
+- Use \`expect(locator).toBeVisible()\` / \`toBeHidden()\` / \`toHaveText()\` etc.
+- If the bug IS present, the test should PASS. If the bug is fixed, the test would FAIL.
+- Keep tests focused and minimal — test ONLY the reported bug
 
-## Strategy
-1. Read the issue carefully. Plan the FULL reproduction sequence.
-2. Set up prerequisites (load workflow, open settings, etc.)
-3. Perform the actual bug trigger (the specific interaction described in the issue)
-4. Verify the result with inspect() — is the state broken or correct?
-5. If the bug is triggered by a setting/mode, do control/test comparison:
-   - CONTROL: perform action with setting OFF → inspect() → should work
-   - TEST: perform action with setting ON → inspect() → should break
+## Current UI state (accessibility tree)
+${initialA11y}
 
-## ComfyUI Layout (1280×720)
-- Canvas centered at ~(640, 400)
-- Hamburger menu (top-left C logo) → File, Edit, View, Theme, Help
-- Sidebar: Workflows, Node Library, Models
-- Default workflow: Load Checkpoint (~150,300), CLIP Text Encode (~450,250/450), KSampler (~750,350)
-
-${qaGuide ? `## QA Guide\n${qaGuide}\n` : ''}
+${qaGuide ? `## QA Analysis Guide\n${qaGuide}\n` : ''}
 ## Issue to Reproduce
 ${issueContext}`
 
   // ── Run the agent ──
-  console.warn('Starting research phase (Claude + a11y)...')
+  console.warn('Starting research phase (Claude writes E2E tests)...')
 
   try {
     for await (const message of query({
       prompt:
-        'Investigate the reported bug. Use inspect() after every action to verify state. When done, call done() with evidence from inspect() results and a reproduction plan.',
+        'Write a Playwright E2E test that reproduces the reported bug. Use inspect() to discover selectors, writeTest() to write the test, runTest() to execute it. Iterate until it works or you determine the bug cannot be reproduced.',
       options: {
         model: 'claude-sonnet-4-6',
         systemPrompt,
@@ -357,7 +286,8 @@ ${issueContext}`
         mcpServers: { 'qa-research': server },
         allowedTools: [
           'mcp__qa-research__inspect',
-          'mcp__qa-research__perform',
+          'mcp__qa-research__writeTest',
+          'mcp__qa-research__runTest',
           'mcp__qa-research__done'
         ]
       }
@@ -380,22 +310,17 @@ ${issueContext}`
     console.warn(`Research error: ${e instanceof Error ? e.message : e}`)
   }
 
-  // Save research log
   const result: ResearchResult = {
     verdict: finalVerdict,
     summary: finalSummary,
     evidence: finalEvidence,
-    reproductionPlan: finalPlan,
+    testCode: finalTestCode,
     log: researchLog
   }
 
-  mkdirSync(`${outputDir}/research`, { recursive: true })
-  writeFileSync(
-    `${outputDir}/research/research-log.json`,
-    JSON.stringify(result, null, 2)
-  )
+  writeFileSync(`${testDir}/research-log.json`, JSON.stringify(result, null, 2))
   console.warn(
-    `Research complete: ${finalVerdict} (${researchLog.length} tool calls, ${finalPlan.length} reproduction steps)`
+    `Research complete: ${finalVerdict} (${researchLog.length} tool calls)`
   )
 
   return result

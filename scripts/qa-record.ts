@@ -1934,8 +1934,8 @@ async function main() {
         await page.screenshot({
           path: `${opts.outputDir}/debug-after-login-reproduce${sessionLabel}.png`
         })
-        // ═══ Phase 1: RESEARCH (Claude + a11y — no video needed) ═══
-        console.warn('Phase 1: Research — Claude investigates via a11y API')
+        // ═══ Phase 1: RESEARCH — Claude writes E2E test to reproduce ═══
+        console.warn('Phase 1: Research — Claude writes E2E test')
         const anthropicKey = process.env.ANTHROPIC_API_KEY
         const { runResearchPhase } = await import('./qa-agent.js')
         const issueCtx = opts.diffFile
@@ -1954,33 +1954,39 @@ async function main() {
           issueContext: issueCtx,
           qaGuide: qaGuideText,
           outputDir: opts.outputDir,
+          serverUrl: opts.serverUrl,
           anthropicApiKey: anthropicKey
         })
         console.warn(
           `Research complete: ${research.verdict} — ${research.summary.slice(0, 100)}`
         )
         console.warn(`Evidence: ${research.evidence.slice(0, 200)}`)
-        console.warn(
-          `Reproduction plan: ${research.reproductionPlan.length} steps`
-        )
 
-        // ═══ Phase 2: REPRODUCE (deterministic replay + narration) ═══
-        if (
-          research.verdict === 'REPRODUCED' &&
-          research.reproductionPlan.length > 0
-        ) {
-          console.warn('Phase 2: Reproduce — replaying plan with narration')
-          const { runReproducePhase } = await import('./qa-reproduce.js')
-          await runReproducePhase({
-            page,
-            plan: research.reproductionPlan,
-            geminiApiKey: opts.apiKey,
-            outputDir: opts.outputDir
-          })
+        // ═══ Phase 2: Run passing test with video recording ═══
+        if (research.verdict === 'REPRODUCED' && research.testCode) {
+          console.warn('Phase 2: Recording test execution with video')
+          const testPath = `${opts.outputDir}/research/reproduce.spec.ts`
+          writeFileSync(testPath, research.testCode)
+          try {
+            execSync(
+              `cd "${process.cwd()}" && npx playwright test "${testPath}" --reporter=list --timeout=30000 --video=on --output="${opts.outputDir}/test-results" 2>&1`,
+              {
+                timeout: 60000,
+                encoding: 'utf-8',
+                env: {
+                  ...process.env,
+                  COMFYUI_BASE_URL: opts.serverUrl
+                }
+              }
+            )
+            console.warn('Phase 2: Test passed with video')
+          } catch {
+            console.warn(
+              'Phase 2: Test execution failed (video may be partial)'
+            )
+          }
         } else {
-          console.warn(
-            `Skipping Phase 2: verdict=${research.verdict}, plan=${research.reproductionPlan.length} steps`
-          )
+          console.warn(`Skipping Phase 2: verdict=${research.verdict}`)
         }
         await sleep(2000)
       } finally {
