@@ -214,11 +214,36 @@ cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 </head><body><div><h1>404</h1><p>File not found. The QA recording may have failed or been cancelled.</p></div></body></html>
 ERROREOF
 
+# Copy research log to deploy dir if it exists
+for rlog in qa-artifacts/*/research/research-log.json qa-artifacts/*/*/research/research-log.json; do
+  if [ -f "$rlog" ]; then
+    cp "$rlog" "$DEPLOY_DIR/research-log.json"
+    echo "Found research log: $rlog"
+    break
+  fi
+done
+
 # Generate badge SVGs into deploy dir
-# Verdict detection: check each report file's ## Summary section individually,
-# then aggregate across passes for a "X/Y REPRODUCED" badge.
+# Priority: research-log.json verdict (a11y-verified) > video review verdict (AI interpretation)
 REPRO_COUNT=0 INCONC_COUNT=0 NOT_REPRO_COUNT=0 TOTAL_REPORTS=0
-if [ -d video-reviews ]; then
+
+# Try research log first (ground truth from a11y assertions)
+RESEARCH_VERDICT=""
+if [ -f "$DEPLOY_DIR/research-log.json" ]; then
+  RESEARCH_VERDICT=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('verdict',''))" "$DEPLOY_DIR/research-log.json" 2>/dev/null || true)
+  echo "Research verdict (a11y-verified): ${RESEARCH_VERDICT:-none}"
+  if [ -n "$RESEARCH_VERDICT" ]; then
+    TOTAL_REPORTS=1
+    case "$RESEARCH_VERDICT" in
+      REPRODUCED) REPRO_COUNT=1 ;;
+      NOT_REPRODUCIBLE) NOT_REPRO_COUNT=1 ;;
+      INCONCLUSIVE) INCONC_COUNT=1 ;;
+    esac
+  fi
+fi
+
+# Fall back to video review verdicts if no research log
+if [ -z "$RESEARCH_VERDICT" ] && [ -d video-reviews ]; then
   for rpt in video-reviews/*-qa-video-report.md; do
     [ -f "$rpt" ] || continue
     TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
