@@ -2,7 +2,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV1 } from '@/schemas/nodeDefSchema'
 import { useWidgetStore } from '@/stores/widgetStore'
+
+/** Cast shorthand — the mock bypasses Zod validation, so we only need the shape `inputIsWidget` reads. */
+const v1 = (spec: unknown) => spec as InputSpecV1
+const v2 = (spec: unknown) => spec as InputSpecV2
 
 vi.mock('@/scripts/widgets', () => ({
   ComfyWidgets: {
@@ -62,28 +68,28 @@ describe('widgetStore', () => {
   describe('inputIsWidget', () => {
     it('returns true for known widget type (v1 spec)', () => {
       const store = useWidgetStore()
-      expect(store.inputIsWidget(['INT', {}])).toBe(true)
+      expect(store.inputIsWidget(v1(['INT', {}]))).toBe(true)
     })
 
     it('returns false for unknown type (v1 spec)', () => {
       const store = useWidgetStore()
-      expect(store.inputIsWidget(['UNKNOWN_TYPE', {}])).toBe(false)
+      expect(store.inputIsWidget(v1(['UNKNOWN_TYPE', {}]))).toBe(false)
     })
 
     it('returns true for v2 spec with known type', () => {
       const store = useWidgetStore()
-      expect(store.inputIsWidget({ type: 'STRING' })).toBe(true)
+      expect(store.inputIsWidget(v2({ type: 'STRING' }))).toBe(true)
     })
 
     it('returns false for v2 spec with unknown type', () => {
       const store = useWidgetStore()
-      expect(store.inputIsWidget({ type: 'LATENT' })).toBe(false)
+      expect(store.inputIsWidget(v2({ type: 'LATENT' }))).toBe(false)
     })
 
     it('returns true for custom registered type', () => {
       const store = useWidgetStore()
       store.registerCustomWidgets({ MY_WIDGET: vi.fn() })
-      expect(store.inputIsWidget({ type: 'MY_WIDGET' })).toBe(true)
+      expect(store.inputIsWidget(v2({ type: 'MY_WIDGET' }))).toBe(true)
     })
   })
 })
