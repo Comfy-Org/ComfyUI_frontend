@@ -72,9 +72,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect(async () => {
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-    }).toPass({ timeout: 250 })
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+      .toBe(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -87,9 +87,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(comfyPage.templates.content).toBeHidden()
 
     // Ensure we now have some nodes
-    await expect(async () => {
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
-    }).toPass({ timeout: 250 })
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+      .toBeGreaterThan(0)
   })
 
   test('dialog should be automatically shown to first-time users', async ({
