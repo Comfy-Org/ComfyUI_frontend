@@ -401,7 +401,14 @@ function buildComparativePrompt(
     '',
     '## Possible Issues (Needs Human Verification)',
     '## Overall Risk',
-    '(Assess whether the PR achieves its goal based on the before/after comparison)'
+    '(Assess whether the PR achieves its goal based on the before/after comparison)',
+    '',
+    '## Verdict',
+    'End your report with this EXACT JSON block (no markdown fence):',
+    '{"verdict": "REPRODUCED" | "NOT_REPRODUCIBLE" | "INCONCLUSIVE", "risk": "low" | "medium" | "high", "confidence": "high" | "medium" | "low"}',
+    '- REPRODUCED: the before video confirms the old behavior and the after video shows the fix working',
+    '- NOT_REPRODUCIBLE: the before video does not show the reported bug',
+    '- INCONCLUSIVE: the videos do not adequately demonstrate the behavior change'
   )
 
   return lines.filter(Boolean).join('\n')
@@ -496,7 +503,14 @@ function buildSingleVideoPrompt(
     '`SEVERITY` `TIMESTAMP` `Confidence: LEVEL`',
     'Do NOT use a table for issues — use the block format above.',
     '## Possible Issues (Needs Human Verification)',
-    '## Overall Risk'
+    '## Overall Risk',
+    '',
+    '## Verdict',
+    'End your report with this EXACT JSON block (no markdown fence):',
+    '{"verdict": "REPRODUCED" | "NOT_REPRODUCIBLE" | "INCONCLUSIVE", "risk": "low" | "medium" | "high" | null, "confidence": "high" | "medium" | "low"}',
+    '- REPRODUCED: the bug/behavior is clearly visible in the video',
+    '- NOT_REPRODUCIBLE: the steps were performed correctly but the bug was not observed',
+    '- INCONCLUSIVE: the reproduction steps were not performed or the video is insufficient'
   )
 
   return lines.filter(Boolean).join('\n')
