@@ -164,7 +164,10 @@ export async function runReproducePhase(
     console.warn(`  [${i + 1}/${plan.length}] ${actionObj.action}`)
 
     // Capture a11y BEFORE
-    const a11yBefore = await page.accessibility.snapshot().catch(() => null)
+    const a11yBefore = await page
+      .locator('body')
+      .ariaSnapshot({ timeout: 3000 })
+      .catch(() => null)
 
     // Execute action
     const result = await executeAction(
@@ -175,7 +178,10 @@ export async function runReproducePhase(
     await new Promise((r) => setTimeout(r, 500))
 
     // Capture a11y AFTER
-    const a11yAfter = await page.accessibility.snapshot().catch(() => null)
+    const a11yAfter = await page
+      .locator('body')
+      .ariaSnapshot({ timeout: 3000 })
+      .catch(() => null)
 
     // Check assertion
     let assertionPassed = false
