@@ -99,6 +99,37 @@ expect(node.widgets).toHaveLength(4)
 - Use `expect.soft()` when you want to verify multiple invariants without aborting on the first failure
 - Prefer Playwright's built-in message parameter over custom error classes
 
+## Creating New Test Helpers
+
+New domain-specific test helpers (e.g., `AssetHelper`, `JobHelper`) should be
+registered as Playwright fixtures via `base.extend()` rather than attached as
+properties on `ComfyPage`. This enables automatic setup/teardown.
+
+### Extend `comfyPageFixture`
+
+```typescript
+// browser_tests/fixtures/assetFixture.ts
+import { comfyPageFixture } from './ComfyPage'
+
+export const assetFixture = comfyPageFixture.extend<{
+  assetHelper: AssetHelper
+}>({
+  assetHelper: async ({ comfyPage }, use) => {
+    const helper = new AssetHelper(comfyPage)
+    await helper.setup()
+    await use(helper)
+    await helper.cleanup() // automatic teardown
+  }
+})
+```
+
+### Rules
+
+- **Do NOT** add new helpers as properties on `ComfyPage`
+- Each fixture gets automatic cleanup via the callback after `use()`
+- Tests that need the helper import the extended fixture instead of
+  `comfyPageFixture`
+
 ## Test Tags
 
 Tags are respected by config:
