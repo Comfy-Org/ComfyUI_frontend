@@ -120,19 +120,6 @@ class NodeSlotReference {
         const convertedPos =
           window.app!.canvas.ds!.convertOffsetToCanvas(rawPos)
 
-        // Debug logging - convert Float64Arrays to regular arrays for visibility
-        console.warn(
-          `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
-          {
-            nodePos: [node.pos[0], node.pos[1]],
-            nodeSize: [node.size[0], node.size[1]],
-            rawConnectionPos: [rawPos[0], rawPos[1]],
-            convertedPos: [convertedPos[0], convertedPos[1]],
-            currentGraphType:
-              'inputNode' in window.app!.canvas.graph! ? 'Subgraph' : 'LGraph'
-          }
-        )
-
         return convertedPos
       },
       [this.type, this.node.id, this.index] as const
@@ -490,12 +477,7 @@ export class NodeReference {
       y: nodePos.y - titleHeight / 2
     }
 
-    const checkIsInSubgraph = async () => {
-      return this.comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return !!graph && 'inputNode' in graph
-      })
-    }
+    const checkIsInSubgraph = () => this.comfyPage.subgraph.isInSubgraph()
 
     await expect(async () => {
       // Try just clicking the enter button first

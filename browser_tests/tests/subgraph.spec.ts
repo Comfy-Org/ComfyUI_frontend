@@ -11,10 +11,7 @@ const TEST_WIDGET_CONTENT = 'Test content that should persist'
 
 // Common selectors
 const SELECTORS = {
-  breadcrumb: '.subgraph-breadcrumb',
-  promptDialog: '.graphdialog input',
-  nodeSearchContainer: '.node-search-container',
-  domWidget: '.comfy-multiline-input'
+  promptDialog: '.graphdialog input'
 } as const
 
 test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
@@ -447,16 +444,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       const initialNodeCount = await comfyPage.subgraph.getNodeCount()
 
-      const nodesInSubgraph = await comfyPage.page.evaluate(() => {
-        const nodes = window.app!.canvas.graph!.nodes
-        return nodes?.[0]?.id || null
-      })
+      const firstNodeLocator = comfyPage.page.locator('[data-node-id]').first()
+      await expect(firstNodeLocator).toBeVisible()
+      const firstNodeId = await firstNodeLocator.getAttribute('data-node-id')
 
-      expect(nodesInSubgraph).not.toBeNull()
+      expect(firstNodeId).not.toBeNull()
 
-      const nodeToClone = await comfyPage.nodeOps.getNodeRefById(
-        String(nodesInSubgraph)
-      )
+      const nodeToClone = await comfyPage.nodeOps.getNodeRefById(firstNodeId!)
       await nodeToClone.click('title')
       await comfyPage.nextFrame()
 
@@ -518,12 +512,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       // Navigate into subgraph
       await subgraphNode.navigateIntoSubgraph()
 
-      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
-        state: 'visible',
-        timeout: 20000
-      })
-
-      const breadcrumb = comfyPage.page.locator(SELECTORS.breadcrumb)
+      const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
+      await breadcrumb.waitFor({ state: 'visible', timeout: 20000 })
       const initialBreadcrumbText = await breadcrumb.textContent()
 
       // Go back and edit title
@@ -548,7 +538,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       // Navigate back into subgraph
       await subgraphNode.navigateIntoSubgraph()
 
-      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
+      await breadcrumb.waitFor({ state: 'visible' })
 
       const updatedBreadcrumbText = await breadcrumb.textContent()
       expect(updatedBreadcrumbText).toContain(UPDATED_SUBGRAPH_TITLE)
@@ -566,7 +556,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
-      await expect(comfyPage.page.locator(SELECTORS.breadcrumb)).toBeVisible()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
+      ).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
@@ -611,7 +603,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       // Verify promoted widget is visible in parent graph
-      const parentTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+      const parentTextarea = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
       await expect(parentTextarea).toBeVisible()
       await expect(parentTextarea).toHaveCount(1)
 
@@ -621,7 +615,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       // Verify widget is visible in subgraph
-      const subgraphTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+      const subgraphTextarea = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
       await expect(subgraphTextarea).toBeVisible()
       await expect(subgraphTextarea).toHaveCount(1)
 
@@ -630,7 +626,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       // Verify widget is still visible
-      const backToParentTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+      const backToParentTextarea = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
       await expect(backToParentTextarea).toBeVisible()
       await expect(backToParentTextarea).toHaveCount(1)
     })
@@ -642,19 +640,25 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      const textarea = comfyPage.page.locator(SELECTORS.domWidget)
+      const textarea = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
       await textarea.fill(TEST_WIDGET_CONTENT)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.navigateIntoSubgraph()
 
-      const subgraphTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+      const subgraphTextarea = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
       await expect(subgraphTextarea).toHaveValue(TEST_WIDGET_CONTENT)
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
 
-      const parentTextarea = comfyPage.page.locator(SELECTORS.domWidget)
+      const parentTextarea = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
       await expect(parentTextarea).toHaveValue(TEST_WIDGET_CONTENT)
     })
 
@@ -665,18 +669,17 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      const initialCount = await comfyPage.page
-        .locator(SELECTORS.domWidget)
-        .count()
+      const domWidget = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
+      const initialCount = await domWidget.count()
       expect(initialCount).toBe(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
 
       await subgraphNode.delete()
 
-      const finalCount = await comfyPage.page
-        .locator(SELECTORS.domWidget)
-        .count()
+      const finalCount = await domWidget.count()
       expect(finalCount).toBe(0)
     })
 
@@ -690,7 +693,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(workflowName)
 
       const textareaCount = await comfyPage.page
-        .locator(SELECTORS.domWidget)
+        .getByTestId(TestIds.widgets.domWidgetTextarea)
         .count()
       expect(textareaCount).toBe(1)
 
@@ -702,10 +705,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.removeSlot('input', 'text')
 
       // Wait for breadcrumb to be visible
-      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
-        state: 'visible',
-        timeout: 5000
-      })
+      await comfyPage.page
+        .getByTestId(TestIds.breadcrumb.subgraph)
+        .waitFor({ state: 'visible', timeout: 5000 })
 
       // Click breadcrumb to navigate back to parent graph
       const homeBreadcrumb = comfyPage.page.locator(
@@ -730,25 +732,22 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         'subgraphs/subgraph-with-multiple-promoted-widgets'
       )
 
-      const parentCount = await comfyPage.page
-        .locator(SELECTORS.domWidget)
-        .count()
+      const domWidget = comfyPage.page.getByTestId(
+        TestIds.widgets.domWidgetTextarea
+      )
+      const parentCount = await domWidget.count()
       expect(parentCount).toBeGreaterThan(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.navigateIntoSubgraph()
 
-      const subgraphCount = await comfyPage.page
-        .locator(SELECTORS.domWidget)
-        .count()
+      const subgraphCount = await domWidget.count()
       expect(subgraphCount).toBe(parentCount)
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.page
-        .locator(SELECTORS.domWidget)
-        .count()
+      const finalCount = await domWidget.count()
       expect(finalCount).toBe(parentCount)
     })
   })
@@ -796,7 +795,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       // Navigate into subgraph
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
-      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
+      await comfyPage.page
+        .getByTestId(TestIds.breadcrumb.subgraph)
+        .waitFor({ state: 'visible' })
 
       // Verify we're in a subgraph
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
@@ -822,7 +823,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
-      await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
+      await comfyPage.page
+        .getByTestId(TestIds.breadcrumb.subgraph)
+        .waitFor({ state: 'visible' })
 
       // Verify we're in a subgraph
       if (!(await comfyPage.subgraph.isInSubgraph())) {

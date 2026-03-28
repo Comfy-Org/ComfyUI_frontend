@@ -7,6 +7,11 @@
     }"
     draggable="false"
     class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
+    :data-testid="
+      item.key === 'root'
+        ? 'subgraph-breadcrumb-root'
+        : 'subgraph-breadcrumb-item'
+    "
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,

@@ -310,10 +310,9 @@ test.describe(
         })
         await comfyPage.nextFrame()
 
-        const firstNodeExists = await comfyPage.page.evaluate(() => {
-          return !!window.app!.graph!.getNodeById('7')
-        })
-        expect(firstNodeExists).toBe(false)
+        await expect(comfyPage.page.locator('[data-node-id="7"]')).toHaveCount(
+          0
+        )
 
         const secondNodeAfter = await getPseudoPreviewWidgets(comfyPage, '8')
         expect(secondNodeAfter).toEqual(secondNodeBefore)

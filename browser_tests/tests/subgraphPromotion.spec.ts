@@ -146,7 +146,7 @@ test.describe(
         await expect(nodeBody).toBeVisible()
 
         // Widgets section should exist and have at least one widget
-        const widgets = nodeBody.locator('.lg-node-widgets > div')
+        const widgets = nodeBody.getByTestId(TestIds.widgets.widget)
         await expect(widgets.first()).toBeVisible()
       })
 
@@ -176,7 +176,7 @@ test.describe(
         await expect(subgraphVueNode).toBeVisible()
 
         const nodeBody = subgraphVueNode.locator('[data-testid="node-body-11"]')
-        const widgets = nodeBody.locator('.lg-node-widgets > div')
+        const widgets = nodeBody.getByTestId(TestIds.widgets.widget)
         const count = await widgets.count()
         expect(count).toBeGreaterThan(1)
       })
@@ -559,15 +559,16 @@ test.describe(
         await comfyPage.page.keyboard.up('Alt')
         await comfyPage.nextFrame()
 
-        const subgraphNodeIds = await comfyPage.page.evaluate(() => {
-          const graph = window.app!.canvas.graph!
-          return graph.nodes
-            .filter(
-              (n) =>
-                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-            )
-            .map((n) => String(n.id))
-        })
+        const enterButtons = comfyPage.page.getByTestId(
+          TestIds.widgets.subgraphEnterButton
+        )
+        const allButtons = await enterButtons.all()
+        const subgraphNodeIds: string[] = []
+        for (const btn of allButtons) {
+          const nodeEl = btn.locator('xpath=ancestor::*[@data-node-id]').first()
+          const id = await nodeEl.getAttribute('data-node-id')
+          if (id) subgraphNodeIds.push(id)
+        }
 
         expect(subgraphNodeIds.length).toBeGreaterThan(1)
         for (const nodeId of subgraphNodeIds) {

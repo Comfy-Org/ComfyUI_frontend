@@ -2,6 +2,7 @@
  * Vue Node Test Helpers
  */
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { TestIds } from './selectors'
 import { VueNodeFixture } from './utils/vueNodeFixtures'
@@ -55,11 +56,11 @@ export class VueNodeHelpers {
    * Get all Vue node IDs currently in the DOM
    */
   async getNodeIds(): Promise<string[]> {
-    return await this.nodes.evaluateAll((nodes) =>
-      nodes
-        .map((n) => n.getAttribute('data-node-id'))
-        .filter((id): id is string => id !== null)
+    const allNodes = await this.nodes.all()
+    const ids = await Promise.all(
+      allNodes.map((l) => l.getAttribute('data-node-id'))
     )
+    return ids.filter((id): id is string => id !== null)
   }
 
   /**
@@ -67,7 +68,7 @@ export class VueNodeHelpers {
    */
   async selectNode(nodeId: string): Promise<void> {
     await this.page
-      .locator(`[data-node-id="${nodeId}"] .lg-node-header`)
+      .locator(`[data-node-id="${nodeId}"] [data-testid^="node-header-"]`)
       .click()
   }
 
@@ -83,7 +84,7 @@ export class VueNodeHelpers {
     // Add additional nodes with Ctrl+click on header
     for (let i = 1; i < nodeIds.length; i++) {
       await this.page
-        .locator(`[data-node-id="${nodeIds[i]}"] .lg-node-header`)
+        .locator(`[data-node-id="${nodeIds[i]}"] [data-testid^="node-header-"]`)
         .click({
           modifiers: ['Control']
         })
@@ -121,7 +122,7 @@ export class VueNodeHelpers {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
-    const nodeId = await node.evaluate((el) => el.getAttribute('data-node-id'))
+    const nodeId = await node.getAttribute('data-node-id')
     if (!nodeId) {
       throw new Error(
         `Vue node titled "${title}" is missing its data-node-id attribute`
@@ -136,12 +137,12 @@ export class VueNodeHelpers {
    */
   async waitForNodes(expectedCount?: number): Promise<void> {
     if (expectedCount !== undefined) {
-      await this.page.waitForFunction(
-        (count) => document.querySelectorAll('[data-node-id]').length >= count,
-        expectedCount
+      await expect(this.page.locator('[data-node-id]')).toHaveCount(
+        expectedCount,
+        { timeout: 30_000 }
       )
     } else {
-      await this.page.waitForSelector('[data-node-id]')
+      await this.page.locator('[data-node-id]').first().waitFor()
     }
   }
 

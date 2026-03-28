@@ -1,10 +1,7 @@
 import { expect } from '@playwright/test'
 import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
-import type {
-  CanvasPointerEvent,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type { ComfyPage } from '../ComfyPage'
@@ -19,26 +16,17 @@ export class SubgraphHelper {
     return this.comfyPage.page
   }
 
-  /**
-   * Core helper method for interacting with subgraph I/O slots.
-   * Handles both input/output slots and both right-click/double-click actions.
-   *
-   * @param slotType - 'input' or 'output'
-   * @param action - 'rightClick' or 'doubleClick'
-   * @param slotName - Optional specific slot name to target
-   */
-  private async interactWithSubgraphSlot(
+  private async getSlotScreenPositions(
     slotType: 'input' | 'output',
     action: 'rightClick' | 'doubleClick',
     slotName?: string
-  ): Promise<void> {
-    const foundSlot = await this.page.evaluate(
-      async (params) => {
+  ): Promise<{ x: number; y: number; slotName: string }[]> {
+    return this.page.evaluate(
+      (params) => {
         const { slotType, action, targetSlotName } = params
         const app = window.app!
         const currentGraph = app.canvas!.graph!
 
-        // Check if we're in a subgraph
         if (!('inputNode' in currentGraph)) {
           throw new Error(
             'Not in a subgraph - this method only works inside subgraphs'
@@ -47,7 +35,6 @@ export class SubgraphHelper {
 
         const subgraph = currentGraph as Subgraph
 
-        // Get the appropriate node and slots
         const node =
           slotType === 'input' ? subgraph.inputNode : subgraph.outputNode
         const slots = slotType === 'input' ? subgraph.inputs : subgraph.outputs
@@ -60,12 +47,11 @@ export class SubgraphHelper {
           throw new Error(`No ${slotType} slots found in subgraph`)
         }
 
-        // Filter slots based on target name and action type
         const slotsToTry = targetSlotName
           ? slots.filter((slot) => slot.name === targetSlotName)
           : action === 'rightClick'
             ? slots
-            : [slots[0]] // Right-click tries all, double-click uses first
+            : [slots[0]]
 
         if (slotsToTry.length === 0) {
           throw new Error(
@@ -75,95 +61,98 @@ export class SubgraphHelper {
           )
         }
 
-        // Handle the interaction based on action type
-        if (action === 'rightClick') {
-          // Right-click: try each slot until one works
-          for (const slot of slotsToTry) {
+        const results: { x: number; y: number; slotName: string }[] = []
+
+        for (const slot of slotsToTry) {
+          let canvasX: number
+          let canvasY: number
+
+          if (action === 'rightClick') {
             if (!slot.pos) continue
-
-            const event = {
-              canvasX: slot.pos[0],
-              canvasY: slot.pos[1],
-              button: 2, // Right mouse button
-              preventDefault: () => {},
-              stopPropagation: () => {}
+            canvasX = slot.pos[0]
+            canvasY = slot.pos[1]
+          } else {
+            if (!slot.boundingRect) {
+              throw new Error(`${slotType} slot bounding rect not found`)
             }
-
-            if (node.onPointerDown) {
-              node.onPointerDown(
-                event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-                app.canvas.pointer,
-                app.canvas.linkConnector
-              )
-              return {
-                success: true,
-                slotName: slot.name,
-                x: slot.pos[0],
-                y: slot.pos[1]
-              }
-            }
-          }
-        } else if (action === 'doubleClick') {
-          // Double-click: use first slot with bounding rect center
-          const slot = slotsToTry[0]
-          if (!slot.boundingRect) {
-            throw new Error(`${slotType} slot bounding rect not found`)
+            const rect = slot.boundingRect
+            canvasX = rect[0] + rect[2] / 2
+            canvasY = rect[1] + rect[3] / 2
           }
 
-          const rect = slot.boundingRect
-          const testX = rect[0] + rect[2] / 2 // x + width/2
-          const testY = rect[1] + rect[3] / 2 // y + height/2
-
-          const event = {
-            canvasX: testX,
-            canvasY: testY,
-            button: 0, // Left mouse button
-            preventDefault: () => {},
-            stopPropagation: () => {}
-          }
-
-          if (node.onPointerDown) {
-            node.onPointerDown(
-              event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-              app.canvas.pointer,
-              app.canvas.linkConnector
-            )
-
-            // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(
-                event as Partial<CanvasPointerEvent> as CanvasPointerEvent
-              )
-            }
-          }
-
-          return { success: true, slotName: slot.name, x: testX, y: testY }
+          const [clientX, clientY] = app.canvasPosToClientPos([
+            canvasX,
+            canvasY
+          ])
+          results.push({ x: clientX, y: clientY, slotName: slot.name })
         }
 
-        return { success: false }
+        return results
       },
       { slotType, action, targetSlotName: slotName }
     )
+  }
 
-    if (!foundSlot.success) {
-      const actionText =
-        action === 'rightClick' ? 'open context menu for' : 'double-click'
+  private async rightClickSlot(
+    slotType: 'input' | 'output',
+    slotName?: string
+  ): Promise<void> {
+    const positions = await this.getSlotScreenPositions(
+      slotType,
+      'rightClick',
+      slotName
+    )
+
+    if (positions.length === 0) {
       throw new Error(
         slotName
-          ? `Could not ${actionText} ${slotType} slot '${slotName}'`
-          : `Could not find any ${slotType} slot to ${actionText}`
+          ? `Could not open context menu for ${slotType} slot '${slotName}'`
+          : `Could not find any ${slotType} slot to open context menu for`
       )
     }
 
-    // Wait for the appropriate UI element to appear
-    if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
-        state: 'visible',
-        timeout: 5000
-      })
-    } else {
+    for (const pos of positions) {
+      await this.page.mouse.click(pos.x, pos.y, { button: 'right' })
       await this.comfyPage.nextFrame()
+
+      const menuVisible = await this.page
+        .waitForSelector('.litemenu-entry', {
+          state: 'visible',
+          timeout: 1000
+        })
+        .then(() => true)
+        .catch(() => false)
+
+      if (menuVisible) return
     }
+
+    await this.page.waitForSelector('.litemenu-entry', {
+      state: 'visible',
+      timeout: 5000
+    })
+  }
+
+  private async doubleClickSlot(
+    slotType: 'input' | 'output',
+    slotName?: string
+  ): Promise<void> {
+    const positions = await this.getSlotScreenPositions(
+      slotType,
+      'doubleClick',
+      slotName
+    )
+
+    if (positions.length === 0) {
+      throw new Error(
+        slotName
+          ? `Could not double-click ${slotType} slot '${slotName}'`
+          : `Could not find any ${slotType} slot to double-click`
+      )
+    }
+
+    const pos = positions[0]
+    await this.page.mouse.dblclick(pos.x, pos.y)
+    await this.comfyPage.nextFrame()
   }
 
   /**
@@ -180,7 +169,7 @@ export class SubgraphHelper {
    * @returns Promise that resolves when the context menu appears
    */
   async rightClickInputSlot(inputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('input', 'rightClick', inputName)
+    return this.rightClickSlot('input', inputName)
   }
 
   /**
@@ -194,7 +183,7 @@ export class SubgraphHelper {
    * @returns Promise that resolves when the context menu appears
    */
   async rightClickOutputSlot(outputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('output', 'rightClick', outputName)
+    return this.rightClickSlot('output', outputName)
   }
 
   /**
@@ -206,7 +195,7 @@ export class SubgraphHelper {
    * @returns Promise that resolves when the rename dialog appears
    */
   async doubleClickInputSlot(inputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('input', 'doubleClick', inputName)
+    return this.doubleClickSlot('input', inputName)
   }
 
   /**
@@ -218,7 +207,7 @@ export class SubgraphHelper {
    * @returns Promise that resolves when the rename dialog appears
    */
   async doubleClickOutputSlot(outputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('output', 'doubleClick', outputName)
+    return this.doubleClickSlot('output', outputName)
   }
 
   /**
@@ -327,26 +316,14 @@ export class SubgraphHelper {
   }
 
   async isInSubgraph(): Promise<boolean> {
-    return this.page.evaluate(() => {
-      const graph = window.app!.canvas.graph
-      return !!graph && 'inputNode' in graph
-    })
+    const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
+    return breadcrumb.isVisible()
   }
 
   async exitViaBreadcrumb(): Promise<void> {
     const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
     const parentLink = breadcrumb.getByRole('link').first()
-    if (await parentLink.isVisible()) {
-      await parentLink.click()
-    } else {
-      await this.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        const graph = canvas.graph
-        if (!graph) return
-        canvas.setGraph(graph.rootGraph)
-      })
-    }
-
+    await parentLink.click()
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
   }
@@ -408,11 +385,8 @@ export class SubgraphHelper {
     })
   }
 
-  /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
   async getNodeCount(): Promise<number> {
-    return this.page.evaluate(() => {
-      return window.app!.canvas.graph!.nodes?.length || 0
-    })
+    return this.page.locator('[data-node-id]').count()
   }
 
   async getSlotCount(type: 'input' | 'output'): Promise<number> {
@@ -449,13 +423,13 @@ export class SubgraphHelper {
   }
 
   async findSubgraphNodeId(): Promise<string> {
-    const id = await this.page.evaluate(() => {
-      const graph = window.app!.canvas.graph!
-      const node = graph.nodes.find(
-        (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-      )
-      return node ? String(node.id) : null
-    })
+    const enterButton = this.page
+      .getByTestId(TestIds.widgets.subgraphEnterButton)
+      .first()
+    const nodeEl = enterButton
+      .locator('xpath=ancestor::*[@data-node-id]')
+      .first()
+    const id = await nodeEl.getAttribute('data-node-id')
     if (!id) throw new Error('No subgraph node found in current graph')
     return id
   }

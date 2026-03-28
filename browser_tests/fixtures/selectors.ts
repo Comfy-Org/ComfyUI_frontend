@@ -83,7 +83,9 @@ export const TestIds = {
     opensAs: 'builder-opens-as'
   },
   breadcrumb: {
-    subgraph: 'subgraph-breadcrumb'
+    subgraph: 'subgraph-breadcrumb',
+    item: 'subgraph-breadcrumb-item',
+    root: 'subgraph-breadcrumb-root'
   },
   templates: {
     content: 'template-workflows-content',
