@@ -49,7 +49,15 @@ const defaultDirectiveStubs: Record<string, () => void> = {
  */
 const ButtonStub = defineComponent({
   name: 'Button',
-  props: ['disabled', 'loading', 'variant', 'size', 'label', 'icon', 'severity'],
+  props: [
+    'disabled',
+    'loading',
+    'variant',
+    'size',
+    'label',
+    'icon',
+    'severity'
+  ],
   emits: ['click'],
   setup(props, { slots, emit }) {
     return () =>
@@ -77,7 +85,8 @@ const TagStub = defineComponent({
   name: 'Tag',
   props: ['value', 'severity'],
   setup(props, { slots }) {
-    return () => h('span', { 'data-testid': 'tag' }, slots.default?.() ?? props.value)
+    return () =>
+      h('span', { 'data-testid': 'tag' }, slots.default?.() ?? props.value)
   }
 })
 
@@ -93,7 +102,8 @@ const MessageStub = defineComponent({
   name: 'Message',
   props: ['severity', 'closable'],
   setup(_, { slots }) {
-    return () => h('div', { 'data-testid': 'message', role: 'alert' }, slots.default?.())
+    return () =>
+      h('div', { 'data-testid': 'message', role: 'alert' }, slots.default?.())
   }
 })
 
