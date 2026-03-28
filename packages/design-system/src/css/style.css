@@ -28,11 +28,8 @@
   --text-2xs: 0.625rem;
   --text-2xs--line-height: calc(1 / 0.625);
 
-  --text-xxs: 0.625rem;
-  --text-xxs--line-height: calc(1 / 0.625);
-
-  --text-xxxs: 0.5625rem;
-  --text-xxxs--line-height: calc(1 / 0.5625);
+  --text-3xs: 0.5625rem;
+  --text-3xs--line-height: calc(1 / 0.5625);
 
   /* Font Families */
   --font-inter: 'Inter', sans-serif;

@@ -1,13 +1,13 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
-export const statusBadgeVariants = cva({
+export const badgeVariants = cva({
   base: 'inline-flex items-center justify-center rounded-full',
   variants: {
     severity: {
-      default: 'bg-primary-background text-base-foreground',
-      secondary: 'bg-secondary-background text-base-foreground',
-      warn: 'bg-warning-background text-base-background',
+      default: 'bg-primary-background text-white',
+      secondary: 'bg-secondary-background-hover text-white',
+      warn: 'bg-warning-background text-white',
       danger: 'bg-destructive-background text-white',
       contrast: 'bg-base-foreground text-base-background'
     },
@@ -23,4 +23,4 @@ export const statusBadgeVariants = cva({
   }
 })
 
-export type StatusBadgeVariants = VariantProps<typeof statusBadgeVariants>
+export type BadgeVariants = VariantProps<typeof badgeVariants>
