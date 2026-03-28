@@ -193,6 +193,38 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph zoom interaction', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    // Position mouse at center so wheel events hit the canvas
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+    await comfyPage.page.mouse.move(centerX, centerY)
+
+    await comfyPage.perf.startMeasuring()
+
+    // Zoom in 30 steps then out 30 steps — each step triggers
+    // ResizeObserver for all ~245 node elements due to CSS scale change.
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.page.mouse.wheel(0, -100)
+      await comfyPage.nextFrame()
+    }
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.page.mouse.wheel(0, 100)
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('large-graph-zoom')
+    recordMeasurement(m)
+    console.log(
+      `Large graph zoom: ${m.layouts} layouts, ${m.layoutDurationMs.toFixed(1)}ms layout, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {
