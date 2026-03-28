@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { getTextSlotPosition } from '../helpers/subgraphTestUtils'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 
 test.describe(
   'Subgraph promoted widget-input slot position',
@@ -18,7 +18,10 @@ test.describe(
       await comfyPage.nextFrame()
       await comfyPage.nextFrame()
 
-      const result = await getTextSlotPosition(comfyPage.page, '11')
+      const result = await SubgraphHelper.getTextSlotPosition(
+        comfyPage.page,
+        '11'
+      )
       expect(result).not.toBeNull()
       expect(result!.hasPos).toBe(true)
 
@@ -37,7 +40,10 @@ test.describe(
       await comfyPage.nextFrame()
 
       // Verify initial position is correct
-      const before = await getTextSlotPosition(comfyPage.page, '11')
+      const before = await SubgraphHelper.getTextSlotPosition(
+        comfyPage.page,
+        '11'
+      )
       expect(before).not.toBeNull()
       expect(before!.hasPos).toBe(true)
       expect(before!.posY).toBeGreaterThan(before!.titleHeight)
@@ -73,7 +79,10 @@ test.describe(
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       // Verify slot position is still at the widget row after rename
-      const after = await getTextSlotPosition(comfyPage.page, '11')
+      const after = await SubgraphHelper.getTextSlotPosition(
+        comfyPage.page,
+        '11'
+      )
       expect(after).not.toBeNull()
       expect(after!.hasPos).toBe(true)
       expect(after!.posY).toBeGreaterThan(after!.titleHeight)

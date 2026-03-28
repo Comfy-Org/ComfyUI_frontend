@@ -1,7 +1,5 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import { fitToViewInstant } from '../helpers/fitToView'
@@ -72,14 +70,7 @@ test.describe(
 
         // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
-        const savePos = await saveNode.getPosition()
-        await comfyPage.page.evaluate((pos) => {
-          const canvas = window.app!.canvas
-          canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
-          canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2
-          canvas.setDirty(true, true)
-        }, savePos)
-        await comfyPage.nextFrame()
+        await saveNode.centerOnNode()
 
         await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
@@ -473,14 +464,7 @@ test.describe(
 
         // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
-        const savePos = await saveNode.getPosition()
-        await comfyPage.page.evaluate((pos) => {
-          const canvas = window.app!.canvas
-          canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
-          canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2
-          canvas.setDirty(true, true)
-        }, savePos)
-        await comfyPage.nextFrame()
+        await saveNode.centerOnNode()
 
         await saveNode.click('title')
         const subgraphNode = await saveNode.convertToSubgraph()
@@ -529,14 +513,7 @@ test.describe(
         const beforePromoted = await getPromotedWidgetNames(comfyPage, '11')
         expect(beforePromoted).toContain('text')
 
-        const serialized = await comfyPage.page.evaluate(() => {
-          return window.app!.graph!.serialize()
-        })
-
-        await comfyPage.page.evaluate((workflow: ComfyWorkflowJSON) => {
-          return window.app!.loadGraphData(workflow)
-        }, serialized as ComfyWorkflowJSON)
-        await comfyPage.nextFrame()
+        await comfyPage.subgraph.serializeAndReload()
 
         const afterPromoted = await getPromotedWidgetNames(comfyPage, '11')
         expect(afterPromoted).toContain('text')
@@ -556,14 +533,7 @@ test.describe(
         const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
         expect(beforeSnapshot.length).toBeGreaterThan(0)
 
-        const serialized = await comfyPage.page.evaluate(() => {
-          return window.app!.graph!.serialize()
-        })
-
-        await comfyPage.page.evaluate((workflow: ComfyWorkflowJSON) => {
-          return window.app!.loadGraphData(workflow)
-        }, serialized as ComfyWorkflowJSON)
-        await comfyPage.nextFrame()
+        await comfyPage.subgraph.serializeAndReload()
 
         const afterSnapshot = await getPromotedWidgets(comfyPage, '11')
         expect(afterSnapshot).toEqual(beforeSnapshot)
@@ -715,15 +685,10 @@ test.describe(
 
         // Delete the subgraph node
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-        await subgraphNode.click('title')
-        await comfyPage.page.keyboard.press('Delete')
-        await comfyPage.nextFrame()
+        await subgraphNode.delete()
 
         // Node no longer exists, so promoted widgets should be gone
-        const nodeExists = await comfyPage.page.evaluate(() => {
-          return !!window.app!.canvas.graph!.getNodeById('11')
-        })
-        expect(nodeExists).toBe(false)
+        expect(await subgraphNode.exists()).toBe(false)
       })
 
       test('Nested promoted widget entries reflect interior changes after slot removal', async ({
@@ -749,9 +714,7 @@ test.describe(
         })
         expect(removedSlotName).not.toBeNull()
 
-        await comfyPage.subgraph.rightClickInputSlot()
-        await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
-        await comfyPage.nextFrame()
+        await comfyPage.subgraph.removeSlot('input')
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
@@ -781,9 +744,7 @@ test.describe(
         await subgraphNode.navigateIntoSubgraph()
 
         // Remove the text input slot
-        await comfyPage.subgraph.rightClickInputSlot('text')
-        await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
-        await comfyPage.nextFrame()
+        await comfyPage.subgraph.removeSlot('input', 'text')
 
         // Navigate back via breadcrumb
         await comfyPage.subgraph.exitViaBreadcrumb()

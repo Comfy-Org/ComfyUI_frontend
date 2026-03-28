@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
 
 test.describe(
@@ -14,13 +15,8 @@ test.describe(
     test('Promoted seed widget renders in node body, not header', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('default')
-
-      // Convert KSampler (id 3) to subgraph — seed is auto-promoted.
-      const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
-      await ksampler.click('title')
-      const subgraphNode = await ksampler.convertToSubgraph()
-      await comfyPage.nextFrame()
+      const subgraphNode =
+        await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
 
       // Enable Vue nodes now that the subgraph has been created
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -43,15 +39,7 @@ test.describe(
       await expect(seedWidget).toBeVisible()
 
       // Verify widget is inside the node body, not the header
-      const headerBox = await nodeLocator
-        .locator('[data-testid^="node-header-"]')
-        .boundingBox()
-      const widgetBox = await seedWidget.boundingBox()
-      expect(headerBox).not.toBeNull()
-      expect(widgetBox).not.toBeNull()
-
-      // Widget top should be below the header bottom
-      expect(widgetBox!.y).toBeGreaterThan(headerBox!.y + headerBox!.height)
+      await SubgraphHelper.expectWidgetBelowHeader(nodeLocator, seedWidget)
     })
   }
 )
