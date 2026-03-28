@@ -142,8 +142,12 @@ function onBranchSelectorCreated(this: LGraphNode) {
       .filter((inp) => inp.connected)
   }
 
+  function getConnectedLabels(): string[] {
+    return getConnectedInputs().map((inp) => inp.label)
+  }
+
   function refreshBranchValues() {
-    const next = getConnectedInputs().map((inp) => inp.label)
+    const next = getConnectedLabels()
     values.splice(0, values.length, ...next)
   }
 
@@ -151,8 +155,25 @@ function onBranchSelectorCreated(this: LGraphNode) {
     values
   })
 
+  // Also expose values as a live getter so Vue dropdowns always read fresh
+  Object.defineProperty(comboWidget.options, 'values', {
+    get: () => {
+      const live = getConnectedLabels()
+      if (
+        live.length !== values.length ||
+        live.some((v, i) => v !== values[i])
+      ) {
+        values.splice(0, values.length, ...live)
+      }
+      return values
+    },
+    configurable: true,
+    enumerable: true
+  })
+
   function syncComboSelection() {
     if (app.configuringGraph) return
+    refreshBranchValues()
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -166,24 +187,8 @@ function onBranchSelectorCreated(this: LGraphNode) {
 
   // Refresh on connection changes (add/remove inputs)
   this.onConnectionsChange = useChainCallback(this.onConnectionsChange, () =>
-    requestAnimationFrame(() => {
-      refreshBranchValues()
-      syncComboSelection()
-    })
+    requestAnimationFrame(() => syncComboSelection())
   )
-
-  // Check for label/connection changes on each draw frame
-  let lastSnapshot = ''
-  this.onDrawForeground = useChainCallback(this.onDrawForeground, () => {
-    const current = getConnectedInputs()
-      .map((inp) => `${inp.index}:${inp.label}`)
-      .join('\0')
-    if (current !== lastSnapshot) {
-      lastSnapshot = current
-      refreshBranchValues()
-      syncComboSelection()
-    }
-  })
 
   // Restore renamed labels after configure (autogrow recreates inputs fresh)
   this.onConfigure = useChainCallback(
