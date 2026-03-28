@@ -242,10 +242,22 @@ const INPUT_NAMES = [
   'batch_002.png'
 ]
 
-const INPUT_MIMES: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.mp4': 'video/mp4'
+const EXTENSION_MIME_MAP: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  ogg: 'audio/ogg',
+  flac: 'audio/flac'
+}
+
+function getMimeType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+  return EXTENSION_MIME_MAP[ext] ?? 'application/octet-stream'
 }
 
 /**
@@ -276,12 +288,11 @@ export function generateModels(
 export function generateInputFiles(count: number): Asset[] {
   return Array.from({ length: Math.min(count, INPUT_NAMES.length) }, (_, i) => {
     const name = INPUT_NAMES[i % INPUT_NAMES.length]
-    const ext = name.substring(name.lastIndexOf('.'))
     return createInputAsset({
       id: `gen-input-${String(i + 1).padStart(3, '0')}`,
       name,
       size: 1_000_000 + i * 500_000,
-      mime_type: INPUT_MIMES[ext] ?? 'application/octet-stream',
+      mime_type: getMimeType(name),
       tags: ['input'],
       created_at: `2025-03-${String(1 + i).padStart(2, '0')}T09:00:00Z`,
       updated_at: `2025-03-${String(1 + i).padStart(2, '0')}T09:00:00Z`
