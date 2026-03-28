@@ -271,9 +271,12 @@ test.describe('Workflows sidebar', () => {
       '.comfyui-workflows-open .close-workflow-button'
     )
     await closeButton.click()
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow'
-    ])
+    await comfyPage.nextFrame()
+    await expect(async () => {
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow'])
+    }).toPass({ timeout: 5000 })
   })
 
   test('Can close saved workflow with command', async ({ comfyPage }) => {

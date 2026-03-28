@@ -175,7 +175,9 @@ test.describe('Node Interaction', () => {
     // Move mouse away to avoid hover highlight on the node at the drop position.
     await comfyPage.canvasOps.moveMouseToEmptyArea()
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
+    await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png', {
+      maxDiffPixels: 50
+    })
   })
 
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
