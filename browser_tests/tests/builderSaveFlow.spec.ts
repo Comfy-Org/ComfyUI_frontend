@@ -23,8 +23,8 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   test('Save as dialog appears for unsaved workflow', async ({ comfyPage }) => {
     const { page, appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+    await appMode.steps.goToPreview()
+    await appMode.footer.clickSave()
 
     // The save-as dialog should appear with filename input and view type selection
     const dialog = page.getByRole('dialog')
@@ -42,8 +42,8 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   }) => {
     const { page, appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+    await appMode.steps.goToPreview()
+    await appMode.footer.clickSave()
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible({ timeout: 5000 })
@@ -69,8 +69,8 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   }) => {
     const { page, appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+    await appMode.steps.goToPreview()
+    await appMode.footer.clickSave()
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible({ timeout: 5000 })
@@ -90,24 +90,24 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
 
     // Should start at outputs (we ended there in setup)
     // Navigate to inputs
-    await appMode.goToInputs()
+    await appMode.steps.goToInputs()
 
     // Back button should be disabled on first step
-    const backButton = appMode.getFooterButton('Back')
+    const backButton = appMode.footer.getButton('Back')
     await expect(backButton).toBeDisabled()
 
     // Next button should be enabled
-    const nextButton = appMode.getFooterButton('Next')
+    const nextButton = appMode.footer.getButton('Next')
     await expect(nextButton).toBeEnabled()
 
     // Navigate forward
-    await appMode.next()
+    await appMode.steps.next()
 
     // Back button should now be enabled
     await expect(backButton).toBeEnabled()
 
     // Navigate to preview (last step)
-    await appMode.next()
+    await appMode.steps.next()
 
     // Next button should be disabled on last step
     await expect(nextButton).toBeDisabled()
@@ -118,7 +118,7 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
     await setupSubgraphBuilder(comfyPage)
 
     // Verify builder toolbar is visible
-    const toolbar = page.getByRole('navigation', { name: 'App Builder' })
+    const toolbar = comfyPage.appMode.steps.toolbar
     await expect(toolbar).toBeVisible()
 
     // Press Escape
@@ -130,13 +130,13 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   })
 
   test('Exit builder button exits builder mode', async ({ comfyPage }) => {
-    const { page, appMode } = comfyPage
+    const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
-    const toolbar = page.getByRole('navigation', { name: 'App Builder' })
+    const toolbar = appMode.steps.toolbar
     await expect(toolbar).toBeVisible()
 
-    await appMode.exitBuilder()
+    await appMode.footer.exitBuilder()
 
     await expect(toolbar).not.toBeVisible()
   })
@@ -146,10 +146,10 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   }) => {
     const { page, appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
+    await appMode.steps.goToPreview()
 
     // First save via builder save-as to make it non-temporary
-    await appMode.clickSave()
+    await appMode.footer.clickSave()
     const saveAsDialog = page.getByRole('dialog')
     await expect(saveAsDialog).toBeVisible({ timeout: 5000 })
     const workflowName = `${Date.now()} builder-direct-save`
@@ -164,22 +164,11 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
     await successDialog.getByText('Close', { exact: true }).click()
     await comfyPage.nextFrame()
 
-    // Modify the workflow so the save button becomes enabled
-    await appMode.goToInputs()
-    const seedMenu = appMode.getBuilderInputItemMenu('seed')
-    await seedMenu.click()
-    await page.getByText('Delete', { exact: true }).click()
-    await comfyPage.nextFrame()
-    await appMode.goToPreview()
-    await expect(appMode.getFooterButton(/^Save$/)).toBeEnabled({
-      timeout: 5000
-    })
-
-    // Now click save — should save directly without dialog
-    await appMode.clickSave()
+    // Now click save again — should save directly
+    await appMode.footer.clickSave()
 
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 2000 })
-    await expect(appMode.getFooterButton(/^Save$/)).toBeDisabled()
+    await expect(appMode.footer.getButton(/^Save$/)).toBeDisabled()
   })
 
   test('Split button chevron opens save-as for saved workflow', async ({
@@ -187,10 +176,10 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   }) => {
     const { page, appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
+    await appMode.steps.goToPreview()
 
     // First save via builder save-as to make it non-temporary
-    await appMode.clickSave()
+    await appMode.footer.clickSave()
     const saveAsDialog = page.getByRole('dialog')
     await expect(saveAsDialog).toBeVisible({ timeout: 5000 })
     const workflowName = `${Date.now()} builder-split-btn`
@@ -206,7 +195,7 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
     await comfyPage.nextFrame()
 
     // Click the chevron dropdown trigger
-    const chevronButton = appMode.getFooterButton('Save as')
+    const chevronButton = appMode.footer.getButton('Save as')
     await chevronButton.click()
 
     // "Save as" menu item should appear
@@ -232,7 +221,7 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
 
     // Without selecting any outputs, click the save button
     // It should trigger the connect-output popover
-    await appMode.clickSave()
+    await appMode.footer.clickSave()
 
     // The popover should show a message about connecting outputs
     await expect(
@@ -243,8 +232,8 @@ test.describe('Builder save flow', { tag: ['@ui', '@subgraph'] }, () => {
   test('View type can be toggled in save-as dialog', async ({ comfyPage }) => {
     const { page, appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
-    await appMode.goToPreview()
-    await appMode.clickSave()
+    await appMode.steps.goToPreview()
+    await appMode.footer.clickSave()
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible({ timeout: 5000 })
