@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 
+import type { AppMode } from '../../../src/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -111,14 +112,14 @@ export class WorkflowHelper {
     })
   }
 
-  async getActiveWorkflowActiveAppMode(): Promise<string | null | undefined> {
+  async getActiveWorkflowActiveAppMode(): Promise<AppMode | null | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.activeMode
     })
   }
 
-  async getActiveWorkflowInitialMode(): Promise<string | null | undefined> {
+  async getActiveWorkflowInitialMode(): Promise<AppMode | null | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.initialMode
