@@ -448,10 +448,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       const initialNodeCount = await comfyPage.subgraph.getNodeCount()
 
-      const firstNodeLocator = comfyPage.page.locator('[data-node-id]').first()
-      await expect(firstNodeLocator).toBeVisible()
-      const firstNodeId = await firstNodeLocator.getAttribute('data-node-id')
-
+      const firstNodeId = await comfyPage.page.evaluate(() => {
+        const nodes = window.app!.canvas.graph!.nodes
+        return nodes?.[0]?.id != null ? String(nodes[0].id) : null
+      })
       expect(firstNodeId).not.toBeNull()
 
       const nodeToClone = await comfyPage.nodeOps.getNodeRefById(firstNodeId!)

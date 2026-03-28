@@ -69,8 +69,12 @@ export class SubgraphHelper {
 
           if (action === 'rightClick') {
             if (!slot.pos) continue
-            canvasX = slot.pos[0]
-            canvasY = slot.pos[1]
+            const converted = app.canvas.ds.convertOffsetToCanvas([
+              slot.pos[0],
+              slot.pos[1]
+            ])
+            canvasX = converted[0]
+            canvasY = converted[1]
           } else {
             if (!slot.boundingRect) {
               throw new Error(`${slotType} slot bounding rect not found`)
@@ -447,10 +451,22 @@ export class SubgraphHelper {
     const enterButton = this.page
       .getByTestId(TestIds.widgets.subgraphEnterButton)
       .first()
-    const nodeEl = enterButton
-      .locator('xpath=ancestor::*[@data-node-id]')
-      .first()
-    const id = await nodeEl.getAttribute('data-node-id')
+
+    if ((await enterButton.count()) > 0) {
+      const nodeEl = enterButton
+        .locator('xpath=ancestor::*[@data-node-id]')
+        .first()
+      const id = await nodeEl.getAttribute('data-node-id')
+      if (id) return id
+    }
+
+    const id = await this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const node = graph.nodes.find(
+        (n) => typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+      )
+      return node ? String(node.id) : null
+    })
     if (!id) throw new Error('No subgraph node found in current graph')
     return id
   }

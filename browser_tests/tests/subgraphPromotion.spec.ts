@@ -559,16 +559,15 @@ test.describe(
         await comfyPage.page.keyboard.up('Alt')
         await comfyPage.nextFrame()
 
-        const enterButtons = comfyPage.page.getByTestId(
-          TestIds.widgets.subgraphEnterButton
-        )
-        const allButtons = await enterButtons.all()
-        const subgraphNodeIds: string[] = []
-        for (const btn of allButtons) {
-          const nodeEl = btn.locator('xpath=ancestor::*[@data-node-id]').first()
-          const id = await nodeEl.getAttribute('data-node-id')
-          if (id) subgraphNodeIds.push(id)
-        }
+        const subgraphNodeIds = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph!
+          return graph.nodes
+            .filter(
+              (n) =>
+                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+            )
+            .map((n) => String(n.id))
+        })
 
         expect(subgraphNodeIds.length).toBeGreaterThan(1)
         for (const nodeId of subgraphNodeIds) {
