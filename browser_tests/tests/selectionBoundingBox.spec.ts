@@ -3,8 +3,8 @@ import type { Page } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage';
-import type { ComfyPage } from '../fixtures/ComfyPage';
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 
 interface CanvasRect {
   x: number
