@@ -783,7 +783,7 @@ export async function executeAction(
         break
       case 'pressKey':
         try {
-          // Show key press in subtitle + hold long enough for video frame capture
+          // Show key in subtitle (persists 2s) then instant press
           const keyLabel =
             step.key === ' '
               ? 'Space'
@@ -791,10 +791,9 @@ export async function executeAction(
                 ? step.key.toUpperCase()
                 : step.key
           await showSubtitle(page, `⌨ ${keyLabel}`, 0)
-          await page.keyboard.down(step.key)
-          await sleep(400) // Hold long enough for HUD + video frame
-          await page.keyboard.up(step.key)
-          await sleep(300)
+          await sleep(200) // Let subtitle render before pressing
+          await page.keyboard.press(step.key)
+          await sleep(500)
         } catch (e) {
           console.warn(
             `Skipping invalid key "${step.key}": ${e instanceof Error ? e.message : e}`
@@ -910,11 +909,29 @@ export async function executeAction(
         break
       }
       case 'loadDefaultWorkflow':
-        // Convenience: File → Load Default in one action
-        await openComfyMenu(page)
-        await hoverMenuItem(page, 'File')
-        await clickSubmenuItem(page, 'Load Default')
-        await sleep(1000)
+        // Load default workflow via app API (most reliable, no menu navigation)
+        try {
+          await page.evaluate(() => {
+            const app = (window as unknown as Record<string, unknown>).app as {
+              loadGraphData?: (d: unknown) => Promise<void>
+              resetToDefaultWorkflow?: () => Promise<void>
+            }
+            if (app?.resetToDefaultWorkflow) return app.resetToDefaultWorkflow()
+            return Promise.resolve()
+          })
+          await sleep(1000)
+        } catch {
+          // Fallback: try menu navigation with multiple possible item names
+          await openComfyMenu(page)
+          await hoverMenuItem(page, 'File')
+          const loaded = await clickSubmenuItem(page, 'Load Default')
+            .then(() => true)
+            .catch(() => false)
+          if (!loaded) {
+            await clickSubmenuItem(page, 'Default Workflow').catch(() => {})
+          }
+          await sleep(1000)
+        }
         break
       case 'openSettings':
         // Convenience: open Settings dialog in one action
