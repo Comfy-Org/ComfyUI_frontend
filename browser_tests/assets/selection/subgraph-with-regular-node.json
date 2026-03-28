@@ -1,0 +1,116 @@
+{
+  "id": "selection-bbox-test",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "e5fb1765-9323-4548-801a-5aead34d879e",
+      "pos": [300, 200],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [1]
+        }
+      ],
+      "properties": {},
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "EmptyLatentImage",
+      "pos": [800, 200],
+      "size": [315, 106],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "properties": {},
+      "widgets_values": [512, 512, 1]
+    }
+  ],
+  "links": [[1, 2, 0, 3, 0, "LATENT"]],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "e5fb1765-9323-4548-801a-5aead34d879e",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 1,
+          "lastLinkId": 0,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Test Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [100, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [500, 200, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "c5cc99d8-a2b6-4bf3-8be7-d4949ef736cd",
+            "name": "positive",
+            "type": "CONDITIONING",
+            "linkIds": [],
+            "pos": { "0": 200, "1": 220 }
+          }
+        ],
+        "outputs": [
+          {
+            "id": "9bd488b9-e907-4c95-a7a4-85c5597a87af",
+            "name": "LATENT",
+            "type": "LATENT",
+            "linkIds": [],
+            "pos": { "0": 520, "1": 220 }
+          }
+        ],
+        "widgets": [],
+        "nodes": [],
+        "groups": [],
+        "links": [],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

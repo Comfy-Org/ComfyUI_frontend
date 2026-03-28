@@ -261,7 +261,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -778,6 +779,34 @@ const showAdvancedState = customRef((track, trigger) => {
       trigger()
     }
   }
+})
+
+const FOOTER_BOUNDING_OFFSET = 32
+const FOOTER_BOUNDING_OFFSET_COLLAPSED = 34
+watchEffect((onCleanup) => {
+  const node = lgraphNode.value
+  if (!node) return
+
+  const needsFooterOffset = hasFooter.value
+  const collapsed = isCollapsed.value
+
+  if (needsFooterOffset || collapsed) {
+    node.onBounding = (out) => {
+      if (needsFooterOffset)
+        out[3] += collapsed
+          ? FOOTER_BOUNDING_OFFSET_COLLAPSED
+          : FOOTER_BOUNDING_OFFSET
+
+      // Must match CSS --min-node-width in the template.
+      if (collapsed) out[2] = MIN_NODE_WIDTH
+    }
+  } else {
+    node.onBounding = undefined
+  }
+
+  onCleanup(() => {
+    node.onBounding = undefined
+  })
 })
 
 const hasVideoInput = computed(() => {
