@@ -28,15 +28,23 @@
             @load="handleImageLoad"
           />
 
-          <!-- Toggle to Grid (hover, top-left) -->
+          <!-- Toggle to Grid / Back to Grid (hover, top-left) -->
           <button
             v-if="showControls && galleryImages.length > 1"
             :class="toggleButtonClass"
             class="absolute top-2 left-2"
-            :aria-label="t('g.switchToGridView')"
+            :aria-label="
+              cameFromGrid ? t('g.switchToSingleView') : t('g.switchToGridView')
+            "
             @click="switchToGrid"
           >
-            <i class="icon-[lucide--layout-grid] size-4" />
+            <i
+              :class="
+                cameFromGrid
+                  ? 'icon-[lucide--arrow-left] size-4'
+                  : 'icon-[lucide--layout-grid] size-4'
+              "
+            />
           </button>
 
           <!-- Action Buttons (hover, top-right) -->
@@ -143,17 +151,7 @@
           class="relative h-72 overflow-x-hidden overflow-y-auto rounded-sm bg-component-node-background"
           tabindex="0"
         >
-          <!-- Back to Single (top-left, always visible) -->
-          <button
-            :class="toggleButtonClass"
-            class="sticky top-2 left-2 z-10 mt-2 ml-2"
-            :aria-label="t('g.switchToSingleView')"
-            @click="switchToSingle"
-          >
-            <i class="icon-[lucide--arrow-left] size-4" />
-          </button>
-
-          <div class="-mt-10 flex flex-wrap content-start gap-1">
+          <div class="flex flex-wrap content-start gap-1">
             <button
               v-for="(item, index) in galleryImages"
               :key="getItemSrc(item)"
@@ -217,6 +215,7 @@ const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
 const isHovered = ref(false)
 const isFocused = ref(false)
+const cameFromGrid = ref(false)
 const imageDimensions = ref<string | null>(null)
 const thumbnailRefs = ref<(HTMLElement | null)[]>([])
 const imageContainerEl = ref<HTMLDivElement>()
@@ -267,6 +266,7 @@ watch(galleryImages, (images) => {
   }
   if (images.length <= 1) {
     displayMode.value = 'single'
+    cameFromGrid.value = false
   }
 })
 
@@ -346,15 +346,11 @@ function switchToGrid() {
   displayMode.value = 'grid'
 }
 
-function switchToSingle() {
-  isHovered.value = false
-  displayMode.value = 'single'
-}
-
 function selectFromGrid(index: number) {
   activeIndex.value = index
   imageDimensions.value = null
   isHovered.value = false
+  cameFromGrid.value = true
   displayMode.value = 'single'
   scrollToActive()
 }
