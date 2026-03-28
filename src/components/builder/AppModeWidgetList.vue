@@ -170,6 +170,7 @@ defineExpose({ handleDragDrop })
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
         : undefined
     "
+    data-testid="builder-widget-item"
   >
     <div
       :class="
@@ -181,6 +182,7 @@ defineExpose({ handleDragDrop })
     >
       <span
         :class="cn('truncate text-sm/8', builderMode && 'pointer-events-none')"
+        data-testid="builder-widget-label"
       >
         {{ action.widget.label || action.widget.name }}
       </span>

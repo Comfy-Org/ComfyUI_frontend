@@ -86,7 +86,9 @@ export const TestIds = {
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
     widgetActionsMenu: 'widget-actions-menu',
-    opensAs: 'builder-opens-as'
+    opensAs: 'builder-opens-as',
+    widgetItem: 'builder-widget-item',
+    widgetLabel: 'builder-widget-label'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
