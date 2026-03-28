@@ -118,6 +118,26 @@ export class WorkflowHelper {
     })
   }
 
+  async getActiveWorkflowInitialMode(): Promise<string | null | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.initialMode
+    })
+  }
+
+  async getLinearModeFromGraph(): Promise<boolean | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return window.app!.rootGraph.extra?.linearMode as boolean | undefined
+    })
+  }
+
+  async getOpenWorkflowCount(): Promise<number> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow.workflows
+        .length
+    })
+  }
+
   async isCurrentWorkflowModified(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow

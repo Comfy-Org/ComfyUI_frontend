@@ -53,6 +53,11 @@ export class BuilderSaveAsHelper {
       .filter({ hasText: 'Close' })
   }
 
+  /** The X button to dismiss the success dialog without any action. */
+  get dismissButton(): Locator {
+    return this.successDialog.locator('button.p-dialog-close-button')
+  }
+
   get exitBuilderButton(): Locator {
     return this.successDialog.getByRole('button', { name: 'Exit builder' })
   }
