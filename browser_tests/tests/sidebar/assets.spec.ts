@@ -503,7 +503,9 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
-    await comfyPage.page.waitForTimeout(200)
+
+    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    await expect(contextMenu).toBeVisible({ timeout: 3000 })
 
     await expect(
       tab.contextMenuItem('Open as workflow in new tab')
