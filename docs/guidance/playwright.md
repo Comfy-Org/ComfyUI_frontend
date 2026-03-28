@@ -77,22 +77,25 @@ await page.evaluate(() => {
 
 ## Assertion Best Practices
 
-```typescript
-// ✅ Custom message — explains why the assertion matters
-expect(items, 'K-Sampler inputs changed — update test fixture').toHaveLength(7)
+When a test depends on an invariant unrelated to what it's actually testing (e.g. asserting a node has 4 widgets before testing node movement), always assert that invariant explicitly — don't leave it unchecked. Use a custom message or `expect.soft()` rather than a bare `expect`, so failures point to the broken assumption instead of producing a confusing error downstream.
 
-// ✅ Soft assertion — collects multiple failures without stopping
+```typescript
+// ✅ Custom message on an unrelated precondition — clear signal when the invariant breaks
+expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(4)
+await node.move(100, 200)
+
+// ✅ Soft assertion — verifies multiple invariants without stopping the test early
 expect.soft(menuItem1).toBeVisible()
 expect.soft(menuItem2).toBeVisible()
 expect.soft(menuItem3).toBeVisible()
 
-// ❌ Bad — no context when it fails
-expect(items).toHaveLength(7)
+// ❌ Bare expect on a precondition — no context when it fails
+expect(node.widgets).toHaveLength(4)
 ```
 
-- Use custom messages for precondition/invariant checks
-- Use `expect.soft()` for non-blocking checks where you want to verify multiple things
-- Never use custom error classes for test invariants — just use Playwright's built-in message parameter
+- Use custom messages (`expect(x, 'reason')`) for precondition checks unrelated to the test's purpose
+- Use `expect.soft()` when you want to verify multiple invariants without aborting on the first failure
+- Prefer Playwright's built-in message parameter over custom error classes
 
 ## Test Tags
 
