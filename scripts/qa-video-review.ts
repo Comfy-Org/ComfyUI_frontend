@@ -421,6 +421,12 @@ function buildSingleVideoPrompt(
 ): string {
   const lines = [
     'You are a senior QA engineer reviewing a UI test session recording.',
+    '',
+    '## ANTI-HALLUCINATION RULES (READ FIRST)',
+    '- Describe ONLY what you can directly observe in the video frames',
+    '- NEVER infer or assume what "must have happened" between frames',
+    '- If a step is not visible in the video, say "NOT SHOWN" — do not guess',
+    '- Your job is to be a CAMERA — report facts, not interpretations',
     ''
   ]
 
@@ -431,38 +437,40 @@ function buildSingleVideoPrompt(
     )
 
   if (prContext) {
+    lines.push(
+      '## Phase 1: Blind Observation (describe what you SEE)',
+      'First, describe every UI interaction chronologically WITHOUT knowing the expected outcome:',
+      '- What elements does the user click/hover/type?',
+      '- What dialogs/menus open and close?',
+      '- What keyboard indicators appear? (look for subtitle overlays)',
+      '- What is the BEFORE state and AFTER state of each action?',
+      '',
+      '## Phase 2: Compare against expected behavior',
+      'Now compare your observations against the context below.',
+      'Only claim a match if your Phase 1 observations EXPLICITLY support it.',
+      ''
+    )
+
     if (isIssueContext) {
       lines.push(
         '## Issue Context',
-        'This video attempts to reproduce a reported bug on the main branch.',
-        'Your review MUST evaluate whether the reported bug is visible and reproducible.',
-        '',
         prContext,
         '',
-        '## Review Instructions',
-        '1. Does the video demonstrate the reported bug occurring?',
-        '2. Is the bug clearly visible and reproducible from the steps shown?',
-        '3. Are there any other issues visible during the reproduction attempt?',
-        '',
-        '## CRITICAL: Honesty Requirements',
-        '- If the video only shows login, idle canvas, or trivial menu interactions WITHOUT actually performing the reproduction steps, say "INCONCLUSIVE — reproduction steps were not performed".',
-        '- Do NOT claim a bug is "confirmed" unless you can clearly see the bug behavior described in the issue.',
-        '- Do NOT hallucinate findings. If the video does not show meaningful interaction, say so clearly.',
-        '- Rate confidence as "Low" if the video does not actually demonstrate the bug scenario.',
+        '## Comparison Questions',
+        '1. Did the video perform the reproduction steps described in the issue?',
+        '2. Did your Phase 1 observations show the reported bug behavior?',
+        '3. If the steps were not performed or the bug was not visible, say INCONCLUSIVE.',
         ''
       )
     } else {
       lines.push(
         '## PR Context',
-        'The video is a QA session testing a specific pull request.',
-        'Your review MUST evaluate whether the PR achieves its stated purpose.',
-        '',
         prContext,
         '',
-        '## Review Instructions',
-        "1. Does the video demonstrate the PR's intended behavior working correctly?",
-        '2. Are there regressions or side effects caused by the PR changes?',
-        '3. Does the observed behavior match what the PR claims to implement/fix?',
+        '## Comparison Questions',
+        '1. Did the video test the specific behavior the PR changes?',
+        '2. Did your Phase 1 observations show the expected before/after difference?',
+        '3. If the test was incomplete or inconclusive, say so honestly.',
         ''
       )
     }
