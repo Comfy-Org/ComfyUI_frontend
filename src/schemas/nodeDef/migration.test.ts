@@ -537,4 +537,122 @@ describe('ComfyNodeDefImpl', () => {
       expect(result.api_node).toBe(expected)
     }
   )
+
+  describe('defaultInput migration', () => {
+    it('should not set forceInput on optional input with defaultInput', () => {
+      const nodeDef = new ComfyNodeDefImpl({
+        name: 'TestNode',
+        display_name: 'Test Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A test node',
+        input: {
+          optional: {
+            seed_override: ['INT', { defaultInput: true, default: 0 }]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      } as ComfyNodeDefV1)
+
+      expect(nodeDef.inputs['seed_override']).toBeDefined()
+      expect(nodeDef.inputs['seed_override'].forceInput).toBeUndefined()
+    })
+
+    it('should preserve widget type on optional input with defaultInput', () => {
+      const nodeDef = new ComfyNodeDefImpl({
+        name: 'TestNode',
+        display_name: 'Test Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A test node',
+        input: {
+          optional: {
+            my_param: [
+              'FLOAT',
+              { defaultInput: true, default: 0.5, min: 0, max: 1 }
+            ]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      } as ComfyNodeDefV1)
+
+      const inputSpec = nodeDef.inputs['my_param']
+      expect(inputSpec.type).toBe('FLOAT')
+      expect(inputSpec.isOptional).toBe(true)
+      expect(inputSpec.default).toBe(0.5)
+      expect(inputSpec.forceInput).toBeUndefined()
+    })
+
+    it('should not affect required inputs with defaultInput', () => {
+      const nodeDef = new ComfyNodeDefImpl({
+        name: 'TestNode',
+        display_name: 'Test Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A test node',
+        input: {
+          required: {
+            value: ['INT', { defaultInput: true, default: 42 }]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      } as ComfyNodeDefV1)
+
+      expect(nodeDef.inputs['value']).toBeDefined()
+      expect(nodeDef.inputs['value'].forceInput).toBeUndefined()
+    })
+
+    it('should preserve explicit forceInput when set alongside defaultInput', () => {
+      const nodeDef = new ComfyNodeDefImpl({
+        name: 'TestNode',
+        display_name: 'Test Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A test node',
+        input: {
+          optional: {
+            forced: ['INT', { forceInput: true, defaultInput: true }]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      } as ComfyNodeDefV1)
+
+      expect(nodeDef.inputs['forced'].forceInput).toBe(true)
+    })
+
+    it('should not mutate the original node definition', () => {
+      const originalDef = {
+        name: 'TestNode',
+        display_name: 'Test Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A test node',
+        input: {
+          optional: {
+            param: ['INT', { defaultInput: true }]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      } as ComfyNodeDefV1
+
+      new ComfyNodeDefImpl(originalDef)
+
+      expect(originalDef.input!.optional!['param'][1]!.forceInput).toBeUndefined()
+    })
+  })
 })

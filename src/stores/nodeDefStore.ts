@@ -103,7 +103,14 @@ export class ComfyNodeDefImpl
 
   /**
    * @internal
-   * Migrate default input options to forceInput.
+   * Migrate default input options. Since frontend version 1.16+, widget and
+   * input socket co-exist on every input, so `defaultInput` no longer needs
+   * special handling. We only emit deprecation warnings.
+   *
+   * Previously `defaultInput` on optional inputs was migrated to `forceInput`,
+   * which prevented the widget from being created at all and made it impossible
+   * for users to toggle back to widget mode after reload.
+   * See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/1500
    */
   private static _migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
     const def = _.cloneDeep(nodeDef)
@@ -118,16 +125,16 @@ export class ComfyNodeDefImpl
         )
       }
     }
-    // For optional inputs, defaultInput is used to distinguish the null state.
-    // We migrate it to forceInput. One example is the "seed_override" input usage.
-    // User can connect the socket to override the seed.
+    // For optional inputs, defaultInput previously converted the widget into
+    // a socket-only input. Since 1.16+ widgets and sockets co-exist, we no
+    // longer need to set forceInput. The widget will be created alongside the
+    // socket, and users can choose how to provide the value.
     for (const [name, spec] of Object.entries(def.input.optional ?? {})) {
       const inputOptions = spec[1]
       if (inputOptions && inputOptions.defaultInput) {
         console.warn(
           `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please use forceInput instead.`
         )
-        inputOptions.forceInput = true
       }
     }
     return def
