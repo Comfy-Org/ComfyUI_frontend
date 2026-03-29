@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { WorkflowTemplates } from '../../src/platform/workflow/templates/types/template'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 
@@ -244,7 +245,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.page.route(
         '**/templates/index.json',
         async (route, _) => {
-          const response = [
+          const response: WorkflowTemplates[] = [
             {
               moduleName: 'default',
               title: 'Test Templates',
