@@ -137,20 +137,6 @@ Use helper methods from `browser_tests/fixtures/helpers/` that wrap real user
 interactions (e.g., `comfyPage.settings.setSetting`, `comfyPage.nodeOps`,
 `comfyPage.workflow.loadWorkflow`).
 
-### Migration Candidates
-
-Action-oriented `page.evaluate` calls to replace with user interactions or
-fixture helpers:
-
-1. `actionbar.spec.ts` — sets widget value and calls `changeTracker.checkState()` via evaluate instead of interacting with the widget UI
-2. `changeTracker.spec.ts` — calls `emitBeforeChange`/`emitAfterChange` via evaluate instead of performing actual canvas edits
-3. `selectionToolboxSubmenus.spec.ts` — dispatches synthetic `MouseEvent` click instead of using Playwright's `locator.click()`
-4. `dialog.spec.ts:443` — calls `showSignInDialog()` via evaluate instead of triggering it through the UI
-5. `colorPalette.spec.ts:181` — calls `addCustomColorPalette()` via evaluate instead of using the settings UI to import a palette
-6. `menu.spec.ts:156` — registers an extension command via evaluate; could use a test fixture that pre-registers extensions
-7. `groupSelectChildren.spec.ts:115` — deselects all nodes via evaluate instead of clicking an empty canvas area
-8. `widget.spec.ts:128,149,173` — mutates widget values directly via evaluate instead of interacting with widget controls
-
 ## Running Tests
 
 ```bash
