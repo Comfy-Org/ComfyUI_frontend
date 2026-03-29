@@ -117,7 +117,7 @@ type KeysOfType<T, Match> = {
 }[keyof T]
 
 class ConfirmDialog {
-  private readonly root: Locator
+  public readonly root: Locator
   public readonly delete: Locator
   public readonly overwrite: Locator
   public readonly reject: Locator
