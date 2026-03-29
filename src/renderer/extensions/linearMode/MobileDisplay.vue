@@ -164,13 +164,14 @@ const menuEntries = computed<MenuItem[]>(() => [
       <DropdownMenu :entries="menuEntries" />
       <DropdownMenu
         :entries="workflowsEntries"
-        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width)"
+        class="max-h-[40vh] w-(--reka-dropdown-menu-content-available-width) overflow-y-auto"
         :collision-padding="20"
       >
         <template #button>
           <!--TODO: Use button here? Probably too much work to destyle-->
           <div
             class="flex h-10 grow items-center gap-2 rounded-sm bg-secondary-background p-2"
+            data-testid="linear-mobile-workflows"
           >
             <i
               class="icon-[lucide--panels-top-left] shrink-0 bg-primary-background"

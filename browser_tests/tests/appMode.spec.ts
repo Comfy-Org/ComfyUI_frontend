@@ -35,7 +35,7 @@ test.describe('App mode usage', () => {
     ])
   })
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
-    test('smoke', async ({ comfyPage }) => {
+    test('panel navigation', async ({ comfyPage }) => {
       const { mobileView } = comfyPage.appMode
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
       await expect(mobileView).toBeVisible()
@@ -67,11 +67,20 @@ test.describe('App mode usage', () => {
         .click({ clickCount: 3 })
       await expect(steps).toHaveValue('22')
     })
-    test('workflow selection', async ({ comfyPage }) => {
-      for (const w of ['default']) await comfyPage.workflow.loadWorkflow(w)
 
-      await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
-      await expect(comfyPage.appMode.mobileView).toBeVisible()
+    test('workflow selection', async ({ comfyPage }) => {
+      const widgetNames = ['seed', 'steps', 'denoise', 'cfg']
+      for (const name of widgetNames)
+        await comfyPage.appMode.enterAppModeWithInputs([['3', name]])
+      await expect(comfyPage.appMode.mobileWorkflows).toBeVisible()
+      const widgets = comfyPage.appMode.linearWidgets
+      await comfyPage.appMode.mobileView
+        .getByRole('tab', { name: 'Edit & Run' })
+        .click()
+      for (let i = 0; i < widgetNames.length; i++) {
+        await comfyPage.appMode.switchMobileWorkflow(`(${i + 2})`)
+        await expect(widgets.getByText(widgetNames[i])).toBeVisible()
+      }
     })
   })
 })
