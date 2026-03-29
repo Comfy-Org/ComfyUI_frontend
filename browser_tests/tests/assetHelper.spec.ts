@@ -183,10 +183,7 @@ test.describe('AssetHelper', () => {
       comfyPage
     }) => {
       const { assetApi } = comfyPage
-      assetApi.configure(
-        withAsset(STABLE_CHECKPOINT),
-        withAsset(STABLE_LORA)
-      )
+      assetApi.configure(withAsset(STABLE_CHECKPOINT), withAsset(STABLE_LORA))
       await assetApi.mock()
 
       const { status } = await assetApi.fetch(
@@ -272,9 +269,7 @@ test.describe('AssetHelper', () => {
       await assetApi.clearMocks()
     })
 
-    test('GET requests are not tracked as mutations', async ({
-      comfyPage
-    }) => {
+    test('GET requests are not tracked as mutations', async ({ comfyPage }) => {
       const { assetApi } = comfyPage
       assetApi.configure(withAsset(STABLE_CHECKPOINT))
       await assetApi.mock()
@@ -291,9 +286,7 @@ test.describe('AssetHelper', () => {
   })
 
   test.describe('mockError', () => {
-    test('returns error status for all asset routes', async ({
-      comfyPage
-    }) => {
+    test('returns error status for all asset routes', async ({ comfyPage }) => {
       const { assetApi } = comfyPage
       await assetApi.mockError(503, 'Service Unavailable')
 
