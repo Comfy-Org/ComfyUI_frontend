@@ -10,107 +10,89 @@ See `docs/testing/*.md` for detailed patterns.
 ## Best Practices
 
 - Follow [Playwright Best Practices](https://playwright.dev/docs/best-practices)
-- Do NOT use `waitForTimeout` - use Locator actions and retrying assertions
+- Do NOT use `waitForTimeout` — use Locator actions and retrying assertions
 - Prefer specific selectors (role, label, test-id)
 - Test across viewports
 
 ## Window Globals
 
 Browser tests access `window.app`, `window.graph`, and `window.LiteGraph` which are
-optional in the main app types. In E2E tests, use non-null assertions (`!`):
+optional in the main app types. Use non-null assertions (`!`) in E2E tests only:
 
 ```typescript
 window.app!.graph!.nodes
 window.LiteGraph!.registered_node_types
 ```
 
-This is the **only context** where non-null assertions are acceptable.
+TODO: Consolidate into a central utility (e.g., `getApp()`) with runtime type checking.
 
-**TODO:** Consolidate these references into a central utility (e.g., `getApp()`) that
-performs proper runtime type checking, removing the need for scattered `!` assertions.
+## Type Assertions
 
-## Type Assertions in E2E Tests
+Use specific type assertions when needed, never `as any`.
 
-E2E tests may use **specific** type assertions when needed, but **never** `as any`.
-
-### Acceptable Patterns
+Acceptable:
 
 ```typescript
-// ✅ Non-null assertions for window globals
 window.app!.extensionManager
-
-// ✅ Specific type assertions with documentation
-// Extensions can register arbitrary setting IDs
 id: 'TestSetting' as TestSettingId
-
-// ✅ Test-local type helpers
 type TestSettingId = keyof Settings
 ```
 
-### Forbidden Patterns
+Forbidden:
 
 ```typescript
-// ❌ Never use `as any`
 settings: testData as any
-
-// ❌ Never modify production types to satisfy test errors
-// Don't add test settings to src/schemas/apiSchema.ts
-
-// ❌ Don't chain through unknown to bypass types
-data as unknown as SomeType // Avoid; prefer `as Partial<SomeType> as SomeType` or explicit typings
+data as unknown as SomeType
 ```
 
-### Accessing Internal State
-
-When tests need internal store properties (e.g., `.workflow`, `.focusMode`):
-
-```typescript
-// ✅ Access stores directly in page.evaluate
-await page.evaluate(() => {
-  const store = useWorkflowStore()
-  return store.activeWorkflow
-})
-
-// ❌ Don't change public API types to expose internals
-// Keep app.extensionManager typed as ExtensionManager, not WorkspaceStore
-```
+Access internal state via `page.evaluate` and stores directly — don't change public API types to expose internals.
 
 ## Assertion Best Practices
 
-When a test depends on an invariant unrelated to what it's actually testing (e.g. asserting a node has 4 widgets before testing node movement), always assert that invariant explicitly — don't leave it unchecked. Use a custom message or `expect.soft()` rather than a bare `expect`, so failures point to the broken assumption instead of producing a confusing error downstream.
+Assert preconditions explicitly with a custom message so failures point to the broken assumption:
 
 ```typescript
-// ✅ Custom message on an unrelated precondition — clear signal when the invariant breaks
 expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(
   4
 )
 await node.move(100, 200)
 
-// ✅ Soft assertion — verifies multiple invariants without stopping the test early
 expect.soft(menuItem1).toBeVisible()
 expect.soft(menuItem2).toBeVisible()
-expect.soft(menuItem3).toBeVisible()
 
-// ❌ Bare expect on a precondition — no context when it fails
+// Bad — bare expect on a precondition gives no context when it fails
 expect(node.widgets).toHaveLength(4)
 ```
 
-- Use custom messages (`expect(x, 'reason')`) for precondition checks unrelated to the test's purpose
-- Use `expect.soft()` when you want to verify multiple invariants without aborting on the first failure
-- Prefer Playwright's built-in message parameter over custom error classes
+- `expect(x, 'reason')` for precondition checks unrelated to the test's purpose
+- `expect.soft()` to verify multiple invariants without aborting on the first failure
+
+## Test Structure: Arrange/Act/Assert
+
+1. All mock setup, state resets, and fixture arrangement belongs in `test.beforeEach()` or Playwright fixtures
+2. Inside `test()`, only act (user actions) and assert
+3. Never call `clearAllMocks` or reset mock state mid-test
+
+```typescript
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('test.json')
+})
+test('should do something', async ({ comfyPage }) => {
+  await comfyPage.menu.topbar.click()
+  await expect(comfyPage.menu.nodeLibraryTab.root).toBeVisible()
+})
+```
 
 ## Test Tags
 
-Tags are respected by config:
-
-- `@mobile` - Mobile viewport tests
-- `@2x` - High DPI tests
+- `@mobile` — Mobile viewport tests
+- `@2x` — High DPI tests
 
 ## Test Data
 
-- Check `browser_tests/assets/` for test data and fixtures
-- Use realistic ComfyUI workflows for E2E tests
-- When multiple nodes share the same title (e.g. two "CLIP Text Encode" nodes), use `vueNodes.getNodeByTitle(name).nth(n)` to pick a specific one. Never interact with the bare locator when titles are non-unique — Playwright strict mode will fail.
+- Check `browser_tests/assets/` for fixtures
+- Use realistic ComfyUI workflows
+- When multiple nodes share the same title, use `vueNodes.getNodeByTitle(name).nth(n)` — Playwright strict mode will fail on ambiguous locators
 
 ## Fixture Data & Schemas
 
