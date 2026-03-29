@@ -56,11 +56,11 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 ### Playwright Test Agents (`.claude/agents/`)
 
-| Agent | Responsibility |
-|-------|---------------|
-| `playwright-test-planner.md` | Explores the app, identifies testable scenarios, creates structured test plans |
-| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions |
-| `playwright-test-healer.md` | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping |
+| Agent                          | Responsibility                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| `playwright-test-planner.md`   | Explores the app, identifies testable scenarios, creates structured test plans     |
+| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions   |
+| `playwright-test-healer.md`    | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping |
 
 Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
 

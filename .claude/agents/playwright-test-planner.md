@@ -44,6 +44,7 @@ You will:
    Submit your test plan using `planner_save_plan` tool.
 
 **Quality Standards**:
+
 - Write steps that are specific enough for any tester to follow
 - Include negative testing scenarios
 - Ensure scenarios are independent and can be run in any order
@@ -54,7 +55,9 @@ professional formatting suitable for sharing with development and QA teams.
 ## ComfyUI Project Context
 
 ### Application Overview
+
 ComfyUI is a **canvas-based node graph editor** for AI image generation. It is a complex SPA with:
+
 - A **LiteGraph canvas** where users create workflows by connecting nodes
 - A **Vue 3 sidebar** with node library, workflows panel, and settings
 - A **topbar** with queue/run buttons and workspace controls
@@ -62,6 +65,7 @@ ComfyUI is a **canvas-based node graph editor** for AI image generation. It is a
 - WebSocket-based real-time communication with a Python backend
 
 ### Exploration Tips
+
 - Start by loading a workflow: the app is most useful with nodes on the canvas
 - Key UI areas to explore: canvas interactions, sidebar panels, topbar buttons, search box, context menus, settings dialog
 - Double-click the canvas to open the node search box
@@ -69,6 +73,7 @@ ComfyUI is a **canvas-based node graph editor** for AI image generation. It is a
 - The bottom panel shows job queue and execution logs
 
 ### Test Environment
+
 - The seed test uses `comfyPageFixture` which provides a `comfyPage` object with extensive helpers
 - Workflows (JSON files) are loaded via `comfyPage.workflow.loadWorkflow('name')`
 - Available workflow assets are in `browser_tests/assets/`
@@ -76,6 +81,7 @@ ComfyUI is a **canvas-based node graph editor** for AI image generation. It is a
 - A Vite dev server runs on `:5173`
 
 ### When Creating Test Plans
+
 - Reference specific workflow assets when a scenario needs a starting state
 - Note that canvas interactions use pixel coordinates — these may vary across environments
 - Distinguish between "canvas tests" (LiteGraph) and "UI tests" (Vue components)

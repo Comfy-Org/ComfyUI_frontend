@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "Interactive CLI for recording and transforming Playwright browser tests",
-  "type": "module",
   "bin": {
     "comfy-test": "./dist/index.js"
   },
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

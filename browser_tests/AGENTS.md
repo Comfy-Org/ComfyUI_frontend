@@ -133,6 +133,7 @@ Source: `tools/test-recorder/`
 For AI agents transforming raw Playwright codegen output. See `.claude/skills/codegen-transform/SKILL.md`.
 
 Key transforms:
+
 - `@playwright/test` → `../fixtures/ComfyPage` imports
 - `page` destructure → `comfyPage` fixture
 - `page.goto()` → removed (fixture handles navigation)
@@ -153,6 +154,7 @@ To regenerate after Playwright updates: `bash scripts/update-playwright-agents.s
 ### MCP Server
 
 The `.mcp.json` configures `playwright-test` MCP server for agent browser interaction:
+
 ```bash
 pnpm exec playwright run-test-mcp-server
 ```
