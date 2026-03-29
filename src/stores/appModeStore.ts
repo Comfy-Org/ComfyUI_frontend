@@ -350,13 +350,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   useEventListener(
     () => app.rootGraph?.events,
     'configured',
-    () => {
-      // Only reload from saved state during graph loading, not while
-      // the user is actively editing in builder/app mode.
-      if (!isBuilderMode.value && !isAppMode.value) {
-        resetSelectedToWorkflow()
-      }
-    }
+    resetSelectedToWorkflow
   )
 
   function persistLinearData() {

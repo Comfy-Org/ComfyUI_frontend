@@ -30,6 +30,7 @@ export function useOutputHistory(): {
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
+  const appModeStore = useAppModeStore()
   const queueStore = useQueueStore()
 
   function matchesActiveWorkflow(task: { jobId: string | number }): boolean {
@@ -51,6 +52,14 @@ export function useOutputHistory(): {
     if (linearStore.activeWorkflowInProgressItems.length > 0) return false
     return hasActiveWorkflowJobs()
   })
+
+  function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
+    const nodeIds = appModeStore.selectedOutputs
+    if (!nodeIds.length) return []
+    return items.filter((r) =>
+      nodeIds.some((id) => String(id) === String(r.nodeId))
+    )
+  }
 
   // True when the active workflow has running/pending jobs or in-progress items.
   const isWorkflowActive = computed(
@@ -89,7 +98,7 @@ export function useOutputHistory(): {
     if (!item?.id) return []
 
     const cached = resolvedCache.get(item.id)
-    if (cached) return cached
+    if (cached) return filterByOutputNodes(cached)
 
     const user_metadata = getOutputAssetMetadata(item.user_metadata)
     if (!user_metadata) return []
@@ -102,7 +111,7 @@ export function useOutputHistory(): {
         .map((i) => i.output!)
       if (ordered.length > 0) {
         resolvedCache.set(item.id, ordered)
-        return ordered
+        return filterByOutputNodes(ordered)
       }
     }
 
@@ -117,13 +126,13 @@ export function useOutputHistory(): {
     ) {
       const reversed = user_metadata.allOutputs.toReversed()
       resolvedCache.set(item.id, reversed)
-      return reversed
+      return filterByOutputNodes(reversed)
     }
 
     // Async fallback for multi-output jobs — fetch full /jobs/{id} detail.
     // This can be hit if the user executes the job then switches tabs.
     const existing = asyncRefs.get(item.id)
-    if (existing) return existing.value
+    if (existing) return filterByOutputNodes(existing.value)
 
     const itemId = item.id
     const outputRef = useAsyncState(

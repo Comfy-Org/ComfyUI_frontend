@@ -47,11 +47,6 @@ vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
   useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const mod = (await importOriginal()) as Record<string, unknown>
-  return { ...mod, useEventListener: vi.fn() }
-})
-
 const mockSettings = vi.hoisted(() => {
   const store: Record<string, unknown> = {}
   return {
@@ -368,6 +363,7 @@ describe('appModeStore', () => {
     it('calls checkState when input is deselected', async () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
+      await nextTick()
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
       vi.mocked(workflow.changeTracker!.checkState).mockClear()
