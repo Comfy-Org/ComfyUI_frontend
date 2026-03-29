@@ -55,8 +55,7 @@
           hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
             ? 'border-node-component-outline'
-            : 'border-node-stroke-executing',
-          footerStateOutlineBottomClass
+            : 'border-node-stroke-executing'
         )
       "
     />
@@ -64,10 +63,9 @@
     <div
       :class="
         cn(
-          'pointer-events-none absolute border border-solid border-component-node-border',
+          'pointer-events-none absolute z-0 border-solid border-component-node-border',
           rootBorderShapeClass,
-          hasAnyError ? '-inset-1' : 'inset-0',
-          footerRootBorderBottomClass
+          hasAnyError ? '-inset-[5px] border' : '-inset-px border-2'
         )
       "
     />
@@ -75,7 +73,7 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
+          'relative z-5 flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
           'w-(--node-width)',
           !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
           shapeClass,
@@ -190,6 +188,49 @@
           />
         </div>
       </template>
+      <template
+        v-if="
+          !isCollapsed &&
+          !isRerouteNode &&
+          nodeData.resizable !== false &&
+          !isSelectMode
+        "
+      >
+        <div
+          v-for="handle in RESIZE_HANDLES"
+          :key="handle.corner"
+          role="button"
+          :aria-label="t(handle.i18nKey)"
+          :class="
+            cn(
+              baseResizeHandleClasses,
+              handle.positionClasses,
+              handle.cursorClass,
+              'group-hover/node:opacity-100'
+            )
+          "
+          @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 12 12"
+            :class="cn('absolute size-2/5', handle.svgPositionClasses)"
+            :style="
+              handle.svgTransform
+                ? { transform: handle.svgTransform }
+                : undefined
+            "
+          >
+            <path
+              d="M11 1L1 11M11 6L6 11"
+              stroke="var(--color-muted-foreground)"
+              stroke-width="0.975"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </template>
     </div>
     <NodeFooter
       v-if="!isRerouteNode"
@@ -205,49 +246,6 @@
       @open-errors="handleOpenErrors"
       @toggle-advanced="handleToggleAdvanced"
     />
-    <template
-      v-if="
-        !isCollapsed &&
-        !isRerouteNode &&
-        nodeData.resizable !== false &&
-        !isSelectMode
-      "
-    >
-      <div
-        v-for="handle in RESIZE_HANDLES"
-        :key="handle.corner"
-        role="button"
-        :aria-label="t(handle.i18nKey)"
-        :class="
-          cn(
-            baseResizeHandleClasses,
-            handle.positionClasses,
-            (handle.corner === 'SE' || handle.corner === 'SW') &&
-              footerResizeHandleBottomClass,
-            handle.cursorClass,
-            'group-hover/node:opacity-100'
-          )
-        "
-        @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 12 12"
-          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-          :style="
-            handle.svgTransform ? { transform: handle.svgTransform } : undefined
-          "
-        >
-          <path
-            d="M11 1L1 11M11 6L6 11"
-            stroke="var(--color-muted-foreground)"
-            stroke-width="0.975"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </div>
-    </template>
   </div>
 </template>
 
@@ -565,30 +563,6 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
-const hasFooter = computed(() => {
-  return !!(
-    (hasAnyError.value && showErrorsTabEnabled.value) ||
-    lgraphNode.value?.isSubgraphNode() ||
-    (!lgraphNode.value?.isSubgraphNode() &&
-      (showAdvancedState.value || showAdvancedInputsButton.value))
-  )
-})
-
-// Footer offset computed classes
-
-const footerStateOutlineBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-[35px]' : ''
-)
-
-const footerRootBorderBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-8' : ''
-)
-
-const footerResizeHandleBottomClass = computed(() => {
-  if (!hasFooter.value) return ''
-  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-35px]'
-})
-
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
@@ -612,9 +586,9 @@ const shapeClass = computed(() => {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return 'rounded-tl-2xl rounded-br-2xl'
+      return 'rounded-tl-[16px] rounded-br-[17px]'
     default:
-      return 'rounded-2xl'
+      return 'rounded-t-[16px] rounded-b-[17px]'
   }
 })
 
@@ -634,10 +608,10 @@ const rootBorderShapeClass = computed(() => {
       return ''
     case RenderShape.CARD:
       return isExpanded
-        ? 'rounded-tl-[20px] rounded-br-[20px]'
-        : 'rounded-tl-2xl rounded-br-2xl'
+        ? 'rounded-tl-[21px] rounded-br-[21px]'
+        : 'rounded-tl-[17px] rounded-br-[18px]'
     default:
-      return isExpanded ? 'rounded-[20px]' : 'rounded-2xl'
+      return isExpanded ? 'rounded-[21px]' : 'rounded-t-[17px] rounded-b-[18px]'
   }
 })
 

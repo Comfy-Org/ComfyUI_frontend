@@ -1,13 +1,16 @@
 <template>
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
-  <template v-if="isSubgraph && hasAnyError && showErrorsTabEnabled">
+  <div
+    v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    class="-mx-1 -mt-18 -mb-2 box-border flex w-[calc(100%+8px)] pt-7 pb-1"
+  >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(false),
-          errorTabWidth,
-          '-z-5 bg-destructive-background text-white hover:bg-destructive-background-hover'
+          'box-border w-1/2 rounded-none bg-destructive-background pt-16 pb-4 text-white hover:bg-destructive-background-hover',
+          errorRadiusClass
         )
       "
       @click.stop="$emit('openErrors')"
@@ -24,36 +27,37 @@
       :class="
         cn(
           getTabStyles(true),
-          enterTabFullWidth,
-          '-z-10 bg-node-component-header-surface'
+          '-ml-5·box-border·w-[calc(50%+20px)]·rounded-none·bg-node-component-header-surface·pt-16·pb-4·pl-5',
+          enterRadiusClass
         )
       "
       :style="headerColorStyle"
       @click.stop="$emit('enterSubgraph')"
     >
-      <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
+      <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
         <i class="icon-[comfy--workflow] size-4 shrink-0" />
       </div>
     </Button>
-  </template>
+  </div>
 
   <!-- Case 1b: Advanced + Error (Dual Tabs, Regular Nodes) -->
-  <template
+  <div
     v-else-if="
       !isSubgraph &&
       hasAnyError &&
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
+    class="-mx-1 -mt-18 -mb-2 box-border flex w-[calc(100%+8px)] pt-7 pb-1"
   >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(false),
-          errorTabWidth,
-          '-z-5 bg-destructive-background text-white hover:bg-destructive-background-hover'
+          'box-border w-1/2 rounded-none bg-destructive-background pt-16 pb-4 text-white hover:bg-destructive-background-hover',
+          errorRadiusClass
         )
       "
       @click.stop="$emit('openErrors')"
@@ -69,14 +73,14 @@
       :class="
         cn(
           getTabStyles(true),
-          enterTabFullWidth,
-          '-z-10 bg-node-component-header-surface'
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-16 pb-4 pl-5',
+          enterRadiusClass
         )
       "
       :style="headerColorStyle"
       @click.stop="$emit('toggleAdvanced')"
     >
-      <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
+      <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{
           showAdvancedState
             ? t('rightSidePanel.hideAdvancedShort')
@@ -91,17 +95,20 @@
         />
       </div>
     </Button>
-  </template>
+  </div>
 
   <!-- Case 2: Error Only (Full Width) -->
-  <template v-else-if="hasAnyError && showErrorsTabEnabled">
+  <div
+    v-else-if="hasAnyError && showErrorsTabEnabled"
+    class="-mx-1 -mt-18 -mb-2 box-border flex w-[calc(100%+8px)] pt-7 pb-1"
+  >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(false),
-          enterTabFullWidth,
-          '-z-5 bg-destructive-background text-white hover:bg-destructive-background-hover'
+          'box-border w-full rounded-none bg-destructive-background pt-16 pb-4 text-white hover:bg-destructive-background-hover',
+          footerRadiusClass
         )
       "
       @click.stop="$emit('openErrors')"
@@ -111,18 +118,18 @@
         <i class="icon-[lucide--info] size-4 shrink-0" />
       </div>
     </Button>
-  </template>
+  </div>
 
   <!-- Case 3: Subgraph only (Full Width) -->
-  <template v-else-if="isSubgraph">
+  <div v-else-if="isSubgraph" class="-mt-18 box-border flex w-full pt-7">
     <Button
       variant="textonly"
       data-testid="subgraph-enter-button"
       :class="
         cn(
           getTabStyles(true),
-          hasAnyError ? 'w-[calc(100%+8px)]' : 'w-full',
-          '-z-10 bg-node-component-header-surface'
+          'box-border w-full rounded-none bg-node-component-header-surface pt-15 pb-4',
+          footerRadiusClass
         )
       "
       :style="headerColorStyle"
@@ -133,37 +140,41 @@
         <i class="icon-[comfy--workflow] size-4 shrink-0" />
       </div>
     </Button>
-  </template>
+  </div>
 
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
-  <Button
+  <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
-    variant="textonly"
-    :class="
-      cn(
-        getTabStyles(true),
-        hasAnyError ? 'w-[calc(100%+8px)]' : 'w-full',
-        '-z-10 bg-node-component-header-surface'
-      )
-    "
-    :style="headerColorStyle"
-    @click.stop="$emit('toggleAdvanced')"
+    class="-mt-18 box-border flex w-full pt-7"
   >
-    <div class="flex size-full items-center justify-center gap-2">
-      <template v-if="showAdvancedState">
-        <span class="truncate">{{
-          t('rightSidePanel.hideAdvancedInputsButton')
-        }}</span>
-        <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
-      </template>
-      <template v-else>
-        <span class="truncate">{{
-          t('rightSidePanel.showAdvancedInputsButton')
-        }}</span>
-        <i class="icon-[lucide--settings-2] size-4 shrink-0" />
-      </template>
-    </div>
-  </Button>
+    <Button
+      variant="textonly"
+      :class="
+        cn(
+          getTabStyles(true),
+          'box-border w-full rounded-none bg-node-component-header-surface pt-15 pb-4',
+          footerRadiusClass
+        )
+      "
+      :style="headerColorStyle"
+      @click.stop="$emit('toggleAdvanced')"
+    >
+      <div class="flex size-full items-center justify-center gap-2">
+        <template v-if="showAdvancedState">
+          <span class="truncate">{{
+            t('rightSidePanel.hideAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
+        </template>
+        <template v-else>
+          <span class="truncate">{{
+            t('rightSidePanel.showAdvancedInputsButton')
+          }}</span>
+          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
+        </template>
+      </div>
+    </Button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -195,51 +206,48 @@ defineEmits<{
 }>()
 
 const footerRadiusClass = computed(() => {
-  const isExpanded = props.hasAnyError
-
+  const isError = props.hasAnyError
   switch (props.shape) {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return isExpanded ? 'rounded-br-[20px]' : 'rounded-br-2xl'
+      return isError ? 'rounded-br-[20px]' : 'rounded-br-[17px]'
     default:
-      return isExpanded ? 'rounded-b-[20px]' : 'rounded-b-2xl'
+      return isError ? 'rounded-b-[20px]' : 'rounded-b-[17px]'
   }
 })
 
-/**
- * Returns shared size/position classes for footer tabs
- * @param isBackground If true, calculates styles for the background/right tab (Enter Subgraph)
- */
-const getTabStyles = (isBackground = false) => {
-  let sizeClasses = ''
-  if (props.isCollapsed) {
-    let pt = 'pt-10'
-    if (isBackground) {
-      pt = props.hasAnyError ? 'pt-10.5' : 'pt-9'
-    }
-    sizeClasses = cn('-mt-7.5 h-15', pt)
-  } else {
-    let pt = 'pt-12.5'
-    if (isBackground) {
-      pt = props.hasAnyError ? 'pt-12.5' : 'pt-11.5'
-    }
-    sizeClasses = cn('-mt-10 h-17.5', pt)
+const errorRadiusClass = computed(() => {
+  switch (props.shape) {
+    case RenderShape.BOX:
+      return ''
+    case RenderShape.CARD:
+      return 'rounded-bl-[20px]'
+    default:
+      return 'rounded-b-[20px]'
   }
+})
 
+const enterRadiusClass = computed(() => {
+  switch (props.shape) {
+    case RenderShape.BOX:
+      return ''
+    case RenderShape.CARD:
+      return 'rounded-br-[20px]'
+    default:
+      return 'rounded-br-[20px]'
+  }
+})
+
+const getTabStyles = (isBackground = false) => {
   return cn(
-    'pointer-events-auto absolute top-full left-0 text-xs',
-    footerRadiusClass.value,
-    sizeClasses,
-    props.hasAnyError ? '-translate-x-1 translate-y-0.5' : 'translate-y-0.5'
+    'pointer-events-auto text-xs',
+    isBackground ? 'z-0' : 'z-2',
+    props.isCollapsed ? 'h-8' : 'h-9'
   )
 }
 
 const headerColorStyle = computed(() =>
   props.headerColor ? { backgroundColor: props.headerColor } : undefined
 )
-
-// Case 1 context: Split widths
-const errorTabWidth = 'w-[calc(50%+4px)]'
-const enterTabFullWidth = 'w-[calc(100%+8px)]'
 </script>
