@@ -6,16 +6,24 @@ exports typed objects that conform to the Zod schemas defined in
 
 ## Usage with `page.route()`
 
+> **Note:** `comfyPageFixture` navigates to the app during `setup()`,
+> before the test body runs. Routes must be registered before navigation
+> to intercept initial page-load requests. Set up routes in a custom
+> fixture or `test.beforeEach` that runs before `comfyPage.setup()`.
+
 ```ts
-import { mockNodeDefinitions } from '../fixtures/data/nodeDefinitions'
+import { createMockNodeDefinitions } from '../fixtures/data/nodeDefinitions'
 import { mockSystemStats } from '../fixtures/data/systemStats'
 
-// Intercept the object_info API call
+// Extend the base set with test-specific nodes
+const nodeDefs = createMockNodeDefinitions({
+  MyCustomNode: { /* ... */ }
+})
+
 await page.route('**/api/object_info', (route) =>
-  route.fulfill({ json: mockNodeDefinitions })
+  route.fulfill({ json: nodeDefs })
 )
 
-// Intercept the system_stats API call
 await page.route('**/api/system_stats', (route) =>
   route.fulfill({ json: mockSystemStats })
 )
