@@ -3239,6 +3239,7 @@
       "termsAgreement": "계속 진행하면 Comfy Org의 {terms} 및 {privacy}에 동의하게 됩니다.",
       "totalDueToday": "오늘 결제 금액 합계"
     },
+    "refreshCredits": "크레딧 새로고침",
     "renewsDate": "{date}에 갱신됨",
     "required": {
       "pollingFailed": "구독 활성화에 실패했습니다",

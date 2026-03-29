@@ -3239,6 +3239,7 @@
       "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
       "totalDueToday": "本日のお支払い合計"
     },
+    "refreshCredits": "クレジットを更新",
     "renewsDate": "{date} に更新",
     "required": {
       "pollingFailed": "サブスクリプションの有効化に失敗しました",

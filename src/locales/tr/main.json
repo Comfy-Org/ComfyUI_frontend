@@ -3239,6 +3239,7 @@
       "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} politikasını kabul etmiş olursunuz.",
       "totalDueToday": "Bugün ödenecek toplam tutar"
     },
+    "refreshCredits": "Kredileri yenile",
     "renewsDate": "{date} tarihinde yenilenir",
     "required": {
       "pollingFailed": "Abonelik etkinleştirme başarısız oldu",

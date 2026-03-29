@@ -3239,6 +3239,7 @@
       "termsAgreement": "Al continuar, aceptas los {terms} y la {privacy} de Comfy Org.",
       "totalDueToday": "Total a pagar hoy"
     },
+    "refreshCredits": "Actualizar créditos",
     "renewsDate": "Se renueva el {date}",
     "required": {
       "pollingFailed": "Error al activar la suscripción",

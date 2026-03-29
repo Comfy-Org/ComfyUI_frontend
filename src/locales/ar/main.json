@@ -3239,6 +3239,7 @@
       "termsAgreement": "بالمتابعة، أنت توافق على {terms} و{privacy} الخاصة بـ Comfy Org.",
       "totalDueToday": "الإجمالي المستحق اليوم"
     },
+    "refreshCredits": "تحديث الرصيد",
     "renewsDate": "تجديد في {date}",
     "required": {
       "pollingFailed": "فشل تفعيل الاشتراك",

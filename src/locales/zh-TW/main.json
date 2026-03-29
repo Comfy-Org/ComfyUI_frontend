@@ -3239,6 +3239,7 @@
       "termsAgreement": "繼續即表示您同意 Comfy Org 的{terms}與{privacy}。",
       "totalDueToday": "今日應付總額"
     },
+    "refreshCredits": "刷新點數",
     "renewsDate": "將於 {date} 續訂",
     "required": {
       "pollingFailed": "訂閱啟用失敗",
