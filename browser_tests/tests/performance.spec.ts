@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { recordMeasurement } from '../helpers/perfReporter'
+import { logMeasurement, recordMeasurement } from '../helpers/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -186,6 +186,22 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph viewport pan sweep', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    await comfyPage.perf.startMeasuring()
+    await comfyPage.canvasOps.panSweep()
+
+    const measurement = await comfyPage.perf.stopMeasuring('viewport-pan-sweep')
+    recordMeasurement(measurement)
+    logMeasurement('Viewport pan sweep', measurement, [
+      'styleRecalcs',
+      'layouts',
+      'taskDurationMs',
+      'heapDeltaBytes',
+      'domNodes'
+    ])
+  })
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {

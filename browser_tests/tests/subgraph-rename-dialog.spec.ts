@@ -25,11 +25,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     await subgraphNode.navigateIntoSubgraph()
 
     // Get initial slot label
-    const initialInputLabel = await comfyPage.page.evaluate(() => {
-      const graph = window.app!.canvas.graph
-      if (!graph || !('inputNode' in graph)) return null
-      return graph.inputs?.[0]?.label || graph.inputs?.[0]?.name || null
-    })
+    const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
     if (initialInputLabel === null) {
       throw new Error(
@@ -106,11 +102,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     await comfyPage.nextFrame()
 
     // Verify the second rename worked
-    const afterSecondRename = await comfyPage.page.evaluate(() => {
-      const graph = window.app!.canvas.graph
-      if (!graph || !('inputNode' in graph)) return null
-      return graph.inputs?.[0]?.label || null
-    })
+    const afterSecondRename = await comfyPage.subgraph.getSlotLabel('input')
     expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
   })
 
@@ -123,11 +115,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     await subgraphNode.navigateIntoSubgraph()
 
     // Get initial output slot label
-    const initialOutputLabel = await comfyPage.page.evaluate(() => {
-      const graph = window.app!.canvas.graph
-      if (!graph || !('inputNode' in graph)) return null
-      return graph.outputs?.[0]?.label || graph.outputs?.[0]?.name || null
-    })
+    const initialOutputLabel = await comfyPage.subgraph.getSlotLabel('output')
 
     if (initialOutputLabel === null) {
       throw new Error(

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 
 test.describe('Nested subgraph configure order', { tag: ['@subgraph'] }, () => {
   const WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
@@ -8,17 +9,10 @@ test.describe('Nested subgraph configure order', { tag: ['@subgraph'] }, () => {
   test('Loads without "No link found" or "Failed to resolve legacy -1" console warnings', async ({
     comfyPage
   }) => {
-    const warnings: string[] = []
-    comfyPage.page.on('console', (msg) => {
-      const text = msg.text()
-      if (
-        text.includes('No link found') ||
-        text.includes('Failed to resolve legacy -1') ||
-        text.includes('No inner link found')
-      ) {
-        warnings.push(text)
-      }
-    })
+    const { warnings } = SubgraphHelper.collectConsoleWarnings(comfyPage.page, [
+      'No link found',
+      'Failed to resolve legacy -1'
+    ])
 
     await comfyPage.workflow.loadWorkflow(WORKFLOW)
 

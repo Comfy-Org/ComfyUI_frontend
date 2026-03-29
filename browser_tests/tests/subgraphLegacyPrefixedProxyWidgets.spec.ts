@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { SubgraphHelper } from '../fixtures/helpers/SubgraphHelper'
 import { TestIds } from '../fixtures/selectors'
 
 /**
@@ -30,17 +31,7 @@ test.describe(
     test('Loads without console warnings about failed widget resolution', async ({
       comfyPage
     }) => {
-      const warnings: string[] = []
-      comfyPage.page.on('console', (msg) => {
-        const text = msg.text()
-        if (
-          text.includes('Failed to resolve legacy -1') ||
-          text.includes('No link found') ||
-          text.includes('No inner link found')
-        ) {
-          warnings.push(text)
-        }
-      })
+      const { warnings } = SubgraphHelper.collectConsoleWarnings(comfyPage.page)
 
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
