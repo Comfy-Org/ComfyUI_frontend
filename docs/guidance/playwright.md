@@ -89,20 +89,24 @@ Tags are respected by config:
 
 ## Typed API Mocks
 
-When mocking API responses with `route.fulfill()`, always type the response body
-using existing schemas or generated types. This catches shape mismatches at compile
-time instead of through flaky runtime failures.
+When mocking API responses with `route.fulfill()`, **always** type the response body
+using existing schemas or generated types — never use untyped inline JSON objects.
+This catches shape mismatches at compile time instead of through flaky runtime failures.
+
+All three generated-type packages (`ingest-types`, `registry-types`, `generatedManagerTypes`)
+are auto-generated from their respective OpenAPI specs. Prefer these as the single
+source of truth for any mock that targets their endpoints.
 
 ### Sources of truth
 
-| Endpoint category                                   | Type source                                              |
-| --------------------------------------------------- | -------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (auto-generated from OpenAPI)   |
-| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (auto-generated from OpenAPI) |
-| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (auto-generated from OpenAPI) |
-| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`         |
-| Node definitions                                    | `src/schemas/nodeDefSchema.ts`                           |
-| Templates                                           | `src/platform/workflow/templates/types/template.ts`      |
+| Endpoint category                                   | Type source                                                                                         |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (`packages/ingest-types`, auto-generated from OpenAPI)                     |
+| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (`packages/registry-types`, auto-generated from OpenAPI)                 |
+| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`, auto-generated from OpenAPI) |
+| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`                                                    |
+| Node definitions                                    | `src/schemas/nodeDefSchema.ts`                                                                      |
+| Templates                                           | `src/platform/workflow/templates/types/template.ts`                                                 |
 
 ### Patterns
 
