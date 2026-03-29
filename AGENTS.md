@@ -49,6 +49,10 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs)
+- `pnpm comfy-test transform <file>`: Transform raw codegen to conventions
+- `pnpm comfy-test check`: Check environment prerequisites
+- `pnpm comfy-test list`: List available test workflows
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking

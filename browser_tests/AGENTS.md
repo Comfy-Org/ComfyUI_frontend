@@ -110,3 +110,49 @@ Reserve `toPass()` for blocks with multiple assertions or complex async logic th
 A Playwright test-writing skill exists at `.claude/skills/writing-playwright-tests/SKILL.md`.
 
 The skill documents **meta-level guidance only** (gotchas, anti-patterns, decision guides). It does **not** duplicate fixture APIs - agents should read the fixture code directly in `browser_tests/fixtures/`.
+
+## AI-Assisted Test Creation
+
+Three systems work together for test authoring:
+
+### 1. Interactive Recorder CLI (`comfy-test`)
+
+For QA testers and non-developers. Guides through the full flow:
+
+```bash
+pnpm comfy-test record     # Interactive 7-step recording flow
+pnpm comfy-test transform   # Transform raw codegen to conventions
+pnpm comfy-test check       # Verify environment prerequisites
+pnpm comfy-test list        # List available workflow assets
+```
+
+Source: `tools/test-recorder/`
+
+### 2. Codegen Transform Skill
+
+For AI agents transforming raw Playwright codegen output. See `.claude/skills/codegen-transform/SKILL.md`.
+
+Key transforms:
+- `@playwright/test` → `../fixtures/ComfyPage` imports
+- `page` destructure → `comfyPage` fixture
+- `page.goto()` → removed (fixture handles navigation)
+- `page.locator('canvas')` → `comfyPage.canvas`
+- `waitForTimeout()` → `comfyPage.nextFrame()`
+- Wraps in `test.describe` with tags and `afterEach` cleanup
+
+### 3. Playwright AI Agents
+
+Three agents in `.claude/agents/` are patched with ComfyUI context:
+
+- **planner** — explores the app and creates test plans in `browser_tests/specs/`
+- **generator** — converts test plans into executable `.spec.ts` files
+- **healer** — debugs and fixes failing tests
+
+To regenerate after Playwright updates: `bash scripts/update-playwright-agents.sh`
+
+### MCP Server
+
+The `.mcp.json` configures `playwright-test` MCP server for agent browser interaction:
+```bash
+pnpm exec playwright run-test-mcp-server
+```

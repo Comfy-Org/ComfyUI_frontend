@@ -1,6 +1,7 @@
 packages:
   - apps/**
   - packages/**
+  - tools/**
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
