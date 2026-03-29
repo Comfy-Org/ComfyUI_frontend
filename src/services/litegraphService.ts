@@ -332,9 +332,14 @@ export const useLitegraphService = () => {
     const nodeDefImpl = node.constructor.nodeData as ComfyNodeDefImpl
     const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
 
-    // Create sockets and widgets in the determined order
-    for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
-    for (const inputSpec of orderedInputSpecs) addInputWidget(node, inputSpec)
+    // Create sockets and widgets in the determined order.
+    // Each input is added individually to preserve declaration order.
+    // Previously, all sockets were added first, then all widgets,
+    // causing forceInput inputs (sockets) to always appear before widgets.
+    for (const inputSpec of orderedInputSpecs) {
+      addInputSocket(node, inputSpec)
+      addInputWidget(node, inputSpec)
+    }
   }
 
   /**
