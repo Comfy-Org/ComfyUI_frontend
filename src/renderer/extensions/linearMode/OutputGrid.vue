@@ -253,7 +253,7 @@ function onDragEnd() {
     >
       <div
         v-if="builderMode || !cell.output"
-        class="absolute top-0 left-0 z-10 flex items-center gap-1.5 rounded-br-lg bg-base-background/80 px-2.5 py-1 text-xxs text-muted-foreground"
+        class="text-xxs absolute top-0 left-0 z-10 flex items-center gap-1.5 rounded-br-lg bg-base-background/80 px-2.5 py-1 text-muted-foreground"
       >
         <i :class="cn(cell.icon, 'size-3')" />
         {{ cell.label }}
