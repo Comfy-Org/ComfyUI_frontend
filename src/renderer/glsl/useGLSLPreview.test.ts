@@ -227,4 +227,105 @@ describe('useGLSLPreview', () => {
       })
     })
   })
+
+  describe('render pipeline', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function setupAndRender(node: LGraphNode) {
+      mockNodeOutputs[String(node.id)] = {
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      }
+      const store = useWidgetValueStore() as unknown as {
+        _widgetMap: Map<string, { value: unknown }>
+      }
+      store._widgetMap.set('fragment_shader', {
+        value: 'void main() {}'
+      })
+
+      const nodeRef = shallowRef<LGraphNode | null>(null)
+      const result = useGLSLPreview(nodeRef)
+
+      nodeRef.value = node
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+      // Allow async renderPreview to complete
+      await nextTick()
+
+      return result
+    }
+
+    it('calls compileFragment, render, and toBlob in sequence', async () => {
+      const node = createMockNode()
+      await setupAndRender(node)
+
+      expect(mockRendererFactory.compileFragment).toHaveBeenCalledWith(
+        'void main() {}'
+      )
+      expect(mockRendererFactory.render).toHaveBeenCalled()
+      expect(mockRendererFactory.toBlob).toHaveBeenCalled()
+
+      const compileOrder =
+        mockRendererFactory.compileFragment.mock.invocationCallOrder[0]
+      const renderOrder = mockRendererFactory.render.mock.invocationCallOrder[0]
+      const toBlobOrder = mockRendererFactory.toBlob.mock.invocationCallOrder[0]
+      expect(compileOrder).toBeLessThan(renderOrder)
+      expect(renderOrder).toBeLessThan(toBlobOrder)
+    })
+
+    it('sets lastError on compilation failure', async () => {
+      mockRendererFactory.compileFragment.mockReturnValueOnce({
+        success: false,
+        log: 'syntax error at line 5'
+      })
+
+      const node = createMockNode()
+      const { lastError } = await setupAndRender(node)
+
+      expect(lastError.value).toBe('syntax error at line 5')
+    })
+
+    it('clears lastError on successful compilation', async () => {
+      const node = createMockNode()
+      const { lastError } = await setupAndRender(node)
+
+      expect(lastError.value).toBe(null)
+    })
+
+    it('skips render when shader source is unavailable', async () => {
+      const store = useWidgetValueStore() as unknown as {
+        _widgetMap: Map<string, { value: unknown }>
+      }
+      store._widgetMap.delete('fragment_shader')
+
+      const node = createMockNode()
+      mockNodeOutputs[String(node.id)] = {
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      }
+
+      const nodeRef = shallowRef<LGraphNode | null>(null)
+      useGLSLPreview(nodeRef)
+      nodeRef.value = node
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      await nextTick()
+
+      expect(mockRendererFactory.compileFragment).not.toHaveBeenCalled()
+    })
+
+    it('disposes renderer and cancels debounce on cleanup', async () => {
+      const node = createMockNode()
+      const { dispose } = await setupAndRender(node)
+
+      dispose()
+
+      expect(mockRendererFactory.dispose).toHaveBeenCalled()
+    })
+  })
 })

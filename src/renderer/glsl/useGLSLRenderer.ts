@@ -204,7 +204,9 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       if (!ctx) return false
 
       gl = ctx
-      gl.getExtension('EXT_color_buffer_float')
+
+      if (!gl.getExtension('EXT_color_buffer_float')) return false
+
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
       vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
       initPingPongFBOs(gl, width, height)
@@ -313,6 +315,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     const unit = maxInputs + index
     gl.activeTexture(gl.TEXTURE0 + unit)
     gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -324,6 +327,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       gl.FLOAT,
       lut
     )
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
@@ -436,7 +440,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
   async function toBlob(): Promise<Blob> {
     if (!canvas) throw new Error('Renderer not initialized')
-    return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.92 })
+    return canvas.convertToBlob({ type: 'image/webp', quality: 0.92 })
   }
 
   function dispose(): void {
