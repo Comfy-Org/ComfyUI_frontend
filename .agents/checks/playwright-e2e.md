@@ -20,7 +20,7 @@ Reference docs (read if you need full context):
 
 1. **`waitForTimeout` usage** — Always wrong. Must use retrying assertions (`toBeVisible`, `toHaveText`), `expect.poll()`, or `expect().toPass()`. See retry patterns in `.claude/skills/writing-playwright-tests/SKILL.md`.
 
-2. **Missing `nextFrame()` after canvas ops** — Any `drag`, `click` on canvas, `resizeNode`, `pan`, `zoom`, or programmatic graph mutation via `page.evaluate` that changes visual state needs `await comfyPage.nextFrame()` before assertions. `loadWorkflow()` does NOT need it.
+2. **Missing `nextFrame()` after canvas ops** — Any `drag`, `click` on canvas, `resizeNode`, `pan`, `zoom`, or programmatic graph mutation via `page.evaluate` that changes visual state needs `await comfyPage.nextFrame()` before assertions. `loadWorkflow()` does NOT need it. Prefer encapsulating `nextFrame()` calls inside Page Object methods so tests don't manage frame timing directly.
 
 3. **Keyboard actions without prior focus** — `page.keyboard.press()` without a preceding `comfyPage.canvas.click()` or element `.focus()` will silently send keys to nothing.
 
