@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const agentsDir = join(process.cwd(), '.claude', 'agents')
@@ -136,8 +136,15 @@ Tests in this project use \`comfyPage\` fixture, not bare \`page\`. When healing
 
 const CONTEXT_HEADING = '## ComfyUI Project Context'
 
+const missingFiles = []
+
 for (const [filename, patch] of Object.entries(patches)) {
   const filePath = join(agentsDir, filename)
+  if (!existsSync(filePath)) {
+    missingFiles.push(filename)
+    console.error(`  ❌ ${filename}: not found (run init-agents first)`)
+    continue
+  }
   let content = readFileSync(filePath, 'utf-8')
 
   // Strip existing ComfyUI context section (heading to EOF)
@@ -151,4 +158,10 @@ for (const [filename, patch] of Object.entries(patches)) {
   content += patch
   writeFileSync(filePath, content, 'utf-8')
   console.log(`  ✅ ${filename}: patched`)
+}
+
+if (missingFiles.length > 0) {
+  throw new Error(
+    `Missing expected Playwright agent files: ${missingFiles.join(', ')}`
+  )
 }
