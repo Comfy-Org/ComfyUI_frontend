@@ -344,6 +344,7 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /** @deprecated Use standalone `assetPath` from `browser_tests/fixtures/utils/assetPath` directly. */
   public assetPath(fileName: string) {
     return assetPath(fileName)
   }
