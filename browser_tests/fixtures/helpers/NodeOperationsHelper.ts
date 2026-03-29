@@ -114,25 +114,25 @@ export class NodeOperationsHelper {
     }
   }
 
-  async loadWithPositions(
+  async getSerializedGraph(): Promise<ComfyWorkflowJSON> {
+    return this.page.evaluate(
+      () => window.app!.graph.serialize() as ComfyWorkflowJSON
+    )
+  }
+
+  async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
+    await this.page.evaluate(
+      (d) => window.app!.loadGraphData(d, true, true, null),
+      data
+    )
+  }
+
+  async repositionNodes(
     positions: Record<string, [number, number]>
   ): Promise<void> {
-    await this.page.evaluate(
-      async ({ positions }) => {
-        const data = window.app!.graph.serialize()
-        for (const node of data.nodes) {
-          const pos = positions[String(node.id)]
-          if (pos) node.pos = pos
-        }
-        await window.app!.loadGraphData(
-          data as ComfyWorkflowJSON,
-          true,
-          true,
-          null
-        )
-      },
-      { positions }
-    )
+    const data = await this.getSerializedGraph()
+    applyNodePositions(data, positions)
+    await this.loadGraph(data)
   }
 
   async resizeNode(
@@ -207,5 +207,15 @@ export class NodeOperationsHelper {
     await dialogInput.fill('128')
     await dialogInput.press('Enter')
     await this.comfyPage.nextFrame()
+  }
+}
+
+function applyNodePositions(
+  data: ComfyWorkflowJSON,
+  positions: Record<string, [number, number]>
+): void {
+  for (const node of data.nodes) {
+    const pos = positions[String(node.id)]
+    if (pos) node.pos = pos
   }
 }

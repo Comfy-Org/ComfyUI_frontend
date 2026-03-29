@@ -332,6 +332,7 @@ export class NodeReference {
   async isCollapsed() {
     return !!(await this.getFlags()).collapsed
   }
+  /** Deterministic setter using node.collapse() API (not a toggle). */
   async setCollapsed(collapsed: boolean) {
     await this.comfyPage.page.evaluate(
       ([id, collapsed]) => {
