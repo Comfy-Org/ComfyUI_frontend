@@ -55,8 +55,8 @@ export async function runResearchPhase(
 ): Promise<ResearchResult> {
   const { page, issueContext, qaGuide, outputDir, serverUrl, anthropicApiKey } =
     opts
-  const maxTurns = opts.maxTurns ?? 40
-  const timeBudgetMs = opts.timeBudgetMs ?? 300_000
+  const maxTurns = opts.maxTurns ?? 50
+  const timeBudgetMs = opts.timeBudgetMs ?? 600_000 // 10 min for write→run→fix loops
 
   let agentDone = false
   let finalVerdict: ResearchResult['verdict'] = 'INCONCLUSIVE'
@@ -158,18 +158,32 @@ export async function runResearchPhase(
   )
 
   // ── Tool: runTest ──
+  // Place test in browser_tests/ so Playwright config finds fixtures
+  const projectRoot = process.cwd()
+  const browserTestPath = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
+
   const runTestTool = tool(
     'runTest',
     'Run the Playwright test and get results. Returns stdout/stderr including assertion errors.',
     {},
     async () => {
       turnCount++
+      // Copy the test to browser_tests/tests/ where Playwright expects it
+      const { copyFileSync } = await import('fs')
+      try {
+        copyFileSync(testPath, browserTestPath)
+      } catch {
+        // directory may not exist
+        mkdirSync(`${projectRoot}/browser_tests/tests`, { recursive: true })
+        copyFileSync(testPath, browserTestPath)
+      }
+
       let resultText: string
       try {
         const output = execSync(
-          `cd "${process.cwd()}" && npx playwright test "${testPath}" --reporter=list --timeout=30000 2>&1`,
+          `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=30000 --retries=0 --workers=1 2>&1`,
           {
-            timeout: 60000,
+            timeout: 90000,
             encoding: 'utf-8',
             env: {
               ...process.env,
@@ -253,16 +267,22 @@ export async function runResearchPhase(
 6. Call done() with the final verdict and test code
 
 ## Test writing guidelines
-- Use \`import { test, expect } from '@playwright/test'\`
-- URL: \`${serverUrl}\`
-- Wait for the app to load: \`await page.waitForSelector('.comfy-menu-button-wrapper', { timeout: 15000 })\`
-- Skip tutorial: \`await page.evaluate(() => localStorage.setItem('Comfy.TutorialCompleted', 'true'))\`
-- Dismiss template gallery: \`await page.keyboard.press('Escape')\`
-- Menu: click \`.comfy-menu-button-wrapper\` → hover menu items → click submenu
-- Use \`page.locator()\` with role/text selectors — never raw CSS when possible
-- Use \`expect(locator).toBeVisible()\` / \`toBeHidden()\` / \`toHaveText()\` etc.
+- Import the project fixture: \`import { comfyPageFixture as test } from '../fixtures/ComfyPage'\`
+- Import expect: \`import { expect } from '@playwright/test'\`
+- The fixture provides \`comfyPage\` which has:
+  - \`comfyPage.page\` — the Playwright Page object
+  - \`comfyPage.menu.topbar\` — topbar actions (saveWorkflowAs, getTabNames, getWorkflowTab)
+  - \`comfyPage.menu.topbar.triggerTopbarCommand(label)\` — click a menu command
+  - \`comfyPage.workflow\` — workflow helpers (isCurrentWorkflowModified, setupWorkflowsDirectory)
+  - \`comfyPage.canvas\` — canvas element for mouse interactions
+  - \`comfyPage.settings.setSetting(id, value)\` — change settings
+  - \`comfyPage.nextFrame()\` — wait for next render frame
+  - \`comfyPage.loadWorkflow(name)\` — load a named workflow
+- Use beforeEach to set up settings and workflow directory
+- Use afterEach to clean up (setupWorkflowsDirectory({}))
 - If the bug IS present, the test should PASS. If the bug is fixed, the test would FAIL.
 - Keep tests focused and minimal — test ONLY the reported bug
+- The test file will be placed in browser_tests/tests/qa-reproduce.spec.ts
 
 ## Current UI state (accessibility tree)
 ${initialA11y}
