@@ -89,9 +89,10 @@ Tags are respected by config:
 
 ## When to Use `page.evaluate`
 
-### Acceptable
+### Acceptable (use sparingly)
 
-Reading internal state that has no UI representation:
+Reading internal state that has no UI representation (prefer locator
+assertions whenever possible):
 
 ```typescript
 // Reading graph/store values
