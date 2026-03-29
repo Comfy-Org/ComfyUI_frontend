@@ -1,7 +1,11 @@
 import { spawnSync } from 'node:child_process'
 import { detectPlatform } from '../checks/platform'
 
-export async function copyToClipboard(content: string): Promise<boolean> {
+type ClipboardResult = { ok: true } | { ok: false; reason: string }
+
+export async function copyToClipboard(
+  content: string
+): Promise<ClipboardResult> {
   const platform = detectPlatform()
 
   let cmd: string
@@ -19,13 +23,15 @@ export async function copyToClipboard(content: string): Promise<boolean> {
       input: content,
       stdio: 'pipe'
     })
-    if (xclip.status === 0) return true
+    if (xclip.status === 0) return { ok: true }
 
     const xsel = spawnSync('xsel', ['--clipboard', '--input'], {
       input: content,
       stdio: 'pipe'
     })
     return xsel.status === 0
+      ? { ok: true }
+      : { ok: false, reason: 'xclip/xsel unavailable or failed' }
   }
 
   const result = spawnSync(cmd, args, {
@@ -33,4 +39,6 @@ export async function copyToClipboard(content: string): Promise<boolean> {
     stdio: 'pipe'
   })
   return result.status === 0
+    ? { ok: true }
+    : { ok: false, reason: `${cmd} failed` }
 }
