@@ -2258,6 +2258,7 @@
     "dataset": "veri seti",
     "debug": "hata ayıklama",
     "deprecated": "kullanımdan kaldırılmış",
+    "detection": "tespit",
     "edit_models": "modelleri_düzenle",
     "flux": "flux",
     "gligen": "gligen",

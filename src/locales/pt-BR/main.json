@@ -2258,6 +2258,7 @@
     "dataset": "conjunto_de_dados",
     "debug": "depuração",
     "deprecated": "obsoleto",
+    "detection": "detecção",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",

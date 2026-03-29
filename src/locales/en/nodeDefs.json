@@ -2201,6 +2201,10 @@
       "padding": {
         "name": "padding",
         "tooltip": "Extra padding in pixels added on each side of the bbox before cropping."
+      },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Whether to stretch the crop to fit the output size, or pad with black pixels to preserve aspect ratio."
       }
     },
     "outputs": {
@@ -2309,6 +2313,23 @@
     "display_name": "DisableNoise",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Draw BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -13413,6 +13434,34 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detect",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "threshold": {
+        "name": "threshold"
+      },
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filter detections by class. Set to 'all' to disable filtering."
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Maximum number of detections to return per image. In order of descending confidence score."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
         "tooltip": null
       }
     }

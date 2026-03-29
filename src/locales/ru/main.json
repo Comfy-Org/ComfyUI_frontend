@@ -2258,6 +2258,7 @@
     "dataset": "dataset",
     "debug": "отладка",
     "deprecated": "устаревший",
+    "detection": "детекция",
     "edit_models": "редактировать_модели",
     "flux": "flux",
     "gligen": "gligen",
