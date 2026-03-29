@@ -83,6 +83,40 @@ test('should do something', async ({ comfyPage }) => {
 })
 ```
 
+## Creating New Test Helpers
+
+New domain-specific test helpers (e.g., `AssetHelper`, `JobHelper`) should be
+registered as Playwright fixtures via `base.extend()` rather than attached as
+properties on `ComfyPage`. This enables automatic setup/teardown.
+
+### Extend `base` from Playwright
+
+Keep each fixture self-contained by extending `@playwright/test` directly.
+Compose fixtures together with `mergeTests` when a test needs multiple helpers.
+
+```typescript
+// browser_tests/fixtures/assetFixture.ts
+import { test as base } from '@playwright/test'
+
+export const test = base.extend<{
+  assetHelper: AssetHelper
+}>({
+  assetHelper: async ({ page }, use) => {
+    const helper = new AssetHelper(page)
+    await helper.setup()
+    await use(helper)
+    await helper.cleanup() // automatic teardown
+  }
+})
+```
+
+### Rules
+
+- **Do NOT** add new helpers as properties on `ComfyPage`
+- Each fixture gets automatic cleanup via the callback after `use()`
+- Keep fixtures modular — extend `@playwright/test` base, not
+  `comfyPageFixture`, so they can be composed via `mergeTests`
+
 ## Test Tags
 
 - `@mobile` — Mobile viewport tests
