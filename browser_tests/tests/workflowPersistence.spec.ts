@@ -140,8 +140,7 @@ test.describe('Workflow Persistence', () => {
   }) => {
     test.info().annotations.push({
       type: 'regression',
-      description:
-        'PR #7648 — component widget state lost on graph change'
+      description: 'PR #7648 — component widget state lost on graph change'
     })
 
     const tab = comfyPage.menu.workflowsTab
@@ -195,8 +194,7 @@ test.describe('Workflow Persistence', () => {
   }) => {
     test.info().annotations.push({
       type: 'regression',
-      description:
-        'PR #9694 — loadApiJson early-returned on missing node types'
+      description: 'PR #9694 — loadApiJson early-returned on missing node types'
     })
 
     const fixturePath = path.resolve(
@@ -272,8 +270,7 @@ test.describe('Workflow Persistence', () => {
   }) => {
     test.info().annotations.push({
       type: 'regression',
-      description:
-        'PR #8963 — template workflows not reloaded on locale change'
+      description: 'PR #8963 — template workflows not reloaded on locale change'
     })
 
     const tab = comfyPage.menu.workflowsTab
@@ -295,13 +292,10 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => tab.getActiveWorkflowName()).toBe('locale-test')
   })
 
-  test('Node links survive save/load/switch cycles', async ({
-    comfyPage
-  }) => {
+  test('Node links survive save/load/switch cycles', async ({ comfyPage }) => {
     test.info().annotations.push({
       type: 'regression',
-      description:
-        'PR #9533 — node links must survive serialization roundtrips'
+      description: 'PR #9533 — node links must survive serialization roundtrips'
     })
 
     const tab = comfyPage.menu.workflowsTab
