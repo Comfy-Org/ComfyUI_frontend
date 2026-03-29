@@ -109,103 +109,33 @@ export class AssetHelper {
       const url = new URL(route.request().url())
       const method = route.request().method()
       const path = url.pathname
+      const body = ['POST', 'PUT', 'DELETE'].includes(method)
+        ? route.request().postDataJSON()
+        : null
 
-      // Track mutations
-      if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      if (body !== null) {
         this.mutations.push({
           endpoint: path,
           method,
           url: route.request().url(),
-          body: route.request().postDataJSON(),
+          body,
           timestamp: Date.now()
         })
       }
 
-      // GET /assets — list assets
-      if (method === 'GET' && /\/assets\/?$/.test(path)) {
-        const includeTags =
-          url.searchParams.get('include_tags')?.split(',') ?? []
-        const limit = parseInt(url.searchParams.get('limit') ?? '0', 10)
-        const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
+      if (method === 'GET' && /\/assets\/?$/.test(path))
+        return this.handleListAssets(route, url)
+      if (method === 'GET' && /\/assets\/[^/]+$/.test(path))
+        return this.handleGetAsset(route, path)
+      if (method === 'PUT' && /\/assets\/[^/]+$/.test(path))
+        return this.handleUpdateAsset(route, path, body)
+      if (method === 'DELETE' && /\/assets\/[^/]+$/.test(path))
+        return this.handleDeleteAsset(route, path)
+      if (method === 'POST' && /\/assets\/?$/.test(path))
+        return this.handleUploadAsset(route)
+      if (method === 'POST' && path.endsWith('/assets/download'))
+        return this.handleDownloadAsset(route)
 
-        let filtered = this.getFilteredAssets(includeTags)
-        if (limit > 0) {
-          filtered = filtered.slice(offset, offset + limit)
-        }
-
-        const response: ListAssetsResponse = {
-          assets: filtered,
-          total: this.paginationOptions?.total ?? this.store.size,
-          has_more: this.paginationOptions?.hasMore ?? false
-        }
-        return route.fulfill({ json: response })
-      }
-
-      // GET /assets/:id — single asset details
-      if (method === 'GET' && /\/assets\/[^/]+$/.test(path)) {
-        const id = path.split('/').pop()!
-        const asset = this.store.get(id)
-        if (asset) {
-          return route.fulfill({ json: asset })
-        }
-        return route.fulfill({
-          status: 404,
-          json: { error: 'Not found' }
-        })
-      }
-
-      // PUT /assets/:id — update asset
-      if (method === 'PUT' && /\/assets\/[^/]+$/.test(path)) {
-        const id = path.split('/').pop()!
-        const asset = this.store.get(id)
-        if (asset) {
-          const body = route.request().postDataJSON()
-          const updated = {
-            ...asset,
-            ...body,
-            updated_at: new Date().toISOString()
-          }
-          this.store.set(id, updated)
-          return route.fulfill({ json: updated })
-        }
-        return route.fulfill({
-          status: 404,
-          json: { error: 'Not found' }
-        })
-      }
-
-      // DELETE /assets/:id — delete asset
-      if (method === 'DELETE' && /\/assets\/[^/]+$/.test(path)) {
-        const id = path.split('/').pop()!
-        this.store.delete(id)
-        return route.fulfill({ status: 204, body: '' })
-      }
-
-      // POST /assets — upload
-      if (method === 'POST' && /\/assets\/?$/.test(path)) {
-        const response = this.uploadResponse ?? {
-          id: `upload-${Date.now()}`,
-          name: 'uploaded_file.safetensors',
-          tags: ['models', 'checkpoints'],
-          created_at: new Date().toISOString(),
-          created_new: true
-        }
-        return route.fulfill({ status: 201, json: response })
-      }
-
-      // POST /assets/download — async download
-      if (method === 'POST' && path.endsWith('/assets/download')) {
-        return route.fulfill({
-          status: 202,
-          json: {
-            task_id: 'download-task-001',
-            status: 'created',
-            message: 'Download started'
-          }
-        })
-      }
-
-      // Fallback — let unhandled requests through
       return route.fallback()
     }
 
@@ -244,6 +174,74 @@ export class AssetHelper {
   get assetCount(): number {
     return this.store.size
   }
+  private handleListAssets(route: Route, url: URL) {
+    const includeTags = url.searchParams.get('include_tags')?.split(',') ?? []
+    const limit = parseInt(url.searchParams.get('limit') ?? '0', 10)
+    const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
+
+    let filtered = this.getFilteredAssets(includeTags)
+    if (limit > 0) {
+      filtered = filtered.slice(offset, offset + limit)
+    }
+
+    const response: ListAssetsResponse = {
+      assets: filtered,
+      total: this.paginationOptions?.total ?? this.store.size,
+      has_more: this.paginationOptions?.hasMore ?? false
+    }
+    return route.fulfill({ json: response })
+  }
+
+  private handleGetAsset(route: Route, path: string) {
+    const id = path.split('/').pop()!
+    const asset = this.store.get(id)
+    if (asset) return route.fulfill({ json: asset })
+    return route.fulfill({ status: 404, json: { error: 'Not found' } })
+  }
+
+  private handleUpdateAsset(route: Route, path: string, body: unknown) {
+    const id = path.split('/').pop()!
+    const asset = this.store.get(id)
+    if (asset) {
+      const updated = {
+        ...asset,
+        ...(body as Record<string, unknown>),
+        updated_at: new Date().toISOString()
+      }
+      this.store.set(id, updated)
+      return route.fulfill({ json: updated })
+    }
+    return route.fulfill({ status: 404, json: { error: 'Not found' } })
+  }
+
+  private handleDeleteAsset(route: Route, path: string) {
+    const id = path.split('/').pop()!
+    this.store.delete(id)
+    return route.fulfill({ status: 204, body: '' })
+  }
+
+  private handleUploadAsset(route: Route) {
+    const response = this.uploadResponse ?? {
+      id: `upload-${Date.now()}`,
+      name: 'uploaded_file.safetensors',
+      tags: ['models', 'checkpoints'],
+      created_at: new Date().toISOString(),
+      created_new: true
+    }
+    return route.fulfill({ status: 201, json: response })
+  }
+
+  private handleDownloadAsset(route: Route) {
+    return route.fulfill({
+      status: 202,
+      json: {
+        task_id: 'download-task-001',
+        status: 'created',
+        message: 'Download started'
+      }
+    })
+  }
+
   async clearMocks(): Promise<void> {
     for (const { pattern, handler } of this.routeHandlers) {
       await this.page.unroute(pattern, handler)
