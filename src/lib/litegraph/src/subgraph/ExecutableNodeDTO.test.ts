@@ -458,6 +458,75 @@ describe('Virtual node resolveVirtualOutput', () => {
     )
   })
 
+  it('should return widget value for virtual nodes with widgets (e.g. PrimitiveNode)', () => {
+    const graph = new LGraph()
+
+    const primitiveNode = new LGraphNode('PrimitiveNode')
+    primitiveNode.addOutput('connect to widget input', '*')
+    primitiveNode.isVirtualNode = true
+    primitiveNode.addWidget('number', 'value', 42, null)
+    graph.add(primitiveNode)
+
+    const nodeDtoMap = new Map()
+    const primitiveDto = new ExecutableNodeDTO(
+      primitiveNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(primitiveDto.id, primitiveDto)
+
+    const resolved = primitiveDto.resolveOutput(0, 'INT', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.widgetInfo).toEqual({ value: 42 })
+    expect(resolved?.origin_slot).toBe(-1)
+    expect(resolved?.node).toBe(primitiveDto)
+  })
+
+  it('should return string widget value for virtual nodes', () => {
+    const graph = new LGraph()
+
+    const primitiveNode = new LGraphNode('PrimitiveNode')
+    primitiveNode.addOutput('connect to widget input', '*')
+    primitiveNode.isVirtualNode = true
+    primitiveNode.addWidget('text', 'value', 'hello world', null)
+    graph.add(primitiveNode)
+
+    const nodeDtoMap = new Map()
+    const primitiveDto = new ExecutableNodeDTO(
+      primitiveNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(primitiveDto.id, primitiveDto)
+
+    const resolved = primitiveDto.resolveOutput(0, 'STRING', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.widgetInfo).toEqual({ value: 'hello world' })
+  })
+
+  it('should still return undefined for virtual nodes without widgets', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Empty')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+  })
+
   it('should fall through to getInputLink when resolveVirtualOutput returns undefined', () => {
     const graph = new LGraph()
 

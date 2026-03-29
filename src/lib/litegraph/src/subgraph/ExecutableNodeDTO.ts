@@ -324,6 +324,18 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         return inputNodeDto.resolveInput(virtualLink.target_slot, visited, type)
       }
 
+      // Virtual nodes with widget values (e.g. PrimitiveNode) should return
+      // the widget value so that it is preserved during API workflow export.
+      const widgetValue = this.node.widgets?.[0]?.value
+      if (widgetValue !== undefined) {
+        return {
+          node: this,
+          origin_id: this.id,
+          origin_slot: -1,
+          widgetInfo: { value: widgetValue }
+        }
+      }
+
       // Virtual nodes without a matching input should be discarded.
       return
     }
