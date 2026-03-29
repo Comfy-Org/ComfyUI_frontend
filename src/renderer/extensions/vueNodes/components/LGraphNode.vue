@@ -174,6 +174,9 @@
       >
         <div
           v-for="handle in RESIZE_HANDLES"
+          v-show="
+            handle.corner === 'NE' || handle.corner === 'NW' || !hasFooter
+          "
           :key="handle.corner"
           role="button"
           :aria-label="t(handle.i18nKey)"
@@ -221,6 +224,50 @@
       @open-errors="handleOpenErrors"
       @toggle-advanced="handleToggleAdvanced"
     />
+    <template
+      v-if="
+        hasFooter &&
+        !isCollapsed &&
+        !isRerouteNode &&
+        nodeData.resizable !== false &&
+        !isSelectMode
+      "
+    >
+      <div
+        v-for="handle in RESIZE_HANDLES.filter(
+          (h) => h.corner === 'SE' || h.corner === 'SW'
+        )"
+        :key="`footer-${handle.corner}`"
+        role="button"
+        :aria-label="t(handle.i18nKey)"
+        :class="
+          cn(
+            baseResizeHandleClasses,
+            handle.positionClasses,
+            handle.cursorClass,
+            'group-hover/node:opacity-100'
+          )
+        "
+        @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 12 12"
+          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
+          :style="
+            handle.svgTransform ? { transform: handle.svgTransform } : undefined
+          "
+        >
+          <path
+            d="M11 1L1 11M11 6L6 11"
+            stroke="var(--color-muted-foreground)"
+            stroke-width="0.975"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -477,7 +524,7 @@ onUnmounted(() => {
 })
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute z-10 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const mutations = useLayoutMutations()
 
@@ -555,6 +602,15 @@ const outlineClass = computed(() => {
         ? 'rounded-tl-[16px] rounded-br-[16px]'
         : 'rounded-[16px]'
   return cn('outline-4 outline-offset-[3px]', errorRadius, color)
+})
+
+const hasFooter = computed(() => {
+  return !!(
+    (hasAnyError.value && showErrorsTabEnabled.value) ||
+    lgraphNode.value?.isSubgraphNode() ||
+    (!lgraphNode.value?.isSubgraphNode() &&
+      (showAdvancedState.value || showAdvancedInputsButton.value))
+  )
 })
 
 const cursorClass = computed(() => {
