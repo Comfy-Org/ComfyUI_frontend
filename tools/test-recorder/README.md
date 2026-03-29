@@ -8,7 +8,7 @@ From the repo root:
 
 ```bash
 pnpm comfy-test record     # Record a new test
-pnpm comfy-test transform   # Transform raw codegen to conventions
+pnpm comfy-test transform <file>  # Transform raw codegen to conventions
 pnpm comfy-test check       # Check environment prerequisites
 pnpm comfy-test list        # List available workflows
 ```
