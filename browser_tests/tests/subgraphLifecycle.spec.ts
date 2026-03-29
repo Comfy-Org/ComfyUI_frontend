@@ -149,7 +149,7 @@ test.describe(
         const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
         await clipNode.delete()
 
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
 
         await expect
           .poll(async () => {
@@ -189,7 +189,7 @@ test.describe(
         const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
         await clipNode.delete()
 
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
 
         await expect(
           comfyPage.page.getByTestId(TestIds.widgets.domWidgetTextarea)

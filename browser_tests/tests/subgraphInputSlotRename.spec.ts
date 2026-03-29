@@ -76,7 +76,7 @@ test.describe(
       await page.waitForSelector(dialog, { state: 'hidden' })
 
       // 5. Navigate back to parent graph and re-enable Vue nodes
-      await comfyPage.subgraph.exitViaBreadcrumb()
+      await comfyPage.subgraph.exitSubgraph()
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.vueNodes.waitForNodes()
 

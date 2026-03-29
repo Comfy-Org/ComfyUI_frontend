@@ -516,7 +516,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       // Navigate into subgraph
       await subgraphNode.navigateIntoSubgraph()
 
-      const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
+      const breadcrumb = comfyPage.subgraph.breadcrumb
       await breadcrumb.waitFor({ state: 'visible', timeout: 20000 })
       const initialBreadcrumbText = await breadcrumb.textContent()
 
@@ -560,9 +560,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
-      await expect(
-        comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
-      ).toBeVisible()
+      await expect(comfyPage.subgraph.breadcrumb).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
@@ -580,9 +578,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
-      const breadcrumb = comfyPage.page
-        .getByTestId(TestIds.breadcrumb.subgraph)
-        .locator('.p-breadcrumb')
+      const breadcrumb = comfyPage.subgraph.breadcrumb.locator('.p-breadcrumb')
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -709,12 +705,15 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.removeSlot('input', 'text')
 
       // Wait for breadcrumb to be visible
-      await comfyPage.page
-        .getByTestId(TestIds.breadcrumb.subgraph)
-        .waitFor({ state: 'visible', timeout: 5000 })
+      await comfyPage.subgraph.breadcrumb.waitFor({
+        state: 'visible',
+        timeout: 5000
+      })
 
       // Click breadcrumb to navigate back to parent graph
-      const homeBreadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.root)
+      const homeBreadcrumb = comfyPage.subgraph.breadcrumb.getByTestId(
+        TestIds.breadcrumb.root
+      )
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
@@ -797,9 +796,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       // Navigate into subgraph
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
-      await comfyPage.page
-        .getByTestId(TestIds.breadcrumb.subgraph)
-        .waitFor({ state: 'visible' })
+      await comfyPage.subgraph.breadcrumb.waitFor({ state: 'visible' })
 
       // Verify we're in a subgraph
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
@@ -825,9 +822,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
-      await comfyPage.page
-        .getByTestId(TestIds.breadcrumb.subgraph)
-        .waitFor({ state: 'visible' })
+      await comfyPage.subgraph.breadcrumb.waitFor({ state: 'visible' })
 
       // Verify we're in a subgraph
       if (!(await comfyPage.subgraph.isInSubgraph())) {

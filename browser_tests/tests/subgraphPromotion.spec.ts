@@ -233,7 +233,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent graph
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
 
         // Promoted textarea on SubgraphNode should have the same value
         const promotedTextarea = comfyPage.page.getByTestId(
@@ -267,7 +267,7 @@ test.describe(
           )
           await expect(interiorTextarea).toHaveValue(testContent)
 
-          await comfyPage.subgraph.exitViaBreadcrumb()
+          await comfyPage.subgraph.exitSubgraph()
 
           const promotedTextarea = comfyPage.page.getByTestId(
             TestIds.widgets.domWidgetTextarea
@@ -313,7 +313,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
 
         // SubgraphNode should now have the promoted widget
         const widgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -348,7 +348,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back and verify promotion took effect
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
         await fitToViewInstant(comfyPage)
         await comfyPage.nextFrame()
         await comfyPage.nextFrame()
@@ -380,7 +380,7 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Navigate back to parent
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
 
         // SubgraphNode should have fewer widgets
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
@@ -716,7 +716,7 @@ test.describe(
 
         await comfyPage.subgraph.removeSlot('input')
 
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitSubgraph()
 
         const finalNames = await getPromotedWidgetNames(comfyPage, '5')
         const expectedNames = [...initialNames]
@@ -746,8 +746,8 @@ test.describe(
         // Remove the text input slot
         await comfyPage.subgraph.removeSlot('input', 'text')
 
-        // Navigate back via breadcrumb
-        await comfyPage.subgraph.exitViaBreadcrumb()
+        // Navigate back
+        await comfyPage.subgraph.exitSubgraph()
 
         // Widget count should be reduced
         const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '11')

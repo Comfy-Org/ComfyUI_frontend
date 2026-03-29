@@ -326,21 +326,24 @@ export class SubgraphHelper {
     })
   }
 
+  get breadcrumb(): Locator {
+    return this.page.getByTestId(TestIds.breadcrumb.subgraph)
+  }
+
+  async exitSubgraph(): Promise<void> {
+    await this.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      const graph = canvas.graph
+      if (!graph) return
+      canvas.setGraph(graph.rootGraph)
+    })
+    await this.comfyPage.nextFrame()
+    await expect.poll(async () => this.isInSubgraph()).toBe(false)
+  }
+
   async exitViaBreadcrumb(): Promise<void> {
-    const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
-    const rootItem = breadcrumb.getByTestId(TestIds.breadcrumb.root)
-
-    if (await rootItem.isVisible()) {
-      await rootItem.click()
-    } else {
-      await this.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        const graph = canvas.graph
-        if (!graph) return
-        canvas.setGraph(graph.rootGraph)
-      })
-    }
-
+    const rootItem = this.breadcrumb.getByTestId(TestIds.breadcrumb.root)
+    await rootItem.click()
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
   }
@@ -500,7 +503,7 @@ export class SubgraphHelper {
       canvas.graph!.convertToSubgraph(canvas.selectedItems)
     })
     await this.comfyPage.nextFrame()
-    await this.exitViaBreadcrumb()
+    await this.exitSubgraph()
     await this.comfyPage.canvas.click()
     await this.comfyPage.nextFrame()
   }

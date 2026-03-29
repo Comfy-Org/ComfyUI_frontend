@@ -92,7 +92,7 @@ test.describe('Subgraph viewport restoration', { tag: '@subgraph' }, () => {
     await comfyPage.vueNodes.enterSubgraph('11')
     await comfyPage.nextFrame()
 
-    await comfyPage.subgraph.exitViaBreadcrumb()
+    await comfyPage.subgraph.exitSubgraph()
 
     await expect
       .poll(

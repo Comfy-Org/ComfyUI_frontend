@@ -76,7 +76,7 @@ test.describe(
       await comfyPage.page.waitForSelector(dialog, { state: 'hidden' })
 
       // Navigate back to parent graph
-      await comfyPage.subgraph.exitViaBreadcrumb()
+      await comfyPage.subgraph.exitSubgraph()
 
       // Verify slot position is still at the widget row after rename
       const after = await SubgraphHelper.getTextSlotPosition(

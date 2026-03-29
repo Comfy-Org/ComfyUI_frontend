@@ -58,7 +58,7 @@ export class VueNodeHelpers {
   async getNodeIds(): Promise<string[]> {
     const allNodes = await this.nodes.all()
     const ids = await Promise.all(
-      allNodes.map((l) => l.getAttribute('data-node-id'))
+      allNodes.map((node) => node.getAttribute('data-node-id'))
     )
     return ids.filter((id): id is string => id !== null)
   }
