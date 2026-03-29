@@ -18,6 +18,7 @@ import { ComfyNodeSearchBoxV2 } from './components/ComfyNodeSearchBoxV2'
 import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { QueuePanel } from './components/QueuePanel'
 import {
   NodeLibrarySidebarTab,
@@ -39,7 +40,6 @@ import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
-import type { WorkspaceStore } from '../types/globals'
 
 dotenvConfig()
 
@@ -109,48 +109,6 @@ class ComfyMenu {
     return await this.page.evaluate(async () => {
       return await window.app!.ui.settings.getSettingValue('Comfy.ColorPalette')
     })
-  }
-}
-
-type KeysOfType<T, Match> = {
-  [K in keyof T]: T[K] extends Match ? K : never
-}[keyof T]
-
-class ConfirmDialog {
-  private readonly root: Locator
-  public readonly delete: Locator
-  public readonly overwrite: Locator
-  public readonly reject: Locator
-  public readonly confirm: Locator
-
-  constructor(public readonly page: Page) {
-    this.root = page.getByRole('dialog')
-    this.delete = this.root.getByRole('button', { name: 'Delete' })
-    this.overwrite = this.root.getByRole('button', { name: 'Overwrite' })
-    this.reject = this.root.getByRole('button', { name: 'Cancel' })
-    this.confirm = this.root.getByRole('button', { name: 'Confirm' })
-  }
-
-  async click(locator: KeysOfType<ConfirmDialog, Locator>) {
-    const loc = this[locator]
-    await loc.waitFor({ state: 'visible' })
-    await loc.click()
-
-    // Wait for the dialog mask to disappear after confirming
-    const mask = this.page.locator('.p-dialog-mask')
-    const count = await mask.count()
-    if (count > 0) {
-      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
-    }
-
-    // Wait for workflow service to finish if it's busy
-    await this.page.waitForFunction(
-      () =>
-        (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy === false,
-      undefined,
-      { timeout: 3000 }
-    )
   }
 }
 

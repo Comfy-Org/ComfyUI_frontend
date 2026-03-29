@@ -18,15 +18,13 @@ test.describe('Confirm dialog text wrapping', { tag: ['@mobile'] }, () => {
         .catch(() => {})
     }, longFilename)
 
-    const dialog = comfyPage.page.getByRole('dialog')
-    await expect(dialog).toBeVisible()
+    const dialog = comfyPage.confirmDialog
+    await dialog.waitForVisible()
 
-    const confirmButton = dialog.getByRole('button', { name: 'Confirm' })
-    await expect(confirmButton).toBeVisible()
-    await expect(confirmButton).toBeInViewport()
+    await expect(dialog.confirm).toBeVisible()
+    await expect(dialog.confirm).toBeInViewport()
 
-    const cancelButton = dialog.getByRole('button', { name: 'Cancel' })
-    await expect(cancelButton).toBeVisible()
-    await expect(cancelButton).toBeInViewport()
+    await expect(dialog.reject).toBeVisible()
+    await expect(dialog.reject).toBeInViewport()
   })
 })
