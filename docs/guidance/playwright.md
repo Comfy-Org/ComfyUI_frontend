@@ -52,7 +52,9 @@ Access internal state via `page.evaluate` and stores directly — don't change p
 Assert preconditions explicitly with a custom message so failures point to the broken assumption:
 
 ```typescript
-expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(4)
+expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(
+  4
+)
 await node.move(100, 200)
 
 expect.soft(menuItem1).toBeVisible()
