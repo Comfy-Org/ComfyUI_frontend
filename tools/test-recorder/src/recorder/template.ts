@@ -22,7 +22,7 @@ export function generateRecordingTemplate(
   const filePath = join(browserTestsDir, 'tests', `_recording-session.spec.ts`)
 
   const workflowLine = options.workflow
-    ? `  // Load the selected workflow\n  await comfyPage.workflow.loadWorkflow('${options.workflow}')\n  await comfyPage.nextFrame()\n`
+    ? `  // Load the selected workflow\n  await comfyPage.workflow.loadWorkflow('${options.workflow.replace(/'/g, "\\'")}')\n  await comfyPage.nextFrame()\n`
     : ''
 
   const code = `/**
