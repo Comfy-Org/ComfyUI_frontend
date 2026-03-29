@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
 async function createSubgraphAndNavigateInto(comfyPage: ComfyPage) {
   const subgraphNode =
