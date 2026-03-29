@@ -260,9 +260,7 @@ test.describe('AssetHelper', () => {
       await helper.clearMocks()
     })
 
-    test('GET requests are not tracked as mutations', async ({
-      comfyPage
-    }) => {
+    test('GET requests are not tracked as mutations', async ({ comfyPage }) => {
       const helper = createAssetHelper(
         comfyPage.page,
         withAsset(STABLE_CHECKPOINT)
@@ -281,9 +279,7 @@ test.describe('AssetHelper', () => {
   })
 
   test.describe('mockError', () => {
-    test('returns error status for all asset routes', async ({
-      comfyPage
-    }) => {
+    test('returns error status for all asset routes', async ({ comfyPage }) => {
       const helper = createAssetHelper(comfyPage.page)
       await helper.mockError(503, 'Service Unavailable')
 
