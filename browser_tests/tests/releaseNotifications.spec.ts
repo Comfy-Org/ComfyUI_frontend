@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { ReleaseNote } from '../../src/platform/updates/common/releaseService'
+import type { components } from '@comfyorg/registry-types'
+
+type ReleaseNote = components['schemas']['ReleaseNote']
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 
