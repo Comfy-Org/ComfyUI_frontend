@@ -33,4 +33,4 @@ function prestige(save: SaveState, narrativeSummary: string): SaveState {
   }
 }
 
-export { canPrestige, finalizeRun, prestige }
+export { canPrestige, prestige }

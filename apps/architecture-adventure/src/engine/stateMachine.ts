@@ -21,10 +21,6 @@ function initGameState(save: SaveState): void {
   notify()
 }
 
-function getGameState(): GameState {
-  return currentState
-}
-
 function subscribe(handler: GameEventHandler): () => void {
   listeners.push(handler)
   return () => {
@@ -103,11 +99,9 @@ function resetForPrestige(newSave: SaveState): void {
 
 export {
   enterRoom,
-  getGameState,
   initGameState,
   resetForPrestige,
   resolveChallenge,
   showEnding,
-  subscribe,
-  transition
+  subscribe
 }

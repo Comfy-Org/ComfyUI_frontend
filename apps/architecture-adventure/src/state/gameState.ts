@@ -64,12 +64,4 @@ function isV1Save(): boolean {
   }
 }
 
-export {
-  clearSave,
-  createDefaultSave,
-  createFreshRun,
-  isV1Save,
-  loadSave,
-  persistSave,
-  SAVE_VERSION
-}
+export { clearSave, createFreshRun, isV1Save, loadSave, persistSave }

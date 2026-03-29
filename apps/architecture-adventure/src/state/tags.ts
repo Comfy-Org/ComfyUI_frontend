@@ -1,21 +1,9 @@
 import type { RoomDefinition, SaveState } from '@/types'
 
-function hasAllPrerequisites(
-  room: RoomDefinition,
-  earnedTags: string[]
-): boolean {
-  return room.prerequisites.every((tag) => earnedTags.includes(tag))
-}
-
-function getUnmetPrerequisites(
-  room: RoomDefinition,
-  earnedTags: string[]
-): string[] {
-  return room.prerequisites.filter((tag) => !earnedTags.includes(tag))
-}
-
 function canEnterRoom(room: RoomDefinition, save: SaveState): boolean {
-  return hasAllPrerequisites(room, save.currentRun.conceptTags)
+  return room.prerequisites.every((tag) =>
+    save.currentRun.conceptTags.includes(tag)
+  )
 }
 
 function grantTags(save: SaveState, tags: string[]): SaveState {
@@ -31,4 +19,4 @@ function grantTags(save: SaveState, tags: string[]): SaveState {
   }
 }
 
-export { canEnterRoom, getUnmetPrerequisites, grantTags, hasAllPrerequisites }
+export { canEnterRoom, grantTags }

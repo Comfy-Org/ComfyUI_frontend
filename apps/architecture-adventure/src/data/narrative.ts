@@ -192,5 +192,3 @@ export function buildNarrativeSummary(
 
   return parts.join(' ')
 }
-
-export { bridges, sections, sentences }

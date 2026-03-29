@@ -11,8 +11,6 @@ type GamePhase =
   | 'ending'
   | 'prestige'
 
-type RoomState = 'locked' | 'discovered' | 'challenge-available' | 'solved'
-
 // --- Room & Challenge Data ---
 
 interface RoomConnection {
@@ -132,8 +130,6 @@ interface GameState {
 }
 
 export type {
-  Artifact,
-  ChallengeChoice,
   ChallengeDefinition,
   ChallengeRating,
   ChallengeResult,
@@ -144,10 +140,7 @@ export type {
   NarrativeBridge,
   NarrativeSection,
   NarrativeSentence,
-  PersistentState,
-  RoomConnection,
   RoomDefinition,
-  RoomState,
   RunRecord,
   SaveState
 }

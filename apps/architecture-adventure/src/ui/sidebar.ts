@@ -34,18 +34,4 @@ function renderSidebar(state: GameState): void {
   }
 }
 
-function addLogEntry(text: string, type: string = 'info'): void {
-  const logEntries = document.getElementById('log-entries')
-  if (!logEntries) return
-
-  const entry = document.createElement('div')
-  entry.className = `log-entry log-${type}`
-  entry.textContent = text
-  logEntries.prepend(entry)
-
-  while (logEntries.children.length > 50) {
-    logEntries.lastChild?.remove()
-  }
-}
-
-export { addLogEntry, createSidebar, renderSidebar }
+export { createSidebar, renderSidebar }
