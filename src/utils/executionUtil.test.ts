@@ -6,6 +6,10 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 
+function widgetValues(node: { widgets_values?: unknown }): unknown[] {
+  return node.widgets_values as unknown[]
+}
+
 describe('graphToPrompt', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -72,8 +76,8 @@ describe('graphToPrompt', () => {
       expect(output[nodeId].inputs.steps).toBe(20)
 
       // workflow widgets_values should match what was sent in the prompt
-      expect(wfNode.widgets_values![0]).toBe('cat')
-      expect(wfNode.widgets_values![1]).toBe(20)
+      expect(widgetValues(wfNode)[0]).toBe('cat')
+      expect(widgetValues(wfNode)[1]).toBe(20)
     })
 
     it('syncs async serializeValue results', async () => {
@@ -92,7 +96,7 @@ describe('graphToPrompt', () => {
       const nodeId = String(wfNode.id)
 
       expect(output[nodeId].inputs.data).toBe('resolved-async')
-      expect(wfNode.widgets_values![0]).toBe('resolved-async')
+      expect(widgetValues(wfNode)[0]).toBe('resolved-async')
     })
 
     it('keeps workflow in sync when widget.value changes between calls', async () => {
@@ -108,7 +112,7 @@ describe('graphToPrompt', () => {
       const nodeId = String(wfNode1.id)
 
       expect(result1.output[nodeId].inputs.seed).toBe(100)
-      expect(wfNode1.widgets_values![0]).toBe(100)
+      expect(widgetValues(wfNode1)[0]).toBe(100)
 
       // Simulate seed change (e.g. beforeQueued randomises the seed)
       node.widgets![0].value = 999
@@ -118,10 +122,10 @@ describe('graphToPrompt', () => {
       const wfNode2 = result2.workflow.nodes[0]
 
       expect(result2.output[nodeId].inputs.seed).toBe(999)
-      expect(wfNode2.widgets_values![0]).toBe(999)
+      expect(widgetValues(wfNode2)[0]).toBe(999)
 
       // Verify first call was not mutated
-      expect(wfNode1.widgets_values![0]).toBe(100)
+      expect(widgetValues(wfNode1)[0]).toBe(100)
     })
 
     it('does not sync widgets with options.serialize === false', async () => {
@@ -145,10 +149,10 @@ describe('graphToPrompt', () => {
       expect(output[nodeId].inputs.control).toBeUndefined()
 
       // seed should be synced, control should retain its serialized value
-      expect(wfNode.widgets_values![0]).toBe(42)
+      expect(widgetValues(wfNode)[0]).toBe(42)
       // control widget's workflow value should be its original value
       // (set by graph.serialize, not modified by sync)
-      expect(wfNode.widgets_values![1]).toBe('randomize')
+      expect(widgetValues(wfNode)[1]).toBe('randomize')
     })
 
     it('does not sync widgets with widget.serialize === false', async () => {
@@ -168,10 +172,10 @@ describe('graphToPrompt', () => {
       const wfNode = workflow.nodes[0]
 
       // visible widget should be synced
-      expect(wfNode.widgets_values![0]).toBe(10)
+      expect(widgetValues(wfNode)[0]).toBe(10)
       // hidden widget (serialize: false) should not appear in widgets_values
       // because LGraphNode.serialize() skips it
-      expect(wfNode.widgets_values![1]).toBeUndefined()
+      expect(widgetValues(wfNode)[1]).toBeUndefined()
     })
 
     it('handles object widget values by deep-cloning', async () => {
@@ -186,12 +190,21 @@ describe('graphToPrompt', () => {
         }
       ])
 
-      const { workflow } = await graphToPrompt(graph)
+      const { workflow, output } = await graphToPrompt(graph)
       const wfNode = workflow.nodes[0]
 
       // Should be deep-cloned, not a reference
-      const synced = wfNode.widgets_values![0] as Record<string, unknown>
+      const synced = widgetValues(wfNode)[0] as Record<string, unknown>
       expect(synced).toEqual({ key: 'modified', nested: { a: 2 } })
+
+      // Verify reference independence: mutating synced does not affect output
+      ;(synced.nested as Record<string, unknown>).a = 999
+      const nodeId = String(wfNode.id)
+      const outputValue = output[nodeId].inputs.config as Record<
+        string,
+        unknown
+      >
+      expect((outputValue.nested as Record<string, unknown>).a).toBe(2)
     })
   })
 
@@ -218,15 +231,15 @@ describe('graphToPrompt', () => {
       // Each iteration should have its own seed in both output and workflow
       for (const [idx, result] of results.entries()) {
         expect(result.output[nodeId].inputs.seed).toBe(seeds[idx])
-        expect(result.workflow.nodes[0].widgets_values![0]).toBe(seeds[idx])
+        expect(widgetValues(result.workflow.nodes[0])[0]).toBe(seeds[idx])
       }
 
       // Steps and cfg should be the same across all iterations
       for (const result of results) {
         expect(result.output[nodeId].inputs.steps).toBe(20)
         expect(result.output[nodeId].inputs.cfg).toBe(7.5)
-        expect(result.workflow.nodes[0].widgets_values![1]).toBe(20)
-        expect(result.workflow.nodes[0].widgets_values![2]).toBe(7.5)
+        expect(widgetValues(result.workflow.nodes[0])[1]).toBe(20)
+        expect(widgetValues(result.workflow.nodes[0])[2]).toBe(7.5)
       }
     })
 
@@ -257,9 +270,9 @@ describe('graphToPrompt', () => {
       expect(result3.output[nodeId].inputs.prompt).toBe('result-3')
 
       // Workflow metadata should match the output
-      expect(result1.workflow.nodes[0].widgets_values![0]).toBe('result-1')
-      expect(result2.workflow.nodes[0].widgets_values![0]).toBe('result-2')
-      expect(result3.workflow.nodes[0].widgets_values![0]).toBe('result-3')
+      expect(widgetValues(result1.workflow.nodes[0])[0]).toBe('result-1')
+      expect(widgetValues(result2.workflow.nodes[0])[0]).toBe('result-2')
+      expect(widgetValues(result3.workflow.nodes[0])[0]).toBe('result-3')
     })
   })
 })
