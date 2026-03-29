@@ -101,20 +101,14 @@ expect(node.widgets).toHaveLength(4)
 
 ## Custom Assertions
 
-Existing `comfyExpect` matchers (`toBePinned`, `toBeBypassed`, `toBeCollapsed`, `toHaveFocus`) are fine to use in existing and new tests.
-
-**For NEW assertions**: Add assertion methods directly on the page object or helper class instead of extending `comfyExpect`. Page object methods are discoverable via IntelliSense without special imports.
+Add assertion methods directly on the page object or helper class instead of extending `comfyExpect`. Page object methods are discoverable via IntelliSense without special imports.
 
 ```typescript
-// ✅ Preferred for new assertions
+// ✅ Page object assertions
 await node.expectPinned()
 await node.expectBypassed()
 
-// ✅ Acceptable (existing matchers)
-import { comfyExpect as expect } from '../fixtures/ComfyPage'
-await expect(node).toBePinned()
-
-// ❌ Do not add new custom matchers to comfyExpect
+// ❌ Do not add custom matchers to comfyExpect
 ```
 
 ## Test Tags
