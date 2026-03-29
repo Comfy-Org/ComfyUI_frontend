@@ -123,6 +123,8 @@ export const TestIds = {
     centerPanel: 'linear-center-panel',
     mobile: 'linear-mobile',
     mobileNavigation: 'linear-mobile-navigation',
+    mobileActionMenu: 'linear-mobile-menu',
+    mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
     widgetContainer: 'linear-widgets'
   },

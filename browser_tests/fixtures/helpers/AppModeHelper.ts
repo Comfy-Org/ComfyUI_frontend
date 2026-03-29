@@ -153,6 +153,17 @@ export class AppModeHelper {
     return this.page.getByTestId(TestIds.linear.mobile)
   }
 
+  get mobileWorkflows() {
+    return this.mobileView.getByTestId(TestIds.linear.mobileWorkflows)
+  }
+  get mobileActionmenu() {
+    return this.mobileView.getByTestId(TestIds.linear.mobileActionMenu)
+  }
+  async switchMobileWorkflow(workflowName: string) {
+    await this.mobileWorkflows.click()
+    await this.page.getByRole('menu').getByText(workflowName).click()
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").
