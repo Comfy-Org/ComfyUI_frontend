@@ -45,8 +45,7 @@ export const comfyExpect = expect.extend({
 
     return {
       pass: isFocused,
-      message: () =>
-        `Expected element to ${isFocused ? 'not ' : ''}be focused.`
+      message: () => `Expected element to ${isFocused ? 'not ' : ''}be focused.`
     }
   }
 })
