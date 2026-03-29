@@ -2017,7 +2017,16 @@ async function main() {
       }
 
       knownNames.add(videoName)
-      renameLatestWebm(opts.outputDir, videoName, knownNames)
+      // If Phase 2 already copied a test video as qa-session.webm, don't overwrite it
+      // with the idle research browser video
+      const videoPath = `${opts.outputDir}/${videoName}`
+      if (statSync(videoPath, { throwIfNoEntry: false })) {
+        console.warn(
+          'Phase 2 test video exists — skipping research video rename'
+        )
+      } else {
+        renameLatestWebm(opts.outputDir, videoName, knownNames)
+      }
 
       // Post-process: add TTS narration audio to the video
       if (narrationSegments.length > 0) {
