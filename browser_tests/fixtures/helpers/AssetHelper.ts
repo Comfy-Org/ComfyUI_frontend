@@ -109,11 +109,17 @@ export class AssetHelper {
       const url = new URL(route.request().url())
       const method = route.request().method()
       const path = url.pathname
-      const body = ['POST', 'PUT', 'DELETE'].includes(method)
-        ? route.request().postDataJSON()
-        : null
+      const isMutation = ['POST', 'PUT', 'DELETE'].includes(method)
+      let body: Record<string, unknown> | null = null
+      if (isMutation) {
+        try {
+          body = route.request().postDataJSON()
+        } catch {
+          body = null
+        }
+      }
 
-      if (body !== null) {
+      if (isMutation) {
         this.mutations.push({
           endpoint: path,
           method,
