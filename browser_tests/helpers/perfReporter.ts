@@ -41,7 +41,8 @@ export function logMeasurement(
     if (formatter) return formatter(m)
     return `${f}=${m[f]}`
   })
-   
+
+  // oxlint-disable-next-line no-console -- perf reporter intentionally logs
   console.log(`${label}: ${parts.join(', ')}`)
 }
 
