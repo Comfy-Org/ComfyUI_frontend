@@ -18,12 +18,12 @@ export class SubgraphHelper {
 
   private async getSlotScreenPositions(
     slotType: 'input' | 'output',
-    action: 'rightClick' | 'doubleClick',
+    coordinateSource: 'pos' | 'boundingRect',
     slotName?: string
   ): Promise<{ x: number; y: number; slotName: string }[]> {
     return this.page.evaluate(
       (params) => {
-        const { slotType, action, targetSlotName } = params
+        const { slotType, coordinateSource, targetSlotName } = params
         const app = window.app!
         const currentGraph = app.canvas!.graph!
 
@@ -49,7 +49,7 @@ export class SubgraphHelper {
 
         const slotsToTry = targetSlotName
           ? slots.filter((slot) => slot.name === targetSlotName)
-          : action === 'rightClick'
+          : coordinateSource === 'pos'
             ? slots
             : [slots[0]]
 
@@ -67,7 +67,7 @@ export class SubgraphHelper {
           let offsetX: number
           let offsetY: number
 
-          if (action === 'rightClick') {
+          if (coordinateSource === 'pos') {
             if (!slot.pos) continue
             offsetX = slot.pos[0]
             offsetY = slot.pos[1]
@@ -93,7 +93,7 @@ export class SubgraphHelper {
 
         return results
       },
-      { slotType, action, targetSlotName: slotName }
+      { slotType, coordinateSource, targetSlotName: slotName }
     )
   }
 
@@ -103,7 +103,7 @@ export class SubgraphHelper {
   ): Promise<void> {
     const positions = await this.getSlotScreenPositions(
       slotType,
-      'rightClick',
+      'pos',
       slotName
     )
 
@@ -115,25 +115,25 @@ export class SubgraphHelper {
       )
     }
 
+    const menuEntry = this.page.locator('.litemenu-entry').first()
+
     for (const pos of positions) {
       await this.page.mouse.click(pos.x, pos.y, { button: 'right' })
       await this.comfyPage.nextFrame()
 
-      const menuVisible = await this.page
-        .waitForSelector('.litemenu-entry', {
-          state: 'visible',
-          timeout: 1000
-        })
+      const menuVisible = await menuEntry
+        .waitFor({ state: 'visible', timeout: 1000 })
         .then(() => true)
         .catch(() => false)
 
       if (menuVisible) return
     }
 
-    await this.page.waitForSelector('.litemenu-entry', {
-      state: 'visible',
-      timeout: 5000
-    })
+    throw new Error(
+      slotName
+        ? `Context menu did not appear after right-clicking ${slotType} slot '${slotName}'`
+        : `Context menu did not appear after right-clicking all ${slotType} slots`
+    )
   }
 
   private async doubleClickSlot(
@@ -142,7 +142,7 @@ export class SubgraphHelper {
   ): Promise<void> {
     const positions = await this.getSlotScreenPositions(
       slotType,
-      'doubleClick',
+      'boundingRect',
       slotName
     )
 
@@ -330,7 +330,7 @@ export class SubgraphHelper {
     const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
     const rootItem = breadcrumb.getByTestId(TestIds.breadcrumb.root)
 
-    if (await rootItem.isVisible().catch(() => false)) {
+    if (await rootItem.isVisible()) {
       await rootItem.click()
     } else {
       await this.page.evaluate(() => {
@@ -403,6 +403,8 @@ export class SubgraphHelper {
   }
 
   async getNodeCount(): Promise<number> {
+    // Prefer DOM count (Vue nodes only render for the active graph).
+    // Falls back to graph model for canvas-only mode or empty graphs (0 DOM nodes).
     const domCount = await this.page.locator('[data-node-id]').count()
     if (domCount > 0) return domCount
 

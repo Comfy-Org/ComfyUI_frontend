@@ -35,10 +35,13 @@ test.describe(
         comfyPage.page
       )
 
-      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      try {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-      expect(warnings).toEqual([])
-      dispose()
+        expect(warnings).toEqual([])
+      } finally {
+        dispose()
+      }
     })
 
     test('Promoted widget renders with normalized name, not legacy prefix', async ({

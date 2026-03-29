@@ -14,10 +14,13 @@ test.describe('Nested subgraph configure order', { tag: ['@subgraph'] }, () => {
       ['No link found', 'Failed to resolve legacy -1']
     )
 
-    await comfyPage.workflow.loadWorkflow(WORKFLOW)
+    try {
+      await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-    expect(warnings).toEqual([])
-    dispose()
+      expect(warnings).toEqual([])
+    } finally {
+      dispose()
+    }
   })
 
   test('All three subgraph levels resolve promoted widgets', async ({

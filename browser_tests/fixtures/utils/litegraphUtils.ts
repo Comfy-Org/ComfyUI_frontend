@@ -385,7 +385,9 @@ export class NodeReference {
       .first()
 
     if ((await header.count()) > 0) {
-      await header.click({ force: true })
+      await header.dispatchEvent('pointerdown', { bubbles: true })
+      await header.dispatchEvent('pointerup', { bubbles: true })
+      await header.dispatchEvent('click', { bubbles: true })
     } else {
       await this.click('title')
     }

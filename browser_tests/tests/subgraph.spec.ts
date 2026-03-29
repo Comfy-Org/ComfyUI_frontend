@@ -714,9 +714,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         .waitFor({ state: 'visible', timeout: 5000 })
 
       // Click breadcrumb to navigate back to parent graph
-      const homeBreadcrumb = comfyPage.page.locator(
-        '.p-breadcrumb-list > :first-child'
-      )
+      const homeBreadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.root)
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
