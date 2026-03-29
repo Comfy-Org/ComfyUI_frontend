@@ -1965,25 +1965,47 @@ async function main() {
         // ═══ Phase 2: Run passing test with video recording ═══
         if (research.verdict === 'REPRODUCED' && research.testCode) {
           console.warn('Phase 2: Recording test execution with video')
-          const testPath = `${opts.outputDir}/research/reproduce.spec.ts`
-          writeFileSync(testPath, research.testCode)
+          const projectRoot = process.cwd()
+          const browserTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
+          const testResultsDir = `${opts.outputDir}/test-results`
+          writeFileSync(browserTestFile, research.testCode)
           try {
-            execSync(
-              `cd "${process.cwd()}" && npx playwright test "${testPath}" --reporter=list --timeout=30000 --video=on --output="${opts.outputDir}/test-results" 2>&1`,
+            const output = execSync(
+              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=30000 --retries=0 --workers=1 --video=on --output="${testResultsDir}" 2>&1`,
               {
-                timeout: 60000,
+                timeout: 90000,
                 encoding: 'utf-8',
-                env: {
-                  ...process.env,
-                  COMFYUI_BASE_URL: opts.serverUrl
-                }
+                env: { ...process.env, COMFYUI_BASE_URL: opts.serverUrl }
               }
             )
-            console.warn('Phase 2: Test passed with video')
-          } catch {
+            console.warn(`Phase 2: Test passed\n${output.slice(-300)}`)
+          } catch (e) {
+            const err = e as { stdout?: string }
             console.warn(
-              'Phase 2: Test execution failed (video may be partial)'
+              `Phase 2: Test failed\n${(err.stdout || '').slice(-300)}`
             )
+          }
+          // Copy recorded video to outputDir so deploy script finds it
+          try {
+            const videos = execSync(
+              `find "${testResultsDir}" -name '*.webm' -type f 2>/dev/null`,
+              { encoding: 'utf-8' }
+            )
+              .trim()
+              .split('\n')
+              .filter(Boolean)
+            if (videos.length > 0) {
+              execSync(`cp "${videos[0]}" "${opts.outputDir}/qa-session.webm"`)
+              console.warn(`Phase 2: Video → ${opts.outputDir}/qa-session.webm`)
+            }
+          } catch {
+            console.warn('Phase 2: No test video found')
+          }
+          // Cleanup
+          try {
+            execSync(`rm -f "${browserTestFile}"`)
+          } catch {
+            /* ignore */
           }
         } else {
           console.warn(`Skipping Phase 2: verdict=${research.verdict}`)
