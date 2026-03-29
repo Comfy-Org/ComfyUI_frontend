@@ -107,7 +107,11 @@ test.describe('AssetHelper', () => {
       )
       expect(status).toBe(200)
 
-      const data = body as { assets: unknown[]; total: number; has_more: boolean }
+      const data = body as {
+        assets: unknown[]
+        total: number
+        has_more: boolean
+      }
       expect(data.assets).toHaveLength(2)
       expect(data.total).toBe(2)
       expect(data.has_more).toBe(false)
@@ -127,7 +131,11 @@ test.describe('AssetHelper', () => {
         comfyPage.page,
         `${comfyPage.url}/api/assets?limit=2&offset=0`
       )
-      const data = body as { assets: unknown[]; total: number; has_more: boolean }
+      const data = body as {
+        assets: unknown[]
+        total: number
+        has_more: boolean
+      }
       expect(data.assets).toHaveLength(2)
       expect(data.total).toBe(10)
       expect(data.has_more).toBe(true)
