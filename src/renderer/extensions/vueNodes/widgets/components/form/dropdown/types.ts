@@ -12,7 +12,9 @@ export interface FormDropdownItem {
   name: string
   /** Original/alternate label (e.g., original filename) */
   label?: string
-  /** Preview image/video URL */
+  /** Short description shown below the name in list view */
+  description?: string
+  /** Preview image/video/audio URL */
   preview_url?: string
   /** Whether the item is immutable (public model) - used for ownership filtering */
   is_immutable?: boolean

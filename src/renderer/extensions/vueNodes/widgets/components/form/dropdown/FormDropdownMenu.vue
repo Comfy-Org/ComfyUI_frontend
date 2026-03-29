@@ -20,6 +20,8 @@ interface Props {
   isSelected: (item: FormDropdownItem, index: number) => boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
+  showSort?: boolean
+  showLayoutSwitcher?: boolean
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -31,6 +33,8 @@ const {
   isSelected,
   filterOptions,
   sortOptions,
+  showSort = true,
+  showLayoutSwitcher = true,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
@@ -112,6 +116,8 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :sort-options
+      :show-sort
+      :show-layout-switcher="showLayoutSwitcher"
       :show-ownership-filter
       :ownership-options
       :show-base-model-filter
@@ -145,6 +151,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
           :label="item.label"
+          :description="item.description"
           :layout="layoutMode"
           @click="emit('item-click', item, index)"
         />

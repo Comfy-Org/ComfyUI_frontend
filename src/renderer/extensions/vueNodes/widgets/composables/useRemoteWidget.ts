@@ -2,10 +2,12 @@ import axios from 'axios'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
+import {
+  getRemoteAuthHeaders,
+  resolveRoute
+} from '../utils/resolveRemoteRoute'
 
 const MAX_RETRIES = 5
 const TIMEOUT = 4096
@@ -19,17 +21,6 @@ interface CacheEntry<T> {
   lastErrorTime?: number
   retryCount?: number
   failed?: boolean
-}
-
-async function getAuthHeaders() {
-  if (isCloud) {
-    const authStore = useAuthStore()
-    const authHeader = await authStore.getAuthHeader()
-    return {
-      ...(authHeader && { headers: authHeader })
-    }
-  }
-  return {}
 }
 
 const dataCache = new Map<string, CacheEntry<unknown>>()
@@ -73,9 +64,10 @@ const fetchData = async (
 ) => {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
 
-  const authHeaders = await getAuthHeaders()
+  const url = resolveRoute(route)
+  const authHeaders = await getRemoteAuthHeaders(route)
 
-  const res = await axios.get(route, {
+  const res = await axios.get(url, {
     params: query_params,
     signal: controller.signal,
     timeout,

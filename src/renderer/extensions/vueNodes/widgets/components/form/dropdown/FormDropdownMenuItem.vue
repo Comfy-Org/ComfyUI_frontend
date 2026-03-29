@@ -12,6 +12,7 @@ interface Props {
   previewUrl: string
   name: string
   label?: string
+  description?: string
   layout?: LayoutMode
 }
 
@@ -27,9 +28,29 @@ const actualDimensions = ref<string | null>(null)
 const assetKind = inject(AssetKindKey)
 
 const isVideo = computed(() => assetKind?.value === 'video')
+const isAudio = computed(() => assetKind?.value === 'audio')
+
+const audioRef = ref<HTMLAudioElement | null>(null)
+const isPlayingAudio = ref(false)
 
 function handleClick() {
   emit('click', props.index)
+}
+
+function toggleAudioPreview(event: Event) {
+  event.stopPropagation()
+  if (!audioRef.value) return
+  if (isPlayingAudio.value) {
+    audioRef.value.pause()
+    isPlayingAudio.value = false
+  } else {
+    void audioRef.value.play()
+    isPlayingAudio.value = true
+  }
+}
+
+function handleAudioEnded() {
+  isPlayingAudio.value = false
 }
 
 function handleImageLoad(event: Event) {
@@ -107,6 +128,25 @@ function handleVideoLoad(event: Event) {
         muted
         @loadeddata="handleVideoLoad"
       />
+      <div
+        v-else-if="previewUrl && isAudio"
+        class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-tr from-violet-500 via-purple-500 to-fuchsia-400"
+        @click.stop="toggleAudioPreview"
+      >
+        <audio
+          ref="audioRef"
+          :src="previewUrl"
+          preload="none"
+          @ended="handleAudioEnded"
+        />
+        <i
+          :class="
+            isPlayingAudio
+              ? 'icon-[lucide--pause] size-5 text-white'
+              : 'icon-[lucide--play] size-5 text-white'
+          "
+        />
+      </div>
       <img
         v-else-if="previewUrl"
         :src="previewUrl"
@@ -143,6 +183,13 @@ function handleVideoLoad(event: Event) {
         "
       >
         {{ label ?? name }}
+      </span>
+      <!-- Description -->
+      <span
+        v-if="description && layout !== 'grid'"
+        class="text-secondary line-clamp-1 block overflow-hidden text-xs"
+      >
+        {{ description }}
       </span>
       <!-- Meta Data -->
       <span v-if="actualDimensions" class="text-secondary block text-xs">

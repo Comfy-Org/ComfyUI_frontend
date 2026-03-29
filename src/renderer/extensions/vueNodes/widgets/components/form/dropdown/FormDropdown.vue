@@ -34,6 +34,8 @@ interface Props {
   accept?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
+  showSort?: boolean
+  showLayoutSwitcher?: boolean
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -61,6 +63,8 @@ const {
   accept,
   filterOptions = [],
   sortOptions = getDefaultSortOptions(),
+  showSort = true,
+  showLayoutSwitcher = true,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
@@ -232,6 +236,8 @@ function handleSelection(item: FormDropdownItem, index: number) {
         v-model:base-model-selected="baseModelSelected"
         :filter-options
         :sort-options
+        :show-sort
+        :show-layout-switcher="showLayoutSwitcher"
         :show-ownership-filter
         :ownership-options
         :show-base-model-filter

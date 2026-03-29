@@ -5,6 +5,16 @@ import { resultItemType } from '@/schemas/apiSchema'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 const zComboOption = z.union([z.string(), z.number()])
+const zRemoteItemSchema = z.object({
+  value_field: z.string(),
+  label_field: z.string(),
+  preview_url_field: z.string().optional(),
+  preview_type: z.enum(['image', 'video', 'audio']).default('image'),
+  description_field: z.string().optional(),
+  search_fields: z.array(z.string()).optional(),
+  filter_field: z.string().optional()
+})
+
 const zRemoteWidgetConfig = z.object({
   route: z.string().url().or(z.string().startsWith('/')),
   refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional(),
@@ -13,7 +23,8 @@ const zRemoteWidgetConfig = z.object({
   refresh_button: z.boolean().optional(),
   control_after_refresh: z.enum(['first', 'last']).optional(),
   timeout: z.number().gte(0).optional(),
-  max_retries: z.number().gte(0).optional()
+  max_retries: z.number().gte(0).optional(),
+  item_schema: zRemoteItemSchema.optional()
 })
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
@@ -354,6 +365,7 @@ export const zMatchTypeOptions = z.object({
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
+export type RemoteItemSchema = z.infer<typeof zRemoteItemSchema>
 export type RemoteWidgetConfig = z.infer<typeof zRemoteWidgetConfig>
 
 export type ComboInputOptions = z.infer<typeof zComboInputOptions>

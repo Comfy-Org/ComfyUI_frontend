@@ -214,7 +214,9 @@ const addComboWidget = (
     }
   )
 
-  if (inputSpec.remote) {
+  if (inputSpec.remote && !inputSpec.remote.item_schema) {
+    // Skip useRemoteWidget when item_schema is present —
+    // RichComboWidget handles its own data fetching and rendering.
     if (!isComboWidget(widget)) {
       throw new Error(`Expected combo widget but received ${widget.type}`)
     }
