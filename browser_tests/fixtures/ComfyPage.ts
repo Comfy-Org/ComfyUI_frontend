@@ -3,7 +3,7 @@ import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { TestIds } from './selectors'
-import { delay } from './utils/timing'
+import { sleep } from './utils/timing'
 import { comfyExpect } from './utils/customMatchers'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
@@ -354,7 +354,7 @@ export class ComfyPage {
   }
 
   async delay(ms: number) {
-    return delay(ms)
+    return sleep(ms)
   }
 
   /**
