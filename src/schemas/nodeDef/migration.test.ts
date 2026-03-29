@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -632,6 +632,33 @@ describe('ComfyNodeDefImpl', () => {
       expect(nodeDef.inputs['forced'].forceInput).toBe(true)
     })
 
+    it('should emit deprecation warning for optional input with defaultInput', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      new ComfyNodeDefImpl({
+        name: 'TestNode',
+        display_name: 'Test Node',
+        category: 'Test',
+        python_module: 'test_module',
+        description: 'A test node',
+        input: {
+          optional: {
+            seed: ['INT', { defaultInput: true }]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      } as ComfyNodeDefV1)
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Use of defaultInput on optional input test_module:TestNode:seed is deprecated and ignored. Remove defaultInput. Use forceInput only if you intentionally want a socket-only input.'
+      )
+
+      warnSpy.mockRestore()
+    })
+
     it('should not mutate the original node definition', () => {
       const originalDef = {
         name: 'TestNode',
@@ -652,7 +679,9 @@ describe('ComfyNodeDefImpl', () => {
 
       new ComfyNodeDefImpl(originalDef)
 
-      expect(originalDef.input!.optional!['param'][1]!.forceInput).toBeUndefined()
+      expect(
+        originalDef.input!.optional!['param'][1]!.forceInput
+      ).toBeUndefined()
     })
   })
 })

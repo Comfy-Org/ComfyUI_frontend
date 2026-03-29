@@ -133,7 +133,7 @@ export class ComfyNodeDefImpl
       const inputOptions = spec[1]
       if (inputOptions && inputOptions.defaultInput) {
         console.warn(
-          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please use forceInput instead.`
+          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated and ignored. Remove defaultInput. Use forceInput only if you intentionally want a socket-only input.`
         )
       }
     }
