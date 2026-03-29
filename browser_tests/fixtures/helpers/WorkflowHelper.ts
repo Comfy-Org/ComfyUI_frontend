@@ -1,11 +1,13 @@
 import { readFileSync } from 'fs'
 
+import type { AppMode } from '../../../src/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { WorkspaceStore } from '../../types/globals'
 import type { ComfyPage } from '../ComfyPage'
+import { assetPath } from '../utils/paths'
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -19,7 +21,7 @@ export class WorkflowHelper {
 
     for (const [key, value] of Object.entries(structure)) {
       if (typeof value === 'string') {
-        const filePath = this.comfyPage.assetPath(value)
+        const filePath = assetPath(value)
         result[key] = readFileSync(filePath, 'utf-8')
       } else {
         result[key] = this.convertLeafToContent(value)
@@ -58,7 +60,7 @@ export class WorkflowHelper {
 
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
-      this.comfyPage.assetPath(`${workflowName}.json`)
+      assetPath(`${workflowName}.json`)
     )
     await this.comfyPage.nextFrame()
   }
@@ -101,6 +103,40 @@ export class WorkflowHelper {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
       return workflow?.changeTracker.redoQueue.length
+    })
+  }
+
+  async getActiveWorkflowPath(): Promise<string | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.path
+    })
+  }
+
+  async getActiveWorkflowActiveAppMode(): Promise<AppMode | null | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.activeMode
+    })
+  }
+
+  async getActiveWorkflowInitialMode(): Promise<AppMode | null | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.initialMode
+    })
+  }
+
+  async getLinearModeFromGraph(): Promise<boolean | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return window.app!.rootGraph.extra?.linearMode as boolean | undefined
+    })
+  }
+
+  async getOpenWorkflowCount(): Promise<number> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow.workflows
+        .length
     })
   }
 

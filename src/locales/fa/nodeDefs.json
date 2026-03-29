@@ -2190,6 +2190,10 @@
       "image": {
         "name": "تصویر"
       },
+      "keep_aspect": {
+        "name": "حفظ نسبت تصویر",
+        "tooltip": "آیا برش تصویر برای تطبیق با اندازه خروجی کشیده شود یا با پد سیاه نسبت تصویر حفظ گردد."
+      },
       "output_height": {
         "name": "ارتفاع خروجی",
         "tooltip": "ارتفاعی که هر برش به آن تغییر اندازه داده می‌شود."
@@ -2309,6 +2313,23 @@
     "display_name": "غیرفعال‌سازی نویز",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "ترسیم BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر خروجی",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "اعمال شیدرهای fragment GLSL ES به تصاویر. u_resolution (vec2) همیشه در دسترس است.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "بول‌ها",
+        "tooltip": "بولین‌ها به صورت u_bool0-9 (bool) در کد شیدر در دسترس هستند"
+      },
+      "curves": {
+        "name": "منحنی‌ها",
+        "tooltip": "منحنی‌ها به صورت u_curve0-3 (sampler2D، ۱D LUT) در کد شیدر در دسترس هستند. با texture(u_curve0, vec2(x, 0.5)).r نمونه‌برداری کنید."
+      },
       "floats": {
         "name": "floats",
         "tooltip": "اعداد اعشاری به صورت u_float0-4 در کد شیدر در دسترس هستند"
@@ -12215,6 +12244,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "شناسایی RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "نام کلاس",
+        "tooltip": "فیلتر کردن شناسایی‌ها بر اساس کلاس. برای غیرفعال کردن فیلتر، مقدار 'all' را قرار دهید."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "max_detections": {
+        "name": "حداکثر شناسایی",
+        "tooltip": "حداکثر تعداد شناسایی برای هر تصویر. به ترتیب امتیاز اطمینان نزولی."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "threshold": {
+        "name": "آستانه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },

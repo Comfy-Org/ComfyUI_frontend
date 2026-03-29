@@ -126,6 +126,7 @@ const i18n = createI18n({
         viewMoreDetailsPlans: 'View more details about plans & pricing',
         learnMore: 'Learn More',
         messageSupport: 'Message Support',
+        refreshCredits: 'Refresh credits',
         invoiceHistory: 'Invoice History',
         partnerNodesCredits: 'Partner nodes pricing',
         renewsDate: 'Renews {date}',
@@ -200,8 +201,8 @@ function createWrapper(overrides = {}) {
         SubscriptionBenefits: true,
         Button: {
           template:
-            '<button @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
-          props: ['variant', 'size'],
+            '<button v-bind="$attrs" @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
+          props: ['variant', 'size', 'loading', 'label', 'icon'],
           emits: ['click']
         },
         Skeleton: {
@@ -213,6 +214,17 @@ function createWrapper(overrides = {}) {
   })
 }
 
+function findButtonByText(
+  wrapper: ReturnType<typeof createWrapper>,
+  text: string
+) {
+  const button = wrapper
+    .findAll('button')
+    .find((button) => button.text().includes(text))
+  if (!button) throw new Error(`Button with text "${text}" not found`)
+  return button
+}
+
 describe('SubscriptionPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -221,6 +233,8 @@ describe('SubscriptionPanel', () => {
     mockIsCancelled.value = false
     mockSubscriptionTier.value = 'CREATOR'
     mockIsYearlySubscription.value = false
+    mockCreditsData.isLoadingBalance = false
+    mockActionsData.isLoadingSupport = false
   })
 
   describe('subscription state functionality', () => {
@@ -290,50 +304,54 @@ describe('SubscriptionPanel', () => {
     })
 
     it('renders refill date with literal slashes', () => {
+      vi.useFakeTimers()
+      vi.stubEnv('TZ', 'UTC')
+
       mockIsActiveSubscription.value = true
       const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Included (Refills 12/31/24)')
+      expect(wrapper.text()).toMatch(/Included \(Refills \d{2}\/\d{2}\/\d{2}\)/)
       expect(wrapper.text()).not.toContain('&#x2F;')
+
+      vi.useRealTimers()
+      vi.unstubAllEnvs()
     })
   })
 
-  // TODO: Re-enable when migrating to VTL so we can find by user visible content.
-  describe.skip('action buttons', () => {
+  describe('action buttons', () => {
     it('should call handleLearnMoreClick when learn more is clicked', async () => {
       const wrapper = createWrapper()
-      const learnMoreButton = wrapper.find('[data-testid="Learn More"]')
+      const learnMoreButton = findButtonByText(wrapper, 'Learn More')
       await learnMoreButton.trigger('click')
       expect(mockActionsData.handleLearnMoreClick).toHaveBeenCalledOnce()
     })
 
     it('should call handleMessageSupport when message support is clicked', async () => {
       const wrapper = createWrapper()
-      const supportButton = wrapper.find('[data-testid="Message Support"]')
+      const supportButton = findButtonByText(wrapper, 'Message Support')
       await supportButton.trigger('click')
       expect(mockActionsData.handleMessageSupport).toHaveBeenCalledOnce()
     })
 
     it('should call handleRefresh when refresh button is clicked', async () => {
       const wrapper = createWrapper()
-      // Find the refresh button by icon
-      const refreshButton = wrapper.find('[data-icon="pi pi-sync"]')
+      const refreshButton = wrapper.find('button[aria-label="Refresh credits"]')
       await refreshButton.trigger('click')
       expect(mockActionsData.handleRefresh).toHaveBeenCalledOnce()
     })
   })
 
-  describe.skip('loading states', () => {
+  describe('loading states', () => {
     it('should show loading state on support button when loading', () => {
       mockActionsData.isLoadingSupport = true
       const wrapper = createWrapper()
-      const supportButton = wrapper.find('[data-testid="Message Support"]')
+      const supportButton = findButtonByText(wrapper, 'Message Support')
       expect(supportButton.attributes('disabled')).toBeDefined()
     })
 
     it('should show loading state on refresh button when loading balance', () => {
       mockCreditsData.isLoadingBalance = true
       const wrapper = createWrapper()
-      const refreshButton = wrapper.find('[data-icon="pi pi-sync"]')
+      const refreshButton = wrapper.find('button[aria-label="Refresh credits"]')
       expect(refreshButton.attributes('disabled')).toBeDefined()
     })
   })
