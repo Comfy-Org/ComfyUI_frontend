@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "출력 크기에 맞게 자르기를 늘릴지, 아니면 종횡비를 유지하기 위해 검은색 픽셀로 채울지 여부입니다."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "각 잘라낸 이미지의 높이로 크기가 조정됩니다."
@@ -2309,6 +2313,23 @@
     "display_name": "노이즈 비활성화",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "BBoxes 그리기",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -12223,6 +12244,34 @@
       },
       "vae": {
         "name": "VAE"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 감지",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "클래스로 감지 결과를 필터링합니다. 필터링을 비활성화하려면 'all'로 설정하세요."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "이미지당 반환할 최대 감지 개수입니다. 신뢰도 점수 내림차순으로 정렬됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },

@@ -20,6 +20,7 @@ export const TestIds = {
     main: 'graph-canvas',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
+    closeMinimapButton: 'close-minimap-button',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',
@@ -51,7 +52,8 @@ export const TestIds = {
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
-    saveButton: 'save-workflow-button'
+    saveButton: 'save-workflow-button',
+    subscribeButton: 'topbar-subscribe-button'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
