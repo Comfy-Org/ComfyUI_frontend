@@ -165,6 +165,36 @@ export class AssetHelper {
     this.routeHandlers.push({ pattern, handler })
     await this.page.route(pattern, handler)
   }
+  async fetch(
+    path: string,
+    init?: RequestInit
+  ): Promise<{ status: number; body: unknown }> {
+    return this.page.evaluate(
+      async ([fetchUrl, fetchInit]) => {
+        const res = await fetch(fetchUrl, fetchInit)
+        const text = await res.text()
+        let body: unknown
+        try {
+          body = JSON.parse(text)
+        } catch {
+          body = text
+        }
+        return { status: res.status, body }
+      },
+      [path, init] as const
+    )
+  }
+
+  configure(...operators: AssetOperator[]): void {
+    const config = operators.reduce<AssetConfig>(
+      (cfg, op) => op(cfg),
+      emptyConfig()
+    )
+    this.store = new Map(config.assets)
+    this.paginationOptions = config.pagination
+    this.uploadResponse = config.uploadResponse
+  }
+
   getMutations(): MutationRecord[] {
     return [...this.mutations]
   }
