@@ -74,6 +74,17 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   }
   pass('Committed test file')
 
+  const push = spawnSync(
+    'git',
+    ['push', '-u', 'origin', branchName],
+    { encoding: 'utf-8', stdio: 'pipe' }
+  )
+  if (push.status !== 0) {
+    fail('Git push failed', push.stderr.trim())
+    return { success: false, error: push.stderr.trim() }
+  }
+  pass('Pushed branch', branchName)
+
   const pr = spawnSync(
     'gh',
     ['pr', 'create', '--title', prTitle, '--body', prBody, '--fill'],

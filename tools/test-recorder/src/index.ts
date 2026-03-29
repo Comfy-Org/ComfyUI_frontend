@@ -37,6 +37,7 @@ switch (command) {
           '  Some required checks failed. Fix the issues above and try again.'
         )
       )
+      process.exitCode = 1
     }
     break
   }
@@ -57,7 +58,6 @@ Commands:
 
 Options:
   --help      Show help
-  --version   Show version
 `)
     break
 }
