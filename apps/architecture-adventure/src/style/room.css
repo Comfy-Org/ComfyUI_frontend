@@ -69,7 +69,7 @@
   border-bottom-style: solid;
 }
 
-#choices {
+#room-choices {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -115,42 +115,4 @@
 .choice-btn .choice-hint {
   font-size: 13px;
   color: var(--muted);
-}
-
-#welcome-panel {
-  border: 1px solid var(--accent);
-  border-radius: 10px;
-  padding: 16px 20px;
-  background: rgb(88 166 255 / 0.04);
-  display: none;
-}
-
-#welcome-panel.active {
-  display: block;
-}
-
-#welcome-panel h3 {
-  font-size: 16px;
-  color: var(--accent);
-  margin-bottom: 10px;
-}
-
-#welcome-panel p {
-  font-size: 15px;
-  line-height: 1.7;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-
-#welcome-panel p:last-child {
-  margin-bottom: 0;
-}
-
-#welcome-panel kbd {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: var(--text);
 }

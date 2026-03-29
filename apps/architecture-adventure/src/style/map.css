@@ -55,69 +55,6 @@
   margin-bottom: 12px;
 }
 
-#map {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-}
-
-.map-room {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  flex-direction: column;
-}
-
-.map-room:hover {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.map-room.visited {
-  border-color: var(--green);
-  opacity: 0.7;
-}
-
-.map-room.current {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.map-room .room-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 4px;
-}
-
-.map-room .room-layer {
-  color: var(--muted);
-  font-size: 9px;
-  text-transform: uppercase;
-}
-
-.map-room .challenge-badge {
-  display: inline-block;
-  font-size: 8px;
-  padding: 1px 4px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.map-room .challenge-badge.pending {
-  background: var(--yellow);
-  color: var(--bg);
-}
-
-.map-room .challenge-badge.done {
-  background: var(--green);
-  color: var(--bg);
-}
-
 .map-node circle {
   transition:
     fill 0.3s ease,
@@ -163,8 +100,4 @@
 
 .map-lock {
   font-size: 12px;
-}
-
-.hidden {
-  display: none !important;
 }

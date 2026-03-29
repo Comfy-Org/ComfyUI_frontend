@@ -35,19 +35,6 @@
   }
 }
 
-#narrative {
-  transition: opacity 0.2s ease;
-}
-
-#narrative.exit,
-#narrative.enter {
-  opacity: 0;
-}
-
-.map-room.newly-unlocked {
-  animation: unlockPulse 0.6s ease-out;
-}
-
 .map-node.newly-unlocked circle {
   animation: unlockPulse 0.6s ease-out;
 }

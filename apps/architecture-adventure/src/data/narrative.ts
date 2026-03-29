@@ -150,6 +150,8 @@ function sectionTone(
   challengeIds: string[]
 ): Tone {
   const ratings = challengeIds.map((id) => results[id]?.rating).filter(Boolean)
+  if (ratings.length === 0) return 'mixed'
+
   const goodCount = ratings.filter((r) => r === 'good').length
   const badCount = ratings.filter((r) => r === 'bad').length
 

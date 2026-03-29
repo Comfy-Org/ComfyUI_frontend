@@ -1,26 +1,11 @@
 #hud,
-.stat-bar-group,
 .choice-key,
-.challenge-badge,
-.artifact-type,
 .sidebar-header,
 #room-layer,
-.ending-label,
-.scorecard-header,
 #challenge-header,
-.map-room .room-layer,
-#challenge-progress,
-.stat-delta,
-.ending-stat .label,
-#play-again-btn,
 #toggle-map,
 .choice-btn .choice-hint,
-.challenge-choice-btn .choice-hint,
-.inv-slot,
-.artifact-icon,
-#dec-label,
-#ach-label,
-#inv-label {
+.challenge-choice-btn .choice-hint {
   user-select: none;
 }
 
@@ -49,75 +34,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-#stat-bars {
-  display: flex;
-  gap: 18px;
-  font-size: 12px;
-}
-
-.stat-bar-group {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.stat-bar-label {
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.stat-bar {
-  width: 80px;
-  height: 10px;
-  background: var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-.stat-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition:
-    width 0.4s ease,
-    background-color 0.4s ease;
-}
-
-.stat-bar-value {
-  color: var(--text);
-  font-weight: 600;
-  font-size: 13px;
-  min-width: 20px;
-  text-align: right;
-}
-
-.stat-debt .stat-bar-fill {
-  background: var(--red);
-}
-
-.stat-quality .stat-bar-fill {
-  background: var(--green);
-}
-
-.stat-morale .stat-bar-fill {
-  background: var(--yellow);
-}
-
-.stat-migration .stat-bar-fill {
-  background: var(--purple);
-}
-
-#challenge-progress {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-#challenge-progress .progress-value {
-  color: var(--text);
-  font-weight: 600;
 }
 
 #restart-btn {
@@ -152,17 +68,6 @@
   color: var(--accent);
 }
 
-@media (max-width: 900px) {
-  #stat-bars {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .stat-bar {
-    width: 40px;
-  }
-}
-
 @media (max-width: 768px) {
   #hud {
     padding: 6px 12px;
@@ -177,45 +82,6 @@
     width: 100%;
     flex-wrap: wrap;
     gap: 6px;
-  }
-
-  #stat-bars {
-    width: 100%;
-    justify-content: space-between;
-    gap: 4px;
-  }
-
-  .stat-bar {
-    width: 32px;
-  }
-
-  .stat-bar-label {
-    display: none;
-  }
-
-  .stat-bar-group::before {
-    font-size: 10px;
-    color: var(--muted);
-  }
-
-  .stat-debt::before {
-    content: 'D';
-  }
-
-  .stat-quality::before {
-    content: 'Q';
-  }
-
-  .stat-morale::before {
-    content: 'M';
-  }
-
-  .stat-migration::before {
-    content: 'E';
-  }
-
-  #challenge-progress {
-    font-size: 9px;
   }
 
   #restart-btn,
