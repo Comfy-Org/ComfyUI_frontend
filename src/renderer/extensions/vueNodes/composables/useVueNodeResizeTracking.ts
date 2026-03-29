@@ -17,7 +17,6 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { app } from '@/scripts/app'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -27,6 +26,14 @@ import {
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
+
+interface VueBoundsOverride {
+  footerHeight?: number
+  collapsedWidth?: number
+  collapsedHeight?: number
+}
+
+export const vueBoundsOverrides = new Map<NodeId, VueBoundsOverride>()
 
 /**
  * Generic update item for element bounds tracking
@@ -141,42 +148,40 @@ const resizeObserver = new ResizeObserver((entries) => {
       elementType === 'node' ? elementId : undefined
 
     // Collapsed nodes: don't update layoutStore (preserve expanded size),
-    // but sync the collapsed DOM width to litegraph for boundingRect.
+    // but store collapsed dimensions in the shared WeakMap for onBounding.
     if (elementType === 'node' && element.dataset.collapsed != null) {
       if (nodeId) {
-        const lgNode = app.graph?.getNodeById(nodeId)
-        if (lgNode) {
-          const body = element.querySelector(
-            '[data-testid^="node-inner-wrapper"]'
-          )
-          lgNode._collapsed_width =
-            body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
-          lgNode._collapsed_height = element.offsetHeight
-        }
+        const body = element.querySelector(
+          '[data-testid^="node-inner-wrapper"]'
+        )
+        const collapsedWidth =
+          body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
+        vueBoundsOverrides.set(nodeId, {
+          ...vueBoundsOverrides.get(nodeId),
+          collapsedWidth,
+          collapsedHeight: element.offsetHeight
+        })
         nodesNeedingSlotResync.add(nodeId)
       }
       continue
     }
 
-    // Measure body (node-inner-wrapper) for node.size to exclude footer,
-    // but store the full height (with footer) for boundingRect.
+    // Measure body (node-inner-wrapper) for node.size to exclude footer.
+    // Store footer height in WeakMap for onBounding to extend boundingRect.
     const bodyEl = element.querySelector('[data-testid^="node-inner-wrapper"]')
     const measuredEl = bodyEl instanceof HTMLElement ? bodyEl : element
     const width = Math.max(0, measuredEl.offsetWidth)
     const height = Math.max(0, measuredEl.offsetHeight)
     const fullHeight = Math.max(0, element.offsetHeight)
 
-    // Store footer-inclusive height for boundingRect calculation
     if (nodeId) {
-      const lgNode = app.graph?.getNodeById(nodeId)
-      if (lgNode) {
-        const footerExtra = fullHeight - measuredEl.offsetHeight
-        if (footerExtra > 0) {
-          lgNode._footerHeight = footerExtra
-        } else {
-          lgNode._footerHeight = undefined
-        }
-      }
+      const footerExtra = fullHeight - measuredEl.offsetHeight
+      vueBoundsOverrides.set(nodeId, {
+        ...vueBoundsOverrides.get(nodeId),
+        footerHeight: footerExtra > 0 ? footerExtra : 0,
+        collapsedWidth: vueBoundsOverrides.get(nodeId)?.collapsedWidth,
+        collapsedHeight: vueBoundsOverrides.get(nodeId)?.collapsedHeight
+      })
     }
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value

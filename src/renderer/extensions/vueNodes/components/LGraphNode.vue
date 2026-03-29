@@ -281,7 +281,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -314,7 +315,10 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  useVueElementTracking,
+  vueBoundsOverrides
+} from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -784,6 +788,32 @@ const showAdvancedState = customRef((track, trigger) => {
       trigger()
     }
   }
+})
+
+watchEffect((onCleanup) => {
+  const node = lgraphNode.value
+  if (!node) return
+
+  const nodeId = String(nodeData.id)
+  const collapsed = isCollapsed.value
+  const previousOnBounding = node.onBounding
+
+  node.onBounding = function (out) {
+    previousOnBounding?.call(this, out)
+    const overrides = vueBoundsOverrides.get(nodeId)
+    if (!overrides) return
+
+    if (collapsed) {
+      if (overrides.collapsedWidth) out[2] = overrides.collapsedWidth
+      if (overrides.collapsedHeight) out[3] = overrides.collapsedHeight
+    } else if (overrides.footerHeight) {
+      out[3] += overrides.footerHeight
+    }
+  }
+
+  onCleanup(() => {
+    node.onBounding = previousOnBounding
+  })
 })
 
 const hasVideoInput = computed(() => {
