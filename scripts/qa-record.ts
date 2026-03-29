@@ -1971,11 +1971,15 @@ async function main() {
           writeFileSync(browserTestFile, research.testCode)
           try {
             const output = execSync(
-              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=30000 --retries=0 --workers=1 --video=on --output="${testResultsDir}" 2>&1`,
+              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=30000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
               {
                 timeout: 90000,
                 encoding: 'utf-8',
-                env: { ...process.env, COMFYUI_BASE_URL: opts.serverUrl }
+                env: {
+                  ...process.env,
+                  COMFYUI_BASE_URL: opts.serverUrl,
+                  PLAYWRIGHT_LOCAL: '1' // Enables video=on + trace=on in playwright.config.ts
+                }
               }
             )
             console.warn(`Phase 2: Test passed\n${output.slice(-300)}`)
