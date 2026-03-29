@@ -101,8 +101,10 @@ export const structuralTransforms: StructuralTransform[] = [
       // If already has test.describe, skip
       if (code.includes('test.describe')) return code
 
-      const tagStr = tags.map((t) => `'${t}'`).join(', ')
-      const descName = testName.replace(/[-_]/g, ' ').replace(/\.spec\.ts$/, '')
+      const tagStr = tags.map((t) => JSON.stringify(t)).join(', ')
+      const descName = JSON.stringify(
+        testName.replace(/[-_]/g, ' ').replace(/\.spec\.ts$/, '')
+      )
 
       // Find the test() call and wrap it
       const testMatch = code.match(/^(import[\s\S]*?\n\n?)(test\s*\([\s\S]*)$/m)
@@ -111,7 +113,7 @@ export const structuralTransforms: StructuralTransform[] = [
       const imports = testMatch[1]
       const testBody = testMatch[2]
 
-      return `${imports}test.describe('${descName}', { tag: [${tagStr}] }, () => {
+      return `${imports}test.describe(${descName}, { tag: [${tagStr}] }, () => {
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.canvasOps.resetView()
   })
