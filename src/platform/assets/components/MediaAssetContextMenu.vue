@@ -39,29 +39,22 @@ import Button from '@/components/ui/button/Button.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
-import { isPreviewableMediaType } from '@/utils/formatUtil'
+import { isPreviewableMediaFilename } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
-import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
+import type { AssetContext } from '../schemas/mediaAssetSchema'
 
-const {
-  asset,
-  assetType,
-  fileKind,
-  showDeleteButton,
-  selectedAssets,
-  isBulkMode
-} = defineProps<{
-  asset: AssetItem
-  assetType: AssetContext['type']
-  fileKind: MediaKind
-  showDeleteButton?: boolean
-  selectedAssets?: AssetItem[]
-  isBulkMode?: boolean
-}>()
+const { asset, assetType, showDeleteButton, selectedAssets, isBulkMode } =
+  defineProps<{
+    asset: AssetItem
+    assetType: AssetContext['type']
+    showDeleteButton?: boolean
+    selectedAssets?: AssetItem[]
+    isBulkMode?: boolean
+  }>()
 
 const emit = defineEmits<{
   zoom: []
@@ -196,7 +189,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Individual mode: Show all menu options
 
   // Inspect
-  if (isPreviewableMediaType(fileKind)) {
+  if (isPreviewableMediaFilename(asset.name)) {
     items.push({
       label: t('mediaAsset.actions.inspect'),
       icon: 'icon-[lucide--zoom-in]',

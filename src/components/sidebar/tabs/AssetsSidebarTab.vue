@@ -179,7 +179,6 @@
     ref="contextMenuRef"
     :asset="contextMenuAsset"
     :asset-type="contextMenuAssetType"
-    :file-kind="contextMenuFileKind"
     :show-delete-button="shouldShowDeleteButton"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
@@ -236,7 +235,6 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -244,7 +242,7 @@ import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
-  isPreviewableMediaType
+  isPreviewableMediaFilename
 } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -279,10 +277,6 @@ const shouldShowDeleteButton = computed(() => {
 
 const contextMenuAssetType = computed(() =>
   contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
-)
-
-const contextMenuFileKind = computed<MediaKind>(() =>
-  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
@@ -411,9 +405,7 @@ const visibleAssets = computed(() => {
 })
 
 const previewableVisibleAssets = computed(() =>
-  visibleAssets.value.filter((asset) =>
-    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
-  )
+  visibleAssets.value.filter((asset) => isPreviewableMediaFilename(asset.name))
 )
 
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
@@ -561,7 +553,7 @@ const handleDeleteSelected = async () => {
 
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
-  if (!isPreviewableMediaType(mediaType)) {
+  if (!isPreviewableMediaFilename(asset.name)) {
     return
   }
 

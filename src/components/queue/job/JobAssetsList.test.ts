@@ -222,6 +222,20 @@ describe('JobAssetsList', () => {
     expect(onViewItem).toHaveBeenCalledWith(job)
   })
 
+  it('emits viewItem on icon click for completed PLY jobs without preview tile', async () => {
+    const job = buildJob({
+      iconImageUrl: undefined,
+      taskRef: createTaskRef(createResultItem('job-1.ply', 'model'))
+    })
+    const onViewItem = vi.fn()
+    const { container, user } = renderJobAssetsList([job], { onViewItem })
+
+    const icon = container.querySelector('.assets-list-item-stub i')!
+    await user.click(icon)
+
+    expect(onViewItem).toHaveBeenCalledWith(job)
+  })
+
   it('does not emit viewItem on double-click for non-completed jobs', async () => {
     const job = buildJob({
       state: 'running',

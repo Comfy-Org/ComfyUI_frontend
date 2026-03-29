@@ -207,6 +207,45 @@ describe('TaskItemImpl', () => {
     expect(task.previewOutput?.content).toBe('test')
   })
 
+  it('should treat PLY preview output as previewable 3D media', () => {
+    const job: JobListItem = {
+      ...createHistoryJob(0, 'ply-job'),
+      preview_output: {
+        filename: 'mesh-output.ply',
+        subfolder: 'mesh',
+        type: 'output',
+        nodeId: 'node-1',
+        mediaType: 'model'
+      }
+    }
+
+    const task = new TaskItemImpl(job)
+    const output = task.previewOutput
+
+    expect(task.previewableOutputs).toHaveLength(1)
+    expect(output?.filename).toBe('mesh-output.ply')
+    expect(output?.is3D).toBe(true)
+    expect(output?.supportsPreview).toBe(true)
+  })
+
+  it('should not treat USDZ output as previewable 3D media', () => {
+    const job: JobListItem = {
+      ...createHistoryJob(0, 'usdz-job'),
+      preview_output: {
+        filename: 'mesh-output.usdz',
+        subfolder: 'mesh',
+        type: 'output',
+        nodeId: 'node-1',
+        mediaType: 'model'
+      }
+    }
+
+    const task = new TaskItemImpl(job)
+
+    expect(task.previewableOutputs).toHaveLength(0)
+    expect(task.previewOutput).toBeUndefined()
+  })
+
   describe('error extraction getters', () => {
     it('errorMessage returns undefined when no execution_error', () => {
       const job = createHistoryJob(0, 'job-id')

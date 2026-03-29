@@ -22,7 +22,10 @@ import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getMediaTypeFromFilename,
+  isPreviewableMediaFilename
+} from '@/utils/formatUtil'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -220,7 +223,10 @@ export class ResultItemImpl {
   }
 
   get is3D(): boolean {
-    return getMediaTypeFromFilename(this.filename) === '3D'
+    return (
+      getMediaTypeFromFilename(this.filename) === '3D' &&
+      isPreviewableMediaFilename(this.filename)
+    )
   }
   get isText(): boolean {
     return this.mediaType === 'text'

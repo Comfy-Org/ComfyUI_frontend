@@ -3,16 +3,10 @@
  * This file can be imported without pulling in the entire THREE.js bundle
  */
 
-export const SUPPORTED_EXTENSIONS = new Set([
-  '.gltf',
-  '.glb',
-  '.obj',
-  '.fbx',
-  '.stl',
-  '.spz',
-  '.splat',
-  '.ply',
-  '.ksplat'
-])
+import { THREE_D_LOADABLE_EXTENSIONS } from '@comfyorg/shared-frontend-utils/mediaExtensions'
+
+export const SUPPORTED_EXTENSIONS = new Set(
+  THREE_D_LOADABLE_EXTENSIONS.map((extension) => `.${extension}`)
+)
 
 export const SUPPORTED_EXTENSIONS_ACCEPT = [...SUPPORTED_EXTENSIONS].join(',')
