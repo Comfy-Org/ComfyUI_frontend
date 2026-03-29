@@ -13,7 +13,7 @@ Applies when implementing or modifying user-facing components and views.
 Consult the **Comfy Design Standards** Figma file to ensure your changes follow the agreed-upon design principles. Use the Figma MCP tool to fetch the current standards:
 
 ```javascript
-get_figma_data({ fileKey: "QreIv5htUaSICNuO2VBHw0", nodeId: "0-1", depth: 1 })
+get_figma_data({ fileKey: 'QreIv5htUaSICNuO2VBHw0', nodeId: '0-1', depth: 1 })
 ```
 
 The Figma file is the single source of truth. Always fetch it live — do not rely on cached assumptions.
@@ -33,7 +33,11 @@ The Figma file is the single source of truth. Always fetch it live — do not re
 Fetch the specific section relevant to your task:
 
 ```javascript
-get_figma_data({ fileKey: "QreIv5htUaSICNuO2VBHw0", nodeId: "<node-id>", depth: 3 })
+get_figma_data({
+  fileKey: 'QreIv5htUaSICNuO2VBHw0',
+  nodeId: '<node-id>',
+  depth: 3
+})
 ```
 
 ## Figma Component Reference
