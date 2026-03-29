@@ -28,7 +28,7 @@ Reference docs (read if you need full context):
 
 5. **Shared mutable state between tests** — Variables declared outside `test()` blocks, `let` state mutated across tests, or tests depending on execution order. Each test must be independently runnable.
 
-6. **Missing cleanup of server-persisted state** — Settings changed via `comfyPage.settings.setSetting()` persist across tests. Must be reset in `afterEach` or at test start. Same for uploaded files or saved workflows.
+6. **Missing cleanup of server-persisted state** — Settings changed via `comfyPage.settings.setSetting()` persist across tests. Must be reset in `afterEach` or at test start. Same for uploaded files or saved workflows. Prefer moving cleanup into [fixture options](https://playwright.dev/docs/test-fixtures#fixtures-options) so individual tests don't manage reset logic.
 
 7. **Double-click without `{ delay }` option** — `dblclick()` without `{ delay: 5 }` or similar can be too fast for the canvas event handler.
 
