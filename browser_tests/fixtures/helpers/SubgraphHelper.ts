@@ -64,26 +64,26 @@ export class SubgraphHelper {
         const results: { x: number; y: number; slotName: string }[] = []
 
         for (const slot of slotsToTry) {
-          let canvasX: number
-          let canvasY: number
+          let offsetX: number
+          let offsetY: number
 
           if (action === 'rightClick') {
             if (!slot.pos) continue
-            const converted = app.canvas.ds.convertOffsetToCanvas([
-              slot.pos[0],
-              slot.pos[1]
-            ])
-            canvasX = converted[0]
-            canvasY = converted[1]
+            offsetX = slot.pos[0]
+            offsetY = slot.pos[1]
           } else {
             if (!slot.boundingRect) {
               throw new Error(`${slotType} slot bounding rect not found`)
             }
             const rect = slot.boundingRect
-            canvasX = rect[0] + rect[2] / 2
-            canvasY = rect[1] + rect[3] / 2
+            offsetX = rect[0] + rect[2] / 2
+            offsetY = rect[1] + rect[3] / 2
           }
 
+          const [canvasX, canvasY] = app.canvas.ds.convertOffsetToCanvas([
+            offsetX,
+            offsetY
+          ])
           const [clientX, clientY] = app.canvasPosToClientPos([
             canvasX,
             canvasY
@@ -320,9 +320,6 @@ export class SubgraphHelper {
   }
 
   async isInSubgraph(): Promise<boolean> {
-    const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
-    if (await breadcrumb.isVisible().catch(() => false)) return true
-
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
       return !!graph && 'inputNode' in graph
