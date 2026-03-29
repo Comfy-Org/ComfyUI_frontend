@@ -117,6 +117,14 @@ export interface ExtensionManager {
   // Execution error state (read-only)
   lastNodeErrors: Record<NodeId, NodeError> | null
   lastExecutionError: ExecutionErrorWsMessage | null
+
+  /**
+   * Renders a markdown string to sanitized HTML.
+   * Uses marked (GFM) + DOMPurify. Safe for direct use with innerHTML.
+   * @param markdown - The markdown string to render.
+   * @param baseUrl - Optional base URL for resolving relative image/media paths.
+   */
+  renderMarkdownToHtml(markdown: string, baseUrl?: string): string
 }
 
 export interface CommandManager {
