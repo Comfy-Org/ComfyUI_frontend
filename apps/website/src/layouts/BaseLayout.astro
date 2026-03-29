@@ -1,0 +1,86 @@
+---
+import { ClientRouter } from 'astro:transitions'
+import Analytics from '@vercel/analytics/astro'
+import '../styles/global.css'
+
+interface Props {
+  title: string
+  description?: string
+  ogImage?: string
+}
+
+const {
+  title,
+  description = 'Comfy is the AI creation engine for visual professionals who demand control.',
+  ogImage = '/og-default.png',
+} = Astro.props
+
+const siteBase = Astro.site ?? 'https://comfy.org'
+const canonicalURL = new URL(Astro.url.pathname, siteBase)
+const ogImageURL = new URL(ogImage, siteBase)
+const locale = Astro.currentLocale ?? 'en'
+const gtmId = 'GTM-NP9JM6K7'
+const gtmEnabled = import.meta.env.PROD
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={canonicalURL.href} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL.href} />
+    <meta property="og:url" content={canonicalURL.href} />
+    <meta property="og:locale" content={locale} />
+    <meta property="og:site_name" content="Comfy" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL.href} />
+
+    <!-- Google Tag Manager -->
+    {gtmEnabled && (
+      <script is:inline define:vars={{ gtmId }}>
+        ;(function (w, d, s, l, i) {
+          w[l] = w[l] || []
+          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+          var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s),
+            dl = l != 'dataLayer' ? '&l=' + l : ''
+          j.async = true
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+          f.parentNode.insertBefore(j, f)
+        })(window, document, 'script', 'dataLayer', gtmId)
+      </script>
+    )}
+
+    <ClientRouter />
+  </head>
+  <body class="bg-black text-white font-inter antialiased">
+    {gtmEnabled && (
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+          height="0"
+          width="0"
+          style="display:none;visibility:hidden"
+        ></iframe>
+      </noscript>
+    )}
+
+    <slot />
+
+    <Analytics />
+  </body>
+</html>

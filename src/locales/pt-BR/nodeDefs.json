@@ -2190,6 +2190,10 @@
       "image": {
         "name": "imagem"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Escolher entre esticar o recorte para caber no tamanho de saída ou preencher com pixels pretos para preservar a proporção."
+      },
       "output_height": {
         "name": "altura_de_saida",
         "tooltip": "Altura para a qual cada recorte será redimensionado."
@@ -2309,6 +2313,23 @@
     "display_name": "Desativar Ruído",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Desenhar BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -12223,6 +12244,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detectar",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrar detecções por classe. Defina como 'all' para desabilitar o filtro."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Número máximo de detecções a retornar por imagem. Em ordem decrescente de confiança."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },

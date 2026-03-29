@@ -1,22 +1,11 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
 async function createSubgraphAndNavigateInto(comfyPage: ComfyPage) {
-  await comfyPage.workflow.loadWorkflow('default')
-  await comfyPage.nextFrame()
-
-  const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
-  await ksampler.click('title')
-  await ksampler.convertToSubgraph()
-  await comfyPage.nextFrame()
-
-  const subgraphNodes =
-    await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
-  expect(subgraphNodes.length).toBe(1)
-  const subgraphNode = subgraphNodes[0]
-
+  const subgraphNode =
+    await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
   await subgraphNode.navigateIntoSubgraph()
   return subgraphNode
 }

@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { WorkflowTemplates } from '../../src/platform/workflow/templates/types/template'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 
@@ -33,7 +34,11 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   })
 
-  // TODO: Re-enable this test once issue resolved
+  // Flaky: /templates is proxied to an external server, so thumbnail
+  // availability varies across CI runs.
+  // FIX: Make hermetic — fixture index.json and thumbnail responses via
+  // page.route(), and change checkTemplateFileExists to use browser-context
+  // fetch (page.request.head bypasses Playwright routing).
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
   test.skip('should have all required thumbnail media for each template', async ({
     comfyPage
@@ -73,9 +78,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect(async () => {
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-    }).toPass({ timeout: 250 })
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+      .toBe(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -88,9 +93,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(comfyPage.templates.content).toBeHidden()
 
     // Ensure we now have some nodes
-    await expect(async () => {
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
-    }).toPass({ timeout: 250 })
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+      .toBeGreaterThan(0)
   })
 
   test('dialog should be automatically shown to first-time users', async ({
@@ -103,7 +108,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.setup({ clearStorage: true })
 
     // Expect the templates dialog to be shown
-    expect(await comfyPage.templates.content.isVisible()).toBe(true)
+    await expect(comfyPage.templates.content).toBeVisible({ timeout: 5000 })
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
@@ -240,7 +245,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.page.route(
         '**/templates/index.json',
         async (route, _) => {
-          const response = [
+          const response: WorkflowTemplates[] = [
             {
               moduleName: 'default',
               title: 'Test Templates',
