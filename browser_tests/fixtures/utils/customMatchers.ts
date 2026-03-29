@@ -12,15 +12,11 @@ function makeMatcher<T>(
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {
-    const value = await getValue(node)
-    let assertion = expect(
-      value,
-      'Node is ' + (this.isNot ? '' : 'not ') + type
-    )
-    if (this.isNot) {
-      assertion = assertion.not
-    }
     await expect(async () => {
+      const value = await getValue(node)
+      const assertion = this.isNot
+        ? expect(value, 'Node is ' + type).not
+        : expect(value, 'Node is not ' + type)
       assertion.toBeTruthy()
     }).toPass({ timeout: 250, ...options })
     return {
