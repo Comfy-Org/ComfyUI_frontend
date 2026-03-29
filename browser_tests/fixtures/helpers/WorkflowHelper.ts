@@ -111,6 +111,16 @@ export class WorkflowHelper {
     })
   }
 
+  async waitForWorkflowIdle(timeout = 5000): Promise<void> {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy,
+      undefined,
+      { timeout }
+    )
+  }
+
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>
   async getExportedWorkflow(options?: {
     api?: false
