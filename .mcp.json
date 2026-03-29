@@ -2,10 +2,7 @@
   "mcpServers": {
     "playwright-test": {
       "command": "pnpm",
-      "args": [
-        "dlx",
-        "@playwright/mcp@latest"
-      ]
+      "args": ["dlx", "@playwright/mcp@latest"]
     }
   }
 }
