@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Déterminer s'il faut étirer le recadrage pour correspondre à la taille de sortie, ou ajouter des pixels noirs pour préserver le ratio d'aspect."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Hauteur à laquelle chaque découpe est redimensionnée."
@@ -2309,6 +2313,23 @@
     "display_name": "DésactiverBruit",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Dessiner les BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -12223,6 +12244,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "Détection RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrer les détections par classe. Définir sur 'all' pour désactiver le filtrage."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Nombre maximal de détections à retourner par image. Par ordre décroissant du score de confiance."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },
