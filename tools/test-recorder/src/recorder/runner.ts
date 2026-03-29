@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join, parse } from 'node:path'
 import pc from 'picocolors'
 import { generateRecordingTemplate, cleanupRecordingTemplate } from './template'
 import { box } from '../ui/logger'
@@ -22,11 +22,13 @@ interface RecordingResult {
  */
 export function findProjectRoot(): string {
   let dir = process.cwd()
-  while (dir !== '/') {
+  const { root } = parse(dir)
+  while (true) {
     if (existsSync(join(dir, 'playwright.config.ts'))) {
       return dir
     }
-    dir = join(dir, '..')
+    if (dir === root) break
+    dir = dirname(dir)
   }
   throw new Error(
     'Could not find project root (no playwright.config.ts found). ' +
@@ -97,7 +99,7 @@ export async function runRecording(
 
   try {
     // Run the test in headed mode with PWDEBUG to force inspector
-    spawnSync(
+    const result = spawnSync(
       'pnpm',
       [
         'exec',
@@ -119,9 +121,20 @@ export async function runRecording(
       }
     )
 
-    // The user will have copied code from the Inspector.
-    // We can't automatically capture Inspector output, so we'll
-    // prompt the user to paste it or check if they saved a file.
+    if (result.error) {
+      return {
+        success: false,
+        error: `Failed to spawn pnpm: ${result.error.message}`
+      }
+    }
+
+    if (result.status !== 0) {
+      return {
+        success: false,
+        error: `Playwright exited with status ${result.status}`
+      }
+    }
+
     console.log()
     console.log(pc.green('  ✅ Recording session complete.'))
     console.log()
