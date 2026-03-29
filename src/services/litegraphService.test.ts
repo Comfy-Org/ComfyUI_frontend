@@ -1,14 +1,17 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 
-setActivePinia(createTestingPinia())
+let registerNodeDef: ReturnType<typeof useLitegraphService>['registerNodeDef']
 
-const { registerNodeDef } = useLitegraphService()
+beforeEach(() => {
+  setActivePinia(createTestingPinia())
+  ;({ registerNodeDef } = useLitegraphService())
+})
 
 function createNodeDefV1(
   overrides: Partial<ComfyNodeDefV1> = {}
