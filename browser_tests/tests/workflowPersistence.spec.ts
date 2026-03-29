@@ -1,5 +1,4 @@
 import { readFileSync } from 'fs'
-import path from 'path'
 
 import { expect } from '@playwright/test'
 
@@ -197,9 +196,8 @@ test.describe('Workflow Persistence', () => {
       description: 'PR #9694 — loadApiJson early-returned on missing node types'
     })
 
-    const fixturePath = path.resolve(
-      __dirname,
-      '../assets/nodes/api_workflow_with_missing_nodes.json'
+    const fixturePath = comfyPage.assetPath(
+      'nodes/api_workflow_with_missing_nodes.json'
     )
     const apiWorkflow = JSON.parse(readFileSync(fixturePath, 'utf-8'))
 
