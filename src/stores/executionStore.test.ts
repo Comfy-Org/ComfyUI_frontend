@@ -1,5 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -16,8 +17,8 @@ import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
-// Mutable activeWorkflow ref so tests can control the "active tab" path
-const mockActiveWorkflow = { value: null as { path: string } | null }
+// Reactive ref so the watcher on activeWorkflow?.path fires in tests
+const mockActiveWorkflow = ref<{ path: string } | null>(null)
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -1017,6 +1018,75 @@ describe('useExecutionStore - WS message filtering by workflow tab', () => {
 
       // But nodeProgressStatesByJob should be updated
       expect(store.nodeProgressStatesByJob['job-a']['node-1'].value).toBe(8)
+    })
+  })
+
+  describe('tab switch rehydration', () => {
+    it('should rehydrate nodeProgressStates from the new workflow on tab switch', async () => {
+      store.ensureSessionWorkflowPath('job-a', '/workflow-a')
+      store.ensureSessionWorkflowPath('job-b', '/workflow-b')
+
+      // Populate per-job maps with progress data
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      const nodesA = {
+        'node-1': {
+          value: 3,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-a',
+          display_node_id: 'node-1'
+        }
+      }
+      fireEvent('progress_state', { prompt_id: 'job-a', nodes: nodesA })
+      expect(store.nodeProgressStates['node-1']?.value).toBe(3)
+
+      mockActiveWorkflow.value = { path: '/workflow-b' }
+      const nodesB = {
+        'node-2': {
+          value: 7,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-2',
+          prompt_id: 'job-b',
+          display_node_id: 'node-2'
+        }
+      }
+      fireEvent('progress_state', { prompt_id: 'job-b', nodes: nodesB })
+      expect(store.nodeProgressStates['node-2']?.value).toBe(7)
+
+      // Switch back to workflow A — watcher should rehydrate from job-a
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      await vi.dynamicImportSettled()
+      // Wait for watcher to fire
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(store.nodeProgressStates['node-1']?.value).toBe(3)
+      expect(store.nodeProgressStates['node-2']).toBeUndefined()
+    })
+
+    it('should clear nodeProgressStates when switching to a workflow with no jobs', async () => {
+      store.ensureSessionWorkflowPath('job-a', '/workflow-a')
+
+      mockActiveWorkflow.value = { path: '/workflow-a' }
+      const nodesA = {
+        'node-1': {
+          value: 5,
+          max: 10,
+          state: 'running' as const,
+          node_id: 'node-1',
+          prompt_id: 'job-a',
+          display_node_id: 'node-1'
+        }
+      }
+      fireEvent('progress_state', { prompt_id: 'job-a', nodes: nodesA })
+      expect(store.nodeProgressStates['node-1']?.value).toBe(5)
+
+      // Switch to a workflow with no queued jobs
+      mockActiveWorkflow.value = { path: '/workflow-c' }
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
     })
   })
 })
