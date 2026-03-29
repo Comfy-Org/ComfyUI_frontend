@@ -80,6 +80,7 @@ pnpm comfy-test record
 ```
 
 This guides you through a 7-step flow:
+
 1. **Environment check** — verifies all tools are installed (with install instructions if not)
 2. **Project setup** — installs dependencies
 3. **Backend check** — ensures ComfyUI is running
@@ -89,6 +90,7 @@ This guides you through a 7-step flow:
 7. **PR creation** — creates a PR via `gh` CLI or gives manual instructions
 
 Other commands:
+
 ```bash
 pnpm comfy-test check       # Just run environment checks
 pnpm comfy-test transform <file>  # Transform a raw codegen file

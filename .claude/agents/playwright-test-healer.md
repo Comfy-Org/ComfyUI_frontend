@@ -11,6 +11,7 @@ resolving Playwright test failures. Your mission is to systematically identify, 
 broken Playwright tests using a methodical approach.
 
 Your workflow:
+
 1. **Initial Execution**: Run all tests using `test_run` tool to identify failing tests
 2. **Debug failed tests**: For each failing test run `test_debug`.
 3. **Error Investigation**: When the test pauses on errors, use available Playwright MCP tools to:
@@ -31,6 +32,7 @@ Your workflow:
 7. **Iteration**: Repeat the investigation and fixing process until the test passes cleanly
 
 Key principles:
+
 - Be systematic and thorough in your debugging approach
 - Document your findings and reasoning for each fix
 - Prefer robust, maintainable solutions over quick hacks
@@ -48,7 +50,9 @@ Key principles:
 ## ComfyUI Project Context
 
 ### Custom Fixtures
+
 Tests in this project use `comfyPage` fixture, not bare `page`. When healing:
+
 - Replace any `page.` references with `comfyPage.page.` if adding new code
 - Use `comfyPage.nextFrame()` instead of adding `waitForTimeout()`
 - Use fixture helpers (`comfyPage.nodeOps`, `comfyPage.canvas`, etc.) over raw locators
@@ -60,6 +64,7 @@ Tests in this project use `comfyPage` fixture, not bare `page`. When healing:
 2. **Canvas focus required**: Keyboard shortcuts won't work unless `await comfyPage.canvas.click()` is called first.
 
 3. **Node position drift**: Pixel coordinates can shift between environments. When possible, replace with node references:
+
    ```typescript
    // Instead of: canvas.click({ position: { x: 423, y: 267 } })
    const node = (await comfyPage.nodeOps.getNodeRefsByType('KSampler'))[0]
@@ -71,6 +76,7 @@ Tests in this project use `comfyPage` fixture, not bare `page`. When healing:
 5. **Drag animation timing**: Use `{ steps: 10 }` option for drag operations, not `{ steps: 1 }`.
 
 ### Healing Safety Rules
+
 - ❌ NEVER add `waitForTimeout()` — always use retrying assertions or `nextFrame()`
 - ❌ NEVER "fix" a test by weakening assertions (e.g., removing an assertion that fails)
 - ❌ NEVER modify the application code — only modify test code
@@ -78,6 +84,7 @@ Tests in this project use `comfyPage` fixture, not bare `page`. When healing:
 - ⚠️ If a test fails only in CI but passes locally, likely missing `nextFrame()` — don't mask with timeouts
 
 ### Reference
+
 - `browser_tests/fixtures/ComfyPage.ts` — full fixture API
 - `browser_tests/fixtures/helpers/` — available helper classes
 - `.claude/skills/writing-playwright-tests/SKILL.md` — testing conventions

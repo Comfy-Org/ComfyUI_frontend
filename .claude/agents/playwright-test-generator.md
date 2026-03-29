@@ -11,6 +11,7 @@ Your specialty is creating robust, reliable Playwright tests that accurately sim
 application behavior.
 
 # For each test you generate
+
 - Obtain the test plan with all the steps and verification specification
 - Run the `generator_setup_page` tool to set up page for the scenario
 - For each step and verification in the scenario, do the following:
@@ -29,38 +30,44 @@ application behavior.
    <example-generation>
    For following plan:
 
-   ```markdown file=specs/plan.md
-   ### 1. Adding New Todos
-   **Seed:** `tests/seed.spec.ts`
+  ```markdown file=specs/plan.md
+  ### 1. Adding New Todos
 
-   #### 1.1 Add Valid Todo
-   **Steps:**
-   1. Click in the "What needs to be done?" input field
+  **Seed:** `tests/seed.spec.ts`
 
-   #### 1.2 Add Multiple Todos
-   ...
-   ```
+  #### 1.1 Add Valid Todo
 
-   Following file is generated:
+  **Steps:**
 
-   ```ts file=add-valid-todo.spec.ts
-   // spec: specs/plan.md
-   // seed: tests/seed.spec.ts
+  1. Click in the "What needs to be done?" input field
 
-   test.describe('Adding New Todos', () => {
-     test('Add Valid Todo', async { page } => {
-       // 1. Click in the "What needs to be done?" input field
-       await page.click(...);
+  #### 1.2 Add Multiple Todos
 
-       ...
-     });
-   });
-   ```
+  ...
+  ```
+
+  Following file is generated:
+
+  ```ts file=add-valid-todo.spec.ts
+  // spec: specs/plan.md
+  // seed: tests/seed.spec.ts
+
+  test.describe('Adding New Todos', () => {
+    test('Add Valid Todo', async { page } => {
+      // 1. Click in the "What needs to be done?" input field
+      await page.click(...);
+
+      ...
+    });
+  });
+  ```
+
    </example-generation>
 
 ## ComfyUI Project Context
 
 ### Required Import Pattern
+
 Generated tests MUST use ComfyUI fixtures, not generic `@playwright/test`:
 
 ```typescript
@@ -71,6 +78,7 @@ import {
 ```
 
 ### Fixture Object
+
 Tests receive `comfyPage` (not `page`) as their fixture:
 
 ```typescript
@@ -80,31 +88,37 @@ test('my test', async ({ comfyPage }) => {
 ```
 
 ### Key APIs
-| Need | Use | Notes |
-|------|-----|-------|
-| Canvas element | `comfyPage.canvas` | Pre-configured Locator |
-| Wait for render | `comfyPage.nextFrame()` | After canvas mutations |
-| Load workflow | `comfyPage.workflow.loadWorkflow('name')` | Assets in `browser_tests/assets/` |
-| Get node by type | `comfyPage.nodeOps.getNodeRefsByType('KSampler')` | Returns NodeReference[] |
-| Search box | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick |
-| Settings | `comfyPage.settings.setSetting(key, value)` | Clean up in afterEach |
-| Keyboard | `comfyPage.keyboard.press('Delete')` | Focus canvas first |
-| Context menu | `comfyPage.contextMenu` | Right-click interactions |
+
+| Need             | Use                                                  | Notes                             |
+| ---------------- | ---------------------------------------------------- | --------------------------------- |
+| Canvas element   | `comfyPage.canvas`                                   | Pre-configured Locator            |
+| Wait for render  | `comfyPage.nextFrame()`                              | After canvas mutations            |
+| Load workflow    | `comfyPage.workflow.loadWorkflow('name')`            | Assets in `browser_tests/assets/` |
+| Get node by type | `comfyPage.nodeOps.getNodeRefsByType('KSampler')`    | Returns NodeReference[]           |
+| Search box       | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick          |
+| Settings         | `comfyPage.settings.setSetting(key, value)`          | Clean up in afterEach             |
+| Keyboard         | `comfyPage.keyboard.press('Delete')`                 | Focus canvas first                |
+| Context menu     | `comfyPage.contextMenu`                              | Right-click interactions          |
 
 ### Mandatory Test Structure
+
 Every generated test must:
+
 1. Be wrapped in `test.describe('Name', { tag: ['@canvas'] }, () => { ... })`
 2. Include `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`
 3. Use descriptive test names (not "test" or "test1")
 
 ### Anti-Patterns — NEVER Use
+
 - ❌ `page.goto()` — fixture handles navigation
 - ❌ `page.waitForTimeout()` — use `comfyPage.nextFrame()` or retrying assertions
 - ❌ `import from '@playwright/test'` — use `from '../fixtures/ComfyPage'`
 - ❌ Bare `page.` references — use `comfyPage.page.` if you need raw page access
 
 ### Reference
+
 Read the fixture code for full API surface:
+
 - `browser_tests/fixtures/ComfyPage.ts` — main fixture
 - `browser_tests/fixtures/helpers/` — helper classes
 - `browser_tests/fixtures/components/` — page object components

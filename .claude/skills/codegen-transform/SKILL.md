@@ -18,39 +18,39 @@ Transform raw Playwright codegen output into tests that follow ComfyUI conventio
 
 Apply these replacements in order:
 
-| Raw codegen | Convention replacement | Why |
-|---|---|---|
+| Raw codegen                                       | Convention replacement                                                                    | Why                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `import { test, expect } from '@playwright/test'` | `import { comfyPageFixture as test, comfyExpect as expect } from '../fixtures/ComfyPage'` | Use custom fixtures with ComfyUI helpers |
-| `test('test', async ({ page }) =>` | `test('descriptive-name', async ({ comfyPage }) =>` | Use comfyPage fixture, descriptive names |
-| `await page.goto('http://...')` | **Remove entirely** | Fixture handles navigation automatically |
-| `page.locator('canvas')` | `comfyPage.canvas` | Pre-configured canvas locator |
-| `page.waitForTimeout(N)` | `comfyPage.nextFrame()` | Never use arbitrary waits |
-| `page.getByPlaceholder('Search Nodes...')` | `comfyPage.searchBox.input` | Use search box page object |
-| `page` (bare reference) | `comfyPage.page` | Access raw page through fixture |
-| Bare `test(...)` | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })` | All tests need describe + tags |
-| No cleanup | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })` | Canvas tests need cleanup |
+| `test('test', async ({ page }) =>`                | `test('descriptive-name', async ({ comfyPage }) =>`                                       | Use comfyPage fixture, descriptive names |
+| `await page.goto('http://...')`                   | **Remove entirely**                                                                       | Fixture handles navigation automatically |
+| `page.locator('canvas')`                          | `comfyPage.canvas`                                                                        | Pre-configured canvas locator            |
+| `page.waitForTimeout(N)`                          | `comfyPage.nextFrame()`                                                                   | Never use arbitrary waits                |
+| `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                               | Use search box page object               |
+| `page` (bare reference)                           | `comfyPage.page`                                                                          | Access raw page through fixture          |
+| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })`                     | All tests need describe + tags           |
+| No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`  | Canvas tests need cleanup                |
 
 ## Fixture API Quick Reference
 
-| Need | Use | Notes |
-|------|-----|-------|
-| Canvas element | `comfyPage.canvas` | Pre-configured Locator |
-| Wait for render | `comfyPage.nextFrame()` | After canvas mutations. NOT needed after `loadWorkflow()` |
-| Load workflow | `comfyPage.workflow.loadWorkflow('name')` | Assets in `browser_tests/assets/` |
-| Get node by type | `comfyPage.nodeOps.getNodeRefsByType('KSampler')` | Returns array of NodeReference |
-| Get node by title | `comfyPage.nodeOps.getNodeRefsByTitle('My Node')` | Returns array of NodeReference |
-| Search box | `comfyPage.searchBox` | Has `.input`, `.fillAndSelectFirstNode()` |
-| Settings | `comfyPage.settings.setSetting(key, value)` | Persistent — clean up in afterEach |
-| Keyboard | `comfyPage.keyboard.press('Delete')` | Focus canvas first |
-| Drag & drop | `comfyPage.dragDrop.*` | Use `{ steps: 10 }` for reliability |
-| Context menu | `comfyPage.contextMenu.*` | Right-click interactions |
-| Toast messages | `comfyPage.toast.*` | Notification assertions |
-| Subgraph | `comfyPage.subgraph.*` | Subgraph/group node operations |
-| Vue Nodes | `comfyPage.vueNodes.*` | Requires opt-in: `setSetting('Comfy.VueNodes.Enabled', true)` |
-| Mouse ops | `comfyPage.page` + `ComfyMouse` | For precise canvas mouse interactions |
-| Bottom panel | `comfyPage.bottomPanel.*` | Job queue, logs panel |
-| Commands | `comfyPage.command.*` | Command palette interactions |
-| Clipboard | `comfyPage.clipboard.*` | Copy/paste operations |
+| Need              | Use                                               | Notes                                                         |
+| ----------------- | ------------------------------------------------- | ------------------------------------------------------------- |
+| Canvas element    | `comfyPage.canvas`                                | Pre-configured Locator                                        |
+| Wait for render   | `comfyPage.nextFrame()`                           | After canvas mutations. NOT needed after `loadWorkflow()`     |
+| Load workflow     | `comfyPage.workflow.loadWorkflow('name')`         | Assets in `browser_tests/assets/`                             |
+| Get node by type  | `comfyPage.nodeOps.getNodeRefsByType('KSampler')` | Returns array of NodeReference                                |
+| Get node by title | `comfyPage.nodeOps.getNodeRefsByTitle('My Node')` | Returns array of NodeReference                                |
+| Search box        | `comfyPage.searchBox`                             | Has `.input`, `.fillAndSelectFirstNode()`                     |
+| Settings          | `comfyPage.settings.setSetting(key, value)`       | Persistent — clean up in afterEach                            |
+| Keyboard          | `comfyPage.keyboard.press('Delete')`              | Focus canvas first                                            |
+| Drag & drop       | `comfyPage.dragDrop.*`                            | Use `{ steps: 10 }` for reliability                           |
+| Context menu      | `comfyPage.contextMenu.*`                         | Right-click interactions                                      |
+| Toast messages    | `comfyPage.toast.*`                               | Notification assertions                                       |
+| Subgraph          | `comfyPage.subgraph.*`                            | Subgraph/group node operations                                |
+| Vue Nodes         | `comfyPage.vueNodes.*`                            | Requires opt-in: `setSetting('Comfy.VueNodes.Enabled', true)` |
+| Mouse ops         | `comfyPage.page` + `ComfyMouse`                   | For precise canvas mouse interactions                         |
+| Bottom panel      | `comfyPage.bottomPanel.*`                         | Job queue, logs panel                                         |
+| Commands          | `comfyPage.command.*`                             | Command palette interactions                                  |
+| Clipboard         | `comfyPage.clipboard.*`                           | Copy/paste operations                                         |
 
 ## Canvas Coordinates → Node References
 
@@ -127,28 +127,28 @@ test.describe('Queue workflow with KSampler', { tag: ['@canvas'] }, () => {
 
 ## Decision Guide
 
-| Question | Answer |
-|----------|--------|
-| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. DOM: `comfyPage.vueNodes.*` (needs opt-in) |
-| Need `nextFrame()`? | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks |
-| Which tag? | `@canvas` for canvas tests, `@widget` for widget tests, `@screenshot` for visual regression |
-| Need cleanup? | Yes for canvas tests (`resetView`), yes if changing settings (`setSetting` back) |
-| Keep pixel coords? | Only for empty canvas clicks. Replace with node refs for node interactions |
-| Use `page` directly? | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures |
+| Question                   | Answer                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. DOM: `comfyPage.vueNodes.*` (needs opt-in)                   |
+| Need `nextFrame()`?        | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks                  |
+| Which tag?                 | `@canvas` for canvas tests, `@widget` for widget tests, `@screenshot` for visual regression |
+| Need cleanup?              | Yes for canvas tests (`resetView`), yes if changing settings (`setSetting` back)            |
+| Keep pixel coords?         | Only for empty canvas clicks. Replace with node refs for node interactions                  |
+| Use `page` directly?       | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures                       |
 
 ## Tags Reference
 
-| Tag | When to use |
-|-----|-------------|
-| `@canvas` | Any test interacting with the canvas |
-| `@widget` | Testing widget inputs |
-| `@smoke` | Quick essential tests |
-| `@screenshot` | Visual regression (Linux CI only) |
-| `@mobile` | Mobile viewport (runs on Pixel 5) |
-| `@2x` | HiDPI tests (2x scale) |
-| `@0.5x` | Low-DPI tests (0.5x scale) |
-| `@slow` | Tests taking >10 seconds |
-| `@perf` | Performance measurement tests |
+| Tag           | When to use                          |
+| ------------- | ------------------------------------ |
+| `@canvas`     | Any test interacting with the canvas |
+| `@widget`     | Testing widget inputs                |
+| `@smoke`      | Quick essential tests                |
+| `@screenshot` | Visual regression (Linux CI only)    |
+| `@mobile`     | Mobile viewport (runs on Pixel 5)    |
+| `@2x`         | HiDPI tests (2x scale)               |
+| `@0.5x`       | Low-DPI tests (0.5x scale)           |
+| `@slow`       | Tests taking >10 seconds             |
+| `@perf`       | Performance measurement tests        |
 
 ## Anti-Patterns
 
@@ -163,12 +163,12 @@ test.describe('Queue workflow with KSampler', { tag: ['@canvas'] }, () => {
 
 Read fixture code directly — it's the source of truth:
 
-| Purpose | Path |
-|---------|------|
-| Main fixture | `browser_tests/fixtures/ComfyPage.ts` |
-| Helper classes | `browser_tests/fixtures/helpers/` |
-| Component objects | `browser_tests/fixtures/components/` |
-| Test selectors | `browser_tests/fixtures/selectors.ts` |
-| Vue Node helpers | `browser_tests/fixtures/VueNodeHelpers.ts` |
-| Existing tests | `browser_tests/tests/` |
-| Test assets | `browser_tests/assets/` |
+| Purpose           | Path                                       |
+| ----------------- | ------------------------------------------ |
+| Main fixture      | `browser_tests/fixtures/ComfyPage.ts`      |
+| Helper classes    | `browser_tests/fixtures/helpers/`          |
+| Component objects | `browser_tests/fixtures/components/`       |
+| Test selectors    | `browser_tests/fixtures/selectors.ts`      |
+| Vue Node helpers  | `browser_tests/fixtures/VueNodeHelpers.ts` |
+| Existing tests    | `browser_tests/tests/`                     |
+| Test assets       | `browser_tests/assets/`                    |
