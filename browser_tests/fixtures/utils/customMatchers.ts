@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import type { NodeReference } from './litegraphUtils'
 
-const makeMatcher = function <T>(
+function makeMatcher<T>(
   getValue: (node: NodeReference) => Promise<T> | T,
   type: string
 ) {
