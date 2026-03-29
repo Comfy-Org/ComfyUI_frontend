@@ -57,35 +57,41 @@ test.describe('Properties panel - Node settings', () => {
     test('should apply color to node', async ({ comfyPage }) => {
       await panel.getColorSwatch('red').click()
 
-      await expect.poll(() =>
-        comfyPage.page.evaluate(() => {
-          const selected = window.app!.canvas.selected_nodes
-          const node = Object.values(selected)[0]
-          return node?.color != null
-        })
-      ).toBe(true)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const selected = window.app!.canvas.selected_nodes
+            const node = Object.values(selected)[0]
+            return node?.color != null
+          })
+        )
+        .toBe(true)
     })
 
     test('should remove color with noColor swatch', async ({ comfyPage }) => {
       await panel.getColorSwatch('red').click()
 
-      await expect.poll(() =>
-        comfyPage.page.evaluate(() => {
-          const selected = window.app!.canvas.selected_nodes
-          const node = Object.values(selected)[0]
-          return node?.color != null
-        })
-      ).toBe(true)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const selected = window.app!.canvas.selected_nodes
+            const node = Object.values(selected)[0]
+            return node?.color != null
+          })
+        )
+        .toBe(true)
 
       await panel.getColorSwatch('noColor').click()
 
-      await expect.poll(() =>
-        comfyPage.page.evaluate(() => {
-          const selected = window.app!.canvas.selected_nodes
-          const node = Object.values(selected)[0]
-          return node?.color
-        })
-      ).toBeFalsy()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const selected = window.app!.canvas.selected_nodes
+            const node = Object.values(selected)[0]
+            return node?.color
+          })
+        )
+        .toBeFalsy()
     })
   })
 
@@ -98,18 +104,14 @@ test.describe('Properties panel - Node settings', () => {
       await panel.pinnedSwitch.click()
 
       const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
-      await expect(
-        nodeLocator.getByTestId('node-pin-indicator')
-      ).toBeVisible()
+      await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeVisible()
     })
 
     test('should unpin previously pinned node', async ({ comfyPage }) => {
       const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
 
       await panel.pinnedSwitch.click()
-      await expect(
-        nodeLocator.getByTestId('node-pin-indicator')
-      ).toBeVisible()
+      await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeVisible()
 
       await panel.pinnedSwitch.click()
       await expect(

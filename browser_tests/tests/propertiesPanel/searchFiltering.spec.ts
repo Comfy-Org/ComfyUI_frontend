@@ -18,18 +18,18 @@ test.describe('Properties panel - Search filtering', () => {
   test('should filter nodes by search query', async () => {
     await panel.searchWidgets('seed')
     await expect(panel.root.getByText('KSampler')).toHaveCount(1)
-    await expect(
-      panel.root.getByText('CLIP Text Encode (Prompt)')
-    ).toHaveCount(0)
+    await expect(panel.root.getByText('CLIP Text Encode (Prompt)')).toHaveCount(
+      0
+    )
   })
 
   test('should restore all nodes when search is cleared', async () => {
     await panel.searchWidgets('seed')
     await panel.clearSearch()
     await expect(panel.root.getByText('KSampler')).toHaveCount(1)
-    await expect(
-      panel.root.getByText('CLIP Text Encode (Prompt)')
-    ).toHaveCount(2)
+    await expect(panel.root.getByText('CLIP Text Encode (Prompt)')).toHaveCount(
+      2
+    )
   })
 
   test('should show empty state for no matches', async () => {

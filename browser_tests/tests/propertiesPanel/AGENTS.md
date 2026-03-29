@@ -4,17 +4,17 @@ Tests for the right-side properties panel (`RightSidePanel.vue`).
 
 ## Structure
 
-| File | Coverage |
-|---|---|
-| `openClose.spec.ts` | Panel open/close via actionbar and close button |
-| `workflowOverview.spec.ts` | No-selection state: tabs, nodes list, global settings |
-| `nodeSelection.spec.ts` | Single/multi-node selection, selection changes, tab labels |
-| `titleEditing.spec.ts` | Node title editing via pencil icon |
-| `searchFiltering.spec.ts` | Widget search and clear |
-| `nodeSettings.spec.ts` | Settings tab: node state, color, pinned (requires VueNodes) |
-| `infoTab.spec.ts` | Node help content |
-| `errorsTab.spec.ts` | Errors tab visibility |
-| `propertiesPanelPosition.spec.ts` | Panel position relative to sidebar |
+| File                              | Coverage                                                    |
+| --------------------------------- | ----------------------------------------------------------- |
+| `openClose.spec.ts`               | Panel open/close via actionbar and close button             |
+| `workflowOverview.spec.ts`        | No-selection state: tabs, nodes list, global settings       |
+| `nodeSelection.spec.ts`           | Single/multi-node selection, selection changes, tab labels  |
+| `titleEditing.spec.ts`            | Node title editing via pencil icon                          |
+| `searchFiltering.spec.ts`         | Widget search and clear                                     |
+| `nodeSettings.spec.ts`            | Settings tab: node state, color, pinned (requires VueNodes) |
+| `infoTab.spec.ts`                 | Node help content                                           |
+| `errorsTab.spec.ts`               | Errors tab visibility                                       |
+| `propertiesPanelPosition.spec.ts` | Panel position relative to sidebar                          |
 
 ## Shared Helper
 

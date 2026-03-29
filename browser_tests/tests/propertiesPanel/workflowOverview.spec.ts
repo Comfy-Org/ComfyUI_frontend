@@ -38,9 +38,7 @@ test.describe('Properties panel - Workflow Overview', () => {
   test('should filter nodes by search in Nodes tab', async () => {
     await panel.switchToTab('Nodes')
     await panel.searchWidgets('KSampler')
-    await expect(
-      panel.contentArea.getByText('KSampler').first()
-    ).toBeVisible()
+    await expect(panel.contentArea.getByText('KSampler').first()).toBeVisible()
   })
 
   test('should switch to Settings tab and show global settings', async () => {
@@ -67,8 +65,6 @@ test.describe('Properties panel - Workflow Overview', () => {
 
   test('should show Connection Links section', async () => {
     await panel.switchToTab('Settings')
-    await expect(
-      panel.contentArea.getByText('Connection Links')
-    ).toBeVisible()
+    await expect(panel.contentArea.getByText('Connection Links')).toBeVisible()
   })
 })
