@@ -140,6 +140,12 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       ...(metadata.user_id ? { user_id: metadata.user_id } : {})
     }
 
+    if (metadata.email) {
+      window.dataLayer?.push({
+        user_data: { email: metadata.email.trim().toLowerCase() }
+      })
+    }
+
     if (metadata.is_new_user) {
       this.pushEvent('sign_up', basePayload)
       return

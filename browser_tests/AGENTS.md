@@ -30,6 +30,24 @@ browser_tests/
 └── tests/            - Test files (*.spec.ts)
 ```
 
+## Polling Assertions
+
+Prefer `expect.poll()` over `expect(async () => { ... }).toPass()` when the block contains a single async call with a single assertion. `expect.poll()` is more readable and gives better error messages (shows actual vs expected on failure).
+
+```typescript
+// ✅ Correct — single async call + single assertion
+await expect
+  .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+  .toBe(0)
+
+// ❌ Avoid — nested expect inside toPass
+await expect(async () => {
+  expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+}).toPass({ timeout: 250 })
+```
+
+Reserve `toPass()` for blocks with multiple assertions or complex async logic that can't be expressed as a single polled value.
+
 ## Gotchas
 
 | Symptom                                            | Cause                                       | Fix                                                                                                     |

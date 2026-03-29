@@ -75,6 +75,30 @@ await page.evaluate(() => {
 // Keep app.extensionManager typed as ExtensionManager, not WorkspaceStore
 ```
 
+## Assertion Best Practices
+
+When a test depends on an invariant unrelated to what it's actually testing (e.g. asserting a node has 4 widgets before testing node movement), always assert that invariant explicitly — don't leave it unchecked. Use a custom message or `expect.soft()` rather than a bare `expect`, so failures point to the broken assumption instead of producing a confusing error downstream.
+
+```typescript
+// ✅ Custom message on an unrelated precondition — clear signal when the invariant breaks
+expect(node.widgets, 'Widget count changed — update test fixture').toHaveLength(
+  4
+)
+await node.move(100, 200)
+
+// ✅ Soft assertion — verifies multiple invariants without stopping the test early
+expect.soft(menuItem1).toBeVisible()
+expect.soft(menuItem2).toBeVisible()
+expect.soft(menuItem3).toBeVisible()
+
+// ❌ Bare expect on a precondition — no context when it fails
+expect(node.widgets).toHaveLength(4)
+```
+
+- Use custom messages (`expect(x, 'reason')`) for precondition checks unrelated to the test's purpose
+- Use `expect.soft()` when you want to verify multiple invariants without aborting on the first failure
+- Prefer Playwright's built-in message parameter over custom error classes
+
 ## Test Tags
 
 Tags are respected by config:
@@ -86,6 +110,22 @@ Tags are respected by config:
 
 - Check `browser_tests/assets/` for test data and fixtures
 - Use realistic ComfyUI workflows for E2E tests
+- When multiple nodes share the same title (e.g. two "CLIP Text Encode" nodes), use `vueNodes.getNodeByTitle(name).nth(n)` to pick a specific one. Never interact with the bare locator when titles are non-unique — Playwright strict mode will fail.
+
+## Fixture Data & Schemas
+
+When creating test fixture data, import or reference existing Zod schemas and TypeScript
+types from `src/` instead of inventing ad-hoc shapes. This keeps test data in sync with
+production types.
+
+Key schema locations:
+
+- `src/schemas/apiSchema.ts` — API response types (`PromptResponse`, `SystemStats`, `User`, `UserDataFullInfo`, WebSocket messages)
+- `src/schemas/nodeDefSchema.ts` — Node definition schema (`ComfyNodeDef`, `InputSpec`, `ComboInputSpec`)
+- `src/schemas/nodeDef/nodeDefSchemaV2.ts` — V2 node definition schema
+- `src/platform/remote/comfyui/jobs/jobTypes.ts` — Jobs API Zod schemas (`zJobDetail`, `zJobsListResponse`, `zRawJobListItem`)
+- `src/platform/workflow/validation/schemas/workflowSchema.ts` — Workflow validation (`ComfyWorkflowJSON`, `ComfyApiWorkflow`)
+- `src/types/metadataTypes.ts` — Asset metadata types
 
 ## Running Tests
 

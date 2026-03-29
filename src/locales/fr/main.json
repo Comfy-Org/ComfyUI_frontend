@@ -347,9 +347,19 @@
     "share": "Partager",
     "workflowActions": "Actions du workflow"
   },
+  "builderFooter": {
+    "opensAsApp": "Ouvrir en tant que {mode}",
+    "opensAsGraph": "Ouvrir en tant que {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Entrer en mode application",
     "exitAppBuilder": "Quitter le constructeur d'application"
+  },
+  "builderSave": {
+    "successBody": "Voulez-vous le consulter maintenant ?",
+    "successBodyApp": "Ce workflow s’ouvrira désormais par défaut en mode Application.\n\nVoulez-vous le consulter maintenant ?",
+    "successBodyGraph": "Ce workflow s’ouvrira sous forme de graphe de nœuds.",
+    "successTitle": "Enregistré avec succès"
   },
   "builderToolbar": {
     "app": "Application",
@@ -359,18 +369,10 @@
     "connectOutput": "Connecter une sortie",
     "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
     "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-    "defaultModeAppliedAppBody": "Ce workflow s’ouvrira désormais par défaut en mode Application.",
-    "defaultModeAppliedAppPrompt": "Voulez-vous le voir maintenant ?",
-    "defaultModeAppliedGraphBody": "Ce workflow s’ouvrira désormais par défaut sous forme de graphe de nœuds.",
-    "defaultModeAppliedGraphPrompt": "Voulez-vous tout de même voir l’application ?",
-    "defaultModeAppliedTitle": "Défini avec succès",
-    "defaultView": "Définir une vue par défaut",
-    "defaultViewDescription": "Choisissez comment cela s'ouvre",
     "defaultViewLabel": "Par défaut, ce workflow s'ouvrira comme :",
-    "defaultViewTitle": "Définir la vue par défaut pour ce workflow",
     "emptyWorkflowPrompt": "Voulez-vous commencer avec un modèle ?",
     "emptyWorkflowTitle": "Ce workflow ne contient aucun nœud",
-    "exitToWorkflow": "Quitter vers le workflow",
+    "filename": "Nom du fichier",
     "inputs": "Entrées",
     "inputsDescription": "Choisissez les entrées",
     "label": "Créateur d'applications",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
     "outputs": "Sorties",
     "outputsDescription": "Choisissez les sorties",
+    "saveAs": "Enregistrer sous",
     "switchToOutputs": "Passer aux sorties",
     "viewApp": "Voir l’application"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ Télécharger une couverture",
     "uploadProfilePicture": "+ Télécharger une photo de profil",
     "uploadWorkflowButton": "Télécharger mon workflow",
+    "usernameError": "3 à 42 caractères alphanumériques minuscules et tirets, doit commencer et se terminer par une lettre ou un chiffre",
     "usernameLabel": "Votre nom d'utilisateur (obligatoire)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "Informations supplémentaires",
     "back": "Retour",
     "createProfileCta": "Créer un profil",
     "createProfileToPublish": "Créez un profil pour publier sur ComfyHub",
     "exampleImage": "Image d'exemple {index}",
+    "exampleImagePosition": "Image d’exemple {index} sur {total}",
     "examplesDescription": "Ajoutez jusqu'à {total} images d'exemple supplémentaires",
     "maxExamples": "Vous pouvez sélectionner jusqu'à {max} exemples",
     "next": "Suivant",
     "publishButton": "Publier sur ComfyHub",
+    "publishFailedDescription": "Une erreur s’est produite lors de la publication de votre workflow. Veuillez réessayer.",
+    "publishFailedTitle": "Échec de la publication",
+    "removeExampleImage": "Supprimer l’image d’exemple",
     "selectAThumbnail": "Sélectionner une miniature",
+    "shareAs": "Partager en tant que",
     "showLessTags": "Afficher moins...",
     "showMoreTags": "Afficher plus...",
     "stepDescribe": "Décrivez votre workflow",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "Aperçu de la miniature",
     "thumbnailVideo": "Vidéo",
     "title": "Publier sur ComfyHub",
+    "unsavedDescription": "Vous devez enregistrer votre workflow avant de le publier sur ComfyHub. Enregistrez-le maintenant pour continuer.",
     "uploadAnImage": "Cliquez pour parcourir ou faites glisser une image",
     "uploadComparison": "Télécharger avant et après",
     "uploadComparisonAfterPrompt": "Après",
@@ -606,13 +617,7 @@
     "workflowDescription": "Description du workflow",
     "workflowDescriptionPlaceholder": "Qu'est-ce qui rend votre workflow passionnant et unique ? Soyez précis pour que les utilisateurs sachent à quoi s'attendre.",
     "workflowName": "Nom du workflow",
-    "workflowNamePlaceholder": "Astuce : saisissez un nom descriptif facile à rechercher",
-    "workflowType": "Type de workflow",
-    "workflowTypeEditing": "Édition",
-    "workflowTypeImageGeneration": "Génération d'image",
-    "workflowTypePlaceholder": "Sélectionnez le type",
-    "workflowTypeUpscaling": "Upscaling",
-    "workflowTypeVideoGeneration": "Génération de vidéo"
+    "workflowNamePlaceholder": "Astuce : saisissez un nom descriptif facile à rechercher"
   },
   "commands": {
     "clear": "Effacer le workflow",
@@ -896,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERREUR | {count} ERREURS",
-    "seeErrors": "Voir les erreurs"
+    "missingMedia": "Certains nœuds n'ont pas les entrées requises",
+    "missingModels": "{count} modèle requis est manquant | {count} modèles requis sont manquants",
+    "missingNodes": "Certains nœuds sont manquants et doivent être installés",
+    "seeErrors": "Voir les erreurs",
+    "showMissingMedia": "Afficher les entrées manquantes",
+    "showMissingModels": "Afficher les modèles manquants",
+    "showMissingNodes": "Afficher les nœuds manquants",
+    "showSwapNodes": "Afficher les nœuds de remplacement",
+    "swapNodes": "Certains nœuds peuvent être remplacés par des alternatives"
   },
   "essentials": {
     "batchImage": "Traitement par lot d'images",

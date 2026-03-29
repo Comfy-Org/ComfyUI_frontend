@@ -3645,6 +3645,14 @@
     "description": "GLSL ESフラグメントシェーダーを画像に適用します。u_resolution（vec2）は常に利用可能です。",
     "display_name": "GLSLシェーダー",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "ブール値はシェーダーコード内で u_bool0-9（bool）として利用できます"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "カーブはシェーダーコード内で u_curve0-3（sampler2D、1D LUT）として利用できます。texture(u_curve0, vec2(x, 0.5)).r でサンプリングします"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "floatsはシェーダーコード内でu_float0-4として利用可能"
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "ポジティブ条件付け",
         "tooltip": "学習に使用するポジティブな条件付け。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "training_dtype を「none」に設定し、量子化モデルでトレーニングする場合、有効にすると逆伝播時に量子化された行列積を使用します。"
       },
       "rank": {
         "name": "ランク",

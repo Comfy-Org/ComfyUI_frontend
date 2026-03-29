@@ -3645,6 +3645,14 @@
     "description": "تطبيق مظللات GLSL ES على الصور. المتغير u_resolution (vec2) متوفر دائماً.",
     "display_name": "مظلل GLSL",
     "inputs": {
+      "bools": {
+        "name": "القيم المنطقية",
+        "tooltip": "القيم المنطقية متوفرة كـ u_bool0-9 (bool) في كود الشادر"
+      },
+      "curves": {
+        "name": "المنحنيات",
+        "tooltip": "المنحنيات متوفرة كـ u_curve0-3 (sampler2D, 1D LUT) في كود الشادر. قم بأخذ العينة باستخدام texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "القيم العشرية متوفرة كـ u_float0-4 في كود المظلل"
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "أقل قيمة p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "عقوبة التكرار"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "أعلى p"
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "أدنى قيمة p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "عقوبة التكرار"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "أعلى p"
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "إيجابي",
         "tooltip": "التكييف الإيجابي المستخدم في التدريب."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "عند استخدام نوع التدريب 'none' والتدريب على نموذج كمي، يتم تنفيذ عملية الرجوع للخلف باستخدام ضرب المصفوفات الكمي عند التفعيل."
       },
       "rank": {
         "name": "الرتبة",

@@ -13,7 +13,8 @@ import {
   useQueueSettingsStore,
   useQueueStore
 } from '@/stores/queueStore'
-import { render, screen } from '@/utils/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
@@ -89,8 +90,9 @@ const stubs = {
 
 function renderQueueButton() {
   const pinia = createTestingPinia({ createSpy: vi.fn })
+  const user = userEvent.setup()
 
-  return render(ComfyQueueButton, {
+  const result = render(ComfyQueueButton, {
     global: {
       plugins: [pinia, i18n],
       directives: {
@@ -99,6 +101,8 @@ function renderQueueButton() {
       stubs
     }
   })
+
+  return { ...result, user }
 }
 
 describe('ComfyQueueButton', () => {
@@ -148,7 +152,7 @@ describe('ComfyQueueButton', () => {
     queueStore.runningTasks = [createTask('run-1', 'in_progress')]
     await nextTick()
 
-    await user!.click(screen.getByTestId('queue-button'))
+    await user.click(screen.getByTestId('queue-button'))
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-idle')
@@ -167,7 +171,7 @@ describe('ComfyQueueButton', () => {
     queueSettingsStore.mode = 'instant-idle'
     await nextTick()
 
-    await user!.click(screen.getByTestId('queue-button'))
+    await user.click(screen.getByTestId('queue-button'))
     await nextTick()
 
     expect(queueSettingsStore.mode).toBe('instant-running')

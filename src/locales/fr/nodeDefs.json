@@ -3645,6 +3645,14 @@
     "description": "Appliquez des shaders de fragments GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
     "display_name": "Shader GLSL",
     "inputs": {
+      "bools": {
+        "name": "booléens",
+        "tooltip": "Les booléens sont disponibles sous u_bool0-9 (bool) dans le code du shader"
+      },
+      "curves": {
+        "name": "courbes",
+        "tooltip": "Les courbes sont disponibles sous u_curve0-3 (sampler2D, LUT 1D) dans le code du shader. Échantillonnez avec texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Les flottants sont disponibles sous u_float0-4 dans le code du shader"
@@ -15913,6 +15921,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "pénalité_de_presence"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "pénalité_de_répétition"
       },
@@ -15927,6 +15938,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "réflexion",
+        "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
       }
     },
     "outputs": {
@@ -15957,6 +15972,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "pénalité_de_presence"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "pénalité_de_répétition"
       },
@@ -15971,6 +15989,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "réflexion",
+        "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
       }
     },
     "outputs": {
@@ -16239,6 +16261,10 @@
       "positive": {
         "name": "positif",
         "tooltip": "Le conditionnement positif à utiliser pour l'entraînement."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Lorsque le paramètre training_dtype est défini sur 'none' et que l'entraînement se fait sur un modèle quantifié, effectue la rétropropagation avec une multiplication matricielle quantifiée si activé."
       },
       "rank": {
         "name": "rang",

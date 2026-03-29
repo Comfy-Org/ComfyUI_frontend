@@ -300,6 +300,25 @@ describe('TeamWorkspacesDialogContent', () => {
 
       expect(mockCreateWorkspace).not.toHaveBeenCalled()
     })
+
+    it('resets loading state after createWorkspace fails', async () => {
+      mockCreateWorkspace.mockRejectedValue(new Error('Limit reached'))
+      const wrapper = mountComponent()
+
+      await typeAndCreate(wrapper, 'New Team')
+
+      expect(findCreateButton(wrapper).props('loading')).toBe(false)
+    })
+
+    it('resets loading state after onConfirm fails', async () => {
+      mockCreateWorkspace.mockResolvedValue({ id: 'new-ws' })
+      const onConfirm = vi.fn().mockRejectedValue(new Error('Setup failed'))
+      const wrapper = mountComponent({ onConfirm })
+
+      await typeAndCreate(wrapper, 'New Team')
+
+      expect(findCreateButton(wrapper).props('loading')).toBe(false)
+    })
   })
 
   describe('close button', () => {
