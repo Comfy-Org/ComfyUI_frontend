@@ -3,9 +3,8 @@
     "playwright-test": {
       "command": "pnpm",
       "args": [
-        "exec",
-        "playwright",
-        "run-test-mcp-server"
+        "dlx",
+        "@playwright/mcp@latest"
       ]
     }
   }
