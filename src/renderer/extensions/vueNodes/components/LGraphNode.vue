@@ -10,12 +10,12 @@
     :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate text-sm',
-        'flex flex-col contain-layout contain-style',
+        'group/node lg-node absolute isolate flex flex-col border border-solid text-sm contain-layout contain-style',
+        hasAnyError ? 'border-transparent' : 'border-component-node-border',
+        rootBorderShapeClass,
+        outlineClass,
         isRerouteNode ? 'h-(--node-height)' : 'min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-node-component-outline',
-        executing && 'outline-node-stroke-executing',
         shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -44,30 +44,6 @@
         !nodeData.hasErrors
       "
       :id="nodeData.id"
-    />
-    <div
-      v-if="isSelected || executing"
-      data-testid="node-state-outline-overlay"
-      :class="
-        cn(
-          'pointer-events-none absolute z-0 border-3 outline-none',
-          selectionShapeClass,
-          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
-          isSelected
-            ? 'border-node-component-outline'
-            : 'border-node-stroke-executing'
-        )
-      "
-    />
-    <!-- Root Border Overlay -->
-    <div
-      :class="
-        cn(
-          'pointer-events-none absolute z-0 border-solid border-component-node-border',
-          rootBorderShapeClass,
-          hasAnyError ? '-inset-[5px] border' : '-inset-px border-2'
-        )
-      "
     />
     <div
       data-testid="node-inner-wrapper"
@@ -237,7 +213,6 @@
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
-      :is-collapsed="isCollapsed"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="showAdvancedState"
       :header-color="applyLightThemeColor(nodeData?.color)"
@@ -563,6 +538,25 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
+const outlineClass = computed(() => {
+  const color = isSelected.value
+    ? 'outline-node-component-outline'
+    : executing.value
+      ? 'outline-node-stroke-executing'
+      : null
+  if (!color) return ''
+
+  if (!hasAnyError.value) return cn('outline-3', color)
+
+  const errorRadius =
+    nodeData.shape === RenderShape.BOX
+      ? ''
+      : nodeData.shape === RenderShape.CARD
+        ? 'rounded-tl-[16px] rounded-br-[16px]'
+        : 'rounded-[16px]'
+  return cn('outline-4 outline-offset-[3px]', errorRadius, color)
+})
+
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
@@ -575,9 +569,9 @@ const bodyRoundingClass = computed(() => {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return 'rounded-br-2xl'
+      return 'rounded-br-[15px]'
     default:
-      return 'rounded-b-2xl'
+      return 'rounded-b-[15px]'
   }
 })
 
@@ -586,9 +580,9 @@ const shapeClass = computed(() => {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return 'rounded-tl-[16px] rounded-br-[17px]'
+      return 'rounded-tl-[15px] rounded-br-[15px]'
     default:
-      return 'rounded-t-[16px] rounded-b-[17px]'
+      return 'rounded-[15px]'
   }
 })
 
@@ -601,33 +595,15 @@ const isTransparentHeaderless = computed(
 
 const rootBorderShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
-
-  const isExpanded = hasAnyError.value
   switch (nodeData.shape) {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return isExpanded
+      return hasAnyError.value
         ? 'rounded-tl-[21px] rounded-br-[21px]'
-        : 'rounded-tl-[17px] rounded-br-[18px]'
+        : 'rounded-tl-[16px] rounded-br-[16px]'
     default:
-      return isExpanded ? 'rounded-[21px]' : 'rounded-t-[17px] rounded-b-[18px]'
-  }
-})
-
-const selectionShapeClass = computed(() => {
-  if (isTransparentHeaderless.value) return 'border-0'
-
-  const isExpanded = hasAnyError.value
-  switch (nodeData.shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return isExpanded
-        ? 'rounded-tl-[23px] rounded-br-[23px]'
-        : 'rounded-tl-[19px] rounded-br-[19px]'
-    default:
-      return isExpanded ? 'rounded-[23px]' : 'rounded-[19px]'
+      return hasAnyError.value ? 'rounded-[21px]' : 'rounded-[16px]'
   }
 })
 

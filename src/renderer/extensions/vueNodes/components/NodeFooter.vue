@@ -2,14 +2,14 @@
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
-    class="-mx-1 -mt-18 -mb-2 box-border flex w-[calc(100%+8px)] pt-7 pb-1"
+    class="-mx-1 -mt-4 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
   >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(false),
-          'box-border w-1/2 rounded-none bg-destructive-background pt-16 pb-4 text-white hover:bg-destructive-background-hover',
+          'box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
       "
@@ -27,7 +27,7 @@
       :class="
         cn(
           getTabStyles(true),
-          '-ml-5·box-border·w-[calc(50%+20px)]·rounded-none·bg-node-component-header-surface·pt-16·pb-4·pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5 ring-1 ring-component-node-border ring-inset',
           enterRadiusClass
         )
       "
@@ -49,14 +49,14 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
-    class="-mx-1 -mt-18 -mb-2 box-border flex w-[calc(100%+8px)] pt-7 pb-1"
+    class="-mx-1 -mt-4 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
   >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(false),
-          'box-border w-1/2 rounded-none bg-destructive-background pt-16 pb-4 text-white hover:bg-destructive-background-hover',
+          'box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
       "
@@ -73,7 +73,7 @@
       :class="
         cn(
           getTabStyles(true),
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-16 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5 ring-1 ring-component-node-border ring-inset',
           enterRadiusClass
         )
       "
@@ -100,14 +100,14 @@
   <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
-    class="-mx-1 -mt-18 -mb-2 box-border flex w-[calc(100%+8px)] pt-7 pb-1"
+    class="-mx-1 -mt-4 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
   >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(false),
-          'box-border w-full rounded-none bg-destructive-background pt-16 pb-4 text-white hover:bg-destructive-background-hover',
+          'box-border w-full rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
           footerRadiusClass
         )
       "
@@ -121,14 +121,25 @@
   </div>
 
   <!-- Case 3: Subgraph only (Full Width) -->
-  <div v-else-if="isSubgraph" class="-mt-18 box-border flex w-full pt-7">
+  <div
+    v-else-if="isSubgraph"
+    :class="
+      cn(
+        '-mt-4 box-border flex',
+        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+      )
+    "
+  >
     <Button
       variant="textonly"
       data-testid="subgraph-enter-button"
       :class="
         cn(
           getTabStyles(true),
-          'box-border w-full rounded-none bg-node-component-header-surface pt-15 pb-4',
+          'box-border w-full rounded-none bg-node-component-header-surface',
+          hasAnyError
+            ? 'pt-9 pb-4 ring-1 ring-component-node-border ring-inset'
+            : 'pt-8 pb-4',
           footerRadiusClass
         )
       "
@@ -145,14 +156,22 @@
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
-    class="-mt-18 box-border flex w-full pt-7"
+    :class="
+      cn(
+        '-mt-4 box-border flex',
+        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+      )
+    "
   >
     <Button
       variant="textonly"
       :class="
         cn(
           getTabStyles(true),
-          'box-border w-full rounded-none bg-node-component-header-surface pt-15 pb-4',
+          'box-border w-full rounded-none bg-node-component-header-surface',
+          hasAnyError
+            ? 'pt-9 pb-4 ring-1 ring-component-node-border ring-inset'
+            : 'pt-8 pb-4',
           footerRadiusClass
         )
       "
@@ -190,7 +209,6 @@ interface Props {
   isSubgraph: boolean
   hasAnyError: boolean
   showErrorsTabEnabled: boolean
-  isCollapsed: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
   headerColor?: string
@@ -211,9 +229,9 @@ const footerRadiusClass = computed(() => {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return isError ? 'rounded-br-[20px]' : 'rounded-br-[17px]'
+      return isError ? 'rounded-br-[19px]' : 'rounded-br-[15px]'
     default:
-      return isError ? 'rounded-b-[20px]' : 'rounded-b-[17px]'
+      return isError ? 'rounded-b-[19px]' : 'rounded-b-[15px]'
   }
 })
 
@@ -222,9 +240,9 @@ const errorRadiusClass = computed(() => {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return 'rounded-bl-[20px]'
+      return 'rounded-br-[19px]'
     default:
-      return 'rounded-b-[20px]'
+      return 'rounded-b-[19px]'
   }
 })
 
@@ -233,18 +251,13 @@ const enterRadiusClass = computed(() => {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
-      return 'rounded-br-[20px]'
     default:
-      return 'rounded-br-[20px]'
+      return 'rounded-br-[19px]'
   }
 })
 
 const getTabStyles = (isBackground = false) => {
-  return cn(
-    'pointer-events-auto text-xs',
-    isBackground ? 'z-0' : 'z-2',
-    props.isCollapsed ? 'h-8' : 'h-9'
-  )
+  return cn('pointer-events-auto h-9 text-xs', isBackground ? 'z-0' : 'z-2')
 }
 
 const headerColorStyle = computed(() =>
