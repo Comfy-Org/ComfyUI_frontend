@@ -337,21 +337,8 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: jobId } = e.detail
 
-    // Revoke previews for nodes that are starting to execute
-    const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
-    for (const nodeId in nodes) {
-      const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !previousForJob[nodeId]) {
-        // This node just started executing, revoke its previews
-        // Note that we're doing the *actual* node id instead of the display node id
-        // here intentionally. That way, we don't clear the preview every time a new node
-        // within an expanded graph starts executing.
-        const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(nodeId)
-      }
-    }
-
     // Update the per-job progress map (always, regardless of active tab)
+    const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
     nodeProgressStatesByJob.value = {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
@@ -360,6 +347,18 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // Only update the "current view" progress if this job belongs to the active workflow tab
     if (!isJobForActiveWorkflow(jobId)) return
+
+    // Revoke previews for nodes that are starting to execute.
+    // Gated behind isJobForActiveWorkflow so background jobs with overlapping
+    // node IDs don't clear previews in the currently viewed workflow.
+    for (const nodeId in nodes) {
+      const nodeState = nodes[nodeId]
+      if (nodeState.state === 'running' && !previousForJob[nodeId]) {
+        const { revokePreviewsByExecutionId } = useNodeOutputStore()
+        revokePreviewsByExecutionId(nodeId)
+      }
+    }
+
     nodeProgressStates.value = nodes
 
     // If we have progress for the currently executing node, update it for backwards compatibility
