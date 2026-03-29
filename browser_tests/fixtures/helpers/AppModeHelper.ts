@@ -152,6 +152,9 @@ export class AppModeHelper {
   get mobileView(): Locator {
     return this.page.getByTestId(TestIds.linear.mobile)
   }
+  get mobileNavigation(): Locator {
+    return this.page.getByRole('tablist').filter({ hasText: 'Run' })
+  }
 
   get mobileWorkflows() {
     return this.mobileView.getByTestId(TestIds.linear.mobileWorkflows)
@@ -162,6 +165,9 @@ export class AppModeHelper {
   async switchMobileWorkflow(workflowName: string) {
     await this.mobileWorkflows.click()
     await this.page.getByRole('menu').getByText(workflowName).click()
+  }
+  async mobileNavigateTab(name: 'run' | 'outputs' | 'assets') {
+    await this.mobileNavigation.getByRole('tab', { name }).click()
   }
 
   /**

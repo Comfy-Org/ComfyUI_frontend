@@ -36,23 +36,19 @@ test.describe('App mode usage', () => {
   })
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
-      const { mobileView } = comfyPage.appMode
+      const { mobileNavigation, mobileView } = comfyPage.appMode
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
       await expect(mobileView).toBeVisible()
 
-      const navigation = comfyPage.page
-        .getByRole('tablist')
-        .filter({ hasText: 'Assets' })
       const panel = comfyPage.page.getByRole('tabpanel')
-      await expect(navigation).toBeVisible()
-      const buttons = await navigation.getByRole('tab').all()
-      await buttons[2].click()
+      await expect(mobileNavigation).toBeVisible()
+      await comfyPage.appMode.mobileNavigateTab('assets')
       await expect(panel).toContainClass('left-[200vw]')
-      //expect
+      const buttons = await mobileNavigation.getByRole('tab').all()
       await buttons[0].dragTo(buttons[2], { steps: 5 })
       await expect(panel).toContainClass('left-[100vw]')
 
-      await navigation.getByRole('tab', { name: 'Edit & Run' }).click()
+      await comfyPage.appMode.mobileNavigateTab('run')
       const widgets = mobileView.getByTestId(TestIds.linear.widgetContainer)
       await expect(widgets).toBeInViewport({ ratio: 1 })
 
