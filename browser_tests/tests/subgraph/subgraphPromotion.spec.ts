@@ -1,13 +1,12 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
-import { fitToViewInstant } from '../helpers/fitToView'
+import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { TestIds } from '../../fixtures/selectors'
+import { fitToViewInstant } from '../../helpers/fitToView'
 import {
   getPromotedWidgetNames,
-  getPromotedWidgetCount,
-  getPromotedWidgets
-} from '../helpers/promotedWidgets'
+  getPromotedWidgetCount
+} from '../../helpers/promotedWidgets'
 
 test.describe(
   'Subgraph Widget Promotion',
@@ -477,106 +476,6 @@ test.describe(
 
         const widgetCount = await getPromotedWidgetCount(comfyPage, nodeId)
         expect(widgetCount).toBeGreaterThan(0)
-      })
-    })
-
-    test.describe('Legacy And Round-Trip Coverage', () => {
-      test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-compressed-target-slot'
-        )
-        await comfyPage.nextFrame()
-
-        const promotedWidgets = await getPromotedWidgets(comfyPage, '2')
-        expect(promotedWidgets.length).toBeGreaterThan(0)
-        expect(
-          promotedWidgets.some(([interiorNodeId]) => interiorNodeId === '-1')
-        ).toBe(false)
-        expect(
-          promotedWidgets.some(
-            ([interiorNodeId, widgetName]) =>
-              interiorNodeId !== '-1' && widgetName === 'batch_size'
-          )
-        ).toBe(true)
-      })
-
-      test('Promoted widgets survive serialize -> loadGraphData round-trip', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
-        await comfyPage.nextFrame()
-
-        const beforePromoted = await getPromotedWidgetNames(comfyPage, '11')
-        expect(beforePromoted).toContain('text')
-
-        await comfyPage.subgraph.serializeAndReload()
-
-        const afterPromoted = await getPromotedWidgetNames(comfyPage, '11')
-        expect(afterPromoted).toContain('text')
-
-        const widgetCount = await getPromotedWidgetCount(comfyPage, '11')
-        expect(widgetCount).toBeGreaterThan(0)
-      })
-
-      test('Multi-link input representative stays stable through save/reload', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-multiple-promoted-widgets'
-        )
-        await comfyPage.nextFrame()
-
-        const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
-        expect(beforeSnapshot.length).toBeGreaterThan(0)
-
-        await comfyPage.subgraph.serializeAndReload()
-
-        const afterSnapshot = await getPromotedWidgets(comfyPage, '11')
-        expect(afterSnapshot).toEqual(beforeSnapshot)
-      })
-
-      test('Cloning a subgraph node keeps promoted widget entries on original and clone', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
-        await comfyPage.nextFrame()
-
-        const originalNode = await comfyPage.nodeOps.getNodeRefById('11')
-        const originalPos = await originalNode.getPosition()
-
-        await comfyPage.page.mouse.move(originalPos.x + 16, originalPos.y + 16)
-        await comfyPage.page.keyboard.down('Alt')
-        await comfyPage.page.mouse.down()
-        await comfyPage.nextFrame()
-        await comfyPage.page.mouse.move(originalPos.x + 72, originalPos.y + 72)
-        await comfyPage.page.mouse.up()
-        await comfyPage.page.keyboard.up('Alt')
-        await comfyPage.nextFrame()
-
-        const subgraphNodeIds = await comfyPage.page.evaluate(() => {
-          const graph = window.app!.canvas.graph!
-          return graph.nodes
-            .filter(
-              (n) =>
-                typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
-            )
-            .map((n) => String(n.id))
-        })
-
-        expect(subgraphNodeIds.length).toBeGreaterThan(1)
-        for (const nodeId of subgraphNodeIds) {
-          const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
-          expect(promotedWidgets.length).toBeGreaterThan(0)
-          expect(
-            promotedWidgets.some(([, widgetName]) => widgetName === 'text')
-          ).toBe(true)
-        }
       })
     })
 

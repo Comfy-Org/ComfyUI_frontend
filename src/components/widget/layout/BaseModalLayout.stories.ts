@@ -6,7 +6,7 @@ import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
+import Tag from '@/components/chip/Tag.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
@@ -76,7 +76,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     CardContainer,
     CardTop,
     CardBottom,
-    SquareChip
+    Tag
   },
   setup() {
     const t = (k: string) => k
@@ -276,13 +276,13 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     </Button>
                   </template>
                   <template #bottom-right>
-                    <SquareChip label="png" />
-                    <SquareChip label="1.2 MB" />
-                    <SquareChip label="LoRA">
+                    <Tag label="png" />
+                    <Tag label="1.2 MB" />
+                    <Tag label="LoRA">
                       <template #icon>
                         <i class="icon-[lucide--folder] size-3" />
                       </template>
-                    </SquareChip>
+                    </Tag>
                   </template>
                 </CardTop>
               </template>
@@ -392,13 +392,13 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     </Button>
                   </template>
                   <template #bottom-right>
-                    <SquareChip label="png" />
-                    <SquareChip label="1.2 MB" />
-                    <SquareChip label="LoRA">
+                    <Tag label="png" />
+                    <Tag label="1.2 MB" />
+                    <Tag label="LoRA">
                       <template #icon>
                         <i class="icon-[lucide--folder] size-3" />
                       </template>
-                    </SquareChip>
+                    </Tag>
                   </template>
                 </CardTop>
               </template>
