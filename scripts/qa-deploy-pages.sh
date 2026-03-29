@@ -215,7 +215,7 @@ cat > "$DEPLOY_DIR/404.html" <<'ERROREOF'
 ERROREOF
 
 # Copy research log to deploy dir if it exists
-for rlog in qa-artifacts/*/research/research-log.json qa-artifacts/*/*/research/research-log.json; do
+for rlog in qa-artifacts/*/research/research-log.json qa-artifacts/*/*/research/research-log.json qa-artifacts/before/*/research/research-log.json; do
   if [ -f "$rlog" ]; then
     cp "$rlog" "$DEPLOY_DIR/research-log.json"
     echo "Found research log: $rlog"
