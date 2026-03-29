@@ -35,6 +35,9 @@ const config: KnipConfig = {
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
+    },
+    'tools/test-recorder': {
+      project: ['src/**/*.ts']
     }
   },
   ignoreBinaries: ['python3'],
