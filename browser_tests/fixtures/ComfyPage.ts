@@ -18,6 +18,7 @@ import { ComfyNodeSearchBoxV2 } from './components/ComfyNodeSearchBoxV2'
 import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
+import { QueuePanel } from './components/QueuePanel'
 import {
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
@@ -191,6 +192,7 @@ export class ComfyPage {
   public readonly featureFlags: FeatureFlagHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
+  public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly queue: QueueHelper
 
@@ -237,6 +239,7 @@ export class ComfyPage {
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
+    this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.queue = new QueueHelper(page)
   }
