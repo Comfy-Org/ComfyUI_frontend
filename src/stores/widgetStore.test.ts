@@ -78,18 +78,24 @@ describe('widgetStore', () => {
 
     it('returns true for v2 spec with known type', () => {
       const store = useWidgetStore()
-      expect(store.inputIsWidget(v2({ type: 'STRING' }))).toBe(true)
+      expect(
+        store.inputIsWidget(v2({ type: 'STRING', name: 'test_input' }))
+      ).toBe(true)
     })
 
     it('returns false for v2 spec with unknown type', () => {
       const store = useWidgetStore()
-      expect(store.inputIsWidget(v2({ type: 'LATENT' }))).toBe(false)
+      expect(
+        store.inputIsWidget(v2({ type: 'LATENT', name: 'test_input' }))
+      ).toBe(false)
     })
 
     it('returns true for custom registered type', () => {
       const store = useWidgetStore()
       store.registerCustomWidgets({ MY_WIDGET: vi.fn() })
-      expect(store.inputIsWidget(v2({ type: 'MY_WIDGET' }))).toBe(true)
+      expect(
+        store.inputIsWidget(v2({ type: 'MY_WIDGET', name: 'test_input' }))
+      ).toBe(true)
     })
   })
 })
