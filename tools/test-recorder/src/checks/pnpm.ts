@@ -13,7 +13,7 @@ export async function checkPnpm(): Promise<CheckResult> {
       'Install pnpm via corepack (comes with Node.js):',
       '',
       '  corepack enable',
-      '  corepack prepare pnpm@latest --activate',
+      '  corepack prepare pnpm@10.17.1 --activate',
       '',
       'Or install directly:',
       '',
