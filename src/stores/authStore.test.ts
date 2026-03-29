@@ -740,9 +740,10 @@ describe('useAuthStore', () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
-      await expect(store.getAuthHeaderOrThrow()).rejects.toThrow(
-        'toastMessages.userNotAuthenticated'
-      )
+      await expect(store.getAuthHeaderOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
     })
   })
 
@@ -755,9 +756,10 @@ describe('useAuthStore', () => {
     it('throws AuthStoreError when not authenticated', async () => {
       authStateCallback(null)
 
-      await expect(store.getFirebaseAuthHeaderOrThrow()).rejects.toThrow(
-        'toastMessages.userNotAuthenticated'
-      )
+      await expect(store.getFirebaseAuthHeaderOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
     })
   })
 
