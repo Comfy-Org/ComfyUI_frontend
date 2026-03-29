@@ -31,14 +31,16 @@ export const comfyExpect = expect.extend({
   toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
   toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed'),
   async toHaveFocus(locator: Locator, options = { timeout: 256 }) {
+    await expect
+      .poll(
+        () => locator.evaluate((el) => el === document.activeElement),
+        options
+      )
+      .toBe(!this.isNot)
+
     const isFocused = await locator.evaluate(
       (el) => el === document.activeElement
     )
-
-    await expect(async () => {
-      expect(isFocused).toBe(!this.isNot)
-    }).toPass(options)
-
     return {
       pass: isFocused,
       message: () => `Expected element to ${isFocused ? 'not ' : ''}be focused.`
