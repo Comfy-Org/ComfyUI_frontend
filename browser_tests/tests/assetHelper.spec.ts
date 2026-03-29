@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
@@ -16,6 +17,32 @@ import {
   STABLE_INPUT_IMAGE,
   STABLE_OUTPUT
 } from '../fixtures/data/assetFixtures'
+
+/**
+ * Helper to make fetch calls from the page context so page.route()
+ * interception works. page.request (APIRequestContext) bypasses route
+ * interception because it's an independent HTTP client.
+ */
+async function pageFetch(
+  page: Page,
+  url: string,
+  init?: RequestInit
+): Promise<{ status: number; body: unknown }> {
+  return page.evaluate(
+    async ([fetchUrl, fetchInit]) => {
+      const res = await fetch(fetchUrl, fetchInit)
+      const text = await res.text()
+      let body: unknown
+      try {
+        body = JSON.parse(text)
+      } catch {
+        body = text
+      }
+      return { status: res.status, body }
+    },
+    [url, init] as const
+  )
+}
 
 test.describe('AssetHelper', () => {
   test.describe('operators and configuration', () => {
@@ -74,12 +101,13 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const response = await comfyPage.page.request.get(
+      const { status, body } = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets`
       )
-      expect(response.ok()).toBe(true)
+      expect(status).toBe(200)
 
-      const data = await response.json()
+      const data = body as { assets: unknown[]; total: number; has_more: boolean }
       expect(data.assets).toHaveLength(2)
       expect(data.total).toBe(2)
       expect(data.has_more).toBe(false)
@@ -95,10 +123,11 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const response = await comfyPage.page.request.get(
+      const { body } = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets?limit=2&offset=0`
       )
-      const data = await response.json()
+      const data = body as { assets: unknown[]; total: number; has_more: boolean }
       expect(data.assets).toHaveLength(2)
       expect(data.total).toBe(10)
       expect(data.has_more).toBe(true)
@@ -115,10 +144,11 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const response = await comfyPage.page.request.get(
+      const { body } = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets?include_tags=models,checkpoints`
       )
-      const data = await response.json()
+      const data = body as { assets: Array<{ id: string }> }
       expect(data.assets).toHaveLength(1)
       expect(data.assets[0].id).toBe(STABLE_CHECKPOINT.id)
 
@@ -134,17 +164,19 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const found = await comfyPage.page.request.get(
+      const found = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`
       )
-      expect(found.ok()).toBe(true)
-      const asset = await found.json()
+      expect(found.status).toBe(200)
+      const asset = found.body as { id: string }
       expect(asset.id).toBe(STABLE_CHECKPOINT.id)
 
-      const notFound = await comfyPage.page.request.get(
+      const notFound = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets/nonexistent-id`
       )
-      expect(notFound.status()).toBe(404)
+      expect(notFound.status).toBe(404)
 
       await helper.clearMocks()
     })
@@ -156,13 +188,18 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const response = await comfyPage.page.request.put(
+      const { status, body } = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`,
-        { data: { name: 'renamed.safetensors' } }
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'renamed.safetensors' })
+        }
       )
-      expect(response.ok()).toBe(true)
+      expect(status).toBe(200)
 
-      const updated = await response.json()
+      const updated = body as { name: string }
       expect(updated.name).toBe('renamed.safetensors')
       expect(helper.getAsset(STABLE_CHECKPOINT.id)?.name).toBe(
         'renamed.safetensors'
@@ -181,10 +218,12 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const response = await comfyPage.page.request.delete(
-        `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`
+      const { status } = await pageFetch(
+        comfyPage.page,
+        `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`,
+        { method: 'DELETE' }
       )
-      expect(response.status()).toBe(204)
+      expect(status).toBe(204)
       expect(helper.assetCount).toBe(1)
       expect(helper.getAsset(STABLE_CHECKPOINT.id)).toBeUndefined()
 
@@ -205,11 +244,13 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      const response = await comfyPage.page.request.post(
-        `${comfyPage.url}/api/assets`
+      const { status, body } = await pageFetch(
+        comfyPage.page,
+        `${comfyPage.url}/api/assets`,
+        { method: 'POST' }
       )
-      expect(response.status()).toBe(201)
-      const data = await response.json()
+      expect(status).toBe(201)
+      const data = body as { id: string; name: string }
       expect(data.id).toBe('custom-upload-001')
       expect(data.name).toBe('custom.safetensors')
 
@@ -222,11 +263,13 @@ test.describe('AssetHelper', () => {
       const helper = createAssetHelper(comfyPage.page)
       await helper.mock()
 
-      const response = await comfyPage.page.request.post(
-        `${comfyPage.url}/api/assets/download`
+      const { status, body } = await pageFetch(
+        comfyPage.page,
+        `${comfyPage.url}/api/assets/download`,
+        { method: 'POST' }
       )
-      expect(response.status()).toBe(202)
-      const data = await response.json()
+      expect(status).toBe(202)
+      const data = body as { task_id: string; status: string }
       expect(data.task_id).toBe('download-task-001')
       expect(data.status).toBe('created')
 
@@ -242,13 +285,22 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      await comfyPage.page.request.post(`${comfyPage.url}/api/assets`)
-      await comfyPage.page.request.put(
+      await pageFetch(comfyPage.page, `${comfyPage.url}/api/assets`, {
+        method: 'POST'
+      })
+      await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`,
-        { data: { name: 'updated.safetensors' } }
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'updated.safetensors' })
+        }
       )
-      await comfyPage.page.request.delete(
-        `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`
+      await pageFetch(
+        comfyPage.page,
+        `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`,
+        { method: 'DELETE' }
       )
 
       const mutations = helper.getMutations()
@@ -267,8 +319,9 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      await comfyPage.page.request.get(`${comfyPage.url}/api/assets`)
-      await comfyPage.page.request.get(
+      await pageFetch(comfyPage.page, `${comfyPage.url}/api/assets`)
+      await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets/${STABLE_CHECKPOINT.id}`
       )
 
@@ -283,11 +336,12 @@ test.describe('AssetHelper', () => {
       const helper = createAssetHelper(comfyPage.page)
       await helper.mockError(503, 'Service Unavailable')
 
-      const response = await comfyPage.page.request.get(
+      const { status, body } = await pageFetch(
+        comfyPage.page,
         `${comfyPage.url}/api/assets`
       )
-      expect(response.status()).toBe(503)
-      const data = await response.json()
+      expect(status).toBe(503)
+      const data = body as { error: string }
       expect(data.error).toBe('Service Unavailable')
 
       await helper.clearMocks()
@@ -304,7 +358,9 @@ test.describe('AssetHelper', () => {
       )
       await helper.mock()
 
-      await comfyPage.page.request.post(`${comfyPage.url}/api/assets`)
+      await pageFetch(comfyPage.page, `${comfyPage.url}/api/assets`, {
+        method: 'POST'
+      })
       expect(helper.getMutations()).toHaveLength(1)
       expect(helper.assetCount).toBe(1)
 
