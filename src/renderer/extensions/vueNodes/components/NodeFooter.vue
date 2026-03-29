@@ -2,7 +2,7 @@
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
-    class="-mx-1 -mt-4 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
+    class="-mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
   >
     <Button
       variant="textonly"
@@ -49,7 +49,7 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
-    class="-mx-1 -mt-4 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
+    class="-mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
   >
     <Button
       variant="textonly"
@@ -100,7 +100,7 @@
   <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
-    class="-mx-1 -mt-4 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
+    class="-mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
   >
     <Button
       variant="textonly"
@@ -125,7 +125,7 @@
     v-else-if="isSubgraph"
     :class="
       cn(
-        '-mt-4 box-border flex',
+        '-mt-5 box-border flex',
         hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
       )
     "
@@ -158,7 +158,7 @@
     v-else-if="showAdvancedInputsButton || showAdvancedState"
     :class="
       cn(
-        '-mt-4 box-border flex',
+        '-mt-5 box-border flex',
         hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
       )
     "
