@@ -41,36 +41,34 @@ Reference docs (read if you need full context):
    - `comfyPage.settings.setSetting()` for settings
    - Component page objects in `browser_tests/fixtures/components/`
 
-9. **Wrong import** — Tests must use `comfyPageFixture as test` and `comfyExpect as expect` from the `browser_tests/fixtures/ComfyPage` module (path may vary by file depth), not raw `@playwright/test` imports (exception: `expect` from `@playwright/test` is acceptable when `comfyExpect` doesn't provide needed matchers).
+9. **Building workflows programmatically when a JSON asset would work** — Complex `page.evaluate` chains to construct a graph should use a premade JSON workflow in `browser_tests/assets/` loaded via `comfyPage.workflow.loadWorkflow()`.
 
-10. **Building workflows programmatically when a JSON asset would work** — Complex `page.evaluate` chains to construct a graph should use a premade JSON workflow in `browser_tests/assets/` loaded via `comfyPage.workflow.loadWorkflow()`.
-
-11. **Selectors not using `TestIds`** — Hard-coded `data-testid` strings should reference `browser_tests/fixtures/selectors.ts` when a matching entry exists. Check `selectors.ts` before flagging.
+10. **Selectors not using `TestIds`** — Hard-coded `data-testid` strings should reference `browser_tests/fixtures/selectors.ts` when a matching entry exists. Check `selectors.ts` before flagging.
 
 ### Convention Violations (Minor)
 
-12. **Missing test tags** — Every `test.describe` should have `tag` with at least one of: `@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@mobile`, `@2x`. See `.claude/skills/writing-playwright-tests/SKILL.md` for when to use each.
+11. **Missing test tags** — Every `test.describe` should have `tag` with at least one of: `@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@mobile`, `@2x`. See `.claude/skills/writing-playwright-tests/SKILL.md` for when to use each.
 
-13. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `docs/guidance/playwright.md` for acceptable patterns.
+12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `docs/guidance/playwright.md` for acceptable patterns.
 
-14. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
+13. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 
-15. **`test.describe` without `afterEach` cleanup when canvas state changes** — Tests that manipulate canvas view (drag, zoom, pan) should include `afterEach` with `comfyPage.canvasOps.resetView()`. Prefer moving canvas reset into the fixture so individual tests don't manage cleanup.
+14. **`test.describe` without `afterEach` cleanup when canvas state changes** — Tests that manipulate canvas view (drag, zoom, pan) should include `afterEach` with `comfyPage.canvasOps.resetView()`. Prefer moving canvas reset into the fixture so individual tests don't manage cleanup.
 
-16. **Debug helpers left in committed code** — `debugAddMarker`, `debugAttachScreenshot`, `debugShowCanvasOverlay`, `debugGetCanvasDataURL` are for local debugging only.
+15. **Debug helpers left in committed code** — `debugAddMarker`, `debugAttachScreenshot`, `debugShowCanvasOverlay`, `debugGetCanvasDataURL` are for local debugging only.
 
 ### Test Design (Nitpick)
 
-17. **Screenshot-only assertions where functional assertions are possible** — Prefer `expect(await node.isPinned()).toBe(true)` over screenshot comparison when testing non-visual behavior.
+16. **Screenshot-only assertions where functional assertions are possible** — Prefer `expect(await node.isPinned()).toBe(true)` over screenshot comparison when testing non-visual behavior.
 
-18. **Overly large test workflows** — Test should load the minimal workflow needed. If a test only needs one node, don't load the full default graph.
+17. **Overly large test workflows** — Test should load the minimal workflow needed. If a test only needs one node, don't load the full default graph.
 
-19. **Vue Nodes / LiteGraph mismatch** — If testing Vue-rendered node UI (DOM widgets, CSS states), should use `comfyPage.vueNodes.*`. If testing canvas interactions/connections, should use `comfyPage.nodeOps.*`. Mixing both in one test is a smell.
+18. **Vue Nodes / LiteGraph mismatch** — If testing Vue-rendered node UI (DOM widgets, CSS states), should use `comfyPage.vueNodes.*`. If testing canvas interactions/connections, should use `comfyPage.nodeOps.*`. Mixing both in one test is a smell.
 
 ## Rules
 
 - Only review `.spec.ts` files and supporting code in `browser_tests/`
 - Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules
-- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-11), "minor" for convention violations (12-16), "nitpick" for test design (17-19)
+- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18)
 - When flagging missing fixture usage (item 8), confirm the helper exists by checking the fixture code — don't assume
 - Existing tests that predate conventions are acceptable to modify but not required to fix
