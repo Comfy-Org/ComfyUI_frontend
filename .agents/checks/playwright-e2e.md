@@ -55,7 +55,7 @@ Reference docs (read if you need full context):
 
 14. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 
-15. **`test.describe` without `afterEach` cleanup when canvas state changes** — Tests that manipulate canvas view (drag, zoom, pan) should include `afterEach` with `comfyPage.canvasOps.resetView()`.
+15. **`test.describe` without `afterEach` cleanup when canvas state changes** — Tests that manipulate canvas view (drag, zoom, pan) should include `afterEach` with `comfyPage.canvasOps.resetView()`. Prefer moving canvas reset into the fixture so individual tests don't manage cleanup.
 
 16. **Debug helpers left in committed code** — `debugAddMarker`, `debugAttachScreenshot`, `debugShowCanvasOverlay`, `debugGetCanvasDataURL` are for local debugging only.
 
