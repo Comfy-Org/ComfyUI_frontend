@@ -261,8 +261,7 @@ export default defineConfig([
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            'ImportDeclaration[source.value=/^@playwright/]',
+          selector: 'ImportDeclaration[source.value=/^@playwright/]',
           message:
             'fixtures/data/ must contain only static data. No Playwright imports allowed.'
         }
