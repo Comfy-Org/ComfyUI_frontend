@@ -6,11 +6,26 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
 import './testUtils/mockTanstackVirtualizer'
-import { JobDetailsPopoverStub } from './testUtils/mockJobDetailsPopover'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 
 import JobAssetsList from './JobAssetsList.vue'
+
+const hoisted = vi.hoisted(() => ({
+  jobDetailsPopoverStub: {
+    name: 'JobDetailsPopover',
+    props: {
+      jobId: { type: String, required: true },
+      workflowId: { type: String, default: undefined }
+    },
+    template:
+      '<div class="job-details-popover-stub" :data-job-id="jobId" :data-workflow-id="workflowId" />'
+  }
+}))
+
+vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
+  default: hoisted.jobDetailsPopoverStub
+}))
 
 const AssetsListItemStub = defineComponent({
   name: 'AssetsListItem',
@@ -130,7 +145,6 @@ function renderJobAssetsList({
     global: {
       stubs: {
         teleport: true,
-        JobDetailsPopover: JobDetailsPopoverStub,
         AssetsListItem: AssetsListItemStub
       }
     }
@@ -206,7 +220,13 @@ describe('JobAssetsList', () => {
     })
 
     expect(screen.getByTestId('job-assets-list').className.split(' ')).toEqual(
-      expect.arrayContaining(['min-h-0', 'flex-1', 'h-full', 'overflow-y-auto'])
+      expect.arrayContaining([
+        'min-h-0',
+        'flex-1',
+        'h-full',
+        'overflow-y-auto',
+        'pb-4'
+      ])
     )
   })
 

@@ -3,7 +3,7 @@
     ref="scrollContainer"
     v-bind="$attrs"
     data-testid="job-assets-list"
-    class="h-full overflow-y-auto"
+    class="h-full overflow-y-auto pb-4"
     @scroll="onListScroll"
   >
     <div :style="virtualWrapperStyle">
@@ -132,7 +132,6 @@ import type { VirtualJobRow } from './buildVirtualJobRows'
 const HEADER_ROW_HEIGHT = 20
 const GROUP_ROW_GAP = 16
 const JOB_ROW_HEIGHT = 48
-const VIRTUAL_JOB_LIST_BOTTOM_PADDING = 16
 
 defineOptions({
   inheritAttrs: false
@@ -182,7 +181,7 @@ const virtualWrapperStyle = computed<CSSProperties>(() => ({
   position: 'relative',
   width: '100%',
   ...(flatRows.value.length > 0 && {
-    height: `${virtualizer.value.getTotalSize() + VIRTUAL_JOB_LIST_BOTTOM_PADDING}px`
+    height: `${virtualizer.value.getTotalSize()}px`
   })
 }))
 const {
