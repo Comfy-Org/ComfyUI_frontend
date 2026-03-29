@@ -117,6 +117,18 @@ export const test = base.extend<{
 - Keep fixtures modular — extend `@playwright/test` base, not
   `comfyPageFixture`, so they can be composed via `mergeTests`
 
+## Custom Assertions
+
+Add assertion methods directly on the page object or helper class instead of extending `comfyExpect`. Page object methods are discoverable via IntelliSense without special imports.
+
+```typescript
+// ✅ Page object assertions
+await node.expectPinned()
+await node.expectBypassed()
+
+// ❌ Do not add custom matchers to comfyExpect
+```
+
 ## Test Tags
 
 - `@mobile` — Mobile viewport tests
