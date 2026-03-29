@@ -4,7 +4,10 @@ import type {
   LGraph,
   LGraphNode
 } from '../../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  NodeId
+} from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyPage } from '../ComfyPage'
 import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
 import type { Position, Size } from '../types'
@@ -109,6 +112,27 @@ export class NodeOperationsHelper {
       await this.page.keyboard.up('Control')
       await this.comfyPage.nextFrame()
     }
+  }
+
+  async loadWithPositions(
+    positions: Record<string, [number, number]>
+  ): Promise<void> {
+    await this.page.evaluate(
+      async ({ positions }) => {
+        const data = window.app!.graph.serialize()
+        for (const node of data.nodes) {
+          const pos = positions[String(node.id)]
+          if (pos) node.pos = pos
+        }
+        await window.app!.loadGraphData(
+          data as ComfyWorkflowJSON,
+          true,
+          true,
+          null
+        )
+      },
+      { positions }
+    )
   }
 
   async resizeNode(

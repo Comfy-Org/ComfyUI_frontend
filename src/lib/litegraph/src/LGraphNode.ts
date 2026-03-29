@@ -423,6 +423,16 @@ export class LGraphNode
    */
   _collapsed_width?: number
   /**
+   * The height of the node when collapsed (including footer).
+   * Set by ResizeObserver in Vue nodes mode.
+   */
+  _collapsed_height?: number
+  /**
+   * The footer height in Vue nodes mode.
+   * Set by ResizeObserver, used by measure() to extend boundingRect.
+   */
+  _footerHeight?: number
+  /**
    * Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}.
    * WARNING: Making changes to boundingRect via onBounding is poorly supported, and will likely result in strange behaviour.
    */
@@ -2090,18 +2100,18 @@ export class LGraphNode
     out[1] = this.pos[1] + -titleHeight
     if (!this.flags?.collapsed) {
       out[2] = this.size[0]
-      out[3] = this.size[1] + titleHeight
+      out[3] = this.size[1] + titleHeight + (this._footerHeight ?? 0)
     } else {
-      if (ctx) ctx.font = this.innerFontStyle
-      this._collapsed_width = Math.min(
-        this.size[0],
-        ctx
-          ? cachedMeasureText(ctx, this.getTitle() ?? '') +
-              LiteGraph.NODE_TITLE_HEIGHT * 2
-          : 0
-      )
+      if (ctx && !LiteGraph.vueNodesMode) {
+        ctx.font = this.innerFontStyle
+        this._collapsed_width = Math.min(
+          this.size[0],
+          cachedMeasureText(ctx, this.getTitle() ?? '') +
+            LiteGraph.NODE_TITLE_HEIGHT * 2
+        )
+      }
       out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-      out[3] = LiteGraph.NODE_TITLE_HEIGHT
+      out[3] = this._collapsed_height || LiteGraph.NODE_TITLE_HEIGHT
     }
   }
 

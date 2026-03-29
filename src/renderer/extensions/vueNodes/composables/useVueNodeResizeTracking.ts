@@ -15,8 +15,9 @@ import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { app } from '@/scripts/app'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -139,25 +140,44 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Skip collapsed nodes — their DOM height is just the header, and writing
-    // that back to the layout store would overwrite the stored expanded size.
+    // Collapsed nodes: don't update layoutStore (preserve expanded size),
+    // but sync the collapsed DOM width to litegraph for boundingRect.
     if (elementType === 'node' && element.dataset.collapsed != null) {
       if (nodeId) {
+        const lgNode = app.graph?.getNodeById(nodeId)
+        if (lgNode) {
+          const body = element.querySelector(
+            '[data-testid^="node-inner-wrapper"]'
+          )
+          lgNode._collapsed_width =
+            body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
+          lgNode._collapsed_height = element.offsetHeight
+        }
         nodesNeedingSlotResync.add(nodeId)
       }
       continue
     }
 
-    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
-    // Border box is the border included FULL wxh DOM value.
-    const borderBox = Array.isArray(entry.borderBoxSize)
-      ? entry.borderBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
+    // Measure body (node-inner-wrapper) for node.size to exclude footer,
+    // but store the full height (with footer) for boundingRect.
+    const bodyEl = element.querySelector('[data-testid^="node-inner-wrapper"]')
+    const measuredEl = bodyEl instanceof HTMLElement ? bodyEl : element
+    const width = Math.max(0, measuredEl.offsetWidth)
+    const height = Math.max(0, measuredEl.offsetHeight)
+    const fullHeight = Math.max(0, element.offsetHeight)
+
+    // Store footer-inclusive height for boundingRect calculation
+    if (nodeId) {
+      const lgNode = app.graph?.getNodeById(nodeId)
+      if (lgNode) {
+        const footerExtra = fullHeight - measuredEl.offsetHeight
+        if (footerExtra > 0) {
+          lgNode._footerHeight = footerExtra
+        } else {
+          lgNode._footerHeight = undefined
         }
-    const width = Math.max(0, borderBox.inlineSize)
-    const height = Math.max(0, borderBox.blockSize)
+      }
+    }
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
       : null
