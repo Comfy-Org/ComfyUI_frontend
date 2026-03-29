@@ -44,7 +44,8 @@ export const TestIds = {
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
-    missingModelsGroup: 'error-group-missing-model'
+    missingModelsGroup: 'error-group-missing-model',
+    publishTabPanel: 'publish-tab-panel'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'

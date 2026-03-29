@@ -31,6 +31,7 @@ import { QueueHelper } from './helpers/QueueHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { CommandHelper } from './helpers/CommandHelper'
 import { DragDropHelper } from './helpers/DragDropHelper'
+import { CloudAuthHelper } from './helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from './helpers/FeatureFlagHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
@@ -203,6 +204,7 @@ export class ComfyPage {
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
   public readonly queue: QueueHelper
+  public readonly cloudAuth: CloudAuthHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -250,6 +252,7 @@ export class ComfyPage {
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
     this.queue = new QueueHelper(page)
+    this.cloudAuth = new CloudAuthHelper(page)
   }
 
   get visibleToasts() {
@@ -460,6 +463,10 @@ export const comfyPageFixture = base.extend<{
       })
     } catch (e) {
       console.error(e)
+    }
+
+    if (testInfo.tags.includes('@cloud')) {
+      await comfyPage.cloudAuth.mockAuth()
     }
 
     await comfyPage.setup()
