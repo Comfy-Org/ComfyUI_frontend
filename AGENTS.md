@@ -53,6 +53,17 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm comfy-test transform <file>`: Transform raw codegen to conventions
 - `pnpm comfy-test check`: Check environment prerequisites
 - `pnpm comfy-test list`: List available test workflows
+
+### Playwright Test Agents (`.claude/agents/`)
+
+| Agent | Responsibility |
+|-------|---------------|
+| `playwright-test-planner.md` | Explores the app, identifies testable scenarios, creates structured test plans |
+| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions |
+| `playwright-test-healer.md` | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping |
+
+Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
+
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
