@@ -150,7 +150,6 @@ const baseNodeDefinitions: Record<string, ComfyNodeDef> = {
 export function createMockNodeDefinitions(
   overrides?: Record<string, ComfyNodeDef>
 ): Record<string, ComfyNodeDef> {
-  return { ...baseNodeDefinitions, ...overrides }
+  const base = structuredClone(baseNodeDefinitions)
+  return overrides ? { ...base, ...overrides } : base
 }
-
-export const mockNodeDefinitions = baseNodeDefinitions
