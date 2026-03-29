@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Déterminer s'il faut étirer le recadrage pour correspondre à la taille de sortie, ou ajouter des pixels noirs pour préserver le ratio d'aspect."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Hauteur à laquelle chaque découpe est redimensionnée."
@@ -2309,6 +2313,23 @@
     "display_name": "DésactiverBruit",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Dessiner les BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "Appliquez des shaders de fragments GLSL ES aux images. u_resolution (vec2) est toujours disponible.",
     "display_name": "Shader GLSL",
     "inputs": {
+      "bools": {
+        "name": "booléens",
+        "tooltip": "Les booléens sont disponibles sous u_bool0-9 (bool) dans le code du shader"
+      },
+      "curves": {
+        "name": "courbes",
+        "tooltip": "Les courbes sont disponibles sous u_curve0-3 (sampler2D, LUT 1D) dans le code du shader. Échantillonnez avec texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Les flottants sont disponibles sous u_float0-4 dans le code du shader"
@@ -12218,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "Détection RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrer les détections par classe. Définir sur 'all' pour désactiver le filtrage."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Nombre maximal de détections à retourner par image. Par ordre décroissant du score de confiance."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Rogner aléatoirement des images",
     "inputs": {
@@ -15913,6 +15970,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "pénalité_de_presence"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "pénalité_de_répétition"
       },
@@ -15927,6 +15987,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "réflexion",
+        "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
       }
     },
     "outputs": {
@@ -15957,6 +16021,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "pénalité_de_presence"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "pénalité_de_répétition"
       },
@@ -15971,6 +16038,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "réflexion",
+        "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
       }
     },
     "outputs": {
@@ -16239,6 +16310,10 @@
       "positive": {
         "name": "positif",
         "tooltip": "Le conditionnement positif à utiliser pour l'entraînement."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Lorsque le paramètre training_dtype est défini sur 'none' et que l'entraînement se fait sur un modèle quantifié, effectue la rétropropagation avec une multiplication matricielle quantifiée si activé."
       },
       "rank": {
         "name": "rang",

@@ -347,9 +347,19 @@
     "share": "Paylaş",
     "workflowActions": "İş akışı işlemleri"
   },
+  "builderFooter": {
+    "opensAsApp": "{mode} olarak aç",
+    "opensAsGraph": "{mode} olarak aç"
+  },
   "builderMenu": {
     "enterAppMode": "Uygulama moduna gir",
     "exitAppBuilder": "Uygulama oluşturucudan çık"
+  },
+  "builderSave": {
+    "successBody": "Şimdi görüntülemek ister misiniz?",
+    "successBodyApp": "Bu iş akışı artık varsayılan olarak Uygulama Modu'nda açılacak.\n\nŞimdi görüntülemek ister misiniz?",
+    "successBodyGraph": "Bu iş akışı bir düğüm grafiği olarak açılacak.",
+    "successTitle": "Başarıyla kaydedildi"
   },
   "builderToolbar": {
     "app": "Uygulama",
@@ -359,18 +369,10 @@
     "connectOutput": "Bir çıktı bağla",
     "connectOutputBody1": "Uygulamanızın kaydedilebilmesi için en az bir çıktı bağlanmalıdır.",
     "connectOutputBody2": "'Seç' adımına geçin ve çıktı düğümlerine tıklayarak buraya ekleyin.",
-    "defaultModeAppliedAppBody": "Bu iş akışı artık varsayılan olarak Uygulama Modunda açılacak.",
-    "defaultModeAppliedAppPrompt": "Şimdi görüntülemek ister misiniz?",
-    "defaultModeAppliedGraphBody": "Bu iş akışı artık varsayılan olarak bir düğüm grafiği olarak açılacak.",
-    "defaultModeAppliedGraphPrompt": "Uygulamayı yine de görüntülemek ister misiniz?",
-    "defaultModeAppliedTitle": "Başarıyla ayarlandı",
-    "defaultView": "Varsayılan görünümü ayarla",
-    "defaultViewDescription": "Nasıl açılacağını seçin",
     "defaultViewLabel": "Varsayılan olarak, bu iş akışı şu şekilde açılacak:",
-    "defaultViewTitle": "Bu iş akışı için varsayılan görünümü ayarla",
     "emptyWorkflowPrompt": "Bir şablonla başlamak ister misiniz?",
     "emptyWorkflowTitle": "Bu iş akışında düğüm yok",
-    "exitToWorkflow": "İş akışına çık",
+    "filename": "Dosya adı",
     "inputs": "Girdiler",
     "inputsDescription": "Girdileri seçin",
     "label": "Uygulama Oluşturucu",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Varsayılan olarak düğüm grafiği olarak açılır",
     "outputs": "Çıktılar",
     "outputsDescription": "Çıktıları seçin",
+    "saveAs": "Farklı kaydet",
     "switchToOutputs": "Çıktılara Geç",
     "viewApp": "Uygulamayı görüntüle"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ Kapak yükle",
     "uploadProfilePicture": "+ Profil fotoğrafı yükle",
     "uploadWorkflowButton": "Çalışma akışımı yükle",
+    "usernameError": "3–42 küçük harfli alfanümerik karakter ve tire, bir harf veya rakam ile başlamalı ve bitmelidir",
     "usernameLabel": "Kullanıcı adınız (gerekli)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "Ek bilgi",
     "back": "Geri",
     "createProfileCta": "Profil oluştur",
     "createProfileToPublish": "ComfyHub'da yayınlamak için bir profil oluşturun",
     "exampleImage": "Örnek görsel {index}",
+    "exampleImagePosition": "Örnek görsel {index} / {total}",
     "examplesDescription": "En fazla {total} ek örnek görsel ekleyin",
     "maxExamples": "En fazla {max} örnek seçebilirsiniz",
     "next": "İleri",
     "publishButton": "ComfyHub'da Yayınla",
+    "publishFailedDescription": "Çalışma akışınızı yayınlarken bir hata oluştu. Lütfen tekrar deneyin.",
+    "publishFailedTitle": "Yayınlama başarısız",
+    "removeExampleImage": "Örnek görseli kaldır",
     "selectAThumbnail": "Bir küçük resim seçin",
+    "shareAs": "Olarak paylaş",
     "showLessTags": "Daha az göster...",
     "showMoreTags": "Daha fazla göster...",
     "stepDescribe": "Çalışma akışınızı açıklayın",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "Küçük resim önizlemesi",
     "thumbnailVideo": "Video",
     "title": "ComfyHub'da Yayınla",
+    "unsavedDescription": "Çalışma akışınızı ComfyHub'da yayınlamadan önce kaydetmelisiniz. Devam etmek için şimdi kaydedin.",
     "uploadAnImage": "Göz atmak için tıklayın veya bir görsel sürükleyin",
     "uploadComparison": "Öncesi ve sonrası yükle",
     "uploadComparisonAfterPrompt": "Sonra",
@@ -606,13 +617,7 @@
     "workflowDescription": "Çalışma akışı açıklaması",
     "workflowDescriptionPlaceholder": "Çalışma akışınızı heyecan verici ve özel kılan nedir? İnsanların ne bekleyeceğini bilmesi için ayrıntılı olun.",
     "workflowName": "Çalışma akışı adı",
-    "workflowNamePlaceholder": "İpucu: Araması kolay, açıklayıcı bir isim girin",
-    "workflowType": "Çalışma akışı türü",
-    "workflowTypeEditing": "Düzenleme",
-    "workflowTypeImageGeneration": "Görüntü oluşturma",
-    "workflowTypePlaceholder": "Türü seçin",
-    "workflowTypeUpscaling": "Yükseltme",
-    "workflowTypeVideoGeneration": "Video oluşturma"
+    "workflowNamePlaceholder": "İpucu: Araması kolay, açıklayıcı bir isim girin"
   },
   "commands": {
     "clear": "İş akışını temizle",
@@ -896,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} HATA | {count} HATA",
-    "seeErrors": "Hataları Gör"
+    "missingMedia": "Bazı düğümler gerekli girdilerden yoksun",
+    "missingModels": "{count} gerekli model eksik | {count} gerekli model eksik",
+    "missingNodes": "Bazı düğümler eksik ve yüklenmesi gerekiyor",
+    "seeErrors": "Hataları Gör",
+    "showMissingMedia": "Eksik girdileri göster",
+    "showMissingModels": "Eksik modelleri göster",
+    "showMissingNodes": "Eksik düğümleri göster",
+    "showSwapNodes": "Değiştirilebilir düğümleri göster",
+    "swapNodes": "Bazı düğümler alternatiflerle değiştirilebilir"
   },
   "essentials": {
     "batchImage": "Toplu Görüntü",
@@ -2245,6 +2258,7 @@
     "dataset": "veri seti",
     "debug": "hata ayıklama",
     "deprecated": "kullanımdan kaldırılmış",
+    "detection": "tespit",
     "edit_models": "modelleri_düzenle",
     "flux": "flux",
     "gligen": "gligen",
@@ -3226,6 +3240,7 @@
       "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} politikasını kabul etmiş olursunuz.",
       "totalDueToday": "Bugün ödenecek toplam tutar"
     },
+    "refreshCredits": "Kredileri yenile",
     "renewsDate": "{date} tarihinde yenilenir",
     "required": {
       "pollingFailed": "Abonelik etkinleştirme başarısız oldu",

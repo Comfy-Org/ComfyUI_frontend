@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ContextMenu {
@@ -31,6 +32,20 @@ export class ContextMenu {
       .isVisible()
       .catch(() => false)
     return primeVueVisible || litegraphVisible
+  }
+
+  async assertHasItems(items: string[]): Promise<void> {
+    for (const item of items) {
+      await expect
+        .soft(this.page.getByRole('menuitem', { name: item }))
+        .toBeVisible()
+    }
+  }
+
+  async openFor(locator: Locator): Promise<this> {
+    await locator.click({ button: 'right' })
+    await expect.poll(() => this.isVisible()).toBe(true)
+    return this
   }
 
   async waitForHidden(): Promise<void> {

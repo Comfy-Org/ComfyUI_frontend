@@ -347,9 +347,19 @@
     "share": "اشتراک‌گذاری",
     "workflowActions": "عملیات گردش‌کار"
   },
+  "builderFooter": {
+    "opensAsApp": "باز کردن به صورت {mode}",
+    "opensAsGraph": "باز کردن به صورت {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "ورود به حالت برنامه",
     "exitAppBuilder": "خروج از سازنده برنامه"
+  },
+  "builderSave": {
+    "successBody": "آیا مایل هستید اکنون آن را مشاهده کنید؟",
+    "successBodyApp": "این workflow از این پس به طور پیش‌فرض در حالت App Mode باز خواهد شد.\n\nآیا مایل هستید اکنون آن را مشاهده کنید؟",
+    "successBodyGraph": "این workflow به صورت یک گراف نود باز خواهد شد.",
+    "successTitle": "با موفقیت ذخیره شد"
   },
   "builderToolbar": {
     "app": "اپلیکیشن",
@@ -359,18 +369,10 @@
     "connectOutput": "اتصال خروجی",
     "connectOutputBody1": "اپلیکیشن شما باید حداقل یک خروجی متصل داشته باشد تا بتوان آن را ذخیره کرد.",
     "connectOutputBody2": "به مرحله «انتخاب» بروید و روی nodeهای خروجی کلیک کنید تا اینجا اضافه شوند.",
-    "defaultModeAppliedAppBody": "این ورک‌فلو از این پس به طور پیش‌فرض در حالت اپلیکیشن باز خواهد شد.",
-    "defaultModeAppliedAppPrompt": "آیا مایل هستید اکنون آن را مشاهده کنید؟",
-    "defaultModeAppliedGraphBody": "این ورک‌فلو از این پس به طور پیش‌فرض به صورت گراف node باز خواهد شد.",
-    "defaultModeAppliedGraphPrompt": "آیا همچنان مایل به مشاهده اپلیکیشن هستید؟",
-    "defaultModeAppliedTitle": "با موفقیت تنظیم شد",
-    "defaultView": "تنظیم نمای پیش‌فرض",
-    "defaultViewDescription": "انتخاب نحوه باز شدن",
     "defaultViewLabel": "به طور پیش‌فرض، این گردش‌کار به صورت زیر باز می‌شود:",
-    "defaultViewTitle": "تنظیم نمای پیش‌فرض برای این گردش‌کار",
     "emptyWorkflowPrompt": "آیا می‌خواهید با یک قالب شروع کنید؟",
     "emptyWorkflowTitle": "این ورک‌فلو هیچ node ندارد",
-    "exitToWorkflow": "بازگشت به workflow",
+    "filename": "نام فایل",
     "inputs": "ورودی‌ها",
     "inputsDescription": "انتخاب ورودی‌ها",
     "label": "سازنده اپلیکیشن",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "به طور پیش‌فرض به صورت گراف node باز می‌شود",
     "outputs": "خروجی‌ها",
     "outputsDescription": "انتخاب خروجی‌ها",
+    "saveAs": "ذخیره به عنوان",
     "switchToOutputs": "رفتن به خروجی‌ها",
     "viewApp": "مشاهده اپلیکیشن"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ بارگذاری کاور",
     "uploadProfilePicture": "+ بارگذاری تصویر پروفایل",
     "uploadWorkflowButton": "بارگذاری جریان‌کار من",
+    "usernameError": "۳ تا ۴۲ کاراکتر حرفی یا عددی کوچک و خط تیره، باید با حرف یا عدد شروع و پایان یابد",
     "usernameLabel": "نام کاربری شما (الزامی)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "اطلاعات تکمیلی",
     "back": "بازگشت",
     "createProfileCta": "ساخت پروفایل",
     "createProfileToPublish": "برای انتشار در ComfyHub یک پروفایل بسازید",
     "exampleImage": "تصویر نمونه {index}",
+    "exampleImagePosition": "تصویر نمونه {index} از {total}",
     "examplesDescription": "تا {total} تصویر نمونه اضافی اضافه کنید",
     "maxExamples": "شما می‌توانید تا {max} نمونه انتخاب کنید",
     "next": "بعدی",
     "publishButton": "انتشار در ComfyHub",
+    "publishFailedDescription": "در هنگام انتشار گردش‌کار شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
+    "publishFailedTitle": "انتشار ناموفق بود",
+    "removeExampleImage": "حذف تصویر نمونه",
     "selectAThumbnail": "یک تصویر بندانگشتی انتخاب کنید",
+    "shareAs": "اشتراک‌گذاری به عنوان",
     "showLessTags": "نمایش کمتر...",
     "showMoreTags": "نمایش بیشتر...",
     "stepDescribe": "شرح جریان‌کار خود را وارد کنید",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "پیش‌نمایش بندانگشتی",
     "thumbnailVideo": "ویدیو",
     "title": "انتشار در ComfyHub",
+    "unsavedDescription": "شما باید گردش‌کار خود را قبل از انتشار در ComfyHub ذخیره کنید. اکنون ذخیره کنید تا ادامه دهید.",
     "uploadAnImage": "برای انتخاب کلیک کنید یا تصویر را بکشید",
     "uploadComparison": "بارگذاری قبل و بعد",
     "uploadComparisonAfterPrompt": "بعد",
@@ -606,13 +617,7 @@
     "workflowDescription": "توضیحات جریان‌کار",
     "workflowDescriptionPlaceholder": "چه چیزی جریان‌کار شما را هیجان‌انگیز و خاص می‌کند؟ مشخص توضیح دهید تا کاربران بدانند چه انتظاری داشته باشند.",
     "workflowName": "نام جریان‌کار",
-    "workflowNamePlaceholder": "نکته: یک نام توصیفی وارد کنید که به راحتی قابل جستجو باشد",
-    "workflowType": "نوع جریان‌کار",
-    "workflowTypeEditing": "ویرایش",
-    "workflowTypeImageGeneration": "تولید تصویر",
-    "workflowTypePlaceholder": "نوع را انتخاب کنید",
-    "workflowTypeUpscaling": "افزایش کیفیت",
-    "workflowTypeVideoGeneration": "تولید ویدیو"
+    "workflowNamePlaceholder": "نکته: یک نام توصیفی وارد کنید که به راحتی قابل جستجو باشد"
   },
   "commands": {
     "clear": "پاک‌سازی workflow",
@@ -896,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
-    "seeErrors": "مشاهده خطاها"
+    "missingMedia": "برخی از نودها ورودی‌های مورد نیاز را ندارند",
+    "missingModels": "{count} مدل مورد نیاز مفقود است | {count} مدل مورد نیاز مفقود هستند",
+    "missingNodes": "برخی از نودها مفقود هستند و باید نصب شوند",
+    "seeErrors": "مشاهده خطاها",
+    "showMissingMedia": "نمایش ورودی‌های مفقود",
+    "showMissingModels": "نمایش مدل‌های مفقود",
+    "showMissingNodes": "نمایش نودهای مفقود",
+    "showSwapNodes": "نمایش نودهای قابل جایگزینی",
+    "swapNodes": "برخی از نودها را می‌توان با گزینه‌های جایگزین تعویض کرد"
   },
   "essentials": {
     "batchImage": "پردازش دسته‌ای تصویر",
@@ -2245,6 +2258,7 @@
     "dataset": "داده‌نما",
     "debug": "اشکال‌زدایی",
     "deprecated": "منسوخ",
+    "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
     "flux": "flux",
     "gligen": "gligen",
@@ -3238,6 +3252,7 @@
       "termsAgreement": "با ادامه، شما با {terms} و {privacy} Comfy Org موافقت می‌کنید.",
       "totalDueToday": "مبلغ قابل پرداخت امروز"
     },
+    "refreshCredits": "به‌روزرسانی اعتبارها",
     "renewsDate": "تمدید در {date}",
     "required": {
       "pollingFailed": "فعال‌سازی اشتراک ناموفق بود",

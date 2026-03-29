@@ -392,6 +392,11 @@ export class NodeReference {
     await this.comfyPage.clipboard.copy()
     await this.comfyPage.nextFrame()
   }
+  async delete(): Promise<void> {
+    await this.click('title')
+    await this.comfyPage.page.keyboard.press('Delete')
+    await this.comfyPage.nextFrame()
+  }
   async connectWidget(
     originSlotIndex: number,
     targetNode: NodeReference,

@@ -2190,6 +2190,10 @@
       "image": {
         "name": "الصورة"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "ما إذا كان سيتم تمديد الاقتصاص ليتناسب مع حجم الإخراج، أو إضافة حواف سوداء للحفاظ على نسبة العرض إلى الارتفاع."
+      },
       "output_height": {
         "name": "ارتفاع الناتج",
         "tooltip": "الارتفاع الذي يتم تغيير حجم كل قص إليه."
@@ -2309,6 +2313,23 @@
     "display_name": "تعطيل الضجيج",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "رسم مربعات الإحاطة",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "تطبيق مظللات GLSL ES على الصور. المتغير u_resolution (vec2) متوفر دائماً.",
     "display_name": "مظلل GLSL",
     "inputs": {
+      "bools": {
+        "name": "القيم المنطقية",
+        "tooltip": "القيم المنطقية متوفرة كـ u_bool0-9 (bool) في كود الشادر"
+      },
+      "curves": {
+        "name": "المنحنيات",
+        "tooltip": "المنحنيات متوفرة كـ u_curve0-3 (sampler2D, 1D LUT) في كود الشادر. قم بأخذ العينة باستخدام texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "القيم العشرية متوفرة كـ u_float0-4 في كود المظلل"
@@ -12218,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "اكتشاف RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "تصفية الاكتشافات حسب الفئة. اختر 'all' لتعطيل التصفية."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "الحد الأقصى لعدد الاكتشافات التي سيتم إرجاعها لكل صورة. بالترتيب التنازلي حسب درجة الثقة."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "قص عشوائي للصور",
     "inputs": {
@@ -15913,6 +15970,9 @@
       "sampling_mode_min_p": {
         "name": "أقل قيمة p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "عقوبة التكرار"
       },
@@ -15927,6 +15987,10 @@
       },
       "sampling_mode_top_p": {
         "name": "أعلى p"
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
       }
     },
     "outputs": {
@@ -15957,6 +16021,9 @@
       "sampling_mode_min_p": {
         "name": "أدنى قيمة p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "عقوبة التكرار"
       },
@@ -15971,6 +16038,10 @@
       },
       "sampling_mode_top_p": {
         "name": "أعلى p"
+      },
+      "thinking": {
+        "name": "التفكير",
+        "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
       }
     },
     "outputs": {
@@ -16239,6 +16310,10 @@
       "positive": {
         "name": "إيجابي",
         "tooltip": "التكييف الإيجابي المستخدم في التدريب."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "عند استخدام نوع التدريب 'none' والتدريب على نموذج كمي، يتم تنفيذ عملية الرجوع للخلف باستخدام ضرب المصفوفات الكمي عند التفعيل."
       },
       "rank": {
         "name": "الرتبة",

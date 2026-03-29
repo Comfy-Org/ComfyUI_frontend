@@ -347,9 +347,19 @@
     "share": "分享",
     "workflowActions": "工作流程操作"
   },
+  "builderFooter": {
+    "opensAsApp": "以 {mode} 模式開啟",
+    "opensAsGraph": "以 {mode} 節點圖開啟"
+  },
   "builderMenu": {
     "enterAppMode": "進入應用模式",
     "exitAppBuilder": "離開應用程式建構器"
+  },
+  "builderSave": {
+    "successBody": "現在要檢視嗎？",
+    "successBodyApp": "此工作流程將預設以應用程式模式開啟。\n\n現在要檢視嗎？",
+    "successBodyGraph": "此工作流程將以節點圖方式開啟。",
+    "successTitle": "儲存成功"
   },
   "builderToolbar": {
     "app": "應用",
@@ -359,18 +369,10 @@
     "connectOutput": "連接輸出",
     "connectOutputBody1": "您的應用必須至少連接一個輸出才能儲存。",
     "connectOutputBody2": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
-    "defaultModeAppliedAppBody": "此工作流程將從現在起預設以應用程式模式開啟。",
-    "defaultModeAppliedAppPrompt": "您想現在查看嗎？",
-    "defaultModeAppliedGraphBody": "此工作流程將從現在起預設以節點圖形模式開啟。",
-    "defaultModeAppliedGraphPrompt": "您還想查看應用程式嗎？",
-    "defaultModeAppliedTitle": "設定成功",
-    "defaultView": "設定預設檢視",
-    "defaultViewDescription": "選擇開啟方式",
     "defaultViewLabel": "預設情況下，此工作流程將以以下方式開啟：",
-    "defaultViewTitle": "設定此工作流程的預設檢視",
     "emptyWorkflowPrompt": "您想從範本開始嗎？",
     "emptyWorkflowTitle": "此工作流程沒有節點",
-    "exitToWorkflow": "返回工作流程",
+    "filename": "檔案名稱",
     "inputs": "輸入",
     "inputsDescription": "選擇輸入",
     "label": "應用建立器",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "預設以節點圖開啟",
     "outputs": "輸出",
     "outputsDescription": "選擇輸出",
+    "saveAs": "另存新檔",
     "switchToOutputs": "切換到輸出",
     "viewApp": "查看應用程式"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ 上傳封面",
     "uploadProfilePicture": "+ 上傳大頭貼",
     "uploadWorkflowButton": "上傳我的工作流程",
+    "usernameError": "3–42 個小寫英數字或連字號，且必須以字母或數字開頭與結尾",
     "usernameLabel": "你的用戶名稱（必填）",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "其他資訊",
     "back": "返回",
     "createProfileCta": "建立個人檔案",
     "createProfileToPublish": "建立個人檔案以發佈到 ComfyHub",
     "exampleImage": "範例圖片 {index}",
+    "exampleImagePosition": "範例圖片 {index} / {total}",
     "examplesDescription": "最多可新增 {total} 張額外範例圖片",
     "maxExamples": "最多可選擇 {max} 個範例",
     "next": "下一步",
     "publishButton": "發佈到 ComfyHub",
+    "publishFailedDescription": "發佈您的工作流程時發生錯誤。請再試一次。",
+    "publishFailedTitle": "發佈失敗",
+    "removeExampleImage": "移除範例圖片",
     "selectAThumbnail": "選擇縮圖",
+    "shareAs": "分享為",
     "showLessTags": "顯示較少...",
     "showMoreTags": "顯示更多...",
     "stepDescribe": "描述你的工作流程",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "縮圖預覽",
     "thumbnailVideo": "影片",
     "title": "發佈到 ComfyHub",
+    "unsavedDescription": "您必須先儲存您的工作流程，才能發佈到 ComfyHub。請先儲存以繼續。",
     "uploadAnImage": "點擊瀏覽或拖曳圖片",
     "uploadComparison": "上傳前後對比",
     "uploadComparisonAfterPrompt": "後",
@@ -606,13 +617,7 @@
     "workflowDescription": "工作流程描述",
     "workflowDescriptionPlaceholder": "你的工作流程有什麼令人興奮和特別之處？請具體說明，讓大家知道可以期待什麼。",
     "workflowName": "工作流程名稱",
-    "workflowNamePlaceholder": "提示：輸入容易搜尋且具描述性的名稱",
-    "workflowType": "工作流程類型",
-    "workflowTypeEditing": "編輯",
-    "workflowTypeImageGeneration": "影像生成",
-    "workflowTypePlaceholder": "選擇類型",
-    "workflowTypeUpscaling": "升級解析度",
-    "workflowTypeVideoGeneration": "影片生成"
+    "workflowNamePlaceholder": "提示：輸入容易搜尋且具描述性的名稱"
   },
   "commands": {
     "clear": "清除工作流程",
@@ -896,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
-    "seeErrors": "查看錯誤"
+    "missingMedia": "有些節點缺少必要的輸入",
+    "missingModels": "缺少 {count} 個必要模型",
+    "missingNodes": "有些節點缺失，需要安裝",
+    "seeErrors": "查看錯誤",
+    "showMissingMedia": "顯示缺少的輸入",
+    "showMissingModels": "顯示缺少的模型",
+    "showMissingNodes": "顯示缺少的節點",
+    "showSwapNodes": "顯示可替換的節點",
+    "swapNodes": "有些節點可以用其他選項替換"
   },
   "essentials": {
     "batchImage": "批次圖片",
@@ -2245,6 +2258,7 @@
     "dataset": "資料集",
     "debug": "除錯",
     "deprecated": "已棄用",
+    "detection": "偵測",
     "edit_models": "編輯模型",
     "flux": "Flux",
     "gligen": "GLIGEN",
@@ -3226,6 +3240,7 @@
       "termsAgreement": "繼續即表示您同意 Comfy Org 的{terms}與{privacy}。",
       "totalDueToday": "今日應付總額"
     },
+    "refreshCredits": "刷新點數",
     "renewsDate": "將於 {date} 續訂",
     "required": {
       "pollingFailed": "訂閱啟用失敗",

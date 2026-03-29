@@ -2190,6 +2190,10 @@
       "image": {
         "name": "görüntü"
       },
+      "keep_aspect": {
+        "name": "oranı_koru",
+        "tooltip": "Kırpmanın çıktı boyutuna sığması için esnetilip esnetilmeyeceği veya en-boy oranını korumak için siyah piksellerle doldurulup doldurulmayacağı."
+      },
       "output_height": {
         "name": "çıktı_yüksekliği",
         "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
@@ -2309,6 +2313,23 @@
     "display_name": "Gürültüyü Devre Dışı Bırak",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "BBox'ları Çiz",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxlar"
+      },
+      "image": {
+        "name": "görsel"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "çıktı_görseli",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "Görüntülere GLSL ES fragment shader'ları uygula. u_resolution (vec2) her zaman kullanılabilir.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "Boolean değerler, shader kodunda u_bool0-9 (bool) olarak kullanılabilir"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Eğriler, shader kodunda u_curve0-3 (sampler2D, 1D LUT) olarak kullanılabilir. texture(u_curve0, vec2(x, 0.5)).r ile örnekleyin"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Floats shader kodunda u_float0-4 olarak kullanılabilir"
@@ -12218,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Tespit",
+    "inputs": {
+      "class_name": {
+        "name": "sınıf_adı",
+        "tooltip": "Tespitleri sınıfa göre filtrele. Filtrelemeyi devre dışı bırakmak için 'all' olarak ayarlayın."
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "max_detections": {
+        "name": "maksimum_tespit",
+        "tooltip": "Görsel başına döndürülecek en fazla tespit sayısı. Güven puanına göre azalan sırada."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxlar",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Rastgele Kırpılmış Görseller",
     "inputs": {
@@ -15913,6 +15970,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "tekrar_cezası"
       },
@@ -15927,6 +15987,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalış."
       }
     },
     "outputs": {
@@ -15957,6 +16021,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "tekrar_cezası"
       },
@@ -15971,6 +16038,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalış."
       }
     },
     "outputs": {
@@ -16239,6 +16310,10 @@
       "positive": {
         "name": "pozitif",
         "tooltip": "Eğitim için kullanılacak pozitif koşullandırma."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Eğer training_dtype 'none' olarak ayarlanmışsa ve quantized bir modelde eğitim yapılıyorsa, etkinleştirildiğinde backward işlemi quantized matmul ile yapılır."
       },
       "rank": {
         "name": "rütbe",

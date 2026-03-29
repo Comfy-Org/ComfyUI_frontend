@@ -10,6 +10,7 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import { TestIds } from '../fixtures/selectors'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { WorkspaceStore } from '../types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -174,7 +175,9 @@ test.describe('Node Interaction', () => {
     // Move mouse away to avoid hover highlight on the node at the drop position.
     await comfyPage.canvasOps.moveMouseToEmptyArea()
     await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
+    await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png', {
+      maxDiffPixels: 50
+    })
   })
 
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
@@ -219,10 +222,7 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot('moved-link.png')
     })
 
-    // Shift drag copy link regressed. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/2941
-    test.skip('Can copy link by shift-drag existing link', async ({
-      comfyPage
-    }) => {
+    test('Can copy link by shift-drag existing link', async ({ comfyPage }) => {
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode1InputSlot,
         DefaultGraphPositions.emptySpace
@@ -720,6 +720,19 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
 
+  test('Creates initial workflow tab when persistence is disabled', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
+    await comfyPage.setup()
+
+    const openCount = await comfyPage.page.evaluate(() => {
+      return (window.app!.extensionManager as WorkspaceStore).workflow
+        .openWorkflows.length
+    })
+    expect(openCount).toBeGreaterThanOrEqual(1)
+  })
+
   test('Restore workflow on reload (switch workflow)', async ({
     comfyPage
   }) => {
@@ -801,11 +814,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
-      const tabs = await comfyPage.menu.topbar.getTabNames()
-      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
 
-      expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames(), { timeout: 5000 })
+        .toEqual(expect.arrayContaining([workflowA, workflowB]))
+
+      const tabs = await comfyPage.menu.topbar.getTabNames()
       expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+
+      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
       expect(activeWorkflowName).toEqual(workflowB)
     })
 

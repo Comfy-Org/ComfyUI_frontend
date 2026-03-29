@@ -13,7 +13,7 @@ import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
 import { useCommandStore } from './commandStore'
 import { useExecutionErrorStore } from './executionErrorStore'
-import { useFirebaseAuthStore } from './firebaseAuthStore'
+import { useAuthStore } from './authStore'
 import { useQueueSettingsStore } from './queueStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
@@ -48,7 +48,7 @@ function workspaceStoreSetup() {
   const dialog = useDialogService()
   const bottomPanel = useBottomPanelStore()
 
-  const authStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
   const apiKeyStore = useApiKeyAuthStore()
 
   const firebaseUser = computed(() => authStore.currentUser)

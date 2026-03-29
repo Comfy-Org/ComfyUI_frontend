@@ -153,7 +153,7 @@
                       </span>
                       <span
                         v-if="uiConfig.showRoleBadge"
-                        class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                        class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                       >
                         {{ $t('workspaceSwitcher.roleOwner') }}
                       </span>
@@ -202,7 +202,7 @@
                       </span>
                       <span
                         v-if="uiConfig.showRoleBadge"
-                        class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                        class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                       >
                         {{ getRoleBadgeLabel(member.role) }}
                       </span>

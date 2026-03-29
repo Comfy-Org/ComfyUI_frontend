@@ -50,12 +50,12 @@ vi.mock('@/stores/userStore', () => ({
   }))
 }))
 
-const mockIsFirebaseInitialized = ref(false)
-const mockIsFirebaseAuthenticated = ref(false)
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({
-    isInitialized: mockIsFirebaseInitialized,
-    isAuthenticated: mockIsFirebaseAuthenticated
+const mockIsAuthInitialized = ref(false)
+const mockIsAuthAuthenticated = ref(false)
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({
+    isInitialized: mockIsAuthInitialized,
+    isAuthenticated: mockIsAuthAuthenticated
   }))
 }))
 
@@ -67,8 +67,8 @@ vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 describe('bootstrapStore', () => {
   beforeEach(() => {
     mockIsSettingsReady.value = false
-    mockIsFirebaseInitialized.value = false
-    mockIsFirebaseAuthenticated.value = false
+    mockIsAuthInitialized.value = false
+    mockIsAuthAuthenticated.value = false
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -107,14 +107,14 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(false)
 
       // Firebase initialized but user not yet authenticated
-      mockIsFirebaseInitialized.value = true
+      mockIsAuthInitialized.value = true
       await nextTick()
 
       expect(store.isI18nReady).toBe(false)
       expect(settingStore.isReady).toBe(false)
 
       // User authenticates (e.g. signs in on login page)
-      mockIsFirebaseAuthenticated.value = true
+      mockIsAuthAuthenticated.value = true
       await bootstrapPromise
 
       await vi.waitFor(() => {

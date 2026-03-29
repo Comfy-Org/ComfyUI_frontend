@@ -5,7 +5,7 @@ import type {
   Page
 } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 
 import { TestIds } from './selectors'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
@@ -19,10 +19,12 @@ import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
 import {
+  AssetsSidebarTab,
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
+import { AssetsHelper } from './helpers/AssetsHelper'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
 import { QueueHelper } from './helpers/QueueHelper'
@@ -40,7 +42,7 @@ import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
 import type { WorkspaceStore } from '../types/globals'
 
-dotenv.config()
+dotenvConfig()
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -55,6 +57,7 @@ class ComfyPropertiesPanel {
 }
 
 class ComfyMenu {
+  private _assetsTab: AssetsSidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
@@ -76,6 +79,11 @@ class ComfyMenu {
   get nodeLibraryTab() {
     this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
     return this._nodeLibraryTab
+  }
+
+  get assetsTab() {
+    this._assetsTab ??= new AssetsSidebarTab(this.page)
+    return this._assetsTab
   }
 
   get workflowsTab() {
@@ -192,6 +200,7 @@ export class ComfyPage {
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
+  public readonly assets: AssetsHelper
   public readonly queue: QueueHelper
 
   /** Worker index to test user ID */
@@ -238,6 +247,7 @@ export class ComfyPage {
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
+    this.assets = new AssetsHelper(page)
     this.queue = new QueueHelper(page)
   }
 
@@ -452,12 +462,13 @@ export const comfyPageFixture = base.extend<{
 
     await comfyPage.setup()
 
-    const isPerf = testInfo.tags.includes('@perf')
-    if (isPerf) await comfyPage.perf.init()
+    const needsPerf =
+      testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
+    if (needsPerf) await comfyPage.perf.init()
 
     await use(comfyPage)
 
-    if (isPerf) await comfyPage.perf.dispose()
+    if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
