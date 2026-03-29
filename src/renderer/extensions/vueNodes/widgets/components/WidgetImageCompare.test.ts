@@ -58,7 +58,7 @@ describe('WidgetImageCompare Display', () => {
       expect(images[1].attributes('src')).toBe('https://example.com/before.jpg')
 
       images.forEach((img) => {
-        expect(img.classes()).toContain('object-cover')
+        expect(img.classes()).toContain('object-contain')
       })
     })
   })
