@@ -64,7 +64,15 @@ export async function runRecord(): Promise<void> {
 
   const s = spinner()
   s.start('Installing dependencies...')
-  spawnSync('pnpm', ['install'], { cwd: projectRoot, stdio: 'pipe' })
+  const install = spawnSync('pnpm', ['install'], {
+    cwd: projectRoot,
+    stdio: 'pipe'
+  })
+  if (install.status !== 0) {
+    s.stop('Dependency installation failed')
+    fail('pnpm install failed', install.stderr?.toString() ?? '')
+    process.exit(1)
+  }
   s.stop('Dependencies installed')
   pass('Project ready', projectRoot)
 
@@ -228,7 +236,13 @@ export async function runRecord(): Promise<void> {
       })
     } else {
       const fileContents = readFileSync(outputPath, 'utf-8')
-      await copyToClipboard(fileContents)
+      const copied = await copyToClipboard(fileContents)
+      if (!copied.ok) {
+        info([
+          'Could not copy to clipboard. File contents are at:',
+          pc.cyan(outputPath)
+        ])
+      }
       const relativePath = `browser_tests/tests/${slug}.spec.ts`
       printManualInstructions({
         testFilePath: outputPath,
