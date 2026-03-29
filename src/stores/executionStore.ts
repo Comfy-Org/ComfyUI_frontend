@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -644,6 +644,28 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activePath) return true
     return jobPath === activePath
   }
+
+  // Rehydrate the "current view" progress when the user switches workflow tabs
+  // so stale progress from the previous tab is not displayed.
+  watch(
+    () => workflowStore.activeWorkflow?.path,
+    (newPath) => {
+      if (!newPath) {
+        nodeProgressStates.value = {}
+        return
+      }
+      // Find the most recent job that belongs to the new active workflow
+      const jobEntries = Object.entries(nodeProgressStatesByJob.value)
+      for (let i = jobEntries.length - 1; i >= 0; i--) {
+        const [jobId, states] = jobEntries[i]
+        if (jobIdToSessionWorkflowPath.value.get(jobId) === newPath) {
+          nodeProgressStates.value = states
+          return
+        }
+      }
+      nodeProgressStates.value = {}
+    }
+  )
 
   return {
     isIdle,
