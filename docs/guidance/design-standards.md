@@ -20,15 +20,15 @@ The Figma file is the single source of truth. Always fetch it live — do not re
 
 ### Key Sections
 
-| Section | Node ID | When to consult |
-|---|---|---|
-| Hover States | `1-2` | Adding/modifying interactive elements (buttons, inputs, links, nav items) |
-| Click Targets | `4-243` | Adding clickable elements, especially small ones (icons, handles, connectors) |
-| Affordances | `15-2202` | Any interactive element — ensuring visual feedback on interaction |
-| Feedback | `15-2334` | User actions that need confirmation, success/error states |
-| Slips and How to Fix | `15-2337` | Error prevention, undo patterns, destructive actions |
-| Design Pillars | `15-2340` | New features, architectural UI decisions |
-| The User | `16-2348` | User flows, onboarding, accessibility |
+| Section              | Node ID   | When to consult                                                               |
+| -------------------- | --------- | ----------------------------------------------------------------------------- |
+| Hover States         | `1-2`     | Adding/modifying interactive elements (buttons, inputs, links, nav items)     |
+| Click Targets        | `4-243`   | Adding clickable elements, especially small ones (icons, handles, connectors) |
+| Affordances          | `15-2202` | Any interactive element — ensuring visual feedback on interaction             |
+| Feedback             | `15-2334` | User actions that need confirmation, success/error states                     |
+| Slips and How to Fix | `15-2337` | Error prevention, undo patterns, destructive actions                          |
+| Design Pillars       | `15-2340` | New features, architectural UI decisions                                      |
+| The User             | `16-2348` | User flows, onboarding, accessibility                                         |
 
 Fetch the specific section relevant to your task:
 
@@ -40,11 +40,11 @@ get_figma_data({ fileKey: "QreIv5htUaSICNuO2VBHw0", nodeId: "<node-id>", depth: 
 
 The Figma file contains component specifications. When implementing these components, fetch details to match the design:
 
-| Component | Component Set ID |
-|---|---|
-| Button/Default | `4:314` |
-| Search | `4:2366` |
-| Base Node Example | `4:4739` |
+| Component         | Component Set ID |
+| ----------------- | ---------------- |
+| Button/Default    | `4:314`          |
+| Search            | `4:2366`         |
+| Base Node Example | `4:4739`         |
 
 ## Integration with Codebase
 
