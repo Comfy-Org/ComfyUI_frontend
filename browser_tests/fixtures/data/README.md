@@ -1,8 +1,8 @@
 # Mock Data Fixtures
 
 Deterministic mock data for browser (Playwright) tests. Each fixture
-exports typed objects that conform to the Zod schemas defined in
-`src/schemas/`.
+exports typed objects that conform to generated types from
+`packages/ingest-types` or Zod schemas in `src/schemas/`.
 
 ## Usage with `page.route()`
 
@@ -33,7 +33,8 @@ await page.route('**/api/system_stats', (route) =>
 
 ## Adding new fixtures
 
-1. Locate the Zod schema in `src/schemas/` for the endpoint you need.
+1. Locate the generated type in `packages/ingest-types` or Zod schema
+   in `src/schemas/` for the endpoint you need.
 2. Create a new `.ts` file here that imports and satisfies the
    corresponding TypeScript type.
 3. Keep values realistic but stable — avoid dates, random IDs, or

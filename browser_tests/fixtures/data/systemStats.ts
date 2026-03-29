@@ -1,6 +1,6 @@
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStatsResponse } from '@comfyorg/ingest-types'
 
-export const mockSystemStats: SystemStats = {
+export const mockSystemStats: SystemStatsResponse = {
   system: {
     os: 'posix',
     python_version: '3.11.9 (main, Apr  2 2024, 08:25:04) [GCC 13.2.0]',
@@ -15,11 +15,8 @@ export const mockSystemStats: SystemStats = {
     {
       name: 'NVIDIA GeForce RTX 4090',
       type: 'cuda',
-      index: 0,
       vram_total: 25769803776,
-      vram_free: 23622320128,
-      torch_vram_total: 25769803776,
-      torch_vram_free: 24696061952
+      vram_free: 23622320128
     }
   ]
 }

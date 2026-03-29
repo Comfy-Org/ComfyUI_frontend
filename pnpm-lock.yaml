@@ -410,6 +410,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:packages/ingest-types
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
