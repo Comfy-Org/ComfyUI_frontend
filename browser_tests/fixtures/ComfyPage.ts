@@ -38,7 +38,6 @@ import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
 import { assetPath } from './utils/paths'
 import type { WorkspaceStore } from '../types/globals'
-import type { NodeReference } from './utils/litegraphUtils'
 
 dotenvConfig()
 
