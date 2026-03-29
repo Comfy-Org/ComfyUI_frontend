@@ -1,52 +1,31 @@
-import type { Locator, Page } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
 
 test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
 
     // Expand the queue overlay so the JobHistoryActionsMenu is visible
-    await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
+    await comfyPage.queuePanel.overlayToggle.click()
   })
-
-  async function openClearHistoryDialog(page: Page) {
-    // Open the more options popover
-    const moreButton = page.getByLabel(/More options/i).first()
-    await moreButton.click()
-
-    // Click "Clear history" action
-    const clearHistoryAction = page.getByTestId(
-      TestIds.queue.clearHistoryAction
-    )
-    await expect(clearHistoryAction).toBeVisible()
-    await clearHistoryAction.click()
-  }
-
-  function getDialog(page: Page): Locator {
-    return page.getByRole('dialog')
-  }
 
   test('Dialog opens from queue panel history actions menu', async ({
     comfyPage
   }) => {
-    await openClearHistoryDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
 
-    const dialog = getDialog(comfyPage.page)
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
   })
 
   test('Dialog shows confirmation message with title, description, and assets note', async ({
     comfyPage
   }) => {
-    await openClearHistoryDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
 
-    const dialog = getDialog(comfyPage.page)
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     // Verify title
@@ -72,9 +51,9 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
   test('Cancel button closes dialog without clearing history', async ({
     comfyPage
   }) => {
-    await openClearHistoryDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
 
-    const dialog = getDialog(comfyPage.page)
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     // Intercept the clear API call — it should NOT be called
@@ -101,9 +80,9 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
   test('Close (X) button closes dialog without clearing history', async ({
     comfyPage
   }) => {
-    await openClearHistoryDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
 
-    const dialog = getDialog(comfyPage.page)
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     // Intercept the clear API call — it should NOT be called
@@ -130,9 +109,9 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
   test('Confirm clears queue history and closes dialog', async ({
     comfyPage
   }) => {
-    await openClearHistoryDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
 
-    const dialog = getDialog(comfyPage.page)
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     // Intercept the clear API call to verify it is made
@@ -153,14 +132,14 @@ test.describe('QueueClearHistoryDialog', { tag: '@ui' }, () => {
 
   test('Dialog state resets after close and reopen', async ({ comfyPage }) => {
     // Open and cancel
-    await openClearHistoryDialog(comfyPage.page)
-    const dialog = getDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).not.toBeVisible()
 
     // Reopen — dialog should be fresh (Clear button enabled, not stuck)
-    await openClearHistoryDialog(comfyPage.page)
+    await comfyPage.queuePanel.openClearHistoryDialog()
     await expect(dialog).toBeVisible()
 
     const clearButton = dialog.getByRole('button', { name: 'Clear' })
