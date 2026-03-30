@@ -1,9 +1,6 @@
 import { expect } from '@playwright/test'
 
-import {
-  comfyPageFixture as test,
-  comfyExpect
-} from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test, comfyExpect } from '../../fixtures/ComfyPage'
 import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
 import { TestIds } from '../../fixtures/selectors'
 
