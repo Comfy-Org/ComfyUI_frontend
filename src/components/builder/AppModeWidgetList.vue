@@ -170,7 +170,8 @@ defineExpose({ handleDragDrop })
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
         : undefined
     "
-    data-testid="builder-widget-item"
+    :data-testid="builderMode ? 'builder-widget-item' : 'app-mode-widget-item'"
+    :data-widget-key="key"
   >
     <div
       :class="
