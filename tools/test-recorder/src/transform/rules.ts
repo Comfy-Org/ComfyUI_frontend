@@ -12,7 +12,7 @@ export const transformRules: TransformRule[] = [
     name: 'replace-test-import',
     description: 'Use comfyPageFixture instead of @playwright/test',
     pattern:
-      /import\s*\{\s*test\s*,?\s*expect\s*\}\s*from\s*['"]@playwright\/test['"]/,
+      /import\s*\{\s*(?:test\s*,?\s*expect|expect\s*,?\s*test)\s*\}\s*from\s*['"]@playwright\/test['"]/,
     replacement: `import {\n  comfyPageFixture as test,\n  comfyExpect as expect\n} from '../fixtures/ComfyPage'`,
     category: 'import'
   },
@@ -35,7 +35,7 @@ export const transformRules: TransformRule[] = [
   {
     name: 'replace-page-destructure',
     description: 'Use comfyPage fixture instead of page',
-    pattern: /async\s*\(\s*\{\s*page\s*\}\s*\)/g,
+    pattern: /async\s*\(\s*\{\s*page\s*(?:,\s*\w+\s*)*\}\s*\)/g,
     replacement: 'async ({ comfyPage })',
     category: 'fixture'
   },
@@ -67,7 +67,7 @@ export const transformRules: TransformRule[] = [
   {
     name: 'replace-bare-page',
     description: 'Replace bare page references with comfyPage.page',
-    pattern: /(?<!\w)page\./g,
+    pattern: /(?<![\w.])page\./g,
     replacement: 'comfyPage.page.',
     category: 'locator'
   },
@@ -107,7 +107,7 @@ export const structuralTransforms: StructuralTransform[] = [
       )
 
       // Find the test() call and wrap it
-      const testMatch = code.match(/^(import[\s\S]*?\n\n?)(test\s*\([\s\S]*)$/m)
+      const testMatch = code.match(/^(import[\s\S]*?\n\n?)(test(?:\.(?:only|skip|fixme))?\s*\([\s\S]*)$/m)
       if (!testMatch) return code
 
       const imports = testMatch[1]
@@ -118,7 +118,7 @@ export const structuralTransforms: StructuralTransform[] = [
     await comfyPage.canvasOps.resetView()
   })
 
-  ${testBody.replace(/^/gm, '  ').trimStart()}
+  ${testBody.replace(/^(?=.)/gm, '  ').trimStart()}
 })\n`
     }
   }
