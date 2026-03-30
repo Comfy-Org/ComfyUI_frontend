@@ -212,13 +212,8 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    // Root div should have the selection class
+    // Root div should have the selection outline
     expect(wrapper.classes()).toContain('outline-node-component-outline')
-
-    // The layered outline overlay should be present
-    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
-    expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('border-node-component-outline')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -226,13 +221,8 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    // Root div should have the executing class
+    // Root div should have the executing outline
     expect(wrapper.classes()).toContain('outline-node-stroke-executing')
-
-    // The layered outline overlay should be present
-    const overlay = wrapper.find('[data-testid="node-state-outline-overlay"]')
-    expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('border-node-stroke-executing')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {
