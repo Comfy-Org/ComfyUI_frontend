@@ -39,7 +39,7 @@
           so the container's intrinsic width equals the wider label.
           height:0 + overflow:hidden keeps them invisible without affecting height.
         -->
-        <div class="max-h-0 overflow-y-hidden" aria-hidden>
+        <div class="max-h-0 overflow-y-hidden" aria-hidden="true">
           <div class="px-4 py-2 text-sm">{{ t('g.save') }}</div>
           <div class="px-4 py-2 text-sm">{{ t('builderToolbar.saveAs') }}</div>
         </div>
