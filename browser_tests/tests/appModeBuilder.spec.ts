@@ -6,12 +6,7 @@ import { TestIds } from '../fixtures/selectors'
 
 test.describe('App mode builder selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
+    await comfyPage.featureFlags.setFlag('linear_toggle_enabled', true)
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
@@ -28,7 +23,7 @@ test.describe('App mode builder selection', () => {
     await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
     await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.goToInputs()
+    await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
 
     const prompts = await comfyPage.vueNodes
@@ -44,7 +39,7 @@ test.describe('App mode builder selection', () => {
   test('Can drag and drop inputs', async ({ comfyPage }) => {
     const items = comfyPage.page.getByTestId(TestIds.builder.ioItem)
     await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.goToInputs()
+    await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
 
     const ksampler = await comfyPage.vueNodes.getNodeLocator('3')
@@ -59,7 +54,7 @@ test.describe('App mode builder selection', () => {
   })
   test('Can select outputs', async ({ comfyPage }) => {
     await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.goToOutputs()
+    await comfyPage.appMode.steps.goToOutputs()
 
     await comfyPage.nodeOps
       .getNodeRefById('9')
@@ -73,7 +68,7 @@ test.describe('App mode builder selection', () => {
   test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
     const items = comfyPage.page.getByTestId(TestIds.builder.ioItem)
     await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.goToInputs()
+    await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
 
     await comfyPage.vueNodes
@@ -84,7 +79,7 @@ test.describe('App mode builder selection', () => {
 
     await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
     await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.goToInputs()
+    await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
     await comfyPage.vueNodes
       .getNodeLocator('1')
@@ -107,7 +102,7 @@ test.describe('App mode builder selection', () => {
     await comfyPage.page.keyboard.press('Escape')
 
     await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.goToInputs()
+    await comfyPage.appMode.steps.goToInputs()
 
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
     await expect(comfyPage.searchBox.input).toHaveCount(0)
