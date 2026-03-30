@@ -27,6 +27,14 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
+interface VueBoundsOverride {
+  footerHeight?: number
+  collapsedWidth?: number
+  collapsedHeight?: number
+}
+
+export const vueBoundsOverrides = new Map<NodeId, VueBoundsOverride>()
+
 /**
  * Generic update item for element bounds tracking
  */
@@ -139,25 +147,43 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Skip collapsed nodes — their DOM height is just the header, and writing
-    // that back to the layout store would overwrite the stored expanded size.
+    // Collapsed nodes: don't update layoutStore (preserve expanded size),
+    // but store collapsed dimensions in vueBoundsOverrides for onBounding.
     if (elementType === 'node' && element.dataset.collapsed != null) {
       if (nodeId) {
+        const body = element.querySelector(
+          '[data-testid^="node-inner-wrapper"]'
+        )
+        vueBoundsOverrides.set(nodeId, {
+          ...vueBoundsOverrides.get(nodeId),
+          collapsedWidth:
+            body instanceof HTMLElement
+              ? body.offsetWidth
+              : element.offsetWidth,
+          collapsedHeight: element.offsetHeight
+        })
         nodesNeedingSlotResync.add(nodeId)
       }
       continue
     }
 
-    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
-    // Border box is the border included FULL wxh DOM value.
-    const borderBox = Array.isArray(entry.borderBoxSize)
-      ? entry.borderBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
-        }
-    const width = Math.max(0, borderBox.inlineSize)
-    const height = Math.max(0, borderBox.blockSize)
+    // Measure body (node-inner-wrapper) to exclude footer height from
+    // node.size, preventing size accumulation on Vue/legacy mode switching.
+    const bodyEl = element.querySelector('[data-testid^="node-inner-wrapper"]')
+    const measuredEl = bodyEl instanceof HTMLElement ? bodyEl : element
+    const width = Math.max(0, measuredEl.offsetWidth)
+    const height = Math.max(0, measuredEl.offsetHeight)
+    const fullHeight = Math.max(0, element.offsetHeight)
+
+    // Store footer height in vueBoundsOverrides for onBounding
+    if (nodeId) {
+      const footerExtra = fullHeight - measuredEl.offsetHeight
+      vueBoundsOverrides.set(nodeId, {
+        ...vueBoundsOverrides.get(nodeId),
+        footerHeight: footerExtra > 0 ? footerExtra : 0
+      })
+    }
+
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
       : null
@@ -310,5 +336,9 @@ export function useVueElementTracking(
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
     resizeObserver.unobserve(element)
+
+    if (trackingType === 'node' && appIdentifier) {
+      vueBoundsOverrides.delete(appIdentifier as NodeId)
+    }
   })
 }

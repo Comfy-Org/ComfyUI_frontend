@@ -55,8 +55,7 @@
           hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
             ? 'border-node-component-outline'
-            : 'border-node-stroke-executing',
-          footerStateOutlineBottomClass
+            : 'border-node-stroke-executing'
         )
       "
     />
@@ -66,8 +65,7 @@
         cn(
           'pointer-events-none absolute border border-solid border-component-node-border',
           rootBorderShapeClass,
-          hasAnyError ? '-inset-1' : 'inset-0',
-          footerRootBorderBottomClass
+          hasAnyError ? '-inset-1' : 'inset-0'
         )
       "
     />
@@ -196,7 +194,6 @@
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
-      :is-collapsed="isCollapsed"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="showAdvancedState"
       :header-color="applyLightThemeColor(nodeData?.color)"
@@ -222,8 +219,6 @@
           cn(
             baseResizeHandleClasses,
             handle.positionClasses,
-            (handle.corner === 'SE' || handle.corner === 'SW') &&
-              footerResizeHandleBottomClass,
             handle.cursorClass,
             'group-hover/node:opacity-100'
           )
@@ -261,7 +256,8 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  watch
+  watch,
+  watchEffect
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -271,6 +267,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
+import type { CompassCorners, Rect } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -295,7 +292,10 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  useVueElementTracking,
+  vueBoundsOverrides
+} from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -316,7 +316,6 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 import { isTransparent } from '@/utils/colorUtil'
 
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -566,30 +565,6 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
-const hasFooter = computed(() => {
-  return !!(
-    (hasAnyError.value && showErrorsTabEnabled.value) ||
-    lgraphNode.value?.isSubgraphNode() ||
-    (!lgraphNode.value?.isSubgraphNode() &&
-      (showAdvancedState.value || showAdvancedInputsButton.value))
-  )
-})
-
-// Footer offset computed classes
-
-const footerStateOutlineBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-[35px]' : ''
-)
-
-const footerRootBorderBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-8' : ''
-)
-
-const footerResizeHandleBottomClass = computed(() => {
-  if (!hasFooter.value) return ''
-  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-35px]'
-})
-
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
@@ -781,6 +756,35 @@ const showAdvancedState = customRef((track, trigger) => {
       trigger()
     }
   }
+})
+
+watchEffect((onCleanup) => {
+  const node = lgraphNode.value
+  if (!node) return
+
+  const nodeId = String(nodeData.id)
+  const collapsed = isCollapsed.value
+  const previousOnBounding = node.onBounding
+
+  const wrappedOnBounding = function (this: typeof node, out: Rect) {
+    previousOnBounding?.call(this, out)
+    const overrides = vueBoundsOverrides.get(nodeId)
+    if (!overrides) return
+
+    if (collapsed) {
+      if (overrides.collapsedWidth) out[2] = overrides.collapsedWidth
+      if (overrides.collapsedHeight) out[3] = overrides.collapsedHeight
+    } else if (overrides.footerHeight) {
+      out[3] += overrides.footerHeight
+    }
+  }
+  node.onBounding = wrappedOnBounding
+
+  onCleanup(() => {
+    if (node.onBounding === wrappedOnBounding) {
+      node.onBounding = previousOnBounding
+    }
+  })
 })
 
 const hasVideoInput = computed(() => {
