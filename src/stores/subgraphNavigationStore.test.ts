@@ -216,6 +216,32 @@ describe('useSubgraphNavigationStore', () => {
     expect(navigationStore.navigationStack).toEqual([])
   })
 
+  it('should fall back to the active subgraph id when path lookup fails during navigation updates', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+
+    const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
+
+    app.graph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
+    vi.mocked(findSubgraphPathById).mockReturnValue(null)
+
+    const mockWorkflow = {
+      path: 'test-workflow.json',
+      filename: 'test-workflow.json'
+    } as ComfyWorkflow
+
+    workflowStore.activeWorkflow =
+      mockWorkflow as typeof workflowStore.activeWorkflow
+
+    app.canvas.subgraph = unreachableSubgraph
+    workflowStore.updateActiveGraph()
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([unreachableSubgraph.id])
+    expect(navigationStore.navigationStack).toEqual([unreachableSubgraph])
+  })
+
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()

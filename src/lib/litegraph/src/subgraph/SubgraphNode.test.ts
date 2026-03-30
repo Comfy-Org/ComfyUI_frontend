@@ -10,6 +10,7 @@ import { setActivePinia } from 'pinia'
 
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -985,21 +986,43 @@ describe('SubgraphNode label propagation', () => {
   })
 
   it('should propagate label via renaming-input event', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
 
-    subgraph.addInput('steps', 'number')
-    expect(subgraphNode.inputs[0].label).toBeUndefined()
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'number')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'number')
+    interiorNode.addWidget('number', 'value', 0, () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const originalWidgetName = promotedInput.widget?.name
+    const labelChangedSpy = vi.spyOn(subgraphNode.graph!, 'trigger')
+
+    expect(promotedInput.label).toBeUndefined()
+    expect(promotedInput._widget).toBeDefined()
 
     subgraph.renameInput(subgraph.inputs[0], 'Steps Count')
 
-    expect(subgraphNode.inputs[0].label).toBe('Steps Count')
-    expect(subgraphNode.inputs[0].name).toBe('steps')
+    expect(promotedInput.label).toBe('Steps Count')
+    expect(promotedInput.name).toBe('steps')
+    expect(promotedInput.widget?.name).toBe(originalWidgetName)
+    expect(promotedInput._widget?.label).toBe('Steps Count')
+    expect(subgraphNode.widgets?.[0].label).toBe('Steps Count')
+    expect(labelChangedSpy).toHaveBeenCalledWith('node:slot-label:changed', {
+      nodeId: subgraphNode.id,
+      slotType: NodeSlotType.INPUT
+    })
   })
 
   it('should propagate label via renaming-output event', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
+    const labelChangedSpy = vi.spyOn(subgraphNode.graph!, 'trigger')
 
     subgraph.addOutput('result', 'number')
     expect(subgraphNode.outputs[0].label).toBeUndefined()
@@ -1008,6 +1031,10 @@ describe('SubgraphNode label propagation', () => {
 
     expect(subgraphNode.outputs[0].label).toBe('Final Result')
     expect(subgraphNode.outputs[0].name).toBe('result')
+    expect(labelChangedSpy).toHaveBeenCalledWith('node:slot-label:changed', {
+      nodeId: subgraphNode.id,
+      slotType: NodeSlotType.OUTPUT
+    })
   })
 
   it('should preserve localized_name from configure path', () => {
