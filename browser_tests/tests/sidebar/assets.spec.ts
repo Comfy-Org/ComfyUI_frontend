@@ -524,6 +524,9 @@ test.describe('Assets sidebar - context menu', () => {
     const cardCount = await cards.count()
     expect(cardCount).toBeGreaterThanOrEqual(2)
 
+    // Dismiss any toasts that appeared after asset loading
+    await tab.dismissToasts()
+
     // Multi-select: click first, then Ctrl/Cmd+click second
     await cards.first().click()
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
