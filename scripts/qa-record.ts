@@ -1992,9 +1992,10 @@ async function main() {
               testCode.slice(insertPos)
           }
           // Inject 800ms pauses between actions for human-readable video
+          // Uses comfyPage.page since test code uses comfyPageFixture
           testCode = testCode.replace(
-            /(\n\s*)(await\s+(?:comfyPage|topbar|page|canvas|expect))/g,
-            '$1await page.waitForTimeout(800);\n$1$2'
+            /(\n\s*)(await\s+(?:comfyPage|topbar|firstNode|page|canvas|expect))/g,
+            '$1await comfyPage.page.waitForTimeout(800);\n$1$2'
           )
           writeFileSync(browserTestFile, testCode)
           try {
