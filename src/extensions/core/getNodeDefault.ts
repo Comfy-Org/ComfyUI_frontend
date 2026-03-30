@@ -139,11 +139,13 @@ app.registerExtension({
         override getInputLink(_slot: number): LLink | null {
           const resolved = this._resolveSource()
           if (resolved) {
-            const link = this.graph?.getNodeById(resolved.node.id)
-            if (link) {
-              const outLink = resolved.node.outputs?.[resolved.slot]?.links?.[0]
-              if (outLink != null) return this.graph?.links.get(outLink) ?? null
-            }
+            const inLink = resolved.node.inputs?.[resolved.slot]?.link
+            if (inLink != null)
+              return (
+                this.graph?.links.get(inLink) ??
+                this.graph?._links?.get(inLink) ??
+                null
+              )
           }
           const defaultInput = this.inputs?.[0]
           if (defaultInput?.link != null && this.graph?._links) {
