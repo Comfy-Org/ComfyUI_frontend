@@ -7,6 +7,7 @@ import type {
 } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { WorkspaceStore } from '../../types/globals'
 import type { ComfyPage } from '../ComfyPage'
+import { assetPath } from '../utils/paths'
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -20,7 +21,7 @@ export class WorkflowHelper {
 
     for (const [key, value] of Object.entries(structure)) {
       if (typeof value === 'string') {
-        const filePath = this.comfyPage.assetPath(value)
+        const filePath = assetPath(value)
         result[key] = readFileSync(filePath, 'utf-8')
       } else {
         result[key] = this.convertLeafToContent(value)
@@ -59,7 +60,7 @@ export class WorkflowHelper {
 
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
-      this.comfyPage.assetPath(`${workflowName}.json`)
+      assetPath(`${workflowName}.json`)
     )
     await this.comfyPage.nextFrame()
   }
@@ -144,6 +145,16 @@ export class WorkflowHelper {
       return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.isModified
     })
+  }
+
+  async waitForWorkflowIdle(timeout = 5000): Promise<void> {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy,
+      undefined,
+      { timeout }
+    )
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>

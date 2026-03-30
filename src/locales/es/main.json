@@ -2258,6 +2258,7 @@
     "dataset": "conjunto de datos",
     "debug": "depurar",
     "deprecated": "obsoleto",
+    "detection": "detección",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",
@@ -3239,6 +3240,7 @@
       "termsAgreement": "Al continuar, aceptas los {terms} y la {privacy} de Comfy Org.",
       "totalDueToday": "Total a pagar hoy"
     },
+    "refreshCredits": "Actualizar créditos",
     "renewsDate": "Se renueva el {date}",
     "required": {
       "pollingFailed": "Error al activar la suscripción",

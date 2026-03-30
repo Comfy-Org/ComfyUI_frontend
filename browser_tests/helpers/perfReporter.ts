@@ -47,7 +47,8 @@ export function logMeasurement(
 export function recordMeasurement(m: PerfMeasurement) {
   mkdirSync(TEMP_DIR, { recursive: true })
   const filename = `${m.name}-${Date.now()}.json`
-  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(m))
+  const { allFrameDurationsMs: _, ...serializable } = m
+  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(serializable))
 }
 
 export function writePerfReport(
