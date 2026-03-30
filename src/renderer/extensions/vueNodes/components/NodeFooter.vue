@@ -2,13 +2,13 @@
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
-    class="isolate -z-1 -mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
+    :class="errorWrapperStyles"
   >
     <Button
       variant="textonly"
       :class="
         cn(
-          getTabStyles(false),
+          tabStyles,
           'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
@@ -26,7 +26,7 @@
       data-testid="subgraph-enter-button"
       :class="
         cn(
-          getTabStyles(true),
+          tabStyles,
           '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
           enterRadiusClass
         )
@@ -49,13 +49,13 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
-    class="isolate -z-1 -mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
+    :class="errorWrapperStyles"
   >
     <Button
       variant="textonly"
       :class="
         cn(
-          getTabStyles(false),
+          tabStyles,
           'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
@@ -72,7 +72,7 @@
       variant="textonly"
       :class="
         cn(
-          getTabStyles(true),
+          tabStyles,
           '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
           enterRadiusClass
         )
@@ -100,13 +100,13 @@
   <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
-    class="isolate -z-1 -mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1"
+    :class="errorWrapperStyles"
   >
     <Button
       variant="textonly"
       :class="
         cn(
-          getTabStyles(false),
+          tabStyles,
           'box-border w-full rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
           footerRadiusClass
         )
@@ -135,7 +135,7 @@
       data-testid="subgraph-enter-button"
       :class="
         cn(
-          getTabStyles(true),
+          tabStyles,
           'box-border w-full rounded-none bg-node-component-header-surface',
           hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
           footerRadiusClass
@@ -165,7 +165,7 @@
       variant="textonly"
       :class="
         cn(
-          getTabStyles(true),
+          tabStyles,
           'box-border w-full rounded-none bg-node-component-header-surface',
           hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
           footerRadiusClass
@@ -211,7 +211,15 @@ interface Props {
   shape?: RenderShape
 }
 
-const props = defineProps<Props>()
+const {
+  isSubgraph,
+  hasAnyError,
+  showErrorsTabEnabled,
+  showAdvancedInputsButton,
+  showAdvancedState,
+  headerColor,
+  shape
+} = defineProps<Props>()
 
 defineEmits<{
   (e: 'enterSubgraph'): void
@@ -220,8 +228,8 @@ defineEmits<{
 }>()
 
 const footerRadiusClass = computed(() => {
-  const isError = props.hasAnyError
-  switch (props.shape) {
+  const isError = hasAnyError
+  switch (shape) {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
@@ -232,7 +240,7 @@ const footerRadiusClass = computed(() => {
 })
 
 const errorRadiusClass = computed(() => {
-  switch (props.shape) {
+  switch (shape) {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
@@ -243,7 +251,7 @@ const errorRadiusClass = computed(() => {
 })
 
 const enterRadiusClass = computed(() => {
-  switch (props.shape) {
+  switch (shape) {
     case RenderShape.BOX:
       return ''
     case RenderShape.CARD:
@@ -252,11 +260,11 @@ const enterRadiusClass = computed(() => {
   }
 })
 
-const getTabStyles = (isBackground = false) => {
-  return cn('pointer-events-auto h-9 text-xs', isBackground ? '' : '')
-}
+const tabStyles = 'pointer-events-auto h-9 text-xs'
+const errorWrapperStyles =
+  'isolate -z-1 -mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1'
 
 const headerColorStyle = computed(() =>
-  props.headerColor ? { backgroundColor: props.headerColor } : undefined
+  headerColor ? { backgroundColor: headerColor } : undefined
 )
 </script>

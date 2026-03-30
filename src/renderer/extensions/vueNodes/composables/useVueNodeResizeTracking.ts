@@ -178,10 +178,17 @@ const resizeObserver = new ResizeObserver((entries) => {
     // Store footer height in vueBoundsOverrides for onBounding
     if (nodeId) {
       const footerExtra = fullHeight - measuredEl.offsetHeight
-      vueBoundsOverrides.set(nodeId, {
-        ...vueBoundsOverrides.get(nodeId),
-        footerHeight: footerExtra > 0 ? footerExtra : 0
-      })
+      if (footerExtra > 0) {
+        vueBoundsOverrides.set(nodeId, {
+          ...vueBoundsOverrides.get(nodeId),
+          footerHeight: footerExtra
+        })
+      } else {
+        const existing = vueBoundsOverrides.get(nodeId)
+        if (existing?.footerHeight) {
+          existing.footerHeight = undefined
+        }
+      }
     }
 
     const nodeLayout = nodeId
