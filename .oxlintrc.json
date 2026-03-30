@@ -117,6 +117,12 @@
       }
     },
     {
+      "files": ["tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
       "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
