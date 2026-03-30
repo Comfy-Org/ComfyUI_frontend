@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
@@ -33,6 +33,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { createSessionTabMap } from '@/utils/sessionTabMap'
 
 interface QueuedJob {
   /**
@@ -72,11 +73,8 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   const jobIdToWorkflowId = ref<Map<string, string>>(new Map())
 
-  /**
-   * Map of job ID to workflow file path in the current session.
-   * Only populated for jobs that are queued in this browser tab.
-   */
-  const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
+  const sessionJobPaths = createSessionTabMap('Comfy.Execution.JobPaths')
+  const jobIdToSessionWorkflowPath = sessionJobPaths.map
 
   const initializingJobIds = ref<Set<string>>(new Set())
 
@@ -255,7 +253,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // before the HTTP response from queuePrompt triggers storeJob.
     if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
       const path = queuedJobs.value[activeJobId.value]?.workflow?.path
-      if (path) ensureSessionWorkflowPath(activeJobId.value, path)
+      if (path) sessionJobPaths.set(activeJobId.value, path)
     }
   }
 
@@ -562,23 +560,8 @@ export const useExecutionStore = defineStore('execution', () => {
       jobIdToWorkflowId.value.set(String(id), String(wid))
     }
     if (workflow?.path) {
-      ensureSessionWorkflowPath(String(id), workflow.path)
+      sessionJobPaths.set(String(id), workflow.path)
     }
-  }
-
-  // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
-  const MAX_SESSION_PATH_ENTRIES = 4000
-
-  function ensureSessionWorkflowPath(jobId: string, path: string) {
-    if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
-    const next = new Map(jobIdToSessionWorkflowPath.value)
-    next.set(jobId, path)
-    while (next.size > MAX_SESSION_PATH_ENTRIES) {
-      const oldest = next.keys().next().value
-      if (oldest !== undefined) next.delete(oldest)
-      else break
-    }
-    jobIdToSessionWorkflowPath.value = next
   }
 
   /**
@@ -703,6 +686,6 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocatorIdToExecutionId,
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
-    ensureSessionWorkflowPath
+    ensureSessionWorkflowPath: sessionJobPaths.set
   }
 })
