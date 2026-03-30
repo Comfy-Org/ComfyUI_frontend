@@ -326,6 +326,12 @@ test.describe('Workflow Persistence', () => {
   test('Closing an inactive tab with save preserves its own content', async ({
     comfyPage
   }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10745 — saveWorkflow called checkState on inactive tab, serializing the active graph instead'
+    })
+
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'
