@@ -18,12 +18,15 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
 
     await comfyPage.page.mouse.move(subgraphPos.x + 16, subgraphPos.y + 16)
     await comfyPage.page.keyboard.down('Alt')
-    await comfyPage.page.mouse.down()
-    await comfyPage.nextFrame()
+    try {
+      await comfyPage.page.mouse.down()
+      await comfyPage.nextFrame()
 
-    await comfyPage.page.mouse.move(subgraphPos.x + 64, subgraphPos.y + 64)
-    await comfyPage.page.mouse.up()
-    await comfyPage.page.keyboard.up('Alt')
+      await comfyPage.page.mouse.move(subgraphPos.x + 64, subgraphPos.y + 64)
+      await comfyPage.page.mouse.up()
+    } finally {
+      await comfyPage.page.keyboard.up('Alt')
+    }
   }
 
   test.describe('Subgraph Unpacking', () => {

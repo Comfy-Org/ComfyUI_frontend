@@ -25,7 +25,7 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         const response = await responsePromise
         expect(warnings).toEqual([])
-        expect(response.status()).not.toBe(400)
+        expect(response.ok()).toBe(true)
       } finally {
         dispose()
       }

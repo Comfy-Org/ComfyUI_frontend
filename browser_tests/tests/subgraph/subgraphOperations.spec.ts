@@ -32,10 +32,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await nodeToClone.click('title')
       await comfyPage.nextFrame()
 
-      await comfyPage.page.keyboard.press('Control+c')
+      await comfyPage.page.keyboard.press('ControlOrMeta+c')
       await comfyPage.nextFrame()
 
-      await comfyPage.page.keyboard.press('Control+v')
+      await comfyPage.page.keyboard.press('ControlOrMeta+v')
       await comfyPage.nextFrame()
 
       await expect

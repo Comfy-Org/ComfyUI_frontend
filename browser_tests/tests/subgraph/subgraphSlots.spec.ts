@@ -392,7 +392,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       })
       expect(updatedLabel).toBe(RENAMED_LABEL)
 
-      const seedWidgetAfter = subgraphNodeAfter.getByLabel('seed', {
+      const seedWidgetAfter = subgraphNodeAfter.getByLabel(RENAMED_LABEL, {
         exact: true
       })
       await expect(seedWidgetAfter).toBeVisible()
@@ -410,6 +410,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
+      // Two frames needed: first renders slot changes, second stabilizes layout
       await comfyPage.nextFrame()
       await comfyPage.nextFrame()
 
