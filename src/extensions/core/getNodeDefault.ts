@@ -76,7 +76,7 @@ app.registerExtension({
         }
 
         override onConnectionsChange(
-          type: ISlotType,
+          type: number,
           _slot: number | undefined,
           _connected: boolean
         ) {
@@ -170,7 +170,10 @@ app.registerExtension({
           if (setter) return { node: setter, slot: 0 }
 
           // Fall back to the connected default input
-          const defaultLink = this.getInputLink(0)
+          const defaultInput = this.inputs?.[0]
+          if (defaultInput?.link == null || !this.graph?._links)
+            return undefined
+          const defaultLink = this.graph._links.get(defaultInput.link)
           if (!defaultLink) return undefined
           const originNode = graph.getNodeById(defaultLink.origin_id)
           if (!originNode) return undefined
@@ -208,9 +211,11 @@ app.registerExtension({
             (n.widgets?.[0]?.value as string) === name
         )
         if (setter) {
-          const slotInfo = setter.inputs?.[slot]
-          if (slotInfo?.link != null) {
-            return graph._links?.get(slotInfo.link) ?? null
+          if (slot === 0) {
+            const slotInfo = setter.inputs?.[0]
+            if (slotInfo?.link != null) {
+              return graph._links?.get(slotInfo.link) ?? null
+            }
           }
           // Setter found but its input is unconnected — fall through to default
         }
