@@ -119,7 +119,7 @@ When writing new tests, follow these patterns:
 
 ```typescript
 // Import the test fixture
-import { comfyPageFixture as test } from '#e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Feature Name', () => {
   // Set up test environment if needed
@@ -150,7 +150,7 @@ Most common testing needs are already addressed by these helpers, which will mak
 
 ### Import Conventions
 
-- Prefer `#e2e/*` for imports within `browser_tests/`
+- Prefer `@e2e/*` for imports within `browser_tests/`
 - Continue using `@/*` for imports from `src/`
 - Avoid introducing new deep relative imports within `browser_tests/` when the alias is available
 

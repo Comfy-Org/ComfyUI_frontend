@@ -7,10 +7,6 @@
   "license": "GPL-3.0-only",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
-  "imports": {
-    "#e2e/assets/*": "./browser_tests/assets/*",
-    "#e2e/*": "./browser_tests/*.ts"
-  },
   "scripts": {
     "build:cloud": "cross-env DISTRIBUTION=cloud NODE_OPTIONS='--max-old-space-size=8192' nx build",
     "build:desktop": "nx build @comfyorg/desktop-ui",

@@ -21,7 +21,7 @@
     "verbatimModuleSyntax": true,
     "paths": {
       "@/*": ["./src/*"],
-      "#e2e/*": ["./browser_tests/*"],
+      "@e2e/*": ["./browser_tests/*"],
       "@/utils/formatUtil": [
         "./packages/shared-frontend-utils/src/formatUtil.ts"
       ],
