@@ -40,6 +40,31 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
   })
 
   test.describe('Unpack/Remove Cleanup for Pseudo-Preview Targets', () => {
+    test('Unpacking the preview subgraph clears promoted preview state and DOM', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-preview-node'
+      )
+      await comfyPage.nextFrame()
+
+      const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
+      expect(beforePseudo.length).toBeGreaterThan(0)
+
+      await comfyPage.page.evaluate(() => {
+        const graph = window.app!.graph!
+        const subgraphNode = graph.getNodeById('5')
+        if (!subgraphNode || !subgraphNode.isSubgraphNode()) return
+        graph.unpackSubgraph(subgraphNode)
+      })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())
+        .toBe(0)
+      await expect(comfyPage.page.locator(domPreviewSelector)).toHaveCount(0)
+    })
+
     test('Removing the preview subgraph clears promoted preview state and DOM', async ({
       comfyPage
     }) => {

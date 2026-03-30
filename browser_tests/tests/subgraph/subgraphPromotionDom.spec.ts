@@ -3,10 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
-import {
-  getPromotedWidgetCount,
-  getPromotedWidgetNames
-} from '../../helpers/promotedWidgets'
+import { getPromotedWidgetNames } from '../../helpers/promotedWidgets'
 
 const DOM_WIDGET_SELECTOR = '.comfy-multiline-input'
 const VISIBLE_DOM_WIDGET_SELECTOR = `${DOM_WIDGET_SELECTOR}:visible`
@@ -146,7 +143,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
 
       await comfyPage.subgraph.exitViaBreadcrumb()
 
-      await expect.poll(() => getPromotedWidgetCount(comfyPage, '11')).toBe(0)
+      await expect(
+        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      ).toHaveCount(0)
     })
 
     test('Multiple promoted widgets are handled correctly', async ({
