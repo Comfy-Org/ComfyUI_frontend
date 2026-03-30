@@ -2,7 +2,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
 
 test.describe('App mode usage', () => {
   test('Drag and Drop', async ({ comfyPage }) => {
@@ -49,8 +48,7 @@ test.describe('App mode usage', () => {
       await expect(panel).toContainClass('left-[100vw]')
 
       await comfyPage.appMode.mobileNavigateTab('run')
-      const widgets = mobileView.getByTestId(TestIds.linear.widgetContainer)
-      await expect(widgets).toBeInViewport({ ratio: 1 })
+      await expect(comfyPage.appMode.linearWidgets).toBeInViewport({ ratio: 1 })
 
       const steps = comfyPage.page.getByRole('spinbutton')
       await expect(steps).toHaveValue('20')

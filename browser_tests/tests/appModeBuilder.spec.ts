@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { VueNodeFixture } from '../fixtures/utils/vueNodeFixtures'
 
 test.describe('App mode builder selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -67,23 +68,19 @@ test.describe('App mode builder selection', () => {
     await expect(items).toHaveCount(0)
 
     await comfyPage.vueNodes
-      .getNodeLocator('4')
-      .locator('.lg-node-widget')
-      .click()
+      .getFixtureByTitle('Load Checkpoint')
+      .then((node) => node.widgets.click())
+
     await expect.soft(items).toHaveCount(0)
 
     await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
-    await comfyPage.vueNodes
-      .getNodeLocator('1')
-      .locator('.lg-node-widget')
-      .click({ force: true })
-    await comfyPage.vueNodes
-      .getNodeLocator('2')
-      .locator('.lg-node-widget')
-      .click({ force: true })
+
+    for (const locator of await comfyPage.vueNodes.getNodeByTitle('Note').all())
+      await new VueNodeFixture(locator).widgets.click({ force: true })
+
     await expect(items).toHaveCount(0)
   })
   test('Marks canvas readOnly', async ({ comfyPage }) => {
