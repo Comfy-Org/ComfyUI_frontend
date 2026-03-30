@@ -8,10 +8,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
-
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,
@@ -19,6 +17,7 @@ import {
   createTestSubgraphData,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+import { fromAny } from '@total-typescript/shoehorn'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -48,7 +47,7 @@ describe('Subgraph Construction', () => {
   it('should require a root graph', () => {
     const subgraphData = createTestSubgraphData()
     const createWithoutRoot = () =>
-      new Subgraph(null as unknown as LGraph, subgraphData)
+      new Subgraph(fromAny<LGraph, unknown>(null), subgraphData)
 
     expect(createWithoutRoot).toThrow('Root graph is required')
   })

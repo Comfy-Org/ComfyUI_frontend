@@ -2,7 +2,6 @@ import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
-
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -17,6 +16,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { fromAny } from '@total-typescript/shoehorn'
 
 describe('Node Reactivity', () => {
   beforeEach(() => {
@@ -277,18 +277,20 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const secondPromotedView = promotedViews[1]
     if (!secondPromotedView) throw new Error('Expected second promoted view')
 
-    ;(
-      secondPromotedView as unknown as {
+    fromAny<
+      {
         sourceNodeId: string
         sourceWidgetName: string
-      }
-    ).sourceNodeId = '9999'
-    ;(
-      secondPromotedView as unknown as {
+      },
+      unknown
+    >(secondPromotedView).sourceNodeId = '9999'
+    fromAny<
+      {
         sourceNodeId: string
         sourceWidgetName: string
-      }
-    ).sourceWidgetName = 'stale_widget'
+      },
+      unknown
+    >(secondPromotedView).sourceWidgetName = 'stale_widget'
 
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))

@@ -1,6 +1,5 @@
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
-
 import {
   buildSubgraphExecutionPaths,
   flattenWorkflowNodes,
@@ -11,6 +10,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
 
@@ -295,29 +295,33 @@ describe('flattenWorkflowNodes', () => {
   })
 
   it('includes subgraph nodes with prefixed IDs', () => {
-    const result = flattenWorkflowNodes({
-      nodes: [node(5, 'def-A')],
-      definitions: {
-        subgraphs: [
-          subgraphDef('def-A', [node(10, 'Inner'), node(20, 'Inner2')])
-        ]
-      }
-    } as unknown as ComfyWorkflowJSON)
+    const result = flattenWorkflowNodes(
+      fromPartial<ComfyWorkflowJSON>({
+        nodes: [node(5, 'def-A')],
+        definitions: {
+          subgraphs: [
+            subgraphDef('def-A', [node(10, 'Inner'), node(20, 'Inner2')])
+          ]
+        }
+      })
+    )
 
     expect(result).toHaveLength(3) // 1 root + 2 subgraph
     expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:20'])
   })
 
   it('prefixes nested subgraph nodes with full execution path', () => {
-    const result = flattenWorkflowNodes({
-      nodes: [node(5, 'def-A')],
-      definitions: {
-        subgraphs: [
-          subgraphDef('def-A', [node(10, 'def-B')]),
-          subgraphDef('def-B', [node(3, 'Leaf')])
-        ]
-      }
-    } as unknown as ComfyWorkflowJSON)
+    const result = flattenWorkflowNodes(
+      fromPartial<ComfyWorkflowJSON>({
+        nodes: [node(5, 'def-A')],
+        definitions: {
+          subgraphs: [
+            subgraphDef('def-A', [node(10, 'def-B')]),
+            subgraphDef('def-B', [node(3, 'Leaf')])
+          ]
+        }
+      })
+    )
 
     // root:5, def-A inner: 5:10, def-B inner: 5:10:3
     expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:10:3'])

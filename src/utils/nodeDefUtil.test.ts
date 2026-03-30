@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
@@ -8,6 +7,7 @@ import type {
   IntInputSpec
 } from '@/schemas/nodeDefSchema'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
+import { fromAny } from '@total-typescript/shoehorn'
 
 describe('nodeDefUtil', () => {
   describe('mergeInputSpec', () => {
@@ -175,7 +175,10 @@ describe('nodeDefUtil', () => {
         const spec1: IntInputSpec = ['INT', { min: 0, max: 10 }]
         const spec2: ComboInputSpecV2 = ['COMBO', { options: ['A', 'B'] }]
 
-        const result = mergeInputSpec(spec1, spec2 as unknown as IntInputSpec)
+        const result = mergeInputSpec(
+          spec1,
+          fromAny<IntInputSpec, unknown>(spec2)
+        )
 
         expect(result).toBeNull()
       })

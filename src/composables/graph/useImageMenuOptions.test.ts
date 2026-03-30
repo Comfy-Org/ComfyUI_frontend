@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-
 import { useImageMenuOptions } from './useImageMenuOptions'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
@@ -112,9 +111,11 @@ describe('useImageMenuOptions', () => {
         getType: vi.fn().mockResolvedValue(mockBlob)
       }
 
-      mockClipboard({
-        read: vi.fn().mockResolvedValue([mockClipboardItem])
-      } as unknown as Clipboard)
+      mockClipboard(
+        fromPartial<Clipboard>({
+          read: vi.fn().mockResolvedValue([mockClipboardItem])
+        })
+      )
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)
@@ -131,7 +132,7 @@ describe('useImageMenuOptions', () => {
 
     it('handles missing clipboard API gracefully', async () => {
       const node = createImageNode()
-      mockClipboard({ read: undefined } as unknown as Clipboard)
+      mockClipboard(fromPartial<Clipboard>({ read: undefined }))
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)
@@ -148,9 +149,11 @@ describe('useImageMenuOptions', () => {
         getType: vi.fn()
       }
 
-      mockClipboard({
-        read: vi.fn().mockResolvedValue([mockClipboardItem])
-      } as unknown as Clipboard)
+      mockClipboard(
+        fromPartial<Clipboard>({
+          read: vi.fn().mockResolvedValue([mockClipboardItem])
+        })
+      )
 
       const { getImageMenuOptions } = useImageMenuOptions()
       const options = getImageMenuOptions(node)

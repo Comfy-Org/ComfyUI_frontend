@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-
 import { createBitmapCache } from './svgBitmapCache'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 function mockSvg(
   overrides: Partial<{ complete: boolean; naturalWidth: number }> = {}
@@ -25,9 +25,9 @@ describe('createBitmapCache', () => {
       )
   }
 
-  const stubContext = {
+  const stubContext = fromPartial<CanvasRenderingContext2D>({
     drawImage: vi.fn()
-  } as unknown as CanvasRenderingContext2D
+  })
 
   it('returns the SVG when image is not yet complete', () => {
     const svg = mockSvg({ complete: false, naturalWidth: 0 })

@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type {
   JobDetail,
   JobListItem
@@ -10,6 +9,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ComfyApp } from '@/scripts/app'
 import { TaskItemImpl } from '@/stores/queueStore'
 import * as jobOutputCache from '@/services/jobOutputCache'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: vi.fn(() => ({
@@ -76,13 +76,13 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     vi.clearAllMocks()
 
     mockFetchApi = vi.fn()
-    mockApp = {
+    mockApp = fromPartial<ComfyApp>({
       loadGraphData: vi.fn(),
       nodeOutputs: {},
       api: {
         fetchApi: mockFetchApi
       }
-    } as unknown as ComfyApp
+    })
   })
 
   it('should fetch workflow from API for history tasks', async () => {

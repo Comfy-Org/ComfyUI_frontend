@@ -1,13 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+import { fromAny } from '@total-typescript/shoehorn'
 
 const mockResolveNode = vi.fn()
 
@@ -623,7 +623,7 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   it('should return early for null node', () => {
     const store = useNodeOutputStore()
 
-    store.setNodeOutputs(null as unknown as LGraphNode, 'test.png')
+    store.setNodeOutputs(fromAny<LGraphNode, unknown>(null), 'test.png')
 
     expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
   })

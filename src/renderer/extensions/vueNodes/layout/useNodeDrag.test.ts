@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 const testState = vi.hoisted(() => {
   return {
-    selectedNodeIds: null as unknown as Ref<Set<string>>,
-    selectedItems: null as unknown as Ref<unknown[]>,
+    selectedNodeIds: fromAny<Ref<Set<string>>, unknown>(null),
+    selectedItems: fromAny<Ref<unknown[]>, unknown>(null),
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       setSource: vi.fn(),
@@ -114,12 +115,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   const target = document.createElement('div')
   target.hasPointerCapture = vi.fn(() => false)
   target.setPointerCapture = vi.fn()
-  return {
-    clientX,
-    clientY,
-    target,
-    pointerId: 1
-  } as unknown as PointerEvent
+  return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
 describe('useNodeDrag', () => {

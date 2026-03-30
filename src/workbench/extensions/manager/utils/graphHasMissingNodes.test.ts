@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-
 import type {
   LGraph,
   LGraphNode,
@@ -11,6 +10,7 @@ import {
 } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 import type { NodeDefLookup } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { fromAny } from '@total-typescript/shoehorn'
 
 type NodeDefs = NodeDefLookup
 
@@ -29,12 +29,12 @@ const createNode = (
   type?: string,
   subgraphNodes?: LGraphNode[]
 ): LGraphNode => {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: nodeIdCounter++,
     type,
     isSubgraphNode: subgraphNodes ? () => true : undefined,
     subgraph: subgraphNodes ? createSubgraph(subgraphNodes) : undefined
-  } as unknown as LGraphNode
+  })
 }
 
 describe('graphHasMissingNodes', () => {

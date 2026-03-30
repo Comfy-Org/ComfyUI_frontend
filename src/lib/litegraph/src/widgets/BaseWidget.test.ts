@@ -1,11 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
-
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { fromAny } from '@total-typescript/shoehorn'
 
 function createTestWidget(
   node: LGraphNode,
@@ -167,7 +167,7 @@ describe('BaseWidget store integration', () => {
       const defaultValue = 'You are an expert image-generation engine.'
       const widget = createTestWidget(node, {
         name: 'system_prompt',
-        value: undefined as unknown as number
+        value: fromAny<number, unknown>(undefined)
       })
 
       // Simulate what addDOMWidget does: override value with getter/setter

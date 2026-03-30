@@ -3,10 +3,10 @@ import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import WidgetItem from './WidgetItem.vue'
+import { fromAny } from '@total-typescript/shoehorn'
 
 const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   mockGetInputSpecForWidget: vi.fn(),
@@ -72,13 +72,13 @@ const i18n = createI18n({
 })
 
 function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
     graph: { rootGraph: { id: 'test-graph-id' } },
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
@@ -128,7 +128,7 @@ function createMockPromotedWidgetView(
       return 0
     }
   }
-  return new MockPromotedWidgetView() as unknown as IBaseWidget
+  return fromAny<IBaseWidget, unknown>(new MockPromotedWidgetView())
 }
 
 function mountWidgetItem(

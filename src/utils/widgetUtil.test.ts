@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
+import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
   resolvePromotedWidgetSource: vi.fn()
@@ -50,14 +49,14 @@ describe('getWidgetDefaultValue', () => {
 })
 
 function makeWidget(overrides: Record<string, unknown> = {}): IBaseWidget {
-  return {
+  return fromAny<IBaseWidget, unknown>({
     name: 'myWidget',
     type: 'number',
     value: 0,
     label: undefined,
     options: {},
     ...overrides
-  } as unknown as IBaseWidget
+  })
 }
 
 function makeNode({
@@ -67,11 +66,11 @@ function makeNode({
   isSubgraph?: boolean
   inputs?: INodeInputSlot[]
 } = {}): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 1,
     inputs,
     isSubgraphNode: () => isSubgraph
-  } as unknown as LGraphNode
+  })
 }
 
 describe('renameWidget', () => {
@@ -131,11 +130,11 @@ describe('renameWidget', () => {
   it('updates _subgraphSlot.label when input has a subgraph slot', () => {
     const widget = makeWidget({ name: 'seed' })
     const subgraphSlot = { label: undefined as string | undefined }
-    const input = {
+    const input = fromAny<INodeInputSlot, unknown>({
       name: 'seed',
       widget: { name: 'seed' },
       _subgraphSlot: subgraphSlot
-    } as unknown as INodeInputSlot
+    })
     const node = makeNode({ inputs: [input] })
 
     renameWidget(widget, node, 'New Label')

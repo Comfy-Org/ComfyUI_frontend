@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import * as measure from '@/lib/litegraph/src/measure'
@@ -8,8 +7,8 @@ import {
   createMockLGraphNode,
   createMockLGraphGroup
 } from '@/utils/__tests__/litegraphTestUtils'
-
 import { useGraphHierarchy } from './useGraphHierarchy'
+import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/renderer/core/canvas/canvasStore')
 
@@ -36,7 +35,10 @@ describe('useGraphHierarchy', () => {
     mockNode = createMockNode()
     mockGroups = []
 
-    mockCanvasStore = {
+    mockCanvasStore = fromAny<
+      Partial<ReturnType<typeof useCanvasStore>>,
+      unknown
+    >({
       canvas: {
         graph: {
           groups: mockGroups
@@ -51,7 +53,7 @@ describe('useGraphHierarchy', () => {
       $dispose: vi.fn(),
       _customProperties: new Set(),
       _p: {}
-    } as unknown as Partial<ReturnType<typeof useCanvasStore>>
+    })
 
     vi.mocked(useCanvasStore).mockReturnValue(
       mockCanvasStore as ReturnType<typeof useCanvasStore>

@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-
 import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -11,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -101,14 +101,14 @@ describe('resolveSubgraphInputLink', () => {
     vi.spyOn(subgraph, 'getLink').mockImplementation((linkId) => {
       if (typeof linkId !== 'number') return originalGetLink(linkId)
       if (linkId === stale.linkId) {
-        return {
+        return fromPartial<ReturnType<typeof subgraph.getLink>>({
           resolve: () => ({
             inputNode: {
               inputs: undefined,
               getWidgetFromSlot: () => ({ name: 'ignored' })
             }
           })
-        } as unknown as ReturnType<typeof subgraph.getLink>
+        })
       }
 
       return originalGetLink(linkId)

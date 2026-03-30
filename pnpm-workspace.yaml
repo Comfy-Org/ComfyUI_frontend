@@ -46,6 +46,7 @@ catalog:
   '@tiptap/extension-table-row': ^2.27.2
   '@tiptap/pm': 2.27.2
   '@tiptap/starter-kit': ^2.27.2
+  '@total-typescript/shoehorn': ^0.1.2
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0

@@ -1,6 +1,5 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -9,14 +8,13 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-
 import { useLitegraphService } from '@/services/litegraphService'
-
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
@@ -264,7 +262,9 @@ describe('useSubgraphStore', () => {
         failing_blueprint: {
           name: 'Failing Blueprint',
           info: { node_pack: 'test_pack' },
-          data: Promise.reject(new Error('Network error')) as unknown as string
+          data: fromAny<string, unknown>(
+            Promise.reject(new Error('Network error'))
+          )
         }
       }
     )

@@ -7,16 +7,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+import { fromAny } from '@total-typescript/shoehorn'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -933,14 +932,17 @@ describe('SubgraphNode promotion view keys', () => {
 
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const nodeWithKeyBuilder = subgraphNode as unknown as {
-      _makePromotionViewKey: (
-        inputKey: string,
-        interiorNodeId: string,
-        widgetName: string,
-        inputName?: string
-      ) => string
-    }
+    const nodeWithKeyBuilder = fromAny<
+      {
+        _makePromotionViewKey: (
+          inputKey: string,
+          interiorNodeId: string,
+          widgetName: string,
+          inputName?: string
+        ) => string
+      },
+      unknown
+    >(subgraphNode)
 
     const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
       '65',

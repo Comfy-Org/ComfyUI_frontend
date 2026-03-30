@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
@@ -58,16 +58,16 @@ function mockNode(
   type: string,
   overrides: Partial<LGraphNode> = {}
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id,
     type,
     last_serialization: { type },
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function mockGraph(): LGraph {
-  return {} as unknown as LGraph
+  return fromAny<LGraph, unknown>({})
 }
 
 function getMissingNodesError(
@@ -216,9 +216,9 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 
   it('uses last_serialization.type over node.type', () => {
     const node = mockNode(1, 'LiveType')
-    node.last_serialization = {
+    node.last_serialization = fromPartial<LGraphNode['last_serialization']>({
       type: 'OriginalType'
-    } as unknown as LGraphNode['last_serialization']
+    })
     vi.mocked(collectAllNodes).mockReturnValue([node])
     vi.mocked(getExecutionIdByNode).mockReturnValue(null)
 

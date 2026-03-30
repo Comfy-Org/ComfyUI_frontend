@@ -1,11 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { fromAny } from '@total-typescript/shoehorn'
 
 setActivePinia(createTestingPinia())
 
@@ -72,8 +72,8 @@ describe('MatchType during configure', () => {
     const link2Id = switchNode.inputs[1].link!
 
     const outputTypeBefore = switchNode.outputs[0].type
-    ;(
-      app as unknown as { configuringGraphLevel: number }
+    fromAny<{ configuringGraphLevel: number }, unknown>(
+      app
     ).configuringGraphLevel = 1
 
     try {
@@ -92,8 +92,8 @@ describe('MatchType during configure', () => {
       expect(graph.links[link2Id]).toBeDefined()
       expect(switchNode.outputs[0].type).toBe(outputTypeBefore)
     } finally {
-      ;(
-        app as unknown as { configuringGraphLevel: number }
+      fromAny<{ configuringGraphLevel: number }, unknown>(
+        app
       ).configuringGraphLevel = 0
     }
   })

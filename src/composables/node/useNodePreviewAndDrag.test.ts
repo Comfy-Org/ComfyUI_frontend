@@ -1,9 +1,8 @@
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
+import { fromAny } from '@total-typescript/shoehorn'
 
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
@@ -116,9 +115,9 @@ describe('useNodePreviewAndDrag', () => {
         setData: vi.fn(),
         setDragImage: vi.fn()
       }
-      const mockEvent = {
+      const mockEvent = fromAny<DragEvent, unknown>({
         dataTransfer: mockDataTransfer
-      } as unknown as DragEvent
+      })
 
       result.handleDragStart(mockEvent)
 

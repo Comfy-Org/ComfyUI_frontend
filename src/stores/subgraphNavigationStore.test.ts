@@ -2,13 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import { fromAny } from '@total-typescript/shoehorn'
 
 type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
 
@@ -20,7 +19,7 @@ function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
     nodes: []
   } satisfies MockSubgraph
 
-  return mockSubgraph as unknown as Subgraph
+  return fromAny<Subgraph, unknown>(mockSubgraph)
 }
 
 vi.mock('@/scripts/app', () => {

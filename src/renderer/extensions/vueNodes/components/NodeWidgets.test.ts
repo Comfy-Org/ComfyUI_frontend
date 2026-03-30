@@ -3,15 +3,14 @@ import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-
 import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -79,8 +78,8 @@ describe('NodeWidgets', () => {
   }
 
   const getBorderStyles = (wrapper: ReturnType<typeof mount>) =>
-    (
-      wrapper.vm as unknown as { processedWidgets: unknown[] }
+    fromAny<{ processedWidgets: unknown[] }, unknown>(
+      wrapper.vm
     ).processedWidgets.map(
       (entry) =>
         (

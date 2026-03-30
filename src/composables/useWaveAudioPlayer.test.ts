@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
+import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
@@ -80,10 +80,12 @@ describe('useWaveAudioPlayer', () => {
 
     const mockDecodeAudioData = vi.fn(() => Promise.resolve(mockAudioBuffer))
     const mockClose = vi.fn().mockResolvedValue(undefined)
-    globalThis.AudioContext = class {
-      decodeAudioData = mockDecodeAudioData
-      close = mockClose
-    } as unknown as typeof AudioContext
+    globalThis.AudioContext = fromAny<typeof AudioContext, unknown>(
+      class {
+        decodeAudioData = mockDecodeAudioData
+        close = mockClose
+      }
+    )
 
     mockFetchApi.mockResolvedValue({
       ok: true,

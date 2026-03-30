@@ -1,9 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const mockGetSharedWorkflow = vi.fn()
 
@@ -51,9 +51,9 @@ function makePayload(
     name: 'Test Workflow',
     listed: true,
     publishedAt: new Date('2026-02-20T00:00:00Z'),
-    workflowJson: {
+    workflowJson: fromPartial<SharedWorkflowPayload['workflowJson']>({
       nodes: []
-    } as unknown as SharedWorkflowPayload['workflowJson'],
+    }),
     assets: [],
     ...overrides
   }

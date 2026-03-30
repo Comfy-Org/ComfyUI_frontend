@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { MissingNodeType } from '@/types/comfy'
+import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -215,7 +215,7 @@ describe('useErrorGroups', () => {
       const { groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes([
-        'StringGroupNode' as unknown as MissingNodeType
+        fromAny<MissingNodeType, unknown>('StringGroupNode')
       ])
       await nextTick()
 

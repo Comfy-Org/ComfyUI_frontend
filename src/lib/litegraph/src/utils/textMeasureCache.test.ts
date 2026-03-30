@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { cachedMeasureText, clearTextMeasureCache } from './textMeasureCache'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 function createMockCtx(font = '12px sans-serif'): CanvasRenderingContext2D {
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     font,
     measureText: vi.fn((text: string) => ({ width: text.length * 7 }))
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 describe('textMeasureCache', () => {

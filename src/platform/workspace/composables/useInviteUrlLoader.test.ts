@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { useInviteUrlLoader } from './useInviteUrlLoader'
+import { fromAny } from '@total-typescript/shoehorn'
 
 /**
  * Unit tests for useInviteUrlLoader composable
@@ -224,7 +224,9 @@ describe('useInviteUrlLoader', () => {
     })
 
     it('ignores non-string invite param', async () => {
-      mockRouteQuery.value = { invite: ['array', 'value'] as unknown as string }
+      mockRouteQuery.value = {
+        invite: fromAny<string, unknown>(['array', 'value'])
+      }
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()

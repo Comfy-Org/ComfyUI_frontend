@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
+import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: undefined }
@@ -35,7 +35,7 @@ function createMockGraph(
 ): Partial<LGraph> {
   const graph: Partial<LGraph> = {
     id: crypto.randomUUID(),
-    nodes: nodes as unknown as LGraph['nodes'],
+    nodes: fromAny<LGraph['nodes'], unknown>(nodes),
     groups: [],
     reroutes: new Map() as LGraph['reroutes'],
     extra

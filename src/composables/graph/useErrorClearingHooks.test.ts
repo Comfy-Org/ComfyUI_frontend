@@ -1,7 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -11,6 +10,7 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { fromAny } from '@total-typescript/shoehorn'
 
 function seedSimpleError(
   store: ReturnType<typeof useExecutionErrorStore>,
@@ -194,7 +194,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
-      undefined as unknown as LGraph
+      fromAny<LGraph, unknown>(undefined)
     )
     store.lastNodeErrors = {
       [String(node.id)]: {
