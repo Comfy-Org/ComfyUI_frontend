@@ -114,7 +114,7 @@ app.registerExtension({
             app.canvas?.setDirty(true, true)
             return
           }
-          const link = graph.links.get(linkId)
+          const link = graph._links.get(linkId)
           if (!link) return
           const originNode = graph.getNodeById(link.origin_id)
           const resolvedType: ISlotType =
@@ -150,32 +150,44 @@ app.registerExtension({
 
         /**
          * Resolves the virtual output to the node that should supply this
-         * GetNode's value: either a matching SetNode or the `default` input.
+         * GetNode's value: either the matched SetNode's upstream or the
+         * `default` input's origin.
          */
         override resolveVirtualOutput(
           _slot: number
         ): { node: LGraphNode; slot: number } | undefined {
-          return this._resolveSource()
+          const setter = this._resolveSource()
+          if (setter) {
+            const linkId = setter.inputs?.[0]?.link
+            if (linkId == null || !this.graph) return undefined
+            const link = this.graph._links.get(linkId)
+            if (!link) return undefined
+            const originNode = this.graph.getNodeById(link.origin_id)
+            if (!originNode) return undefined
+            return { node: originNode, slot: link.origin_slot }
+          }
+          const defaultInput = this.inputs?.[0]
+          if (defaultInput?.link == null || !this.graph?._links)
+            return undefined
+          const defaultLink = this.graph._links.get(defaultInput.link)
+          if (!defaultLink) return undefined
+          const originNode = this.graph.getNodeById(defaultLink.origin_id)
+          if (!originNode) return undefined
+          return { node: originNode, slot: defaultLink.origin_slot }
         }
 
         /**
          * Returns the link that feeds this GetNode's effective input.
          *
-         * When a matching SetNode is found, returns the link connected to
-         * that SetNode's input (slot 0 only — SetNode has a single input).
-         * Falls back to the link on the `default` input when no SetNode
-         * matches.
+         * When a matching SetNode is found, returns the link on that SetNode's
+         * input (slot 0 — SetNode has a single input). Otherwise falls back to
+         * the link on the `default` input.
          */
         override getInputLink(_slot: number): LLink | null {
-          const resolved = this._resolveSource()
-          if (resolved) {
-            const inLink = resolved.node.inputs?.[resolved.slot]?.link
-            if (inLink != null)
-              return (
-                this.graph?.links.get(inLink) ??
-                this.graph?._links?.get(inLink) ??
-                null
-              )
+          const setter = this._resolveSource()
+          if (setter) {
+            const inLink = setter.inputs?.[0]?.link
+            if (inLink != null) return this.graph?._links?.get(inLink) ?? null
           }
           const defaultInput = this.inputs?.[0]
           if (defaultInput?.link != null && this.graph?._links) {
@@ -185,38 +197,26 @@ app.registerExtension({
         }
 
         /**
-         * Finds the node and slot that should supply this GetNode's value.
+         * Finds the active SetNode whose Constant widget matches this node's
+         * Constant name, or returns `undefined` when none exists.
          *
-         * Searches for an active SetNode whose Constant widget matches this
-         * node's Constant name. If none is found, resolves through the
-         * `default` input instead.
+         * The default-input fallback is intentionally not handled here so that
+         * `getInputLink` and `resolveVirtualOutput` can each read the default
+         * link directly without an intermediate resolved-source object.
          */
-        private _resolveSource():
-          | { node: LGraphNode; slot: number }
-          | undefined {
+        private _resolveSource(): LGraphNode | undefined {
           const { graph } = this
           if (!graph) return undefined
           const constantName = this.widgets?.[0]?.value as string
           if (!constantName) return undefined
 
-          const setter = graph.nodes.find(
+          return graph.nodes.find(
             (n) =>
               isSetNode(n) &&
               n.mode !== LGraphEventMode.NEVER &&
               n.inputs?.[0]?.link != null &&
               (n.widgets?.[0]?.value as string) === constantName
           )
-          if (setter) return { node: setter, slot: 0 }
-
-          // Fall back to the connected default input
-          const defaultInput = this.inputs?.[0]
-          if (defaultInput?.link == null || !this.graph?._links)
-            return undefined
-          const defaultLink = this.graph._links.get(defaultInput.link)
-          if (!defaultLink) return undefined
-          const originNode = graph.getNodeById(defaultLink.origin_id)
-          if (!originNode) return undefined
-          return { node: originNode, slot: defaultLink.origin_slot }
         }
       }
 
