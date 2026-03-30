@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
+import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
 import {
   LGraph,
   LGraphNode,
@@ -21,6 +22,11 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+class DummyNode extends LGraphNode {}
+
+const DUPLICATE_ID_SUBGRAPH_A = '11111111-1111-4111-8111-111111111111'
+const DUPLICATE_ID_SUBGRAPH_B = '22222222-2222-4222-8222-222222222222'
 
 function createRegisteredNode(
   graph: LGraph | Subgraph,
@@ -473,6 +479,63 @@ describe('SubgraphSerialization - Data Integrity', () => {
       expect(link.target_slot).toBeGreaterThanOrEqual(0)
       expect(originNode!.outputs[link.origin_slot]).toBeDefined()
       expect(targetNode!.inputs[link.target_slot]).toBeDefined()
+    }
+  })
+
+  it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
+    LiteGraph.registerNodeType('dummy', DummyNode)
+
+    const graph = new LGraph()
+    graph.configure(structuredClone(duplicateSubgraphNodeIds))
+
+    const rootIds = graph.nodes
+      .map((node) => node.id)
+      .filter((id): id is number => typeof id === 'number')
+      .sort((a, b) => a - b)
+    expect(rootIds).toEqual([102, 103])
+
+    const subgraphAIds = new Set(
+      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_A)!.nodes.map((node) => node.id)
+    )
+    const subgraphBIds = new Set(
+      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!.nodes.map((node) => node.id)
+    )
+
+    expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
+    for (const id of subgraphAIds) {
+      expect(subgraphBIds.has(id)).toBe(false)
+    }
+  })
+
+  it('patches remapped link and proxyWidget references during duplicate-ID hydration', () => {
+    LiteGraph.registerNodeType('dummy', DummyNode)
+
+    const graph = new LGraph()
+    graph.configure(structuredClone(duplicateSubgraphNodeIds))
+
+    const subgraphAIds = new Set(
+      graph.subgraphs
+        .get(DUPLICATE_ID_SUBGRAPH_A)!
+        .nodes.map((node) => String(node.id))
+    )
+    const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
+    const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
+
+    const rootProxyWidgetsA = graph.getNodeById(102)?.properties?.proxyWidgets
+    expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
+    for (const entry of rootProxyWidgetsA as string[][]) {
+      expect(subgraphAIds.has(String(entry[0]))).toBe(true)
+    }
+
+    const rootProxyWidgetsB = graph.getNodeById(103)?.properties?.proxyWidgets
+    expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
+    for (const entry of rootProxyWidgetsB as string[][]) {
+      expect(subgraphBIds.has(String(entry[0]))).toBe(true)
+    }
+
+    for (const [, link] of subgraphB.links) {
+      expect(subgraphBIds.has(String(link.origin_id))).toBe(true)
+      expect(subgraphBIds.has(String(link.target_id))).toBe(true)
     }
   })
 })

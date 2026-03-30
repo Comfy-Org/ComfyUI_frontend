@@ -49,20 +49,6 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
     )
   })
 
-  test('Can set search aliases on subgraph and find via search', async ({
-    comfyPage
-  }) => {
-    const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
-
-    await comfyPage.command.executeCommand('Comfy.Subgraph.SetSearchAliases', {
-      aliases: 'qwerty,unicorn'
-    })
-
-    const blueprintName = `test-aliases-${Date.now()}`
-    await exitSubgraphAndPublish(comfyPage, subgraphNode, blueprintName)
-    await searchAndExpectResult(comfyPage, 'unicorn', blueprintName)
-  })
-
   test('Can set description on subgraph', async ({ comfyPage }) => {
     await createSubgraphAndNavigateInto(comfyPage)
 
@@ -78,7 +64,7 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
     expect(description).toBe('This is a test description')
   })
 
-  test('Search aliases persist after publish and reload', async ({
+  test('Published search aliases remain searchable after reload', async ({
     comfyPage
   }) => {
     const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)

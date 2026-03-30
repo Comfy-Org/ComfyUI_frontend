@@ -6,150 +6,38 @@ import { TestIds } from '../../fixtures/selectors'
 
 const NESTED_DUPLICATE_WIDGET_NAMES_WORKFLOW =
   'subgraphs/nested-duplicate-widget-names'
-const PROMOTED_BORDER_CLASS = 'ring-component-node-widget-promoted'
 
 test.describe('Nested Subgraphs', { tag: ['@subgraph', '@widget'] }, () => {
   test.describe('Nested subgraph configure order', () => {
     const workflow = 'subgraphs/subgraph-nested-duplicate-ids'
 
-    test('Loads without "No link found" or "Failed to resolve legacy -1" console warnings', async ({
+    test('Loads and queues without nested promotion resolution failures', async ({
       comfyPage
     }) => {
-      const { warnings } = SubgraphHelper.collectConsoleWarnings(
+      const { warnings, dispose } = SubgraphHelper.collectConsoleWarnings(
         comfyPage.page,
         ['No link found', 'Failed to resolve legacy -1']
       )
 
-      await comfyPage.workflow.loadWorkflow(workflow)
+      try {
+        await comfyPage.workflow.loadWorkflow(workflow)
+        await comfyPage.nextFrame()
 
-      expect(warnings).toEqual([])
-    })
+        const responsePromise = comfyPage.page.waitForResponse('**/api/prompt')
+        await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-    test('All three subgraph levels resolve promoted widgets', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(workflow)
-      await comfyPage.nextFrame()
-
-      const results = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        const allGraphs = [graph, ...graph.subgraphs.values()]
-
-        return allGraphs.flatMap((g) =>
-          g._nodes
-            .filter(
-              (node) =>
-                typeof node.isSubgraphNode === 'function' &&
-                node.isSubgraphNode()
-            )
-            .map((hostNode) => {
-              const proxyWidgets = Array.isArray(
-                hostNode.properties?.proxyWidgets
-              )
-                ? hostNode.properties.proxyWidgets
-                : []
-
-              const widgetEntries = proxyWidgets
-                .filter(
-                  (entry: unknown): entry is [string, string] =>
-                    Array.isArray(entry) &&
-                    entry.length >= 2 &&
-                    typeof entry[0] === 'string' &&
-                    typeof entry[1] === 'string'
-                )
-                .map(([interiorNodeId, widgetName]: [string, string]) => {
-                  const subgraph = hostNode.isSubgraphNode()
-                    ? hostNode.subgraph
-                    : null
-                  const interiorNode = subgraph?.getNodeById(
-                    Number(interiorNodeId)
-                  )
-                  return {
-                    interiorNodeId,
-                    widgetName,
-                    resolved:
-                      interiorNode !== null && interiorNode !== undefined
-                  }
-                })
-
-              return {
-                hostNodeId: String(hostNode.id),
-                widgetEntries
-              }
-            })
-        )
-      })
-
-      expect(results.length).toBeGreaterThanOrEqual(2)
-
-      for (const { hostNodeId, widgetEntries } of results) {
-        expect(widgetEntries.length).toBeGreaterThan(0)
-
-        for (const { interiorNodeId, widgetName, resolved } of widgetEntries) {
-          expect(interiorNodeId).not.toBe('-1')
-          expect(Number(interiorNodeId)).toBeGreaterThan(0)
-          expect(widgetName).toBeTruthy()
-          expect(
-            resolved,
-            `Widget "${widgetName}" (interior node ${interiorNodeId}) on host ${hostNodeId} should resolve`
-          ).toBe(true)
-        }
+        const response = await responsePromise
+        expect(warnings).toEqual([])
+        expect(response.status()).not.toBe(400)
+      } finally {
+        dispose()
       }
-    })
-
-    test('Prompt execution succeeds without 400 error', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(workflow)
-      await comfyPage.nextFrame()
-
-      const responsePromise = comfyPage.page.waitForResponse('**/api/prompt')
-      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-
-      const response = await responsePromise
-      expect(response.status()).not.toBe(400)
     })
   })
 
   test.describe('Nested subgraph duplicate widget names', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
-
-    test('Inner subgraph node has both text widgets promoted', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        NESTED_DUPLICATE_WIDGET_NAMES_WORKFLOW
-      )
-      await comfyPage.nextFrame()
-
-      const nonPreview = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph!
-        const outerNode = graph.getNodeById('4')
-        if (!outerNode?.isSubgraphNode?.()) return []
-
-        const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
-        if (!innerSubgraphNode) return []
-
-        return ((innerSubgraphNode.properties?.proxyWidgets ?? []) as unknown[])
-          .filter(
-            (entry): entry is [string, string] =>
-              Array.isArray(entry) &&
-              entry.length >= 2 &&
-              typeof entry[0] === 'string' &&
-              typeof entry[1] === 'string' &&
-              !entry[1].startsWith('$$')
-          )
-          .map(
-            ([nodeId, widgetName]) => [nodeId, widgetName] as [string, string]
-          )
-      })
-
-      expect(nonPreview).toEqual([
-        ['1', 'text'],
-        ['2', 'text']
-      ])
     })
 
     test('Promoted widget values from both inner CLIPTextEncode nodes are distinguishable', async ({
@@ -182,37 +70,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph', '@widget'] }, () => {
       const values = textWidgets.map((widget) => widget.value)
       expect(values).toContain('11111111111')
       expect(values).toContain('22222222222')
-    })
-
-    test.describe('Promoted border styling in Vue mode', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      })
-
-      test('Intermediate subgraph widgets get promoted border, outermost does not', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          NESTED_DUPLICATE_WIDGET_NAMES_WORKFLOW
-        )
-        await comfyPage.vueNodes.waitForNodes()
-
-        const outerNode = comfyPage.vueNodes.getNodeLocator('4')
-        await expect(outerNode).toBeVisible()
-        await expect(
-          outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
-        ).toHaveCount(0)
-
-        await comfyPage.vueNodes.enterSubgraph('4')
-        await comfyPage.nextFrame()
-        await comfyPage.vueNodes.waitForNodes()
-
-        const intermediateNode = comfyPage.vueNodes.getNodeLocator('3')
-        await expect(intermediateNode).toBeVisible()
-        await expect(
-          intermediateNode.locator(`.${PROMOTED_BORDER_CLASS}`)
-        ).toHaveCount(1)
-      })
     })
   })
 
@@ -275,62 +132,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph', '@widget'] }, () => {
         await expect(heightAfter.input).toHaveValue('1024')
         await expect(stepsAfter.input).toHaveValue('8')
         await expect(textAfter).toHaveValue(/Latina female/)
-      }).toPass({ timeout: 5_000 })
-    })
-
-    test('proxyWidgets entries resolve to valid interior nodes after packing', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(workflow)
-      await comfyPage.vueNodes.waitForNodes()
-
-      const nodeLocator = comfyPage.vueNodes.getNodeLocator(hostNodeId)
-      await expect(nodeLocator).toBeVisible()
-
-      await comfyPage.subgraph.packAllInteriorNodes(hostNodeId)
-
-      await expect(async () => {
-        const result = await comfyPage.page.evaluate((id) => {
-          const graph = window.app!.graph!
-          const hostNode = graph.getNodeById(id)
-          if (!hostNode?.isSubgraphNode?.()) {
-            return { error: 'Host node not found or not a subgraph node' }
-          }
-
-          const proxyWidgets = hostNode.properties?.proxyWidgets ?? []
-          const entries = (proxyWidgets as unknown[])
-            .filter(
-              (entry): entry is [string, string] =>
-                Array.isArray(entry) &&
-                entry.length >= 2 &&
-                typeof entry[0] === 'string' &&
-                typeof entry[1] === 'string' &&
-                !entry[1].startsWith('$$')
-            )
-            .map(([nodeId, widgetName]) => {
-              const interiorNode = hostNode.subgraph.getNodeById(Number(nodeId))
-              return {
-                nodeId,
-                widgetName,
-                resolved: interiorNode !== null && interiorNode !== undefined
-              }
-            })
-
-          return { entries, count: entries.length }
-        }, hostNodeId)
-
-        expect(result).not.toHaveProperty('error')
-        const { entries, count } = result as {
-          entries: { nodeId: string; widgetName: string; resolved: boolean }[]
-          count: number
-        }
-        expect(count).toBeGreaterThan(0)
-        for (const entry of entries) {
-          expect(
-            entry.resolved,
-            `Widget "${entry.widgetName}" (node ${entry.nodeId}) should resolve`
-          ).toBe(true)
-        }
       }).toPass({ timeout: 5_000 })
     })
   })

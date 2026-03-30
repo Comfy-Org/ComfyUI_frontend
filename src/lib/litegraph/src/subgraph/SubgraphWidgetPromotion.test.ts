@@ -266,6 +266,40 @@ describe('SubgraphWidgetPromotion', () => {
   })
 
   describe('Nested Subgraph Widget Promotion', () => {
+    it('should hydrate legacy -1 proxyWidgets to a concrete promoted widget with preserved options', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'batch_size', type: 'INT' }]
+      })
+
+      const interiorNode = new LGraphNode('EmptyLatentImage')
+      const interiorInput = interiorNode.addInput('batch_size', 'INT')
+      interiorNode.addOutput('LATENT', 'LATENT')
+      interiorNode.addWidget('number', 'batch_size', 1, () => {}, {
+        step: 10,
+        min: 1
+      })
+      interiorInput.widget = { name: 'batch_size' }
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostNode = createTestSubgraphNode(subgraph)
+      const serializedHostNode = hostNode.serialize()
+      serializedHostNode.properties = {
+        ...serializedHostNode.properties,
+        proxyWidgets: [['-1', 'batch_size']]
+      }
+
+      hostNode.configure(serializedHostNode)
+
+      expect(hostNode.properties.proxyWidgets).toStrictEqual([
+        [String(interiorNode.id), 'batch_size']
+      ])
+      expect(hostNode.widgets).toHaveLength(1)
+      expect(hostNode.widgets[0].name).toBe('batch_size')
+      expect(hostNode.widgets[0].value).toBe(1)
+      expect(hostNode.widgets[0].options.step).toBe(10)
+    })
+
     it('should prune proxyWidgets referencing nodes not in subgraph on configure', () => {
       // Reproduces the bug where packing nodes into a nested subgraph leaves
       // stale proxyWidgets on the outer subgraph node referencing grandchild
