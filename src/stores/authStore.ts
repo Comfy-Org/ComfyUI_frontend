@@ -236,6 +236,22 @@ export const useAuthStore = defineStore('auth', () => {
     return await getIdToken()
   }
 
+  const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return authHeader
+  }
+
+  const getFirebaseAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+    const authHeader = await getFirebaseAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return authHeader
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
@@ -538,7 +554,9 @@ export const useAuthStore = defineStore('auth', () => {
     sendPasswordReset,
     updatePassword: _updatePassword,
     getAuthHeader,
+    getAuthHeaderOrThrow,
     getFirebaseAuthHeader,
+    getFirebaseAuthHeaderOrThrow,
     getAuthToken
   }
 })
