@@ -92,7 +92,7 @@ function copyBadge(){const u=location.href.replace(/\/[^/]*$/,'/');const b=u+'ba
 document.querySelectorAll('[data-md]').forEach(el=>{const t=el.textContent;el.removeAttribute('data-md');el.innerHTML=marked.parse(t)});
 const FPS=30,FT=1/FPS,SPEEDS=[0.1,0.25,0.5,1,1.5,2];
 document.querySelectorAll('.video-wrap video').forEach(v=>{
-  v.playbackRate=0.5;v.removeAttribute('autoplay');v.pause();
+  v.playbackRate=0.25;v.removeAttribute('autoplay');v.pause();
   const c=document.createElement('div');c.className='vctrl';
   const btn=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.onclick=fn;c.appendChild(b);return b};
   const sep=()=>{const s=document.createElement('div');s.className='vsep';c.appendChild(s)};
@@ -104,7 +104,7 @@ document.querySelectorAll('.video-wrap video').forEach(v=>{
   btn('\u25B6\u25B6',()=>{v.pause();v.currentTime+=FT});
   btn('\u25B6\u25B6\u25B6',()=>{v.currentTime+=FT*10});
   sep();
-  const spdBtns=SPEEDS.map(s=>{const b=btn(s+'x',()=>{v.playbackRate=s;spdBtns.forEach(x=>x.classList.remove('active'));b.classList.add('active')});if(s===0.5)b.classList.add('active');return b});
+  const spdBtns=SPEEDS.map(s=>{const b=btn(s+'x',()=>{v.playbackRate=s;spdBtns.forEach(x=>x.classList.remove('active'));b.classList.add('active')});if(s===0.25)b.classList.add('active');return b});
   sep();c.appendChild(time);
   const hint=document.createElement('span');hint.className='vhint';hint.textContent='\u2190\u2192 frame \u2022 space play';c.appendChild(hint);
   // Custom seekbar — works even without server range request support
