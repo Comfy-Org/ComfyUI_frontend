@@ -31,8 +31,8 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
     accessBillingPortal: mockAccessBillingPortal,
     reportError: mockReportError
   })
@@ -56,13 +56,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () =>
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () =>
     reactive({
       getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     }),
-  FirebaseAuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {}
 }))
 
 vi.mock('@/platform/telemetry', () => ({

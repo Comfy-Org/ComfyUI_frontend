@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Растягивать ли обрезку до нужного размера или добавлять чёрные поля для сохранения соотношения сторон."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Высота, до которой изменяется каждый обрезанный фрагмент."
@@ -2309,6 +2313,23 @@
     "display_name": "Отключить шум",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Нарисовать BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "Применяет фрагментные шейдеры GLSL ES к изображениям. u_resolution (vec2) всегда доступен.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "булевы",
+        "tooltip": "Булевы значения доступны как u_bool0-9 (bool) в коде шейдера"
+      },
+      "curves": {
+        "name": "кривые",
+        "tooltip": "Кривые доступны как u_curve0-3 (sampler2D, 1D LUT) в коде шейдера. Используйте sample с texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Числа с плавающей точкой доступны как u_float0-4 в коде шейдера"
@@ -12218,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Обнаружение",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Фильтровать обнаружения по классу. Установите 'all', чтобы отключить фильтрацию."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Максимальное количество обнаружений на изображение. В порядке убывания оценки уверенности."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Случайное кадрирование изображений",
     "inputs": {
@@ -15622,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
         "tooltip": null
       }
     }

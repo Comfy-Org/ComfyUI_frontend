@@ -2190,6 +2190,10 @@
       "image": {
         "name": "画像"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "クロップを出力サイズに合わせて引き伸ばすか、アスペクト比を維持するために黒いピクセルでパディングするかを選択します。"
+      },
       "output_height": {
         "name": "出力高さ",
         "tooltip": "各切り抜き画像がリサイズされる高さ。"
@@ -2309,6 +2313,23 @@
     "display_name": "ノイズを無効にする",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "バウンディングボックスを描画",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "GLSL ESフラグメントシェーダーを画像に適用します。u_resolution（vec2）は常に利用可能です。",
     "display_name": "GLSLシェーダー",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "ブール値はシェーダーコード内で u_bool0-9（bool）として利用できます"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "カーブはシェーダーコード内で u_curve0-3（sampler2D、1D LUT）として利用できます。texture(u_curve0, vec2(x, 0.5)).r でサンプリングします"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "floatsはシェーダーコード内でu_float0-4として利用可能"
@@ -12218,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 検出",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "クラスで検出結果をフィルタリングします。「all」に設定するとフィルタリングを無効にします。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "画像ごとに返す検出の最大数。信頼度スコアの高い順に並びます。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "ランダムクロップ画像",
     "inputs": {
@@ -15622,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv画像",
         "tooltip": null
       }
     }

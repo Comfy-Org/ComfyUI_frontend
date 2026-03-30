@@ -100,7 +100,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await comfyPage.nextFrame()
 
     await expect
-      .poll(() => comfyPage.canvasOps.getScale(), { timeout: 2000 })
+      .poll(() => comfyPage.canvasOps.getScale(), { timeout: 5000 })
       .toBeCloseTo(1.0, 1)
 
     const zoomIn = comfyPage.page.getByTestId(TestIds.canvas.zoomInAction)

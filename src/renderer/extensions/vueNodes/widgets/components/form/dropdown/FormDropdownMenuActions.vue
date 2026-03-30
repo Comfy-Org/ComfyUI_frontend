@@ -103,6 +103,7 @@ function toggleBaseModelSelection(item: FilterOption) {
   <div class="text-secondary flex gap-2 px-4">
     <FormSearchInput
       v-model="searchQuery"
+      autofocus
       :class="
         cn(
           actionButtonStyle,

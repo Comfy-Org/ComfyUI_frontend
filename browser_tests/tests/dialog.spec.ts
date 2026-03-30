@@ -256,27 +256,6 @@ test.describe('Missing models in Error Tab', () => {
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlayMessages)
     ).not.toBeVisible()
   })
-
-  // Flaky test after parallelization
-  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/1400
-  test.skip('Should download missing model when clicking download button', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_models')
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-
-    const downloadAllButton = comfyPage.page.getByText('Download all')
-    await expect(downloadAllButton).toBeVisible()
-    const downloadPromise = comfyPage.page.waitForEvent('download')
-    await downloadAllButton.click()
-
-    const download = await downloadPromise
-    expect(download.suggestedFilename()).toBe('fake_model.safetensors')
-  })
 })
 
 test.describe('Settings', () => {

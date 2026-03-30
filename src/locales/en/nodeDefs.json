@@ -2201,6 +2201,10 @@
       "padding": {
         "name": "padding",
         "tooltip": "Extra padding in pixels added on each side of the bbox before cropping."
+      },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Whether to stretch the crop to fit the output size, or pad with black pixels to preserve aspect ratio."
       }
     },
     "outputs": {
@@ -2309,6 +2313,23 @@
     "display_name": "DisableNoise",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Draw BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3996,11 +4017,19 @@
       },
       "floats": {
         "name": "floats",
-        "tooltip": "Floats are available as u_float0-4 in the shader code"
+        "tooltip": "Floats are available as u_float0-19 in the shader code"
       },
       "ints": {
         "name": "ints",
-        "tooltip": "Ints are available as u_int0-4 in the shader code"
+        "tooltip": "Ints are available as u_int0-19 in the shader code"
+      },
+      "bools": {
+        "name": "bools",
+        "tooltip": "Booleans are available as u_bool0-9 (bool) in the shader code"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Curves are available as u_curve0-3 (sampler2D, 1D LUT) in the shader code. Sample with texture(u_curve0, vec2(x, 0.5)).r"
       }
     },
     "outputs": {
@@ -13409,6 +13438,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detect",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "threshold": {
+        "name": "threshold"
+      },
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filter detections by class. Set to 'all' to disable filtering."
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Maximum number of detections to return per image. In order of descending confidence score."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "display_name": "Runway First-Last-Frame to Video",
     "description": "Upload first and last keyframes, draft a prompt, and generate a video. More complex transitions, such as cases where the Last frame is completely different from the First frame, may benefit from the longer 10s duration. This would give the generation more time to smoothly transition between the two inputs. Before diving in, review these best practices to ensure that your input selections will set your generation up for success: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -15622,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
         "tooltip": null
       }
     }

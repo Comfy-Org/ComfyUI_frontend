@@ -2190,6 +2190,10 @@
       "image": {
         "name": "imagem"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Escolher entre esticar o recorte para caber no tamanho de saída ou preencher com pixels pretos para preservar a proporção."
+      },
       "output_height": {
         "name": "altura_de_saida",
         "tooltip": "Altura para a qual cada recorte será redimensionado."
@@ -2309,6 +2313,23 @@
     "display_name": "Desativar Ruído",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Desenhar BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "Aplicar shaders de fragmento GLSL ES em imagens. u_resolution (vec2) está sempre disponível.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "booleanos",
+        "tooltip": "Booleanos estão disponíveis como u_bool0-9 (bool) no código do shader"
+      },
+      "curves": {
+        "name": "curvas",
+        "tooltip": "Curvas estão disponíveis como u_curve0-3 (sampler2D, 1D LUT) no código do shader. Amostre com texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Floats estão disponíveis como u_float0-4 no código do shader"
@@ -12218,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detectar",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrar detecções por classe. Defina como 'all' para desabilitar o filtro."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Número máximo de detecções a retornar por imagem. Em ordem decrescente de confiança."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Corte Aleatório de Imagens",
     "inputs": {
@@ -15622,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "imagem UV",
         "tooltip": null
       }
     }

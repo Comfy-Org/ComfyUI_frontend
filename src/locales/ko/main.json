@@ -347,9 +347,19 @@
     "share": "공유",
     "workflowActions": "워크플로우 작업"
   },
+  "builderFooter": {
+    "opensAsApp": "{mode}(으)로 열기",
+    "opensAsGraph": "{mode} 노드 그래프로 열기"
+  },
   "builderMenu": {
     "enterAppMode": "앱 모드로 들어가기",
     "exitAppBuilder": "앱 빌더 종료"
+  },
+  "builderSave": {
+    "successBody": "지금 확인하시겠습니까?",
+    "successBodyApp": "이 워크플로우는 앞으로 기본적으로 앱 모드로 열립니다.\n\n지금 확인하시겠습니까?",
+    "successBodyGraph": "이 워크플로우는 노드 그래프로 열립니다.",
+    "successTitle": "성공적으로 저장되었습니다"
   },
   "builderToolbar": {
     "app": "앱",
@@ -359,18 +369,10 @@
     "connectOutput": "출력 연결",
     "connectOutputBody1": "앱을 저장하려면 최소 한 개의 출력이 연결되어야 합니다.",
     "connectOutputBody2": "'선택' 단계로 전환한 후 출력 노드를 클릭하여 여기에 추가하세요.",
-    "defaultModeAppliedAppBody": "이 워크플로우는 앞으로 기본적으로 앱 모드에서 열립니다.",
-    "defaultModeAppliedAppPrompt": "지금 확인하시겠습니까?",
-    "defaultModeAppliedGraphBody": "이 워크플로우는 앞으로 기본적으로 노드 그래프로 열립니다.",
-    "defaultModeAppliedGraphPrompt": "앱을 계속 보시겠습니까?",
-    "defaultModeAppliedTitle": "성공적으로 설정됨",
-    "defaultView": "기본 보기 설정",
-    "defaultViewDescription": "이 워크플로우가 어떻게 열릴지 선택하세요",
     "defaultViewLabel": "기본적으로 이 워크플로우는 다음과 같이 열립니다:",
-    "defaultViewTitle": "이 워크플로우의 기본 보기 설정",
     "emptyWorkflowPrompt": "템플릿으로 시작하시겠습니까?",
     "emptyWorkflowTitle": "이 워크플로우에는 노드가 없습니다",
-    "exitToWorkflow": "워크플로우로 나가기",
+    "filename": "파일 이름",
     "inputs": "입력",
     "inputsDescription": "입력 선택",
     "label": "앱 빌더",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "기본적으로 노드 그래프로 열립니다",
     "outputs": "출력",
     "outputsDescription": "출력 선택",
+    "saveAs": "다른 이름으로 저장",
     "switchToOutputs": "출력으로 전환",
     "viewApp": "앱 보기"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",
-    "seeErrors": "오류 보기"
+    "missingMedia": "일부 노드에 필요한 입력값이 누락되었습니다",
+    "missingModels": "{count}개의 필수 모델이 누락되었습니다",
+    "missingNodes": "일부 노드가 누락되어 설치가 필요합니다",
+    "seeErrors": "오류 보기",
+    "showMissingMedia": "누락된 입력값 표시",
+    "showMissingModels": "누락된 모델 표시",
+    "showMissingNodes": "누락된 노드 표시",
+    "showSwapNodes": "교체 가능한 노드 표시",
+    "swapNodes": "일부 노드는 대체 가능한 노드로 교체할 수 있습니다"
   },
   "essentials": {
     "batchImage": "이미지 일괄 처리",
@@ -2247,6 +2258,7 @@
     "dataset": "데이터셋",
     "debug": "디버그",
     "deprecated": "지원 중단",
+    "detection": "감지",
     "edit_models": "edit_models",
     "flux": "flux",
     "gligen": "글리젠",
@@ -3228,6 +3240,7 @@
       "termsAgreement": "계속 진행하면 Comfy Org의 {terms} 및 {privacy}에 동의하게 됩니다.",
       "totalDueToday": "오늘 결제 금액 합계"
     },
+    "refreshCredits": "크레딧 새로고침",
     "renewsDate": "{date}에 갱신됨",
     "required": {
       "pollingFailed": "구독 활성화에 실패했습니다",

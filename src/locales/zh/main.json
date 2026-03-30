@@ -347,9 +347,19 @@
     "share": "分享",
     "workflowActions": "工作流操作"
   },
+  "builderFooter": {
+    "opensAsApp": "以 {mode} 模式打开",
+    "opensAsGraph": "以 {mode} 节点图打开"
+  },
   "builderMenu": {
     "enterAppMode": "进入应用模式",
     "exitAppBuilder": "退出应用构建器"
+  },
+  "builderSave": {
+    "successBody": "现在要查看吗？",
+    "successBodyApp": "此工作流将默认以应用模式打开。\n\n现在要查看吗？",
+    "successBodyGraph": "此工作流将以节点图方式打开。",
+    "successTitle": "保存成功"
   },
   "builderToolbar": {
     "app": "应用",
@@ -359,18 +369,10 @@
     "connectOutput": "连接输出",
     "connectOutputBody1": "您的应用需要至少连接一个输出，才能保存。",
     "connectOutputBody2": "切换到“选择”步骤，点击输出节点将其添加到此处。",
-    "defaultModeAppliedAppBody": "此工作流将从现在起默认以应用模式打开。",
-    "defaultModeAppliedAppPrompt": "你想现在查看吗？",
-    "defaultModeAppliedGraphBody": "此工作流将从现在起默认以节点图模式打开。",
-    "defaultModeAppliedGraphPrompt": "你还想查看应用吗？",
-    "defaultModeAppliedTitle": "设置成功",
-    "defaultView": "设置默认视图",
-    "defaultViewDescription": "选择打开方式",
     "defaultViewLabel": "默认情况下，此工作流将以以下方式打开：",
-    "defaultViewTitle": "为此工作流设置默认视图",
     "emptyWorkflowPrompt": "要使用模板开始吗？",
     "emptyWorkflowTitle": "此工作流没有节点",
-    "exitToWorkflow": "返回工作流",
+    "filename": "文件名",
     "inputs": "输入",
     "inputsDescription": "选择输入",
     "label": "应用构建器",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "默认以节点图方式打开",
     "outputs": "输出",
     "outputsDescription": "选择输出",
+    "saveAs": "另存为",
     "switchToOutputs": "切换到输出",
     "viewApp": "查看应用"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count}个错误",
-    "seeErrors": "查看错误"
+    "missingMedia": "部分节点缺少所需输入",
+    "missingModels": "缺少 {count} 个所需模型",
+    "missingNodes": "部分节点缺失，需要安装",
+    "seeErrors": "查看错误",
+    "showMissingMedia": "显示缺失输入",
+    "showMissingModels": "显示缺失模型",
+    "showMissingNodes": "显示缺失节点",
+    "showSwapNodes": "显示可替换节点",
+    "swapNodes": "部分节点可以用替代项替换"
   },
   "essentials": {
     "batchImage": "批量图像",
@@ -2247,6 +2258,7 @@
     "dataset": "dataset",
     "debug": "调试",
     "deprecated": "已弃用",
+    "detection": "检测",
     "edit_models": "编辑模型",
     "flux": "Flux",
     "gligen": "GLIGEN",
@@ -3240,6 +3252,7 @@
       "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
       "totalDueToday": "今日应付总额"
     },
+    "refreshCredits": "刷新额度",
     "renewsDate": "将于 {date} 续订",
     "required": {
       "pollingFailed": "订阅激活失败",
