@@ -49,7 +49,7 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'relative z-5 flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
+          'relative z-5 flex flex-1 flex-col bg-node-component-header-surface',
           'w-(--node-width)',
           !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
           shapeClass,
