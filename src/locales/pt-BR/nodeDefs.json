@@ -15680,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "imagem UV",
+        "tooltip": null
       }
     }
   },
