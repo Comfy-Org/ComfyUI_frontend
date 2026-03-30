@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
@@ -70,8 +71,11 @@ describe('useAssetExportStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    vi.resetAllMocks()
+    vi.clearAllMocks()
     eventHandler.current = null
+    vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({
+      url: 'https://example.com/export.zip'
+    })
   })
 
   afterEach(() => {
@@ -91,6 +95,7 @@ describe('useAssetExportStore', () => {
       )
 
       expect(store.exportList).toHaveLength(0)
+      expect(assetService.getExportDownloadUrl).not.toHaveBeenCalled()
     })
 
     it('updates tracked exports on progress messages', () => {
@@ -128,6 +133,7 @@ describe('useAssetExportStore', () => {
       expect(store.activeExports).toHaveLength(0)
       expect(store.finishedExports).toHaveLength(1)
       expect(store.finishedExports[0].status).toBe('completed')
+      expect(assetService.getExportDownloadUrl).toHaveBeenCalledTimes(1)
     })
 
     it('ignores duplicate completed messages after download triggered', () => {
@@ -152,6 +158,7 @@ describe('useAssetExportStore', () => {
       )
 
       expect(store.finishedExports).toHaveLength(before)
+      expect(assetService.getExportDownloadUrl).toHaveBeenCalledTimes(1)
     })
   })
 
