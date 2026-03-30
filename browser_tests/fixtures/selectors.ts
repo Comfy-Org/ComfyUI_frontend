@@ -127,7 +127,10 @@ export const TestIds = {
     widgetLabel: 'builder-widget-label'
   },
   appMode: {
-    widgetItem: 'app-mode-widget-item'
+    widgetItem: 'app-mode-widget-item',
+    welcome: 'linear-welcome',
+    emptyWorkflow: 'linear-welcome-empty-workflow',
+    buildApp: 'linear-welcome-build-app'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'

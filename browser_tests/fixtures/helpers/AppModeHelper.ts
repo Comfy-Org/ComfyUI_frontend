@@ -112,6 +112,21 @@ export class AppModeHelper {
       .getByRole('button', { name: /run/i })
   }
 
+  /** The welcome screen shown when app mode has no outputs or no nodes. */
+  get welcome(): Locator {
+    return this.page.getByTestId(TestIds.appMode.welcome)
+  }
+
+  /** The empty workflow message shown when no nodes exist. */
+  get emptyWorkflowText(): Locator {
+    return this.page.getByTestId(TestIds.appMode.emptyWorkflow)
+  }
+
+  /** The "Build app" button shown when nodes exist but no outputs. */
+  get buildAppButton(): Locator {
+    return this.page.getByTestId(TestIds.appMode.buildApp)
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").

@@ -33,6 +33,14 @@ export class NodeOperationsHelper {
     })
   }
 
+  /** Remove all nodes from the graph and clean. */
+  async clearGraph() {
+    await this.page.evaluate(() => {
+      window.app!.clean()
+      window.app!.rootGraph.clear()
+    })
+  }
+
   /** Reads from `window.app.graph` (the root workflow graph). */
   async getNodeCount(): Promise<number> {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
