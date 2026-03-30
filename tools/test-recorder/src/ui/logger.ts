@@ -15,10 +15,6 @@ export function warn(label: string, detail?: string) {
   console.log(`  ${pc.yellow('⚠️')}  ${label}${d}`)
 }
 
-function wait(label: string) {
-  console.log(`  ${pc.blue('⏳')} ${label}`)
-}
-
 export function info(lines: string[]) {
   for (const line of lines) {
     console.log(`  ${pc.dim('┃')}  ${line}`)
