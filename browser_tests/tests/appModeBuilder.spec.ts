@@ -2,22 +2,17 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
 
 test.describe('App mode builder selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.featureFlags.setFlag('linear_toggle_enabled', true)
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
   })
 
   test('Can independently select inputs of same name', async ({
     comfyPage
   }) => {
-    const items = comfyPage.page.getByTestId(TestIds.builder.ioItem)
+    const items = comfyPage.appMode.select.selectedItems
 
     await comfyPage.vueNodes.selectNodes(['6', '7'])
     await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
@@ -37,7 +32,7 @@ test.describe('App mode builder selection', () => {
     }
   })
   test('Can drag and drop inputs', async ({ comfyPage }) => {
-    const items = comfyPage.page.getByTestId(TestIds.builder.ioItem)
+    const items = comfyPage.appMode.select.selectedItems
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
@@ -62,11 +57,11 @@ test.describe('App mode builder selection', () => {
     const saveImage = await comfyPage.vueNodes.getNodeLocator('9')
     await saveImage.click()
 
-    const items = comfyPage.page.getByTestId(TestIds.builder.ioItem)
+    const items = comfyPage.appMode.select.selectedItems
     await expect(items).toHaveCount(1)
   })
   test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
-    const items = comfyPage.page.getByTestId(TestIds.builder.ioItem)
+    const items = comfyPage.appMode.select.selectedItems
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
     await expect(items).toHaveCount(0)
