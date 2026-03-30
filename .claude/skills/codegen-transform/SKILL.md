@@ -18,28 +18,28 @@ Transform raw Playwright codegen output into tests that follow ComfyUI conventio
 
 Before transforming, read these existing docs for full context:
 
-| Document | What it covers |
-| --- | --- |
-| `docs/guidance/playwright.md` | Playwright conventions, type assertions, assertion best practices, tags |
-| `browser_tests/AGENTS.md` | Directory structure, polling assertions, gotchas, quality checks |
-| `browser_tests/fixtures/ComfyPage.ts` | Main fixture API (source of truth for all helpers) |
-| `browser_tests/fixtures/helpers/` | Focused helper classes (canvas, keyboard, workflow, etc.) |
+| Document                              | What it covers                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| `docs/guidance/playwright.md`         | Playwright conventions, type assertions, assertion best practices, tags |
+| `browser_tests/AGENTS.md`             | Directory structure, polling assertions, gotchas, quality checks        |
+| `browser_tests/fixtures/ComfyPage.ts` | Main fixture API (source of truth for all helpers)                      |
+| `browser_tests/fixtures/helpers/`     | Focused helper classes (canvas, keyboard, workflow, etc.)               |
 
 ## Transform Rules
 
 The programmatic transform engine lives in `tools/test-recorder/src/transform/rules.ts`. Apply these replacements in order:
 
-| Raw codegen | Convention replacement | Why |
-| --- | --- | --- |
+| Raw codegen                                       | Convention replacement                                                                    | Why                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `import { test, expect } from '@playwright/test'` | `import { comfyPageFixture as test, comfyExpect as expect } from '../fixtures/ComfyPage'` | Use custom fixtures with ComfyUI helpers |
-| `test('test', async ({ page }) =>` | `test('descriptive-name', async ({ comfyPage }) =>` | Use comfyPage fixture, descriptive names |
-| `await page.goto('http://...')` | **Remove entirely** | Fixture handles navigation automatically |
-| `page.locator('canvas')` | `comfyPage.canvas` | Pre-configured canvas locator |
-| `page.waitForTimeout(N)` | `comfyPage.nextFrame()` | Never use arbitrary waits |
-| `page.getByPlaceholder('Search Nodes...')` | `comfyPage.searchBox.input` | Use search box page object |
-| `page` (bare reference) | `comfyPage.page` | Access raw page through fixture |
-| Bare `test(...)` | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })` | All tests need describe + tags |
-| No cleanup | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })` | Canvas tests need cleanup |
+| `test('test', async ({ page }) =>`                | `test('descriptive-name', async ({ comfyPage }) =>`                                       | Use comfyPage fixture, descriptive names |
+| `await page.goto('http://...')`                   | **Remove entirely**                                                                       | Fixture handles navigation automatically |
+| `page.locator('canvas')`                          | `comfyPage.canvas`                                                                        | Pre-configured canvas locator            |
+| `page.waitForTimeout(N)`                          | `comfyPage.nextFrame()`                                                                   | Never use arbitrary waits                |
+| `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                               | Use search box page object               |
+| `page` (bare reference)                           | `comfyPage.page`                                                                          | Access raw page through fixture          |
+| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })`                     | All tests need describe + tags           |
+| No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`  | Canvas tests need cleanup                |
 
 ## Canvas Coordinates → Node References
 
@@ -62,14 +62,14 @@ await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 
 ## Decision Guide
 
-| Question | Answer |
-| --- | --- |
-| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. DOM: `comfyPage.vueNodes.*` (needs opt-in) |
-| Need `nextFrame()`? | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks |
-| Which tag? | `@canvas` for canvas tests, `@widget` for widget tests, `@screenshot` for visual regression |
-| Need cleanup? | Yes for canvas tests (`resetView`), yes if changing settings (`setSetting` back) |
-| Keep pixel coords? | Only for empty canvas clicks. Replace with node refs for node interactions |
-| Use `page` directly? | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures |
+| Question                   | Answer                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. DOM: `comfyPage.vueNodes.*` (needs opt-in)                   |
+| Need `nextFrame()`?        | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks                  |
+| Which tag?                 | `@canvas` for canvas tests, `@widget` for widget tests, `@screenshot` for visual regression |
+| Need cleanup?              | Yes for canvas tests (`resetView`), yes if changing settings (`setSetting` back)            |
+| Keep pixel coords?         | Only for empty canvas clicks. Replace with node refs for node interactions                  |
+| Use `page` directly?       | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures                       |
 
 ## Anti-Patterns
 
@@ -84,12 +84,12 @@ await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 
 Read fixture code directly — it's the source of truth:
 
-| Purpose | Path |
-| --- | --- |
-| Main fixture | `browser_tests/fixtures/ComfyPage.ts` |
-| Helper classes | `browser_tests/fixtures/helpers/` |
-| Component objects | `browser_tests/fixtures/components/` |
-| Test selectors | `browser_tests/fixtures/selectors.ts` |
-| Vue Node helpers | `browser_tests/fixtures/VueNodeHelpers.ts` |
-| Existing tests | `browser_tests/tests/` |
-| Test assets | `browser_tests/assets/` |
+| Purpose           | Path                                       |
+| ----------------- | ------------------------------------------ |
+| Main fixture      | `browser_tests/fixtures/ComfyPage.ts`      |
+| Helper classes    | `browser_tests/fixtures/helpers/`          |
+| Component objects | `browser_tests/fixtures/components/`       |
+| Test selectors    | `browser_tests/fixtures/selectors.ts`      |
+| Vue Node helpers  | `browser_tests/fixtures/VueNodeHelpers.ts` |
+| Existing tests    | `browser_tests/tests/`                     |
+| Test assets       | `browser_tests/assets/`                    |

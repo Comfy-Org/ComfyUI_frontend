@@ -110,5 +110,3 @@ Reserve `toPass()` for blocks with multiple assertions or complex async logic th
 A Playwright test-writing skill exists at `.claude/skills/writing-playwright-tests/SKILL.md`.
 
 The skill documents **meta-level guidance only** (gotchas, anti-patterns, decision guides). It does **not** duplicate fixture APIs - agents should read the fixture code directly in `browser_tests/fixtures/`.
-
-
