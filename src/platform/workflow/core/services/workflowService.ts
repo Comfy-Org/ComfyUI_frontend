@@ -137,7 +137,7 @@ export const useWorkflowService = () => {
       }
     }
 
-    workflow.changeTracker?.checkState()
+    if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
 
     if (isSelfOverwrite) {
       await saveWorkflow(workflow)
@@ -160,7 +160,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      workflow.changeTracker?.checkState()
+      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
 
       const isApp = workflow.initialMode === 'app'
       const expectedPath =
