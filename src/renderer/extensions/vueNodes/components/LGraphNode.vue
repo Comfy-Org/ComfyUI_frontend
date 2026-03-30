@@ -10,7 +10,7 @@
     :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate flex flex-col border border-solid text-sm contain-layout contain-style',
+        'group/node lg-node absolute isolate box-border flex flex-col border border-solid text-sm contain-layout contain-style',
         hasAnyError ? 'border-transparent' : 'border-component-node-border',
         rootBorderShapeClass,
         outlineClass,
