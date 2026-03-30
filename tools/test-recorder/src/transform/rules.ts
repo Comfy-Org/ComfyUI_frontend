@@ -107,7 +107,9 @@ export const structuralTransforms: StructuralTransform[] = [
       )
 
       // Find the test() call and wrap it
-      const testMatch = code.match(/^(import[\s\S]*?\n\n?)(test(?:\.(?:only|skip|fixme))?\s*\([\s\S]*)$/m)
+      const testMatch = code.match(
+        /^(import[\s\S]*?\n\n?)(test(?:\.(?:only|skip|fixme))?\s*\([\s\S]*)$/m
+      )
       if (!testMatch) return code
 
       const imports = testMatch[1]
