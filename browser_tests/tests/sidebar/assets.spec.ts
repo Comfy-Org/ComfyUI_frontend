@@ -535,11 +535,12 @@ test.describe('Assets sidebar - context menu', () => {
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
     await expect(tab.selectionFooter).toBeVisible({ timeout: 3000 })
 
-    // Right-click on a selected card
-    await cards.first().click({ button: 'right' })
-
+    // Right-click on a selected card (retry to let grid layout settle)
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible({ timeout: 3000 })
+    await expect(async () => {
+      await cards.first().click({ button: 'right' })
+      await expect(contextMenu).toBeVisible()
+    }).toPass({ intervals: [300], timeout: 5000 })
 
     // Bulk menu should show bulk download action
     await expect(tab.contextMenuItem('Download all')).toBeVisible()
