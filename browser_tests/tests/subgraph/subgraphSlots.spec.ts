@@ -392,10 +392,13 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       })
       expect(updatedLabel).toBe(RENAMED_LABEL)
 
-      const seedWidgetAfter = subgraphNodeAfter.getByLabel(RENAMED_LABEL, {
+      const seedWidgetAfter = subgraphNodeAfter.getByLabel('seed', {
         exact: true
       })
       await expect(seedWidgetAfter).toBeVisible()
+      await expect(
+        subgraphNodeAfter.getByText(RENAMED_LABEL, { exact: true })
+      ).toBeVisible()
       await SubgraphHelper.expectWidgetBelowHeader(
         subgraphNodeAfter,
         seedWidgetAfter
