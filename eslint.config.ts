@@ -231,15 +231,6 @@ export default defineConfig([
     }
   },
   {
-    files: ['tests-ui/**/*'],
-    rules: {
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { disallowTypeAnnotations: false }
-      ]
-    }
-  },
-  {
     files: ['**/*.spec.ts'],
     ignores: ['browser_tests/tests/**/*.spec.ts'],
     rules: {

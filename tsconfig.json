@@ -27,8 +27,7 @@
       ],
       "@/utils/networkUtil": [
         "./packages/shared-frontend-utils/src/networkUtil.ts"
-      ],
-      "@tests-ui/*": ["./tests-ui/*"]
+      ]
     },
     "typeRoots": ["src/types", "node_modules/@types", "./node_modules"],
     "types": [
@@ -50,8 +49,6 @@
     "src/types/**/*.d.ts",
     "playwright.config.ts",
     "playwright.i18n.config.ts",
-
-    "tests-ui/**/*",
     "vite.config.mts",
     "vitest.config.ts"
     // "vitest.setup.ts",

@@ -5,6 +5,63 @@ import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/j
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 
+/** Factory to create a mock completed job with preview output. */
+export function createMockJob(
+  overrides: Partial<RawJobListItem> & { id: string }
+): RawJobListItem {
+  const now = Date.now() / 1000
+  return {
+    status: 'completed',
+    create_time: now,
+    execution_start_time: now,
+    execution_end_time: now + 5,
+    preview_output: {
+      filename: `output_${overrides.id}.png`,
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    },
+    outputs_count: 1,
+    priority: 0,
+    ...overrides
+  }
+}
+
+/** Create multiple mock jobs with sequential IDs and staggered timestamps. */
+export function createMockJobs(
+  count: number,
+  baseOverrides?: Partial<RawJobListItem>
+): RawJobListItem[] {
+  const now = Date.now() / 1000
+  return Array.from({ length: count }, (_, i) =>
+    createMockJob({
+      id: `job-${String(i + 1).padStart(3, '0')}`,
+      create_time: now - i * 60,
+      execution_start_time: now - i * 60,
+      execution_end_time: now - i * 60 + 5 + i,
+      preview_output: {
+        filename: `image_${String(i + 1).padStart(3, '0')}.png`,
+        subfolder: '',
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      },
+      ...baseOverrides
+    })
+  )
+}
+
+/** Create mock imported file names with various media types. */
+export function createMockImportedFiles(count: number): string[] {
+  const extensions = ['png', 'jpg', 'mp4', 'wav', 'glb', 'txt']
+  return Array.from(
+    { length: count },
+    (_, i) =>
+      `imported_${String(i + 1).padStart(3, '0')}.${extensions[i % extensions.length]}`
+  )
+}
+
 function parseLimit(url: URL, total: number): number {
   const value = Number(url.searchParams.get('limit'))
   if (!Number.isInteger(value) || value <= 0) {
