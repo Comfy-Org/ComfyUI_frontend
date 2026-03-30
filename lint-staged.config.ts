@@ -1,9 +1,6 @@
 import path from 'node:path'
 
 export default {
-  'tests-ui/**': () =>
-    'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1',
-
   './**/*.{css,vue}': (stagedFiles: string[]) => {
     const joinedPaths = toJoinedRelativePaths(stagedFiles)
     return [`pnpm exec stylelint --allow-empty-input ${joinedPaths}`]
