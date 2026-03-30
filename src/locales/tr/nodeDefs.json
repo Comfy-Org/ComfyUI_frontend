@@ -15680,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_görüntüsü",
+        "tooltip": null
       }
     }
   },
