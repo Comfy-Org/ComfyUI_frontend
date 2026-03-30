@@ -11,7 +11,6 @@
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/patch-playwright-agents.js",
-    "tools/test-recorder/*",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
