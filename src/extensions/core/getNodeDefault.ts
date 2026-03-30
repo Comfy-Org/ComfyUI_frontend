@@ -8,10 +8,15 @@ import type { ISlotType, LLink } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '@/scripts/app'
 
+/** Returns true when the node is a SetNode (fallback or kjnodes). */
 function isSetNode(node: LGraphNode): boolean {
   return node.type === 'SetNode'
 }
 
+/**
+ * Applies a color scheme to a node based on its resolved slot type, mirroring
+ * kjnodes' `setColorAndBgColor` so fallback nodes stay visually consistent.
+ */
 function applyTypeColor(node: LGraphNode, type: ISlotType) {
   const typeStr = String(type)
   const nodeColors = LGraphCanvas.node_colors
@@ -45,6 +50,13 @@ function applyTypeColor(node: LGraphNode, type: ISlotType) {
  * to support an optional `default` input: when no active SetNode with a
  * matching Constant name is found, the value connected to `default` is used
  * instead of erroring out.
+ *
+ * **ADR 0008 note**: The `nodeCreated` patch monkey-patches `getInputLink` on
+ * kjnodes-provided GetNode instances solely to add the `default`-input
+ * fallback that kjnodes does not provide. This is a deliberate compatibility
+ * shim scoped to this one method. It wraps, not replaces, the original
+ * implementation so that kjnodes' cross-graph resolution continues to work.
+ * When kjnodes adds native `default`-input support the patch should be removed.
  */
 app.registerExtension({
   name: 'Comfy.GetNodeDefault',
@@ -65,6 +77,10 @@ app.registerExtension({
           this.serialize_widgets = true
         }
 
+        /**
+         * Resolves the virtual output to the node actually feeding this
+         * SetNode's input, allowing the graph serialiser to bypass it.
+         */
         override resolveVirtualOutput(
           _slot: number
         ): { node: LGraphNode; slot: number } | undefined {
@@ -75,6 +91,7 @@ app.registerExtension({
           return { node: originNode, slot: link.origin_slot }
         }
 
+        /** Propagates slot-type and color when the input connection changes. */
         override onConnectionsChange(
           type: number,
           _slot: number | undefined,
@@ -84,6 +101,7 @@ app.registerExtension({
           this._updateType()
         }
 
+        /** Reads the connected input type and updates slots and node color. */
         private _updateType() {
           const { graph } = this
           if (!graph) return
@@ -130,12 +148,24 @@ app.registerExtension({
           this.serialize_widgets = true
         }
 
+        /**
+         * Resolves the virtual output to the node that should supply this
+         * GetNode's value: either a matching SetNode or the `default` input.
+         */
         override resolveVirtualOutput(
           _slot: number
         ): { node: LGraphNode; slot: number } | undefined {
           return this._resolveSource()
         }
 
+        /**
+         * Returns the link that feeds this GetNode's effective input.
+         *
+         * When a matching SetNode is found, returns the link connected to
+         * that SetNode's input (slot 0 only — SetNode has a single input).
+         * Falls back to the link on the `default` input when no SetNode
+         * matches.
+         */
         override getInputLink(_slot: number): LLink | null {
           const resolved = this._resolveSource()
           if (resolved) {
@@ -154,6 +184,13 @@ app.registerExtension({
           return null
         }
 
+        /**
+         * Finds the node and slot that should supply this GetNode's value.
+         *
+         * Searches for an active SetNode whose Constant widget matches this
+         * node's Constant name. If none is found, resolves through the
+         * `default` input instead.
+         */
         private _resolveSource():
           | { node: LGraphNode; slot: number }
           | undefined {
@@ -191,7 +228,14 @@ app.registerExtension({
     }
   },
 
-  // Patch kjnodes' GetNode instances (if kjnodes loaded instead of our fallback)
+  /**
+   * Patches kjnodes-provided GetNode instances to add the `default` input
+   * and the fallback resolution logic that kjnodes does not include natively.
+   *
+   * The original `getInputLink` is preserved and called first so that
+   * kjnodes' cross-graph (subgraph) resolution continues to work. This patch
+   * should be removed once kjnodes ships native `default`-input support.
+   */
   nodeCreated(node: LGraphNode) {
     if (node.type !== 'GetNode') return
     if (node.inputs?.some((i) => i.name === 'default')) return
