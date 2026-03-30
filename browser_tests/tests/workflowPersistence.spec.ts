@@ -323,6 +323,81 @@ test.describe('Workflow Persistence', () => {
     expect(linkCountAfter).toBe(linkCountBefore)
   })
 
+  test('Closing an inactive tab with save preserves its own content', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const suffix = Date.now().toString(36)
+    const nameA = `test-A-${suffix}`
+    const nameB = `test-B-${suffix}`
+
+    // Save the default workflow as A
+    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const nodeCountA = await comfyPage.nodeOps.getNodeCount()
+
+    // Create B: duplicate and save
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.nextFrame()
+    await comfyPage.menu.topbar.saveWorkflow(nameB)
+
+    // Add a Note node in B to mark it as modified
+    await comfyPage.page.evaluate(() => {
+      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
+    })
+    await comfyPage.nextFrame()
+
+    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
+    expect(nodeCountB).toBe(nodeCountA + 1)
+
+    // Trigger checkState so isModified is set
+    await comfyPage.page.evaluate(() => {
+      const em = window.app!.extensionManager as unknown as Record<
+        string,
+        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+      >
+      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+    })
+
+    // Switch to A via topbar tab (making B inactive)
+    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Close inactive B tab via middle-click — triggers "Save before closing?"
+    await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
+      button: 'middle'
+    })
+
+    // Click "Save" in the dirty close dialog
+    const saveButton = comfyPage.page.getByRole('button', { name: 'Save' })
+    await saveButton.waitFor({ state: 'visible' })
+    await saveButton.click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await comfyPage.nextFrame()
+
+    // Verify we're still on A with A's content
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Re-open B from sidebar saved list
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // B should have the extra Note node we added, not A's node count
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
+      .toBe(nodeCountB)
+  })
+
   test('Splitter panel sizes persist correctly in localStorage', async ({
     comfyPage
   }) => {
