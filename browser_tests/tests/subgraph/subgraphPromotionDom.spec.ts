@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
 import {
@@ -8,11 +9,37 @@ import {
 } from '../../helpers/promotedWidgets'
 
 const DOM_WIDGET_SELECTOR = '.comfy-multiline-input'
+const VISIBLE_DOM_WIDGET_SELECTOR = `${DOM_WIDGET_SELECTOR}:visible`
 const TEST_WIDGET_CONTENT = 'Test content that should persist'
+
+async function openSubgraphById(comfyPage: ComfyPage, nodeId: string) {
+  await comfyPage.page.evaluate((targetNodeId) => {
+    const node = window.app!.rootGraph.nodes.find(
+      (candidate) => String(candidate.id) === targetNodeId
+    )
+    if (!node || !('subgraph' in node) || !node.subgraph) {
+      throw new Error(`Subgraph node ${targetNodeId} not found`)
+    }
+
+    window.app!.canvas.openSubgraph(node.subgraph, node)
+  }, nodeId)
+
+  await expect
+    .poll(
+      () =>
+        comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph
+          return !!graph && 'inputNode' in graph
+        }),
+      { timeout: 5_000 }
+    )
+    .toBe(true)
+}
 
 test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
   })
 
   test('Promoted seed widget renders in node body, not header', async ({
@@ -58,7 +85,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       expect(await subgraphNode.exists()).toBe(true)
 
-      await subgraphNode.navigateIntoSubgraph()
+      await openSubgraphById(comfyPage, '11')
 
       const subgraphTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(subgraphTextarea).toBeVisible()
@@ -111,7 +138,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       expect(textareaCount).toBe(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      await subgraphNode.navigateIntoSubgraph()
+      expect(await subgraphNode.exists()).toBe(true)
+
+      await openSubgraphById(comfyPage, '11')
 
       await comfyPage.subgraph.removeSlot('input', 'text')
 
@@ -128,23 +157,24 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       )
 
       const parentCount = await comfyPage.page
-        .locator(DOM_WIDGET_SELECTOR)
+        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
         .count()
       expect(parentCount).toBeGreaterThan(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      await subgraphNode.navigateIntoSubgraph()
+      expect(await subgraphNode.exists()).toBe(true)
+
+      await openSubgraphById(comfyPage, '11')
 
       const subgraphCount = await comfyPage.page
-        .locator(DOM_WIDGET_SELECTOR)
+        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
         .count()
       expect(subgraphCount).toBe(parentCount)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.subgraph.exitViaBreadcrumb()
 
       const finalCount = await comfyPage.page
-        .locator(DOM_WIDGET_SELECTOR)
+        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
         .count()
       expect(finalCount).toBe(parentCount)
     })
