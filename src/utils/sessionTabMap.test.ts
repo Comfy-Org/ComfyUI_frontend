@@ -101,10 +101,7 @@ describe('createSessionTabMap', () => {
         ['node-1', 'tab-a'],
         ['node-2', 'tab-b']
       ]
-      sessionStorage.setItem(
-        `${PREFIX}:test-client`,
-        JSON.stringify(entries)
-      )
+      sessionStorage.setItem(`${PREFIX}:test-client`, JSON.stringify(entries))
 
       const { map } = createSessionTabMap(PREFIX)
       expect(map.value.get('node-1')).toBe('tab-a')
