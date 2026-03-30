@@ -1991,6 +1991,11 @@ async function main() {
               '\n' +
               testCode.slice(insertPos)
           }
+          // Inject 800ms pauses between actions for human-readable video
+          testCode = testCode.replace(
+            /(\n\s*)(await\s+(?:comfyPage|topbar|page|canvas|expect))/g,
+            '$1await page.waitForTimeout(800);\n$1$2'
+          )
           writeFileSync(browserTestFile, testCode)
           try {
             const output = execSync(
