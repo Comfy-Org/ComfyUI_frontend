@@ -315,19 +315,15 @@ export class AssetsSidebarTab extends SidebarTab {
     for (const btn of await closeButtons.all()) {
       await btn.click({ force: true }).catch(() => {})
     }
-    // Wait for toast containers to animate out after close
-    await this.page
-      .locator('.p-toast')
-      .first()
-      .waitFor({ state: 'hidden', timeout: 5000 })
+    // Wait for all toast elements to fully animate out and detach from DOM
+    await expect(this.page.locator('.p-toast-message'))
+      .toHaveCount(0, { timeout: 5000 })
       .catch(() => {})
   }
 
   async switchToImported() {
     await this.dismissToasts()
-    // Use evaluate click because toast overlay can intercept force clicks
-    // during fade-out animation (browser hit-test still routes to overlay)
-    await this.importedTab.evaluate((el: HTMLElement) => el.click())
+    await this.importedTab.click()
     await expect(this.importedTab).toHaveAttribute('aria-selected', 'true', {
       timeout: 3000
     })
@@ -335,7 +331,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async switchToGenerated() {
     await this.dismissToasts()
-    await this.generatedTab.evaluate((el: HTMLElement) => el.click())
+    await this.generatedTab.click()
     await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true', {
       timeout: 3000
     })
@@ -343,7 +339,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async openSettingsMenu() {
     await this.dismissToasts()
-    await this.settingsButton.click({ force: true })
+    await this.settingsButton.click()
     // Wait for popover content to render
     await this.listViewOption
       .or(this.gridViewOption)

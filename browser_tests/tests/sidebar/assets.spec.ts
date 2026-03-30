@@ -525,14 +525,14 @@ test.describe('Assets sidebar - context menu', () => {
     expect(cardCount).toBeGreaterThanOrEqual(2)
 
     // Multi-select: click first, then Ctrl/Cmd+click second
-    await cards.first().click({ force: true })
-    await cards.nth(1).click({ modifiers: ['ControlOrMeta'], force: true })
+    await cards.first().click()
+    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
 
     // Verify multi-selection took effect before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
 
-    // Right-click on a selected card (force bypasses overlay interception)
-    await cards.first().click({ button: 'right', force: true })
+    // Right-click on a selected card
+    await cards.first().click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await expect(contextMenu).toBeVisible({ timeout: 3000 })
