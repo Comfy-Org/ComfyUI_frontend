@@ -60,7 +60,10 @@ export function transform(
       'Still contains waitForTimeout — replace with comfyPage.nextFrame() or retrying assertions'
     )
   }
-  if (code.includes("from '@playwright/test'")) {
+  if (
+    code.includes("from '@playwright/test'") ||
+    code.includes('from "@playwright/test"')
+  ) {
     warnings.push(
       'Still imports from @playwright/test — should use ../fixtures/ComfyPage'
     )
