@@ -161,7 +161,6 @@ export default defineConfig({
       ignored: [
         './browser_tests/**',
         './node_modules/**',
-        './tests-ui/**',
         '.eslintcache',
         '.oxlintrc.json',
         '*.config.{ts,mts}',
