@@ -21,6 +21,7 @@ export const TestIds = {
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
     closeMinimapButton: 'close-minimap-button',
+    minimapInteractionOverlay: 'minimap-interaction-overlay',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',

@@ -64,6 +64,7 @@
 
       <div
         class="absolute inset-0 touch-none"
+        data-testid="minimap-interaction-overlay"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"

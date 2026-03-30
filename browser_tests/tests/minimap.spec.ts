@@ -105,6 +105,169 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     }
   )
 
+  test('Minimap canvas is non-empty for a workflow with nodes', async ({
+    comfyPage
+  }) => {
+    const minimapCanvas = comfyPage.page.locator('.minimap-canvas')
+    await expect(minimapCanvas).toBeVisible()
+
+    const hasContent = await minimapCanvas.evaluate(
+      (canvas: HTMLCanvasElement) => {
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return false
+        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] > 0) return true
+        }
+        return false
+      }
+    )
+
+    expect(hasContent).toBe(true)
+  })
+
+  test('Minimap canvas is empty after all nodes are deleted', async ({
+    comfyPage
+  }) => {
+    const minimapCanvas = comfyPage.page.locator('.minimap-canvas')
+    await expect(minimapCanvas).toBeVisible()
+
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.vueNodes.deleteSelected()
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 2000 })
+      .toBe(0)
+
+    await expect
+      .poll(
+        () =>
+          minimapCanvas.evaluate((canvas: HTMLCanvasElement) => {
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return true
+            const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            for (let i = 3; i < data.length; i += 4) {
+              if (data[i] > 0) return false
+            }
+            return true
+          }),
+        { timeout: 2000 }
+      )
+      .toBe(true)
+  })
+
+  test('Clicking minimap corner pans the main canvas', async ({
+    comfyPage
+  }) => {
+    const minimap = comfyPage.page.locator('.litegraph-minimap')
+    const overlay = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    )
+    await expect(minimap).toBeVisible()
+
+    const before = await comfyPage.page.evaluate(() => ({
+      x: window.app!.canvas.ds.offset[0],
+      y: window.app!.canvas.ds.offset[1]
+    }))
+
+    const box = await overlay.boundingBox()
+    expect(box, 'Minimap interaction overlay not found').toBeTruthy()
+
+    // Click bottom-left area — clear of the settings button (top-left, 32×32px)
+    // and close button (top-right, 32×32px)
+    await comfyPage.page.mouse.click(
+      box!.x + box!.width * 0.15,
+      box!.y + box!.height * 0.85
+    )
+    await comfyPage.nextFrame()
+
+    const after = await comfyPage.page.evaluate(() => ({
+      x: window.app!.canvas.ds.offset[0],
+      y: window.app!.canvas.ds.offset[1]
+    }))
+
+    expect(
+      after,
+      'Canvas offset should change after clicking minimap corner'
+    ).not.toStrictEqual(before)
+  })
+
+  test('Clicking minimap center after FitView causes minimal canvas movement', async ({
+    comfyPage
+  }) => {
+    const minimap = comfyPage.page.locator('.litegraph-minimap')
+    const overlay = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    )
+    await expect(minimap).toBeVisible()
+
+    await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+    await comfyPage.nextFrame()
+
+    const before = await comfyPage.page.evaluate(() => ({
+      x: window.app!.canvas.ds.offset[0],
+      y: window.app!.canvas.ds.offset[1]
+    }))
+
+    const box = await overlay.boundingBox()
+    expect(box, 'Minimap interaction overlay not found').toBeTruthy()
+
+    await comfyPage.page.mouse.click(
+      box!.x + box!.width / 2,
+      box!.y + box!.height / 2
+    )
+    await comfyPage.nextFrame()
+
+    const after = await comfyPage.page.evaluate(() => ({
+      x: window.app!.canvas.ds.offset[0],
+      y: window.app!.canvas.ds.offset[1]
+    }))
+
+    // Clicking the minimap center maps to approximately the center of the node
+    // bounds, which FitView also centers on. A small residual offset is expected
+    // due to the 250px (logical) vs 253px (CSS) width discrepancy in the overlay.
+    const TOLERANCE = 50
+    expect(
+      Math.abs(after.x - before.x),
+      `offset.x changed by more than ${TOLERANCE} after clicking minimap center post-FitView`
+    ).toBeLessThan(TOLERANCE)
+    expect(
+      Math.abs(after.y - before.y),
+      `offset.y changed by more than ${TOLERANCE} after clicking minimap center post-FitView`
+    ).toBeLessThan(TOLERANCE)
+  })
+
+  test('Viewport rectangle updates after minimap click', async ({
+    comfyPage
+  }) => {
+    const minimap = comfyPage.page.locator('.litegraph-minimap')
+    const viewport = minimap.locator('.minimap-viewport')
+    const overlay = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    )
+    await expect(minimap).toBeVisible()
+
+    const transformBefore = await viewport.evaluate(
+      (el: HTMLElement) => el.style.transform
+    )
+
+    const box = await overlay.boundingBox()
+    expect(box, 'Minimap interaction overlay not found').toBeTruthy()
+
+    // Click bottom-left area — clear of the settings button (top-left, 32×32px)
+    // and close button (top-right, 32×32px)
+    await comfyPage.page.mouse.click(
+      box!.x + box!.width * 0.15,
+      box!.y + box!.height * 0.85
+    )
+    await comfyPage.nextFrame()
+
+    await expect
+      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform), {
+        timeout: 1000
+      })
+      .not.toBe(transformBefore)
+  })
+
   test(
     'Viewport rectangle is visible and positioned within minimap',
     { tag: '@screenshot' },
