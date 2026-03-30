@@ -151,6 +151,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // but store collapsed dimensions in vueBoundsOverrides for onBounding.
     if (elementType === 'node' && element.dataset.collapsed != null) {
       if (nodeId) {
+        markElementForFreshMeasurement(element)
         const body = element.querySelector(
           '[data-testid^="node-inner-wrapper"]'
         )

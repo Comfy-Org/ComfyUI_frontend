@@ -12,7 +12,7 @@ export interface MeasureResult {
   nodeVisualBounds: Record<string, CanvasRect>
 }
 
-// Must match the padding value passed to createBounds() in selectionBorder.ts
+// Must match createBounds(selectedItems, 10) in src/extensions/core/selectionBorder.ts:19
 const SELECTION_PADDING = 10
 
 export async function measureSelectionBounds(
