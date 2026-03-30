@@ -32,12 +32,18 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+export interface CompareImages {
+  before: readonly ResultItemImpl[]
+  after: readonly ResultItemImpl[]
+}
+
 interface ResultItemInit extends ResultItem {
   nodeId: NodeId
   mediaType: string
   format?: string
   frame_rate?: number
   display_name?: string
+  compareImages?: CompareImages
 }
 
 export class ResultItemImpl {
@@ -55,6 +61,8 @@ export class ResultItemImpl {
   format?: string
   frame_rate?: number
 
+  compareImages?: CompareImages
+
   constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
@@ -67,6 +75,7 @@ export class ResultItemImpl {
 
     this.format = obj.format
     this.frame_rate = obj.frame_rate
+    this.compareImages = obj.compareImages
   }
 
   get urlParams(): URLSearchParams {
@@ -217,8 +226,18 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
 
+  get isImageCompare(): boolean {
+    return this.mediaType === 'image_compare'
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio || this.is3D
+    return (
+      this.isImage ||
+      this.isVideo ||
+      this.isAudio ||
+      this.is3D ||
+      this.isImageCompare
+    )
   }
 
   static filterPreviewable(

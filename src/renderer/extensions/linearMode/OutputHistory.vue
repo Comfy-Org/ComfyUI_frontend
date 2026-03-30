@@ -71,6 +71,13 @@ const selectableItems = computed(() => {
       itemId: item.id
     })
   }
+  for (const entry of store.activeWorkflowNonAssetOutputs) {
+    items.push({
+      id: `nonasset:${entry.id}`,
+      kind: 'nonAsset',
+      itemId: entry.id
+    })
+  }
   for (const asset of outputs.media.value) {
     const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
@@ -135,6 +142,16 @@ function doEmit() {
         canShowPreview: true
       })
     }
+    return
+  }
+  if (sel.kind === 'nonAsset') {
+    const entry = store.activeWorkflowNonAssetOutputs.find(
+      (e) => e.id === sel.itemId
+    )
+    emit('updateSelection', {
+      output: entry?.output,
+      canShowPreview: true
+    })
     return
   }
   const asset = outputs.media.value.find((a) => a.id === sel.assetId)
@@ -206,6 +223,7 @@ useResizeObserver(outputsRef, () => {
 watch(
   [
     () => store.activeWorkflowInProgressItems.length,
+    () => store.activeWorkflowNonAssetOutputs.length,
     () => visibleHistory.value[0]?.id,
     queueCount
   ],
@@ -350,10 +368,33 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           </div>
 
           <div
-            v-if="hasActiveContent && visibleHistory.length > 0"
+            v-if="
+              hasActiveContent &&
+              (store.activeWorkflowNonAssetOutputs.length > 0 ||
+                visibleHistory.length > 0)
+            "
             class="mx-4 h-12 shrink-0 border-l border-border-default"
           />
         </div>
+
+        <div
+          v-for="entry in store.activeWorkflowNonAssetOutputs"
+          :key="entry.id"
+          :ref="selectedRef(`nonasset:${entry.id}`)"
+          v-bind="itemAttrs(`nonasset:${entry.id}`)"
+          :class="itemClass"
+          @click="store.select(`nonasset:${entry.id}`)"
+        >
+          <OutputHistoryItem :output="entry.output" />
+        </div>
+
+        <div
+          v-if="
+            store.activeWorkflowNonAssetOutputs.length > 0 &&
+            visibleHistory.length > 0
+          "
+          class="mx-4 h-12 shrink-0 border-l border-border-default"
+        />
 
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
           <div

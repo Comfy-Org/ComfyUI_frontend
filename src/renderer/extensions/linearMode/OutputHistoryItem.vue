@@ -13,8 +13,27 @@ const { output } = defineProps<{
 }>()
 </script>
 <template>
+  <div
+    v-if="getMediaType(output) === 'image_compare' && output.compareImages"
+    class="relative block size-10 overflow-hidden rounded-sm bg-secondary-background"
+  >
+    <img
+      v-if="output.compareImages.before[0]"
+      class="absolute inset-0 size-full object-cover"
+      loading="lazy"
+      :src="output.compareImages.before[0].url"
+      :style="{ clipPath: 'inset(0 50% 0 0)' }"
+    />
+    <img
+      v-if="output.compareImages.after[0]"
+      class="absolute inset-0 size-full object-cover"
+      loading="lazy"
+      :src="output.compareImages.after[0].url"
+      :style="{ clipPath: 'inset(0 0 0 50%)' }"
+    />
+  </div>
   <img
-    v-if="getMediaType(output) === 'images'"
+    v-else-if="getMediaType(output) === 'images'"
     class="block size-10 rounded-sm bg-secondary-background object-cover"
     loading="lazy"
     width="40"

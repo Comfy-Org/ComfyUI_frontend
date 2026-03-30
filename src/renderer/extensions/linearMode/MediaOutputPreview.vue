@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent, useAttrs } from 'vue'
 
+import ImageComparePreview from '@/renderer/extensions/linearMode/ImageComparePreview.vue'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
@@ -21,8 +22,13 @@ const { output } = defineProps<{
 const attrs = useAttrs()
 </script>
 <template>
+  <ImageComparePreview
+    v-if="getMediaType(output) === 'image_compare' && output.compareImages"
+    :class="cn('flex-1', attrs.class as string)"
+    :compare-images="output.compareImages"
+  />
   <ImagePreview
-    v-if="getMediaType(output) === 'images'"
+    v-else-if="getMediaType(output) === 'images'"
     :class="attrs.class as string"
     :mobile
     :src="output.url"

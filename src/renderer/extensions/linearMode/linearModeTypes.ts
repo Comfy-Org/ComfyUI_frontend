@@ -20,3 +20,4 @@ export interface OutputSelection {
 export type SelectionValue =
   | { id: string; kind: 'inProgress'; itemId: string }
   | { id: string; kind: 'history'; assetId: string; key: number }
+  | { id: string; kind: 'nonAsset'; itemId: string }

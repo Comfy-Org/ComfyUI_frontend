@@ -12,6 +12,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
+const MAX_NON_ASSET_OUTPUTS = 64
+
 export const useLinearOutputStore = defineStore('linearOutput', () => {
   const { isAppMode } = useAppMode()
   const appModeStore = useAppModeStore()
@@ -20,6 +22,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
+  const completedNonAssetOutputs = ref<
+    { id: string; jobId: string; output: ResultItemImpl }[]
+  >([])
   const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
@@ -30,9 +35,16 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const activeWorkflowInProgressItems = computed(() => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
-    const all = inProgressItems.value
-    return all.filter(
+    return inProgressItems.value.filter(
       (i) => executionStore.jobIdToSessionWorkflowPath.get(i.jobId) === path
+    )
+  })
+
+  const activeWorkflowNonAssetOutputs = computed(() => {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return []
+    return completedNonAssetOutputs.value.filter(
+      (e) => executionStore.jobIdToSessionWorkflowPath.get(e.jobId) === path
     )
   })
 
@@ -153,8 +165,15 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       return
     }
 
-    // No skeleton — create image items directly (only for tracked job)
-    if (jobId !== trackedJobId.value) return
+    // No skeleton — create image items directly.
+    // handleExecuted already verified jobId === activeJobId, so start
+    // tracking if we haven't yet (covers nodes that fire before
+    // onJobStart, e.g. ImageCompare with no SaveImage in the workflow).
+    if (!trackedJobId.value) {
+      trackedJobId.value = jobId
+    } else if (jobId !== trackedJobId.value) {
+      return
+    }
 
     const newItems: InProgressItem[] = newOutputs.map((o) => ({
       id: makeItemId(jobId),
@@ -184,14 +203,31 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       trackedJobId.value = null
     }
 
-    const hasImages = inProgressItems.value.some(
+    const jobImageItems = inProgressItems.value.filter(
       (i) => i.jobId === jobId && i.state === 'image'
     )
 
-    if (hasImages) {
-      // Remove non-image items (skeletons, latents), keep images for absorption
+    // Move non-asset outputs (e.g. image_compare) to their own collection
+    // since they won't appear in history.
+    const nonAssetItems = jobImageItems.filter((i) => i.output?.isImageCompare)
+    if (nonAssetItems.length > 0) {
+      completedNonAssetOutputs.value = [
+        ...nonAssetItems.map((i) => ({
+          id: i.id,
+          jobId,
+          output: i.output!
+        })),
+        ...completedNonAssetOutputs.value
+      ].slice(0, MAX_NON_ASSET_OUTPUTS)
+    }
+
+    // Keep only asset images for history absorption, remove everything else.
+    const hasAssetOutputs = jobImageItems.some((i) => !i.output?.isImageCompare)
+    if (hasAssetOutputs) {
       inProgressItems.value = inProgressItems.value.filter(
-        (i) => i.jobId !== jobId || i.state === 'image'
+        (i) =>
+          i.jobId !== jobId ||
+          (i.state === 'image' && !i.output?.isImageCompare)
       )
       pendingResolve.value = new Set([...pendingResolve.value, jobId])
     } else {
@@ -357,6 +393,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   return {
     activeWorkflowInProgressItems,
+    activeWorkflowNonAssetOutputs,
     resolvedOutputsCache,
     selectedId,
     pendingResolve,
