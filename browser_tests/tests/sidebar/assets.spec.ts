@@ -531,8 +531,9 @@ test.describe('Assets sidebar - context menu', () => {
     await cards.first().click()
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
 
-    // Verify multi-selection took effect before right-clicking
+    // Verify multi-selection took effect and footer is stable before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
+    await expect(tab.selectionFooter).toBeVisible({ timeout: 3000 })
 
     // Right-click on a selected card
     await cards.first().click({ button: 'right' })
