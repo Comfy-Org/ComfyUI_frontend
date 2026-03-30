@@ -62,7 +62,10 @@ export const TestIds = {
     root: 'properties-panel'
   },
   node: {
-    titleInput: 'node-title-input'
+    titleInput: 'node-title-input',
+    pinIndicator: 'node-pin-indicator',
+    innerWrapper: 'node-inner-wrapper',
+    mainImage: 'main-image'
   },
   selectionToolbox: {
     colorPickerButton: 'color-picker-button',
