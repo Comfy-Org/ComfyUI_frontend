@@ -1,5 +1,3 @@
-import type { Page } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
@@ -48,16 +46,6 @@ function isClippedByAnyAncestor(el: Element): boolean {
   return false
 }
 
-/** Add a node to the graph by type and return its ID. */
-async function addNode(page: Page, nodeType: string): Promise<string> {
-  return page.evaluate((type) => {
-    const node = window.app!.graph.add(
-      window.LiteGraph!.createNode(type, undefined, {})
-    )
-    return String(node!.id)
-  }, nodeType)
-}
-
 test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
@@ -72,7 +60,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
   test('Select dropdown is not clipped in app mode panel', async ({
     comfyPage
   }) => {
-    const saveVideoId = await addNode(comfyPage.page, 'SaveVideo')
+    const saveVideoId = await comfyPage.nodeOps.addNode('SaveVideo')
     await comfyPage.nextFrame()
 
     const inputs: [string, string][] = [
@@ -116,7 +104,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
   test('FormDropdown popup is not clipped in app mode panel', async ({
     comfyPage
   }) => {
-    const loadImageId = await addNode(comfyPage.page, 'LoadImage')
+    const loadImageId = await comfyPage.nodeOps.addNode('LoadImage')
     await comfyPage.nextFrame()
 
     const inputs: [string, string][] = [

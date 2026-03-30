@@ -33,6 +33,16 @@ export class NodeOperationsHelper {
     })
   }
 
+  /** Add a node to the graph by type and return its string ID. */
+  async addNode(nodeType: string): Promise<string> {
+    return this.page.evaluate((type) => {
+      const node = window.app!.graph.add(
+        window.LiteGraph!.createNode(type, undefined, {})
+      )
+      return String(node!.id)
+    }, nodeType)
+  }
+
   /** Reads from `window.app.graph` (the root workflow graph). */
   async getNodeCount(): Promise<number> {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)

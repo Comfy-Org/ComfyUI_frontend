@@ -9,11 +9,7 @@ test.describe('Widget copy button', { tag: '@ui' }, () => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
 
-    // Add a PreviewAny node which has a read-only textarea with a copy button
-    await comfyPage.page.evaluate(() => {
-      const node = window.LiteGraph!.createNode('PreviewAny')
-      window.app!.graph.add(node)
-    })
+    await comfyPage.nodeOps.addNode('PreviewAny')
 
     await comfyPage.vueNodes.waitForNodes()
   })
