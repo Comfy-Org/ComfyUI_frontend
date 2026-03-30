@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -176,6 +177,44 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(5)
       expect(node.widgets![2].value).toBe('test')
+    })
+    it('should support restoration even when order has changed', () => {
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 5, null, {})
+      node.serialize_widgets = true
+
+      const node2 = new LGraphNode('TestNode2')
+      node2.addWidget('number', 'seed', 0, null, {})
+      node2.addWidget('number', 'steps', 0, null, {})
+
+      node2.configure(node.serialize())
+
+      expect(node2.widgets![0].value).toBe(5) // steps
+      expect(node2.widgets![1].value).toBe(20) // seed
+    })
+    it('should support specifying order for legacy workflows', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = {
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      } satisfies Partial<ComfyNodeDef> as unknown as ComfyNodeDef
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+
+      const info: ISerialisedNode = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: [20, 5] // Only serializable widgets
+      }
+
+      node.configure(info)
+
+      expect(node.widgets![0].value).toBe(5) // steps
+      expect(node.widgets![1].value).toBe(20) // seed
     })
   })
 })
