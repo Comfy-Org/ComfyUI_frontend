@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import { TestIds } from '../../fixtures/selectors'
 import { getPseudoPreviewWidgets } from '../../helpers/promotedWidgets'
 
-const DOM_PREVIEW_SELECTOR = '.image-preview'
+const domPreviewSelector = '.image-preview'
 
 test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
   test.describe('Cleanup Behavior After Promoted Source Removal', () => {
@@ -61,7 +61,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await expect
         .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())
         .toBe(0)
-      await expect(comfyPage.page.locator(DOM_PREVIEW_SELECTOR)).toHaveCount(0)
+      await expect(comfyPage.page.locator(domPreviewSelector)).toHaveCount(0)
     })
   })
 })

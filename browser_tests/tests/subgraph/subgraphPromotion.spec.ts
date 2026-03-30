@@ -22,22 +22,17 @@ test.describe(
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
 
-        // Select just the KSampler node (id 3) which has a "seed" widget
         const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
         await ksampler.click('title')
         const subgraphNode = await ksampler.convertToSubgraph()
         await comfyPage.nextFrame()
 
-        // SubgraphNode should exist
         expect(await subgraphNode.exists()).toBe(true)
 
-        // The KSampler has a "seed" widget which is in the recommended list.
-        // The promotion store should have at least the seed widget promoted.
         const nodeId = String(subgraphNode.id)
         const promotedNames = await getPromotedWidgetNames(comfyPage, nodeId)
         expect(promotedNames).toContain('seed')
 
-        // SubgraphNode should have widgets (promoted views)
         const widgetCount = await getPromotedWidgetCount(comfyPage, nodeId)
         expect(widgetCount).toBeGreaterThan(0)
       })
@@ -47,7 +42,6 @@ test.describe(
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
 
-        // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
         await saveNode.centerOnNode()
 
@@ -74,7 +68,6 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        // The subgraph node (id 11) should have a text widget promoted
         const textarea = comfyPage.page.getByTestId(
           TestIds.widgets.domWidgetTextarea
         )
@@ -96,19 +89,15 @@ test.describe(
         )
         await comfyPage.vueNodes.waitForNodes()
 
-        // SubgraphNode (id 11) should render with its body
         const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('11')
         await expect(subgraphVueNode).toBeVisible()
 
-        // It should have the Enter Subgraph button
         const enterButton = subgraphVueNode.getByTestId('subgraph-enter-button')
         await expect(enterButton).toBeVisible()
 
-        // The promoted text widget should render inside the node
         const nodeBody = subgraphVueNode.locator('[data-testid="node-body-11"]')
         await expect(nodeBody).toBeVisible()
 
-        // Widgets section should exist and have at least one widget
         const widgets = nodeBody.locator('.lg-node-widgets > div')
         await expect(widgets.first()).toBeVisible()
         await comfyPage.vueNodes.enterSubgraph('11')
@@ -129,18 +118,15 @@ test.describe(
 
         const testContent = 'promoted-value-sync-test'
 
-        // Type into the promoted textarea on the SubgraphNode
         const textarea = comfyPage.page.getByTestId(
           TestIds.widgets.domWidgetTextarea
         )
         await textarea.fill(testContent)
         await comfyPage.nextFrame()
 
-        // Navigate into subgraph
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
         await subgraphNode.navigateIntoSubgraph()
 
-        // Interior CLIPTextEncode textarea should have the same value
         const interiorTextarea = comfyPage.page.getByTestId(
           TestIds.widgets.domWidgetTextarea
         )
@@ -172,10 +158,8 @@ test.describe(
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
         await subgraphNode.navigateIntoSubgraph()
 
-        // Get the KSampler node (id 1) inside the subgraph
         const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
 
-        // Right-click on the KSampler's "steps" widget (index 2) to promote it
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
         await comfyPage.canvas.click({
@@ -185,7 +169,6 @@ test.describe(
         })
         await comfyPage.nextFrame()
 
-        // Look for the Promote Widget menu entry
         const promoteEntry = comfyPage.page
           .locator('.litemenu-entry')
           .filter({ hasText: /Promote Widget/ })
@@ -246,26 +229,16 @@ test.describe(
         )
         await comfyPage.vueNodes.waitForNodes()
 
-        // Navigate into the subgraph (node id 11)
         await comfyPage.vueNodes.enterSubgraph('11')
         await comfyPage.nextFrame()
         await comfyPage.vueNodes.waitForNodes()
 
-        // The interior CLIPTextEncode node (id 10) should render a textarea
-        // widget in Vue mode. Right-click it to verify the contextmenu
-        // event propagates correctly (fix from PR #9840) and shows the
-        // ComfyUI context menu with "Promote Widget".
         const clipNode = comfyPage.vueNodes.getNodeLocator('10')
         await expect(clipNode).toBeVisible()
 
-        // Select the node first so the context menu builds correctly
         await comfyPage.vueNodes.selectNode('10')
         await comfyPage.nextFrame()
 
-        // Dispatch a contextmenu event directly on the textarea. A normal
-        // right-click is intercepted by the z-999 canvas overlay, but the
-        // Vue WidgetTextarea.vue handler listens on @contextmenu.capture,
-        // so dispatching the event directly tests the fix from PR #9840.
         const textarea = clipNode.locator('textarea')
         await expect(textarea).toBeVisible()
         await textarea.dispatchEvent('contextmenu', {
@@ -275,8 +248,6 @@ test.describe(
         })
         await comfyPage.nextFrame()
 
-        // The PrimeVue context menu should show "Promote Widget" since
-        // the node is inside a subgraph (not the root graph).
         const promoteEntry = comfyPage.page
           .locator('.p-contextmenu')
           .locator('text=Promote Widget')
@@ -334,10 +305,6 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        // Node 5 (Sub 0) has 4 promoted widgets. The first (string_a) has its
-        // slot connected externally from the Outer node, so it should be
-        // disabled. The remaining promoted textarea widgets (value, value_1)
-        // are unlinked and should be enabled.
         const promotedNames = await getPromotedWidgetNames(comfyPage, '5')
         expect(promotedNames).toContain('string_a')
         expect(promotedNames).toContain('value')

@@ -4,12 +4,10 @@ import type { Page } from '@playwright/test'
 
 import type { Position } from '../types'
 import { getMimeType } from './mimeTypeUtil'
+import { assetPath } from '../utils/paths'
 
 export class DragDropHelper {
-  constructor(
-    private readonly page: Page,
-    private readonly assetPath: (fileName: string) => string
-  ) {}
+  constructor(private readonly page: Page) {}
 
   private async nextFrame(): Promise<void> {
     await this.page.evaluate(() => {
@@ -49,7 +47,7 @@ export class DragDropHelper {
     } = { dropPosition, preserveNativePropagation }
 
     if (fileName) {
-      const filePath = this.assetPath(fileName)
+      const filePath = assetPath(fileName)
       const buffer = readFileSync(filePath)
 
       evaluateParams.fileName = fileName

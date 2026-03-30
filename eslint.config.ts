@@ -231,15 +231,6 @@ export default defineConfig([
     }
   },
   {
-    files: ['tests-ui/**/*'],
-    rules: {
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { disallowTypeAnnotations: false }
-      ]
-    }
-  },
-  {
     files: ['**/*.spec.ts'],
     ignores: ['browser_tests/tests/**/*.spec.ts'],
     rules: {
@@ -248,6 +239,22 @@ export default defineConfig([
         {
           selector: 'Program',
           message: '.spec.ts files are only allowed under browser_tests/tests/'
+        }
+      ]
+    }
+  },
+  // fixtures/data/ must contain only static data — no executable code or
+  // Playwright imports. This enforces the architectural separation documented
+  // in browser_tests/AGENTS.md.
+  {
+    files: ['browser_tests/fixtures/data/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[source.value=/^@playwright/]',
+          message:
+            'fixtures/data/ must contain only static data. No Playwright imports allowed.'
         }
       ]
     }
@@ -392,6 +399,26 @@ export default defineConfig([
       ]
     }
   },
+  // Browser tests must use comfyPageFixture, not raw @playwright/test test
+  {
+    files: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test'],
+              message:
+                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   // Non-composable .ts files must use the global t/d/te, not useI18n()
   {
     files: ['**/*.ts'],

@@ -28,7 +28,6 @@ function hasVisibleNodeInViewport() {
     )
       return true
   }
-
   return false
 }
 
