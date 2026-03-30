@@ -7,7 +7,6 @@ import {
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
 type TestAutogrowNode = LGraphNode & {
@@ -27,7 +26,7 @@ function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   node2.connect(0, node, inputIndex)
 }
 function testNode() {
-  const node: LGraphNode & Partial<HasInitialMinSize> = new LGraphNode('test')
+  const node = new LGraphNode('test')
   node.widgets = []
   return node as LGraphNode & Required<Pick<LGraphNode, 'widgets'>>
 }

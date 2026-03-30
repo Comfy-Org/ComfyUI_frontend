@@ -119,7 +119,7 @@ async function reencodeAsPngBlob(
 }
 
 export interface HasInitialMinSize {
-  _initialMinSize: { width: number; height: number }
+  _initialMinSize?: { width: number; height: number }
 }
 
 export const CONFIG = Symbol()
@@ -206,7 +206,7 @@ export const useLitegraphService = () => {
    * @internal The key for the node definition in the i18n file.
    */
   function nodeKey(node: LGraphNode): string {
-    return `nodeDefs.${normalizeI18nKey(node.constructor.nodeData!.name)}`
+    return `nodeDefs.${normalizeI18nKey(node.constructor.nodeData?.name ?? '')}`
   }
   /**
    * @internal Add input sockets to the node. (No widget)
@@ -313,6 +313,7 @@ export const useLitegraphService = () => {
       })
     }
     const castedNode = node as LGraphNode & HasInitialMinSize
+    castedNode._initialMinSize ??= { width: 1, height: 1 }
     castedNode._initialMinSize.width = Math.max(
       castedNode._initialMinSize.width,
       minWidth
@@ -370,8 +371,9 @@ export const useLitegraphService = () => {
       node.widgets?.length &&
       !useSettingStore().get('LiteGraph.Node.DefaultPadding')
     const castedNode = node as LGraphNode & HasInitialMinSize
-    s[0] = Math.max(castedNode._initialMinSize.width, s[0] + (pad ? 60 : 0))
-    s[1] = Math.max(castedNode._initialMinSize.height, s[1])
+    const minSize = castedNode._initialMinSize ?? { width: 1, height: 1 }
+    s[0] = Math.max(minSize.width, s[0] + (pad ? 60 : 0))
+    s[1] = Math.max(minSize.height, s[1])
     node.setSize(s)
   }
 

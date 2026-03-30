@@ -2,20 +2,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { HasInitialMinSize } from '@/services/litegraphService'
 
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
 
-function ensureNodeState(node: LGraphNode & Partial<HasInitialMinSize>) {
-  node._initialMinSize ??= { width: 1, height: 1 }
-  ;(node.constructor as { nodeData?: { name: string } }).nodeData ??= {
-    name: 'testnode'
-  }
-  node.widgets ??= []
-}
-
 export function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
-  ensureNodeState(node)
   const namePrefix = `${node.widgets?.length ?? 0}`
   function getSpec(
     inputs: DynamicInputs,
@@ -45,7 +35,6 @@ export function addDynamicCombo(node: LGraphNode, inputs: DynamicInputs) {
 }
 
 export function addAutogrow(node: LGraphNode, template: unknown) {
-  ensureNodeState(node)
   useLitegraphService().addNodeInput(
     node,
     transformInputSpecV1ToV2(['COMFY_AUTOGROW_V3', { template }], {
