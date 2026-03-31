@@ -1502,7 +1502,8 @@
     "Error System": "Error System",
     "Other": "Other",
     "Secrets": "Secrets",
-    "Node Library": "Node Library"
+    "Node Library": "Node Library",
+    "Network": "Network"
   },
   "serverConfigItems": {
     "listen": {
