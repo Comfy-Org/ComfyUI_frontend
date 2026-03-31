@@ -11,11 +11,12 @@ import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 
 export class AppModeHelper {
-  readonly steps: BuilderStepsHelper
   readonly footer: BuilderFooterHelper
+  readonly mobile: MobileAppHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
   readonly outputHistory: OutputHistoryComponent
+  readonly steps: BuilderStepsHelper
   readonly widgets: AppModeWidgetHelper
   /** The "Connect an output" popover shown when saving without outputs. */
   public readonly connectOutputPopover: Locator
@@ -41,11 +42,12 @@ export class AppModeHelper {
   public readonly cancelRunButton: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
-    this.steps = new BuilderStepsHelper(comfyPage)
+    this.mobile = new MobileAppHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
     this.connectOutputPopover = this.page.getByTestId(
       TestIds.builder.connectOutputPopover
@@ -148,12 +150,6 @@ export class AppModeHelper {
 
   get centerPanel(): Locator {
     return this.page.getByTestId(TestIds.linear.centerPanel)
-  }
-  get mobileView(): Locator {
-    return this.page.getByTestId(TestIds.linear.mobile)
-  }
-  get mobileNavigation(): Locator {
-    return this.page.getByRole('tablist').filter({ hasText: 'Run' })
   }
 
   get mobileWorkflows() {
