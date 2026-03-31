@@ -159,7 +159,7 @@ if [ -f pr-context.txt ]; then
   [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
   # Build requirements from QA guide JSON
   REQS_HTML=""
-  QA_GUIDE=$(ls qa-guides/qa-guide-*.json 2>/dev/null | head -1)
+  QA_GUIDE=$(ls qa-guides/qa-guide-*.json 2>/dev/null | head -1 || true)
   if [ -f "$QA_GUIDE" ]; then
     PREREQS=$(python3 -c "
 import json, sys, html
@@ -326,7 +326,7 @@ if [ "$TARGET_TYPE" != "issue" ]; then
     # Fallback: grep Overall Risk section
     RISK_TEXT=""
     if [ -d video-reviews ]; then
-      RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20)
+      RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20 || true)
     fi
     RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
     if [ -n "$RISK_FIRST" ]; then
