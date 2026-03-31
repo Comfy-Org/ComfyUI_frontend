@@ -4,7 +4,7 @@
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
@@ -56,6 +56,11 @@ function createRegisteredNode(
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
+  LiteGraph.registerNodeType('dummy', DummyNode)
+})
+
+afterEach(() => {
+  delete LiteGraph.registered_node_types.dummy
 })
 
 describe('SubgraphSerialization - Basic Serialization', () => {
@@ -483,8 +488,6 @@ describe('SubgraphSerialization - Data Integrity', () => {
   })
 
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
-    LiteGraph.registerNodeType('dummy', DummyNode)
-
     const graph = new LGraph()
     graph.configure(structuredClone(duplicateSubgraphNodeIds))
 
@@ -508,8 +511,6 @@ describe('SubgraphSerialization - Data Integrity', () => {
   })
 
   it('patches remapped link and proxyWidget references during duplicate-ID hydration', () => {
-    LiteGraph.registerNodeType('dummy', DummyNode)
-
     const graph = new LGraph()
     graph.configure(structuredClone(duplicateSubgraphNodeIds))
 

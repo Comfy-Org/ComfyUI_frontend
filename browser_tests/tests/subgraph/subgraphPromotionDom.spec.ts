@@ -129,10 +129,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      const textareaCount = await comfyPage.page
-        .locator(DOM_WIDGET_SELECTOR)
-        .count()
-      expect(textareaCount).toBe(1)
+      await expect(comfyPage.page.locator(DOM_WIDGET_SELECTOR)).toHaveCount(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       expect(await subgraphNode.exists()).toBe(true)

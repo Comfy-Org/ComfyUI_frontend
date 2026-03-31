@@ -159,6 +159,7 @@ test.describe(
         await subgraphNode.navigateIntoSubgraph()
 
         const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
+        await ksampler.click('title')
 
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
@@ -188,9 +189,9 @@ test.describe(
 
         const subgraphNode2 = await comfyPage.nodeOps.getNodeRefById('2')
         await subgraphNode2.navigateIntoSubgraph()
-        const stepsWidget2 = await (
-          await comfyPage.nodeOps.getNodeRefById('1')
-        ).getWidget(2)
+        const ksampler2 = await comfyPage.nodeOps.getNodeRefById('1')
+        await ksampler2.click('title')
+        const stepsWidget2 = await ksampler2.getWidget(2)
         const widgetPos2 = await stepsWidget2.getPosition()
 
         await comfyPage.canvas.click({
