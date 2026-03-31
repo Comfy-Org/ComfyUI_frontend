@@ -4,7 +4,12 @@ import type { Ref } from 'vue'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+// TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
+// of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
 const testState = vi.hoisted(() => {
+  // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
+  // be used here. This local identity function serves the same purpose
+  // (runtime no-op cast) until the test is rewritten to use real stores.
   const placeholder = <T>(v: unknown): T => v as T
   return {
     selectedNodeIds: placeholder<Ref<Set<string>>>(null),
