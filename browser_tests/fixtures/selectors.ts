@@ -61,6 +61,9 @@ export const TestIds = {
     colorBlue: 'blue',
     colorRed: 'red'
   },
+  menu: {
+    moreMenuContent: 'more-menu-content'
+  },
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
@@ -106,4 +109,5 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
