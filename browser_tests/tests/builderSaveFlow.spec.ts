@@ -172,10 +172,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     // Select I/O to enable the button
     await appMode.steps.goToInputs()
-    const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
-    await appMode.select.selectInputWidget(ksampler)
+    await appMode.select.selectInputWidget('KSampler', 'seed')
     await appMode.steps.goToOutputs()
-    await appMode.select.selectOutputNode()
+    await appMode.select.selectOutputNode('Save Image')
 
     // State 2: Enabled "Save as" (unsaved, has outputs)
     const enabledBox = await appMode.footer.saveAsButton.boundingBox()
