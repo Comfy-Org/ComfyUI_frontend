@@ -35,4 +35,7 @@ export class MobileAppHelper {
   private get page(): Page {
     return this.comfyPage.page
   }
+  async tap(locator: Locator, { count = 1 }: { count: number }) {
+    for (let i = 0; i < count; i++) await locator.tap()
+  }
 }
