@@ -6,46 +6,6 @@ import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from './fitToView'
 import { getPromotedWidgetNames } from './promotedWidgets'
 
-/** Click the first SaveImage/PreviewImage node on the canvas. */
-async function selectOutputNode(comfyPage: ComfyPage) {
-  const { page } = comfyPage
-
-  const saveImageNodeId = await page.evaluate(() =>
-    String(
-      window.app!.rootGraph.nodes.find(
-        (n: { type?: string }) =>
-          n.type === 'SaveImage' || n.type === 'PreviewImage'
-      )?.id
-    )
-  )
-  const saveImageRef = await comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-  await saveImageRef.centerOnNode()
-
-  const canvasBox = await page.locator('#graph-canvas').boundingBox()
-  if (!canvasBox) throw new Error('Canvas not found')
-  await page.mouse.click(
-    canvasBox.x + canvasBox.width / 2,
-    canvasBox.y + canvasBox.height / 2
-  )
-  await comfyPage.nextFrame()
-}
-
-/** Center on a node and click its first widget to select it as input. */
-async function selectInputWidget(comfyPage: ComfyPage, node: NodeReference) {
-  const { page } = comfyPage
-
-  await comfyPage.canvasOps.setScale(1)
-  await node.centerOnNode()
-
-  const widgetRef = await node.getWidget(0)
-  const widgetPos = await widgetRef.getPosition()
-  const titleHeight = await page.evaluate(
-    () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
-  )
-  await page.mouse.click(widgetPos.x, widgetPos.y + titleHeight)
-  await comfyPage.nextFrame()
-}
-
 /**
  * Enter builder on the default workflow and select I/O.
  *
@@ -70,11 +30,11 @@ export async function setupBuilder(
 
   await fitToViewInstant(comfyPage)
   await appMode.enterBuilder()
-  await appMode.goToInputs()
-  await selectInputWidget(comfyPage, inputNode)
+  await appMode.steps.goToInputs()
+  await appMode.select.selectInputWidget(inputNode)
 
-  await appMode.goToOutputs()
-  await selectOutputNode(comfyPage)
+  await appMode.steps.goToOutputs()
+  await appMode.select.selectOutputNode()
 
   return inputNode
 }

@@ -151,6 +151,7 @@ export type HubWorkflowDetail = {
   share_id: string
   workflow_id: string
   name: string
+  status: HubWorkflowStatus
   description?: string
   tags?: Array<LabelRef>
   thumbnail_type?: 'image' | 'video' | 'image_comparison'
@@ -194,9 +195,19 @@ export type LabelRef = {
   display_name: string
 }
 
+/**
+ * Public workflow status. NULL in the database is represented as pending in API responses.
+ */
+export type HubWorkflowStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'deprecated'
+
 export type HubWorkflowSummary = {
   share_id: string
   name: string
+  status: HubWorkflowStatus
   description?: string
   tags?: Array<LabelRef>
   models?: Array<LabelRef>
@@ -245,6 +256,7 @@ export type HubWorkflowTemplateEntry = {
    */
   name: string
   title: string
+  status: HubWorkflowStatus
   description?: string
   tags?: Array<string>
   models?: Array<string>
@@ -404,6 +416,24 @@ export type WorkflowApiAssetsRequest = {
   workflow_api_json: {
     [key: string]: unknown
   }
+}
+
+export type PublishWorkflowAssetsRequest = {
+  /**
+   * IDs of assets (inputs and models) to snapshot.
+   */
+  asset_ids: Array<string>
+}
+
+export type WorkflowPublishInfo = {
+  workflow_id: string
+  share_id: string
+  publish_time?: string | null
+  listed: boolean
+  /**
+   * Published assets (inputs and models).
+   */
+  assets: Array<AssetInfo>
 }
 
 export type ForkWorkflowRequest = {
@@ -1348,6 +1378,154 @@ export type DeletionStatus = {
   status_details: string
 }
 
+/**
+ * Detailed execution error information from ComfyUI
+ */
+export type ExecutionError = {
+  /**
+   * ID of the node that failed
+   */
+  node_id: string
+  /**
+   * Type name of the node (e.g., "KSampler")
+   */
+  node_type: string
+  /**
+   * Human-readable error message
+   */
+  exception_message: string
+  /**
+   * Python exception type (e.g., "RuntimeError")
+   */
+  exception_type: string
+  /**
+   * Array of traceback lines (empty array if not available)
+   */
+  traceback: Array<string>
+  /**
+   * Input values at time of failure (empty object if not available)
+   */
+  current_inputs: {
+    [key: string]: unknown
+  }
+  /**
+   * Output values at time of failure (empty object if not available)
+   */
+  current_outputs: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Full job details including workflow and outputs
+ */
+export type JobDetailResponse = {
+  /**
+   * Unique job identifier
+   */
+  id: string
+  /**
+   * User-friendly job status
+   */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  /**
+   * Full ComfyUI workflow (10-100KB, omitted if not available)
+   */
+  workflow?: {
+    [key: string]: unknown
+  }
+  execution_error?: ExecutionError
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time: number
+  /**
+   * Last update timestamp (Unix timestamp in milliseconds)
+   */
+  update_time: number
+  /**
+   * Full outputs object from ComfyUI (only for terminal states)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Primary preview output (only for terminal states)
+   */
+  preview_output?: {
+    [key: string]: unknown
+  }
+  /**
+   * Total number of output files (omitted for non-terminal states)
+   */
+  outputs_count?: number
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * ComfyUI execution status and timeline (only for terminal states)
+   */
+  execution_status?: {
+    [key: string]: unknown
+  }
+  /**
+   * Node-level execution metadata (only for terminal states)
+   */
+  execution_meta?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export type JobEntry = {
+  /**
+   * Unique job identifier
+   */
+  id: string
+  /**
+   * User-friendly job status
+   */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  execution_error?: ExecutionError
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time: number
+  /**
+   * Primary preview output (only present for terminal states)
+   */
+  preview_output?: {
+    [key: string]: unknown
+  }
+  /**
+   * Total number of output files (omitted for non-terminal states)
+   */
+  outputs_count?: number
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * Workflow execution start timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_start_time?: number
+  /**
+   * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
+   */
+  execution_end_time?: number
+}
+
+export type JobsListResponse = {
+  /**
+   * Array of jobs ordered by specified sort field
+   */
+  jobs: Array<JobEntry>
+  pagination: PaginationInfo
+}
+
 export type TagsModificationResponse = {
   /**
    * Tags that were successfully added (for add operation)
@@ -1629,6 +1807,28 @@ export type SendUserInviteEmailRequest = {
   force?: boolean
 }
 
+export type SetReviewStatusResponse = {
+  /**
+   * The share IDs that were submitted for review
+   */
+  share_ids: Array<string>
+  /**
+   * The applied review status
+   */
+  status: 'approved' | 'rejected'
+}
+
+export type SetReviewStatusRequest = {
+  /**
+   * The share IDs of the hub workflows to review
+   */
+  share_ids: Array<string>
+  /**
+   * The review decision for the workflows
+   */
+  status: 'approved' | 'rejected'
+}
+
 /**
  * Response after successfully claiming an invite code
  */
@@ -1689,6 +1889,76 @@ export type UserResponse = {
    * User status (active or waitlisted)
    */
   status: string
+}
+
+/**
+ * System statistics response
+ */
+export type SystemStatsResponse = {
+  system: {
+    /**
+     * Operating system
+     */
+    os: string
+    /**
+     * Python version
+     */
+    python_version: string
+    /**
+     * Whether using embedded Python
+     */
+    embedded_python: boolean
+    /**
+     * ComfyUI version
+     */
+    comfyui_version: string
+    /**
+     * ComfyUI frontend version (commit hash or tag)
+     */
+    comfyui_frontend_version?: string
+    /**
+     * Workflow templates version
+     */
+    workflow_templates_version?: string
+    /**
+     * Cloud ingest service version (commit hash)
+     */
+    cloud_version?: string
+    /**
+     * PyTorch version
+     */
+    pytorch_version: string
+    /**
+     * Command line arguments
+     */
+    argv: Array<string>
+    /**
+     * Total RAM in bytes
+     */
+    ram_total: number
+    /**
+     * Free RAM in bytes
+     */
+    ram_free: number
+  }
+  devices: Array<{
+    /**
+     * Device name
+     */
+    name: string
+    /**
+     * Device type
+     */
+    type: string
+    /**
+     * Total VRAM in bytes
+     */
+    vram_total?: number
+    /**
+     * Free VRAM in bytes
+     */
+    vram_free?: number
+  }>
 }
 
 export type LogsSubscribeRequest = {
@@ -1808,6 +2078,53 @@ export type ModelFolder = {
 }
 
 /**
+ * Error response for ComfyUI prompt execution.
+ */
+export type PromptErrorResponse = {
+  [key: string]: unknown
+}
+
+export type GetUserDataResponseFullFile = {
+  /**
+   * File name or path relative to the user directory.
+   */
+  path?: string
+  /**
+   * File size in bytes.
+   */
+  size?: number
+  /**
+   * UNIX timestamp of the last modification in milliseconds.
+   */
+  modified?: number
+}
+
+export type GetUserDataResponseFull = Array<GetUserDataResponseFullFile>
+
+export type UserDataResponseFull = {
+  path?: string
+  size?: number
+  /**
+   * UNIX timestamp of the last modification in milliseconds.
+   */
+  modified?: number
+}
+
+/**
+ * Request to manage history operations
+ */
+export type HistoryManageRequest = {
+  /**
+   * Array of job IDs to delete from history
+   */
+  delete?: Array<string>
+  /**
+   * If true, clear all history for the authenticated user
+   */
+  clear?: boolean
+}
+
+/**
  * Job status information
  */
 export type JobStatusResponse = {
@@ -1845,6 +2162,175 @@ export type JobStatusResponse = {
    * Error message if the job failed
    */
   error_message?: string | null
+}
+
+export type QueueManageResponse = {
+  /**
+   * Array of job IDs that were successfully cancelled
+   */
+  deleted?: Array<string>
+  /**
+   * Whether the queue was cleared
+   */
+  cleared?: boolean
+}
+
+/**
+ * Request to manage queue operations
+ */
+export type QueueManageRequest = {
+  /**
+   * Array of PENDING job IDs to cancel
+   */
+  delete?: Array<string>
+  /**
+   * If true, clear all pending jobs from the queue
+   */
+  clear?: boolean
+}
+
+/**
+ * Queue information with pending and running jobs
+ */
+export type QueueInfo = {
+  /**
+   * Array of currently running job items
+   */
+  queue_running?: Array<Array<unknown>>
+  /**
+   * Array of pending job items (ordered by creation time, oldest first)
+   */
+  queue_pending?: Array<Array<unknown>>
+}
+
+/**
+ * Detailed execution history response for a specific prompt.
+ * Returns a dictionary with prompt_id as key and full history data as value.
+ *
+ */
+export type HistoryDetailResponse = {
+  [key: string]: HistoryDetailEntry
+}
+
+/**
+ * History entry with full prompt data
+ */
+export type HistoryDetailEntry = {
+  /**
+   * Full prompt execution data
+   */
+  prompt?: {
+    /**
+     * Execution priority
+     */
+    priority?: number
+    /**
+     * The prompt ID
+     */
+    prompt_id?: string
+    /**
+     * The workflow nodes
+     */
+    prompt?: {
+      [key: string]: unknown
+    }
+    /**
+     * Additional execution data
+     */
+    extra_data?: {
+      [key: string]: unknown
+    }
+    /**
+     * Output nodes to execute
+     */
+    outputs_to_execute?: Array<string>
+  }
+  /**
+   * Output data from execution (generated images, files, etc.)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Execution status and timeline information
+   */
+  status?: {
+    [key: string]: unknown
+  }
+  /**
+   * Metadata about the execution and nodes
+   */
+  meta?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * History entry with prompt_id and execution data
+ */
+export type HistoryEntry = {
+  /**
+   * Unique identifier for this prompt execution
+   */
+  prompt_id: string
+  /**
+   * Job creation timestamp (Unix timestamp in milliseconds)
+   */
+  create_time?: number
+  /**
+   * UUID identifying the workflow graph definition
+   */
+  workflow_id?: string
+  /**
+   * Filtered prompt execution data (lightweight format)
+   */
+  prompt?: {
+    /**
+     * Execution priority
+     */
+    priority?: number
+    /**
+     * The prompt ID
+     */
+    prompt_id?: string
+    /**
+     * Additional execution data (workflow removed from extra_pnginfo)
+     */
+    extra_data?: {
+      [key: string]: unknown
+    }
+  }
+  /**
+   * Output data from execution (generated images, files, etc.)
+   */
+  outputs?: {
+    [key: string]: unknown
+  }
+  /**
+   * Execution status and timeline information
+   */
+  status?: {
+    [key: string]: unknown
+  }
+  /**
+   * Metadata about the execution and nodes
+   */
+  meta?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Execution history response with history array.
+ * Returns an object with a "history" key containing an array of history entries.
+ * Each entry includes prompt_id as a property along with execution data.
+ *
+ */
+export type HistoryResponse = {
+  /**
+   * Array of history entries ordered by creation time (newest first)
+   */
+  history: Array<HistoryEntry>
 }
 
 /**
@@ -1901,6 +2387,82 @@ export type GlobalSubgraphInfo = {
   data?: string
 }
 
+export type NodeInfo = {
+  /**
+   * Input specifications for the node
+   */
+  input?: {
+    [key: string]: unknown
+  }
+  /**
+   * Order of inputs for display
+   */
+  input_order?: {
+    [key: string]: Array<string>
+  }
+  /**
+   * Output types of the node
+   */
+  output?: Array<string>
+  /**
+   * Whether each output is a list
+   */
+  output_is_list?: Array<boolean>
+  /**
+   * Names of the outputs
+   */
+  output_name?: Array<string>
+  /**
+   * Internal name of the node
+   */
+  name?: string
+  /**
+   * Display name of the node
+   */
+  display_name?: string
+  /**
+   * Description of the node
+   */
+  description?: string
+  /**
+   * Python module implementing the node
+   */
+  python_module?: string
+  /**
+   * Category of the node
+   */
+  category?: string
+  /**
+   * Whether this is an output node
+   */
+  output_node?: boolean
+  /**
+   * Tooltips for outputs
+   */
+  output_tooltips?: Array<string>
+  /**
+   * Whether the node is deprecated
+   */
+  deprecated?: boolean
+  /**
+   * Whether the node is experimental
+   */
+  experimental?: boolean
+  /**
+   * Whether this is an API node
+   */
+  api_node?: boolean
+}
+
+export type PromptInfo = {
+  exec_info?: {
+    /**
+     * Number of items remaining in the queue
+     */
+    queue_remaining?: number
+  }
+}
+
 export type ExportDownloadUrlResponse = {
   /**
    * Signed URL for downloading the export ZIP file
@@ -1915,6 +2477,58 @@ export type ExportDownloadUrlResponse = {
 export type ErrorResponse = {
   code: string
   message: string
+}
+
+export type PromptResponse = {
+  /**
+   * Unique identifier for the prompt execution
+   */
+  prompt_id?: string
+  /**
+   * Priority number in the queue
+   */
+  number?: number
+  /**
+   * Any errors in the nodes of the prompt
+   */
+  node_errors?: {
+    [key: string]: unknown
+  }
+}
+
+export type PromptRequest = {
+  /**
+   * The workflow graph to execute
+   */
+  prompt: {
+    [key: string]: unknown
+  }
+  /**
+   * Priority number for the queue (lower numbers have higher priority)
+   */
+  number?: number
+  /**
+   * If true, adds the prompt to the front of the queue
+   */
+  front?: boolean
+  /**
+   * Extra data to be associated with the prompt
+   */
+  extra_data?: {
+    [key: string]: unknown
+  }
+  /**
+   * List of node names to execute
+   */
+  partial_execution_targets?: Array<string>
+  /**
+   * UUID identifying the cloud workflow entity to associate with this job
+   */
+  workflow_id?: string
+  /**
+   * UUID identifying the workflow version to associate with this job
+   */
+  workflow_version_id?: string
 }
 
 export type ListAssetsResponseWritable = {
@@ -2006,6 +2620,124 @@ export type AssetCreatedWritable = AssetWritable & {
 export type FeedbackResponseWritable = {
   [key: string]: unknown
 }
+
+export type GetPromptInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/prompt'
+}
+
+export type GetPromptInfoErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetPromptInfoError = GetPromptInfoErrors[keyof GetPromptInfoErrors]
+
+export type GetPromptInfoResponses = {
+  /**
+   * Success
+   */
+  200: PromptInfo
+}
+
+export type GetPromptInfoResponse =
+  GetPromptInfoResponses[keyof GetPromptInfoResponses]
+
+export type ExecutePromptData = {
+  body: PromptRequest
+  path?: never
+  query?: never
+  url: '/api/prompt'
+}
+
+export type ExecutePromptErrors = {
+  /**
+   * Invalid prompt
+   */
+  400: PromptErrorResponse
+  /**
+   * Payment required - Insufficient credits
+   */
+  402: PromptErrorResponse
+  /**
+   * Payment required - User has not paid
+   */
+  429: PromptErrorResponse
+  /**
+   * Internal server error
+   */
+  500: PromptErrorResponse
+  /**
+   * Service unavailable
+   */
+  503: PromptErrorResponse
+}
+
+export type ExecutePromptError = ExecutePromptErrors[keyof ExecutePromptErrors]
+
+export type ExecutePromptResponses = {
+  /**
+   * Success - Prompt accepted
+   */
+  200: PromptResponse
+}
+
+export type ExecutePromptResponse =
+  ExecutePromptResponses[keyof ExecutePromptResponses]
+
+export type GetNodeInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/object_info'
+}
+
+export type GetNodeInfoResponses = {
+  /**
+   * Success
+   */
+  200: {
+    [key: string]: NodeInfo
+  }
+}
+
+export type GetNodeInfoResponse =
+  GetNodeInfoResponses[keyof GetNodeInfoResponses]
+
+export type GetFeaturesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/features'
+}
+
+export type GetFeaturesResponses = {
+  /**
+   * Success
+   */
+  200: {
+    /**
+     * Whether the server supports preview metadata
+     */
+    supports_preview_metadata?: boolean
+    /**
+     * Maximum upload size in bytes
+     */
+    max_upload_size?: number
+    [key: string]: unknown | boolean | number | undefined
+  }
+}
+
+export type GetFeaturesResponse =
+  GetFeaturesResponses[keyof GetFeaturesResponses]
 
 export type GetWorkflowTemplatesData = {
   body?: never
@@ -2197,6 +2929,297 @@ export type GetModelPreviewResponses = {
 
 export type GetModelPreviewResponse =
   GetModelPreviewResponses[keyof GetModelPreviewResponses]
+
+export type ManageHistoryData = {
+  body: HistoryManageRequest
+  path?: never
+  query?: never
+  url: '/api/history'
+}
+
+export type ManageHistoryErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ManageHistoryError = ManageHistoryErrors[keyof ManageHistoryErrors]
+
+export type ManageHistoryResponses = {
+  /**
+   * Success - History management operation completed
+   */
+  200: unknown
+}
+
+export type GetHistoryData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Maximum number of items to return
+     */
+    max_items?: number
+    /**
+     * Starting position (default 0)
+     */
+    offset?: number
+  }
+  url: '/api/history_v2'
+}
+
+export type GetHistoryErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetHistoryError = GetHistoryErrors[keyof GetHistoryErrors]
+
+export type GetHistoryResponses = {
+  /**
+   * Success - Execution history retrieved
+   */
+  200: HistoryResponse
+}
+
+export type GetHistoryResponse = GetHistoryResponses[keyof GetHistoryResponses]
+
+export type GetHistoryForPromptData = {
+  body?: never
+  path: {
+    /**
+     * The prompt ID to retrieve history for
+     */
+    prompt_id: string
+  }
+  query?: never
+  url: '/api/history_v2/{prompt_id}'
+}
+
+export type GetHistoryForPromptErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Prompt not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetHistoryForPromptError =
+  GetHistoryForPromptErrors[keyof GetHistoryForPromptErrors]
+
+export type GetHistoryForPromptResponses = {
+  /**
+   * Success - History for prompt retrieved
+   */
+  200: HistoryDetailResponse
+}
+
+export type GetHistoryForPromptResponse =
+  GetHistoryForPromptResponses[keyof GetHistoryForPromptResponses]
+
+export type ListJobsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Filter by one or more statuses (comma-separated). If not provided, returns all jobs.
+     */
+    status?: string
+    /**
+     * Filter by workflow ID (exact match)
+     */
+    workflow_id?: string
+    /**
+     * Filter by output media type (only applies to completed jobs with outputs)
+     */
+    output_type?: 'image' | 'video' | 'audio' | '3d'
+    /**
+     * Field to sort by (create_time = when job was submitted, execution_time = how long workflow took to run)
+     */
+    sort_by?: 'create_time' | 'execution_time'
+    /**
+     * Sort direction (asc = ascending, desc = descending)
+     */
+    sort_order?: 'asc' | 'desc'
+    /**
+     * Pagination offset (0-based)
+     */
+    offset?: number
+    /**
+     * Maximum items per page (1-1000)
+     */
+    limit?: number
+  }
+  url: '/api/jobs'
+}
+
+export type ListJobsErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListJobsError = ListJobsErrors[keyof ListJobsErrors]
+
+export type ListJobsResponses = {
+  /**
+   * Success - Jobs retrieved
+   */
+  200: JobsListResponse
+}
+
+export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses]
+
+export type GetJobDetailData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: never
+  url: '/api/jobs/{job_id}'
+}
+
+export type GetJobDetailErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - Job does not belong to user
+   */
+  403: ErrorResponse
+  /**
+   * Job not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetJobDetailError = GetJobDetailErrors[keyof GetJobDetailErrors]
+
+export type GetJobDetailResponses = {
+  /**
+   * Success - Job details retrieved
+   */
+  200: JobDetailResponse
+}
+
+export type GetJobDetailResponse =
+  GetJobDetailResponses[keyof GetJobDetailResponses]
+
+export type ViewFileData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the file to view
+     */
+    filename: string
+    /**
+     * Subfolder path where the file is located
+     */
+    subfolder?: string
+    /**
+     * Type of file (e.g., output, input, temp)
+     */
+    type?: string
+    /**
+     * Full path to the file (used for temp files)
+     */
+    fullpath?: string
+    /**
+     * Format of the file
+     */
+    format?: string
+    /**
+     * Frame rate for video files
+     */
+    frame_rate?: number
+    /**
+     * Workflow identifier
+     */
+    workflow?: string
+    /**
+     * Timestamp parameter
+     */
+    timestamp?: number
+    /**
+     * Image channel to extract from PNG images.
+     * - 'rgb': Return only RGB channels (alpha set to fully opaque)
+     * - 'a' or 'alpha': Return alpha channel as grayscale image
+     * - If not specified, return original image unchanged via redirect
+     *
+     */
+    channel?: string
+    /**
+     * Maximum dimension (width or height) to resize the image to, preserving aspect ratio.
+     * The image is fit within a res x res box. Returns a JPEG thumbnail.
+     * Only applies to raster image files (PNG, JPEG, WebP, GIF).
+     *
+     */
+    res?: number
+  }
+  url: '/api/view'
+}
+
+export type ViewFileErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * File not found or unauthorized
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
+
+export type ViewFileResponses = {
+  /**
+   * Success - File content returned (used when channel or res parameter is present)
+   */
+  200: Blob | File
+}
+
+export type ViewFileResponse = ViewFileResponses[keyof ViewFileResponses]
 
 export type GetMaskLayersData = {
   body?: never
@@ -3259,6 +4282,97 @@ export type ImportPublishedAssetsResponses = {
 export type ImportPublishedAssetsResponse2 =
   ImportPublishedAssetsResponses[keyof ImportPublishedAssetsResponses]
 
+export type GetQueueInfoData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/queue'
+}
+
+export type GetQueueInfoErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Invalid request parameters
+   */
+  500: ErrorResponse
+}
+
+export type GetQueueInfoError = GetQueueInfoErrors[keyof GetQueueInfoErrors]
+
+export type GetQueueInfoResponses = {
+  /**
+   * Success
+   */
+  200: QueueInfo
+}
+
+export type GetQueueInfoResponse =
+  GetQueueInfoResponses[keyof GetQueueInfoResponses]
+
+export type ManageQueueData = {
+  body: QueueManageRequest
+  path?: never
+  query?: never
+  url: '/api/queue'
+}
+
+export type ManageQueueErrors = {
+  /**
+   * Invalid request parameters
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ManageQueueError = ManageQueueErrors[keyof ManageQueueErrors]
+
+export type ManageQueueResponses = {
+  /**
+   * Success
+   */
+  200: QueueManageResponse
+}
+
+export type ManageQueueResponse =
+  ManageQueueResponses[keyof ManageQueueResponses]
+
+export type InterruptJobData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/interrupt'
+}
+
+export type InterruptJobErrors = {
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type InterruptJobError = InterruptJobErrors[keyof InterruptJobErrors]
+
+export type InterruptJobResponses = {
+  /**
+   * Success - Job interrupted or no running job found
+   */
+  200: unknown
+}
+
 export type ListSecretsData = {
   body?: never
   path?: never
@@ -3487,6 +4601,73 @@ export type UpdateSecretResponses = {
 export type UpdateSecretResponse =
   UpdateSecretResponses[keyof UpdateSecretResponses]
 
+export type GetAllSettingsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/settings'
+}
+
+export type GetAllSettingsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type GetAllSettingsError =
+  GetAllSettingsErrors[keyof GetAllSettingsErrors]
+
+export type GetAllSettingsResponses = {
+  /**
+   * User settings as key-value pairs
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetAllSettingsResponse =
+  GetAllSettingsResponses[keyof GetAllSettingsResponses]
+
+export type UpdateMultipleSettingsData = {
+  /**
+   * Settings to update as key-value pairs
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/api/settings'
+}
+
+export type UpdateMultipleSettingsErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type UpdateMultipleSettingsError =
+  UpdateMultipleSettingsErrors[keyof UpdateMultipleSettingsErrors]
+
+export type UpdateMultipleSettingsResponses = {
+  /**
+   * Updated user settings
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type UpdateMultipleSettingsResponse =
+  UpdateMultipleSettingsResponses[keyof UpdateMultipleSettingsResponses]
+
 export type GetSettingByKeyData = {
   body?: never
   path: {
@@ -3607,6 +4788,490 @@ export type SubmitFeedbackResponses = {
 export type SubmitFeedbackResponse =
   SubmitFeedbackResponses[keyof SubmitFeedbackResponses]
 
+export type GetUserdataData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * The directory to list files from.
+     */
+    dir?: string
+    /**
+     * Whether to list files recursively.
+     */
+    recurse?: boolean
+    /**
+     * Whether to split file information by type.
+     */
+    split?: boolean
+    /**
+     * Whether to return full file metadata.
+     */
+    full_info?: boolean
+  }
+  url: '/api/userdata'
+}
+
+export type GetUserdataErrors = {
+  /**
+   * Bad request (e.g., invalid filename).
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * File not found or invalid path.
+   */
+  404: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type GetUserdataError = GetUserdataErrors[keyof GetUserdataErrors]
+
+export type GetUserdataResponses = {
+  /**
+   * A list of user data files.
+   */
+  200: GetUserDataResponseFull
+}
+
+export type GetUserdataResponse =
+  GetUserdataResponses[keyof GetUserdataResponses]
+
+export type GetUserdataFilePublishData = {
+  body?: never
+  path: {
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}/publish'
+}
+
+export type GetUserdataFilePublishErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetUserdataFilePublishError =
+  GetUserdataFilePublishErrors[keyof GetUserdataFilePublishErrors]
+
+export type GetUserdataFilePublishResponses = {
+  /**
+   * Publish info (publish_time is null if never published)
+   */
+  200: WorkflowPublishInfo
+}
+
+export type GetUserdataFilePublishResponse =
+  GetUserdataFilePublishResponses[keyof GetUserdataFilePublishResponses]
+
+export type PostUserdataFilePublishData = {
+  body: PublishWorkflowAssetsRequest
+  path: {
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}/publish'
+}
+
+export type PostUserdataFilePublishErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type PostUserdataFilePublishError =
+  PostUserdataFilePublishErrors[keyof PostUserdataFilePublishErrors]
+
+export type PostUserdataFilePublishResponses = {
+  /**
+   * Workflow published
+   */
+  200: WorkflowPublishInfo
+}
+
+export type PostUserdataFilePublishResponse =
+  PostUserdataFilePublishResponses[keyof PostUserdataFilePublishResponses]
+
+export type DeleteUserdataFileData = {
+  body?: never
+  path: {
+    /**
+     * The file path to delete (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}'
+}
+
+export type DeleteUserdataFileErrors = {
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * File not found.
+   */
+  404: string
+  /**
+   * Internal server error.
+   */
+  500: string
+}
+
+export type DeleteUserdataFileError =
+  DeleteUserdataFileErrors[keyof DeleteUserdataFileErrors]
+
+export type DeleteUserdataFileResponses = {
+  /**
+   * File deleted successfully (No Content).
+   */
+  204: void
+}
+
+export type DeleteUserdataFileResponse =
+  DeleteUserdataFileResponses[keyof DeleteUserdataFileResponses]
+
+export type GetUserdataFileData = {
+  body?: never
+  path: {
+    /**
+     * The filename of the user data to retrieve.
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}'
+}
+
+export type GetUserdataFileErrors = {
+  /**
+   * Bad request (e.g., invalid filename).
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * File not found or invalid path.
+   */
+  404: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type GetUserdataFileError =
+  GetUserdataFileErrors[keyof GetUserdataFileErrors]
+
+export type GetUserdataFileResponses = {
+  /**
+   * Successfully retrieved the file.
+   */
+  200: Blob | File
+}
+
+export type GetUserdataFileResponse =
+  GetUserdataFileResponses[keyof GetUserdataFileResponses]
+
+export type PostUserdataFileData = {
+  body: Blob | File
+  path: {
+    /**
+     * The target file path (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: {
+    /**
+     * If "false", prevents overwriting existing files. Defaults to "true".
+     */
+    overwrite?: 'true' | 'false'
+    /**
+     * If "true", returns detailed file info; if "false", returns only the relative path.
+     */
+    full_info?: 'true' | 'false'
+  }
+  url: '/api/userdata/{file}'
+}
+
+export type PostUserdataFileErrors = {
+  /**
+   * Missing or invalid 'file' parameter.
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * The requested path is not allowed.
+   */
+  403: string
+  /**
+   * File already exists and overwrite is set to false.
+   */
+  409: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type PostUserdataFileError =
+  PostUserdataFileErrors[keyof PostUserdataFileErrors]
+
+export type PostUserdataFileResponses = {
+  /**
+   * File uploaded successfully.
+   */
+  200: UserDataResponseFull
+}
+
+export type PostUserdataFileResponse =
+  PostUserdataFileResponses[keyof PostUserdataFileResponses]
+
+export type MoveUserdataFileData = {
+  body?: never
+  path: {
+    /**
+     * The source file path (URL encoded if necessary).
+     */
+    file: string
+    /**
+     * The destination file path (URL encoded if necessary).
+     */
+    dest: string
+  }
+  query?: {
+    /**
+     * If "false", prevents overwriting existing files. Defaults to "true".
+     */
+    overwrite?: 'true' | 'false'
+  }
+  url: '/api/userdata/{file}/move/{dest}'
+}
+
+export type MoveUserdataFileErrors = {
+  /**
+   * Missing or invalid parameters.
+   */
+  400: string
+  /**
+   * Unauthorized.
+   */
+  401: string
+  /**
+   * Source file not found.
+   */
+  404: string
+  /**
+   * Destination file already exists and overwrite is set to false.
+   */
+  409: string
+  /**
+   * General error
+   */
+  500: string
+}
+
+export type MoveUserdataFileError =
+  MoveUserdataFileErrors[keyof MoveUserdataFileErrors]
+
+export type MoveUserdataFileResponses = {
+  /**
+   * File moved successfully.
+   */
+  200: UserDataResponseFull
+}
+
+export type MoveUserdataFileResponse =
+  MoveUserdataFileResponses[keyof MoveUserdataFileResponses]
+
+export type UploadImageData = {
+  body: {
+    /**
+     * The image file to upload
+     */
+    image: Blob | File
+    /**
+     * Whether to overwrite existing file (true/false)
+     */
+    overwrite?: string
+    /**
+     * Optional subfolder path
+     */
+    subfolder?: string
+    /**
+     * Upload type (defaults to "output")
+     */
+    type?: string
+  }
+  path?: never
+  query?: never
+  url: '/api/upload/image'
+}
+
+export type UploadImageErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UploadImageError = UploadImageErrors[keyof UploadImageErrors]
+
+export type UploadImageResponses = {
+  /**
+   * Image uploaded successfully
+   */
+  200: {
+    /**
+     * Filename of the uploaded image
+     */
+    name?: string
+    /**
+     * Subfolder path where image was saved
+     */
+    subfolder?: string
+    /**
+     * Type of upload (e.g., "output")
+     */
+    type?: string
+  }
+}
+
+export type UploadImageResponse =
+  UploadImageResponses[keyof UploadImageResponses]
+
+export type UploadMaskData = {
+  body: {
+    /**
+     * The mask image file to upload
+     */
+    image: Blob | File
+    /**
+     * JSON string containing reference to the original image
+     */
+    original_ref: string
+  }
+  path?: never
+  query?: never
+  url: '/api/upload/mask'
+}
+
+export type UploadMaskErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UploadMaskError = UploadMaskErrors[keyof UploadMaskErrors]
+
+export type UploadMaskResponses = {
+  /**
+   * Mask uploaded successfully
+   */
+  200: {
+    /**
+     * Filename of the uploaded mask
+     */
+    name?: string
+    /**
+     * Subfolder path where mask was saved
+     */
+    subfolder?: string
+    /**
+     * Type of upload (e.g., "output")
+     */
+    type?: string
+    /**
+     * Additional metadata for mask detection and re-editing
+     */
+    metadata?: {
+      /**
+       * Whether this file is a mask
+       */
+      is_mask?: boolean
+      /**
+       * Hash of the original unmasked image
+       */
+      original_hash?: string
+      /**
+       * Type of mask (e.g., "painted_masked")
+       */
+      mask_type?: string
+      /**
+       * Related mask layer files (if available)
+       */
+      related_files?: {
+        /**
+         * Hash of the mask layer
+         */
+        mask?: string
+        /**
+         * Hash of the paint layer
+         */
+        paint?: string
+        /**
+         * Hash of the painted image
+         */
+        painted?: string
+      }
+    }
+  }
+}
+
+export type UploadMaskResponse = UploadMaskResponses[keyof UploadMaskResponses]
+
 export type GetLogsData = {
   body?: never
   path?: never
@@ -3692,6 +5357,33 @@ export type SubscribeToLogsResponses = {
 
 export type SubscribeToLogsResponse =
   SubscribeToLogsResponses[keyof SubscribeToLogsResponses]
+
+export type GetSystemStatsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/system_stats'
+}
+
+export type GetSystemStatsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type GetSystemStatsError =
+  GetSystemStatsErrors[keyof GetSystemStatsErrors]
+
+export type GetSystemStatsResponses = {
+  /**
+   * Success
+   */
+  200: SystemStatsResponse
+}
+
+export type GetSystemStatsResponse =
+  GetSystemStatsResponses[keyof GetSystemStatsResponses]
 
 export type DeleteSessionData = {
   body?: never
@@ -4456,6 +6148,45 @@ export type SendUserInviteEmailResponses = {
 
 export type SendUserInviteEmailResponse2 =
   SendUserInviteEmailResponses[keyof SendUserInviteEmailResponses]
+
+export type SetReviewStatusData = {
+  body: SetReviewStatusRequest
+  path?: never
+  query?: never
+  url: '/admin/api/hub/workflows/status'
+}
+
+export type SetReviewStatusErrors = {
+  /**
+   * Bad request - invalid status value or empty share_ids
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type SetReviewStatusError =
+  SetReviewStatusErrors[keyof SetReviewStatusErrors]
+
+export type SetReviewStatusResponses = {
+  /**
+   * Status updated successfully
+   */
+  200: SetReviewStatusResponse
+}
+
+export type SetReviewStatusResponse2 =
+  SetReviewStatusResponses[keyof SetReviewStatusResponses]
 
 export type GetDeletionRequestData = {
   body?: never
@@ -5740,6 +7471,10 @@ export type ListHubWorkflowsData = {
      * When true, returns full HubWorkflowDetail objects in the workflows array instead of summaries. Requires limit <= 20.
      */
     detail?: boolean
+    /**
+     * Filter by status (e.g. ?status=pending,approved). Defaults to approved if omitted.
+     */
+    status?: Array<HubWorkflowStatus>
   }
   url: '/api/hub/workflows'
 }
@@ -5814,7 +7549,12 @@ export type PublishHubWorkflowResponse =
 export type ListHubWorkflowIndexData = {
   body?: never
   path?: never
-  query?: never
+  query?: {
+    /**
+     * Filter by status (e.g. ?status=pending,approved). Defaults to approved if omitted.
+     */
+    status?: Array<HubWorkflowStatus>
+  }
   url: '/api/hub/workflows/index'
 }
 

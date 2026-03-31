@@ -2258,6 +2258,7 @@
     "dataset": "dataset",
     "debug": "调试",
     "deprecated": "已弃用",
+    "detection": "检测",
     "edit_models": "编辑模型",
     "flux": "Flux",
     "gligen": "GLIGEN",
@@ -3251,6 +3252,7 @@
       "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
       "totalDueToday": "今日应付总额"
     },
+    "refreshCredits": "刷新额度",
     "renewsDate": "将于 {date} 续订",
     "required": {
       "pollingFailed": "订阅激活失败",

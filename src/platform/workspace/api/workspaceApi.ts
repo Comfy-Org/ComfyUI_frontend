@@ -1,6 +1,5 @@
 import axios from 'axios'
 
-import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -288,27 +287,7 @@ const workspaceApiClient = axios.create({
 })
 
 async function getAuthHeaderOrThrow() {
-  const authHeader = await useAuthStore().getAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
-}
-
-async function getFirebaseHeaderOrThrow() {
-  const authHeader = await useAuthStore().getFirebaseAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
+  return useAuthStore().getAuthHeaderOrThrow()
 }
 
 function handleAxiosError(err: unknown): never {
@@ -500,7 +479,7 @@ export const workspaceApi = {
    * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await getFirebaseHeaderOrThrow()
+    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),

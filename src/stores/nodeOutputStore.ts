@@ -261,6 +261,17 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
+    setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
+    latestPreview.value = previewImages
+  }
+
+  /**
+   * Set node preview images by NodeLocatorId directly.
+   */
+  function setNodePreviewsByLocatorId(
+    nodeLocatorId: NodeLocatorId,
+    previewImages: string[]
+  ) {
     const existingPreviews = app.nodePreviewImages[nodeLocatorId]
     if (scheduledRevoke[nodeLocatorId]) {
       scheduledRevoke[nodeLocatorId].stop()
@@ -274,7 +285,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     for (const url of previewImages) {
       retainSharedObjectUrl(url)
     }
-    latestPreview.value = previewImages
     app.nodePreviewImages[nodeLocatorId] = previewImages
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
@@ -290,22 +300,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeId: string | number,
     previewImages: string[]
   ) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
-    const existingPreviews = app.nodePreviewImages[nodeLocatorId]
-    if (scheduledRevoke[nodeLocatorId]) {
-      scheduledRevoke[nodeLocatorId].stop()
-      delete scheduledRevoke[nodeLocatorId]
-    }
-    if (existingPreviews?.[Symbol.iterator]) {
-      for (const url of existingPreviews) {
-        releaseSharedObjectUrl(url)
-      }
-    }
-    for (const url of previewImages) {
-      retainSharedObjectUrl(url)
-    }
-    app.nodePreviewImages[nodeLocatorId] = previewImages
-    nodePreviewImages.value[nodeLocatorId] = previewImages
+    setNodePreviewsByLocatorId(nodeIdToNodeLocatorId(nodeId), previewImages)
   }
 
   /**
@@ -486,6 +481,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodeOutputs,
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
+    setNodePreviewsByLocatorId,
     setNodePreviewsByNodeId,
     updateNodeImages,
     refreshNodeOutputs,
@@ -493,6 +489,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     // Cleanup
     revokePreviewsByExecutionId,
+    revokePreviewsByLocatorId,
     revokeAllPreviews,
     revokeSubgraphPreviews,
     removeNodeOutputs,

@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
@@ -10,7 +11,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePromotionStore } from '@/stores/promotionStore'
-
 import WidgetActions from './WidgetActions.vue'
 
 const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
@@ -93,14 +93,14 @@ describe('WidgetActions', () => {
   }
 
   function createMockNode(): LGraphNode {
-    return {
+    return fromAny<LGraphNode, unknown>({
       id: 1,
       type: 'TestNode',
       rootGraph: { id: 'graph-test' },
       computeSize: vi.fn(),
       size: [200, 100],
       isSubgraphNode: () => false
-    } as unknown as LGraphNode
+    })
   }
 
   function mountWidgetActions(widget: IBaseWidget, node: LGraphNode) {
@@ -217,18 +217,18 @@ describe('WidgetActions', () => {
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'CUSTOM'
     })
-    const parentSubgraphNode = {
+    const parentSubgraphNode = fromAny<SubgraphNode, unknown>({
       id: 4,
       rootGraph: { id: 'graph-test' },
       computeSize: vi.fn(),
       size: [300, 150]
-    } as unknown as SubgraphNode
-    const node = {
+    })
+    const node = fromAny<LGraphNode, unknown>({
       id: 4,
       type: 'SubgraphNode',
       rootGraph: { id: 'graph-test' },
       isSubgraphNode: () => false
-    } as unknown as LGraphNode
+    })
     const widget = {
       name: 'text',
       type: 'text',

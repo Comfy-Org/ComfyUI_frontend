@@ -1,10 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -77,10 +77,12 @@ vi.mock('@/platform/workflow/core/services/workflowActionsService', () => ({
 
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({
-    addNodeOnGraph: vi.fn().mockReturnValue({
-      widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-      graph: { setDirtyCanvas: vi.fn() }
-    } as unknown as LGraphNode),
+    addNodeOnGraph: vi.fn().mockReturnValue(
+      fromAny<LGraphNode, unknown>({
+        widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+        graph: { setDirtyCanvas: vi.fn() }
+      })
+    ),
     getCanvasCenter: vi.fn().mockReturnValue([100, 100])
   })
 }))

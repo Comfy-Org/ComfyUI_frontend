@@ -2258,6 +2258,7 @@
     "dataset": "داده‌نما",
     "debug": "اشکال‌زدایی",
     "deprecated": "منسوخ",
+    "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
     "flux": "flux",
     "gligen": "gligen",
@@ -3251,6 +3252,7 @@
       "termsAgreement": "با ادامه، شما با {terms} و {privacy} Comfy Org موافقت می‌کنید.",
       "totalDueToday": "مبلغ قابل پرداخت امروز"
     },
+    "refreshCredits": "به‌روزرسانی اعتبارها",
     "renewsDate": "تمدید در {date}",
     "required": {
       "pollingFailed": "فعال‌سازی اشتراک ناموفق بود",
