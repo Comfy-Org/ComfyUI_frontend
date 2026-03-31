@@ -21,7 +21,11 @@
 
     <template #header />
     <template #content>
-      <div v-if="needsSave" class="flex flex-col gap-4 p-6">
+      <div
+        v-if="needsSave"
+        data-testid="publish-save-prompt"
+        class="flex flex-col gap-4 p-6"
+      >
         <p class="m-0 text-sm text-muted-foreground">
           {{ $t('comfyHubPublish.unsavedDescription') }}
         </p>

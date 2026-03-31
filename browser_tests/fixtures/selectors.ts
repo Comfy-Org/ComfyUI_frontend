@@ -106,6 +106,16 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  publish: {
+    dialog: 'publish-dialog',
+    savePrompt: 'publish-save-prompt',
+    describeStep: 'publish-describe-step',
+    finishStep: 'publish-finish-step',
+    footer: 'publish-footer',
+    profilePrompt: 'publish-profile-prompt',
+    nav: 'publish-nav',
+    gateFlow: 'publish-gate-flow'
   }
 } as const
 
@@ -133,3 +143,4 @@ export type TestIdValue =
   | (typeof TestIds.user)[keyof typeof TestIds.user]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.publish)[keyof typeof TestIds.publish]

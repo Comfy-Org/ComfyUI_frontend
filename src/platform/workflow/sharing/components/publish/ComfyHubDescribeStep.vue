@@ -1,5 +1,8 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4">
+  <div
+    data-testid="publish-describe-step"
+    class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4"
+  >
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.workflowName') }}
