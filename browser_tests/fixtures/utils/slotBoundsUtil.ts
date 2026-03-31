@@ -23,10 +23,8 @@ export async function measureNodeSlotOffsets(
   nodeId: string
 ): Promise<NodeSlotData | null> {
   return page.evaluate((id) => {
-    const nodeEl = document.querySelector(
-      `[data-node-id="${id}"]`
-    )
-    if (!nodeEl || !(node instanceof HTMLElement)) return null
+    const nodeEl = document.querySelector(`[data-node-id="${id}"]`)
+    if (!nodeEl || !(nodeEl instanceof HTMLElement)) return null
 
     const nodeRect = nodeEl.getBoundingClientRect()
     const slotEls = nodeEl.querySelectorAll('[data-slot-key]')
