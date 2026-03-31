@@ -1,4 +1,5 @@
 import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
+import { hashEmail } from '@/platform/telemetry/utils/hashEmail'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -85,11 +86,9 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     if (typeof window === 'undefined') return
 
     const { customerId, customerEmail } = this.resolveCustomerIdentity()
-    const normalizedEmail = customerEmail.trim().toLowerCase()
     // Impact's Identify spec requires customerEmail to be sent as a SHA1 hash.
-    const hashedEmail = normalizedEmail
-      ? await this.hashSha1(normalizedEmail)
-      : EMPTY_CUSTOMER_VALUE
+    const hashedEmail =
+      (await hashEmail(customerEmail, 'SHA-1')) ?? EMPTY_CUSTOMER_VALUE
 
     window.ire?.('identify', {
       customerId,
@@ -149,25 +148,6 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
       return stores
     } catch {
       return null
-    }
-  }
-
-  private async hashSha1(value: string): Promise<string> {
-    try {
-      if (!globalThis.crypto?.subtle || typeof TextEncoder === 'undefined') {
-        return EMPTY_CUSTOMER_VALUE
-      }
-
-      const digestBuffer = await crypto.subtle.digest(
-        'SHA-1',
-        new TextEncoder().encode(value)
-      )
-
-      return Array.from(new Uint8Array(digestBuffer))
-        .map((byte) => byte.toString(16).padStart(2, '0'))
-        .join('')
-    } catch {
-      return EMPTY_CUSTOMER_VALUE
     }
   }
 }

@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { createHash } from 'node:crypto'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GtmTelemetryProvider } from './GtmTelemetryProvider'
 
@@ -12,12 +13,30 @@ function lastDataLayerEntry(): Record<string, unknown> | undefined {
   return dl?.[dl.length - 1] as Record<string, unknown> | undefined
 }
 
+async function flushAsyncWork() {
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
+function toUint8Array(data: BufferSource): Uint8Array {
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data)
+  }
+
+  return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+}
+
 describe('GtmTelemetryProvider', () => {
   beforeEach(() => {
+    vi.unstubAllGlobals()
     window.__CONFIG__ = {}
     window.dataLayer = undefined
     window.gtag = undefined
     document.head.innerHTML = ''
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('injects the GTM runtime script', () => {
@@ -230,8 +249,20 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
-    it('pushes normalized email as user_data before auth event', () => {
+    it('pushes hashed email inside the auth event payload', async () => {
       const provider = createInitializedProvider()
+      vi.stubGlobal('crypto', {
+        subtle: {
+          digest: vi.fn(
+            async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+              const digest = createHash('sha256')
+                .update(toUint8Array(data))
+                .digest()
+              return Uint8Array.from(digest).buffer
+            }
+          )
+        }
+      })
 
       provider.trackAuth({
         method: 'email',
@@ -240,21 +271,25 @@ describe('GtmTelemetryProvider', () => {
         email: '  Test@Example.com  '
       })
 
-      const dl = window.dataLayer as Record<string, unknown>[]
-      const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toMatchObject({
-        user_data: { email: 'test@example.com' }
-      })
+      await flushAsyncWork()
 
-      // Verify user_data is pushed before the sign_up event
-      const userDataIndex = dl.findIndex((entry) => 'user_data' in entry)
-      const signUpIndex = dl.findIndex(
-        (entry) => (entry as Record<string, unknown>).event === 'sign_up'
-      )
-      expect(userDataIndex).toBeLessThan(signUpIndex)
+      const dl = window.dataLayer as Record<string, unknown>[]
+      const authEvent = dl.find((entry) => entry.event === 'sign_up')
+      expect(authEvent).toMatchObject({
+        event: 'sign_up',
+        method: 'email',
+        user_id: 'uid-123',
+        user_data: {
+          email: createHash('sha256').update('test@example.com').digest('hex')
+        }
+      })
+      expect(
+        dl.some((entry) => 'user_data' in entry && !('event' in entry))
+      ).toBe(false)
+      expect(JSON.stringify(dl)).not.toContain('test@example.com')
     })
 
-    it('does not push user_data when email is absent', () => {
+    it('omits user_data when email is absent', async () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
@@ -263,9 +298,35 @@ describe('GtmTelemetryProvider', () => {
         user_id: 'uid-456'
       })
 
-      const dl = window.dataLayer as Record<string, unknown>[]
-      const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toBeUndefined()
+      await flushAsyncWork()
+
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'login',
+        method: 'google',
+        user_id: 'uid-456'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
+    })
+
+    it('omits user_data when hashing is unavailable', async () => {
+      const provider = createInitializedProvider()
+      vi.stubGlobal('crypto', undefined)
+
+      provider.trackAuth({
+        method: 'github',
+        is_new_user: false,
+        user_id: 'uid-789',
+        email: 'user@example.com'
+      })
+
+      await flushAsyncWork()
+
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'login',
+        method: 'github',
+        user_id: 'uid-789'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
     })
 
     it('does not push events when not initialized', () => {
