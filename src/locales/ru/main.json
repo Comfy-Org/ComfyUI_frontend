@@ -2258,6 +2258,7 @@
     "dataset": "dataset",
     "debug": "отладка",
     "deprecated": "устаревший",
+    "detection": "детекция",
     "edit_models": "редактировать_модели",
     "flux": "flux",
     "gligen": "gligen",
@@ -3239,6 +3240,7 @@
       "termsAgreement": "Продолжая, вы соглашаетесь с {terms} и {privacy} Comfy Org.",
       "totalDueToday": "Итого к оплате сегодня"
     },
+    "refreshCredits": "Обновить кредиты",
     "renewsDate": "Обновляется {date}",
     "required": {
       "pollingFailed": "Не удалось активировать подписку",
