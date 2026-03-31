@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { NodeLayout } from '@/renderer/core/layout/types'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const testState = vi.hoisted(() => {
+  const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: fromAny<Ref<Set<string>>, unknown>(null),
-    selectedItems: fromAny<Ref<unknown[]>, unknown>(null),
+    selectedNodeIds: placeholder<Ref<Set<string>>>(null),
+    selectedItems: placeholder<Ref<unknown[]>>(null),
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       setSource: vi.fn(),
