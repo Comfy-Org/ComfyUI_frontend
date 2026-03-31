@@ -37,7 +37,7 @@ export function isLinkedPromotion(
   sourceNodeId: string,
   sourceWidgetName: string
 ): boolean {
-  return subgraphNode.inputs?.some((input) => {
+  return subgraphNode.inputs.some((input) => {
     const w = input._widget
     return (
       w &&
@@ -60,7 +60,9 @@ function toPromotionSource(
   return {
     sourceNodeId: String(node.id),
     sourceWidgetName: getWidgetName(widget),
-    disambiguatingSourceNodeId: getSourceNodeId(widget)
+    disambiguatingSourceNodeId: isPromotedWidgetView(widget)
+      ? widget.disambiguatingSourceNodeId
+      : undefined
   }
 }
 

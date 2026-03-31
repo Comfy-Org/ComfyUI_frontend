@@ -89,14 +89,13 @@ const activeWidgets = computed<WidgetItem[]>({
     promotionStore.setPromotions(
       node.rootGraph.id,
       node.id,
-      value.map(([n, w]) => {
-        const sid = getSourceNodeId(w)
-        return {
-          sourceNodeId: String(n.id),
-          sourceWidgetName: getWidgetName(w),
-          ...(sid && { disambiguatingSourceNodeId: sid })
-        }
-      })
+      value.map(([n, w]) => ({
+        sourceNodeId: String(n.id),
+        sourceWidgetName: getWidgetName(w),
+        disambiguatingSourceNodeId: isPromotedWidgetView(w)
+          ? w.disambiguatingSourceNodeId
+          : undefined
+      }))
     )
     refreshPromotedWidgetRendering()
   }
@@ -124,7 +123,9 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
       !promotionStore.isPromoted(node.rootGraph.id, node.id, {
         sourceNodeId: String(n.id),
         sourceWidgetName: getWidgetName(w),
-        disambiguatingSourceNodeId: getSourceNodeId(w)
+        disambiguatingSourceNodeId: isPromotedWidgetView(w)
+          ? w.disambiguatingSourceNodeId
+          : undefined
       })
   )
 })
@@ -161,6 +162,18 @@ function refreshPromotedWidgetRendering() {
   node.computeSize(node.size)
   node.setDirtyCanvas(true, true)
   canvasStore.canvas?.setDirty(true, true)
+}
+
+function isItemLinked([node, widget]: WidgetItem): boolean {
+  return (
+    node.id === -1 ||
+    (!!activeNode.value &&
+      isLinkedPromotion(
+        activeNode.value,
+        String(node.id),
+        getWidgetName(widget)
+      ))
+  )
 }
 
 function toKey(item: WidgetItem) {
@@ -253,15 +266,7 @@ onMounted(() => {
             :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
             :node-title="node.title"
             :widget-name="widget.label || widget.name"
-            :is-physical="
-              node.id === -1 ||
-              (!!activeNode &&
-                isLinkedPromotion(
-                  activeNode,
-                  String(node.id),
-                  getWidgetName(widget)
-                ))
-            "
+            :is-physical="isItemLinked([node, widget])"
             :is-draggable="!searchQuery"
             @toggle-visibility="demote([node, widget])"
           />
