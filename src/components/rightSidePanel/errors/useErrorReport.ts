@@ -37,7 +37,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
       })
 
       for (const key of Object.keys(enrichedDetails)) {
-        delete enrichedDetails[Number(key)]
+        delete enrichedDetails[key as unknown as number]
       }
 
       const runtimeErrors = card.errors

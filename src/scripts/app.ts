@@ -1581,7 +1581,7 @@ export class ComfyApp {
 
     if (isCloud) {
       const controller = missingMediaStore.createVerificationAbortController()
-      verifyCloudMediaCandidates(candidates, controller.signal)
+      void verifyCloudMediaCandidates(candidates, controller.signal)
         .then(() => {
           if (controller.signal.aborted) return
           const confirmed = candidates.filter((c) => c.isMissing === true)
