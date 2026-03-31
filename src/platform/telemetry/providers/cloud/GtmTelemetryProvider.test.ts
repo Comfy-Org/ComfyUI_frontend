@@ -140,7 +140,12 @@ describe('GtmTelemetryProvider', () => {
         event: 'execution_error',
         node_type: 'KSampler'
       })
-      expect((entry?.error as string).length).toBe(100)
+      const error = entry?.error
+      expect(typeof error).toBe('string')
+      if (typeof error !== 'string') {
+        throw new Error('Expected execution_error payload to include an error')
+      }
+      expect(error).toHaveLength(100)
     })
 
     it('pushes select_content for template events', () => {
