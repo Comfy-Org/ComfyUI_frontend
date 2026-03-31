@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 
+import { getApiBase } from '@/platform/distribution/types'
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
@@ -373,9 +374,7 @@ export class ComfyApi extends EventTarget {
     super()
     this.user = ''
     this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
+    this.api_base = getApiBase()
     this.initialClientId = sessionStorage.getItem('clientId')
   }
 

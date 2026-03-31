@@ -1,16 +1,12 @@
 import { get } from 'es-toolkit/compat'
 
-import { isCloud } from '@/platform/distribution/types'
+import { getApiBase } from '@/platform/distribution/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 const EMPTY: Readonly<Record<string, unknown>> = Object.freeze({})
 const MAX_RETRIES = 2
 
 let capabilities: Readonly<Record<string, unknown>> = EMPTY
-
-function getApiBase(): string {
-  return isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/')
-}
 
 export async function initServerCapabilities(): Promise<void> {
   const url = `${getApiBase()}/api/features`

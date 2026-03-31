@@ -6,7 +6,8 @@ import {
 } from '@/services/serverCapabilities'
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  isCloud: false,
+  getApiBase: () => ''
 }))
 
 describe('serverCapabilities', () => {
