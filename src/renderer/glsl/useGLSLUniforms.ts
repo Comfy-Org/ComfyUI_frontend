@@ -17,11 +17,13 @@ interface AutogrowGroup {
   prefix?: string
 }
 
+/** @knipIgnoreUsedByStackedPR */
 export interface UniformSource {
   nodeId: NodeId
   widgetName: string
 }
 
+/** @knipIgnoreUsedByStackedPR */
 export interface UniformSources {
   floats: UniformSource[]
   ints: UniformSource[]
