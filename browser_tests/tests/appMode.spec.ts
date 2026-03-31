@@ -52,13 +52,16 @@ test.describe('App mode usage', () => {
 
       const steps = comfyPage.page.getByRole('spinbutton')
       await expect(steps).toHaveValue('20')
-      await comfyPage.page
-        .getByRole('button', { name: 'increment' })
-        .click({ clickCount: 5 })
+      await mobile.tap(
+        comfyPage.page.getByRole('button', { name: 'increment' }),
+        { count: 5 }
+      )
       await expect(steps).toHaveValue('25')
-      await comfyPage.page
-        .getByRole('button', { name: 'decrement' })
-        .click({ clickCount: 3 })
+      await mobile.tap(
+        comfyPage.page.getByRole('button', { name: 'decrement' }),
+        { count: 3 }
+      )
+
       await expect(steps).toHaveValue('22')
     })
 
