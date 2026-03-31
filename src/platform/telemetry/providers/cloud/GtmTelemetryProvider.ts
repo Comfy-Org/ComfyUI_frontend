@@ -135,12 +135,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     })
   }
 
-  trackAuth(metadata: AuthMetadata): void {
+  async trackAuth(metadata: AuthMetadata): Promise<void> {
     if (!this.initialized) return
-    void this.pushAuthEvent(metadata)
-  }
-
-  private async pushAuthEvent(metadata: AuthMetadata): Promise<void> {
     const basePayload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {})

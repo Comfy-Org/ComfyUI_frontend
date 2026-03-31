@@ -295,6 +295,46 @@ describe('useAuthStore', () => {
       expect(store.loading).toBe(false)
     })
 
+    it('should wait for auth telemetry before resolving login', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+
+      let resolveTrackAuth: (() => void) | undefined
+      mockTrackAuth.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveTrackAuth = resolve
+          })
+      )
+
+      let resolved = false
+      const loginPromise = store
+        .login('test@example.com', 'password')
+        .then((result) => {
+          resolved = true
+          return result
+        })
+
+      await vi.waitFor(() => {
+        expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'email',
+            is_new_user: false,
+            user_id: mockUser.uid,
+            email: mockUser.email
+          })
+        )
+      })
+      expect(resolved).toBe(false)
+
+      resolveTrackAuth?.()
+
+      await expect(loginPromise).resolves.toEqual(mockUserCredential)
+      expect(resolved).toBe(true)
+    })
+
     it('should handle login errors', async () => {
       const mockError = new Error('Invalid password')
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockRejectedValue(

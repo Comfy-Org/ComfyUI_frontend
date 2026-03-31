@@ -13,11 +13,6 @@ function lastDataLayerEntry(): Record<string, unknown> | undefined {
   return dl?.[dl.length - 1] as Record<string, unknown> | undefined
 }
 
-async function flushAsyncWork() {
-  await Promise.resolve()
-  await Promise.resolve()
-}
-
 function toUint8Array(data: BufferSource): Uint8Array {
   if (data instanceof ArrayBuffer) {
     return new Uint8Array(data)
@@ -269,14 +264,12 @@ describe('GtmTelemetryProvider', () => {
         }
       })
 
-      provider.trackAuth({
+      await provider.trackAuth({
         method: 'email',
         is_new_user: true,
         user_id: 'uid-123',
         email: '  Test@Example.com  '
       })
-
-      await flushAsyncWork()
 
       const dl = window.dataLayer as Record<string, unknown>[]
       const authEvent = dl.find((entry) => entry.event === 'sign_up')
@@ -297,13 +290,11 @@ describe('GtmTelemetryProvider', () => {
     it('omits user_data when email is absent', async () => {
       const provider = createInitializedProvider()
 
-      provider.trackAuth({
+      await provider.trackAuth({
         method: 'google',
         is_new_user: false,
         user_id: 'uid-456'
       })
-
-      await flushAsyncWork()
 
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'login',
@@ -317,14 +308,12 @@ describe('GtmTelemetryProvider', () => {
       const provider = createInitializedProvider()
       vi.stubGlobal('crypto', undefined)
 
-      provider.trackAuth({
+      await provider.trackAuth({
         method: 'github',
         is_new_user: false,
         user_id: 'uid-789',
         email: 'user@example.com'
       })
-
-      await flushAsyncWork()
 
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'login',
