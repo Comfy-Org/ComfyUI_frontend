@@ -244,7 +244,10 @@ class LayoutStoreImpl implements LayoutStore {
             track()
             const ynode = this.ynodes.get(nodeId)
             const layout = ynode ? yNodeToLayout(ynode) : null
-            return layout
+            const collapsedSize = this.collapsedSizes.get(nodeId)
+            return layout && collapsedSize
+              ? { ...layout, collapsedSize }
+              : layout
           },
           set: (newLayout: NodeLayout | null) => {
             if (newLayout === null) {
@@ -1003,6 +1006,7 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
+      this.collapsedSizes.clear()
       // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
       // Vue components may already hold references to these refs, and clearing
       // them would break the reactivity chain. The refs will be reused when
@@ -1551,10 +1555,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   updateNodeCollapsedSize(nodeId: NodeId, size: Size): void {
     this.collapsedSizes.set(nodeId, size)
-    const nodeRef = this.getNodeLayoutRef(nodeId)
-    if (nodeRef.value) {
-      nodeRef.value = { ...nodeRef.value, collapsedSize: size }
-    }
+    this.nodeTriggers.get(nodeId)?.()
   }
 
   getNodeCollapsedSize(nodeId: NodeId): Size | undefined {
