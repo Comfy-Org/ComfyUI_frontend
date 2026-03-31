@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 import type { ClassValue } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const {
+  nodeTitle,
+  widgetName,
+  isDraggable = false,
+  isPhysical = false,
+  class: className
+} = defineProps<{
   nodeTitle: string
   widgetName: string
   isDraggable?: boolean
@@ -14,13 +22,13 @@ defineEmits<{
   (e: 'toggleVisibility'): void
 }>()
 
-function getIcon() {
-  return props.isPhysical
+const icon = computed(() =>
+  isPhysical
     ? 'icon-[lucide--link]'
-    : props.isDraggable
+    : isDraggable
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
-}
+)
 </script>
 
 <template>
@@ -29,8 +37,8 @@ function getIcon() {
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
         'bg-node-component-surface',
-        props.isDraggable && 'ring-accent-background hover:ring-1',
-        props.class
+        isDraggable && 'ring-accent-background hover:ring-1',
+        className
       )
     "
   >
@@ -49,10 +57,7 @@ function getIcon() {
       :disabled="isPhysical"
       @click.stop="$emit('toggleVisibility')"
     >
-      <i
-        :class="getIcon()"
-        :data-testid="isPhysical ? 'icon-link' : 'icon-eye'"
-      />
+      <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
     </Button>
     <div
       v-if="isDraggable"
