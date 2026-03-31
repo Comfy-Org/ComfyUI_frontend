@@ -1,7 +1,7 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-
 import { getDomWidgetZIndex } from './domWidgetZIndex'
 
 describe('getDomWidgetZIndex', () => {
@@ -15,7 +15,7 @@ describe('getDomWidgetZIndex', () => {
     first.order = 0
     second.order = 1
 
-    const nodes = (graph as unknown as { _nodes: LGraphNode[] })._nodes
+    const nodes = fromAny<{ _nodes: LGraphNode[] }, unknown>(graph)._nodes
     nodes.splice(nodes.indexOf(first), 1)
     nodes.push(first)
 
