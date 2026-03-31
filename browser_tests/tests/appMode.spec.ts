@@ -35,19 +35,19 @@ test.describe('App mode usage', () => {
   })
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
-      const { mobileNavigation, mobileView } = comfyPage.appMode
+      const { mobile } = comfyPage.appMode
       await comfyPage.appMode.enterAppModeWithInputs([['3', 'steps']])
-      await expect(mobileView).toBeVisible()
+      await expect(mobile.view).toBeVisible()
+      await expect(mobile.navigation).toBeVisible()
 
-      const panel = comfyPage.page.getByRole('tabpanel')
-      await expect(mobileNavigation).toBeVisible()
-      await comfyPage.appMode.mobileNavigateTab('assets')
-      await expect(panel).toContainClass('left-[200vw]')
-      const buttons = await mobileNavigation.getByRole('tab').all()
+      await mobile.navigateTab('assets')
+      await expect(mobile.contentPanel).toContainClass('left-[200vw]')
+
+      const buttons = await mobile.navigationTabs.all()
       await buttons[0].dragTo(buttons[2], { steps: 5 })
-      await expect(panel).toContainClass('left-[100vw]')
+      await expect(mobile.contentPanel).toContainClass('left-[100vw]')
 
-      await comfyPage.appMode.mobileNavigateTab('run')
+      await mobile.navigateTab('run')
       await expect(comfyPage.appMode.linearWidgets).toBeInViewport({ ratio: 1 })
 
       const steps = comfyPage.page.getByRole('spinbutton')
@@ -66,13 +66,12 @@ test.describe('App mode usage', () => {
       const widgetNames = ['seed', 'steps', 'denoise', 'cfg']
       for (const name of widgetNames)
         await comfyPage.appMode.enterAppModeWithInputs([['3', name]])
-      await expect(comfyPage.appMode.mobileWorkflows).toBeVisible()
+      await expect(comfyPage.appMode.mobile.workflows).toBeVisible()
+
       const widgets = comfyPage.appMode.linearWidgets
-      await comfyPage.appMode.mobileView
-        .getByRole('tab', { name: 'Edit & Run' })
-        .click()
+      await comfyPage.appMode.mobile.navigateTab('run')
       for (let i = 0; i < widgetNames.length; i++) {
-        await comfyPage.appMode.switchMobileWorkflow(`(${i + 2})`)
+        await comfyPage.appMode.mobile.switchWorkflow(`(${i + 2})`)
         await expect(widgets.getByText(widgetNames[i])).toBeVisible()
       }
     })
