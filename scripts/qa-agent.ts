@@ -64,6 +64,7 @@ export async function runResearchPhase(
   let finalEvidence = ''
   let finalTestCode = ''
   let turnCount = 0
+  let lastPassedTurn = -1
   const startTime = Date.now()
   const researchLog: ResearchResult['log'] = []
 
@@ -206,6 +207,17 @@ export async function runResearchPhase(
         toolResult: resultText.slice(0, 1000)
       })
 
+      // Auto-save passing test code for fallback completion
+      if (resultText.startsWith('TEST PASSED')) {
+        try {
+          const { readFileSync: readFs } = await import('fs')
+          finalTestCode = readFs(browserTestPath, 'utf-8')
+          lastPassedTurn = turnCount
+        } catch {
+          // ignore
+        }
+      }
+
       return { content: [{ type: 'text' as const, text: resultText }] }
     }
   )
@@ -328,6 +340,16 @@ ${issueContext}`
     }
   } catch (e) {
     console.warn(`Research error: ${e instanceof Error ? e.message : e}`)
+  }
+
+  // Auto-complete: if a test passed but done() was never called, use the passing test
+  if (!agentDone && lastPassedTurn >= 0 && finalTestCode) {
+    console.warn(
+      `Auto-completing: test passed at turn ${lastPassedTurn} but done() was not called`
+    )
+    finalVerdict = 'REPRODUCED'
+    finalSummary = `Test passed at turn ${lastPassedTurn} (auto-completed — agent did not call done())`
+    finalEvidence = `Test passed with exit code 0`
   }
 
   const result: ResearchResult = {
