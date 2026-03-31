@@ -31,10 +31,23 @@ export async function measureSelectionBounds(
       let maxY = -Infinity
       for (const item of selectedItems) {
         const rect = item.boundingRect
+        // For collapsed nodes, use DOM element size (matches selectionBorder.ts
+        // which reads layoutStore.collapsedSize in Vue mode)
+        const id = 'id' in item ? String(item.id) : null
+        const isCollapsed =
+          'flags' in item &&
+          !!(item as { flags?: { collapsed?: boolean } }).flags?.collapsed
+        const el =
+          id && isCollapsed
+            ? document.querySelector(`[data-node-id="${id}"]`)
+            : null
+        const w = el instanceof HTMLElement ? el.offsetWidth : rect[2]
+        const h = el instanceof HTMLElement ? el.offsetHeight : rect[3]
+
         minX = Math.min(minX, rect[0])
         minY = Math.min(minY, rect[1])
-        maxX = Math.max(maxX, rect[0] + rect[2])
-        maxY = Math.max(maxY, rect[1] + rect[3])
+        maxX = Math.max(maxX, rect[0] + w)
+        maxY = Math.max(maxY, rect[1] + h)
       }
       const selectionBounds =
         selectedItems.size > 0
@@ -57,7 +70,23 @@ export async function measureSelectionBounds(
         const nodeEl = document.querySelector(
           `[data-node-id="${id}"]`
         ) as HTMLElement | null
-        if (!nodeEl) continue
+
+        // Legacy mode: no Vue DOM element, use boundingRect directly
+        if (!nodeEl) {
+          const node = window.app!.graph._nodes.find(
+            (n: { id: number | string }) => String(n.id) === id
+          )
+          if (node) {
+            const rect = node.boundingRect
+            nodeVisualBounds[id] = {
+              x: rect[0],
+              y: rect[1],
+              w: rect[2],
+              h: rect[3]
+            }
+          }
+          continue
+        }
 
         const domRect = nodeEl.getBoundingClientRect()
         const footerEls = nodeEl.querySelectorAll(
