@@ -527,20 +527,27 @@ test.describe('Assets sidebar - context menu', () => {
     // Dismiss any toasts that appeared after asset loading
     await tab.dismissToasts()
 
-    // Multi-select: click first, then Ctrl/Cmd+click second
+    // Multi-select: use keyboard.down/up so useKeyModifier('Control') detects
+    // the modifier — click({ modifiers }) only sets the mouse event flag and
+    // does not fire a keydown event that VueUse tracks.
     await cards.first().click()
-    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
+    await comfyPage.page.keyboard.down('Control')
+    await cards.nth(1).click()
+    await comfyPage.page.keyboard.up('Control')
 
     // Verify multi-selection took effect and footer is stable before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
     await expect(tab.selectionFooter).toBeVisible({ timeout: 3000 })
 
-    // Right-click on a selected card (retry to let grid layout settle)
+    // Use dispatchEvent instead of click({ button: 'right' }) to avoid any
+    // overlay intercepting the event, and assert directly without toPass.
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(async () => {
-      await cards.first().click({ button: 'right' })
-      await expect(contextMenu).toBeVisible()
-    }).toPass({ intervals: [300], timeout: 5000 })
+    await cards.first().dispatchEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
+    await expect(contextMenu).toBeVisible()
 
     // Bulk menu should show bulk download action
     await expect(tab.contextMenuItem('Download all')).toBeVisible()
