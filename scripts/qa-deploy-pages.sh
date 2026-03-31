@@ -146,7 +146,7 @@ HEADERSEOF
 PURPOSE_HTML=""
 if [ -f pr-context.txt ]; then
   # Extract title line and first paragraph of description
-  PR_TITLE=$(grep -m1 '^Title:' pr-context.txt | sed 's/^Title: //')
+  PR_TITLE=$(grep -m1 '^Title:' pr-context.txt 2>/dev/null | sed 's/^Title: //' || true)
   if [ "$TARGET_TYPE" = "issue" ]; then
     PURPOSE_LABEL="Issue #${TARGET_NUM}"
     PURPOSE_VERB="reports"
@@ -155,8 +155,8 @@ if [ -f pr-context.txt ]; then
     PURPOSE_VERB="aims to"
   fi
   # Get first ~300 chars of description body (after "Description:" line)
-  PR_DESC=$(sed -n '/^Description:/,/^###/p' pr-context.txt | grep -v '^Description:\|^###' | head -5 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
-  [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
+  PR_DESC=$(sed -n '/^Description:/,/^###/p' pr-context.txt 2>/dev/null | grep -v '^Description:\|^###' | head -5 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400 || true)
+  [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt 2>/dev/null | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400 || true)
   # Build requirements from QA guide JSON
   REQS_HTML=""
   QA_GUIDE=$(ls qa-guides/qa-guide-*.json 2>/dev/null | head -1 || true)
@@ -328,7 +328,7 @@ if [ "$TARGET_TYPE" != "issue" ]; then
     if [ -d video-reviews ]; then
       RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20 || true)
     fi
-    RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
+    RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]' || true)
     if [ -n "$RISK_FIRST" ]; then
       case "$RISK_FIRST" in
         *low*|*minimal*) FIX_RESULT="APPROVED" FIX_COLOR="#4c1" ;;
@@ -352,7 +352,7 @@ BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 
 URL=$(wrangler pages deploy "$DEPLOY_DIR" \
   --project-name="comfy-qa" \
   --branch="$BRANCH" 2>&1 \
-  | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+  | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1 || true)
 
 echo "url=${URL:-https://${BRANCH}.comfy-qa.pages.dev}" >> "$GITHUB_OUTPUT"
 echo "Deployed to: ${URL}"
