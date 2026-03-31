@@ -82,6 +82,7 @@ export const TestIds = {
     footerNav: 'builder-footer-nav',
     saveButton: 'builder-save-button',
     saveAsButton: 'builder-save-as-button',
+    saveGroup: 'builder-save-group',
     saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
