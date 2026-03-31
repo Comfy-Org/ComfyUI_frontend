@@ -620,15 +620,39 @@ test.describe('Assets sidebar - bulk actions', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - pagination', () => {
+  // BATCH_SIZE in assetsStore is 200, so 250 jobs ensures a second page exists
+  const TOTAL_JOBS = 250
+
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.assets.clearMocks()
   })
 
-  test('Initially loads a batch of assets with has_more pagination', async ({
+  test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
-    // Create a large set of jobs to trigger pagination
-    const manyJobs = createMockJobs(30)
+    const manyJobs = createMockJobs(TOTAL_JOBS)
+    await comfyPage.assets.mockOutputHistory(manyJobs)
+    await comfyPage.setup()
+
+    // Capture the first /api/jobs request to verify pagination params
+    const firstRequest = comfyPage.page.waitForRequest((req) =>
+      /\/api\/jobs\?/.test(req.url())
+    )
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const req = await firstRequest
+    const url = new URL(req.url())
+    expect(url.searchParams.get('offset')).toBe('0')
+    expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
+  })
+
+  test('loading more fetches next page with offset > 0', async ({
+    comfyPage
+  }) => {
+    const manyJobs = createMockJobs(TOTAL_JOBS)
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
 
@@ -636,9 +660,39 @@ test.describe('Assets sidebar - pagination', () => {
     await tab.open()
     await tab.waitForAssets()
 
-    // Should load at least the first batch
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    // Listen for the next /api/jobs request (the pagination fetch)
+    const nextPageRequest = comfyPage.page.waitForRequest(
+      (req) => {
+        if (!/\/api\/jobs\?/.test(req.url())) return false
+        const url = new URL(req.url())
+        return Number(url.searchParams.get('offset')) > 0
+      },
+      { timeout: 10_000 }
+    )
+
+    // Trigger pagination via the Pinia store — the same code path the
+    // VirtualGrid approach-end event calls in production.
+    // Access the store through the Vue app's Pinia instance, which works
+    // in both dev and production builds.
+    await comfyPage.page.evaluate(async () => {
+      const appEl = document.querySelector('#vue-app')!
+      const vueApp = (
+        appEl as unknown as Record<string, Record<string, unknown>>
+      )['__vue_app__']
+      const pinia = (
+        vueApp['config'] as Record<string, Record<string, unknown>>
+      )['globalProperties']['$pinia'] as {
+        _s: Map<string, Record<string, () => Promise<void>>>
+      }
+      await pinia._s.get('assets')!['loadMoreHistory']()
+    })
+
+    const req = await nextPageRequest
+    const url = new URL(req.url())
+    expect(
+      Number(url.searchParams.get('offset')),
+      'Second fetch should request items beyond the first batch'
+    ).toBeGreaterThanOrEqual(200)
   })
 })
 
