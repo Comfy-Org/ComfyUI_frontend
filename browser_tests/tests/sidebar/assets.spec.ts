@@ -544,7 +544,8 @@ test.describe('Assets sidebar - context menu', () => {
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await cards.first().dispatchEvent('contextmenu', {
       bubbles: true,
-      cancelable: true
+      cancelable: true,
+      button: 2
     })
     await expect(contextMenu).toBeVisible()
 
