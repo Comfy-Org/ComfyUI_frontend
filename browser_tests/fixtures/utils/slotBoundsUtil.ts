@@ -25,12 +25,12 @@ export async function measureNodeSlotOffsets(
   return page.evaluate((id) => {
     const nodeEl = document.querySelector(
       `[data-node-id="${id}"]`
-    ) as HTMLElement | null
-    if (!nodeEl) return null
+    )
+    if (!nodeEl || !(node instanceof HTMLElement)) return null
 
     const nodeRect = nodeEl.getBoundingClientRect()
     const slotEls = nodeEl.querySelectorAll('[data-slot-key]')
-    const slots: { key: string; offsetX: number; offsetY: number }[] = []
+    const slots: SlotMeasurement[] = []
 
     for (const slotEl of slotEls) {
       const slotRect = slotEl.getBoundingClientRect()
