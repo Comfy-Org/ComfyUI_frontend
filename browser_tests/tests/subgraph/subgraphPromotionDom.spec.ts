@@ -114,10 +114,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.delete()
 
-      const finalCount = await comfyPage.page
-        .locator(DOM_WIDGET_SELECTOR)
-        .count()
-      expect(finalCount).toBe(0)
+      await expect(comfyPage.page.locator(DOM_WIDGET_SELECTOR)).toHaveCount(0)
     })
 
     test('DOM elements are cleaned up when widget is disconnected from I/O', async ({
