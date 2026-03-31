@@ -1,53 +1,45 @@
 import { test as base } from '@playwright/test'
+import type { WebSocketRoute } from '@playwright/test'
+
+export interface MockWebSocket {
+  /** The intercepted WebSocket route. */
+  ws: WebSocketRoute
+  /** Stop forwarding real server messages to the page. */
+  stopServerForwarding(): void
+}
 
 export const webSocketFixture = base.extend<{
-  ws: { trigger(data: unknown, url?: string): Promise<void> }
+  getWebSocket: () => Promise<MockWebSocket>
 }>({
-  ws: [
-    async ({ page }, use) => {
-      // Each time a page loads, to catch navigations
-      page.on('load', async () => {
-        await page.evaluate(function () {
-          // Create a wrapper for WebSocket that stores them globally
-          // so we can look it up to trigger messages
-          const store: Record<string, WebSocket> = (window.__ws__ = {})
-          window.WebSocket = class extends window.WebSocket {
-            constructor(
-              ...rest: ConstructorParameters<typeof window.WebSocket>
-            ) {
-              super(...rest)
-              store[this.url] = this
-            }
-          }
+  getWebSocket: [
+    async ({ context }, use) => {
+      let latest: MockWebSocket | undefined
+      let resolve: ((mock: MockWebSocket) => void) | undefined
+
+      await context.routeWebSocket(/\/ws/, (ws) => {
+        let forwarding = true
+        const server = ws.connectToServer()
+        server.onMessage((message) => {
+          if (forwarding) ws.send(message)
         })
+
+        const mock: MockWebSocket = {
+          ws,
+          stopServerForwarding() {
+            forwarding = false
+          }
+        }
+        latest = mock
+        resolve?.(mock)
       })
 
-      await use({
-        async trigger(data, url) {
-          // Trigger a websocket event on the page
-          await page.evaluate(
-            function ([data, url]) {
-              if (!url) {
-                // If no URL specified, use page URL
-                const u = new URL(window.location.href)
-                u.hash = ''
-                u.protocol = 'ws:'
-                u.pathname = '/'
-                url = u.toString() + 'ws'
-              }
-              const ws: WebSocket = window.__ws__![url]
-              ws.dispatchEvent(
-                new MessageEvent('message', {
-                  data
-                })
-              )
-            },
-            [JSON.stringify(data), url]
-          )
-        }
+      await use(() => {
+        if (latest) return Promise.resolve(latest)
+        return new Promise<MockWebSocket>((r) => {
+          resolve = r
+        })
       })
     },
-    // We need this to run automatically as the first thing so it adds handlers as soon as the page loads
     { auto: true }
   ]
 })

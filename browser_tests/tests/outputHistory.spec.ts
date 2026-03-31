@@ -1,0 +1,295 @@
+import { mergeTests } from '@playwright/test'
+
+import type { RawJobListItem } from '../../src/platform/remote/comfyui/jobs/jobTypes'
+import { comfyPageFixture, comfyExpect as expect } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
+import { webSocketFixture } from '../fixtures/ws'
+import type { MockWebSocket } from '../fixtures/ws'
+import { ExecutionHelper } from '../fixtures/helpers/ExecutionHelper'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
+
+const SAVE_IMAGE_NODE = '9'
+const KSAMPLER_NODE = '3'
+
+/** Queue a prompt, intercept it, and send execution_start. */
+async function startExecution(comfyPage: ComfyPage, mock: MockWebSocket) {
+  const exec = new ExecutionHelper(comfyPage.page, mock)
+  const jobId = await exec.run()
+  // Allow storeJob() to complete before sending WS events
+  await comfyPage.nextFrame()
+  exec.executionStart(jobId)
+  return { exec, jobId }
+}
+
+function imageOutput(filename: string) {
+  return {
+    images: [{ filename, subfolder: '', type: 'output' }]
+  }
+}
+
+test.describe('Output History', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
+    await expect(comfyPage.appMode.linearWidgets).toBeVisible()
+    await comfyPage.nextFrame()
+  })
+
+  test('Skeleton appears on execution start', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.skeletons.first()
+    ).toBeVisible()
+  })
+
+  test('Latent preview replaces skeleton', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.skeletons.first()
+    ).toBeVisible()
+
+    exec.latentPreview(jobId, SAVE_IMAGE_NODE)
+
+    await expect(
+      comfyPage.appMode.outputHistory.latentPreviews.first()
+    ).toBeVisible()
+  })
+
+  test('Image output replaces skeleton on executed', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('test_output.png'))
+
+    await expect(
+      comfyPage.appMode.outputHistory.imageOutputs.first()
+    ).toBeVisible()
+  })
+
+  test('Multiple outputs from single execution', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    exec.executed(jobId, SAVE_IMAGE_NODE, {
+      images: [
+        { filename: 'output_001.png', subfolder: '', type: 'output' },
+        { filename: 'output_002.png', subfolder: '', type: 'output' },
+        { filename: 'output_003.png', subfolder: '', type: 'output' }
+      ]
+    })
+
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(3)
+  })
+
+  test('Video output renders video element', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    exec.executed(jobId, SAVE_IMAGE_NODE, {
+      gifs: [{ filename: 'output.mp4', subfolder: '', type: 'output' }]
+    })
+
+    await expect(
+      comfyPage.appMode.outputHistory.videoOutputs.first()
+    ).toBeVisible()
+  })
+
+  test('Cancel button sends interrupt during execution', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    const job: RawJobListItem = {
+      id: jobId,
+      status: 'in_progress',
+      create_time: Date.now() / 1000,
+      priority: 0
+    }
+    await comfyPage.page.route(
+      /\/api\/jobs\?status=in_progress/,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            jobs: [job],
+            pagination: { offset: 0, limit: 200, total: 1, has_more: false }
+          })
+        })
+      },
+      { times: 1 }
+    )
+    // Trigger queue refresh
+    exec.status(1)
+    await comfyPage.nextFrame()
+
+    await expect(comfyPage.appMode.cancelRunButton).toBeVisible()
+
+    const interruptRequest = comfyPage.page.waitForRequest('**/interrupt')
+    await comfyPage.appMode.cancelRunButton.click()
+    await interruptRequest
+  })
+
+  test('Full execution lifecycle cleans up in-progress items', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    // Skeleton appears
+    await expect(
+      comfyPage.appMode.outputHistory.skeletons.first()
+    ).toBeVisible()
+
+    // Latent preview replaces skeleton
+    exec.latentPreview(jobId, SAVE_IMAGE_NODE)
+    await expect(
+      comfyPage.appMode.outputHistory.latentPreviews.first()
+    ).toBeVisible()
+
+    // Image output replaces latent
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('lifecycle_out.png'))
+    await expect(
+      comfyPage.appMode.outputHistory.imageOutputs.first()
+    ).toBeVisible()
+
+    // Job completes with history mock - in-progress items fully resolved
+    await exec.completeWithHistory(jobId, SAVE_IMAGE_NODE, 'lifecycle_out.png')
+
+    await expect(comfyPage.appMode.outputHistory.inProgressItems).toHaveCount(0)
+    // Output now appears as a history item
+    await expect(
+      comfyPage.appMode.outputHistory.historyItems.first()
+    ).toBeVisible()
+  })
+
+  test('Auto-selection follows latest in-progress item', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    // Skeleton is auto-selected
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem
+    ).toBeVisible()
+
+    // After executed, the image item should be auto-selected
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('auto_select.png'))
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem
+    ).toBeVisible()
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem.getByTestId(
+        'linear-image-output'
+      )
+    ).toBeVisible()
+  })
+
+  test('Clicking item breaks auto-follow during execution', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    // Send first image
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('first.png'))
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
+
+    // Click the first image to break auto-follow
+    await comfyPage.appMode.outputHistory.inProgressItems.first().click()
+
+    // Send second image - selection should NOT move to it
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('second.png'))
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(2)
+
+    // The first item should still be selected
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem.getByTestId(
+        'linear-image-output'
+      )
+    ).toBeVisible()
+    // And there should be exactly one selected item
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem
+    ).toHaveCount(1)
+  })
+
+  test('Non-output node executed events are filtered', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    // KSampler is not an output node - should be filtered
+    exec.executed(jobId, KSAMPLER_NODE, imageOutput('ksampler_out.png'))
+    await comfyPage.nextFrame()
+
+    // KSampler output should not create image outputs
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(0)
+
+    // Now send from the actual output node (SaveImage)
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('save_image_out.png'))
+    await expect(
+      comfyPage.appMode.outputHistory.imageOutputs.first()
+    ).toBeVisible()
+  })
+
+  test('Execution error cleans up in-progress items', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeVisible()
+
+    exec.executionError(jobId, KSAMPLER_NODE, 'Test error')
+
+    await expect(comfyPage.appMode.outputHistory.inProgressItems).toHaveCount(0)
+  })
+})

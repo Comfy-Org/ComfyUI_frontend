@@ -3,6 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
 
+import { OutputHistoryComponent } from '../components/OutputHistory'
 import { BuilderFooterHelper } from './BuilderFooterHelper'
 import { BuilderSaveAsHelper } from './BuilderSaveAsHelper'
 import { BuilderSelectHelper } from './BuilderSelectHelper'
@@ -13,12 +14,14 @@ export class AppModeHelper {
   readonly footer: BuilderFooterHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
+  readonly outputHistory: OutputHistoryComponent
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.steps = new BuilderStepsHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
+    this.outputHistory = new OutputHistoryComponent(comfyPage.page)
   }
 
   private get page(): Page {
@@ -76,6 +79,10 @@ export class AppModeHelper {
     }, inputs)
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()
+  }
+
+  get cancelRunButton(): Locator {
+    return this.page.getByTestId(TestIds.outputHistory.cancelRun)
   }
 
   /** The linear-mode widget list container (visible in app mode). */
