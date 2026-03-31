@@ -1,7 +1,8 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
-import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()

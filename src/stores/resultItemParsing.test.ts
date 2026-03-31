@@ -1,7 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 function makeOutput(
   overrides: Partial<NodeExecutionOutput> = {}

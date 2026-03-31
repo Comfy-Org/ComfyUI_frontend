@@ -1,4 +1,6 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import * as measure from '@/lib/litegraph/src/measure'
@@ -8,7 +10,6 @@ import {
   createMockLGraphGroup
 } from '@/utils/__tests__/litegraphTestUtils'
 import { useGraphHierarchy } from './useGraphHierarchy'
-import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/renderer/core/canvas/canvasStore')
 

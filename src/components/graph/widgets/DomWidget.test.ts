@@ -1,14 +1,15 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import DomWidget from './DomWidget.vue'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 const mockUpdatePosition = vi.fn()
 const mockUpdateClipPath = vi.fn()

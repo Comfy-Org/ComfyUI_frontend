@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),

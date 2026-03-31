@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 // ---- Module Mocks ----
 

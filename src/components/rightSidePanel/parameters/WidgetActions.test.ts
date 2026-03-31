@@ -1,16 +1,17 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePromotionStore } from '@/stores/promotionStore'
 import WidgetActions from './WidgetActions.vue'
-import { fromAny } from '@total-typescript/shoehorn'
 
 const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
   mockGetInputSpecForWidget: vi.fn()

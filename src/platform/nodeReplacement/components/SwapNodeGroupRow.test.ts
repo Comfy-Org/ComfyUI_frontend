@@ -1,12 +1,13 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { MissingNodeType } from '@/types/comfy'
 import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
-import { fromAny } from '@total-typescript/shoehorn'
 
 const i18n = createI18n({
   legacy: false,

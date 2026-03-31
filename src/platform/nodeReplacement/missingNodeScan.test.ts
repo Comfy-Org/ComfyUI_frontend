@@ -1,8 +1,9 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()

@@ -1,7 +1,8 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { matchPromotedInput } from './matchPromotedInput'
-import { fromAny } from '@total-typescript/shoehorn'
 
 type MockInput = {
   name: string

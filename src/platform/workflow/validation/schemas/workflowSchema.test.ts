@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
+
 import {
   buildSubgraphExecutionPaths,
   flattenWorkflowNodes,
@@ -10,7 +12,6 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
 

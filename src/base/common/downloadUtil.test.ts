@@ -1,10 +1,11 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
   downloadFile,
   extractFilenameFromContentDisposition,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
@@ -200,11 +201,13 @@ describe('downloadUtil', () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      fetchMock.mockResolvedValue({
-        ok: false,
-        status: 404,
-        blob: vi.fn()
-      } as Partial<Response> as Response)
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: false,
+          status: 404,
+          blob: vi.fn()
+        })
+      )
 
       downloadFile(testUrl)
 

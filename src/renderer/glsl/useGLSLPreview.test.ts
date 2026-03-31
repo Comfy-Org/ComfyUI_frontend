@@ -1,12 +1,17 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
+
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { MaybeRefOrGetter } from 'vue'
-import { fromAny } from '@total-typescript/shoehorn'
+
+type WidgetValueStoreStub = {
+  _widgetMap: Map<string, { value: unknown }>
+}
 
 const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)
@@ -176,12 +181,9 @@ describe('useGLSLPreview', () => {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
-      const store = fromAny<
-        {
-          _widgetMap: Map<string, { value: unknown }>
-        },
-        unknown
-      >(useWidgetValueStore())
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
       store._widgetMap.set('fragment_shader', {
         value: 'void main() {}'
       })
@@ -243,12 +245,9 @@ describe('useGLSLPreview', () => {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
-      const store = fromAny<
-        {
-          _widgetMap: Map<string, { value: unknown }>
-        },
-        unknown
-      >(useWidgetValueStore())
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
       store._widgetMap.set('fragment_shader', {
         value: 'void main() {}'
       })
@@ -304,12 +303,9 @@ describe('useGLSLPreview', () => {
     })
 
     it('skips render when shader source is unavailable', async () => {
-      const store = fromAny<
-        {
-          _widgetMap: Map<string, { value: unknown }>
-        },
-        unknown
-      >(useWidgetValueStore())
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
       store._widgetMap.delete('fragment_shader')
 
       const node = createMockNode()

@@ -1,7 +1,8 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getCnrIdFromNode, getCnrIdFromProperties } from './cnrIdUtil'
-import { fromAny } from '@total-typescript/shoehorn'
 
 describe('getCnrIdFromProperties', () => {
   it('returns cnr_id when present', () => {

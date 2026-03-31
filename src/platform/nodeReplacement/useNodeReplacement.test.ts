@@ -1,10 +1,11 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeReplacement } from './types'
 import type { MissingNodeType } from '@/types/comfy'
-import { fromAny } from '@total-typescript/shoehorn'
+import type { NodeReplacement } from './types'
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {

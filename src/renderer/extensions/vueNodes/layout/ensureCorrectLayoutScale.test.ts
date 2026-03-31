@@ -1,8 +1,9 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
-import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: undefined }

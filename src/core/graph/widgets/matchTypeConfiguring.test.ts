@@ -1,11 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
-import { fromAny } from '@total-typescript/shoehorn'
 
 setActivePinia(createTestingPinia())
 

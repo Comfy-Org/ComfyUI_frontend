@@ -1,10 +1,11 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useEventListener } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
 import { useServerLogs } from '@/composables/useServerLogs'
 import type { LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/scripts/api', () => ({
   api: {

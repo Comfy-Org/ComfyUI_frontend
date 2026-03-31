@@ -1,8 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()

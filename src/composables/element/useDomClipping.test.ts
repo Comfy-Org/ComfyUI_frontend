@@ -1,6 +1,7 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { useDomClipping } from './useDomClipping'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+
+import { useDomClipping } from './useDomClipping'
 
 function createMockElement(rect: {
   left: number

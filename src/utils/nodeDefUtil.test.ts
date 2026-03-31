@@ -1,4 +1,6 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
@@ -7,7 +9,6 @@ import type {
   IntInputSpec
 } from '@/schemas/nodeDefSchema'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
-import { fromAny } from '@total-typescript/shoehorn'
 
 describe('nodeDefUtil', () => {
   describe('mergeInputSpec', () => {

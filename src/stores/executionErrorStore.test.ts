@@ -1,7 +1,8 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { MissingNodeType } from '@/types/comfy'
-import { fromAny } from '@total-typescript/shoehorn'
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({

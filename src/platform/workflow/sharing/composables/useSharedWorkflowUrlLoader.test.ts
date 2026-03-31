@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
-import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),

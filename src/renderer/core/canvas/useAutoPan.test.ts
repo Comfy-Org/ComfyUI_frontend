@@ -1,10 +1,11 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import {
   AutoPanController,
   calculateEdgePanSpeed
 } from '@/renderer/core/canvas/useAutoPan'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 describe('calculateEdgePanSpeed', () => {
   const MAX = 15

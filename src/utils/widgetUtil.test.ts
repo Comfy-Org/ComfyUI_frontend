@@ -1,10 +1,11 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
-import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
   resolvePromotedWidgetSource: vi.fn()

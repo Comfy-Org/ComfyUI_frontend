@@ -1,6 +1,8 @@
-import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -10,7 +12,6 @@ import {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { fromAny } from '@total-typescript/shoehorn'
 
 function seedSimpleError(
   store: ReturnType<typeof useExecutionErrorStore>,

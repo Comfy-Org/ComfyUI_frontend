@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useInviteUrlLoader } from './useInviteUrlLoader'
 import { fromAny } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useInviteUrlLoader } from './useInviteUrlLoader'
 
 /**
  * Unit tests for useInviteUrlLoader composable

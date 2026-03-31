@@ -1,7 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 function makeOutput(
   overrides: Partial<NodeExecutionOutput> = {}
@@ -85,7 +86,7 @@ describe(flattenNodeOutput, () => {
 
   it('flattens non-standard output keys with ResultItem-like values', () => {
     const output = makeOutput(
-      fromPartial<Partial<NodeExecutionOutput>>({
+      fromPartial<NodeExecutionOutput>({
         a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
         b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
       })

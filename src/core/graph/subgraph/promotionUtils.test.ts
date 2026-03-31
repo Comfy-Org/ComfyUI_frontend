@@ -1,14 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePromotionStore } from '@/stores/promotionStore'
-import { fromAny } from '@total-typescript/shoehorn'
 
 const updatePreviewsMock = vi.hoisted(() => vi.fn())
 vi.mock('@/services/litegraphService', () => ({

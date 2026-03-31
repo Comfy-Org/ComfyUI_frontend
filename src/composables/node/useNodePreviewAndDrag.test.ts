@@ -1,8 +1,9 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
-import { fromAny } from '@total-typescript/shoehorn'
 
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
@@ -71,9 +72,9 @@ describe('useNodePreviewAndDrag', () => {
         toJSON: () => ({})
       })
 
-      const mockEvent = {
+      const mockEvent = fromPartial<MouseEvent>({
         currentTarget: mockElement
-      } as Partial<MouseEvent> as MouseEvent
+      })
       result.handleMouseEnter(mockEvent)
 
       expect(result.isHovered.value).toBe(true)
@@ -84,9 +85,9 @@ describe('useNodePreviewAndDrag', () => {
       const result = useNodePreviewAndDrag(nodeDef)
 
       const mockElement = document.createElement('div')
-      const mockEvent = {
+      const mockEvent = fromPartial<MouseEvent>({
         currentTarget: mockElement
-      } as Partial<MouseEvent> as MouseEvent
+      })
       result.handleMouseEnter(mockEvent)
 
       expect(result.isHovered.value).toBe(false)
@@ -150,10 +151,10 @@ describe('useNodePreviewAndDrag', () => {
 
       result.isDragging.value = true
 
-      const mockEvent = {
+      const mockEvent = fromPartial<DragEvent>({
         clientX: 100,
         clientY: 200
-      } as Partial<DragEvent> as DragEvent
+      })
 
       result.handleDragEnd(mockEvent)
 
@@ -167,11 +168,11 @@ describe('useNodePreviewAndDrag', () => {
 
       result.isDragging.value = true
 
-      const mockEvent = {
+      const mockEvent = fromPartial<DragEvent>({
         dataTransfer: { dropEffect: 'none' },
         clientX: 300,
         clientY: 400
-      } as Partial<DragEvent> as DragEvent
+      })
 
       result.handleDragEnd(mockEvent)
 

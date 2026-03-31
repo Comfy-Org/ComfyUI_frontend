@@ -1,9 +1,10 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
-import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { flushPromises, mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
+import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const mockGetSharedWorkflow = vi.fn()
 

@@ -1,13 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import DisplayCarousel from './DisplayCarousel.vue'
 import type { GalleryImage, GalleryValue } from './DisplayCarousel.vue'
 import { createMockWidget } from './widgetTestUtils'
-import { fromAny } from '@total-typescript/shoehorn'
 
 const i18n = createI18n({
   legacy: false,

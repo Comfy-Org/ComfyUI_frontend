@@ -1,13 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import * as litegraphUtil from '@/utils/litegraphUtil'
-import { fromAny } from '@total-typescript/shoehorn'
 
 const mockResolveNode = vi.fn()
 
@@ -31,11 +32,11 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  ({
+  fromAny<LGraphNode, Record<string, unknown>>({
     id: 1,
     type: 'TestNode',
     ...overrides
-  }) as Partial<LGraphNode> as LGraphNode
+  })
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']

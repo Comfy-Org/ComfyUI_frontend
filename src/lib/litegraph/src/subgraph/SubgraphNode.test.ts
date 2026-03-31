@@ -4,18 +4,19 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
-import { fromAny } from '@total-typescript/shoehorn'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))

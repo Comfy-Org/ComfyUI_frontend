@@ -1,13 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import type { Subgraph } from '@/lib/litegraph/src/LGraph'
-import { fromAny } from '@total-typescript/shoehorn'
 
 type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
 

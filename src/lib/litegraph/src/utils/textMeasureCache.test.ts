@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cachedMeasureText, clearTextMeasureCache } from './textMeasureCache'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { cachedMeasureText, clearTextMeasureCache } from './textMeasureCache'
 
 function createMockCtx(font = '12px sans-serif'): CanvasRenderingContext2D {
   return fromPartial<CanvasRenderingContext2D>({

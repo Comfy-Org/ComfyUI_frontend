@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { createBitmapCache } from './svgBitmapCache'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+
+import { createBitmapCache } from './svgBitmapCache'
 
 function mockSvg(
   overrides: Partial<{ complete: boolean; naturalWidth: number }> = {}

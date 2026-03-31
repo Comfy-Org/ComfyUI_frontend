@@ -1,4 +1,6 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   LGraph,
@@ -6,7 +8,6 @@ import {
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { fromAny } from '@total-typescript/shoehorn'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
