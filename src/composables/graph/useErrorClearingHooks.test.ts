@@ -1,5 +1,6 @@
-import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -194,7 +195,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(
-      undefined as unknown as LGraph
+      fromAny<LGraph, unknown>(undefined)
     )
     store.lastNodeErrors = {
       [String(node.id)]: {

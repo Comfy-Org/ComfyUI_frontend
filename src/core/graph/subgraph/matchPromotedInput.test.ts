@@ -1,7 +1,7 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-
 import { matchPromotedInput } from './matchPromotedInput'
 
 type MockInput = {
@@ -31,10 +31,13 @@ describe(matchPromotedInput, () => {
     }
 
     const matched = matchPromotedInput(
-      [aliasInput, exactInput] as unknown as Array<{
-        name: string
-        _widget?: IBaseWidget
-      }>,
+      fromAny<
+        Array<{
+          name: string
+          _widget?: IBaseWidget
+        }>,
+        unknown
+      >([aliasInput, exactInput]),
       targetWidget
     )
 
@@ -48,7 +51,9 @@ describe(matchPromotedInput, () => {
     }
 
     const matched = matchPromotedInput(
-      [aliasInput] as unknown as Array<{ name: string; _widget?: IBaseWidget }>,
+      fromAny<Array<{ name: string; _widget?: IBaseWidget }>, unknown>([
+        aliasInput
+      ]),
       targetWidget
     )
 
@@ -65,10 +70,13 @@ describe(matchPromotedInput, () => {
     }
 
     const matched = matchPromotedInput(
-      [firstAliasInput, secondAliasInput] as unknown as Array<{
-        name: string
-        _widget?: IBaseWidget
-      }>,
+      fromAny<
+        Array<{
+          name: string
+          _widget?: IBaseWidget
+        }>,
+        unknown
+      >([firstAliasInput, secondAliasInput]),
       targetWidget
     )
 
