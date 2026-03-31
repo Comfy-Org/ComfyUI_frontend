@@ -50,6 +50,9 @@ export interface NodeLayout {
   visible: boolean
   // Computed bounds for hit testing
   bounds: Bounds
+  // Collapsed node dimensions (Vue mode only, separate from size to
+  // preserve expanded size across collapse/expand cycles)
+  collapsedSize?: Size
 }
 
 export interface SlotLayout {

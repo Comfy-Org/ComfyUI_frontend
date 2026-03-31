@@ -27,14 +27,6 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 
 import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
 
-interface VueBoundsOverride {
-  footerHeight?: number
-  collapsedWidth?: number
-  collapsedHeight?: number
-}
-
-export const vueBoundsOverrides = new Map<NodeId, VueBoundsOverride>()
-
 /**
  * Generic update item for element bounds tracking
  */
@@ -147,50 +139,34 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Collapsed nodes: don't update layoutStore (preserve expanded size),
-    // but store collapsed dimensions in vueBoundsOverrides for onBounding.
+    // Collapsed nodes: preserve expanded size but store collapsed
+    // dimensions separately in layoutStore for selection bounds.
     if (elementType === 'node' && element.dataset.collapsed != null) {
       if (nodeId) {
         markElementForFreshMeasurement(element)
         const body = element.querySelector(
           '[data-testid^="node-inner-wrapper"]'
         )
-        vueBoundsOverrides.set(nodeId, {
-          ...vueBoundsOverrides.get(nodeId),
-          collapsedWidth:
-            body instanceof HTMLElement
-              ? body.offsetWidth
-              : element.offsetWidth,
-          collapsedHeight: element.offsetHeight
-        })
+        const collapsedWidth =
+          body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
+        const collapsedHeight = element.offsetHeight
+        const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+        if (nodeLayout) {
+          layoutStore.updateNodeCollapsedSize(nodeId, {
+            width: collapsedWidth,
+            height: collapsedHeight
+          })
+        }
         nodesNeedingSlotResync.add(nodeId)
       }
       continue
     }
 
-    // Measure body (node-inner-wrapper) to exclude footer height from
-    // node.size, preventing size accumulation on Vue/legacy mode switching.
-    const bodyEl = element.querySelector('[data-testid^="node-inner-wrapper"]')
-    const measuredEl = bodyEl instanceof HTMLElement ? bodyEl : element
-    const width = Math.max(0, measuredEl.offsetWidth)
-    const height = Math.max(0, measuredEl.offsetHeight)
-    const fullHeight = Math.max(0, element.offsetHeight)
-
-    // Store footer height in vueBoundsOverrides for onBounding
-    if (nodeId) {
-      const footerExtra = fullHeight - measuredEl.offsetHeight
-      if (footerExtra > 0) {
-        vueBoundsOverrides.set(nodeId, {
-          ...vueBoundsOverrides.get(nodeId),
-          footerHeight: footerExtra
-        })
-      } else {
-        const existing = vueBoundsOverrides.get(nodeId)
-        if (existing?.footerHeight) {
-          existing.footerHeight = undefined
-        }
-      }
-    }
+    // Measure the full root element (including footer in flow).
+    // min-height is applied to the root, so footer height in node.size
+    // does not accumulate on Vue/legacy mode switching.
+    const width = Math.max(0, element.offsetWidth)
+    const height = Math.max(0, element.offsetHeight)
 
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
@@ -344,9 +320,5 @@ export function useVueElementTracking(
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
     resizeObserver.unobserve(element)
-
-    if (trackingType === 'node' && appIdentifier) {
-      vueBoundsOverrides.delete(appIdentifier as NodeId)
-    }
   })
 }

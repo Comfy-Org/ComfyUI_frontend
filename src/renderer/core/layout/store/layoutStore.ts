@@ -34,6 +34,7 @@ import type {
   NodeId,
   NodeLayout,
   Point,
+  Size,
   RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
@@ -129,6 +130,7 @@ class LayoutStoreImpl implements LayoutStore {
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
+  private collapsedSizes = new Map<NodeId, Size>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -1545,6 +1547,18 @@ class LayoutStoreImpl implements LayoutStore {
     this.applyOperation(operation)
 
     this.currentSource = originalSource
+  }
+
+  updateNodeCollapsedSize(nodeId: NodeId, size: Size): void {
+    this.collapsedSizes.set(nodeId, size)
+    const nodeRef = this.getNodeLayoutRef(nodeId)
+    if (nodeRef.value) {
+      nodeRef.value = { ...nodeRef.value, collapsedSize: size }
+    }
+  }
+
+  getNodeCollapsedSize(nodeId: NodeId): Size | undefined {
+    return this.collapsedSizes.get(nodeId)
   }
 }
 

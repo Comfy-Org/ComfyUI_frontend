@@ -1,68 +1,93 @@
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
-import { createBounds } from '@/lib/litegraph/src/litegraph'
+import { createBounds, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 
-/**
- * Draws a dashed border around selected items that maintains constant pixel size
- * regardless of zoom level, similar to the DOM selection overlay.
- */
+function getSelectionBounds(canvas: LGraphCanvas): ReadOnlyRect | null {
+  const selectedItems = canvas.selectedItems
+  if (selectedItems.size <= 1) return null
+
+  if (!LiteGraph.vueNodesMode) return createBounds(selectedItems, 10)
+
+  // In Vue mode, use layoutStore.collapsedSize for collapsed nodes
+  // to get accurate dimensions instead of litegraph's fallback values.
+  const padding = 10
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const item of selectedItems) {
+    const rect = item.boundingRect
+    const id = 'id' in item ? String(item.id) : null
+    const isCollapsed =
+      'flags' in item &&
+      !!(item as { flags?: { collapsed?: boolean } }).flags?.collapsed
+    const collapsedSize =
+      id && isCollapsed ? layoutStore.getNodeCollapsedSize(id) : undefined
+
+    if (collapsedSize) {
+      minX = Math.min(minX, rect[0])
+      minY = Math.min(minY, rect[1])
+      maxX = Math.max(maxX, rect[0] + collapsedSize.width)
+      maxY = Math.max(maxY, rect[1] + collapsedSize.height)
+    } else {
+      minX = Math.min(minX, rect[0])
+      minY = Math.min(minY, rect[1])
+      maxX = Math.max(maxX, rect[0] + rect[2])
+      maxY = Math.max(maxY, rect[1] + rect[3])
+    }
+  }
+
+  if (!Number.isFinite(minX)) return null
+  return [
+    minX - padding,
+    minY - padding,
+    maxX - minX + 2 * padding,
+    maxY - minY + 2 * padding
+  ]
+}
+
 function drawSelectionBorder(
   ctx: CanvasRenderingContext2D,
   canvas: LGraphCanvas
 ) {
-  const selectedItems = canvas.selectedItems
-
-  // Only draw if multiple items selected
-  if (selectedItems.size <= 1) return
-
-  // Use the same bounds calculation as the toolbox
-  const bounds = createBounds(selectedItems, 10)
+  const bounds = getSelectionBounds(canvas)
   if (!bounds) return
 
   const [x, y, width, height] = bounds
 
-  // Save context state
   ctx.save()
 
-  // Set up dashed line style that doesn't scale with zoom
-  const borderWidth = 2 / canvas.ds.scale // Constant 2px regardless of zoom
+  const borderWidth = 2 / canvas.ds.scale
   ctx.lineWidth = borderWidth
   ctx.strokeStyle =
     getComputedStyle(document.documentElement)
       .getPropertyValue('--border-color')
       .trim() || '#ffffff66'
 
-  // Create dash pattern that maintains visual size
   const dashSize = 5 / canvas.ds.scale
   ctx.setLineDash([dashSize, dashSize])
 
-  // Draw the border using the bounds directly
   ctx.beginPath()
   ctx.roundRect(x, y, width, height, 8 / canvas.ds.scale)
   ctx.stroke()
 
-  // Restore context
   ctx.restore()
 }
 
-/**
- * Extension that adds a dashed selection border for multiple selected nodes
- */
 const ext = {
   name: 'Comfy.SelectionBorder',
 
   async init() {
-    // Hook into the canvas drawing
     const originalDrawForeground = app.canvas.onDrawForeground
 
     app.canvas.onDrawForeground = function (
       ctx: CanvasRenderingContext2D,
       visibleArea: Rectangle
     ) {
-      // Call original if it exists
       originalDrawForeground?.call(this, ctx, visibleArea)
-
-      // Draw our selection border
       drawSelectionBorder(ctx, app.canvas)
     }
   }

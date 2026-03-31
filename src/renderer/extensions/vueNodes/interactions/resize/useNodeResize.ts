@@ -51,10 +51,7 @@ export function useNodeResize(
     const nodeId = nodeElement.dataset.nodeId
     if (!nodeId) return
 
-    const bodyElement =
-      nodeElement.querySelector('[data-testid^="node-inner-wrapper"]') ??
-      nodeElement
-    const rect = bodyElement.getBoundingClientRect()
+    const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z
 
     const startSize: Size = {
@@ -64,7 +61,7 @@ export function useNodeResize(
 
     const savedNodeHeight = nodeElement.style.getPropertyValue('--node-height')
     nodeElement.style.setProperty('--node-height', '0px')
-    const minContentHeight = bodyElement.getBoundingClientRect().height / scale
+    const minContentHeight = nodeElement.getBoundingClientRect().height / scale
     nodeElement.style.setProperty('--node-height', savedNodeHeight || '')
 
     const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
