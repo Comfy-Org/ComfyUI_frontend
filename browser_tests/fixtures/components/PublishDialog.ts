@@ -62,10 +62,8 @@ export class PublishDialog extends BaseDialog {
     return this.describeStep.locator('[role="list"]').first()
   }
 
-  tagSuggestions(): Locator {
-    return this.describeStep.locator(
-      '[data-disabled] [data-tag-item]:not([data-disabled])'
-    )
+  tagSuggestion(name: string): Locator {
+    return this.describeStep.getByText(name, { exact: true })
   }
 
   // Footer button locators
