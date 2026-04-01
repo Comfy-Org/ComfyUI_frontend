@@ -4,23 +4,23 @@ import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import { createMockJob } from '../../fixtures/helpers/AssetsHelper'
 import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
 
-const now = Date.now()
+const now = Date.now() / 1000
 
 const COMPLETED_JOBS: RawJobListItem[] = [
   createMockJob({
     id: 'job-completed-1',
     status: 'completed',
-    create_time: now - 60_000,
-    execution_start_time: now - 60_000,
-    execution_end_time: now - 50_000,
+    create_time: now - 60,
+    execution_start_time: now - 60,
+    execution_end_time: now - 50,
     outputs_count: 2
   }),
   createMockJob({
     id: 'job-completed-2',
     status: 'completed',
-    create_time: now - 120_000,
-    execution_start_time: now - 120_000,
-    execution_end_time: now - 115_000,
+    create_time: now - 120,
+    execution_start_time: now - 120,
+    execution_end_time: now - 115,
     outputs_count: 1
   })
 ]
@@ -29,9 +29,9 @@ const FAILED_JOBS: RawJobListItem[] = [
   createMockJob({
     id: 'job-failed-1',
     status: 'failed',
-    create_time: now - 30_000,
-    execution_start_time: now - 30_000,
-    execution_end_time: now - 28_000,
+    create_time: now - 30,
+    execution_start_time: now - 30,
+    execution_end_time: now - 28,
     outputs_count: 0
   })
 ]
