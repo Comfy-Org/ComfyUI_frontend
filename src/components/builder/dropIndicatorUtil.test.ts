@@ -16,6 +16,10 @@ vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
   appendCloudResParam: vi.fn()
 }))
 
+vi.mock('@/base/common/downloadUtil', () => ({
+  downloadFile: vi.fn()
+}))
+
 function makeNode(type: string, widgetValue?: unknown): LGraphNode {
   return {
     type,
@@ -42,6 +46,21 @@ describe('buildDropIndicator', () => {
     expect(result!.imageUrl).toContain('/view?')
     expect(result!.imageUrl).toContain('filename=photo.png')
     expect(result!.label).toBe('Upload')
+  })
+
+  it('downloads the original image, not the preview rendition', async () => {
+    const { downloadFile } = vi.mocked(
+      await import('@/base/common/downloadUtil')
+    )
+    const result = buildDropIndicator(makeNode('LoadImage', 'photo.png'), {})
+
+    expect(result!.imageUrl).toContain('&format=webp')
+    expect(result!.onDownload).toBeDefined()
+
+    result!.onDownload!()
+    expect(downloadFile).toHaveBeenCalledWith(
+      expect.not.stringContaining('format=webp')
+    )
   })
 
   it('returns image indicator with no imageUrl when widget has no value', () => {

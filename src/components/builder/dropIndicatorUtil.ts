@@ -53,12 +53,20 @@ function buildImageDropIndicator(
     ? parseImageWidgetValue(stringValue)
     : { filename: '', subfolder: '', type: 'input' }
 
-  const imageUrl = filename
+  const rawParams = filename
+    ? new URLSearchParams({ filename, subfolder, type })
+    : undefined
+
+  const imageUrl = rawParams
     ? (() => {
-        const params = new URLSearchParams({ filename, subfolder, type })
+        const params = new URLSearchParams(rawParams)
         appendCloudResParam(params, filename)
         return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
       })()
+    : undefined
+
+  const originalUrl = rawParams
+    ? api.apiURL(`/view?${rawParams}`)
     : undefined
 
   return {
@@ -70,7 +78,7 @@ function buildImageDropIndicator(
       imageUrl && options.openMaskEditor
         ? () => options.openMaskEditor!(node)
         : undefined,
-    onDownload: imageUrl ? () => downloadFile(imageUrl) : undefined,
+    onDownload: originalUrl ? () => downloadFile(originalUrl) : undefined,
     onRemove: imageUrl
       ? () => {
           const imageWidget = node.widgets?.find((w) => w.name === 'image')
@@ -101,6 +109,16 @@ function buildVideoDropIndicator(
     iconClass: 'icon-[lucide--video]',
     videoUrl,
     label: options.videoLabel,
-    onClick: () => node.widgets?.[1]?.callback?.(undefined)
+    onClick: () => node.widgets?.[1]?.callback?.(undefined),
+    onDownload: videoUrl ? () => downloadFile(videoUrl) : undefined,
+    onRemove: videoUrl
+      ? () => {
+          const videoWidget = node.widgets?.find((w) => w.name === 'video')
+          if (videoWidget) {
+            videoWidget.value = ''
+            videoWidget.callback?.(undefined)
+          }
+        }
+      : undefined
   }
 }
