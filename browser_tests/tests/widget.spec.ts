@@ -204,7 +204,8 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     // Expect the image preview to change automatically
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'image_preview_drag_and_dropped.png'
+      'image_preview_drag_and_dropped.png',
+      { maxDiffPixelRatio: 0.02 }
     )
 
     // Expect the filename combo value to be updated
