@@ -6,7 +6,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
-interface DropIndicatorData {
+export interface DropIndicatorData {
   iconClass: string
   imageUrl?: string
   videoUrl?: string
@@ -15,6 +15,13 @@ interface DropIndicatorData {
   onMaskEdit?: () => void
   onDownload?: () => void
   onRemove?: () => void
+}
+
+function parseNodeMediaValue(node: LGraphNode) {
+  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
+  return stringValue
+    ? parseImageWidgetValue(stringValue)
+    : { filename: '', subfolder: '', type: 'input' }
 }
 
 /**
@@ -49,11 +56,7 @@ function buildImageDropIndicator(
     openMaskEditor?: (node: LGraphNode) => void
   }
 ): DropIndicatorData {
-  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
+  const { filename, subfolder, type } = parseNodeMediaValue(node)
 
   const rawParams = filename
     ? new URLSearchParams({ filename, subfolder, type })
@@ -67,7 +70,9 @@ function buildImageDropIndicator(
       })()
     : undefined
 
-  const originalUrl = rawParams ? api.apiURL(`/view?${rawParams}`) : undefined
+  const originalUrl = rawParams
+    ? api.apiURL(`/view?${rawParams}`)
+    : undefined
 
   return {
     iconClass: 'icon-[lucide--image]',
@@ -97,11 +102,7 @@ function buildVideoDropIndicator(
   node: LGraphNode,
   options: { videoLabel?: string }
 ): DropIndicatorData {
-  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
+  const { filename, subfolder, type } = parseNodeMediaValue(node)
 
   const videoUrl = filename
     ? api.apiURL(`/view?${new URLSearchParams({ filename, subfolder, type })}`)
