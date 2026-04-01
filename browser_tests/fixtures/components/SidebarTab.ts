@@ -175,46 +175,50 @@ export class JobHistorySidebarTab extends SidebarTab {
     super(page, 'job-history')
   }
 
+  /** Scope all locators to the sidebar panel to avoid collision
+   *  with QueueOverlayExpanded which renders the same controls. */
+  private get panel() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
   get allTab() {
-    return this.page.getByRole('button', { name: 'All', exact: true })
+    return this.panel.getByRole('button', { name: 'All', exact: true })
   }
 
   get completedTab() {
-    return this.page.getByRole('button', { name: 'Completed', exact: true })
+    return this.panel.getByRole('button', { name: 'Completed', exact: true })
   }
 
   get failedTab() {
-    return this.page.getByRole('button', { name: 'Failed', exact: true })
+    return this.panel.getByRole('button', { name: 'Failed', exact: true })
   }
 
   get searchInput() {
-    return this.page.getByPlaceholder('Search...')
+    return this.panel.getByPlaceholder('Search...')
   }
 
   get filterButton() {
-    return this.page.getByRole('button', { name: /Filter/i })
+    return this.panel.getByRole('button', { name: /Filter/i })
   }
 
   get sortButton() {
-    return this.page.getByRole('button', { name: /Sort/i })
+    return this.panel.getByRole('button', { name: /Sort/i })
   }
 
   get jobItems() {
-    return this.page.locator('[data-job-id]')
+    return this.panel.locator('[data-job-id]')
   }
 
   get noActiveJobsText() {
-    return this.page.getByText('No active jobs')
+    return this.panel.getByText('No active jobs')
   }
 
   getJobById(id: string) {
-    return this.page.locator(`[data-job-id="${id}"]`)
+    return this.panel.locator(`[data-job-id="${id}"]`)
   }
 
   get groupLabels() {
-    return this.page.locator(
-      '.sidebar-content-container .text-xs.text-text-secondary'
-    )
+    return this.panel.locator('.text-xs.text-text-secondary')
   }
 
   override async open() {

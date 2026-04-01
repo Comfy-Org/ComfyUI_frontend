@@ -9,12 +9,12 @@ const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 export function createMockJob(
   overrides: Partial<RawJobListItem> & { id: string }
 ): RawJobListItem {
-  const now = Date.now() / 1000
+  const now = Date.now()
   return {
     status: 'completed',
     create_time: now,
     execution_start_time: now,
-    execution_end_time: now + 5,
+    execution_end_time: now + 5000,
     preview_output: {
       filename: `output_${overrides.id}.png`,
       subfolder: '',
