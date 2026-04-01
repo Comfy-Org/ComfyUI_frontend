@@ -1,16 +1,31 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
 test.describe('Workflow sidebar - search', () => {
-  test.beforeEach(async ({ comfyPage }) => {
+  // Use unique names per worker to avoid overwrite dialogs across parallel tests
+  let nameA: string
+  let nameB: string
+
+  test.beforeEach(async ({ comfyPage }, testInfo) => {
+    const suffix = testInfo.parallelIndex
+    nameA = `alpha-wf-${suffix}`
+    nameB = `beta-wf-${suffix}`
+
     await comfyPage.setup()
 
-    // Save two workflows with distinct names for search testing
-    await comfyPage.menu.topbar.saveWorkflow('alpha-workflow')
+    await comfyPage.menu.topbar.saveWorkflow(nameA)
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.menu.topbar.saveWorkflow('beta-workflow')
+    await comfyPage.menu.topbar.saveWorkflow(nameB)
   })
+
+  /** Locate a workflow label in whatever panel is visible (browse or search). */
+  function findWorkflow(comfyPage: { page: Page }, name: string) {
+    return comfyPage.page
+      .getByTestId('workflows-sidebar')
+      .locator('.node-label', { hasText: name })
+  }
 
   test('Search input is visible in workflows tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
@@ -27,11 +42,8 @@ test.describe('Workflow sidebar - search', () => {
     const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
     await searchInput.fill('alpha')
 
-    // alpha-workflow should be visible, beta-workflow should not
-    await expect(tab.getPersistedItem('alpha-workflow')).toBeVisible({
-      timeout: 5000
-    })
-    await expect(tab.getPersistedItem('beta-workflow')).not.toBeVisible()
+    await expect(findWorkflow(comfyPage, nameA)).toBeVisible({ timeout: 5000 })
+    await expect(findWorkflow(comfyPage, nameB)).not.toBeVisible()
   })
 
   test('Clearing search restores all workflows', async ({ comfyPage }) => {
@@ -40,14 +52,13 @@ test.describe('Workflow sidebar - search', () => {
 
     const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
     await searchInput.fill('alpha')
-    await expect(tab.getPersistedItem('beta-workflow')).not.toBeVisible()
+    await expect(findWorkflow(comfyPage, nameB)).not.toBeVisible()
 
     await searchInput.fill('')
 
-    await expect(tab.getPersistedItem('alpha-workflow')).toBeVisible({
-      timeout: 5000
-    })
-    await expect(tab.getPersistedItem('beta-workflow')).toBeVisible()
+    // After clearing, the browse panel renders again
+    await expect(tab.getPersistedItem(nameA)).toBeVisible({ timeout: 5000 })
+    await expect(tab.getPersistedItem(nameB)).toBeVisible()
   })
 
   test('Search with no matches shows empty results', async ({ comfyPage }) => {
@@ -57,7 +68,7 @@ test.describe('Workflow sidebar - search', () => {
     const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
     await searchInput.fill('nonexistent_xyz')
 
-    await expect(tab.getPersistedItem('alpha-workflow')).not.toBeVisible()
-    await expect(tab.getPersistedItem('beta-workflow')).not.toBeVisible()
+    await expect(findWorkflow(comfyPage, nameA)).not.toBeVisible()
+    await expect(findWorkflow(comfyPage, nameB)).not.toBeVisible()
   })
 })
