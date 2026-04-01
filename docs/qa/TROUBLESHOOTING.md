@@ -64,6 +64,11 @@
 **Cause**: Headless Chrome doesn't render system cursor. The CSS cursor overlay relies on DOM `mousemove` events which Playwright CDP doesn't reliably trigger.
 **Fix**: Monkey-patch `page.mouse.move/click/dblclick/down/up` to call `__moveCursor(x,y)` on the injected cursor div. This makes ALL mouse operations update the overlay.
 
+## Credit Balance Too Low
+**Symptom**: Research phase produces INCONCLUSIVE with 0 tool calls. Log shows "Credit balance is too low".
+**Cause**: The `ANTHROPIC_API_KEY` secret in the repo has exhausted its credits.
+**Fix**: Top up the Anthropic API account linked to the key, or rotate to a new key in repo Settings → Secrets.
+
 ## Agent Doesn't Perform Steps
 **Symptom**: Agent opens menus and settings but never interacts with the canvas.
 **Causes**:

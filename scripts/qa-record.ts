@@ -79,7 +79,7 @@ type TestAction =
   | { action: 'resizeNode'; x: number; y: number; dx: number; dy: number }
   | { action: 'middleClick'; x: number; y: number }
 
-interface ActionResult {
+export interface ActionResult {
   action: TestAction
   success: boolean
   error?: string
@@ -462,7 +462,7 @@ async function showSubtitle(page: Page, text: string, turn: number) {
 async function generateNarrationAudio(
   segments: NarrationSegment[],
   outputDir: string,
-  apiKey: string
+  _apiKey: string
 ): Promise<string | null> {
   if (segments.length === 0) return null
 
@@ -523,7 +523,6 @@ async function generateNarrationAudio(
 
   for (let i = 0; i < audioFiles.length; i++) {
     inputArgs.push('-i', audioFiles[i].path)
-    const delaySec = (audioFiles[i].offsetMs / 1000).toFixed(3)
     filterParts.push(
       `[${i}]adelay=${audioFiles[i].offsetMs}|${audioFiles[i].offsetMs}[a${i}]`
     )
@@ -1429,7 +1428,8 @@ interface AgenticTurnContent {
   >
 }
 
-async function runAgenticLoop(
+// @ts-expect-error TS6133 — legacy function kept for fallback
+async function _runAgenticLoop(
   page: Page,
   opts: Options,
   outputDir: string,
@@ -1497,19 +1497,21 @@ async function runAgenticLoop(
     preflightNote
   )
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  const anthropicKey =
+    process.env.ANTHROPIC_API_KEY_QA || process.env.ANTHROPIC_API_KEY
   const useHybrid = Boolean(anthropicKey)
 
   const genAI = new GoogleGenerativeAI(opts.apiKey)
-  const geminiVisionModel = genAI.getGenerativeModel({
+  // @ts-expect-error TS6133 — kept for hybrid mode fallback
+  const _geminiVisionModel = genAI.getGenerativeModel({
     model: 'gemini-3-flash-preview'
   })
 
-  // Gemini-only fallback model (used when no ANTHROPIC_API_KEY)
+  // Gemini-only fallback model (used when no ANTHROPIC_API_KEY_QA)
   const agenticModel = opts.model.includes('flash')
     ? opts.model
     : 'gemini-3-flash-preview'
-  const geminiOnlyModel = genAI.getGenerativeModel({
+  const _geminiOnlyModel = genAI.getGenerativeModel({
     model: agenticModel,
     systemInstruction
   })
@@ -1588,7 +1590,7 @@ async function runAgenticLoop(
     // 3. Call Gemini
     let actionObj: TestAction
     try {
-      const result = await model.generateContent({
+      const result = await _geminiOnlyModel.generateContent({
         contents,
         generationConfig: {
           temperature: 0.2,
@@ -1936,7 +1938,8 @@ async function main() {
         })
         // ═══ Phase 1: RESEARCH — Claude writes E2E test to reproduce ═══
         console.warn('Phase 1: Research — Claude writes E2E test')
-        const anthropicKey = process.env.ANTHROPIC_API_KEY
+        const anthropicKey =
+          process.env.ANTHROPIC_API_KEY_QA || process.env.ANTHROPIC_API_KEY
         const { runResearchPhase } = await import('./qa-agent.js')
         const issueCtx = opts.diffFile
           ? readFileSync(opts.diffFile, 'utf-8').slice(0, 6000)

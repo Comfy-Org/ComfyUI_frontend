@@ -18,7 +18,7 @@
 import type { Page } from '@playwright/test'
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
-import { mkdirSync, writeFileSync } from 'fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { execSync } from 'child_process'
 
 // ── Types ──
@@ -56,7 +56,6 @@ export async function runResearchPhase(
   const { page, issueContext, qaGuide, outputDir, serverUrl, anthropicApiKey } =
     opts
   const maxTurns = opts.maxTurns ?? 50
-  const timeBudgetMs = opts.timeBudgetMs ?? 600_000 // 10 min for write→run→fix loops
 
   let agentDone = false
   let finalVerdict: ResearchResult['verdict'] = 'INCONCLUSIVE'
@@ -119,6 +118,87 @@ export async function runResearchPhase(
         turn: turnCount,
         timestampMs: Date.now() - startTime,
         toolName: 'inspect',
+        toolInput: args,
+        toolResult: resultText.slice(0, 500)
+      })
+
+      return { content: [{ type: 'text' as const, text: resultText }] }
+    }
+  )
+
+  // ── Tool: readFixture ──
+  const readFixtureTool = tool(
+    'readFixture',
+    'Read a fixture or helper file from browser_tests/fixtures/ to understand the API. Use this to discover available methods on comfyPage helpers before writing your test.',
+    {
+      path: z
+        .string()
+        .describe(
+          'Relative path within browser_tests/fixtures/, e.g. "helpers/CanvasHelper.ts" or "components/Topbar.ts" or "ComfyPage.ts"'
+        )
+    },
+    async (args) => {
+      let resultText: string
+      try {
+        const fullPath = `${projectRoot}/browser_tests/fixtures/${args.path}`
+        const content = readFileSync(fullPath, 'utf-8')
+        resultText = content.slice(0, 4000)
+        if (content.length > 4000) {
+          resultText += `\n\n... (truncated, ${content.length} total chars)`
+        }
+      } catch (e) {
+        resultText = `Could not read fixture: ${e instanceof Error ? e.message : e}`
+      }
+
+      researchLog.push({
+        turn: turnCount,
+        timestampMs: Date.now() - startTime,
+        toolName: 'readFixture',
+        toolInput: args,
+        toolResult: resultText.slice(0, 500)
+      })
+
+      return { content: [{ type: 'text' as const, text: resultText }] }
+    }
+  )
+
+  // ── Tool: readTest ──
+  const readTestTool = tool(
+    'readTest',
+    'Read an existing E2E test file from browser_tests/tests/ to learn patterns and conventions used in this project.',
+    {
+      path: z
+        .string()
+        .describe(
+          'Relative path within browser_tests/tests/, e.g. "workflow.spec.ts" or "subgraph.spec.ts"'
+        )
+    },
+    async (args) => {
+      let resultText: string
+      try {
+        const fullPath = `${projectRoot}/browser_tests/tests/${args.path}`
+        const content = readFileSync(fullPath, 'utf-8')
+        resultText = content.slice(0, 4000)
+        if (content.length > 4000) {
+          resultText += `\n\n... (truncated, ${content.length} total chars)`
+        }
+      } catch (e) {
+        // List available test files if the path doesn't exist
+        try {
+          const { readdirSync } = await import('fs')
+          const files = readdirSync(`${projectRoot}/browser_tests/tests/`)
+            .filter((f: string) => f.endsWith('.spec.ts'))
+            .slice(0, 30)
+          resultText = `File not found: ${args.path}\n\nAvailable test files:\n${files.join('\n')}`
+        } catch {
+          resultText = `Could not read test: ${e instanceof Error ? e.message : e}`
+        }
+      }
+
+      researchLog.push({
+        turn: turnCount,
+        timestampMs: Date.now() - startTime,
+        toolName: 'readTest',
         toolInput: args,
         toolResult: resultText.slice(0, 500)
       })
@@ -255,7 +335,14 @@ export async function runResearchPhase(
   const server = createSdkMcpServer({
     name: 'qa-research',
     version: '1.0.0',
-    tools: [inspectTool, writeTestTool, runTestTool, doneTool]
+    tools: [
+      inspectTool,
+      readFixtureTool,
+      readTestTool,
+      writeTestTool,
+      runTestTool,
+      doneTool
+    ]
   })
 
   // ── System prompt ──
@@ -263,6 +350,8 @@ export async function runResearchPhase(
 
 ## Your tools
 - inspect(selector?) — Read the accessibility tree to understand the current UI. Use to discover selectors, element names, and UI state.
+- readFixture(path) — Read fixture source code from browser_tests/fixtures/. Use to discover available methods. E.g. "helpers/CanvasHelper.ts", "components/Topbar.ts", "ComfyPage.ts"
+- readTest(path) — Read an existing test from browser_tests/tests/ to learn patterns. E.g. "workflow.spec.ts". Pass any name to list available files.
 - writeTest(code) — Write a Playwright test file (.spec.ts)
 - runTest() — Execute the test and get results (pass/fail + errors)
 - done(verdict, summary, evidence, testCode) — Finish with the final test
@@ -270,31 +359,111 @@ export async function runResearchPhase(
 ## Workflow
 1. Read the issue description carefully
 2. Use inspect() to understand the current UI state and discover element selectors
-3. Write a Playwright test that:
-   - Navigates to ${serverUrl}
+3. If unsure about the fixture API, use readFixture() to read the relevant helper source code
+4. If unsure about test patterns, use readTest() to read an existing test for reference
+5. Write a Playwright test that:
    - Performs the exact reproduction steps from the issue
    - Asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
-4. Run the test with runTest()
-5. If it fails: read the error, fix the test, run again (max 5 attempts)
-6. Call done() with the final verdict and test code
+6. Run the test with runTest()
+7. If it fails: read the error, fix the test, run again (max 5 attempts)
+8. Call done() with the final verdict and test code
 
 ## Test writing guidelines
 - Import the project fixture: \`import { comfyPageFixture as test } from '../fixtures/ComfyPage'\`
 - Import expect: \`import { expect } from '@playwright/test'\`
-- The fixture provides \`comfyPage\` which has:
-  - \`comfyPage.page\` — the Playwright Page object
-  - \`comfyPage.menu.topbar\` — topbar actions (saveWorkflowAs, getTabNames, getWorkflowTab)
-  - \`comfyPage.menu.topbar.triggerTopbarCommand(label)\` — click a menu command
-  - \`comfyPage.workflow\` — workflow helpers (isCurrentWorkflowModified, setupWorkflowsDirectory)
-  - \`comfyPage.canvas\` — canvas element for mouse interactions
-  - \`comfyPage.settings.setSetting(id, value)\` — change settings
-  - \`comfyPage.nextFrame()\` — wait for next render frame
-  - \`comfyPage.loadWorkflow(name)\` — load a named workflow
-- Use beforeEach to set up settings and workflow directory
-- Use afterEach to clean up (setupWorkflowsDirectory({}))
+- The fixture provides \`comfyPage\` which has all the helpers listed below
 - If the bug IS present, the test should PASS. If the bug is fixed, the test would FAIL.
 - Keep tests focused and minimal — test ONLY the reported bug
 - The test file will be placed in browser_tests/tests/qa-reproduce.spec.ts
+- Use \`comfyPage.nextFrame()\` after interactions that trigger UI updates
+
+## ComfyPage Fixture API Reference
+
+### Core properties
+- \`comfyPage.page\` — raw Playwright Page
+- \`comfyPage.canvas\` — Locator for #graph-canvas
+- \`comfyPage.queueButton\` — "Queue Prompt" button
+- \`comfyPage.runButton\` — "Run" button (new UI)
+- \`comfyPage.confirmDialog\` — ConfirmDialog (has .confirm, .delete, .overwrite, .reject locators + .click(name) method)
+- \`comfyPage.nextFrame()\` — wait for next requestAnimationFrame
+- \`comfyPage.setup()\` — navigate + wait for app ready (called automatically by fixture)
+
+### Menu (comfyPage.menu)
+- \`comfyPage.menu.topbar\` — Topbar helper:
+  - \`.triggerTopbarCommand(['File', 'Save As'])\` — navigate menu hierarchy
+  - \`.openTopbarMenu()\` / \`.closeTopbarMenu()\` — open/close hamburger
+  - \`.openSubmenu('File')\` — hover to open submenu, returns submenu Locator
+  - \`.getTabNames()\` — get all open workflow tab names
+  - \`.getActiveTabName()\` — get active tab name
+  - \`.getWorkflowTab(name)\` — get tab Locator
+  - \`.closeWorkflowTab(name)\` — close a tab
+  - \`.saveWorkflow(name)\` / \`.saveWorkflowAs(name)\` / \`.exportWorkflow(name)\`
+  - \`.switchTheme('dark' | 'light')\`
+- \`comfyPage.menu.workflowsTab\` — WorkflowsSidebarTab:
+  - \`.open()\` / \`.close()\` — toggle workflows sidebar
+  - \`.getTopLevelSavedWorkflowNames()\` — list saved workflow names
+- \`comfyPage.menu.nodeLibraryTab\` — NodeLibrarySidebarTab
+- \`comfyPage.menu.assetsTab\` — AssetsSidebarTab
+
+### Canvas (comfyPage.canvasOps)
+- \`.click({x, y})\` — click at position on canvas
+- \`.rightClick(x, y)\` — right-click (opens context menu)
+- \`.doubleClick()\` — double-click canvas (opens node search)
+- \`.clickEmptySpace()\` — click known empty area
+- \`.dragAndDrop(source, target)\` — drag from source to target position
+- \`.pan(offset, safeSpot?)\` — pan canvas by offset
+- \`.zoom(deltaY, steps?)\` — zoom via scroll wheel
+- \`.resetView()\` — reset zoom/pan to default
+- \`.getScale()\` / \`.setScale(n)\` — get/set canvas zoom
+- \`.getNodeCenterByTitle(title)\` — get screen coords of node center
+- \`.disconnectEdge()\` / \`.connectEdge()\` — default graph edge operations
+
+### Node Operations (comfyPage.nodeOps)
+- \`.getGraphNodesCount()\` — count all nodes
+- \`.getSelectedGraphNodesCount()\` — count selected nodes
+- \`.getNodes()\` — get all nodes
+- \`.getFirstNodeRef()\` — get NodeReference for first node
+- \`.getNodeRefById(id)\` — get NodeReference by ID
+- \`.getNodeRefsByType(type)\` — get all nodes of a type
+- \`.waitForGraphNodes(count)\` — wait until node count matches
+
+### Settings (comfyPage.settings)
+- \`.setSetting(id, value)\` — change a ComfyUI setting
+- \`.getSetting(id)\` — read current setting value
+
+### Keyboard (comfyPage.keyboard)
+- \`.undo()\` / \`.redo()\` — Ctrl+Z / Ctrl+Y
+- \`.bypass()\` — Ctrl+B
+- \`.selectAll()\` — Ctrl+A
+- \`.ctrlSend(key)\` — send Ctrl+key
+
+### Workflow (comfyPage.workflow)
+- \`.loadWorkflow(name)\` — load from browser_tests/assets/{name}.json
+- \`.setupWorkflowsDirectory(structure)\` — setup test directory
+- \`.deleteWorkflow(name)\`
+- \`.isCurrentWorkflowModified()\` — check dirty state
+
+### Context Menu (comfyPage.contextMenu)
+- \`.openFor(locator)\` — right-click locator and wait for menu
+- \`.clickMenuItem(name)\` — click a menu item by name
+- \`.isVisible()\` — check if context menu is showing
+- \`.assertHasItems(items)\` — assert menu contains items
+
+### Other helpers
+- \`comfyPage.settingDialog\` — SettingDialog component
+- \`comfyPage.searchBox\` / \`comfyPage.searchBoxV2\` — node search
+- \`comfyPage.toast\` — ToastHelper (\`.visibleToasts\`)
+- \`comfyPage.subgraph\` — SubgraphHelper
+- \`comfyPage.vueNodes\` — VueNodeHelpers
+- \`comfyPage.bottomPanel\` — BottomPanel
+- \`comfyPage.clipboard\` — ClipboardHelper
+- \`comfyPage.dragDrop\` — DragDropHelper
+
+### Available fixture files (use readFixture to explore)
+- ComfyPage.ts — main fixture with all helpers
+- helpers/CanvasHelper.ts, NodeOperationsHelper.ts, WorkflowHelper.ts
+- helpers/KeyboardHelper.ts, SettingsHelper.ts, SubgraphHelper.ts
+- components/Topbar.ts, ContextMenu.ts, SettingDialog.ts, SidebarTab.ts
 
 ## Current UI state (accessibility tree)
 ${initialA11y}
@@ -309,7 +478,7 @@ ${issueContext}`
   try {
     for await (const message of query({
       prompt:
-        'Write a Playwright E2E test that reproduces the reported bug. Use inspect() to discover selectors, writeTest() to write the test, runTest() to execute it. Iterate until it works or you determine the bug cannot be reproduced.',
+        'Write a Playwright E2E test that reproduces the reported bug. Use inspect() to discover selectors, readFixture() or readTest() if you need to understand the fixture API or see existing test patterns, writeTest() to write the test, runTest() to execute it. Iterate until it works or you determine the bug cannot be reproduced.',
       options: {
         model: 'claude-sonnet-4-6',
         systemPrompt,
@@ -318,6 +487,8 @@ ${issueContext}`
         mcpServers: { 'qa-research': server },
         allowedTools: [
           'mcp__qa-research__inspect',
+          'mcp__qa-research__readFixture',
+          'mcp__qa-research__readTest',
           'mcp__qa-research__writeTest',
           'mcp__qa-research__runTest',
           'mcp__qa-research__done'
@@ -339,7 +510,21 @@ ${issueContext}`
       if (agentDone) break
     }
   } catch (e) {
-    console.warn(`Research error: ${e instanceof Error ? e.message : e}`)
+    const errMsg = e instanceof Error ? e.message : String(e)
+    console.warn(`Research error: ${errMsg}`)
+
+    // Detect billing/auth errors and surface them clearly
+    if (
+      errMsg.includes('Credit balance is too low') ||
+      errMsg.includes('insufficient_quota') ||
+      errMsg.includes('rate_limit')
+    ) {
+      finalSummary = `API error: ${errMsg.slice(0, 200)}`
+      finalEvidence = 'Agent could not start due to API billing/auth issue'
+      console.warn(
+        '::error::Anthropic API credits exhausted — cannot run research phase'
+      )
+    }
   }
 
   // Auto-complete: if a test passed but done() was never called, use the passing test
