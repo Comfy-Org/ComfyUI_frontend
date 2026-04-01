@@ -66,12 +66,15 @@ test.describe('Workflow tabs', () => {
 
     await topbar.getTab(0).click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator(
-      '[data-reka-context-menu-content]'
-    )
-    await expect(contextMenu).toBeVisible()
+    // Reka UI ContextMenuContent renders with role="menu"
+    const contextMenu = comfyPage.page.getByRole('menu')
+    await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
-    await expect(contextMenu).toContainText('Close Tab')
-    await expect(contextMenu).toContainText('Save')
+    await expect(
+      contextMenu.getByRole('menuitem', { name: /Close Tab/i })
+    ).toBeVisible()
+    await expect(
+      contextMenu.getByRole('menuitem', { name: /Save/i })
+    ).toBeVisible()
   })
 })
