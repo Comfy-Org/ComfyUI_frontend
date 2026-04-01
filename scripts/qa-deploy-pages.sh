@@ -349,10 +349,14 @@ BADGE_STATUS="${REPRO_RESULT:-UNKNOWN}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}"
 echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
 BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
-URL=$(wrangler pages deploy "$DEPLOY_DIR" \
-  --project-name="comfy-qa" \
-  --branch="$BRANCH" 2>&1 \
-  | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1 || true)
 
-echo "url=${URL:-https://${BRANCH}.comfy-qa.pages.dev}" >> "$GITHUB_OUTPUT"
-echo "Deployed to: ${URL}"
+DEPLOY_OUTPUT=$(wrangler pages deploy "$DEPLOY_DIR" \
+  --project-name="comfy-qa" \
+  --branch="$BRANCH" 2>&1) || true
+echo "$DEPLOY_OUTPUT" | tail -5
+
+URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1 || true)
+FALLBACK_URL="https://${BRANCH}.comfy-qa.pages.dev"
+
+echo "url=${URL:-$FALLBACK_URL}" >> "$GITHUB_OUTPUT"
+echo "Deployed to: ${URL:-$FALLBACK_URL}"
