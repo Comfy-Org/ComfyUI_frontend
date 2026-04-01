@@ -170,6 +170,59 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 }
 
+export class JobHistorySidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'job-history')
+  }
+
+  get allTab() {
+    return this.page.getByRole('button', { name: 'All', exact: true })
+  }
+
+  get completedTab() {
+    return this.page.getByRole('button', { name: 'Completed', exact: true })
+  }
+
+  get failedTab() {
+    return this.page.getByRole('button', { name: 'Failed', exact: true })
+  }
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search...')
+  }
+
+  get filterButton() {
+    return this.page.getByRole('button', { name: /Filter/i })
+  }
+
+  get sortButton() {
+    return this.page.getByRole('button', { name: /Sort/i })
+  }
+
+  get jobItems() {
+    return this.page.locator('[data-job-id]')
+  }
+
+  get noActiveJobsText() {
+    return this.page.getByText('No active jobs')
+  }
+
+  getJobById(id: string) {
+    return this.page.locator(`[data-job-id="${id}"]`)
+  }
+
+  get groupLabels() {
+    return this.page.locator(
+      '.sidebar-content-container .text-xs.text-text-secondary'
+    )
+  }
+
+  override async open() {
+    await super.open()
+    await this.allTab.waitFor({ state: 'visible', timeout: 5000 })
+  }
+}
+
 export class AssetsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'assets')
