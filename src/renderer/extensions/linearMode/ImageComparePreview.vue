@@ -27,6 +27,7 @@ watch(
     beforeIndex.value = 0
     afterIndex.value = 0
     sliderPosition.value = 50
+    imageAspect.value = ''
   }
 )
 
