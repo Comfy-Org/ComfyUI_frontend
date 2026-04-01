@@ -670,16 +670,15 @@ test.describe('Assets sidebar - pagination', () => {
       { timeout: 10_000 }
     )
 
-    // Scroll the VirtualGrid's scrollable container to the very bottom.
-    // scrollIntoViewIfNeeded on a virtual item is unreliable because
-    // VirtualGrid removes/adds DOM nodes during scroll. Instead, set
-    // scrollTop directly on the overflow-y-auto container.
-    await comfyPage.page
-      .locator('.sidebar-content-container .overflow-y-auto')
-      .first()
-      .evaluate((el) => {
-        el.scrollTop = el.scrollHeight
-      })
+    // Scroll the grid area to the bottom to trigger VirtualGrid's
+    // approach-end event. Use mouse.wheel for a realistic interaction
+    // that scrolls whichever element is the actual scroll container
+    // in the sidebar hierarchy (may be VirtualGrid, ScrollPanel, or
+    // sidebar-content-container depending on layout).
+    await tab.assetCards.first().hover()
+    for (let i = 0; i < 20; i++) {
+      await comfyPage.page.mouse.wheel(0, 5000)
+    }
 
     const req = await nextPageRequest
     const url = new URL(req.url())
