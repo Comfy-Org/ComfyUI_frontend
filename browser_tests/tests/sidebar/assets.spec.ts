@@ -667,3 +667,114 @@ test.describe('Assets sidebar - settings menu', () => {
     await expect(tab.gridViewOption).toBeVisible()
   })
 })
+
+// ==========================================================================
+// 11. Sort functionality (cloud-only — sort options require DISTRIBUTION=cloud)
+// ==========================================================================
+
+// Sort options are guarded by isCloud (compile-time). The cloud CI project
+// cannot use comfyPageFixture (auth required). Enable once cloud E2E infra
+// supports authenticated comfyPage setup.
+test.describe('Assets sidebar - sort', () => {
+  test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
+  const SORT_JOBS: RawJobListItem[] = [
+    createMockJob({
+      id: 'sort-oldest',
+      create_time: 1000,
+      execution_start_time: 1000,
+      execution_end_time: 1010,
+      preview_output: {
+        filename: 'oldest_asset.png',
+        subfolder: '',
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'sort-middle',
+      create_time: 2000,
+      execution_start_time: 2000,
+      execution_end_time: 2003,
+      preview_output: {
+        filename: 'middle_asset.png',
+        subfolder: '',
+        type: 'output',
+        nodeId: '2',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'sort-newest',
+      create_time: 3000,
+      execution_start_time: 3000,
+      execution_end_time: 3020,
+      preview_output: {
+        filename: 'newest_asset.png',
+        subfolder: '',
+        type: 'output',
+        nodeId: '3',
+        mediaType: 'images'
+      }
+    })
+  ]
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(SORT_JOBS)
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Assets display in newest-first order by default', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets(3)
+
+    const firstCard = tab.assetCards.first()
+    await expect(firstCard).toContainText('newest_asset')
+  })
+
+  test('Sort by oldest first reverses order', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets(3)
+
+    await tab.openSettingsMenu()
+    await tab.sortOldestFirst.click()
+
+    await expect(tab.assetCards.first()).toContainText('oldest_asset')
+    await expect(tab.assetCards.last()).toContainText('newest_asset')
+  })
+
+  test('Sort by longest execution duration', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets(3)
+
+    await tab.openSettingsMenu()
+    await tab.sortLongestFirst.click()
+
+    // Durations: newest=20s, oldest=10s, middle=3s
+    await expect(tab.assetCards.first()).toContainText('newest_asset')
+    await expect(tab.assetCards.last()).toContainText('middle_asset')
+  })
+
+  test('Sort by fastest execution duration', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets(3)
+
+    await tab.openSettingsMenu()
+    await tab.sortFastestFirst.click()
+
+    // Durations: middle=3s, oldest=10s, newest=20s
+    await expect(tab.assetCards.first()).toContainText('middle_asset')
+    await expect(tab.assetCards.last()).toContainText('newest_asset')
+  })
+})

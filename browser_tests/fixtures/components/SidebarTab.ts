@@ -227,6 +227,14 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.getByText('Oldest first')
   }
 
+  get sortLongestFirst() {
+    return this.page.getByText('Generation time (longest first)')
+  }
+
+  get sortFastestFirst() {
+    return this.page.getByText('Generation time (fastest first)')
+  }
+
   // --- Asset cards ---
 
   get assetCards() {
