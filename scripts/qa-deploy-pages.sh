@@ -348,6 +348,14 @@ fi
 BADGE_STATUS="${REPRO_RESULT:-UNKNOWN}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}"
 echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
+# Remove files exceeding Cloudflare Pages 25MB limit to prevent silent deploy failures
+MAX_SIZE=$((25 * 1024 * 1024))
+find "$DEPLOY_DIR" -type f -size +${MAX_SIZE}c | while read -r big_file; do
+  SIZE_MB=$(( $(stat -c%s "$big_file") / 1024 / 1024 ))
+  echo "Removing oversized file: $(basename "$big_file") (${SIZE_MB}MB > 25MB limit)"
+  rm "$big_file"
+done
+
 BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
 
 DEPLOY_OUTPUT=$(wrangler pages deploy "$DEPLOY_DIR" \
