@@ -23,7 +23,8 @@
         cn(
           WidgetInputBaseClass,
           'size-full resize-none text-xs',
-          !hideLayoutField && 'pt-5'
+          !hideLayoutField && 'pt-5',
+          'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
       :placeholder
