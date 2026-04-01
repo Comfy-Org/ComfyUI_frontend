@@ -141,12 +141,11 @@ export const useSubgraphNavigationStore = defineStore(
       // Cache miss — fit to content only if no nodes are currently visible.
       // loadGraphData may have already restored extra.ds or called fitView
       // for templates, so only intervene when the viewport is truly empty.
-      const expectedGraphId = graphId
       requestAnimationFrame(() => {
-        if (getActiveGraphId() !== expectedGraphId) return
+        if (getActiveGraphId() !== graphId) return
         if (!canvas.graph) return
 
-        const nodes = canvas.graph._nodes
+        const nodes = canvas.graph.nodes
         if (!nodes?.length) return
 
         canvas.ds.computeVisibleArea(canvas.viewport)
