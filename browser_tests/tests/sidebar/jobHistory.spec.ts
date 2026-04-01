@@ -49,6 +49,7 @@ const ALL_JOBS = [...COMPLETED_JOBS, ...FAILED_JOBS]
 test.describe('Job history sidebar - display', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(ALL_JOBS)
+    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', true)
     await comfyPage.setup()
   })
 
@@ -100,6 +101,7 @@ test.describe('Job history sidebar - display', () => {
 test.describe('Job history sidebar - filter tabs', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(ALL_JOBS)
+    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', true)
     await comfyPage.setup()
   })
 
@@ -160,6 +162,7 @@ test.describe('Job history sidebar - filter tabs', () => {
 test.describe('Job history sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(ALL_JOBS)
+    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', true)
     await comfyPage.setup()
   })
 
@@ -192,6 +195,7 @@ test.describe('Job history sidebar - search', () => {
 test.describe('Job history sidebar - empty state', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory([])
+    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', true)
     await comfyPage.setup()
   })
 
@@ -224,6 +228,7 @@ test.describe('Job history sidebar - empty state', () => {
 test.describe('Job history sidebar - completed only', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(COMPLETED_JOBS)
+    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', true)
     await comfyPage.setup()
   })
 
