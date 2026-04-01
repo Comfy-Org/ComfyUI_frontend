@@ -92,8 +92,10 @@ function createBuilderWorkflowWithOutputs(
 ): LoadedComfyWorkflow {
   mockResolveNode.mockReturnValue(fromAny({ id: 1 }))
   const workflow = createBuilderWorkflow(activeMode)
-  ;(workflow.changeTracker!.activeState as Record<string, unknown>).extra = {
-    linearData: { inputs: [], outputs: [1] }
+  workflow.changeTracker!.activeState!.extra ??= {}
+  workflow.changeTracker.activeState.extra.linearData = {
+    inputs: [],
+    outputs: [1]
   }
   return workflow
 }
