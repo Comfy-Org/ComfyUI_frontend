@@ -20,11 +20,13 @@ import { SettingDialog } from './components/SettingDialog'
 import { BottomPanel } from './components/BottomPanel'
 import {
   AssetsSidebarTab,
+  ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import { AssetsHelper } from './helpers/AssetsHelper'
+import { ModelLibraryHelper } from './helpers/ModelLibraryHelper'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { PerformanceHelper } from './helpers/PerformanceHelper'
 import { QueueHelper } from './helpers/QueueHelper'
@@ -58,6 +60,7 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
+  private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
@@ -74,6 +77,11 @@ class ComfyMenu {
 
   get buttons() {
     return this.sideToolbar.locator('.side-bar-button')
+  }
+
+  get modelLibraryTab() {
+    this._modelLibraryTab ??= new ModelLibrarySidebarTab(this.page)
+    return this._modelLibraryTab
   }
 
   get nodeLibraryTab() {
@@ -201,6 +209,7 @@ export class ComfyPage {
   public readonly bottomPanel: BottomPanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
+  public readonly modelLibrary: ModelLibraryHelper
   public readonly queue: QueueHelper
 
   /** Worker index to test user ID */
@@ -248,6 +257,7 @@ export class ComfyPage {
     this.bottomPanel = new BottomPanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
+    this.modelLibrary = new ModelLibraryHelper(page)
     this.queue = new QueueHelper(page)
   }
 
