@@ -670,22 +670,12 @@ test.describe('Assets sidebar - pagination', () => {
       { timeout: 10_000 }
     )
 
-    // Trigger pagination via the Pinia store — the same code path the
-    // VirtualGrid approach-end event calls in production.
-    // Access the store through the Vue app's Pinia instance, which works
-    // in both dev and production builds.
-    await comfyPage.page.evaluate(async () => {
-      const appEl = document.querySelector('#vue-app')!
-      const vueApp = (
-        appEl as unknown as Record<string, Record<string, unknown>>
-      )['__vue_app__']
-      const pinia = (
-        vueApp['config'] as Record<string, Record<string, unknown>>
-      )['globalProperties']['$pinia'] as {
-        _s: Map<string, Record<string, () => Promise<void>>>
-      }
-      await pinia._s.get('assets')!['loadMoreHistory']()
-    })
+    // Scroll the VirtualGrid container to the bottom to trigger the
+    // approach-end event, which calls loadMoreHistory() in production.
+    const scrollContainer = comfyPage.page.locator(
+      '.sidebar-content-container [data-virtual-grid-item]'
+    )
+    await scrollContainer.last().scrollIntoViewIfNeeded()
 
     const req = await nextPageRequest
     const url = new URL(req.url())
