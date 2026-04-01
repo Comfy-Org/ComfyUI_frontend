@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,7 +30,7 @@ function widget(
     Pick<IBaseWidget, 'name' | 'serialize' | 'type' | 'options'>
   >
 ): IBaseWidget {
-  return fromAny<IBaseWidget, unknown>({ name: 'widget', ...overrides })
+  return fromPartial<IBaseWidget>({ name: 'widget', ...overrides })
 }
 
 describe('isPreviewPseudoWidget', () => {
