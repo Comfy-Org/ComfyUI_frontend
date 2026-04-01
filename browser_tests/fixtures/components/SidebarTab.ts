@@ -100,6 +100,57 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 }
 
+export class NodeLibrarySidebarTabV2 extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'node-library')
+  }
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search...')
+  }
+
+  get sidebarContent() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  getTab(name: string) {
+    return this.sidebarContent.getByRole('tab', { name, exact: true })
+  }
+
+  get allTab() {
+    return this.getTab('All')
+  }
+
+  get blueprintsTab() {
+    return this.getTab('Blueprints')
+  }
+
+  get sortButton() {
+    return this.sidebarContent.getByRole('button', { name: 'Sort' })
+  }
+
+  getFolder(folderName: string) {
+    return this.page.locator(
+      `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
+    )
+  }
+
+  getNode(nodeName: string) {
+    return this.page.locator(
+      `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
+    )
+  }
+
+  getNodeCard(nodeName: string) {
+    return this.sidebarContent.locator(`[data-node-name="${nodeName}"]`)
+  }
+
+  override async open() {
+    await super.open()
+    await this.searchInput.waitFor({ state: 'visible' })
+  }
+}
+
 export class WorkflowsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -167,6 +218,63 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
       .click()
+  }
+}
+
+export class JobHistorySidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'job-history')
+  }
+
+  /** Scope all locators to the sidebar panel to avoid collision
+   *  with QueueOverlayExpanded which renders the same controls. */
+  private get panel() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  get allTab() {
+    return this.panel.getByRole('button', { name: 'All', exact: true })
+  }
+
+  get completedTab() {
+    return this.panel.getByRole('button', { name: 'Completed', exact: true })
+  }
+
+  get failedTab() {
+    return this.panel.getByRole('button', { name: 'Failed', exact: true })
+  }
+
+  get searchInput() {
+    return this.panel.getByPlaceholder('Search...')
+  }
+
+  get filterButton() {
+    return this.panel.getByRole('button', { name: /Filter/i })
+  }
+
+  get sortButton() {
+    return this.panel.getByRole('button', { name: /Sort/i })
+  }
+
+  get jobItems() {
+    return this.panel.locator('[data-job-id]')
+  }
+
+  get noActiveJobsText() {
+    return this.panel.getByText('No active jobs')
+  }
+
+  getJobById(id: string) {
+    return this.panel.locator(`[data-job-id="${id}"]`)
+  }
+
+  get groupLabels() {
+    return this.panel.locator('.text-xs.text-text-secondary')
+  }
+
+  override async open() {
+    await super.open()
+    await this.allTab.waitFor({ state: 'visible', timeout: 5000 })
   }
 }
 
