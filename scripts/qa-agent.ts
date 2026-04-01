@@ -290,12 +290,12 @@ export async function runResearchPhase(
       // Auto-save passing test code for fallback completion
       if (resultText.startsWith('TEST PASSED')) {
         try {
-          const { readFileSync: readFs } = await import('fs')
-          finalTestCode = readFs(browserTestPath, 'utf-8')
+          finalTestCode = readFileSync(browserTestPath, 'utf-8')
           lastPassedTurn = turnCount
         } catch {
           // ignore
         }
+        resultText += '\n\n⚠️ Test PASSED — call done() now with verdict REPRODUCED and the test code. Do NOT write more tests.'
       }
 
       return { content: [{ type: 'text' as const, text: resultText }] }
@@ -374,8 +374,12 @@ export async function runResearchPhase(
 - The fixture provides \`comfyPage\` which has all the helpers listed below
 - If the bug IS present, the test should PASS. If the bug is fixed, the test would FAIL.
 - Keep tests focused and minimal — test ONLY the reported bug
+- Write ONE test, not multiple. Focus on the single clearest reproduction.
 - The test file will be placed in browser_tests/tests/qa-reproduce.spec.ts
 - Use \`comfyPage.nextFrame()\` after interactions that trigger UI updates
+- NEVER use \`page.waitForTimeout()\` — use Locator actions and retrying assertions instead
+- ALWAYS call done() when finished, even if the test passed — do not keep iterating after a passing test
+- Use \`expect.poll()\` for async assertions: \`await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(8)\`
 
 ## ComfyPage Fixture API Reference
 
