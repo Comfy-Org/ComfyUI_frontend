@@ -70,9 +70,7 @@ function buildImageDropIndicator(
       })()
     : undefined
 
-  const originalUrl = rawParams
-    ? api.apiURL(`/view?${rawParams}`)
-    : undefined
+  const originalUrl = rawParams ? api.apiURL(`/view?${rawParams}`) : undefined
 
   return {
     iconClass: 'icon-[lucide--image]',
