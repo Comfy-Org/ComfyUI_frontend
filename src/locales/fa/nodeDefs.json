@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "تبدیل عدد",
+    "inputs": {
+      "value": {
+        "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "سوئیچ",
     "inputs": {
@@ -2174,6 +2190,10 @@
       "image": {
         "name": "تصویر"
       },
+      "keep_aspect": {
+        "name": "حفظ نسبت تصویر",
+        "tooltip": "آیا برش تصویر برای تطبیق با اندازه خروجی کشیده شود یا با پد سیاه نسبت تصویر حفظ گردد."
+      },
       "output_height": {
         "name": "ارتفاع خروجی",
         "tooltip": "ارتفاعی که هر برش به آن تغییر اندازه داده می‌شود."
@@ -2214,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "ویرایشگر منحنی",
+    "inputs": {
+      "curve": {
+        "name": "منحنی"
+      },
+      "histogram": {
+        "name": "هیستوگرام"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "منحنی",
         "tooltip": null
       }
     }
@@ -2276,6 +2313,23 @@
     "display_name": "غیرفعال‌سازی نویز",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "ترسیم BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر خروجی",
         "tooltip": null
       }
     }
@@ -3612,6 +3666,14 @@
     "description": "اعمال شیدرهای fragment GLSL ES به تصاویر. u_resolution (vec2) همیشه در دسترس است.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "بول‌ها",
+        "tooltip": "بولین‌ها به صورت u_bool0-9 (bool) در کد شیدر در دسترس هستند"
+      },
+      "curves": {
+        "name": "منحنی‌ها",
+        "tooltip": "منحنی‌ها به صورت u_curve0-3 (sampler2D، ۱D LUT) در کد شیدر در دسترس هستند. با texture(u_curve0, vec2(x, 0.5)).r نمونه‌برداری کنید."
+      },
       "floats": {
         "name": "floats",
         "tooltip": "اعداد اعشاری به صورت u_float0-4 در کد شیدر در دسترس هستند"
@@ -4092,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "گسترش یک ویدیوی موجود با ادامه‌ای یکپارچه بر اساس یک متن راهنما.",
+    "display_name": "گسترش ویدیو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای گسترش ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "prompt": {
+        "name": "راهنمای متنی",
+        "tooltip": "توضیح متنی درباره آنچه باید در ادامه ویدیو رخ دهد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed برای تعیین اینکه node باید دوباره اجرا شود یا خیر؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی منبع برای گسترش. فرمت MP4، بین ۲ تا ۱۵ ثانیه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "تولید ویدیو از یک راهنما یا تصویر",
     "display_name": "ویدیو Grok",
@@ -4124,6 +4219,41 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "تولید ویدیو با راهنمایی تصاویر مرجع به عنوان سبک و محتوا.",
+    "display_name": "تولید ویدیو با مرجع Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "prompt": {
+        "name": "راهنمای متنی",
+        "tooltip": "توضیح متنی درباره ویدیوی مورد نظر."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed برای تعیین اینکه node باید دوباره اجرا شود یا خیر؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -6744,6 +6874,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "تنظیم صدای مرجع برای انتقال هویت گوینده با استفاده از ID-LoRA. یک کلیپ صوتی مرجع را به صورت شرطی رمزگذاری می‌کند و در صورت نیاز مدل را با راهنمایی هویتی (یک عبور اضافی بدون مرجع برای تقویت اثر هویت گوینده) اصلاح می‌کند.",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE برای رمزگذاری."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "پایان بازه سیگما که راهنمایی هویتی در آن فعال است."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "شدت راهنمایی هویتی. در هر مرحله یک عبور اضافی بدون مرجع اجرا می‌شود تا هویت گوینده تقویت شود. برای غیرفعال کردن، مقدار را روی ۰ قرار دهید (بدون عبور اضافی)."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "کلیپ صوتی مرجع که هویت گوینده آن منتقل می‌شود. مدت زمان پیشنهادی حدود ۵ ثانیه (مدت زمان آموزش). کلیپ‌های کوتاه‌تر یا بلندتر ممکن است کیفیت انتقال هویت صدا را کاهش دهند."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "آغاز بازه سیگما که راهنمایی هویتی در آن فعال است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "2": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -12069,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "شناسایی RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "نام کلاس",
+        "tooltip": "فیلتر کردن شناسایی‌ها بر اساس کلاس. برای غیرفعال کردن فیلتر، مقدار 'all' را قرار دهید."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "max_detections": {
+        "name": "حداکثر شناسایی",
+        "tooltip": "حداکثر تعداد شناسایی برای هر تصویر. به ترتیب امتیاز اطمینان نزولی."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "threshold": {
+        "name": "آستانه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "برش تصادفی تصاویر",
     "inputs": {
@@ -15474,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "تصویر UV",
+        "tooltip": null
       }
     }
   },
@@ -15764,6 +15974,9 @@
       "sampling_mode_min_p": {
         "name": "حداقل p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "جریمه تکرار"
       },
@@ -15778,6 +15991,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
       }
     },
     "outputs": {
@@ -15808,6 +16025,9 @@
       "sampling_mode_min_p": {
         "name": "حداقل p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "جریمه تکرار"
       },
@@ -15822,6 +16042,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
       }
     },
     "outputs": {
@@ -16090,6 +16314,10 @@
       "positive": {
         "name": "شرط مثبت",
         "tooltip": "شرط مثبت مورد استفاده برای آموزش."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "زمانی که training_dtype روی 'none' تنظیم شده و آموزش روی مدل quantized انجام می‌شود، در صورت فعال بودن، عملیات backward با quantized matmul انجام می‌شود."
       },
       "rank": {
         "name": "رتبه",

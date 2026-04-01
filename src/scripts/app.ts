@@ -65,8 +65,9 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
@@ -83,7 +84,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
   scanAllModelCandidates,
@@ -579,6 +580,9 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
+        // Skip if already handled (e.g. file drop onto publish dialog tiles)
+        if (event.defaultPrevented) return
+
         event.preventDefault()
         event.stopPropagation()
 
@@ -1105,7 +1109,9 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    useExecutionErrorStore().surfaceMissingNodes(missingNodeTypes)
+    if (useMissingNodesErrorStore().surfaceMissingNodes(missingNodeTypes)) {
+      useExecutionErrorStore().showErrorOverlay()
+    }
   }
 
   async loadGraphData(
@@ -1588,7 +1594,7 @@ export class ComfyApp {
     executionErrorStore.clearAllErrors()
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const comfyOrgAuthToken = await useAuthStore().getAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {

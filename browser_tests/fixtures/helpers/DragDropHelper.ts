@@ -4,12 +4,10 @@ import type { Page } from '@playwright/test'
 
 import type { Position } from '../types'
 import { getMimeType } from './mimeTypeUtil'
+import { assetPath } from '../utils/paths'
 
 export class DragDropHelper {
-  constructor(
-    private readonly page: Page,
-    private readonly assetPath: (fileName: string) => string
-  ) {}
+  constructor(private readonly page: Page) {}
 
   private async nextFrame(): Promise<void> {
     await this.page.evaluate(() => {
@@ -25,13 +23,15 @@ export class DragDropHelper {
       url?: string
       dropPosition?: Position
       waitForUpload?: boolean
+      preserveNativePropagation?: boolean
     } = {}
   ): Promise<void> {
     const {
       dropPosition = { x: 100, y: 100 },
       fileName,
       url,
-      waitForUpload = false
+      waitForUpload = false,
+      preserveNativePropagation = false
     } = options
 
     if (!fileName && !url)
@@ -43,10 +43,11 @@ export class DragDropHelper {
       fileType?: string
       buffer?: Uint8Array | number[]
       url?: string
-    } = { dropPosition }
+      preserveNativePropagation: boolean
+    } = { dropPosition, preserveNativePropagation }
 
     if (fileName) {
-      const filePath = this.assetPath(fileName)
+      const filePath = assetPath(fileName)
       const buffer = readFileSync(filePath)
 
       evaluateParams.fileName = fileName
@@ -115,15 +116,17 @@ export class DragDropHelper {
         )
       }
 
-      Object.defineProperty(dropEvent, 'preventDefault', {
-        value: () => {},
-        writable: false
-      })
+      if (!params.preserveNativePropagation) {
+        Object.defineProperty(dropEvent, 'preventDefault', {
+          value: () => {},
+          writable: false
+        })
 
-      Object.defineProperty(dropEvent, 'stopPropagation', {
-        value: () => {},
-        writable: false
-      })
+        Object.defineProperty(dropEvent, 'stopPropagation', {
+          value: () => {},
+          writable: false
+        })
+      }
 
       targetElement.dispatchEvent(dragOverEvent)
       targetElement.dispatchEvent(dropEvent)
@@ -154,7 +157,10 @@ export class DragDropHelper {
 
   async dragAndDropURL(
     url: string,
-    options: { dropPosition?: Position } = {}
+    options: {
+      dropPosition?: Position
+      preserveNativePropagation?: boolean
+    } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ url, ...options })
   }

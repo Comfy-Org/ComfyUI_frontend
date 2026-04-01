@@ -33,7 +33,7 @@
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop.stop.prevent="handleDrop"
+    @drop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -284,6 +284,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -304,6 +305,7 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -355,6 +357,7 @@ const nodeLocatorId = computed(() => getLocatorIdFromNodeData(nodeData))
 const { executing, progress } = useNodeExecutionState(nodeLocatorId)
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const hasExecutionError = computed(
   () => executionErrorStore.lastExecutionErrorNodeId === nodeData.id
 )
@@ -368,7 +371,7 @@ const hasAnyError = computed((): boolean => {
     missingModelStore.hasMissingModelOnNode(nodeLocatorId.value) ||
     (lgraphNode.value &&
       (executionErrorStore.isContainerWithInternalError(lgraphNode.value) ||
-        executionErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
+        missingNodesErrorStore.isContainerWithMissingNode(lgraphNode.value) ||
         missingModelStore.isContainerWithMissingModel(lgraphNode.value)))
   )
 })
@@ -728,6 +731,8 @@ const lgraphNode = computed(() => {
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
 
+useGLSLPreview(lgraphNode)
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
@@ -825,15 +830,16 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-async function handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
-  if (!node || !node.onDragDrop) {
-    return
-  }
+  if (!node?.onDragDrop) return
 
-  // Forward the drop event to the litegraph node's onDragDrop callback
-  await node.onDragDrop(event)
+  const handled = node.onDragDrop(event)
+  if (handled === true) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
 }
 </script>

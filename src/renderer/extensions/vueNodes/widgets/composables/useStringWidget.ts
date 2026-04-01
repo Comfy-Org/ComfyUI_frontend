@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -40,7 +41,14 @@ function addMultilineWidget(
   })
 
   widget.element = inputEl
-  widget.inputEl = inputEl
+
+  /** @deprecated Use {@link widget.element} instead (renamed in PR #8594). */
+  defineDeprecatedProperty(
+    widget,
+    'inputEl',
+    'element',
+    'widget.inputEl is deprecated. Use widget.element instead.'
+  )
   widget.options.minNodeSize = [400, 200]
 
   inputEl.addEventListener('input', (event) => {

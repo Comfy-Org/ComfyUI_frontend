@@ -133,9 +133,45 @@
         role="tabpanel"
         aria-labelledby="tab-publish"
         data-testid="publish-tab-panel"
-        class="min-h-0"
+        class="flex min-h-0 flex-col gap-4"
       >
+        <template v-if="dialogState === 'loading'">
+          <Skeleton class="h-3 w-4/5" />
+          <Skeleton class="h-3 w-3/5" />
+          <Skeleton class="h-10 w-full" />
+        </template>
+
+        <template v-else-if="dialogState === 'unsaved'">
+          <p class="m-0 text-sm text-muted-foreground">
+            {{ $t('comfyHubPublish.unsavedDescription') }}
+          </p>
+          <label v-if="isTemporary" class="flex flex-col gap-1">
+            <span class="text-sm font-medium text-muted-foreground">
+              {{ $t('shareWorkflow.workflowNameLabel') }}
+            </span>
+            <Input
+              ref="publishNameInputRef"
+              v-model="workflowName"
+              :disabled="isSaving"
+              @keydown.enter="() => handleSave()"
+            />
+          </label>
+          <Button
+            variant="primary"
+            size="lg"
+            :loading="isSaving"
+            @click="() => handleSave()"
+          >
+            {{
+              isSaving
+                ? $t('shareWorkflow.saving')
+                : $t('shareWorkflow.saveButton')
+            }}
+          </Button>
+        </template>
+
         <ComfyHubPublishIntroPanel
+          v-else
           data-testid="publish-intro"
           :on-create-profile="handleOpenPublishDialog"
           :on-close="onClose"
@@ -215,10 +251,15 @@ const dialogMode = ref<DialogMode>('shareLink')
 const acknowledged = ref(false)
 const workflowName = ref('')
 const nameInputRef = ref<InstanceType<typeof Input> | null>(null)
+const publishNameInputRef = ref<InstanceType<typeof Input> | null>(null)
 
-function focusNameInput() {
-  nameInputRef.value?.focus()
-  nameInputRef.value?.select()
+function focusActiveNameInput() {
+  const input =
+    dialogMode.value === 'publishToHub'
+      ? publishNameInputRef.value
+      : nameInputRef.value
+  input?.focus()
+  input?.select()
 }
 
 const isTemporary = computed(
@@ -228,7 +269,7 @@ const isTemporary = computed(
 watch(dialogState, async (state) => {
   if (state === 'unsaved' && isTemporary.value) {
     await nextTick()
-    focusNameInput()
+    focusActiveNameInput()
   }
 })
 
@@ -255,10 +296,14 @@ function tabButtonClass(mode: DialogMode) {
   )
 }
 
-function handleDialogModeChange(nextMode: DialogMode) {
+async function handleDialogModeChange(nextMode: DialogMode) {
   if (nextMode === dialogMode.value) return
   if (nextMode === 'publishToHub' && !showPublishToHubTab.value) return
   dialogMode.value = nextMode
+  if (dialogState.value === 'unsaved' && isTemporary.value) {
+    await nextTick()
+    focusActiveNameInput()
+  }
 }
 
 watch(showPublishToHubTab, (isVisible) => {

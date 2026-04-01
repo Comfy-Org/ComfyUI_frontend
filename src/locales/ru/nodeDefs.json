@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Преобразование числа",
+    "inputs": {
+      "value": {
+        "name": "значение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Переключатель",
     "inputs": {
@@ -2174,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Растягивать ли обрезку до нужного размера или добавлять чёрные поля для сохранения соотношения сторон."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Высота, до которой изменяется каждый обрезанный фрагмент."
@@ -2214,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Редактор кривых",
+    "inputs": {
+      "curve": {
+        "name": "кривая"
+      },
+      "histogram": {
+        "name": "гистограмма"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "кривая",
         "tooltip": null
       }
     }
@@ -2276,6 +2313,23 @@
     "display_name": "Отключить шум",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Нарисовать BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3612,6 +3666,14 @@
     "description": "Применяет фрагментные шейдеры GLSL ES к изображениям. u_resolution (vec2) всегда доступен.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "булевы",
+        "tooltip": "Булевы значения доступны как u_bool0-9 (bool) в коде шейдера"
+      },
+      "curves": {
+        "name": "кривые",
+        "tooltip": "Кривые доступны как u_curve0-3 (sampler2D, 1D LUT) в коде шейдера. Используйте sample с texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Числа с плавающей точкой доступны как u_float0-4 в коде шейдера"
@@ -4092,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Расширьте существующее видео с плавным продолжением на основе текстового запроса.",
+    "display_name": "Grok Video Extend",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для расширения видео."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовое описание того, что должно произойти дальше в видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Исходное видео для расширения. Формат MP4, 2-15 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Генерировать видео по запросу или изображению",
     "display_name": "Grok Video",
@@ -4124,6 +4219,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Генерируйте видео, используя референсные изображения в качестве стиля и содержания.",
+    "display_name": "Grok Reference-to-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
       }
     },
     "outputs": {
@@ -6744,6 +6874,54 @@
     "outputs": {
       "0": {
         "name": "выходное изображение",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Установите эталонное аудио для переноса идентичности диктора с помощью ID-LoRA. Кодирует эталонный аудиоклип в conditioning и при необходимости вносит изменения в модель с помощью identity guidance (дополнительный прямой проход без эталона, усиливающий эффект идентичности диктора).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE для кодирования."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Конец диапазона сигмы, в котором активна identity guidance."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Сила identity guidance. Выполняет дополнительный прямой проход без эталона на каждом шаге для усиления идентичности диктора. Установите 0 для отключения (без дополнительного прохода)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Эталонный аудиоклип, идентичность диктора которого будет перенесена. Рекомендуется ~5 секунд (длительность обучения). Более короткие или длинные клипы могут ухудшить перенос голосовой идентичности."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Начало диапазона сигмы, в котором активна identity guidance."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -12069,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Обнаружение",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Фильтровать обнаружения по классу. Установите 'all', чтобы отключить фильтрацию."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Максимальное количество обнаружений на изображение. В порядке убывания оценки уверенности."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Случайное кадрирование изображений",
     "inputs": {
@@ -15474,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -15764,6 +15974,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "штраф за повторение"
       },
@@ -15778,6 +15991,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "мышление",
+        "tooltip": "Работать в режиме мышления, если модель это поддерживает."
       }
     },
     "outputs": {
@@ -15808,6 +16025,9 @@
       "sampling_mode_min_p": {
         "name": "минимальное p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "штраф за повторение"
       },
@@ -15822,6 +16042,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "мышление",
+        "tooltip": "Работать в режиме мышления, если модель это поддерживает."
       }
     },
     "outputs": {
@@ -16090,6 +16314,10 @@
       "positive": {
         "name": "позитивное условие",
         "tooltip": "Позитивное условие, используемое для обучения."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "При использовании training_dtype 'none' и обучении на квантизированной модели, при включении выполняется обратное распространение с квантизированным матричным умножением."
       },
       "rank": {
         "name": "ранг",

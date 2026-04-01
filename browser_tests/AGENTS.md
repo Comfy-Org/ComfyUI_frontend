@@ -12,12 +12,13 @@ browser_tests/
 │   ├── ComfyMouse.ts     - Mouse interaction helper
 │   ├── VueNodeHelpers.ts - Vue Nodes 2.0 helpers
 │   ├── selectors.ts      - Centralized TestIds
-│   ├── components/       - Page object components
+│   ├── data/             - Static test data (mock API responses, workflow JSONs, node definitions)
+│   ├── components/       - Page object components (locators, user interactions)
 │   │   ├── ContextMenu.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
 │   │   └── Topbar.ts
-│   ├── helpers/          - Focused helper classes
+│   ├── helpers/          - Focused helper classes (domain-specific actions)
 │   │   ├── CanvasHelper.ts
 │   │   ├── CommandHelper.ts
 │   │   ├── KeyboardHelper.ts
@@ -25,10 +26,35 @@ browser_tests/
 │   │   ├── SettingsHelper.ts
 │   │   ├── WorkflowHelper.ts
 │   │   └── ...
-│   └── utils/            - Utility functions
+│   └── utils/            - Pure utility functions (no page dependency)
 ├── helpers/          - Test-specific utilities
 └── tests/            - Test files (*.spec.ts)
 ```
+
+### Architectural Separation
+
+- **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
+- **`fixtures/components/`** — Page object components. Encapsulate locators and user interactions for a specific UI area.
+- **`fixtures/helpers/`** — Focused helper classes. Domain-specific actions that coordinate multiple page objects (e.g. canvas operations, workflow loading).
+- **`fixtures/utils/`** — Pure utility functions. No `Page` dependency; stateless helpers that can be used anywhere.
+
+## Polling Assertions
+
+Prefer `expect.poll()` over `expect(async () => { ... }).toPass()` when the block contains a single async call with a single assertion. `expect.poll()` is more readable and gives better error messages (shows actual vs expected on failure).
+
+```typescript
+// ✅ Correct — single async call + single assertion
+await expect
+  .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+  .toBe(0)
+
+// ❌ Avoid — nested expect inside toPass
+await expect(async () => {
+  expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+}).toPass({ timeout: 250 })
+```
+
+Reserve `toPass()` for blocks with multiple assertions or complex async logic that can't be expressed as a single polled value.
 
 ## Gotchas
 

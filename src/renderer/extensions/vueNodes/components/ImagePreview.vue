@@ -117,7 +117,11 @@
       v-if="viewMode === 'gallery'"
       class="pt-2 text-center text-xs text-base-foreground"
     >
-      <span v-if="imageError" class="text-error">
+      <span
+        v-if="imageError"
+        class="text-error"
+        data-testid="error-loading-image"
+      >
         {{ $t('g.errorLoadingImage') }}
       </span>
       <span v-else-if="showLoader" class="text-base-foreground">

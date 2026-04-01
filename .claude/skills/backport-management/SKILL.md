@@ -18,12 +18,20 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 
 ## System Context
 
-| Item           | Value                                             |
-| -------------- | ------------------------------------------------- |
-| Repo           | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend) |
-| Merge strategy | Squash merge (`gh pr merge --squash --admin`)     |
-| Automation     | `pr-backport.yaml` GitHub Action (label-driven)   |
-| Tracking dir   | `~/temp/backport-session/`                        |
+| Item           | Value                                                                       |
+| -------------- | --------------------------------------------------------------------------- |
+| Repo           | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend)                           |
+| Merge strategy | Auto-merge via workflow (`--auto --squash`); `--admin` only after CI passes |
+| Automation     | `pr-backport.yaml` GitHub Action (label-driven, auto-merge enabled)         |
+| Tracking dir   | `~/temp/backport-session/`                                                  |
+
+## CI Safety Rules
+
+**NEVER merge a backport PR without all CI checks passing.** This applies to both automation-created and manual cherry-pick PRs.
+
+- **Automation PRs:** The `pr-backport.yaml` workflow now enables `gh pr merge --auto --squash`, so clean PRs auto-merge once CI passes. Monitor with polling (`gh pr list --base TARGET_BRANCH --state open`). Do not intervene unless CI fails.
+- **Manual cherry-pick PRs:** After `gh pr create`, wait for CI before merging. Poll with `gh pr checks $PR --watch` or use a sleep+check loop. Only merge after all checks pass.
+- **CI failures:** DO NOT use `--admin` to bypass failing CI. Analyze the failure, present it to the user with possible causes (test backported without implementation, missing dependency, flaky test), and let the user decide the next step.
 
 ## Branch Scope Rules
 
@@ -108,11 +116,15 @@ git fetch origin TARGET_BRANCH
 # Quick smoke check: does the branch build?
 git worktree add /tmp/verify-TARGET origin/TARGET_BRANCH
 cd /tmp/verify-TARGET
-source ~/.nvm/nvm.sh && nvm use 24 && pnpm install && pnpm typecheck
+source ~/.nvm/nvm.sh && nvm use 24 && pnpm install && pnpm typecheck && pnpm test:unit
 git worktree remove /tmp/verify-TARGET --force
 ```
 
-If typecheck fails, stop and investigate before continuing. A broken branch after wave N means all subsequent waves will compound the problem.
+If typecheck or tests fail, stop and investigate before continuing. A broken branch after wave N means all subsequent waves will compound the problem.
+
+### Never Admin-Merge Without CI
+
+In a previous bulk session, all 69 backport PRs were merged with `gh pr merge --squash --admin`, bypassing required CI checks. This shipped 3 test failures to a release branch. **Lesson: `--admin` skips all branch protection, including required status checks.** Only use `--admin` after confirming CI has passed (e.g., `gh pr checks $PR` shows all green), or rely on auto-merge (`--auto --squash`) which waits for CI by design.
 
 ## Continuous Backporting Recommendation
 

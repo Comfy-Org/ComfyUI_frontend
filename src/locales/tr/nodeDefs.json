@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Sayı Dönüştürme",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Anahtar",
     "inputs": {
@@ -2174,6 +2190,10 @@
       "image": {
         "name": "görüntü"
       },
+      "keep_aspect": {
+        "name": "oranı_koru",
+        "tooltip": "Kırpmanın çıktı boyutuna sığması için esnetilip esnetilmeyeceği veya en-boy oranını korumak için siyah piksellerle doldurulup doldurulmayacağı."
+      },
       "output_height": {
         "name": "çıktı_yüksekliği",
         "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
@@ -2214,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Eğri Düzenleyici",
+    "inputs": {
+      "curve": {
+        "name": "eğri"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "eğri",
         "tooltip": null
       }
     }
@@ -2276,6 +2313,23 @@
     "display_name": "Gürültüyü Devre Dışı Bırak",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "BBox'ları Çiz",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxlar"
+      },
+      "image": {
+        "name": "görsel"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "çıktı_görseli",
         "tooltip": null
       }
     }
@@ -3612,6 +3666,14 @@
     "description": "Görüntülere GLSL ES fragment shader'ları uygula. u_resolution (vec2) her zaman kullanılabilir.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "Boolean değerler, shader kodunda u_bool0-9 (bool) olarak kullanılabilir"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Eğriler, shader kodunda u_curve0-3 (sampler2D, 1D LUT) olarak kullanılabilir. texture(u_curve0, vec2(x, 0.5)).r ile örnekleyin"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Floats shader kodunda u_float0-4 olarak kullanılabilir"
@@ -4092,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Bir metin istemine dayalı olarak mevcut bir videoyu sorunsuz bir şekilde devam ettirin.",
+    "display_name": "Grok Video Uzatma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video uzatma için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Videoda sonraki adımda ne olacağını açıklayan metin."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Uzatılacak kaynak video. MP4 formatında, 2-15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Bir istem veya görüntüden video oluştur",
     "display_name": "Grok Video",
@@ -4120,6 +4215,41 @@
       "resolution": {
         "name": "çözünürlük",
         "tooltip": "Çıktı videonun çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Stil ve içerik referansı olarak referans görsellerle yönlendirilen video oluşturun.",
+    "display_name": "Grok Referans-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video oluşturmak için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen videonun metin açıklaması."
       },
       "seed": {
         "name": "tohum",
@@ -6744,6 +6874,54 @@
     "outputs": {
       "0": {
         "name": "çıktı_görüntüsü",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA konuşmacı kimliği aktarımı için referans ses ayarlayın. Bir referans ses klibini koşullandırmaya kodlar ve isteğe bağlı olarak modeli kimlik rehberliğiyle yamalar (referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliği etkisini artırır).",
+    "display_name": "LTXV Referans Ses (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Kodlama için LTXV Audio VAE."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının sonu."
+      },
+      "identity_guidance_scale": {
+        "name": "kimlik_rehberliği_ölçeği",
+        "tooltip": "Kimlik rehberliği gücü. Her adımda referans olmadan ekstra bir ileri geçiş yaparak konuşmacı kimliğini güçlendirir. Devre dışı bırakmak için 0 olarak ayarlayın (ekstra geçiş yok)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "reference_audio": {
+        "name": "referans_ses",
+        "tooltip": "Konuşmacı kimliğinin aktarılacağı referans ses klibi. ~5 saniye önerilir (eğitim süresi). Daha kısa veya uzun klipler ses kimliği aktarımını bozabilir."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Kimlik rehberliğinin aktif olduğu sigma aralığının başlangıcı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
         "tooltip": null
       }
     }
@@ -12069,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Tespit",
+    "inputs": {
+      "class_name": {
+        "name": "sınıf_adı",
+        "tooltip": "Tespitleri sınıfa göre filtrele. Filtrelemeyi devre dışı bırakmak için 'all' olarak ayarlayın."
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "max_detections": {
+        "name": "maksimum_tespit",
+        "tooltip": "Görsel başına döndürülecek en fazla tespit sayısı. Güven puanına göre azalan sırada."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxlar",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Rastgele Kırpılmış Görseller",
     "inputs": {
@@ -15474,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_görüntüsü",
+        "tooltip": null
       }
     }
   },
@@ -15764,6 +15974,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "tekrar_cezası"
       },
@@ -15778,6 +15991,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalış."
       }
     },
     "outputs": {
@@ -15808,6 +16025,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "tekrar_cezası"
       },
@@ -15822,6 +16042,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "düşünme",
+        "tooltip": "Model destekliyorsa düşünme modunda çalış."
       }
     },
     "outputs": {
@@ -16090,6 +16314,10 @@
       "positive": {
         "name": "pozitif",
         "tooltip": "Eğitim için kullanılacak pozitif koşullandırma."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Eğer training_dtype 'none' olarak ayarlanmışsa ve quantized bir modelde eğitim yapılıyorsa, etkinleştirildiğinde backward işlemi quantized matmul ile yapılır."
       },
       "rank": {
         "name": "rütbe",

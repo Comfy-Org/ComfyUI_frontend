@@ -247,7 +247,7 @@ test.describe('Workflows sidebar', () => {
     await expect(errorOverlay).toBeVisible()
 
     // Dismiss the error overlay
-    await errorOverlay.getByRole('button', { name: 'Dismiss' }).click()
+    await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
     await expect(errorOverlay).not.toBeVisible()
 
     // Load blank workflow
@@ -271,9 +271,11 @@ test.describe('Workflows sidebar', () => {
       '.comfyui-workflows-open .close-workflow-button'
     )
     await closeButton.click()
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow'
-    ])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames(), {
+        timeout: 5000
+      })
+      .toEqual(['*Unsaved Workflow'])
   })
 
   test('Can close saved workflow with command', async ({ comfyPage }) => {

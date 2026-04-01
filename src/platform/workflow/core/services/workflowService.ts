@@ -23,6 +23,8 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -43,6 +45,7 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const executionErrorStore = useExecutionErrorStore()
+  const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
   function confirmOverwrite(targetPath: string) {
@@ -113,12 +116,12 @@ export const useWorkflowService = () => {
    */
   const saveWorkflowAs = async (
     workflow: ComfyWorkflow,
-    options: { filename?: string } = {}
+    options: { filename?: string; isApp?: boolean } = {}
   ): Promise<boolean> => {
     const newFilename = options.filename ?? (await workflow.promptSave())
     if (!newFilename) return false
 
-    const isApp = workflow.initialMode === 'app'
+    const isApp = options.isApp ?? workflow.initialMode === 'app'
     const newPath =
       workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
@@ -135,17 +138,27 @@ export const useWorkflowService = () => {
       }
     }
 
-    workflow.changeTracker?.checkState()
-
     if (isSelfOverwrite) {
+      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
       await saveWorkflow(workflow)
-    } else if (workflow.isTemporary) {
-      await renameWorkflow(workflow, newPath)
-      await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = workflowStore.saveAs(workflow, newPath)
-      await openWorkflow(tempWorkflow)
-      await workflowStore.saveWorkflow(tempWorkflow)
+      let target: ComfyWorkflow
+      if (workflow.isTemporary) {
+        await renameWorkflow(workflow, newPath)
+        target = workflow
+      } else {
+        target = workflowStore.saveAs(workflow, newPath)
+        await openWorkflow(target)
+      }
+
+      if (options.isApp !== undefined) {
+        app.rootGraph.extra ??= {}
+        app.rootGraph.extra.linearMode = isApp
+        target.initialMode = isApp ? 'app' : 'graph'
+      }
+      if (workflowStore.isActive(target)) target.changeTracker?.checkState()
+
+      await workflowStore.saveWorkflow(target)
     }
 
     useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
@@ -160,7 +173,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      workflow.changeTracker?.checkState()
+      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
 
       const isApp = workflow.initialMode === 'app'
       const expectedPath =
@@ -379,6 +392,9 @@ export const useWorkflowService = () => {
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
+
+      // Save subgraph viewport before the canvas gets overwritten
+      useSubgraphNavigationStore().saveCurrentViewport()
     }
   }
 
@@ -542,7 +558,9 @@ export const useWorkflowService = () => {
     wf.pendingWarnings = null
 
     if (missingNodeTypes?.length) {
-      executionErrorStore.surfaceMissingNodes(missingNodeTypes)
+      if (missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes)) {
+        executionErrorStore.showErrorOverlay()
+      }
     }
   }
 

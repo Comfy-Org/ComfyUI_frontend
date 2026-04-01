@@ -150,21 +150,27 @@ export function createMonotoneInterpolator(
 }
 
 /**
- * Convert a 256-bin histogram into an SVG path string.
- * Normalizes using the 99.5th percentile to avoid outlier spikes.
+ * Convert a histogram (arbitrary number of bins) into an SVG path string.
+ * Applies square-root scaling and normalizes using the 99.5th percentile
+ * to avoid outlier spikes.
  */
 export function histogramToPath(histogram: Uint32Array): string {
-  if (!histogram.length) return ''
+  const len = histogram.length
+  if (len === 0) return ''
 
-  const sorted = Array.from(histogram).sort((a, b) => a - b)
-  const max = sorted[Math.floor(255 * 0.995)]
+  const sqrtValues = new Float32Array(len)
+  for (let i = 0; i < len; i++) sqrtValues[i] = Math.sqrt(histogram[i])
+
+  const sorted = Array.from(sqrtValues).sort((a, b) => a - b)
+  const max = sorted[Math.floor((len - 1) * 0.995)]
   if (max === 0) return ''
 
   const invMax = 1 / max
+  const lastIdx = len - 1
   const parts: string[] = ['M0,1']
-  for (let i = 0; i < 256; i++) {
-    const x = i / 255
-    const y = 1 - Math.min(1, histogram[i] * invMax)
+  for (let i = 0; i < len; i++) {
+    const x = lastIdx === 0 ? 0.5 : i / lastIdx
+    const y = 1 - Math.min(1, sqrtValues[i] * invMax)
     parts.push(`L${x},${y}`)
   }
   parts.push('L1,1 Z')
@@ -184,5 +190,17 @@ export function curvesToLUT(
     lut[i] = Math.max(0, Math.min(255, Math.round(y * 255)))
   }
 
+  return lut
+}
+
+export function curveDataToFloatLUT(
+  curve: CurveData,
+  size: number = 256
+): Float32Array {
+  const lut = new Float32Array(size)
+  const interpolate = createInterpolator(curve.points, curve.interpolation)
+  for (let i = 0; i < size; i++) {
+    lut[i] = interpolate(i / (size - 1))
+  }
   return lut
 }
