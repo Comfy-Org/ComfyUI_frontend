@@ -61,6 +61,16 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel'
   },
+  subgraphEditor: {
+    toggle: 'subgraph-editor-toggle',
+    shownSection: 'subgraph-editor-shown-section',
+    hiddenSection: 'subgraph-editor-hidden-section',
+    widgetToggle: 'subgraph-widget-toggle',
+    widgetLabel: 'subgraph-widget-label',
+    iconLink: 'icon-link',
+    iconEye: 'icon-eye',
+    widgetActionsMenuButton: 'widget-actions-menu-button'
+  },
   node: {
     titleInput: 'node-title-input'
   },
@@ -69,6 +79,9 @@ export const TestIds = {
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
     colorRed: 'red'
+  },
+  menu: {
+    moreMenuContent: 'more-menu-content'
   },
   widgets: {
     container: 'node-widgets',
@@ -131,5 +144,7 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
+  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
