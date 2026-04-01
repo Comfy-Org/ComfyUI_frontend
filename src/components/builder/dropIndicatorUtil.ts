@@ -40,6 +40,8 @@ export function buildDropIndicator(
   return undefined
 }
 
+/** Build indicator data for a LoadImage node, including preview URL,
+ *  mask editor action, and download/remove using the original asset URL. */
 function buildImageDropIndicator(
   node: LGraphNode,
   options: {
@@ -89,6 +91,8 @@ function buildImageDropIndicator(
   }
 }
 
+/** Build indicator data for a LoadVideo node with video preview URL
+ *  and download/remove actions. */
 function buildVideoDropIndicator(
   node: LGraphNode,
   options: { videoLabel?: string }
