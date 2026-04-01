@@ -65,28 +65,6 @@ const hasCompareImages = computed(() =>
 <template>
   <div class="flex size-full flex-col overflow-hidden">
     <div
-      v-if="showBatchNav"
-      class="flex shrink-0 justify-between px-2 py-1 text-xs"
-      data-testid="batch-nav"
-    >
-      <BatchNavigation
-        v-model="beforeIndex"
-        :count="compareImages.before.length"
-        data-testid="before-batch"
-      >
-        <template #label>{{ $t('imageCompare.batchLabelA') }}</template>
-      </BatchNavigation>
-
-      <BatchNavigation
-        v-model="afterIndex"
-        :count="compareImages.after.length"
-        data-testid="after-batch"
-      >
-        <template #label>{{ $t('imageCompare.batchLabelB') }}</template>
-      </BatchNavigation>
-    </div>
-
-    <div
       v-if="beforeUrl || afterUrl"
       class="flex min-h-0 flex-1 items-center justify-center"
     >
@@ -136,6 +114,28 @@ const hasCompareImages = computed(() =>
       class="flex min-h-0 flex-1 items-center justify-center text-muted-foreground"
     >
       {{ $t('imageCompare.noImages') }}
+    </div>
+
+    <div
+      v-if="showBatchNav"
+      class="flex shrink-0 justify-between px-4 py-2 text-xs"
+      data-testid="batch-nav"
+    >
+      <BatchNavigation
+        v-model="beforeIndex"
+        :count="compareImages.before.length"
+        data-testid="before-batch"
+      >
+        <template #label>{{ $t('imageCompare.batchLabelA') }}</template>
+      </BatchNavigation>
+
+      <BatchNavigation
+        v-model="afterIndex"
+        :count="compareImages.after.length"
+        data-testid="after-batch"
+      >
+        <template #label>{{ $t('imageCompare.batchLabelB') }}</template>
+      </BatchNavigation>
     </div>
   </div>
 </template>
