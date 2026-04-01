@@ -687,14 +687,6 @@ jobs:
           [ -n "$NUM" ] && LABEL="#${NUM} QA"
           echo "badge_label=${LABEL}" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy placeholder page — PREPARING
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BADGE_LABEL: ${{ steps.pr.outputs.badge_label || 'QA' }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: /tmp/deploy-badge.sh "PREPARING" "#2196f3" "$BADGE_LABEL" "$RUN_URL"
-
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
@@ -799,12 +791,6 @@ jobs:
               [ -n "$WEBM" ] && convert_video "$WEBM" "$dir/qa-session.mp4"
             fi
           done
-
-      - name: Deploy badge — ANALYZING
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: /tmp/deploy-badge.sh "ANALYZING" "#ff9800" "${{ steps.pr.outputs.badge_label || 'QA' }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Build context for video review
         env:
