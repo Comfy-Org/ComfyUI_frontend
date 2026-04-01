@@ -2440,17 +2440,37 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node &&
       this.allow_interaction
     ) {
-      const items = this._deserializeItems(this._serializeItems([node]), {
-        position: node.pos
-      })
-      const cloned = items?.created[0] as LGraphNode | undefined
-      if (!cloned) return
+      const isMultiSelection =
+        this.selectedItems.has(node) && this.selectedItems.size > 1
 
-      cloned.setPos(cloned.pos[0] + 5, cloned.pos[1] + 5)
+      let clonedAnchor: LGraphNode | undefined
+      if (isMultiSelection) {
+        // Find the top-left of the selection to preserve relative positions
+        let minX = Infinity
+        let minY = Infinity
+        for (const item of this.selectedItems) {
+          if (item.pos[0] < minX) minX = item.pos[0]
+          if (item.pos[1] < minY) minY = item.pos[1]
+        }
+        const items = this._deserializeItems(
+          this._serializeItems(this.selectedItems),
+          { position: [minX, minY] }
+        )
+        clonedAnchor = items?.nodes.get(node.id) as LGraphNode | undefined
+      } else {
+        const items = this._deserializeItems(this._serializeItems([node]), {
+          position: node.pos
+        })
+        clonedAnchor = items?.created[0] as LGraphNode | undefined
+        if (clonedAnchor)
+          clonedAnchor.setPos(clonedAnchor.pos[0] + 5, clonedAnchor.pos[1] + 5)
+      }
+
+      if (!clonedAnchor) return
 
       if (this.allow_dragnodes) {
         pointer.onDragStart = (pointer) => {
-          this._startDraggingItems(cloned, pointer)
+          this._startDraggingItems(clonedAnchor!, pointer, isMultiSelection)
         }
         pointer.onDragEnd = (e) => this._processDraggedItems(e)
       }
