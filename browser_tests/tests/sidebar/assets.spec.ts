@@ -634,10 +634,14 @@ test.describe('Assets sidebar - pagination', () => {
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
 
-    // Capture the first /api/jobs request to verify pagination params
-    const firstRequest = comfyPage.page.waitForRequest((req) =>
-      /\/api\/jobs\?/.test(req.url())
-    )
+    // Capture the first history fetch (terminal statuses only).
+    // Queue polling also hits /jobs but with status=in_progress,pending.
+    const firstRequest = comfyPage.page.waitForRequest((req) => {
+      if (!/\/api\/jobs\?/.test(req.url())) return false
+      const url = new URL(req.url())
+      const status = url.searchParams.get('status') ?? ''
+      return status.includes('completed')
+    })
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
@@ -660,20 +664,32 @@ test.describe('Assets sidebar - pagination', () => {
     await tab.open()
     await tab.waitForAssets()
 
-    // Listen for the next /api/jobs request (the pagination fetch)
+    // Listen for the next history fetch with offset > 0 (the pagination fetch).
+    // Match terminal statuses to avoid false positives from queue polling.
     const nextPageRequest = comfyPage.page.waitForRequest(
       (req) => {
         if (!/\/api\/jobs\?/.test(req.url())) return false
         const url = new URL(req.url())
-        return Number(url.searchParams.get('offset')) > 0
+        const status = url.searchParams.get('status') ?? ''
+        return (
+          status.includes('completed') &&
+          Number(url.searchParams.get('offset')) > 0
+        )
       },
       { timeout: 10_000 }
     )
 
     // Trigger loadMoreHistory() via the Pinia store directly.
-    // VirtualGrid's approach-end scroll zone is unreliable in CI
-    // (viewport size, scroll container hierarchy vary), so we call
-    // the store action that approach-end ultimately invokes.
+    //
+    // Scroll-based triggering is intentionally avoided here because
+    // VirtualGrid's approach-end fires in a narrow scroll zone (~1-2
+    // items wide) that is easily overshot by any non-trivial scroll
+    // delta, and the component sits inside nested scroll containers
+    // (PrimeVue ScrollPanel + sidebar-content-container) so targeting
+    // the correct scrollable element is fragile across viewports.
+    //
+    // This test verifies pagination behavior (offset params, response
+    // handling), not the scroll-to-load-more trigger itself.
     await comfyPage.page.evaluate(async () => {
       const app = document.querySelector('#vue-app') as HTMLElement & {
         __vue_app__?: {
