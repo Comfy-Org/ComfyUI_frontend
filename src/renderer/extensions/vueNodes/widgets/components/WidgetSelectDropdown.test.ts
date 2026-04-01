@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import type { VueWrapper } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
@@ -9,10 +10,9 @@ import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
-import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const mockCheckState = vi.hoisted(() => vi.fn())
@@ -121,18 +121,20 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     modelValue: string | undefined,
     assetKind: 'image' | 'video' | 'audio' = 'image'
   ): VueWrapper<WidgetSelectDropdownInstance> => {
-    return mount(WidgetSelectDropdown, {
-      props: {
-        widget,
-        modelValue,
-        assetKind,
-        allowUpload: true,
-        uploadFolder: 'input'
-      },
-      global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
-      }
-    }) as unknown as VueWrapper<WidgetSelectDropdownInstance>
+    return fromAny<VueWrapper<WidgetSelectDropdownInstance>, unknown>(
+      mount(WidgetSelectDropdown, {
+        props: {
+          widget,
+          modelValue,
+          assetKind,
+          allowUpload: true,
+          uploadFolder: 'input'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n]
+        }
+      })
+    )
   }
 
   describe('when custom labels are not provided', () => {
@@ -258,7 +260,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     it('falls back to original value when label mapping returns undefined', () => {
       const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'hash789.png') {
-          return undefined as unknown as string
+          return fromAny<string, unknown>(undefined)
         }
         return `Labeled: ${value}`
       })
@@ -365,7 +367,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
     it('does not create a fallback item when modelValue is undefined', () => {
       const widget = createSelectDropdownWidget(
-        undefined as unknown as string,
+        fromAny<string, unknown>(undefined),
         {
           values: ['img_001.png', 'photo_abc.jpg']
         }
@@ -415,18 +417,20 @@ describe('WidgetSelectDropdown cloud asset mode (COM-14333)', () => {
     widget: SimplifiedWidget<string | undefined>,
     modelValue: string | undefined
   ): VueWrapper<CloudModeInstance> => {
-    return mount(WidgetSelectDropdown, {
-      props: {
-        widget,
-        modelValue,
-        assetKind: 'model',
-        isAssetMode: true,
-        nodeType: 'CheckpointLoaderSimple'
-      },
-      global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
-      }
-    }) as unknown as VueWrapper<CloudModeInstance>
+    return fromAny<VueWrapper<CloudModeInstance>, unknown>(
+      mount(WidgetSelectDropdown, {
+        props: {
+          widget,
+          modelValue,
+          assetKind: 'model',
+          isAssetMode: true,
+          nodeType: 'CheckpointLoaderSimple'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n]
+        }
+      })
+    )
   }
 
   beforeEach(() => {
@@ -549,10 +553,12 @@ describe('WidgetSelectDropdown multi-output jobs', () => {
     widget: SimplifiedWidget<string | undefined>,
     modelValue: string | undefined
   ): VueWrapper<MultiOutputInstance> {
-    return mount(WidgetSelectDropdown, {
-      props: { widget, modelValue, assetKind: 'image' as const },
-      global: { plugins: [PrimeVue, createTestingPinia(), i18n] }
-    }) as unknown as VueWrapper<MultiOutputInstance>
+    return fromAny<VueWrapper<MultiOutputInstance>, unknown>(
+      mount(WidgetSelectDropdown, {
+        props: { widget, modelValue, assetKind: 'image' as const },
+        global: { plugins: [PrimeVue, createTestingPinia(), i18n] }
+      })
+    )
   }
 
   const defaultWidget = () =>
@@ -744,18 +750,20 @@ describe('WidgetSelectDropdown undo tracking', () => {
     widget: SimplifiedWidget<string | undefined>,
     modelValue: string | undefined
   ): VueWrapper<UndoTrackingInstance> => {
-    return mount(WidgetSelectDropdown, {
-      props: {
-        widget,
-        modelValue,
-        assetKind: 'image',
-        allowUpload: true,
-        uploadFolder: 'input'
-      },
-      global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
-      }
-    }) as unknown as VueWrapper<UndoTrackingInstance>
+    return fromAny<VueWrapper<UndoTrackingInstance>, unknown>(
+      mount(WidgetSelectDropdown, {
+        props: {
+          widget,
+          modelValue,
+          assetKind: 'image',
+          allowUpload: true,
+          uploadFolder: 'input'
+        },
+        global: {
+          plugins: [PrimeVue, createTestingPinia(), i18n]
+        }
+      })
+    )
   }
 
   beforeEach(() => {

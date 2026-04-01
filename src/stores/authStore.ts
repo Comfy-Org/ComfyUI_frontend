@@ -236,6 +236,22 @@ export const useAuthStore = defineStore('auth', () => {
     return await getIdToken()
   }
 
+  const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return authHeader
+  }
+
+  const getFirebaseAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+    const authHeader = await getFirebaseAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return authHeader
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
@@ -348,7 +364,8 @@ export const useAuthStore = defineStore('auth', () => {
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: false,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -369,7 +386,8 @@ export const useAuthStore = defineStore('auth', () => {
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: true,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -390,7 +408,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'google',
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -411,7 +430,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'github',
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
       })
     }
 
@@ -534,7 +554,9 @@ export const useAuthStore = defineStore('auth', () => {
     sendPasswordReset,
     updatePassword: _updatePassword,
     getAuthHeader,
+    getAuthHeaderOrThrow,
     getFirebaseAuthHeader,
+    getFirebaseAuthHeaderOrThrow,
     getAuthToken
   }
 })

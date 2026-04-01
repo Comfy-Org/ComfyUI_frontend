@@ -1,9 +1,7 @@
 <template>
   <div class="space-y-4">
-    <div class="space-y-4">
-      <label>
-        {{ t('load3d.viewer.cameraType') }}
-      </label>
+    <div class="flex flex-col gap-2">
+      <label>{{ t('load3d.viewer.cameraType') }}</label>
       <Select
         v-model="cameraType"
         :options="cameras"
@@ -13,7 +11,7 @@
       </Select>
     </div>
 
-    <div v-if="showFOVButton" class="space-y-4">
+    <div v-if="showFOVButton" class="flex flex-col gap-2">
       <label>{{ t('load3d.fov') }}</label>
       <Slider
         v-model="fov"

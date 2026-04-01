@@ -347,9 +347,19 @@
     "share": "Compartir",
     "workflowActions": "Acciones del flujo de trabajo"
   },
+  "builderFooter": {
+    "opensAsApp": "Abrir como {mode}",
+    "opensAsGraph": "Abrir como {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Entrar en modo aplicación",
     "exitAppBuilder": "Salir del constructor de aplicaciones"
+  },
+  "builderSave": {
+    "successBody": "¿Te gustaría verlo ahora?",
+    "successBodyApp": "Este flujo de trabajo se abrirá en Modo App por defecto de ahora en adelante.\n\n¿Te gustaría verlo ahora?",
+    "successBodyGraph": "Este flujo de trabajo se abrirá como un grafo de nodos.",
+    "successTitle": "Guardado exitosamente"
   },
   "builderToolbar": {
     "app": "Aplicación",
@@ -359,18 +369,10 @@
     "connectOutput": "Conectar una salida",
     "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
     "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
-    "defaultModeAppliedAppBody": "Este flujo de trabajo se abrirá en Modo de Aplicación por defecto a partir de ahora.",
-    "defaultModeAppliedAppPrompt": "¿Te gustaría verlo ahora?",
-    "defaultModeAppliedGraphBody": "Este flujo de trabajo se abrirá como un grafo de nodos por defecto a partir de ahora.",
-    "defaultModeAppliedGraphPrompt": "¿Aún quieres ver la aplicación?",
-    "defaultModeAppliedTitle": "Configurado correctamente",
-    "defaultView": "Establecer vista predeterminada",
-    "defaultViewDescription": "Elige cómo se abre esto",
     "defaultViewLabel": "Por defecto, este flujo de trabajo se abrirá como:",
-    "defaultViewTitle": "Establecer la vista predeterminada para este flujo de trabajo",
     "emptyWorkflowPrompt": "¿Quieres empezar con una plantilla?",
     "emptyWorkflowTitle": "Este flujo de trabajo no tiene nodos",
-    "exitToWorkflow": "Salir al flujo de trabajo",
+    "filename": "Nombre de archivo",
     "inputs": "Entradas",
     "inputsDescription": "Elige entradas",
     "label": "Constructor de aplicaciones",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
     "outputs": "Salidas",
     "outputsDescription": "Elige salidas",
+    "saveAs": "Guardar como",
     "switchToOutputs": "Cambiar a Salidas",
     "viewApp": "Ver aplicación"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORES",
-    "seeErrors": "Ver errores"
+    "missingMedia": "A algunos nodos les faltan entradas requeridas",
+    "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
+    "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
+    "seeErrors": "Ver errores",
+    "showMissingMedia": "Mostrar entradas faltantes",
+    "showMissingModels": "Mostrar modelos faltantes",
+    "showMissingNodes": "Mostrar nodos faltantes",
+    "showSwapNodes": "Mostrar nodos intercambiables",
+    "swapNodes": "Algunos nodos pueden ser reemplazados por alternativas"
   },
   "essentials": {
     "batchImage": "Procesar imágenes por lotes",
@@ -2247,6 +2258,7 @@
     "dataset": "conjunto de datos",
     "debug": "depurar",
     "deprecated": "obsoleto",
+    "detection": "detección",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",
@@ -3228,6 +3240,7 @@
       "termsAgreement": "Al continuar, aceptas los {terms} y la {privacy} de Comfy Org.",
       "totalDueToday": "Total a pagar hoy"
     },
+    "refreshCredits": "Actualizar créditos",
     "renewsDate": "Se renueva el {date}",
     "required": {
       "pollingFailed": "Error al activar la suscripción",

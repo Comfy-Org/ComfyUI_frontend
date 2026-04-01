@@ -1,14 +1,14 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import DomWidget from './DomWidget.vue'
 
 const mockUpdatePosition = vi.fn()
@@ -63,7 +63,7 @@ function createWidgetState(overrideDisabled: boolean): DomWidgetState {
     }
   })
 
-  const widget = {
+  const widget = fromPartial<BaseDOMWidget<object | string>>({
     id: 'dom-widget-id',
     name: 'test_widget',
     type: 'custom',
@@ -71,7 +71,7 @@ function createWidgetState(overrideDisabled: boolean): DomWidgetState {
     options: {},
     node,
     computedDisabled: false
-  } as unknown as BaseDOMWidget<object | string>
+  })
 
   domWidgetStore.registerWidget(widget)
   domWidgetStore.setPositionOverride(widget.id, {

@@ -20,6 +20,7 @@ export const TestIds = {
     main: 'graph-canvas',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
+    closeMinimapButton: 'close-minimap-button',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',
@@ -43,7 +44,15 @@ export const TestIds = {
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
-    missingModelsGroup: 'error-group-missing-model'
+    missingModelsGroup: 'error-group-missing-model',
+    missingMediaGroup: 'error-group-missing-media',
+    missingMediaRow: 'missing-media-row',
+    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
+    missingMediaLibrarySelect: 'missing-media-library-select',
+    missingMediaStatusCard: 'missing-media-status-card',
+    missingMediaConfirmButton: 'missing-media-confirm-button',
+    missingMediaCancelButton: 'missing-media-cancel-button',
+    missingMediaLocateButton: 'missing-media-locate-button'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -51,13 +60,24 @@ export const TestIds = {
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
-    saveButton: 'save-workflow-button'
+    saveButton: 'save-workflow-button',
+    subscribeButton: 'topbar-subscribe-button'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
     root: 'properties-panel'
+  },
+  subgraphEditor: {
+    toggle: 'subgraph-editor-toggle',
+    shownSection: 'subgraph-editor-shown-section',
+    hiddenSection: 'subgraph-editor-hidden-section',
+    widgetToggle: 'subgraph-widget-toggle',
+    widgetLabel: 'subgraph-widget-label',
+    iconLink: 'icon-link',
+    iconEye: 'icon-eye',
+    widgetActionsMenuButton: 'widget-actions-menu-button'
   },
   node: {
     titleInput: 'node-title-input'
@@ -68,6 +88,9 @@ export const TestIds = {
     colorBlue: 'blue',
     colorRed: 'red'
   },
+  menu: {
+    moreMenuContent: 'more-menu-content'
+  },
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
@@ -77,9 +100,15 @@ export const TestIds = {
     subgraphEnterButton: 'subgraph-enter-button'
   },
   builder: {
+    footerNav: 'builder-footer-nav',
+    saveButton: 'builder-save-button',
+    saveAsButton: 'builder-save-as-button',
+    saveGroup: 'builder-save-group',
+    saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
-    widgetActionsMenu: 'widget-actions-menu'
+    widgetActionsMenu: 'widget-actions-menu',
+    opensAs: 'builder-opens-as'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -90,6 +119,10 @@ export const TestIds = {
   },
   user: {
     currentUserIndicator: 'current-user-indicator'
+  },
+  queue: {
+    overlayToggle: 'queue-overlay-toggle',
+    clearHistoryAction: 'clear-history-action'
   },
   errors: {
     imageLoadError: 'error-loading-image',
@@ -119,4 +152,7 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
+  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
+  | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
