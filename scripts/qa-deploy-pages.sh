@@ -238,9 +238,11 @@ REPRO_COUNT=0 INCONC_COUNT=0 NOT_REPRO_COUNT=0 TOTAL_REPORTS=0
 
 # Try research log first (ground truth from a11y assertions)
 RESEARCH_VERDICT=""
+REPRO_METHOD=""
 if [ -f "$DEPLOY_DIR/research-log.json" ]; then
   RESEARCH_VERDICT=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('verdict',''))" "$DEPLOY_DIR/research-log.json" 2>/dev/null || true)
-  echo "Research verdict (a11y-verified): ${RESEARCH_VERDICT:-none}"
+  REPRO_METHOD=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('reproducedBy','none'))" "$DEPLOY_DIR/research-log.json" 2>/dev/null || true)
+  echo "Research verdict (a11y-verified): ${RESEARCH_VERDICT:-none} (by: ${REPRO_METHOD:-none})"
   if [ -n "$RESEARCH_VERDICT" ]; then
     TOTAL_REPORTS=1
     case "$RESEARCH_VERDICT" in
@@ -353,7 +355,7 @@ fi
 # Always use vertical box badge
 /tmp/gen-badge-box.sh "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL" \
   "$REPRO_COUNT" "$NOT_REPRO_COUNT" "$FAIL_COUNT" "$TOTAL_REPORTS" \
-  "$FIX_RESULT" "$FIX_COLOR"
+  "$FIX_RESULT" "$FIX_COLOR" "$REPRO_METHOD"
 BADGE_STATUS="${REPRO_RESULT:-UNKNOWN}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}"
 echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 

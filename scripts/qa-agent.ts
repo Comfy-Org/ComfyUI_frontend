@@ -34,8 +34,11 @@ interface ResearchOptions {
   timeBudgetMs?: number
 }
 
+export type ReproMethod = 'e2e_test' | 'video' | 'both' | 'none'
+
 export interface ResearchResult {
   verdict: 'REPRODUCED' | 'NOT_REPRODUCIBLE' | 'INCONCLUSIVE'
+  reproducedBy: ReproMethod
   summary: string
   evidence: string
   testCode: string
@@ -59,6 +62,7 @@ export async function runResearchPhase(
 
   let agentDone = false
   let finalVerdict: ResearchResult['verdict'] = 'INCONCLUSIVE'
+  let finalReproducedBy: ReproMethod = 'none'
   let finalSummary = 'Agent did not complete'
   let finalEvidence = ''
   let finalTestCode = ''
@@ -308,6 +312,11 @@ export async function runResearchPhase(
     'Finish research with verdict and the final test code.',
     {
       verdict: z.enum(['REPRODUCED', 'NOT_REPRODUCIBLE', 'INCONCLUSIVE']),
+      reproducedBy: z
+        .enum(['e2e_test', 'video', 'both', 'none'])
+        .describe(
+          'How the bug was proven: e2e_test = Playwright assertion passed, video = visual evidence only, both = both methods, none = not reproduced'
+        ),
       summary: z.string().describe('What you found and why'),
       evidence: z.string().describe('Test output that proves the verdict'),
       testCode: z
@@ -319,6 +328,7 @@ export async function runResearchPhase(
     async (args) => {
       agentDone = true
       finalVerdict = args.verdict
+      finalReproducedBy = args.reproducedBy
       finalSummary = args.summary
       finalEvidence = args.evidence
       finalTestCode = args.testCode
@@ -539,12 +549,14 @@ ${issueContext}`
       `Auto-completing: test passed at turn ${lastPassedTurn} but done() was not called`
     )
     finalVerdict = 'REPRODUCED'
+    finalReproducedBy = 'e2e_test'
     finalSummary = `Test passed at turn ${lastPassedTurn} (auto-completed — agent did not call done())`
     finalEvidence = `Test passed with exit code 0`
   }
 
   const result: ResearchResult = {
     verdict: finalVerdict,
+    reproducedBy: finalReproducedBy,
     summary: finalSummary,
     evidence: finalEvidence,
     testCode: finalTestCode,
