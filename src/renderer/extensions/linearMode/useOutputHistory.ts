@@ -7,7 +7,11 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
+import type {
+  NonAssetEntry,
+  TimelineItem
+} from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { api } from '@/scripts/api'
@@ -17,9 +21,83 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
+function makeNonAssetItem(
+  entry: NonAssetEntry,
+  groupKey: string
+): TimelineItem {
+  return {
+    id: `nonasset:${entry.id}`,
+    output: entry.output,
+    groupKey,
+    selectionValue: {
+      id: `nonasset:${entry.id}`,
+      kind: 'nonAsset',
+      itemId: entry.id
+    }
+  }
+}
+
+function indexByJobId(entries: NonAssetEntry[]): Map<string, NonAssetEntry[]> {
+  const map = new Map<string, NonAssetEntry[]>()
+  for (const entry of entries) {
+    const list = map.get(entry.jobId) ?? []
+    list.push(entry)
+    map.set(entry.jobId, list)
+  }
+  return map
+}
+
+export function buildTimeline(
+  visibleHistory: AssetItem[],
+  nonAssetOutputs: NonAssetEntry[],
+  allOutputsFn: (asset: AssetItem) => ResultItemImpl[]
+): TimelineItem[] {
+  const items: TimelineItem[] = []
+  const nonAssetByJobId = indexByJobId(nonAssetOutputs)
+
+  // Collect jobIds that have a matching history entry
+  const pairedJobIds = new Set<string>()
+  for (const asset of visibleHistory) {
+    const m = getOutputAssetMetadata(asset.user_metadata)
+    if (m?.jobId && nonAssetByJobId.has(m.jobId)) pairedJobIds.add(m.jobId)
+  }
+
+  // Orphan compare outputs whose job has no loaded history entry yet
+  for (const entry of nonAssetOutputs) {
+    if (pairedJobIds.has(entry.jobId)) continue
+    items.push(makeNonAssetItem(entry, 'orphans'))
+  }
+
+  // History groups with compare outputs placed before their saved outputs
+  for (const asset of visibleHistory) {
+    const m = getOutputAssetMetadata(asset.user_metadata)
+    const siblings = m?.jobId ? (nonAssetByJobId.get(m.jobId) ?? []) : []
+    for (const entry of siblings) {
+      items.push(makeNonAssetItem(entry, asset.id))
+    }
+    const outs = allOutputsFn(asset)
+    for (let k = 0; k < outs.length; k++) {
+      items.push({
+        id: `history:${asset.id}:${k}`,
+        output: outs[k],
+        groupKey: asset.id,
+        selectionValue: {
+          id: `history:${asset.id}:${k}`,
+          kind: 'history',
+          assetId: asset.id,
+          key: k
+        }
+      })
+    }
+  }
+
+  return items
+}
+
 export function useOutputHistory(): {
   outputs: IAssetsProvider
   allOutputs: (item?: AssetItem) => ResultItemImpl[]
+  timeline: ComputedRef<TimelineItem[]>
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
   isWorkflowActive: ComputedRef<boolean>
@@ -139,7 +217,7 @@ export function useOutputHistory(): {
       getJobDetail(user_metadata.jobId).then((jobDetail) => {
         if (!jobDetail?.outputs) return []
         const results = Object.entries(jobDetail.outputs)
-          .flatMap(flattenNodeOutput)
+          .flatMap(([nodeId, output]) => parseNodeOutput(nodeId, output))
           .toReversed()
         resolvedCache.set(itemId, results)
         return results
@@ -149,6 +227,18 @@ export function useOutputHistory(): {
     asyncRefs.set(item.id, outputRef)
     return filterByOutputNodes(outputRef.value)
   }
+
+  const visibleHistory = computed(() =>
+    outputs.media.value.filter((a) => allOutputs(a).length > 0)
+  )
+
+  const timeline = computed(() =>
+    buildTimeline(
+      visibleHistory.value,
+      linearStore.activeWorkflowNonAssetOutputs,
+      allOutputs
+    )
+  )
 
   function selectFirstHistory() {
     const first = outputs.media.value[0]
@@ -171,7 +261,16 @@ export function useOutputHistory(): {
       const loaded = allOutputs(asset).length > 0
       if (loaded) {
         linearStore.resolveIfReady(jobId, true)
-        if (!linearStore.selectedId) selectFirstHistory()
+        if (!linearStore.selectedId) {
+          const nonAsset = linearStore.activeWorkflowNonAssetOutputs.find(
+            (e) => e.jobId === jobId
+          )
+          if (nonAsset) {
+            linearStore.selectAsLatest(`nonasset:${nonAsset.id}`)
+          } else {
+            selectFirstHistory()
+          }
+        }
       }
     }
   })
@@ -196,6 +295,7 @@ export function useOutputHistory(): {
   return {
     outputs,
     allOutputs,
+    timeline,
     selectFirstHistory,
     mayBeActiveWorkflowPending,
     isWorkflowActive,

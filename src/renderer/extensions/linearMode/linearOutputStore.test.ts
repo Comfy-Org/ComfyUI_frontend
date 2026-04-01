@@ -4,7 +4,6 @@ import { ref } from 'vue'
 
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import { ResultItemImpl } from '@/stores/queueStore'
 
 const activeJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
@@ -64,23 +63,6 @@ vi.mock('@/scripts/api', () => ({
   })
 }))
 
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
-}))
-
 function setJobWorkflowPath(jobId: string, path: string) {
   const next = new Map(jobIdToWorkflowPathRef.value)
   next.set(jobId, path)
@@ -99,6 +81,23 @@ function makeExecutedDetail(
     node: nodeId,
     display_node: nodeId,
     output: { images }
+  } as ExecutedWsMessage
+}
+
+function makeImageCompareDetail(
+  promptId: string,
+  aFilename = 'before.png',
+  bFilename = 'after.png',
+  nodeId = '2'
+): ExecutedWsMessage {
+  return {
+    prompt_id: promptId,
+    node: nodeId,
+    display_node: nodeId,
+    output: {
+      a_images: [{ filename: aFilename, subfolder: '', type: 'temp' }],
+      b_images: [{ filename: bFilename, subfolder: '', type: 'temp' }]
+    }
   } as ExecutedWsMessage
 }
 
@@ -1402,6 +1401,170 @@ describe('linearOutputStore', () => {
       await nextTick()
 
       expect(store.inProgressItems).toHaveLength(0)
+    })
+  })
+
+  describe('autoSelectLatest', () => {
+    it('does not override selection when user is browsing', () => {
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+
+      // Run 1 completes, auto-selects latest
+      store.selectAsLatest('nonasset:compare-1')
+
+      // User manually selects a different item (browsing)
+      store.select('history:run1-asset:1')
+      expect(store.selectedId).toBe('history:run1-asset:1')
+
+      // Run 2 completes, new history appears — media watcher would
+      // call autoSelectLatest to follow the latest history item
+      store.autoSelectLatest('history:run2-asset:0')
+
+      // Should NOT have changed — user was browsing
+      expect(store.selectedId).toBe('history:run1-asset:1')
+    })
+
+    it('updates selection when user is following latest', () => {
+      const store = useLinearOutputStore()
+
+      store.selectAsLatest('history:asset-old:0')
+
+      // New history arrives — autoSelectLatest called
+      store.autoSelectLatest('history:asset-new:0')
+
+      // Should update — user was following
+      expect(store.selectedId).toBe('history:asset-new:0')
+    })
+  })
+
+  it('auto-selects new run when viewing the latest non-asset output', () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+
+    // Run 1 produces a compare output
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeImageCompareDetail('job-1'))
+    store.onJobComplete('job-1')
+
+    // User clicks the (latest) compare output
+    const latest = store.activeWorkflowNonAssetOutputs[0]
+    store.select(`nonasset:${latest.id}`)
+
+    // New run starts
+    store.onJobStart('job-2')
+
+    // Should auto-select — the selected nonasset is the latest item
+    expect(store.selectedId?.startsWith('slot:')).toBe(true)
+  })
+
+  it('does not auto-select new run when viewing the latest non-asset output if browsing history before', () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+
+    // Run 1 produces assets + compare
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+    store.onNodeExecuted('job-1', makeImageCompareDetail('job-1'))
+    store.onJobComplete('job-1')
+
+    // User selects a history asset (browsing, isFollowing=false)
+    store.select('history:asset-1:0')
+
+    // New run starts — should NOT auto-select
+    store.onJobStart('job-2')
+    expect(store.selectedId).toBe('history:asset-1:0')
+  })
+
+  it('does not auto-select new run when viewing an older non-asset output', () => {
+    const store = useLinearOutputStore()
+    setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-2', 'workflows/test-workflow.json')
+    setJobWorkflowPath('job-3', 'workflows/test-workflow.json')
+
+    // Two compare outputs exist (job-2 is latest, job-1 is older)
+    store.onJobStart('job-1')
+    store.onNodeExecuted('job-1', makeImageCompareDetail('job-1'))
+    store.onJobComplete('job-1')
+
+    store.onJobStart('job-2')
+    store.onNodeExecuted('job-2', makeImageCompareDetail('job-2'))
+    store.onJobComplete('job-2')
+
+    // User clicks the OLDER compare output (browsing)
+    const olderEntry = store.activeWorkflowNonAssetOutputs.find(
+      (e) => e.jobId === 'job-1'
+    )!
+    store.select(`nonasset:${olderEntry.id}`)
+
+    // New run starts
+    store.onJobStart('job-3')
+
+    // Should NOT auto-select — user was browsing an older item
+    expect(store.selectedId).toBe(`nonasset:${olderEntry.id}`)
+  })
+
+  describe('image compare outputs', () => {
+    it('stores standalone image_compare outputs in activeWorkflowNonAssetOutputs', () => {
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      store.onJobStart('job-1')
+      store.onNodeExecuted('job-1', makeImageCompareDetail('job-1'))
+      store.onJobComplete('job-1')
+
+      expect(store.activeWorkflowNonAssetOutputs).toHaveLength(1)
+      expect(store.activeWorkflowNonAssetOutputs[0].output.isImageCompare).toBe(
+        true
+      )
+      expect(store.inProgressItems).toHaveLength(0)
+    })
+
+    it('separates image_compare to nonAssetOutputs and asset images to pendingResolve', () => {
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/test-workflow.json')
+      store.onJobStart('job-1')
+      store.onNodeExecuted('job-1', makeExecutedDetail('job-1'))
+      store.onNodeExecuted('job-1', makeImageCompareDetail('job-1'))
+      store.onJobComplete('job-1')
+
+      // Asset images stay in pendingResolve
+      expect(store.pendingResolve.has('job-1')).toBe(true)
+      const remaining = store.inProgressItems.filter((i) => i.jobId === 'job-1')
+      expect(remaining).toHaveLength(1)
+      expect(remaining[0].output?.mediaType).toBe('images')
+
+      // Image compare moved to nonAssetOutputs
+      expect(store.activeWorkflowNonAssetOutputs).toHaveLength(1)
+      expect(store.activeWorkflowNonAssetOutputs[0].output.isImageCompare).toBe(
+        true
+      )
+      expect(store.activeWorkflowNonAssetOutputs[0].jobId).toBe('job-1')
+    })
+
+    it('scopes non-asset outputs to the active workflow', () => {
+      const store = useLinearOutputStore()
+      setJobWorkflowPath('job-1', 'workflows/app-a.json')
+      setJobWorkflowPath('job-2', 'workflows/app-b.json')
+
+      activeWorkflowPathRef.value = 'workflows/app-a.json'
+      store.onJobStart('job-1')
+      store.onNodeExecuted('job-1', makeImageCompareDetail('job-1'))
+      store.onJobComplete('job-1')
+
+      store.onJobStart('job-2')
+      store.onNodeExecuted('job-2', makeImageCompareDetail('job-2'))
+      store.onJobComplete('job-2')
+
+      // Active workflow is app-a — only job-1 visible
+      expect(store.activeWorkflowNonAssetOutputs).toHaveLength(1)
+      expect(store.activeWorkflowNonAssetOutputs[0].jobId).toBe('job-1')
+
+      // Switch to app-b — only job-2 visible
+      activeWorkflowPathRef.value = 'workflows/app-b.json'
+      expect(store.activeWorkflowNonAssetOutputs).toHaveLength(1)
+      expect(store.activeWorkflowNonAssetOutputs[0].jobId).toBe('job-2')
     })
   })
 })
