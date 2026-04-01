@@ -130,19 +130,13 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   }
 
   getFolder(folderName: string) {
-    return this.page.locator(
-      `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
-    )
+    return this.sidebarContent
+      .getByRole('treeitem', { name: folderName })
+      .first()
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(
-      `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
-    )
-  }
-
-  getNodeCard(nodeName: string) {
-    return this.sidebarContent.locator(`[data-node-name="${nodeName}"]`)
+    return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
   }
 
   override async open() {

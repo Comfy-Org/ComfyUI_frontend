@@ -41,14 +41,14 @@ test.describe('Node library sidebar V2', () => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.getFolder('sampling').first()).toBeVisible()
+    await expect(tab.getFolder('sampling')).toBeVisible()
   })
 
   test('Can expand folder and see nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await tab.getFolder('sampling').first().click()
-    await expect(tab.getNode('KSampler (Advanced)').first()).toBeVisible()
+    await tab.getFolder('sampling').click()
+    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
   })
 
   test('Search filters nodes in All tab', async ({ comfyPage }) => {
@@ -57,7 +57,7 @@ test.describe('Node library sidebar V2', () => {
     await tab.searchInput.click()
     await tab.searchInput.fill('KSampler')
     // Wait for debounced search to take effect
-    await expect(tab.getNode('KSampler (Advanced)').first()).toBeVisible({
+    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
       timeout: 5000
     })
   })
