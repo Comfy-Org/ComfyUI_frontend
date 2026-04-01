@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -20,7 +20,7 @@ function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
     nodes: []
   } satisfies MockSubgraph
 
-  return fromAny<Subgraph, unknown>(mockSubgraph)
+  return fromPartial<Subgraph>(mockSubgraph)
 }
 
 vi.mock('@/scripts/app', () => {
