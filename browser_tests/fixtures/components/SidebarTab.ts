@@ -139,6 +139,14 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
   }
 
+  async expandFolder(folderName: string) {
+    const folder = this.getFolder(folderName)
+    const isExpanded = await folder.getAttribute('aria-expanded')
+    if (isExpanded !== 'true') {
+      await folder.click()
+    }
+  }
+
   override async open() {
     await super.open()
     await this.searchInput.waitFor({ state: 'visible' })

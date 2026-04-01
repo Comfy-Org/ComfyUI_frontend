@@ -19,7 +19,6 @@ import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import {
   AssetsSidebarTab,
-  JobHistorySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
   WorkflowsSidebarTab
@@ -57,7 +56,6 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
-  private _jobHistoryTab: JobHistorySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
@@ -75,11 +73,6 @@ class ComfyMenu {
 
   get buttons() {
     return this.sideToolbar.locator('.side-bar-button')
-  }
-
-  get jobHistoryTab() {
-    this._jobHistoryTab ??= new JobHistorySidebarTab(this.page)
-    return this._jobHistoryTab
   }
 
   get nodeLibraryTab() {

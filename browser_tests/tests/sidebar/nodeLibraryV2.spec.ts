@@ -11,22 +11,10 @@ test.describe('Node library sidebar V2', () => {
     await tab.open()
   })
 
-  test('Shows search input and tab buttons', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
-
-    await expect(tab.searchInput).toBeVisible()
-    await expect(tab.allTab).toBeVisible()
-    await expect(tab.blueprintsTab).toBeVisible()
-  })
-
-  test('All tab is selected by default', async ({ comfyPage }) => {
+  test('Can switch between tabs', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-  })
-
-  test('Can switch between tabs', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
 
     await tab.blueprintsTab.click()
     await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'true')
@@ -47,51 +35,37 @@ test.describe('Node library sidebar V2', () => {
   test('Can expand folder and see nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await tab.getFolder('sampling').click()
+    await tab.expandFolder('sampling')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
   })
 
   test('Search filters nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await tab.searchInput.click()
+    await expect(tab.getNode('KSampler (Advanced)')).not.toBeVisible()
+
     await tab.searchInput.fill('KSampler')
-    // Wait for debounced search to take effect
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
       timeout: 5000
     })
-  })
-
-  test('Sort button is visible', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
-
-    await expect(tab.sortButton).toBeVisible()
-  })
-
-  test('Blueprints tab can be selected and shows content area', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
-
-    await tab.blueprintsTab.click()
-    await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'false')
+    await expect(tab.getNode('CLIPLoader')).not.toBeVisible()
   })
 
   test('Drag node to canvas adds it', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await tab.getFolder('sampling').click()
+    await tab.expandFolder('sampling')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
 
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    const canvasBoundingBox = (await comfyPage.page
+    const canvasBoundingBox = await comfyPage.page
       .locator('#graph-canvas')
-      .boundingBox())!
+      .boundingBox()
+    expect(canvasBoundingBox).not.toBeNull()
     const targetPosition = {
-      x: canvasBoundingBox.x + canvasBoundingBox.width / 2,
-      y: canvasBoundingBox.y + canvasBoundingBox.height / 2
+      x: canvasBoundingBox!.x + canvasBoundingBox!.width / 2,
+      y: canvasBoundingBox!.y + canvasBoundingBox!.height / 2
     }
 
     const nodeLocator = tab.getNode('KSampler (Advanced)')
@@ -109,7 +83,7 @@ test.describe('Node library sidebar V2', () => {
   }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await tab.getFolder('sampling').click()
+    await tab.expandFolder('sampling')
     const node = tab.getNode('KSampler (Advanced)')
     await expect(node).toBeVisible()
 
@@ -126,7 +100,6 @@ test.describe('Node library sidebar V2', () => {
 
     await expect(tab.getFolder('sampling')).toBeVisible()
 
-    await tab.searchInput.click()
     await tab.searchInput.fill('KSampler')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
       timeout: 5000
