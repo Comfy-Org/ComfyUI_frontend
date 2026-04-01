@@ -4,6 +4,7 @@ import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/j
 
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
+const historyRoutePattern = /\/api\/history$/
 
 /** Factory to create a mock completed job with preview output. */
 export function createMockJob(
@@ -87,6 +88,8 @@ function getExecutionDuration(job: RawJobListItem): number {
 export class AssetsHelper {
   private jobsRouteHandler: ((route: Route) => Promise<void>) | null = null
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
+    null
+  private deleteHistoryRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private generatedJobs: RawJobListItem[] = []
   private importedFiles: string[] = []
@@ -179,6 +182,36 @@ export class AssetsHelper {
     await this.page.route(inputFilesRoutePattern, this.inputFilesRouteHandler)
   }
 
+  /**
+   * Mock the POST /api/history endpoint used for deleting history items.
+   * On receiving a `{ delete: [id] }` payload, removes matching jobs from
+   * the in-memory mock state so subsequent /api/jobs fetches reflect the
+   * deletion.
+   */
+  async mockDeleteHistory(): Promise<void> {
+    if (this.deleteHistoryRouteHandler) return
+
+    this.deleteHistoryRouteHandler = async (route: Route) => {
+      const request = route.request()
+      if (request.method() !== 'POST') {
+        await route.continue()
+        return
+      }
+
+      const body = request.postDataJSON() as { delete?: string[] }
+      if (body.delete) {
+        const idsToRemove = new Set(body.delete)
+        this.generatedJobs = this.generatedJobs.filter(
+          (job) => !idsToRemove.has(job.id)
+        )
+      }
+
+      await route.fulfill({ status: 200, body: '{}' })
+    }
+
+    await this.page.route(historyRoutePattern, this.deleteHistoryRouteHandler)
+  }
+
   async mockEmptyState(): Promise<void> {
     await this.mockOutputHistory([])
     await this.mockInputFiles([])
@@ -199,6 +232,14 @@ export class AssetsHelper {
         this.inputFilesRouteHandler
       )
       this.inputFilesRouteHandler = null
+    }
+
+    if (this.deleteHistoryRouteHandler) {
+      await this.page.unroute(
+        historyRoutePattern,
+        this.deleteHistoryRouteHandler
+      )
+      this.deleteHistoryRouteHandler = null
     }
   }
 }
