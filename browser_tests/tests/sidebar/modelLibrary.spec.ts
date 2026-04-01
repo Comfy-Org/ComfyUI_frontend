@@ -48,6 +48,8 @@ test.describe('Model library sidebar - tab', () => {
 // ==========================================================================
 
 test.describe('Model library sidebar - folders', () => {
+  // Mocks are set up before setup(), so app.ts's loadModelFolders()
+  // call during initialization hits the mock and populates the store.
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
     await comfyPage.setup()
@@ -204,22 +206,16 @@ test.describe('Model library sidebar - refresh', () => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
-    // Intercept requests to individual model folders
-    const folderRequests: string[] = []
-    await comfyPage.page.route(
-      /\/api\/experiment\/models\/\w+/,
-      async (route) => {
-        folderRequests.push(route.request().url())
-        await route.continue()
-      }
+    // Wait for a per-folder model files request triggered by load all
+    const folderRequest = comfyPage.page.waitForRequest(
+      (req) =>
+        /\/api\/experiment\/models\/[^/]+$/.test(req.url()) &&
+        req.method() === 'GET',
+      { timeout: 5000 }
     )
 
     await tab.loadAllFoldersButton.click()
-
-    // Wait for at least one folder to be loaded
-    await expect
-      .poll(() => folderRequests.length, { timeout: 5000 })
-      .toBeGreaterThanOrEqual(1)
+    await folderRequest
   })
 })
 
