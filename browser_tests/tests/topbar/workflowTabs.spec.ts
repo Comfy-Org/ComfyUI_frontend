@@ -77,4 +77,85 @@ test.describe('Workflow tabs', () => {
       contextMenu.getByRole('menuitem', { name: /Save/i })
     ).toBeVisible()
   })
+
+  test('Context menu Close Tab action removes the tab', async ({
+    comfyPage
+  }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+
+    await topbar.getTab(1).click({ button: 'right' })
+    const contextMenu = comfyPage.page.getByRole('menu')
+    await expect(contextMenu).toBeVisible({ timeout: 5000 })
+
+    await contextMenu.getByRole('menuitem', { name: /Close Tab/i }).click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
+  })
+
+  test('Closing the last tab creates a new default workflow', async ({
+    comfyPage
+  }) => {
+    const topbar = comfyPage.menu.topbar
+
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
+
+    await topbar.closeWorkflowTab('Unsaved Workflow')
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
+
+    const tabNames = await topbar.getTabNames()
+    expect(tabNames[0]).toContain('Unsaved Workflow')
+  })
+
+  test('Modified workflow shows unsaved indicator', async ({ comfyPage }) => {
+    const topbar = comfyPage.menu.topbar
+
+    // Add a node to modify the workflow
+    await comfyPage.canvasOps.doubleClick()
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+
+    // The tab should display the status indicator dot
+    const activeTab = topbar.getActiveTab()
+    const statusDot = activeTab.locator('span:has-text("•")')
+    await expect(statusDot).toBeVisible({ timeout: 5000 })
+  })
+
+  test('Multiple tabs can be created, switched, and closed', async ({
+    comfyPage
+  }) => {
+    const topbar = comfyPage.menu.topbar
+
+    // Create 3 additional tabs (4 total)
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+    await topbar.newWorkflowButton.click()
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(4)
+
+    // Verify all tabs are visible
+    const allNames = await topbar.getTabNames()
+    expect(allNames).toHaveLength(4)
+
+    // Switch to the second tab
+    await topbar.getTab(1).click()
+    await expect
+      .poll(() => topbar.getActiveTabName())
+      .toContain('Unsaved Workflow (2)')
+
+    // Switch to the first tab
+    await topbar.getTab(0).click()
+    await expect
+      .poll(() => topbar.getActiveTabName())
+      .toContain('Unsaved Workflow')
+
+    // Close the middle tab (index 1 = "Unsaved Workflow (2)")
+    await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+
+    // Verify the closed tab is gone
+    const remaining = await topbar.getTabNames()
+    expect(remaining).not.toContain('Unsaved Workflow (2)')
+  })
 })
