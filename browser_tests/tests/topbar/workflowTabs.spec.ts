@@ -66,15 +66,17 @@ test.describe('Workflow tabs', () => {
 
     await topbar.getTab(0).click({ button: 'right' })
 
-    // Each tab has its own ContextMenuRoot; only one is visible at a time
-    const contextMenu = comfyPage.page.locator('[role="menu"]:visible')
+    // Reka UI ContextMenuContent gets data-state="open" when active
+    const contextMenu = comfyPage.page.locator(
+      '[role="menu"][data-state="open"]'
+    )
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
     await expect(
-      contextMenu.getByRole('menuitem', { name: /Close Tab/i })
+      contextMenu.getByRole('menuitem', { name: /Close Tab/i }).first()
     ).toBeVisible()
     await expect(
-      contextMenu.getByRole('menuitem', { name: /Save/i })
+      contextMenu.getByRole('menuitem', { name: /Save/i }).first()
     ).toBeVisible()
   })
 
@@ -87,10 +89,15 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
     await topbar.getTab(1).click({ button: 'right' })
-    const contextMenu = comfyPage.page.locator('[role="menu"]:visible')
+    const contextMenu = comfyPage.page.locator(
+      '[role="menu"][data-state="open"]'
+    )
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
-    await contextMenu.getByRole('menuitem', { name: /Close Tab/i }).click()
+    await contextMenu
+      .getByRole('menuitem', { name: /Close Tab/i })
+      .first()
+      .click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
   })
 
