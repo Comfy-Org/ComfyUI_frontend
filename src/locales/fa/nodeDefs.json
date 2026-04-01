@@ -2190,6 +2190,10 @@
       "image": {
         "name": "تصویر"
       },
+      "keep_aspect": {
+        "name": "حفظ نسبت تصویر",
+        "tooltip": "آیا برش تصویر برای تطبیق با اندازه خروجی کشیده شود یا با پد سیاه نسبت تصویر حفظ گردد."
+      },
       "output_height": {
         "name": "ارتفاع خروجی",
         "tooltip": "ارتفاعی که هر برش به آن تغییر اندازه داده می‌شود."
@@ -2309,6 +2313,23 @@
     "display_name": "غیرفعال‌سازی نویز",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "ترسیم BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر خروجی",
         "tooltip": null
       }
     }
@@ -12226,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "شناسایی RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "نام کلاس",
+        "tooltip": "فیلتر کردن شناسایی‌ها بر اساس کلاس. برای غیرفعال کردن فیلتر، مقدار 'all' را قرار دهید."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "max_detections": {
+        "name": "حداکثر شناسایی",
+        "tooltip": "حداکثر تعداد شناسایی برای هر تصویر. به ترتیب امتیاز اطمینان نزولی."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "threshold": {
+        "name": "آستانه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "برش تصادفی تصاویر",
     "inputs": {
@@ -15630,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "تصویر UV",
         "tooltip": null
       }
     }

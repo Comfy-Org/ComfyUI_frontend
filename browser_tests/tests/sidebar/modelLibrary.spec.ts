@@ -153,9 +153,9 @@ test.describe('Model library sidebar - search', () => {
     await tab.searchInput.fill('nonexistent_model_xyz')
 
     // Wait for debounce, then verify no leaf nodes
-    await expect(async () => {
-      expect(await tab.leafNodes.count()).toBe(0)
-    }).toPass({ timeout: 5000 })
+    await expect
+      .poll(async () => await tab.leafNodes.count(), { timeout: 5000 })
+      .toBe(0)
   })
 })
 

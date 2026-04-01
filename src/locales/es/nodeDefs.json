@@ -2190,6 +2190,10 @@
       "image": {
         "name": "imagen"
       },
+      "keep_aspect": {
+        "name": "mantener_proporción",
+        "tooltip": "Indica si se debe estirar el recorte para ajustarse al tamaño de salida, o rellenar con píxeles negros para preservar la relación de aspecto."
+      },
       "output_height": {
         "name": "alto de salida",
         "tooltip": "Alto al que se redimensiona cada recorte."
@@ -2309,6 +2313,23 @@
     "display_name": "DesactivarRuido",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Dibujar BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "imagen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagen_salida",
         "tooltip": null
       }
     }
@@ -12226,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "Detección RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "nombre_clase",
+        "tooltip": "Filtrar detecciones por clase. Establecer en 'all' para desactivar el filtrado."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "max_detections": {
+        "name": "máx_detecciones",
+        "tooltip": "Número máximo de detecciones a devolver por imagen. En orden descendente de puntuación de confianza."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "threshold": {
+        "name": "umbral"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Recorte Aleatorio de Imágenes",
     "inputs": {
@@ -15630,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "imagen UV",
         "tooltip": null
       }
     }

@@ -1,13 +1,14 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePromotionStore } from '@/stores/promotionStore'
 
 const updatePreviewsMock = vi.hoisted(() => vi.fn())
@@ -29,7 +30,7 @@ function widget(
     Pick<IBaseWidget, 'name' | 'serialize' | 'type' | 'options'>
   >
 ): IBaseWidget {
-  return { name: 'widget', ...overrides } as unknown as IBaseWidget
+  return fromPartial<IBaseWidget>({ name: 'widget', ...overrides })
 }
 
 describe('isPreviewPseudoWidget', () => {

@@ -90,10 +90,12 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     const canvasArea = await comfyPage.canvas.boundingBox()
 
     await comfyPage.page.mouse.move(
-      canvasArea!.x + canvasArea!.width - 100,
-      100
+      canvasArea!.x + canvasArea!.width / 2,
+      canvasArea!.y + canvasArea!.height / 2
     )
-    await expect(comfyPage.page.locator('.workflow-popover-fade')).toBeHidden()
+    await expect(comfyPage.page.locator('.workflow-popover-fade')).toHaveCount(
+      0
+    )
 
     await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()

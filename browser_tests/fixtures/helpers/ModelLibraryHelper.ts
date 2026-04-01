@@ -62,7 +62,7 @@ export class ModelLibraryHelper {
 
     this.filesRouteHandler = async (route: Route) => {
       const match = route.request().url().match(modelFilesRoutePattern)
-      const folderName = match?.[1]
+      const folderName = match?.[1] ? decodeURIComponent(match[1]) : undefined
       const files = folderName ? (this.filesByFolder[folderName] ?? []) : []
 
       await route.fulfill({

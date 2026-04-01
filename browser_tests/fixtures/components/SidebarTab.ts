@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '../../types/globals'
 import { TestIds } from '../selectors'
@@ -227,6 +228,8 @@ export class AssetsSidebarTab extends SidebarTab {
     super(page, 'assets')
   }
 
+  // --- Tab navigation ---
+
   get generatedTab() {
     return this.page.getByRole('tab', { name: 'Generated' })
   }
@@ -234,6 +237,8 @@ export class AssetsSidebarTab extends SidebarTab {
   get importedTab() {
     return this.page.getByRole('tab', { name: 'Imported' })
   }
+
+  // --- Empty state ---
 
   get emptyStateMessage() {
     return this.page.getByText(
@@ -245,8 +250,169 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.getByText(title)
   }
 
+  // --- Search & filter ---
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search Assets...')
+  }
+
+  get settingsButton() {
+    return this.page.getByRole('button', { name: 'View settings' })
+  }
+
+  // --- View mode ---
+
+  get listViewOption() {
+    return this.page.getByText('List view')
+  }
+
+  get gridViewOption() {
+    return this.page.getByText('Grid view')
+  }
+
+  // --- Sort options (cloud-only, shown inside settings popover) ---
+
+  get sortNewestFirst() {
+    return this.page.getByText('Newest first')
+  }
+
+  get sortOldestFirst() {
+    return this.page.getByText('Oldest first')
+  }
+
+  // --- Asset cards ---
+
+  get assetCards() {
+    return this.page.locator('[role="button"][data-selected]')
+  }
+
+  getAssetCardByName(name: string) {
+    return this.page.locator('[role="button"][data-selected]', {
+      hasText: name
+    })
+  }
+
+  get selectedCards() {
+    return this.page.locator('[data-selected="true"]')
+  }
+
+  // --- List view items ---
+
+  get listViewItems() {
+    return this.page.locator(
+      '.sidebar-content-container [role="button"][tabindex="0"]'
+    )
+  }
+
+  // --- Selection footer ---
+
+  get selectionFooter() {
+    return this.page
+      .locator('.sidebar-content-container')
+      .locator('..')
+      .locator('[class*="h-18"]')
+  }
+
+  get selectionCountButton() {
+    return this.page.getByText(/Assets Selected: \d+/)
+  }
+
+  get deselectAllButton() {
+    return this.page.getByText('Deselect all')
+  }
+
+  get deleteSelectedButton() {
+    return this.page
+      .getByTestId('assets-delete-selected')
+      .or(this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
+      .first()
+  }
+
+  get downloadSelectedButton() {
+    return this.page
+      .getByTestId('assets-download-selected')
+      .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
+      .first()
+  }
+
+  // --- Context menu ---
+
+  contextMenuItem(label: string) {
+    return this.page.locator('.p-contextmenu').getByText(label)
+  }
+
+  // --- Folder view ---
+
+  get backToAssetsButton() {
+    return this.page.getByText('Back to all assets')
+  }
+
+  // --- Loading ---
+
+  get skeletonLoaders() {
+    return this.page.locator('.sidebar-content-container .animate-pulse')
+  }
+
+  // --- Helpers ---
+
   override async open() {
+    // Remove any toast notifications that may overlay the sidebar button
+    await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
+  }
+
+  /** Dismiss all visible toast notifications by clicking their close buttons. */
+  async dismissToasts() {
+    const closeButtons = this.page.locator('.p-toast-close-button')
+    for (const btn of await closeButtons.all()) {
+      await btn.click({ force: true }).catch(() => {})
+    }
+    // Wait for all toast elements to fully animate out and detach from DOM
+    await expect(this.page.locator('.p-toast-message'))
+      .toHaveCount(0, { timeout: 5000 })
+      .catch(() => {})
+  }
+
+  async switchToImported() {
+    await this.dismissToasts()
+    await this.importedTab.click()
+    await expect(this.importedTab).toHaveAttribute('aria-selected', 'true', {
+      timeout: 3000
+    })
+  }
+
+  async switchToGenerated() {
+    await this.dismissToasts()
+    await this.generatedTab.click()
+    await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true', {
+      timeout: 3000
+    })
+  }
+
+  async openSettingsMenu() {
+    await this.dismissToasts()
+    await this.settingsButton.click()
+    // Wait for popover content to render
+    await this.listViewOption
+      .or(this.gridViewOption)
+      .first()
+      .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async rightClickAsset(name: string) {
+    const card = this.getAssetCardByName(name)
+    await card.click({ button: 'right' })
+    await this.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async waitForAssets(count?: number) {
+    if (count !== undefined) {
+      await expect(this.assetCards).toHaveCount(count, { timeout: 5000 })
+    } else {
+      await this.assetCards.first().waitFor({ state: 'visible', timeout: 5000 })
+    }
   }
 }
