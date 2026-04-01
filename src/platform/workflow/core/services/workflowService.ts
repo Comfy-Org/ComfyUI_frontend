@@ -23,7 +23,6 @@ import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
@@ -392,9 +391,6 @@ export const useWorkflowService = () => {
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
-
-      // Save subgraph viewport before the canvas gets overwritten
-      useSubgraphNavigationStore().saveCurrentViewport()
     }
   }
 
