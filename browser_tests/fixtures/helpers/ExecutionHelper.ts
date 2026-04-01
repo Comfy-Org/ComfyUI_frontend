@@ -1,18 +1,24 @@
-import type { Page } from '@playwright/test'
-
 import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyPage } from '../ComfyPage'
 import type { MockWebSocket } from '../ws'
+import { createMockJob } from './AssetsHelper'
 
 /**
  * Helper for simulating prompt execution in e2e tests.
  */
 export class ExecutionHelper {
   private jobCounter = 0
+  private readonly completedJobs: RawJobListItem[] = []
+  private readonly page: ComfyPage['page']
+  private readonly assets: ComfyPage['assets']
 
   constructor(
-    private readonly page: Page,
+    comfyPage: ComfyPage,
     private readonly mock: MockWebSocket
-  ) {}
+  ) {
+    this.page = comfyPage.page
+    this.assets = comfyPage.assets
+  }
 
   private get ws() {
     return this.mock.ws
@@ -160,44 +166,30 @@ export class ExecutionHelper {
   }
 
   /**
-   * Mock the history API to return the given job as completed,
-   * then send execution_success and a status event to trigger
-   * the history refresh that resolves in-progress items.
+   * Complete a job by adding it to mock history, sending execution_success,
+   * and triggering a history refresh via a status event.
+   *
+   * Requires an {@link AssetsHelper} to be passed in the constructor.
    */
   async completeWithHistory(
     jobId: string,
     nodeId: string,
     filename: string
   ): Promise<void> {
-    const now = Date.now() / 1000
-    const job: RawJobListItem = {
-      id: jobId,
-      status: 'completed',
-      create_time: now,
-      execution_start_time: now,
-      execution_end_time: now + 1,
-      priority: 0,
-      outputs_count: 1,
-      preview_output: {
-        filename,
-        subfolder: '',
-        type: 'output',
-        nodeId,
-        mediaType: 'images'
-      }
-    }
-
-    await this.page.route(/\/api\/jobs\?status=completed/, async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          jobs: [job],
-          pagination: { offset: 0, limit: 200, total: 1, has_more: false }
-        })
+    this.completedJobs.push(
+      createMockJob({
+        id: jobId,
+        preview_output: {
+          filename,
+          subfolder: '',
+          type: 'output',
+          nodeId,
+          mediaType: 'images'
+        }
       })
-    })
+    )
 
+    await this.assets.mockOutputHistory(this.completedJobs)
     this.executionSuccess(jobId)
     // Trigger queue/history refresh
     this.status(0)

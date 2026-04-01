@@ -14,7 +14,7 @@ const KSAMPLER_NODE = '3'
 
 /** Queue a prompt, intercept it, and send execution_start. */
 async function startExecution(comfyPage: ComfyPage, mock: MockWebSocket) {
-  const exec = new ExecutionHelper(comfyPage.page, mock)
+  const exec = new ExecutionHelper(comfyPage, mock)
   const jobId = await exec.run()
   // Allow storeJob() to complete before sending WS events
   await comfyPage.nextFrame()
@@ -22,9 +22,13 @@ async function startExecution(comfyPage: ComfyPage, mock: MockWebSocket) {
   return { exec, jobId }
 }
 
-function imageOutput(filename: string) {
+function imageOutput(...filenames: string[]) {
   return {
-    images: [{ filename, subfolder: '', type: 'output' }]
+    images: filenames.map((filename) => ({
+      filename,
+      subfolder: '',
+      type: 'output'
+    }))
   }
 }
 
@@ -275,6 +279,49 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(
       comfyPage.appMode.outputHistory.imageOutputs.first()
     ).toBeVisible()
+  })
+
+  test('In-progress items are outside the scrollable area', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const mock = await getWebSocket()
+
+    // Complete one execution with 100 image outputs
+    const { exec, jobId } = await startExecution(comfyPage, mock)
+    exec.executed(
+      jobId,
+      SAVE_IMAGE_NODE,
+      imageOutput(
+        ...Array.from(
+          { length: 100 },
+          (_, i) => `image_${String(i).padStart(3, '0')}.png`
+        )
+      )
+    )
+    await exec.completeWithHistory(jobId, SAVE_IMAGE_NODE, 'image_000.png')
+
+    await expect(comfyPage.appMode.outputHistory.historyItems).toHaveCount(100)
+
+    // First history item is visible before scrolling
+    const firstItem = comfyPage.appMode.outputHistory.historyItems.first()
+    await expect(firstItem).toBeInViewport()
+
+    // Scroll the history feed all the way to the right
+    await comfyPage.appMode.outputHistory.outputs.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth
+    })
+
+    // First history item is now off-screen
+    await expect(firstItem).not.toBeInViewport()
+
+    // Start a new execution to get an in-progress item
+    await startExecution(comfyPage, mock)
+
+    // In-progress item is visible despite scrolling
+    await expect(
+      comfyPage.appMode.outputHistory.inProgressItems.first()
+    ).toBeInViewport()
   })
 
   test('Execution error cleans up in-progress items', async ({
