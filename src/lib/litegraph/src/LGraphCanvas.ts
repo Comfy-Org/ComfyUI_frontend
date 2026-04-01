@@ -2454,7 +2454,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
         const items = this._deserializeItems(
           this._serializeItems(this.selectedItems),
-          { position: [minX, minY] }
+          { position: [minX + 5, minY + 5] }
         )
         clonedAnchor = items?.nodes.get(node.id) as LGraphNode | undefined
       } else {
