@@ -223,63 +223,6 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 }
 
-export class JobHistorySidebarTab extends SidebarTab {
-  constructor(public override readonly page: Page) {
-    super(page, 'job-history')
-  }
-
-  /** Scope all locators to the sidebar panel to avoid collision
-   *  with QueueOverlayExpanded which renders the same controls. */
-  private get panel() {
-    return this.page.locator('.sidebar-content-container')
-  }
-
-  get allTab() {
-    return this.panel.getByRole('button', { name: 'All', exact: true })
-  }
-
-  get completedTab() {
-    return this.panel.getByRole('button', { name: 'Completed', exact: true })
-  }
-
-  get failedTab() {
-    return this.panel.getByRole('button', { name: 'Failed', exact: true })
-  }
-
-  get searchInput() {
-    return this.panel.getByPlaceholder('Search...')
-  }
-
-  get filterButton() {
-    return this.panel.getByRole('button', { name: /Filter/i })
-  }
-
-  get sortButton() {
-    return this.panel.getByRole('button', { name: /Sort/i })
-  }
-
-  get jobItems() {
-    return this.panel.locator('[data-job-id]')
-  }
-
-  get noActiveJobsText() {
-    return this.panel.getByText('No active jobs')
-  }
-
-  getJobById(id: string) {
-    return this.panel.locator(`[data-job-id="${id}"]`)
-  }
-
-  get groupLabels() {
-    return this.panel.locator('.text-xs.text-text-secondary')
-  }
-
-  override async open() {
-    await super.open()
-    await this.allTab.waitFor({ state: 'visible', timeout: 5000 })
-  }
-}
-
 export class AssetsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'assets')
