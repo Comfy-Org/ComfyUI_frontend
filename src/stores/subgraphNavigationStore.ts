@@ -138,11 +138,30 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // Cache miss — fit to content after the canvas has the new graph.
-      // rAF fires after layout + paint, when nodes are positioned.
+      // Cache miss — fit to content only if no nodes are currently visible.
+      // loadGraphData may have already restored extra.ds or called fitView
+      // for templates, so only intervene when the viewport is truly empty.
       const expectedGraphId = graphId
       requestAnimationFrame(() => {
         if (getActiveGraphId() !== expectedGraphId) return
+        if (!canvas.graph) return
+
+        const nodes = canvas.graph._nodes
+        if (!nodes?.length) return
+
+        canvas.ds.computeVisibleArea(canvas.viewport)
+        const area = canvas.visible_area
+        if (area.width && area.height) {
+          const hasVisible = nodes.some(
+            (n: { pos: number[]; size: number[] }) =>
+              n.pos[0] + n.size[0] > area.x &&
+              n.pos[0] < area.x + area.width &&
+              n.pos[1] + n.size[1] > area.y &&
+              n.pos[1] < area.y + area.height
+          )
+          if (hasVisible) return
+        }
+
         useLitegraphService().fitView()
       })
     }
