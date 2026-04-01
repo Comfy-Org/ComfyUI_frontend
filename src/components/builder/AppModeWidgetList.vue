@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed, provide, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buildDropIndicator } from '@/components/builder/dropIndicatorUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -12,15 +13,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -101,30 +98,11 @@ const mappedSelections = computed((): WidgetEntry[] => {
 })
 
 function getDropIndicator(node: LGraphNode) {
-  if (node.type !== 'LoadImage') return undefined
-
-  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
-
-  const buildImageUrl = () => {
-    if (!filename) return undefined
-    const params = new URLSearchParams({ filename, subfolder, type })
-    appendCloudResParam(params, filename)
-    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
-  }
-
-  const imageUrl = buildImageUrl()
-
-  return {
-    iconClass: 'icon-[lucide--image]',
-    imageUrl,
-    label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined),
-    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
-  }
+  return buildDropIndicator(node, {
+    imageLabel: mobile ? undefined : t('linearMode.dragAndDropImage'),
+    videoLabel: mobile ? undefined : t('linearMode.dragAndDropVideo'),
+    openMaskEditor: maskEditor.openMaskEditor
+  })
 }
 
 function nodeToNodeData(node: LGraphNode) {

@@ -3282,6 +3282,7 @@
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "dragAndDropVideo": "Click to browse or drag a video",
     "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
