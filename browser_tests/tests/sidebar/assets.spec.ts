@@ -649,9 +649,7 @@ test.describe('Assets sidebar - pagination', () => {
     expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
   })
 
-  test('loading more fetches next page with offset > 0', async ({
-    comfyPage
-  }) => {
+  test('scrolling to the end loads additional items', async ({ comfyPage }) => {
     const manyJobs = createMockJobs(TOTAL_JOBS)
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
@@ -670,15 +668,50 @@ test.describe('Assets sidebar - pagination', () => {
       { timeout: 10_000 }
     )
 
-    // Scroll the grid area to the bottom to trigger VirtualGrid's
-    // approach-end event. Use mouse.wheel for a realistic interaction
-    // that scrolls whichever element is the actual scroll container
-    // in the sidebar hierarchy (may be VirtualGrid, ScrollPanel, or
-    // sidebar-content-container depending on layout).
-    await tab.assetCards.first().hover()
-    for (let i = 0; i < 20; i++) {
-      await comfyPage.page.mouse.wheel(0, 5000)
-    }
+    // VirtualGrid's approach-end fires in a narrow scroll zone near the
+    // bottom. A single large scroll jump overshoots this zone (isNearEnd
+    // goes false→false). We must scroll in small increments so that
+    // useScroll's throttled handler captures a position inside the zone.
+    await comfyPage.page.evaluate(() => {
+      return new Promise<void>((resolve) => {
+        const item = document.querySelector('[data-virtual-grid-item]')
+        if (!item) {
+          resolve()
+          return
+        }
+        // VirtualGrid DOM: container > spacer + gridDiv(>items) + spacer
+        let el: HTMLElement | null = item.parentElement as HTMLElement
+        let target: HTMLElement | null = null
+        while (el) {
+          if (el.scrollHeight > el.clientHeight + 1) {
+            target = el
+            break
+          }
+          el = el.parentElement
+        }
+        if (!target) {
+          resolve()
+          return
+        }
+
+        const maxScroll = target.scrollHeight - target.clientHeight
+        // Jump to 90% to skip the bulk of the list
+        target.scrollTop = Math.floor(maxScroll * 0.9)
+
+        let count = 0
+        const step = () => {
+          if (count > 300 || target!.scrollTop >= maxScroll) {
+            resolve()
+            return
+          }
+          target!.scrollTop += 25
+          count++
+          setTimeout(step, 20)
+        }
+        // Let the initial jump settle before slow-scrolling
+        setTimeout(step, 100)
+      })
+    })
 
     const req = await nextPageRequest
     const url = new URL(req.url())
