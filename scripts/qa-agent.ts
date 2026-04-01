@@ -380,6 +380,8 @@ export async function runResearchPhase(
 - NEVER use \`page.waitForTimeout()\` — use Locator actions and retrying assertions instead
 - ALWAYS call done() when finished, even if the test passed — do not keep iterating after a passing test
 - Use \`expect.poll()\` for async assertions: \`await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(8)\`
+- CRITICAL: Your assertions must be SPECIFIC TO THE BUG. A test that asserts \`expect(count).toBeGreaterThan(0)\` proves nothing — it would pass even without the bug. Instead assert the exact broken state, e.g. \`expect(clonedWidgets).toHaveLength(0)\` (missing widgets) or \`expect(zIndex).toBeLessThan(parentZIndex)\` (wrong z-order). If a test passes trivially, it's a false positive.
+- If you cannot write a bug-specific assertion, call done() with verdict NOT_REPRODUCIBLE and explain why.
 
 ## ComfyPage Fixture API Reference
 

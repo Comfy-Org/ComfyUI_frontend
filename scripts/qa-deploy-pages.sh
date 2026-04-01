@@ -223,6 +223,15 @@ for rlog in qa-artifacts/*/research/research-log.json qa-artifacts/*/*/research/
   fi
 done
 
+# Copy generated test code to deploy dir
+for tfile in qa-artifacts/*/research/reproduce.spec.ts qa-artifacts/*/*/research/reproduce.spec.ts qa-artifacts/before/*/research/reproduce.spec.ts; do
+  if [ -f "$tfile" ]; then
+    cp "$tfile" "$DEPLOY_DIR/reproduce.spec.ts"
+    echo "Found test code: $tfile"
+    break
+  fi
+done
+
 # Generate badge SVGs into deploy dir
 # Priority: research-log.json verdict (a11y-verified) > video review verdict (AI interpretation)
 REPRO_COUNT=0 INCONC_COUNT=0 NOT_REPRO_COUNT=0 TOTAL_REPORTS=0
