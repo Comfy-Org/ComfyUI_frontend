@@ -667,3 +667,115 @@ test.describe('Assets sidebar - settings menu', () => {
     await expect(tab.gridViewOption).toBeVisible()
   })
 })
+
+// ==========================================================================
+// 11. Media type filter (cloud-only)
+// ==========================================================================
+
+const MIXED_MEDIA_JOBS: RawJobListItem[] = [
+  createMockJob({
+    id: 'job-image',
+    create_time: 1000,
+    execution_start_time: 1000,
+    execution_end_time: 1010,
+    preview_output: {
+      filename: 'photo.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    },
+    outputs_count: 1
+  }),
+  createMockJob({
+    id: 'job-video',
+    create_time: 2000,
+    execution_start_time: 2000,
+    execution_end_time: 2010,
+    preview_output: {
+      filename: 'clip.mp4',
+      subfolder: '',
+      type: 'output',
+      nodeId: '2',
+      mediaType: 'video'
+    },
+    outputs_count: 1
+  }),
+  createMockJob({
+    id: 'job-audio',
+    create_time: 3000,
+    execution_start_time: 3000,
+    execution_end_time: 3010,
+    preview_output: {
+      filename: 'track.mp3',
+      subfolder: '',
+      type: 'output',
+      nodeId: '3',
+      mediaType: 'audio'
+    },
+    outputs_count: 1
+  })
+]
+
+// Filter button is guarded by isCloud (compile-time). The cloud CI project
+// cannot use comfyPageFixture (auth required). Enable once cloud E2E infra
+// supports authenticated comfyPage setup.
+test.describe('Assets sidebar - media type filter', () => {
+  test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Filter menu shows media type options', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.openFilterMenu()
+
+    await expect(tab.filterCheckbox('Image')).toBeVisible()
+    await expect(tab.filterCheckbox('Video')).toBeVisible()
+    await expect(tab.filterCheckbox('Audio')).toBeVisible()
+    await expect(tab.filterCheckbox('3D')).toBeVisible()
+  })
+
+  test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+    expect(initialCount, 'All three mixed-media jobs should render').toBe(3)
+
+    // Open filter menu and enable only image filter (selecting a filter
+    // restricts to that type only, hiding unselected types)
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+
+    // Only the image asset should remain
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+    await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
+  })
+
+  test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    // Enable image filter to restrict to images only
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+
+    // Uncheck image filter to remove all filters (restores all assets)
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
+  })
+})

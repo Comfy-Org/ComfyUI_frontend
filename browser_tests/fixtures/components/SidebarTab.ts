@@ -207,6 +207,14 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.getByRole('button', { name: 'View settings' })
   }
 
+  get filterButton() {
+    return this.page.getByRole('button', { name: 'Filter by' })
+  }
+
+  filterCheckbox(label: string) {
+    return this.page.getByRole('checkbox', { name: label })
+  }
+
   // --- View mode ---
 
   get listViewOption() {
@@ -345,6 +353,16 @@ export class AssetsSidebarTab extends SidebarTab {
       .or(this.gridViewOption)
       .first()
       .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async openFilterMenu() {
+    await this.dismissToasts()
+    await this.filterButton.click()
+    // Wait for popover content with checkboxes to render
+    await this.filterCheckbox('Image').waitFor({
+      state: 'visible',
+      timeout: 3000
+    })
   }
 
   async rightClickAsset(name: string) {
