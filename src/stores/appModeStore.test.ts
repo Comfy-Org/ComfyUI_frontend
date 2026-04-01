@@ -83,6 +83,21 @@ function createBuilderWorkflow(
   return workflow as LoadedComfyWorkflow
 }
 
+/**
+ * Create a workflow with a persisted output so enterBuilder
+ * routes to builder:arrange (requires node 1 to resolve).
+ */
+function createBuilderWorkflowWithOutputs(
+  activeMode: string
+): LoadedComfyWorkflow {
+  mockResolveNode.mockReturnValue(fromAny({ id: 1 }))
+  const workflow = createBuilderWorkflow(activeMode)
+  ;(workflow.changeTracker!.activeState as Record<string, unknown>).extra = {
+    linearData: { inputs: [], outputs: [1] }
+  }
+  return workflow
+}
+
 describe('appModeStore', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
   let store: ReturnType<typeof useAppModeStore>
@@ -100,8 +115,7 @@ describe('appModeStore', () => {
 
   describe('enterBuilder', () => {
     it('navigates to builder:arrange when in app mode with outputs', () => {
-      workflowStore.activeWorkflow = createBuilderWorkflow('app')
-      store.selectedOutputs.push(1)
+      workflowStore.activeWorkflow = createBuilderWorkflowWithOutputs('app')
 
       store.enterBuilder()
 
@@ -425,8 +439,7 @@ describe('appModeStore', () => {
 
     it('does not enable Vue nodes when entering builder:arrange', async () => {
       mockSettings.store['Comfy.VueNodes.Enabled'] = false
-      workflowStore.activeWorkflow = createBuilderWorkflow('app')
-      store.selectedOutputs.push(1)
+      workflowStore.activeWorkflow = createBuilderWorkflowWithOutputs('app')
 
       store.enterBuilder()
       await nextTick()

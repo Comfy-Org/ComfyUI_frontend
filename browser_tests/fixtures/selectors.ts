@@ -121,10 +121,13 @@ export const TestIds = {
     saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
+    ioItemSubtitle: 'builder-io-item-subtitle',
     widgetActionsMenu: 'widget-actions-menu',
     opensAs: 'builder-opens-as',
     widgetItem: 'builder-widget-item',
-    widgetLabel: 'builder-widget-label'
+    widgetLabel: 'builder-widget-label',
+    outputPlaceholder: 'builder-output-placeholder',
+    connectOutputPopover: 'builder-connect-output-popover'
   },
   appMode: {
     widgetItem: 'app-mode-widget-item'
