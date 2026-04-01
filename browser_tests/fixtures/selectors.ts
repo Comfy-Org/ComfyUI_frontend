@@ -44,7 +44,15 @@ export const TestIds = {
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
-    missingModelsGroup: 'error-group-missing-model'
+    missingModelsGroup: 'error-group-missing-model',
+    missingMediaGroup: 'error-group-missing-media',
+    missingMediaRow: 'missing-media-row',
+    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
+    missingMediaLibrarySelect: 'missing-media-library-select',
+    missingMediaStatusCard: 'missing-media-status-card',
+    missingMediaConfirmButton: 'missing-media-confirm-button',
+    missingMediaCancelButton: 'missing-media-cancel-button',
+    missingMediaLocateButton: 'missing-media-locate-button'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
