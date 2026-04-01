@@ -670,12 +670,16 @@ test.describe('Assets sidebar - pagination', () => {
       { timeout: 10_000 }
     )
 
-    // Scroll the VirtualGrid container to the bottom to trigger the
-    // approach-end event, which calls loadMoreHistory() in production.
-    const scrollContainer = comfyPage.page.locator(
-      '.sidebar-content-container [data-virtual-grid-item]'
-    )
-    await scrollContainer.last().scrollIntoViewIfNeeded()
+    // Scroll the VirtualGrid's scrollable container to the very bottom.
+    // scrollIntoViewIfNeeded on a virtual item is unreliable because
+    // VirtualGrid removes/adds DOM nodes during scroll. Instead, set
+    // scrollTop directly on the overflow-y-auto container.
+    await comfyPage.page
+      .locator('.sidebar-content-container .overflow-y-auto')
+      .first()
+      .evaluate((el) => {
+        el.scrollTop = el.scrollHeight
+      })
 
     const req = await nextPageRequest
     const url = new URL(req.url())
