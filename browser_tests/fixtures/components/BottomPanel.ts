@@ -20,6 +20,8 @@ export class BottomPanel {
   readonly root: Locator
   readonly keyboardShortcutsButton: Locator
   readonly toggleButton: Locator
+  readonly closeButton: Locator
+  readonly resizeGutter: Locator
   readonly shortcuts: ShortcutsTab
 
   constructor(readonly page: Page) {
@@ -30,6 +32,10 @@ export class BottomPanel {
     this.toggleButton = page.getByRole('button', {
       name: /Toggle Bottom Panel/i
     })
+    this.closeButton = this.root.getByRole('button', { name: /Close/i })
+    this.resizeGutter = page.locator(
+      '.splitter-overlay-bottom > .p-splitter-gutter'
+    )
     this.shortcuts = new ShortcutsTab(page)
   }
 }
