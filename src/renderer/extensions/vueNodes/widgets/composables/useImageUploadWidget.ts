@@ -11,8 +11,10 @@ import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
-const ACCEPTED_IMAGE_TYPES = 'image/png,image/jpeg,image/webp'
-const ACCEPTED_VIDEO_TYPES = 'video/webm,video/mp4'
+import {
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_VIDEO_TYPES
+} from '@/utils/mediaUploadUtil'
 
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')

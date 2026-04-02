@@ -1,11 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
 import DisplayCarousel from './DisplayCarousel.vue'
 import type { GalleryImage, GalleryValue } from './DisplayCarousel.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -124,7 +124,10 @@ describe('DisplayCarousel Single Mode', () => {
 
     it('handles null value gracefully', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(widget, null as unknown as GalleryValue)
+      const wrapper = mountComponent(
+        widget,
+        fromAny<GalleryValue, unknown>(null)
+      )
 
       expect(wrapper.find('img').exists()).toBe(false)
     })
@@ -133,7 +136,7 @@ describe('DisplayCarousel Single Mode', () => {
       const widget = createGalleriaWidget([])
       const wrapper = mountComponent(
         widget,
-        undefined as unknown as GalleryValue
+        fromAny<GalleryValue, unknown>(undefined)
       )
 
       expect(wrapper.find('img').exists()).toBe(false)
@@ -338,7 +341,7 @@ describe('DisplayCarousel Grid Mode', () => {
     )
   })
 
-  it('switches back to single mode via toggle button', async () => {
+  it('grid mode has no overlay icons', async () => {
     const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
     // Switch to grid via focus on image container
@@ -347,19 +350,69 @@ describe('DisplayCarousel Grid Mode', () => {
     await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
     await nextTick()
 
-    // Focus the grid container to reveal toggle
+    // Grid mode should have no toggle/back button
+    expect(wrapper.find('[aria-label="Switch to single view"]').exists()).toBe(
+      false
+    )
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
+      false
+    )
+  })
+
+  it('always uses undo-2 icon for grid toggle button', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    // Show controls
     await findImageContainer(wrapper).trigger('focusin')
     await nextTick()
 
-    // Switch back to single
-    const singleToggle = wrapper.find('[aria-label="Switch to single view"]')
-    expect(singleToggle.exists()).toBe(true)
+    const toggleBtn = wrapper.find('[aria-label="Switch to grid view"]')
+    expect(toggleBtn.find('i').classes()).toContain('icon-[lucide--undo-2]')
 
-    await singleToggle.trigger('click')
+    // Switch to grid and back
+    await toggleBtn.trigger('click')
     await nextTick()
 
-    // Should be back in single mode with main image
-    expect(wrapper.find('[aria-label="Previous image"]').exists()).toBe(true)
+    const gridButtons = wrapper
+      .findAll('button')
+      .filter((btn) => btn.find('img').exists())
+    await gridButtons[0].trigger('click')
+    await nextTick()
+
+    await findImageContainer(wrapper).trigger('focusin')
+    await nextTick()
+
+    // Icon should still be undo-2
+    const toggleBtnAfter = wrapper.find('[aria-label="Switch to grid view"]')
+    expect(toggleBtnAfter.find('i').classes()).toContain(
+      'icon-[lucide--undo-2]'
+    )
+  })
+
+  it('shows grid button in single mode after selecting from grid', async () => {
+    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+
+    // Switch to grid
+    await findImageContainer(wrapper).trigger('focusin')
+    await nextTick()
+    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await nextTick()
+
+    // Click first grid image to go back to single mode
+    const gridButtons = wrapper
+      .findAll('button')
+      .filter((btn) => btn.find('img').exists())
+    await gridButtons[0].trigger('click')
+    await nextTick()
+
+    // Hover to reveal controls
+    await findImageContainer(wrapper).trigger('focusin')
+    await nextTick()
+
+    // Should still show grid view button (same icon always)
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
+      true
+    )
   })
 
   it('clicking grid image switches to single mode focused on that image', async () => {
@@ -401,8 +454,8 @@ describe('DisplayCarousel Grid Mode', () => {
     await wrapper.setProps({ modelValue: [TEST_IMAGES_SMALL[0]] })
     await nextTick()
 
-    // Should revert to single mode (no grid toggle visible)
-    expect(wrapper.find('[aria-label="Switch to single view"]').exists()).toBe(
+    // Should revert to single mode (single image, no grid button)
+    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
       false
     )
   })

@@ -18,7 +18,7 @@ This guide covers patterns and examples for unit testing utilities, composables,
 Testing Vue composables requires handling reactivity correctly:
 
 ```typescript
-// Example from: tests-ui/tests/composables/useServerLogs.test.ts
+// Example from a colocated composable unit test
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useServerLogs } from '@/composables/useServerLogs'
@@ -59,7 +59,7 @@ describe('useServerLogs', () => {
 Testing LiteGraph-related functionality:
 
 ```typescript
-// Example from: tests-ui/tests/litegraph.test.ts
+// Example from a colocated LiteGraph unit test
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph'
 import { describe, expect, it } from 'vitest'
 
@@ -93,7 +93,7 @@ describe('LGraph', () => {
 Testing with ComfyUI workflow files:
 
 ```typescript
-// Example from: tests-ui/tests/comfyWorkflow.test.ts
+// Example from a colocated workflow unit test
 import { describe, expect, it } from 'vitest'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
@@ -125,7 +125,7 @@ describe('workflow validation', () => {
 Mocking the ComfyUI API object:
 
 ```typescript
-// Example from: tests-ui/tests/composables/useServerLogs.test.ts
+// Example from a colocated composable unit test
 import { describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
 
@@ -183,7 +183,7 @@ describe('Function using debounce', () => {
 When you need to test real debounce/throttle behavior:
 
 ```typescript
-// Example from: tests-ui/tests/composables/useWorkflowAutoSave.test.ts
+// Example from a colocated composable unit test
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('debounced function', () => {
@@ -223,7 +223,7 @@ describe('debounced function', () => {
 Creating mock node definitions for testing:
 
 ```typescript
-// Example from: tests-ui/tests/apiTypes.test.ts
+// Example from a colocated schema unit test
 import { describe, expect, it } from 'vitest'
 import {
   type ComfyNodeDef,

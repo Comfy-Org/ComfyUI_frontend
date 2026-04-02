@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -72,13 +73,13 @@ const i18n = createI18n({
 })
 
 function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
     graph: { rootGraph: { id: 'test-graph-id' } },
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
@@ -128,7 +129,7 @@ function createMockPromotedWidgetView(
       return 0
     }
   }
-  return new MockPromotedWidgetView() as unknown as IBaseWidget
+  return fromAny<IBaseWidget, unknown>(new MockPromotedWidgetView())
 }
 
 function mountWidgetItem(

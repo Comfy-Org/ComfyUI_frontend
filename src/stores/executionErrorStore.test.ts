@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -391,9 +392,9 @@ describe('clearAllErrors', () => {
         class_type: 'Test'
       }
     }
-    missingNodesStore.setMissingNodeTypes([
-      { type: 'MissingNode', hint: '' }
-    ] as unknown as MissingNodeType[])
+    missingNodesStore.setMissingNodeTypes(
+      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
+    )
     executionErrorStore.showErrorOverlay()
 
     executionErrorStore.clearAllErrors()
