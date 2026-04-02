@@ -170,10 +170,14 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.page.keyboard.up('Alt')
     await comfyPage.nextFrame()
 
-    const newLinkCount = await comfyPage.page.evaluate(
-      () => window.app!.graph._links.size
-    )
-    expect(newLinkCount).toBeGreaterThan(initialLinkCount)
+    await expect
+      .poll(
+        () => comfyPage.page.evaluate(() => window.app!.graph._links.size),
+        {
+          timeout: 2000
+        }
+      )
+      .toBeGreaterThan(initialLinkCount)
   })
 
   test('Can undo paste multiple nodes as single action', async ({
