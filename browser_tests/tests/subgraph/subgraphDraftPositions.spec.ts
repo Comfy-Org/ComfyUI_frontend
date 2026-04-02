@@ -37,17 +37,7 @@ test.describe(
       expect(positionsBefore.length).toBeGreaterThan(0)
 
       // Wait for the debounced draft persistence to flush to localStorage
-      await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() =>
-              Object.keys(localStorage).some((k) =>
-                k.startsWith('Comfy.Workflow.Draft.v2:')
-              )
-            ),
-          { timeout: 3000 }
-        )
-        .toBe(true)
+      await comfyPage.workflow.waitForDraftPersisted()
 
       // Reload the page (draft auto-loads with hash preserved)
       await comfyPage.page.reload({ waitUntil: 'networkidle' })
