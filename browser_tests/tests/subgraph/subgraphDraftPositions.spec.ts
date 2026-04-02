@@ -11,11 +11,18 @@ test.describe(
     }) => {
       test.setTimeout(30000)
 
+      // Enable workflow persistence explicitly
+      await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+
       // Load a workflow containing a subgraph
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
-      // Enter the subgraph and record internal node positions
-      await comfyPage.vueNodes.enterSubgraph()
+      // Enter the subgraph programmatically (fixture node is too small for UI click)
+      await comfyPage.page.evaluate(() => {
+        const sg = [...window.app!.rootGraph.subgraphs.values()][0]
+        if (sg) window.app!.canvas.setGraph(sg)
+      })
+      await comfyPage.nextFrame()
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       const positionsBefore = await comfyPage.page.evaluate(() => {
@@ -29,8 +36,28 @@ test.describe(
 
       expect(positionsBefore.length).toBeGreaterThan(0)
 
-      // Reload the page keeping localStorage (draft auto-loads)
-      await comfyPage.setup({ clearStorage: false })
+      // Wait for the debounced draft persistence to flush to localStorage
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(() =>
+              Object.keys(localStorage).some((k) =>
+                k.startsWith('Comfy.Workflow.Draft.v2:')
+              )
+            ),
+          { timeout: 3000 }
+        )
+        .toBe(true)
+
+      // Reload the page (draft auto-loads with hash preserved)
+      await comfyPage.page.reload({ waitUntil: 'networkidle' })
+      await comfyPage.page.waitForFunction(
+        () => window.app && window.app.extensionManager
+      )
+      await comfyPage.page.waitForSelector('.p-blockui-mask', {
+        state: 'hidden'
+      })
+      await comfyPage.nextFrame()
 
       // Wait for subgraph auto-entry via hash navigation
       await expect
