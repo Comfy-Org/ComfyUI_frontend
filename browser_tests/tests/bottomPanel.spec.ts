@@ -50,13 +50,10 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     )
 
     const gutterBox = await bottomPanel.resizeGutter.boundingBox()
-    if (!gutterBox) {
-      test.skip()
-      return
-    }
+    expect(gutterBox, 'Resize gutter should have layout').not.toBeNull()
 
-    const gutterCenterX = gutterBox.x + gutterBox.width / 2
-    const gutterCenterY = gutterBox.y + gutterBox.height / 2
+    const gutterCenterX = gutterBox!.x + gutterBox!.width / 2
+    const gutterCenterY = gutterBox!.y + gutterBox!.height / 2
 
     // Drag gutter upward to enlarge the bottom panel
     await comfyPage.page.mouse.move(gutterCenterX, gutterCenterY)
