@@ -23,20 +23,21 @@ test.describe('Workflow tab save on close', () => {
         'PR #10745 — closing inactive tab saved active graph into the closing tab'
     })
 
-    const suffix = Date.now().toString(36)
-    const nameA = `wf-A-${suffix}`
-    const nameB = `wf-B-${suffix}`
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      'wf-A.json': 'default.json',
+      'wf-B.json': 'nodes/single_ksampler.json'
+    })
 
-    // Save default workflow as A (has multiple nodes)
-    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+
+    await workflowsTab.getPersistedItem('wf-A').dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
     expect(nodeCountA).toBeGreaterThan(1)
 
-    // Load a single-node workflow and save as B
-    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.nextFrame()
-    await comfyPage.menu.topbar.saveWorkflow(nameB)
-
+    await workflowsTab.getPersistedItem('wf-B').dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
       .toBe(1)
@@ -45,14 +46,14 @@ test.describe('Workflow tab save on close', () => {
     expect(nodeCountA).not.toBe(nodeCountB)
 
     // Switch to A (making B the inactive tab)
-    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.menu.topbar.getWorkflowTab('wf-A').click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
       .toBe(nodeCountA)
 
     // Close inactive B tab
-    await comfyPage.menu.topbar.closeWorkflowTab(nameB)
+    await comfyPage.menu.topbar.closeWorkflowTab('wf-B')
     await comfyPage.nextFrame()
 
     // A should still have its own node count
@@ -61,9 +62,8 @@ test.describe('Workflow tab save on close', () => {
       .toBe(nodeCountA)
 
     // Reopen B from the sidebar saved list
-    const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
-    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await workflowsTab.getPersistedItem('wf-B').dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
     // B should still have exactly 1 node, not A's content
@@ -81,21 +81,27 @@ test.describe('Workflow tab save on close', () => {
         'PR #10745 — saveWorkflow on modified inactive tab serialized active graph'
     })
 
-    const suffix = Date.now().toString(36)
-    const nameA = `wf-A-${suffix}`
-    const nameB = `wf-B-${suffix}`
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      'wf-A.json': 'default.json'
+    })
 
-    // Save default workflow as A
-    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+
+    // Open A from saved workflows
+    await workflowsTab.getPersistedItem('wf-A').dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
     // Duplicate to create B, then add a Note node to differentiate
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
     await comfyPage.nextFrame()
-    await comfyPage.menu.topbar.saveWorkflow(nameB)
+    await comfyPage.menu.topbar.saveWorkflow('wf-B')
 
     await comfyPage.page.evaluate(() => {
-      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
+      window.app!.graph.add(
+        window.LiteGraph!.createNode('Note', undefined, {})
+      )
     })
     await comfyPage.nextFrame()
 
@@ -112,14 +118,14 @@ test.describe('Workflow tab save on close', () => {
     })
 
     // Switch to A (B becomes inactive and modified)
-    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.menu.topbar.getWorkflowTab('wf-A').click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
       .toBe(nodeCountA)
 
     // Close inactive modified B tab via middle-click
-    await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
+    await comfyPage.menu.topbar.getWorkflowTab('wf-B').click({
       button: 'middle'
     })
 
@@ -136,9 +142,8 @@ test.describe('Workflow tab save on close', () => {
       .toBe(nodeCountA)
 
     // Reopen B and verify it kept its own content (A's nodes + Note)
-    const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
-    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await workflowsTab.getPersistedItem('wf-B').dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
     await expect
@@ -155,12 +160,16 @@ test.describe('Workflow tab save on close', () => {
         'PR #10745 — saveWorkflowAs on inactive temp tab serialized the active graph'
     })
 
-    const suffix = Date.now().toString(36)
-    const nameA = `wf-A-${suffix}`
-    const nameB = `wf-B-${suffix}`
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      'wf-A.json': 'default.json'
+    })
 
-    // Save default workflow as A
-    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+
+    // Open A from saved workflows
+    await workflowsTab.getPersistedItem('wf-A').dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
     // Create a new blank workflow and add a Note node
@@ -168,7 +177,9 @@ test.describe('Workflow tab save on close', () => {
     await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
-      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
+      window.app!.graph.add(
+        window.LiteGraph!.createNode('Note', undefined, {})
+      )
     })
     await comfyPage.nextFrame()
 
@@ -186,7 +197,7 @@ test.describe('Workflow tab save on close', () => {
     expect(nodeCountA).not.toBe(nodeCountB)
 
     // Switch to A (making the unsaved workflow inactive)
-    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.menu.topbar.getWorkflowTab('wf-A').click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
@@ -206,7 +217,7 @@ test.describe('Workflow tab save on close', () => {
     // Fill the save-as filename
     const saveDialog = comfyPage.menu.topbar.getSaveDialog()
     await saveDialog.waitFor({ state: 'visible' })
-    await saveDialog.fill(nameB)
+    await saveDialog.fill('wf-B')
     await comfyPage.page.keyboard.press('Enter')
     await comfyPage.workflow.waitForWorkflowIdle()
     await comfyPage.nextFrame()
@@ -217,9 +228,8 @@ test.describe('Workflow tab save on close', () => {
       .toBe(nodeCountA)
 
     // Reopen B and verify it has its own content (1 Note node)
-    const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
-    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await workflowsTab.getPersistedItem('wf-B').dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
     await expect
