@@ -36,7 +36,7 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf/ // Run all tests except those tagged with @mobile or @perf
+      grepInvert: /@mobile|@perf|@audit|@cloud/ // Run all tests except those tagged with @mobile, @perf, @audit, or @cloud
     },
 
     {
@@ -47,6 +47,17 @@ export default defineConfig({
       },
       timeout: 60_000,
       grep: /@perf/,
+      fullyParallel: false
+    },
+
+    {
+      name: 'audit',
+      use: {
+        ...devices['Desktop Chrome'],
+        trace: 'retain-on-failure'
+      },
+      timeout: 120_000,
+      grep: /@audit/,
       fullyParallel: false
     },
 
@@ -73,6 +84,14 @@ export default defineConfig({
     //   name: 'webkit',
     //   use: { ...devices['Desktop Safari'] },
     // },
+
+    {
+      name: 'cloud',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 15000,
+      grep: /@cloud/, // Run only tests tagged with @cloud
+      grepInvert: /@oss/ // Exclude tests tagged with @oss
+    },
 
     /* Test against mobile viewports. */
     {

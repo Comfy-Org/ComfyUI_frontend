@@ -56,8 +56,8 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/platform/settings/settingStore')
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: vi.fn(() => ({}))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => ({}))
 }))
 
 vi.mock('@/composables/auth/useFirebaseAuth', () => ({
@@ -123,8 +123,8 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: vi.fn(() => ({}))
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: vi.fn(() => ({}))
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({

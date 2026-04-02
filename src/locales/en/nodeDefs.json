@@ -798,7 +798,7 @@
     }
   },
   "CaseConverter": {
-    "display_name": "Case Converter",
+    "display_name": "Text Case Converter",
     "inputs": {
       "string": {
         "name": "string"
@@ -1427,6 +1427,22 @@
       },
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "Number Convert",
+    "inputs": {
+      "value": {
+        "name": "value"
       }
     },
     "outputs": {
@@ -2185,6 +2201,10 @@
       "padding": {
         "name": "padding",
         "tooltip": "Extra padding in pixels added on each side of the bbox before cropping."
+      },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Whether to stretch the crop to fit the output size, or pad with black pixels to preserve aspect ratio."
       }
     },
     "outputs": {
@@ -2214,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Curve Editor",
+    "inputs": {
+      "curve": {
+        "name": "curve"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curve",
         "tooltip": null
       }
     }
@@ -2276,6 +2313,23 @@
     "display_name": "DisableNoise",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Draw BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3963,11 +4017,19 @@
       },
       "floats": {
         "name": "floats",
-        "tooltip": "Floats are available as u_float0-4 in the shader code"
+        "tooltip": "Floats are available as u_float0-19 in the shader code"
       },
       "ints": {
         "name": "ints",
-        "tooltip": "Ints are available as u_int0-4 in the shader code"
+        "tooltip": "Ints are available as u_int0-19 in the shader code"
+      },
+      "bools": {
+        "name": "bools",
+        "tooltip": "Booleans are available as u_bool0-9 (bool) in the shader code"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Curves are available as u_curve0-3 (sampler2D, 1D LUT) in the shader code. Sample with texture(u_curve0, vec2(x, 0.5)).r"
       }
     },
     "outputs": {
@@ -4092,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "display_name": "Grok Video Extend",
+    "description": "Extend an existing video with a seamless continuation based on a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of what should happen next in the video."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Source video to extend. MP4 format, 2-15 seconds."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video extension."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "display_name": "Grok Video",
     "description": "Generate video from a prompt or an image",
@@ -4124,6 +4219,41 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "display_name": "Grok Reference-to-Video",
+    "description": "Generate video guided by reference images as style and content references.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired video."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -7619,6 +7749,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "description": "Set reference audio for ID-LoRA speaker identity transfer. Encodes a reference audio clip into the conditioning and optionally patches the model with identity guidance (extra forward pass without reference, amplifying the speaker identity effect).",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Reference audio clip whose speaker identity to transfer. ~5 seconds recommended (training duration). Shorter or longer clips may degrade voice identity transfer."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE for encoding."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Strength of identity guidance. Runs an extra forward pass without reference each step to amplify speaker identity. Set to 0 to disable (no extra pass)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Start of the sigma range where identity guidance is active."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "End of the sigma range where identity guidance is active."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -12662,7 +12840,7 @@
     }
   },
   "RegexExtract": {
-    "display_name": "Regex Extract",
+    "display_name": "Text Extract Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -12693,7 +12871,7 @@
     }
   },
   "RegexMatch": {
-    "display_name": "Regex Match",
+    "display_name": "Text Match",
     "inputs": {
       "string": {
         "name": "string"
@@ -12719,7 +12897,7 @@
     }
   },
   "RegexReplace": {
-    "display_name": "Regex Replace",
+    "display_name": "Text Replace (Regex)",
     "description": "Find and replace text using regex patterns.",
     "inputs": {
       "string": {
@@ -13256,6 +13434,34 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detect",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "threshold": {
+        "name": "threshold"
+      },
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filter detections by class. Set to 'all' to disable filtering."
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Maximum number of detections to return per image. In order of descending confidence score."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
         "tooltip": null
       }
     }
@@ -15014,7 +15220,7 @@
     }
   },
   "StringCompare": {
-    "display_name": "Compare",
+    "display_name": "Text Compare",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15036,7 +15242,7 @@
     }
   },
   "StringConcatenate": {
-    "display_name": "Concatenate",
+    "display_name": "Text Concatenate",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15055,7 +15261,7 @@
     }
   },
   "StringContains": {
-    "display_name": "Contains",
+    "display_name": "Text Contains",
     "inputs": {
       "string": {
         "name": "string"
@@ -15075,7 +15281,7 @@
     }
   },
   "StringLength": {
-    "display_name": "Length",
+    "display_name": "Text Length",
     "inputs": {
       "string": {
         "name": "string"
@@ -15089,7 +15295,7 @@
     }
   },
   "StringReplace": {
-    "display_name": "Replace",
+    "display_name": "Text Replace",
     "inputs": {
       "string": {
         "name": "string"
@@ -15108,7 +15314,7 @@
     }
   },
   "StringSubstring": {
-    "display_name": "Substring",
+    "display_name": "Text Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -15127,7 +15333,7 @@
     }
   },
   "StringTrim": {
-    "display_name": "Trim",
+    "display_name": "Text Trim",
     "inputs": {
       "string": {
         "name": "string"
@@ -15474,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -15761,8 +15971,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -15805,8 +16022,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -16075,6 +16299,10 @@
       "lora_dtype": {
         "name": "lora_dtype",
         "tooltip": "The dtype to use for lora."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "When using training_dtype 'none' and training on quantized model, doing backward with quantized matmul when enabled."
       },
       "algorithm": {
         "name": "algorithm",

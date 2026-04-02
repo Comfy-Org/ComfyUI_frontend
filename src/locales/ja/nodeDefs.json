@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "数値変換",
+    "inputs": {
+      "value": {
+        "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "スイッチ",
     "inputs": {
@@ -2174,6 +2190,10 @@
       "image": {
         "name": "画像"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "クロップを出力サイズに合わせて引き伸ばすか、アスペクト比を維持するために黒いピクセルでパディングするかを選択します。"
+      },
       "output_height": {
         "name": "出力高さ",
         "tooltip": "各切り抜き画像がリサイズされる高さ。"
@@ -2214,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "カーブエディター",
+    "inputs": {
+      "curve": {
+        "name": "カーブ"
+      },
+      "histogram": {
+        "name": "ヒストグラム"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "カーブ",
         "tooltip": null
       }
     }
@@ -2276,6 +2313,23 @@
     "display_name": "ノイズを無効にする",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "バウンディングボックスを描画",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3612,6 +3666,14 @@
     "description": "GLSL ESフラグメントシェーダーを画像に適用します。u_resolution（vec2）は常に利用可能です。",
     "display_name": "GLSLシェーダー",
     "inputs": {
+      "bools": {
+        "name": "bools",
+        "tooltip": "ブール値はシェーダーコード内で u_bool0-9（bool）として利用できます"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "カーブはシェーダーコード内で u_curve0-3（sampler2D、1D LUT）として利用できます。texture(u_curve0, vec2(x, 0.5)).r でサンプリングします"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "floatsはシェーダーコード内でu_float0-4として利用可能"
@@ -4092,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "テキストプロンプトに基づいて、既存のビデオをシームレスに継続します。",
+    "display_name": "Grokビデオ拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ拡張に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオの次に何が起こるべきかのテキスト説明。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "拡張する元のビデオ。MP4形式、2～15秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "プロンプトまたは画像から動画を生成します",
     "display_name": "Grok動画生成",
@@ -4124,6 +4219,41 @@
       "seed": {
         "name": "シード値",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "リファレンス画像をスタイルや内容の参考として、ビデオを生成します。",
+    "display_name": "Grokリファレンス→ビデオ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "ビデオ生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望するビデオのテキスト説明。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -6744,6 +6874,54 @@
     "outputs": {
       "0": {
         "name": "出力画像",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "ID-LoRA話者識別転送のためのリファレンス音声を設定します。リファレンス音声クリップをコンディショニングにエンコードし、必要に応じてモデルにアイデンティティガイダンス（リファレンスなしの追加フォワードパスで話者識別効果を強調）を適用します。",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "エンコード用のLTXV Audio VAE。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "アイデンティティガイダンスが有効になるシグマ範囲の終了点。"
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "アイデンティティガイダンスの強さ。各ステップでリファレンスなしの追加フォワードパスを実行し、話者識別を強調します。0に設定すると無効化されます（追加パスなし）。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "転送したい話者識別を持つリファレンス音声クリップ。約5秒間（学習時間）が推奨されます。短すぎたり長すぎたりすると話者識別転送の品質が低下する場合があります。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "アイデンティティガイダンスが有効になるシグマ範囲の開始点。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -12069,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 検出",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "クラスで検出結果をフィルタリングします。「all」に設定するとフィルタリングを無効にします。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "画像ごとに返す検出の最大数。信頼度スコアの高い順に並びます。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "ランダムクロップ画像",
     "inputs": {
@@ -15474,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv画像",
+        "tooltip": null
       }
     }
   },
@@ -15764,6 +15974,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15778,6 +15991,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
       }
     },
     "outputs": {
@@ -15808,6 +16025,9 @@
       "sampling_mode_min_p": {
         "name": "最小p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "繰り返しペナルティ"
       },
@@ -15822,6 +16042,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "思考モード",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
       }
     },
     "outputs": {
@@ -16090,6 +16314,10 @@
       "positive": {
         "name": "ポジティブ条件付け",
         "tooltip": "学習に使用するポジティブな条件付け。"
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "training_dtype を「none」に設定し、量子化モデルでトレーニングする場合、有効にすると逆伝播時に量子化された行列積を使用します。"
       },
       "rank": {
         "name": "ランク",

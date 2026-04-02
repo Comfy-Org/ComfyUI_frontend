@@ -8,8 +8,8 @@ import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
     isInitialized: mockIsInitialized,
     currentUser: mockCurrentUser
   })

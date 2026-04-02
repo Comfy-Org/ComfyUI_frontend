@@ -1,6 +1,6 @@
-import { DOMWrapper, flushPromises, mount } from '@vue/test-utils'
-import type { VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ImageLightbox from './ImageLightbox.vue'
@@ -13,49 +13,39 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function findCloseButton() {
-  const el = document.body.querySelector('[aria-label="g.close"]')
-  return el ? new DOMWrapper(el) : null
-}
-
 describe(ImageLightbox, () => {
-  let wrapper: VueWrapper
-
-  afterEach(() => {
-    wrapper.unmount()
-  })
-
-  function mountComponent(props: { src: string; alt?: string }, open = true) {
-    wrapper = mount(ImageLightbox, {
+  function renderComponent(props: { src: string; alt?: string }, open = true) {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+    const result = render(ImageLightbox, {
       global: { plugins: [i18n] },
-      props: { ...props, modelValue: open },
-      attachTo: document.body
+      props: {
+        ...props,
+        modelValue: open,
+        'onUpdate:modelValue': onUpdate
+      }
     })
-    return wrapper
+    return { ...result, user, onUpdate }
   }
 
   it('renders the image with correct src and alt when open', async () => {
-    mountComponent({ src: '/test.png', alt: 'Test image' })
-    await flushPromises()
-    const img = document.body.querySelector('img')
-    expect(img).toBeTruthy()
-    expect(img?.getAttribute('src')).toBe('/test.png')
-    expect(img?.getAttribute('alt')).toBe('Test image')
+    renderComponent({ src: '/test.png', alt: 'Test image' })
+    const img = await screen.findByRole('img')
+    expect(img).toHaveAttribute('src', '/test.png')
+    expect(img).toHaveAttribute('alt', 'Test image')
   })
 
-  it('does not render dialog content when closed', async () => {
-    mountComponent({ src: '/test.png' }, false)
-    await flushPromises()
-    expect(document.body.querySelector('img')).toBeNull()
+  it('does not render dialog content when closed', () => {
+    renderComponent({ src: '/test.png' }, false)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('emits update:modelValue false when close button is clicked', async () => {
-    mountComponent({ src: '/test.png' })
-    await flushPromises()
-    const closeButton = findCloseButton()
-    expect(closeButton).toBeTruthy()
-    await closeButton!.trigger('click')
-    await flushPromises()
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([false])
+    const { user, onUpdate } = renderComponent({ src: '/test.png' })
+    const closeButton = await screen.findByLabelText('g.close')
+    await user.click(closeButton)
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledWith(false)
+    })
   })
 })

@@ -4,6 +4,7 @@ import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -29,7 +30,9 @@ import type {
   MissingModelCandidate,
   MissingModelGroup
 } from '@/platform/missingModel/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
+import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
 import {
   isNodeExecutionId,
   compareExecutionId
@@ -239,6 +242,7 @@ export function useErrorGroups(
   const executionErrorStore = useExecutionErrorStore()
   const missingNodesStore = useMissingNodesErrorStore()
   const missingModelStore = useMissingModelStore()
+  const missingMediaStore = useMissingMediaStore()
   const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
@@ -635,6 +639,27 @@ export function useErrorGroups(
     ]
   }
 
+  const missingMediaGroups = computed<MissingMediaGroup[]>(() => {
+    const candidates = missingMediaStore.missingMediaCandidates
+    if (!candidates?.length) return []
+    return groupCandidatesByMediaType(candidates)
+  })
+
+  function buildMissingMediaGroups(): ErrorGroup[] {
+    if (!missingMediaGroups.value.length) return []
+    const totalItems = missingMediaGroups.value.reduce(
+      (count, group) => count + group.items.length,
+      0
+    )
+    return [
+      {
+        type: 'missing_media' as const,
+        title: `${t('rightSidePanel.missingMedia.missingMediaTitle')} (${totalItems})`,
+        priority: 3
+      }
+    ]
+  }
+
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
@@ -645,6 +670,7 @@ export function useErrorGroups(
     return [
       ...buildMissingNodeGroups(),
       ...buildMissingModelGroups(),
+      ...buildMissingMediaGroups(),
       ...toSortedGroups(groupsMap)
     ]
   })
@@ -663,6 +689,7 @@ export function useErrorGroups(
     return [
       ...buildMissingNodeGroups(),
       ...buildMissingModelGroups(),
+      ...buildMissingMediaGroups(),
       ...executionGroups
     ]
   })
@@ -682,7 +709,6 @@ export function useErrorGroups(
           }
         }
       } else {
-        // Groups without cards (e.g. missing_node) surface their title as the message.
         messages.add(group.title)
       }
     }
@@ -700,6 +726,7 @@ export function useErrorGroups(
     groupedErrorMessages,
     missingPackGroups,
     missingModelGroups,
+    missingMediaGroups,
     swapNodeGroups
   }
 }

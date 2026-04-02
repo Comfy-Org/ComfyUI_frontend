@@ -4,13 +4,13 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   createTestSubgraph,
@@ -933,14 +933,17 @@ describe('SubgraphNode promotion view keys', () => {
 
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const nodeWithKeyBuilder = subgraphNode as unknown as {
-      _makePromotionViewKey: (
-        inputKey: string,
-        interiorNodeId: string,
-        widgetName: string,
-        inputName?: string
-      ) => string
-    }
+    const nodeWithKeyBuilder = fromAny<
+      {
+        _makePromotionViewKey: (
+          inputKey: string,
+          interiorNodeId: string,
+          widgetName: string,
+          inputName?: string
+        ) => string
+      },
+      unknown
+    >(subgraphNode)
 
     const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
       '65',
@@ -956,5 +959,71 @@ describe('SubgraphNode promotion view keys', () => {
     )
 
     expect(firstKey).not.toBe(secondKey)
+  })
+})
+
+describe('SubgraphNode label propagation', () => {
+  it('should preserve input labels from configure path', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'steps', type: 'number' }]
+    })
+    subgraph.inputs[0].label = 'Steps Count'
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.inputs[0].label).toBe('Steps Count')
+    expect(subgraphNode.inputs[0].name).toBe('steps')
+  })
+
+  it('should preserve output labels from configure path', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'result', type: 'number' }]
+    })
+    subgraph.outputs[0].label = 'Final Result'
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.outputs[0].label).toBe('Final Result')
+    expect(subgraphNode.outputs[0].name).toBe('result')
+  })
+
+  it('should propagate label via renaming-input event', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    subgraph.addInput('steps', 'number')
+    expect(subgraphNode.inputs[0].label).toBeUndefined()
+
+    subgraph.renameInput(subgraph.inputs[0], 'Steps Count')
+
+    expect(subgraphNode.inputs[0].label).toBe('Steps Count')
+    expect(subgraphNode.inputs[0].name).toBe('steps')
+  })
+
+  it('should propagate label via renaming-output event', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    subgraph.addOutput('result', 'number')
+    expect(subgraphNode.outputs[0].label).toBeUndefined()
+
+    subgraph.renameOutput(subgraph.outputs[0], 'Final Result')
+
+    expect(subgraphNode.outputs[0].label).toBe('Final Result')
+    expect(subgraphNode.outputs[0].name).toBe('result')
+  })
+
+  it('should preserve localized_name from configure path', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'steps', type: 'number' }],
+      outputs: [{ name: 'result', type: 'number' }]
+    })
+    subgraph.inputs[0].localized_name = 'ステップ'
+    subgraph.outputs[0].localized_name = '結果'
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    expect(subgraphNode.inputs[0].localized_name).toBe('ステップ')
+    expect(subgraphNode.outputs[0].localized_name).toBe('結果')
   })
 })

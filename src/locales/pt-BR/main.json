@@ -347,9 +347,19 @@
     "share": "Compartilhar",
     "workflowActions": "Ações do fluxo de trabalho"
   },
+  "builderFooter": {
+    "opensAsApp": "Abrir como {mode}",
+    "opensAsGraph": "Abrir como {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Entrar no modo de aplicativo",
     "exitAppBuilder": "Sair do construtor de aplicativos"
+  },
+  "builderSave": {
+    "successBody": "Deseja visualizar agora?",
+    "successBodyApp": "Este fluxo de trabalho será aberto no Modo App por padrão a partir de agora.\n\nDeseja visualizar agora?",
+    "successBodyGraph": "Este fluxo de trabalho será aberto como um grafo de nós.",
+    "successTitle": "Salvo com sucesso"
   },
   "builderToolbar": {
     "app": "Aplicativo",
@@ -359,18 +369,10 @@
     "connectOutput": "Conectar uma saída",
     "connectOutputBody1": "Seu aplicativo precisa de pelo menos uma saída conectada antes de ser salvo.",
     "connectOutputBody2": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
-    "defaultModeAppliedAppBody": "Este fluxo de trabalho será aberto no Modo de Aplicativo por padrão a partir de agora.",
-    "defaultModeAppliedAppPrompt": "Gostaria de visualizá-lo agora?",
-    "defaultModeAppliedGraphBody": "Este fluxo de trabalho será aberto como um grafo de nós por padrão a partir de agora.",
-    "defaultModeAppliedGraphPrompt": "Ainda deseja visualizar o aplicativo?",
-    "defaultModeAppliedTitle": "Definido com sucesso",
-    "defaultView": "Definir visualização padrão",
-    "defaultViewDescription": "Escolha como isso será aberto",
     "defaultViewLabel": "Por padrão, este fluxo será aberto como:",
-    "defaultViewTitle": "Definir a visualização padrão para este fluxo",
     "emptyWorkflowPrompt": "Deseja começar com um modelo?",
     "emptyWorkflowTitle": "Este fluxo de trabalho não possui nós",
-    "exitToWorkflow": "Sair para o fluxo de trabalho",
+    "filename": "Nome do arquivo",
     "inputs": "Entradas",
     "inputsDescription": "Escolha as entradas",
     "label": "Construtor de aplicativos",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Abre como grafo de nós por padrão",
     "outputs": "Saídas",
     "outputsDescription": "Escolha as saídas",
+    "saveAs": "Salvar como",
     "switchToOutputs": "Ir para Saídas",
     "viewApp": "Visualizar aplicativo"
   },
@@ -564,19 +567,26 @@
     "uploadCover": "+ Enviar uma capa",
     "uploadProfilePicture": "+ Enviar uma foto de perfil",
     "uploadWorkflowButton": "Enviar meu fluxo de trabalho",
+    "usernameError": "3–42 caracteres alfanuméricos minúsculos e hífens, deve começar e terminar com uma letra ou número",
     "usernameLabel": "Seu nome de usuário (obrigatório)",
     "usernamePlaceholder": "@"
   },
   "comfyHubPublish": {
+    "additionalInfo": "Informações adicionais",
     "back": "Voltar",
     "createProfileCta": "Criar um perfil",
     "createProfileToPublish": "Crie um perfil para publicar no ComfyHub",
     "exampleImage": "Imagem de exemplo {index}",
+    "exampleImagePosition": "Imagem de exemplo {index} de {total}",
     "examplesDescription": "Adicione até {total} imagens de exemplo adicionais",
     "maxExamples": "Você pode selecionar até {max} exemplos",
     "next": "Avançar",
     "publishButton": "Publicar no ComfyHub",
+    "publishFailedDescription": "Algo deu errado ao publicar seu fluxo de trabalho. Por favor, tente novamente.",
+    "publishFailedTitle": "Falha ao publicar",
+    "removeExampleImage": "Remover imagem de exemplo",
     "selectAThumbnail": "Selecione uma miniatura",
+    "shareAs": "Compartilhar como",
     "showLessTags": "Mostrar menos...",
     "showMoreTags": "Mostrar mais...",
     "stepDescribe": "Descreva seu fluxo de trabalho",
@@ -591,6 +601,7 @@
     "thumbnailPreview": "Prévia da miniatura",
     "thumbnailVideo": "Vídeo",
     "title": "Publicar no ComfyHub",
+    "unsavedDescription": "Você precisa salvar seu fluxo de trabalho antes de publicar no ComfyHub. Salve agora para continuar.",
     "uploadAnImage": "Clique para procurar ou arraste uma imagem",
     "uploadComparison": "Enviar antes e depois",
     "uploadComparisonAfterPrompt": "Depois",
@@ -606,13 +617,7 @@
     "workflowDescription": "Descrição do fluxo de trabalho",
     "workflowDescriptionPlaceholder": "O que torna seu fluxo de trabalho interessante e especial? Seja específico para que as pessoas saibam o que esperar.",
     "workflowName": "Nome do fluxo de trabalho",
-    "workflowNamePlaceholder": "Dica: insira um nome descritivo e fácil de pesquisar",
-    "workflowType": "Tipo de fluxo de trabalho",
-    "workflowTypeEditing": "Edição",
-    "workflowTypeImageGeneration": "Geração de imagem",
-    "workflowTypePlaceholder": "Selecione o tipo",
-    "workflowTypeUpscaling": "Upscaling",
-    "workflowTypeVideoGeneration": "Geração de vídeo"
+    "workflowNamePlaceholder": "Dica: insira um nome descritivo e fácil de pesquisar"
   },
   "commands": {
     "clear": "Limpar fluxo de trabalho",
@@ -780,6 +785,7 @@
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDICIONAMENTO",
     "CONTROL_NET": "controlnet",
+    "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
@@ -793,6 +799,7 @@
     "GEMINI_INPUT_FILES": "ARQUIVOS DE ENTRADA GEMINI",
     "GLIGEN": "GLIGEN",
     "GUIDER": "ORIENTADOR",
+    "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
     "IMAGE": "IMAGEM",
@@ -884,17 +891,25 @@
     "resume": "Retomar download"
   },
   "errorDialog": {
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "accessRestrictedTitle": "Access Restricted",
     "defaultTitle": "Ocorreu um erro",
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt",
-    "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "promptExecutionError": "Falha na execução do prompt"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
-    "seeErrors": "Ver erros"
+    "missingMedia": "Alguns nós estão sem as entradas necessárias",
+    "missingModels": "{count} modelo necessário está ausente | {count} modelos necessários estão ausentes",
+    "missingNodes": "Alguns nós estão ausentes e precisam ser instalados",
+    "seeErrors": "Ver erros",
+    "showMissingMedia": "Mostrar entradas ausentes",
+    "showMissingModels": "Mostrar modelos ausentes",
+    "showMissingNodes": "Mostrar nós ausentes",
+    "showSwapNodes": "Mostrar nós alternativos",
+    "swapNodes": "Alguns nós podem ser substituídos por alternativas"
   },
   "essentials": {
     "batchImage": "Imagem em lote",
@@ -933,6 +948,19 @@
     "textTo3DModel": "Texto para modelo 3D",
     "textToImage": "Texto para imagem",
     "textToVideo": "Texto para vídeo"
+  },
+  "execution": {
+    "decoding": "Decodificando…",
+    "encoding": "Codificando…",
+    "generating": "Gerando…",
+    "generatingVideo": "Gerando vídeo…",
+    "loading": "Carregando…",
+    "processing": "Processando…",
+    "processingVideo": "Processando vídeo…",
+    "resizing": "Redimensionando…",
+    "running": "Executando…",
+    "saving": "Salvando…",
+    "training": "Treinando…"
   },
   "exportToast": {
     "allExportsCompleted": "Todas as exportações concluídas",
@@ -1090,6 +1118,7 @@
     "icon": "Ícone",
     "imageDoesNotExist": "Imagem não existe",
     "imageFailedToLoad": "Falha ao carregar imagem",
+    "imageGallery": "galeria de imagens",
     "imageLightbox": "Pré-visualização da imagem",
     "imagePreview": "Pré-visualização da imagem - Use as setas para navegar entre as imagens",
     "imageUrl": "URL da imagem",
@@ -1104,7 +1133,6 @@
     "installed": "Instalado",
     "installing": "Instalando",
     "interrupted": "Interrompido",
-    "itemSelected": "{selectedCount} item selecionado",
     "itemsCopiedToClipboard": "Itens copiados para a área de transferência",
     "itemsSelected": "{selectedCount} itens selecionados",
     "job": "Tarefa",
@@ -1310,6 +1338,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} Visite https://docs.comfy.org/installation/update_comfyui#common-update-issues para instruções de atualização.",
     "videoFailedToLoad": "Falha ao carregar vídeo",
     "videoPreview": "Pré-visualização do vídeo - Use as setas para navegar entre os vídeos",
+    "viewGrid": "Visualização em grade",
     "viewImageOfTotal": "Visualizar imagem {index} de {total}",
     "viewVideoOfTotal": "Visualizar vídeo {index} de {total}",
     "volume": "Volume",
@@ -2229,6 +2258,7 @@
     "dataset": "conjunto_de_dados",
     "debug": "depuração",
     "deprecated": "obsoleto",
+    "detection": "detecção",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",
@@ -3222,6 +3252,7 @@
       "termsAgreement": "Ao continuar, você concorda com os {terms} e {privacy} da Comfy Org.",
       "totalDueToday": "Total devido hoje"
     },
+    "refreshCredits": "Atualizar créditos",
     "renewsDate": "Renova em {date}",
     "required": {
       "pollingFailed": "Falha ao ativar a assinatura",

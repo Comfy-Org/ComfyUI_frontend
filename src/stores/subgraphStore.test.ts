@@ -1,22 +1,21 @@
+import { createTestingPinia } from '@pinia/testing'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import type { GlobalSubgraphData } from '@/scripts/api'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
-
-import { useLitegraphService } from '@/services/litegraphService'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createTestingPinia } from '@pinia/testing'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { GlobalSubgraphData } from '@/scripts/api'
+import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
@@ -108,12 +107,12 @@ describe('useSubgraphStore', () => {
     graph.add(subgraphNode)
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
-      const serializedSubgraph = {
+      const serializedSubgraph = fromPartial<ExportedSubgraph>({
         ...subgraph.serialize(),
         links: [],
         groups: [],
         version: 1
-      } as Partial<ExportedSubgraph> as ExportedSubgraph
+      })
       return {
         nodes: [subgraphNode.serialize()],
         subgraphs: [serializedSubgraph]
@@ -155,6 +154,16 @@ describe('useSubgraphStore', () => {
       name: 'SubgraphBlueprint.test'
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
+  })
+  it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    const first = store.getBlueprint(store.typePrefix + 'test')
+    first.nodes[0].id = -1
+    first.definitions!.subgraphs![0].id = 'corrupted'
+
+    const second = store.getBlueprint(store.typePrefix + 'test')
+    expect(second.nodes[0].id).not.toBe(-1)
+    expect(second.definitions!.subgraphs![0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -254,7 +263,9 @@ describe('useSubgraphStore', () => {
         failing_blueprint: {
           name: 'Failing Blueprint',
           info: { node_pack: 'test_pack' },
-          data: Promise.reject(new Error('Network error')) as unknown as string
+          data: fromAny<string, unknown>(
+            Promise.reject(new Error('Network error'))
+          )
         }
       }
     )
@@ -379,12 +390,12 @@ describe('useSubgraphStore', () => {
 
       vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
       vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
-        const serializedSubgraph = {
+        const serializedSubgraph = fromPartial<ExportedSubgraph>({
           ...subgraph.serialize(),
           links: [],
           groups: [],
           version: 1
-        } as Partial<ExportedSubgraph> as ExportedSubgraph
+        })
         return {
           nodes: [subgraphNode.serialize()],
           subgraphs: [serializedSubgraph]
