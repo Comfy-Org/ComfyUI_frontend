@@ -47,7 +47,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph!._nodes.length
     )
 
-    const deleteButton = comfyPage.page.locator('[data-testid="delete-button"]')
+    const deleteButton = comfyPage.page.getByTestId('delete-button')
     await expect(deleteButton).toBeVisible()
     await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
@@ -62,14 +62,12 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
 
-    const infoButton = comfyPage.page.locator('[data-testid="info-button"]')
+    const infoButton = comfyPage.page.getByTestId('info-button')
     await expect(infoButton).toBeVisible()
     await infoButton.click({ force: true })
     await comfyPage.nextFrame()
 
-    await expect(
-      comfyPage.page.locator('[data-testid="properties-panel"]')
-    ).toBeVisible()
+    await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
   })
 
   test('convert-to-subgraph button visible with multi-select', async ({
@@ -82,7 +80,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nextFrame()
 
     await expect(
-      comfyPage.page.locator('[data-testid="convert-to-subgraph-button"]')
+      comfyPage.page.getByTestId('convert-to-subgraph-button')
     ).toBeVisible()
   })
 
@@ -99,7 +97,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph!._nodes.length
     )
 
-    const deleteButton = comfyPage.page.locator('[data-testid="delete-button"]')
+    const deleteButton = comfyPage.page.getByTestId('delete-button')
     await expect(deleteButton).toBeVisible()
     await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
@@ -120,7 +118,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     expect(await nodeRef.isBypassed()).toBe(false)
 
-    const bypassButton = comfyPage.page.locator('[data-testid="bypass-button"]')
+    const bypassButton = comfyPage.page.getByTestId('bypass-button')
     await expect(bypassButton).toBeVisible()
     await bypassButton.click({ force: true })
     await comfyPage.nextFrame()
@@ -173,8 +171,8 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
 
-    const convertButton = comfyPage.page.locator(
-      '[data-testid="convert-to-subgraph-button"]'
+    const convertButton = comfyPage.page.getByTestId(
+      'convert-to-subgraph-button'
     )
     await expect(convertButton).toBeVisible()
     await convertButton.click({ force: true })
