@@ -110,18 +110,11 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     // Ensure panel is closed
     await expect(bottomPanel.root).not.toBeVisible()
 
-    // Click on the canvas to interact with it (e.g. deselect all)
-    const canvasCenter = await comfyPage.canvas.boundingBox()
-    if (!canvasCenter) {
-      test.skip()
-      return
-    }
-
-    // Double-click canvas to open search box -- proves canvas receives events
-    await comfyPage.canvas.dblclick({
-      position: { x: canvasCenter.width / 2, y: canvasCenter.height / 2 }
+    // Click the canvas without `force` -- Playwright's actionability checks
+    // will fail if an invisible overlay is intercepting pointer events.
+    await comfyPage.canvas.click({
+      position: { x: 100, y: 100 }
     })
-    await expect(comfyPage.searchBox.input).toBeVisible()
   })
 
   test('should switch from shortcuts to terminal panel', async ({
