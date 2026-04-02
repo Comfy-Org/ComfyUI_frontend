@@ -5,9 +5,9 @@ import {
   comfyPageFixture as test
 } from '../../../../fixtures/ComfyPage'
 import type { ComfyPage } from '../../../../fixtures/ComfyPage'
+import { TestIds } from '../../../../fixtures/selectors'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
-const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
 async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
   await comfyPage.page.getByRole('menuitem', { name, exact: true }).click()
@@ -15,12 +15,10 @@ async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
 }
 
 async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
-  const header = comfyPage.vueNodes
-    .getNodeByTitle(nodeTitle)
-    .locator('.lg-node-header')
-  await header.click()
-  await header.click({ button: 'right' })
-  const menu = comfyPage.page.locator('.p-contextmenu')
+  const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
+  await fixture.header.click()
+  await fixture.header.click({ button: 'right' })
+  const menu = comfyPage.contextMenu.primeVueMenu
   await menu.waitFor({ state: 'visible' })
   return menu
 }
@@ -35,17 +33,13 @@ async function openMultiNodeContextMenu(
   await comfyPage.nextFrame()
 
   for (const title of titles) {
-    const header = comfyPage.vueNodes
-      .getNodeByTitle(title)
-      .locator('.lg-node-header')
-    await header.click({ modifiers: ['ControlOrMeta'] })
+    const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
+    await fixture.header.click({ modifiers: ['ControlOrMeta'] })
   }
   await comfyPage.nextFrame()
 
-  const firstHeader = comfyPage.vueNodes
-    .getNodeByTitle(titles[0])
-    .locator('.lg-node-header')
-  const box = await firstHeader.boundingBox()
+  const firstFixture = await comfyPage.vueNodes.getFixtureByTitle(titles[0])
+  const box = await firstFixture.header.boundingBox()
   if (!box) throw new Error(`Header for "${titles[0]}" not found`)
   await comfyPage.page.mouse.click(
     box.x + box.width / 2,
@@ -53,16 +47,15 @@ async function openMultiNodeContextMenu(
     { button: 'right' }
   )
 
-  const menu = comfyPage.page.locator('.p-contextmenu')
+  const menu = comfyPage.contextMenu.primeVueMenu
   await menu.waitFor({ state: 'visible' })
   return menu
 }
 
 function getNodeWrapper(comfyPage: ComfyPage, nodeTitle: string): Locator {
-  return comfyPage.page
-    .locator('[data-node-id]')
-    .filter({ hasText: nodeTitle })
-    .getByTestId('node-inner-wrapper')
+  return comfyPage.vueNodes
+    .getNodeByTitle(nodeTitle)
+    .getByTestId(TestIds.node.innerWrapper)
 }
 
 async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
@@ -82,9 +75,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Rename')
 
-      const titleInput = comfyPage.page.locator(
-        '.node-title-editor input[type="text"]'
-      )
+      const titleInput = comfyPage.page.getByTestId(TestIds.node.titleInput)
       await titleInput.waitFor({ state: 'visible' })
       await titleInput.fill('My Renamed Sampler')
       await titleInput.press('Enter')
@@ -135,16 +126,12 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Pin')
 
-      const pinIndicator = comfyPage.vueNodes
-        .getNodeByTitle(nodeTitle)
-        .locator(PIN_INDICATOR)
-      await expect(pinIndicator).toBeVisible()
+      const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
+      await expect(fixture.pinIndicator).toBeVisible()
       expect(await nodeRef.isPinned()).toBe(true)
 
       // Verify drag blocked
-      const header = comfyPage.vueNodes
-        .getNodeByTitle(nodeTitle)
-        .locator('.lg-node-header')
+      const header = fixture.header
       const posBeforeDrag = await header.boundingBox()
       if (!posBeforeDrag) throw new Error('Header not found')
       await comfyPage.canvasOps.dragAndDrop(
@@ -158,7 +145,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Unpin')
 
-      await expect(pinIndicator).not.toBeVisible()
+      await expect(fixture.pinIndicator).not.toBeVisible()
       expect(await nodeRef.isPinned()).toBe(false)
     })
 
@@ -244,7 +231,9 @@ test.describe('Vue Node Context Menu', () => {
       comfyPage
     }) => {
       // Capture the original image src from the node's preview
-      const imagePreview = comfyPage.page.locator('.image-preview img')
+      const imagePreview = comfyPage.vueNodes
+        .getNodeByTitle('Load Image')
+        .getByTestId(TestIds.node.mainImage)
       const originalSrc = await imagePreview.getAttribute('src')
 
       // Write a test image into the browser clipboard
@@ -347,8 +336,7 @@ test.describe('Vue Node Context Menu', () => {
       await comfyPage.nodeOps.fillPromptDialog('TestBlueprint')
 
       // Open node library sidebar and search for the blueprint
-      await comfyPage.page.getByRole('button', { name: 'Node Library' }).click()
-      await comfyPage.nextFrame()
+      await comfyPage.menu.nodeLibraryTab.tabButton.click()
       const searchBox = comfyPage.page.getByRole('combobox', {
         name: 'Search'
       })
@@ -414,20 +402,16 @@ test.describe('Vue Node Context Menu', () => {
       await clickExactMenuItem(comfyPage, 'Pin')
 
       for (const title of nodeTitles) {
-        const pinIndicator = comfyPage.vueNodes
-          .getNodeByTitle(title)
-          .locator(PIN_INDICATOR)
-        await expect(pinIndicator).toBeVisible()
+        const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
+        await expect(fixture.pinIndicator).toBeVisible()
       }
 
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Unpin')
 
       for (const title of nodeTitles) {
-        const pinIndicator = comfyPage.vueNodes
-          .getNodeByTitle(title)
-          .locator(PIN_INDICATOR)
-        await expect(pinIndicator).not.toBeVisible()
+        const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
+        await expect(fixture.pinIndicator).not.toBeVisible()
       }
     })
 

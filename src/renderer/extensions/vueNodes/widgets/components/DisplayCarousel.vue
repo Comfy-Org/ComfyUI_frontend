@@ -36,7 +36,7 @@
             :aria-label="t('g.switchToGridView')"
             @click="switchToGrid"
           >
-            <i class="icon-[lucide--layout-grid] size-4" />
+            <i class="icon-[lucide--undo-2] size-4" />
           </button>
 
           <!-- Action Buttons (hover, top-right) -->
@@ -142,41 +142,19 @@
           ref="gridContainerEl"
           class="relative h-72 overflow-x-hidden overflow-y-auto rounded-sm bg-component-node-background"
           tabindex="0"
-          @mouseenter="isHovered = true"
-          @mouseleave="isHovered = false"
-          @focusin="isFocused = true"
-          @focusout="handleFocusOut"
         >
-          <!-- Toggle to Single (hover, top-left) -->
-          <button
-            v-if="showControls"
-            :class="toggleButtonClass"
-            class="absolute top-2 left-2 z-10"
-            :aria-label="t('g.switchToSingleView')"
-            @click="switchToSingle"
-          >
-            <i class="icon-[lucide--square] size-4" />
-          </button>
-
           <div class="flex flex-wrap content-start gap-1">
             <button
               v-for="(item, index) in galleryImages"
               :key="getItemSrc(item)"
               class="size-14 shrink-0 cursor-pointer overflow-hidden border-0 p-0"
               :aria-label="getItemAlt(item, index)"
-              @mouseenter="hoveredGridIndex = index"
-              @mouseleave="hoveredGridIndex = -1"
               @click="selectFromGrid(index)"
             >
               <img
                 :src="getItemThumbnail(item)"
                 :alt="getItemAlt(item, index)"
-                :class="
-                  cn(
-                    'size-full object-cover transition-opacity',
-                    hoveredGridIndex === index && 'opacity-50'
-                  )
-                "
+                class="size-full object-cover"
               />
             </button>
           </div>
@@ -229,7 +207,6 @@ const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
 const isHovered = ref(false)
 const isFocused = ref(false)
-const hoveredGridIndex = ref(-1)
 const imageDimensions = ref<string | null>(null)
 const thumbnailRefs = ref<(HTMLElement | null)[]>([])
 const imageContainerEl = ref<HTMLDivElement>()
@@ -357,11 +334,6 @@ function goToNext() {
 function switchToGrid() {
   isHovered.value = false
   displayMode.value = 'grid'
-}
-
-function switchToSingle() {
-  isHovered.value = false
-  displayMode.value = 'single'
 }
 
 function selectFromGrid(index: number) {

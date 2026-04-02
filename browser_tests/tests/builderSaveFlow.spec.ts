@@ -189,6 +189,41 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await expect(saveAs.nameInput).toBeVisible()
   })
 
+  test('Save button width is consistent across all states', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    await comfyPage.workflow.loadWorkflow('default')
+    await fitToViewInstant(comfyPage)
+    await appMode.enterBuilder()
+
+    // State 1: Disabled "Save as" (no outputs selected)
+    const disabledBox = await appMode.footer.saveAsButton.boundingBox()
+    expect(disabledBox).toBeTruthy()
+
+    // Select I/O to enable the button
+    await appMode.steps.goToInputs()
+    const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
+    await appMode.select.selectInputWidget(ksampler)
+    await appMode.steps.goToOutputs()
+    await appMode.select.selectOutputNode()
+
+    // State 2: Enabled "Save as" (unsaved, has outputs)
+    const enabledBox = await appMode.footer.saveAsButton.boundingBox()
+    expect(enabledBox).toBeTruthy()
+    expect(enabledBox!.width).toBe(disabledBox!.width)
+
+    // Save the workflow to transition to the Save + chevron state
+    await builderSaveAs(appMode, `${Date.now()} width-test`, 'App')
+    await appMode.saveAs.closeButton.click()
+    await comfyPage.nextFrame()
+
+    // State 3: Save + chevron button group (saved workflow)
+    const saveButtonGroupBox = await appMode.footer.saveGroup.boundingBox()
+    expect(saveButtonGroupBox).toBeTruthy()
+    expect(saveButtonGroupBox!.width).toBe(disabledBox!.width)
+  })
+
   test('Connect output popover appears when no outputs selected', async ({
     comfyPage
   }) => {
