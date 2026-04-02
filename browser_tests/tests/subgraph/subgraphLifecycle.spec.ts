@@ -50,6 +50,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
 
       const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
       expect(beforePseudo.length).toBeGreaterThan(0)
+      await expect(comfyPage.page.locator(domPreviewSelector)).toHaveCount(1)
 
       await comfyPage.page.evaluate(() => {
         const graph = window.app!.graph!
@@ -75,6 +76,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
 
       const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
       expect(beforePseudo.length).toBeGreaterThan(0)
+      await expect(comfyPage.page.locator(domPreviewSelector)).toHaveCount(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
       expect(await subgraphNode.exists()).toBe(true)

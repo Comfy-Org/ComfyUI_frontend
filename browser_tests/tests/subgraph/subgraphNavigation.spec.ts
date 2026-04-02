@@ -85,9 +85,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
-      const breadcrumb = comfyPage.page
-        .getByTestId(TestIds.breadcrumb.subgraph)
-        .locator('.p-breadcrumb')
+      const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()
@@ -213,20 +211,8 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       )
       await comfyPage.nextFrame()
 
-      await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        const graph = canvas.graph!
-        const sgNode = graph._nodes.find((node) =>
-          'isSubgraphNode' in node
-            ? (
-                node as unknown as { isSubgraphNode: () => boolean }
-              ).isSubgraphNode()
-            : false
-        ) as unknown as { subgraph?: typeof graph } | undefined
-        if (!sgNode?.subgraph) throw new Error('No subgraph node')
-
-        canvas.setGraph(sgNode.subgraph)
-      })
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+      await subgraphNode.navigateIntoSubgraph()
 
       await expect
         .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {

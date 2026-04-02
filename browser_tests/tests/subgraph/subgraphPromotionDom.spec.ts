@@ -106,10 +106,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      const initialCount = await comfyPage.page
-        .locator(DOM_WIDGET_SELECTOR)
-        .count()
-      expect(initialCount).toBe(1)
+      await expect(comfyPage.page.locator(DOM_WIDGET_SELECTOR)).toHaveCount(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.delete()
@@ -159,17 +156,15 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
 
       await openSubgraphById(comfyPage, '11')
 
-      const subgraphCount = await comfyPage.page
-        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
-        .count()
-      expect(subgraphCount).toBe(parentCount)
+      await expect(
+        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      ).toHaveCount(parentCount)
 
       await comfyPage.subgraph.exitViaBreadcrumb()
 
-      const finalCount = await comfyPage.page
-        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
-        .count()
-      expect(finalCount).toBe(parentCount)
+      await expect(
+        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      ).toHaveCount(parentCount)
     })
   })
 })

@@ -400,6 +400,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
+      // Two frames needed: first renders slot changes, second stabilizes layout
       await comfyPage.nextFrame()
       await comfyPage.nextFrame()
 
@@ -444,7 +445,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       expect(after).not.toBeNull()
       expect(after!.hasPos).toBe(true)
       expect(after!.posY).toBeGreaterThan(after!.titleHeight)
-      expect(after!.widgetName).not.toBe('my_custom_prompt')
+      expect(after!.widgetName).toBe(before!.widgetName)
     })
   })
 
