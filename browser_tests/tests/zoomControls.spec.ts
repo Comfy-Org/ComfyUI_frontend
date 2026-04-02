@@ -93,9 +93,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const input = comfyPage.page
       .getByTestId(TestIds.canvas.zoomPercentageInput)
       .locator('input')
-    await input.focus()
-    await comfyPage.page.keyboard.press('Control+a')
-    await input.pressSequentially('100')
+    await input.fill('100')
     await input.press('Enter')
     await comfyPage.nextFrame()
 

@@ -209,6 +209,10 @@ test.describe('Vue Node Context Menu', () => {
         .grantPermissions(['clipboard-read', 'clipboard-write'])
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       await comfyPage.vueNodes.waitForNodes(1)
+      await comfyPage.page
+        .locator('[data-node-id] img')
+        .first()
+        .waitFor({ state: 'visible' })
     })
 
     test('should copy image to clipboard via context menu', async ({

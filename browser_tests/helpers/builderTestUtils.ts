@@ -52,11 +52,13 @@ export async function setupSubgraphBuilder(
     const subgraphNode = await ksampler.convertToSubgraph()
     await comfyPage.nextFrame()
 
-    const promotedNames = await getPromotedWidgetNames(
-      comfyPage,
-      String(subgraphNode.id)
-    )
-    expect(promotedNames).toContain('seed')
+    await expect(async () => {
+      const promotedNames = await getPromotedWidgetNames(
+        comfyPage,
+        String(subgraphNode.id)
+      )
+      expect(promotedNames).toContain('seed')
+    }).toPass({ timeout: 5000 })
 
     return subgraphNode
   })

@@ -53,15 +53,17 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
       await comfyPage.keyboard.undo()
       await expect(node).not.toBeBypassed()
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(1)
       expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
-      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
-      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(1)
 
       await comfyPage.keyboard.undo()
       await expect(node).not.toBeCollapsed()
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
-      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(2)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(false)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(2)
     })
   })
 

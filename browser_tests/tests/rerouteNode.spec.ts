@@ -113,12 +113,22 @@ test.describe(
         'reroute/single-native-reroute-default-workflow'
       )
 
-      // To find the clickable midpoint button, we use the hardcoded value from the browser logs
-      // since the link is a bezier curve and not a straight line.
-      const middlePoint = { x: 359.4188232421875, y: 468.7716979980469 }
+      // Dynamically read the rendered link marker position from the canvas,
+      // targeting link 5 (CLIP from CheckpointLoaderSimple to negative CLIPTextEncode).
+      const middlePoint = await comfyPage.page.waitForFunction(() => {
+        const canvas = window['app']?.canvas
+        if (!canvas?.renderedPaths) return null
+        for (const segment of canvas.renderedPaths) {
+          if (segment.id === 5 && segment._pos) {
+            return { x: segment._pos[0], y: segment._pos[1] }
+          }
+        }
+        return null
+      })
+      const pos = await middlePoint.jsonValue()
 
       // Click the middle point of the link to open the context menu.
-      await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
+      await comfyPage.page.mouse.click(pos!.x, pos!.y)
 
       // Click the "Delete" context menu option.
       await comfyPage.page

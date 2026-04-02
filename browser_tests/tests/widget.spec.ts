@@ -317,9 +317,9 @@ test.describe(
 
       // Drag and drop image file onto the load animated webp node
       await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
-        dropPosition: { x, y }
+        dropPosition: { x, y },
+        waitForUpload: true
       })
-      await comfyPage.nextFrame()
 
       // Get the SaveAnimatedWEBP node
       const saveNodes =

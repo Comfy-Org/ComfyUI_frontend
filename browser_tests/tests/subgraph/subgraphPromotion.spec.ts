@@ -635,8 +635,13 @@ test.describe(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
 
-        const initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
-        expect(initialWidgetCount).toBeGreaterThan(0)
+        let initialWidgetCount = 0
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
+            timeout: 5000
+          })
+          .toBeGreaterThan(0)
+        initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
 
         // Navigate into subgraph
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
@@ -649,8 +654,11 @@ test.describe(
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         // Widget count should be reduced
-        const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
-        expect(finalWidgetCount).toBeLessThan(initialWidgetCount)
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
+            timeout: 5000
+          })
+          .toBeLessThan(initialWidgetCount)
       })
     })
   }
