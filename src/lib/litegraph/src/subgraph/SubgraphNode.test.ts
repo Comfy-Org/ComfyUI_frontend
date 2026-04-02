@@ -4,12 +4,13 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
@@ -934,14 +935,17 @@ describe('SubgraphNode promotion view keys', () => {
 
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const nodeWithKeyBuilder = subgraphNode as unknown as {
-      _makePromotionViewKey: (
-        inputKey: string,
-        interiorNodeId: string,
-        widgetName: string,
-        inputName?: string
-      ) => string
-    }
+    const nodeWithKeyBuilder = fromAny<
+      {
+        _makePromotionViewKey: (
+          inputKey: string,
+          interiorNodeId: string,
+          widgetName: string,
+          inputName?: string
+        ) => string
+      },
+      unknown
+    >(subgraphNode)
 
     const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
       '65',

@@ -1,5 +1,6 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
+import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -184,9 +185,9 @@ describe('SwapNodeGroupRow', () => {
       const wrapper = mountRow({
         group: makeGroup({
           // Intentionally omits nodeId to test graceful handling of incomplete node data
-          nodeTypes: [
+          nodeTypes: fromAny<MissingNodeType[], unknown>([
             { type: 'NoIdNode', isReplaceable: true }
-          ] as unknown as MissingNodeType[]
+          ])
         })
       })
       await expand(wrapper)
@@ -234,7 +235,7 @@ describe('SwapNodeGroupRow', () => {
       const wrapper = mountRow({
         group: makeGroup({
           // Intentionally uses a plain string entry to test legacy node type handling
-          nodeTypes: ['StringType'] as unknown as MissingNodeType[]
+          nodeTypes: fromAny<MissingNodeType[], unknown>(['StringType'])
         })
       })
       await wrapper.get('button[aria-label="Expand"]').trigger('click')
