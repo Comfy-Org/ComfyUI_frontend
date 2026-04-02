@@ -29,11 +29,11 @@ logger.setLevel('info')
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
-   * Guard flag to prevent checkState from running during loadGraphData.
+   * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
    * contains the NEW workflow's data while activeWorkflow still points to
-   * the OLD workflow. Any checkState call in that window would serialize
-   * the wrong graph into the old workflow's activeState, corrupting it.
+   * the OLD workflow. Any captureCanvasState call in that window would
+   * serialize the wrong graph into the old workflow's activeState, corrupting it.
    */
   static isLoadingGraph = false
   /**
@@ -138,8 +138,25 @@ export class ChangeTracker {
     }
   }
 
-  checkState() {
+  /**
+   * Snapshot the current canvas state into activeState and push undo.
+   * INVARIANT: only the active workflow's tracker may read from the canvas.
+   * Calling this on an inactive tracker would capture the wrong graph.
+   */
+  captureCanvasState() {
     if (!app.graph || this.changeCount || ChangeTracker.isLoadingGraph) return
+
+    const activeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+    if (activeTracker !== this) {
+      if (import.meta.env.DEV) {
+        logger.error(
+          'captureCanvasState called on inactive tracker for:',
+          this.workflow.path
+        )
+      }
+      return
+    }
+
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
@@ -217,14 +234,14 @@ export class ChangeTracker {
 
   afterChange() {
     if (!--this.changeCount) {
-      this.checkState()
+      this.captureCanvasState()
     }
   }
 
   static init() {
     const getCurrentChangeTracker = () =>
       useWorkflowStore().activeWorkflow?.changeTracker
-    const checkState = () => getCurrentChangeTracker()?.checkState()
+    const captureState = () => getCurrentChangeTracker()?.captureCanvasState()
 
     let keyIgnored = false
     window.addEventListener(
@@ -268,8 +285,8 @@ export class ChangeTracker {
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return
-          logger.debug('checkState on keydown')
-          changeTracker.checkState()
+          logger.debug('captureCanvasState on keydown')
+          changeTracker.captureCanvasState()
         })
       },
       true
@@ -278,34 +295,34 @@ export class ChangeTracker {
     window.addEventListener('keyup', () => {
       if (keyIgnored) {
         keyIgnored = false
-        logger.debug('checkState on keyup')
-        checkState()
+        logger.debug('captureCanvasState on keyup')
+        captureState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
-      logger.debug('checkState on mouseup')
-      checkState()
+      logger.debug('captureCanvasState on mouseup')
+      captureState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
-      logger.debug('checkState on promptQueued')
-      checkState()
+      logger.debug('captureCanvasState on promptQueued')
+      captureState()
     })
 
     api.addEventListener('graphCleared', () => {
-      logger.debug('checkState on graphCleared')
-      checkState()
+      logger.debug('captureCanvasState on graphCleared')
+      captureState()
     })
 
     // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
-      logger.debug('checkState on processMouseUp')
-      checkState()
+      logger.debug('captureCanvasState on processMouseUp')
+      captureState()
       return v
     }
 
@@ -319,9 +336,9 @@ export class ChangeTracker {
     ) {
       const extendedCallback = (v: string) => {
         callback(v)
-        checkState()
+        captureState()
       }
-      logger.debug('checkState on prompt')
+      logger.debug('captureCanvasState on prompt')
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
 
@@ -329,8 +346,8 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
-      logger.debug('checkState on contextMenuClose')
-      checkState()
+      logger.debug('captureCanvasState on contextMenuClose')
+      captureState()
       return v
     }
 
@@ -382,7 +399,7 @@ export class ChangeTracker {
       const htmlElement = activeEl as HTMLElement
       if (`on${evt}` in htmlElement) {
         const listener = () => {
-          useWorkflowStore().activeWorkflow?.changeTracker?.checkState?.()
+          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState?.()
           htmlElement.removeEventListener(evt, listener)
         }
         htmlElement.addEventListener(evt, listener)
