@@ -223,6 +223,59 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 }
 
+export class ModelLibrarySidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'model-library')
+  }
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search Models...')
+  }
+
+  get modelTree() {
+    return this.page.locator('.model-lib-tree-explorer')
+  }
+
+  get refreshButton() {
+    return this.page.getByRole('button', { name: 'Refresh' })
+  }
+
+  get loadAllFoldersButton() {
+    return this.page.getByRole('button', { name: 'Load All Folders' })
+  }
+
+  get folderNodes() {
+    return this.modelTree.locator('.p-tree-node:not(.p-tree-node-leaf)')
+  }
+
+  get leafNodes() {
+    return this.modelTree.locator('.p-tree-node-leaf')
+  }
+
+  get modelPreview() {
+    return this.page.locator('.model-lib-model-preview')
+  }
+
+  override async open() {
+    await super.open()
+    await this.modelTree.waitFor({ state: 'visible' })
+  }
+
+  getFolderByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node:not(.p-tree-node-leaf)')
+      .filter({ hasText: label })
+      .first()
+  }
+
+  getLeafByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node-leaf')
+      .filter({ hasText: label })
+      .first()
+  }
+}
+
 export class AssetsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'assets')

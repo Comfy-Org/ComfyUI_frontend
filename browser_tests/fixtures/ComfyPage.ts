@@ -19,6 +19,7 @@ import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import {
   AssetsSidebarTab,
+  ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
   WorkflowsSidebarTab
@@ -32,6 +33,7 @@ import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
+import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
 import { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
 import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
@@ -56,6 +58,7 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
+  private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
@@ -73,6 +76,11 @@ class ComfyMenu {
 
   get buttons() {
     return this.sideToolbar.locator('.side-bar-button')
+  }
+
+  get modelLibraryTab() {
+    this._modelLibraryTab ??= new ModelLibrarySidebarTab(this.page)
+    return this._modelLibraryTab
   }
 
   get nodeLibraryTab() {
@@ -206,6 +214,7 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
+  public readonly modelLibrary: ModelLibraryHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -253,6 +262,7 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
+    this.modelLibrary = new ModelLibraryHelper(page)
   }
 
   get visibleToasts() {
