@@ -223,14 +223,14 @@ describe('ChangeTracker', () => {
       expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
     })
 
-    it('still stores viewport when captureCanvasState is no-op (inactive)', () => {
+    it('is a full no-op when called on inactive tracker', () => {
       const tracker = createTracker()
       mockWorkflowStore.activeWorkflow = { changeTracker: {} }
 
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
+      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
     })
   })
 

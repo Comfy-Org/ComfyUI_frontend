@@ -97,10 +97,20 @@ export class ChangeTracker {
    * Called exactly once when switching away from this workflow.
    *
    * PRECONDITION: must be called while this workflow is still the active one
-   * (before the activeWorkflow pointer is moved). captureCanvasState() will
-   * no-op if called after the pointer has already moved.
+   * (before the activeWorkflow pointer is moved). If called after the pointer
+   * has already moved, this is a no-op to avoid freezing wrong viewport data.
    */
   deactivate() {
+    const isActive = useWorkflowStore().activeWorkflow?.changeTracker === this
+    if (!isActive) {
+      if (import.meta.env.DEV) {
+        logger.error(
+          'deactivate() called on inactive tracker for:',
+          this.workflow.path
+        )
+      }
+      return
+    }
     this.captureCanvasState()
     this.store()
   }

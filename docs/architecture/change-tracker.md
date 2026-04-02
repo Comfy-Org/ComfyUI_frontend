@@ -59,7 +59,7 @@ useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
 
 ### Existing Manual Call Sites
 
-These locations already call `captureCanvasState()` explicitly:
+These locations call `captureCanvasState()` directly:
 
 - `WidgetSelectDropdown.vue` — After dropdown selection and file upload
 - `ColorPickerButton.vue` — After changing node colors
@@ -71,7 +71,9 @@ These locations already call `captureCanvasState()` explicitly:
 - `useSubgraphOperations.ts` — After subgraph enter/exit
 - `useCanvasRefresh.ts` — After canvas refresh
 - `useCoreCommands.ts` — After metadata/subgraph commands
-- `workflowService.ts` — After workflow service operations
+
+`workflowService.ts` calls `captureCanvasState()` indirectly via
+`deactivate()` and `prepareForSave()` (see Lifecycle Methods above).
 
 ## Lifecycle Methods
 

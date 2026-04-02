@@ -257,6 +257,7 @@ export function createMockChangeTracker(
     redoQueue: [],
     changeCount: 0,
     captureCanvasState: vi.fn(),
+    checkState: vi.fn(),
     deactivate: vi.fn(),
     prepareForSave: vi.fn(),
     reset: vi.fn(),
