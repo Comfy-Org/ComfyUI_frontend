@@ -20,9 +20,9 @@ test.describe(
     }) => {
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
       await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
-      await comfyPage.page.evaluate(() => {
+      await comfyPage.page.evaluate(async () => {
         const serialized = window.app!.rootGraph.serialize()
-        window.app!.loadGraphData({
+        await window.app!.loadGraphData({
           ...serialized,
           id: '00000000-0000-0000-0000-000000000000'
         } as ComfyWorkflowJSON)
