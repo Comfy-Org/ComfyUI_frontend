@@ -111,6 +111,71 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('drag-copy-copied-node.png')
   })
 
+  test('Alt-drag clones all selected nodes, not just the dragged one', async ({
+    comfyPage
+  }) => {
+    const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+    // Select both CLIPTextEncode nodes via Ctrl+click on their titles
+    const clipNodes =
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    expect(clipNodes).toHaveLength(2)
+
+    await comfyPage.page.keyboard.down('Control')
+    await clipNodes[0].click('title')
+    await clipNodes[1].click('title')
+    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.nextFrame()
+
+    const selectedCount = await comfyPage.nodeOps.getSelectedGraphNodesCount()
+    expect(selectedCount).toBe(2)
+
+    // Alt-drag one of the selected nodes
+    await comfyPage.page.mouse.move(
+      DefaultGraphPositions.textEncodeNode1.x,
+      DefaultGraphPositions.textEncodeNode1.y
+    )
+    await comfyPage.page.keyboard.down('Alt')
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(100, 500)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Alt')
+    await comfyPage.nextFrame()
+
+    // Both selected nodes must have been cloned, not just the dragged one
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 2000 })
+      .toBe(initialCount + 2)
+  })
+
+  test('Alt-drag on multi-selection preserves internal connections', async ({
+    comfyPage
+  }) => {
+    const initialLinkCount = await comfyPage.page.evaluate(
+      () => window.app!.graph._links.size
+    )
+
+    // Select all nodes and alt-drag — internal links should be duplicated
+    await comfyPage.canvas.press('Control+a')
+    await comfyPage.nextFrame()
+
+    await comfyPage.page.mouse.move(
+      DefaultGraphPositions.textEncodeNode1.x,
+      DefaultGraphPositions.textEncodeNode1.y
+    )
+    await comfyPage.page.keyboard.down('Alt')
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(100, 500)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Alt')
+    await comfyPage.nextFrame()
+
+    const newLinkCount = await comfyPage.page.evaluate(
+      () => window.app!.graph._links.size
+    )
+    expect(newLinkCount).toBeGreaterThan(initialLinkCount)
+  })
+
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
