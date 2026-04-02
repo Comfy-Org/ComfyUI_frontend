@@ -88,10 +88,9 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
-import { useAudioService } from '@/services/audioService'
+import { isDOMWidget } from '@/scripts/domWidget'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
@@ -108,12 +107,14 @@ const props = defineProps<{
 // Audio element ref
 const audioRef = ref<HTMLAudioElement>()
 
-// Keep track of the last uploaded path as a backup
-let lastUploadedPath = ''
-
 // Composables
 const recorder = useAudioRecorder({
-  onRecordingComplete: handleRecordingComplete,
+  onRecordingComplete: async (blob) => handleRecordingComplete(blob),
+  onStop: () => {
+    pauseTimer()
+    waveform.stopWaveform()
+    waveform.dispose()
+  },
   onError: () => {
     useToastStore().addAlert(
       t('g.micPermissionDenied') || 'Microphone permission denied'
@@ -154,20 +155,30 @@ const { isPlaying, audioElementKey } = playback
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const modelValue = defineModel<string>({ default: '' })
-
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.canvas.graph) return null
   return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
-async function handleRecordingComplete(blob: Blob) {
-  try {
-    const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-    modelValue.value = path
-    lastUploadedPath = path
-  } catch (e) {
-    useToastStore().addAlert('Failed to upload recorded audio')
+function handleRecordingComplete(blob: Blob) {
+  // Create a widget-owned blob URL (independent of useAudioRecorder's
+  // recordedURL which gets revoked on re-record or unmount) and set it
+  // on the litegraph audioUI DOM widget's element. The original
+  // serializeValue (in uploadAudio.ts) reads element.src, fetches the
+  // blob, and uploads at serialization time.
+  const node = litegraphNode.value
+  if (!node?.widgets) return
+  for (const w of node.widgets) {
+    if (
+      isDOMWidget<HTMLAudioElement, string>(w) &&
+      w.element instanceof HTMLAudioElement
+    ) {
+      if (w.element.src.startsWith('blob:')) {
+        URL.revokeObjectURL(w.element.src)
+      }
+      w.element.src = URL.createObjectURL(blob)
+      break
+    }
   }
 }
 
@@ -198,8 +209,6 @@ async function handleStartRecording() {
 
 function handleStopRecording() {
   recorder.stopRecording()
-  pauseTimer()
-  waveform.stopWaveform()
 }
 
 async function handlePlayRecording() {
@@ -258,42 +267,8 @@ function handlePlaybackEnded() {
   }
 }
 
-// Serialization function for workflow execution
-async function serializeValue() {
-  if (isRecording.value && recorder.mediaRecorder.value) {
-    recorder.mediaRecorder.value.stop()
-
-    await new Promise((resolve, reject) => {
-      let attempts = 0
-      const maxAttempts = 50 // 5 seconds max (50 * 100ms)
-      const checkRecording = () => {
-        if (!isRecording.value && modelValue.value) {
-          resolve(undefined)
-        } else if (++attempts >= maxAttempts) {
-          reject(new Error('Recording serialization timeout after 5 seconds'))
-        } else {
-          setTimeout(checkRecording, 100)
-        }
-      }
-      checkRecording()
-    })
-  }
-
-  return modelValue.value || lastUploadedPath || ''
-}
-
-function registerWidgetSerialization() {
-  const node = litegraphNode.value
-  if (!node?.widgets) return
-  const targetWidget = node.widgets.find((w: IBaseWidget) => w.name === 'audio')
-  if (targetWidget) {
-    targetWidget.serializeValue = serializeValue
-  }
-}
-
 onMounted(() => {
   waveform.initWaveform()
-  registerWidgetSerialization()
 })
 
 onUnmounted(() => {
