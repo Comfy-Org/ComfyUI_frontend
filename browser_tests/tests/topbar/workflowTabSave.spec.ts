@@ -99,9 +99,7 @@ test.describe('Workflow tab save on close', () => {
     await comfyPage.menu.topbar.saveWorkflow('wf-B')
 
     await comfyPage.page.evaluate(() => {
-      window.app!.graph.add(
-        window.LiteGraph!.createNode('Note', undefined, {})
-      )
+      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
     })
     await comfyPage.nextFrame()
 
@@ -177,9 +175,7 @@ test.describe('Workflow tab save on close', () => {
     await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
-      window.app!.graph.add(
-        window.LiteGraph!.createNode('Note', undefined, {})
-      )
+      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
     })
     await comfyPage.nextFrame()
 
