@@ -323,6 +323,63 @@ test.describe('Workflow Persistence', () => {
     expect(linkCountAfter).toBe(linkCountBefore)
   })
 
+  test('Closing an unmodified inactive tab preserves both workflows', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10745 — closing inactive tab could corrupt the persisted file'
+    })
+
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const suffix = Date.now().toString(36)
+    const nameA = `test-A-${suffix}`
+    const nameB = `test-B-${suffix}`
+
+    // Save the default workflow as A
+    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const nodeCountA = await comfyPage.nodeOps.getNodeCount()
+
+    // Create B with a different node count
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.menu.topbar.saveWorkflow(nameB)
+    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
+
+    expect(nodeCountA).not.toBe(nodeCountB)
+
+    // Switch to A (making B inactive and unmodified)
+    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Close inactive B — no save dialog expected
+    await comfyPage.menu.topbar.closeWorkflowTab(nameB)
+    await comfyPage.nextFrame()
+
+    // A should still have its own content
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Reopen B from saved list
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // B should have its original content, not A's
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
+      .toBe(nodeCountB)
+  })
+
   test('Closing an inactive tab with save preserves its own content', async ({
     comfyPage
   }) => {
