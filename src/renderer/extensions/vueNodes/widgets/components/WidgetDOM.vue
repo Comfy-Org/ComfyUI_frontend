@@ -32,6 +32,9 @@ function mountWidgetElement() {
   const widget = findDOMWidget()
   if (!widget) return
   if (domEl.value.contains(widget.element)) return
+  // Remove litegraph-mode sizing classes that cause circular height
+  // dependencies in vueNodes flex layout (h-full + flex:1 1 0% → 0 height)
+  widget.element.classList.remove('h-full')
   domEl.value.replaceChildren(widget.element)
 }
 
@@ -44,7 +47,7 @@ whenever(() => !canvasStore.linearMode, mountWidgetElement)
 <template>
   <div
     ref="domEl"
-    class="flex flex-col *:flex-1"
+    class="flex flex-col *:flex-auto"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
