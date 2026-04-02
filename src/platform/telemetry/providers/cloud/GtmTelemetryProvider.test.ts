@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { GtmTelemetryProvider } from './GtmTelemetryProvider'
 
@@ -13,25 +12,12 @@ function lastDataLayerEntry(): Record<string, unknown> | undefined {
   return dl?.[dl.length - 1] as Record<string, unknown> | undefined
 }
 
-function toUint8Array(data: BufferSource): Uint8Array {
-  if (data instanceof ArrayBuffer) {
-    return new Uint8Array(data)
-  }
-
-  return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
-}
-
 describe('GtmTelemetryProvider', () => {
   beforeEach(() => {
-    vi.unstubAllGlobals()
     window.__CONFIG__ = {}
     window.dataLayer = undefined
     window.gtag = undefined
     document.head.innerHTML = ''
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('injects the GTM runtime script', () => {
@@ -135,12 +121,7 @@ describe('GtmTelemetryProvider', () => {
         event: 'execution_error',
         node_type: 'KSampler'
       })
-      const error = entry?.error
-      expect(typeof error).toBe('string')
-      if (typeof error !== 'string') {
-        throw new Error('Expected execution_error payload to include an error')
-      }
-      expect(error).toHaveLength(100)
+      expect((entry?.error as string).length).toBe(100)
     })
 
     it('pushes select_content for template events', () => {
@@ -249,22 +230,10 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
-    it('pushes hashed email inside the auth event payload', async () => {
+    it('pushes normalized email inside the auth event payload', () => {
       const provider = createInitializedProvider()
-      vi.stubGlobal('crypto', {
-        subtle: {
-          digest: vi.fn(
-            async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
-              const digest = createHash('sha256')
-                .update(toUint8Array(data))
-                .digest()
-              return Uint8Array.from(digest).buffer
-            }
-          )
-        }
-      })
 
-      await provider.trackAuth({
+      provider.trackAuth({
         method: 'email',
         is_new_user: true,
         user_id: 'uid-123',
@@ -278,19 +247,18 @@ describe('GtmTelemetryProvider', () => {
         method: 'email',
         user_id: 'uid-123',
         user_data: {
-          email: createHash('sha256').update('test@example.com').digest('hex')
+          email: 'test@example.com'
         }
       })
       expect(
         dl.some((entry) => 'user_data' in entry && !('event' in entry))
       ).toBe(false)
-      expect(JSON.stringify(dl)).not.toContain('test@example.com')
     })
 
-    it('omits user_data when email is absent', async () => {
+    it('omits user_data when email is absent', () => {
       const provider = createInitializedProvider()
 
-      await provider.trackAuth({
+      provider.trackAuth({
         method: 'google',
         is_new_user: false,
         user_id: 'uid-456'
@@ -300,25 +268,6 @@ describe('GtmTelemetryProvider', () => {
         event: 'login',
         method: 'google',
         user_id: 'uid-456'
-      })
-      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
-    })
-
-    it('omits user_data when hashing is unavailable', async () => {
-      const provider = createInitializedProvider()
-      vi.stubGlobal('crypto', undefined)
-
-      await provider.trackAuth({
-        method: 'github',
-        is_new_user: false,
-        user_id: 'uid-789',
-        email: 'user@example.com'
-      })
-
-      expect(lastDataLayerEntry()).toMatchObject({
-        event: 'login',
-        method: 'github',
-        user_id: 'uid-789'
       })
       expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
     })

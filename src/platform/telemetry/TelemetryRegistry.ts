@@ -57,26 +57,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     })
   }
 
-  private async dispatchAsync(
-    action: (provider: TelemetryProvider) => void | Promise<void>
-  ): Promise<void> {
-    await Promise.all(
-      this.providers.map(async (provider) => {
-        try {
-          await action(provider)
-        } catch (error) {
-          console.error('[Telemetry] Provider dispatch failed', error)
-        }
-      })
-    )
-  }
-
   trackSignupOpened(): void {
     this.dispatch((provider) => provider.trackSignupOpened?.())
   }
 
-  async trackAuth(metadata: AuthMetadata): Promise<void> {
-    await this.dispatchAsync((provider) => provider.trackAuth?.(metadata))
+  trackAuth(metadata: AuthMetadata): void {
+    this.dispatch((provider) => provider.trackAuth?.(metadata))
   }
 
   trackUserLoggedIn(): void {

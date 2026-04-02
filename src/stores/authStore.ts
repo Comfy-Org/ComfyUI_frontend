@@ -25,7 +25,6 @@ import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AuthMetadata } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -351,11 +350,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const trackCloudAuth = async (metadata: AuthMetadata): Promise<void> => {
-    if (!isCloud) return
-    await useTelemetry()?.trackAuth(metadata)
-  }
-
   const login = async (
     email: string,
     password: string
@@ -366,12 +360,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    await trackCloudAuth({
-      method: 'email',
-      is_new_user: false,
-      user_id: result.user.uid,
-      email: result.user.email ?? undefined
-    })
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: false,
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
+      })
+    }
 
     return result
   }
@@ -386,12 +382,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    await trackCloudAuth({
-      method: 'email',
-      is_new_user: true,
-      user_id: result.user.uid,
-      email: result.user.email ?? undefined
-    })
+    if (isCloud) {
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: true,
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
+      })
+    }
 
     return result
   }
@@ -404,13 +402,16 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    const additionalUserInfo = getAdditionalUserInfo(result)
-    await trackCloudAuth({
-      method: 'google',
-      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
-      user_id: result.user.uid,
-      email: result.user.email ?? undefined
-    })
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      useTelemetry()?.trackAuth({
+        method: 'google',
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
+      })
+    }
 
     return result
   }
@@ -423,13 +424,16 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    const additionalUserInfo = getAdditionalUserInfo(result)
-    await trackCloudAuth({
-      method: 'github',
-      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
-      user_id: result.user.uid,
-      email: result.user.email ?? undefined
-    })
+    if (isCloud) {
+      const additionalUserInfo = getAdditionalUserInfo(result)
+      useTelemetry()?.trackAuth({
+        method: 'github',
+        is_new_user:
+          options?.isNewUser || additionalUserInfo?.isNewUser || false,
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined
+      })
+    }
 
     return result
   }

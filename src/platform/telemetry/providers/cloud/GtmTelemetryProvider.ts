@@ -28,7 +28,6 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import { hashEmail } from '../../utils/hashEmail'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -135,20 +134,18 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     })
   }
 
-  async trackAuth(metadata: AuthMetadata): Promise<void> {
-    if (!this.initialized) return
-    const basePayload = {
+  trackAuth(metadata: AuthMetadata): void {
+    const payload = {
       method: metadata.method,
-      ...(metadata.user_id ? { user_id: metadata.user_id } : {})
+      ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
+      ...(metadata.email
+        ? {
+            user_data: {
+              email: metadata.email.trim().toLowerCase()
+            }
+          }
+        : {})
     }
-
-    const hashedEmail = await hashEmail(metadata.email, 'SHA-256')
-    const payload = hashedEmail
-      ? {
-          ...basePayload,
-          user_data: { email: hashedEmail }
-        }
-      : basePayload
 
     this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
   }

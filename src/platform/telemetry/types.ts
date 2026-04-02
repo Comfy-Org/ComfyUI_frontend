@@ -351,7 +351,7 @@ export interface BeginCheckoutMetadata
 export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
-  trackAuth?(metadata: AuthMetadata): void | Promise<void>
+  trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
