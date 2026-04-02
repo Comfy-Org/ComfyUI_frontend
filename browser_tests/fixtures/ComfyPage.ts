@@ -20,6 +20,7 @@ import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import {
   AssetsSidebarTab,
   NodeLibrarySidebarTab,
+  NodeLibrarySidebarTabV2,
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -56,6 +57,7 @@ class ComfyPropertiesPanel {
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
+  private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
 
@@ -76,6 +78,11 @@ class ComfyMenu {
   get nodeLibraryTab() {
     this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
     return this._nodeLibraryTab
+  }
+
+  get nodeLibraryTabV2() {
+    this._nodeLibraryTabV2 ??= new NodeLibrarySidebarTabV2(this.page)
+    return this._nodeLibraryTabV2
   }
 
   get assetsTab() {

@@ -100,6 +100,59 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 }
 
+export class NodeLibrarySidebarTabV2 extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'node-library')
+  }
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search...')
+  }
+
+  get sidebarContent() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  getTab(name: string) {
+    return this.sidebarContent.getByRole('tab', { name, exact: true })
+  }
+
+  get allTab() {
+    return this.getTab('All')
+  }
+
+  get blueprintsTab() {
+    return this.getTab('Blueprints')
+  }
+
+  get sortButton() {
+    return this.sidebarContent.getByRole('button', { name: 'Sort' })
+  }
+
+  getFolder(folderName: string) {
+    return this.sidebarContent
+      .getByRole('treeitem', { name: folderName })
+      .first()
+  }
+
+  getNode(nodeName: string) {
+    return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
+  }
+
+  async expandFolder(folderName: string) {
+    const folder = this.getFolder(folderName)
+    const isExpanded = await folder.getAttribute('aria-expanded')
+    if (isExpanded !== 'true') {
+      await folder.click()
+    }
+  }
+
+  override async open() {
+    await super.open()
+    await this.searchInput.waitFor({ state: 'visible' })
+  }
+}
+
 export class WorkflowsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
