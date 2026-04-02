@@ -91,6 +91,26 @@ export class ChangeTracker {
     this.subgraphState = { navigation }
   }
 
+  /**
+   * Freeze this tracker's state before the workflow goes inactive.
+   * Captures the final canvas state + viewport/outputs.
+   * Called exactly once when switching away from this workflow.
+   */
+  deactivate() {
+    this.captureCanvasState()
+    this.store()
+  }
+
+  /**
+   * Ensure activeState is up-to-date for persistence.
+   * Active workflow: flushes canvas → activeState.
+   * Inactive workflow: no-op (activeState was frozen by deactivate()).
+   */
+  prepareForSave() {
+    const isActive = useWorkflowStore().activeWorkflow?.changeTracker === this
+    if (isActive) this.captureCanvasState()
+  }
+
   restore() {
     if (this.ds) {
       app.canvas.ds.scale = this.ds.scale
