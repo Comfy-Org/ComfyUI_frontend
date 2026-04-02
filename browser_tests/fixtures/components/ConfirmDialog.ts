@@ -28,12 +28,9 @@ export class ConfirmDialog {
     await loc.waitFor({ state: 'visible' })
     await loc.click()
 
-    // Wait for the dialog mask to disappear after confirming
-    const mask = this.page.locator('.p-dialog-mask')
-    const count = await mask.count()
-    if (count > 0) {
-      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
-    }
+    // Wait for this confirm dialog to close (not all dialogs — another
+    // dialog like save-as may open immediately after).
+    await this.root.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
