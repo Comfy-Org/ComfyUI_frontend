@@ -73,6 +73,17 @@ These locations already call `captureCanvasState()` explicitly:
 - `useCoreCommands.ts` — After metadata/subgraph commands
 - `workflowService.ts` — After workflow service operations
 
+## Lifecycle Methods
+
+| Method                 | Caller                          | Purpose                                                                                                                    |
+| ---------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `captureCanvasState()` | Event handlers, UI interactions | Snapshots canvas into activeState, pushes undo. Asserts active tracker.                                                    |
+| `deactivate()`         | `beforeLoadNewGraph` only       | `captureCanvasState()` + `store()`. Freezes everything for tab switch. Must be called while this workflow is still active. |
+| `prepareForSave()`     | Save paths only                 | Active: calls `captureCanvasState()`. Inactive: no-op (state was frozen by `deactivate()`).                                |
+| `store()`              | Internal to `deactivate()`      | Saves viewport scale/offset, node outputs, subgraph navigation.                                                            |
+| `restore()`            | `afterLoadNewGraph`             | Restores viewport, outputs, subgraph navigation.                                                                           |
+| `reset()`              | `afterLoadNewGraph`, save       | Resets initial state (marks workflow as "clean").                                                                          |
+
 ## Transaction Guards
 
 For operations that make multiple changes that should be a single undo entry:
@@ -92,6 +103,8 @@ The `litegraph:canvas` custom event also supports this with `before-change` /
   inactive trackers get an early return (and a DEV error log)
 - `captureCanvasState()` is a no-op during `loadGraphData` (guarded by
   `isLoadingGraph`) to prevent cross-workflow corruption
+- `captureCanvasState()` is a no-op during undo/redo (guarded by
+  `_restoringState`) to prevent undo history corruption
 - `captureCanvasState()` is a no-op when `changeCount > 0` (inside a transaction)
 - `undoQueue` is capped at 50 entries (`MAX_HISTORY`)
 - `graphEqual` ignores node order and `ds` (pan/zoom) when comparing

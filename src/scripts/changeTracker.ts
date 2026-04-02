@@ -95,6 +95,10 @@ export class ChangeTracker {
    * Freeze this tracker's state before the workflow goes inactive.
    * Captures the final canvas state + viewport/outputs.
    * Called exactly once when switching away from this workflow.
+   *
+   * PRECONDITION: must be called while this workflow is still the active one
+   * (before the activeWorkflow pointer is moved). captureCanvasState() will
+   * no-op if called after the pointer has already moved.
    */
   deactivate() {
     this.captureCanvasState()
@@ -164,7 +168,13 @@ export class ChangeTracker {
    * Calling this on an inactive tracker would capture the wrong graph.
    */
   captureCanvasState() {
-    if (!app.graph || this.changeCount || ChangeTracker.isLoadingGraph) return
+    if (
+      !app.graph ||
+      this.changeCount ||
+      this._restoringState ||
+      ChangeTracker.isLoadingGraph
+    )
+      return
 
     const activeTracker = useWorkflowStore().activeWorkflow?.changeTracker
     if (activeTracker !== this) {
@@ -193,6 +203,16 @@ export class ChangeTracker {
       this.redoQueue.length = 0
       this.updateModified()
     }
+  }
+
+  /** @deprecated Use {@link captureCanvasState} instead. */
+  checkState() {
+    if (import.meta.env.DEV) {
+      logger.warn(
+        'checkState() is deprecated — use captureCanvasState() instead.'
+      )
+    }
+    this.captureCanvasState()
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
