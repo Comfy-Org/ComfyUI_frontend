@@ -345,12 +345,18 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.menu.topbar.saveWorkflow(nameA)
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
-    // Create B with a different node count
-    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.menu.topbar.saveWorkflow(nameB)
-    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
+    // Create B: duplicate, add a node, then save (unmodified after save)
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.nextFrame()
 
-    expect(nodeCountA).not.toBe(nodeCountB)
+    await comfyPage.page.evaluate(() => {
+      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
+    })
+    await comfyPage.nextFrame()
+    await comfyPage.menu.topbar.saveWorkflow(nameB)
+
+    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
+    expect(nodeCountB).toBe(nodeCountA + 1)
 
     // Switch to A (making B inactive and unmodified)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
@@ -359,8 +365,10 @@ test.describe('Workflow Persistence', () => {
       .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
       .toBe(nodeCountA)
 
-    // Close inactive B — no save dialog expected
-    await comfyPage.menu.topbar.closeWorkflowTab(nameB)
+    // Close inactive B via middle-click — no save dialog expected
+    await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
+      button: 'middle'
+    })
     await comfyPage.nextFrame()
 
     // A should still have its own content
