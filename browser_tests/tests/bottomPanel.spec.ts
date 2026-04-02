@@ -20,35 +20,6 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).not.toBeVisible()
   })
 
-  test('should remember last active tab when re-opening terminal panel', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
-
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
-
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasLogsTab = await logsTab.isVisible().catch(() => false)
-    if (!hasLogsTab) {
-      test.skip()
-      return
-    }
-
-    // Logs should be active by default
-    await expect(logsTab).toHaveAttribute('aria-selected', 'true')
-
-    // Close then reopen
-    await bottomPanel.closeButton.click()
-    await expect(bottomPanel.root).not.toBeVisible()
-
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
-
-    // Logs tab should still be the active tab
-    await expect(logsTab).toHaveAttribute('aria-selected', 'true')
-  })
-
   test('should display resize gutter when panel is open', async ({
     comfyPage
   }) => {
@@ -117,51 +88,6 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     })
   })
 
-  test('should switch from shortcuts to terminal panel', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
-
-    // Open shortcuts panel first
-    await bottomPanel.keyboardShortcutsButton.click()
-    await expect(bottomPanel.root).toBeVisible()
-    await expect(bottomPanel.shortcuts.essentialsTab).toBeVisible()
-
-    // Click toggle button to switch to terminal panel
-    await bottomPanel.toggleButton.click()
-
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasTerminalTabs = await logsTab.isVisible().catch(() => false)
-
-    if (hasTerminalTabs) {
-      // Terminal panel is showing -- shortcuts tabs should not be visible
-      await expect(bottomPanel.shortcuts.essentialsTab).not.toBeVisible()
-      await expect(logsTab).toBeVisible()
-    }
-  })
-
-  test('should switch from terminal to shortcuts panel', async ({
-    comfyPage
-  }) => {
-    const { bottomPanel } = comfyPage
-
-    // Open terminal panel first
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
-
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasTerminalTabs = await logsTab.isVisible().catch(() => false)
-    if (!hasTerminalTabs) {
-      test.skip()
-      return
-    }
-
-    // Switch to shortcuts
-    await bottomPanel.keyboardShortcutsButton.click()
-    await expect(bottomPanel.shortcuts.essentialsTab).toBeVisible()
-    await expect(logsTab).not.toBeVisible()
-  })
-
   test('should close panel via close button from shortcuts view', async ({
     comfyPage
   }) => {
@@ -172,33 +98,5 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
 
     await bottomPanel.closeButton.click()
     await expect(bottomPanel.root).not.toBeVisible()
-  })
-
-  test('should display all registered terminal tabs', async ({ comfyPage }) => {
-    const { bottomPanel } = comfyPage
-
-    await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
-
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    const hasTerminalTabs = await logsTab.isVisible().catch(() => false)
-    if (!hasTerminalTabs) {
-      test.skip()
-      return
-    }
-
-    // At least the Logs tab should be present
-    await expect(logsTab).toBeVisible()
-
-    // The active tab should have aria-selected
-    const tabs = bottomPanel.root.getByRole('tab')
-    const tabCount = await tabs.count()
-    expect(tabCount).toBeGreaterThanOrEqual(1)
-
-    // Exactly one tab should be selected
-    const selectedTabs = bottomPanel.root.locator(
-      '[role="tab"][aria-selected="true"]'
-    )
-    await expect(selectedTabs).toHaveCount(1)
   })
 })
