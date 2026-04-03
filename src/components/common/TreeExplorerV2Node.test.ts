@@ -29,6 +29,17 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
   })
 }))
 
+const mockDeleteBlueprint = vi.fn()
+const mockIsUserBlueprint = vi.fn().mockReturnValue(false)
+
+vi.mock('@/stores/subgraphStore', () => ({
+  useSubgraphStore: () => ({
+    isUserBlueprint: mockIsUserBlueprint,
+    deleteBlueprint: mockDeleteBlueprint,
+    typePrefix: 'SubgraphBlueprint.'
+  })
+}))
+
 vi.mock('@/components/node/NodePreviewCard.vue', () => ({
   default: { template: '<div />' }
 }))
@@ -175,8 +186,12 @@ describe('TreeExplorerV2Node', () => {
       expect(contextMenuNode.value).toEqual(nodeItem.value)
     })
 
-    it('does not set contextMenuNode for folder items', async () => {
-      const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
+    it('clears contextMenuNode when right-clicking a folder', async () => {
+      const contextMenuNode = ref<RenderedTreeExplorerNode | null>({
+        key: 'stale',
+        type: 'node',
+        label: 'Stale'
+      } as RenderedTreeExplorerNode)
 
       const { wrapper } = mountComponent(
         { item: createMockItem('folder') },
@@ -191,6 +206,59 @@ describe('TreeExplorerV2Node', () => {
       await folderDiv.trigger('contextmenu')
 
       expect(contextMenuNode.value).toBeNull()
+    })
+  })
+
+  describe('blueprint actions', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('shows delete button for user blueprints', () => {
+      mockIsUserBlueprint.mockReturnValue(true)
+      const { wrapper } = mountComponent({
+        item: createMockItem('node', {
+          data: { name: 'SubgraphBlueprint.test' }
+        })
+      })
+
+      expect(wrapper.find('[aria-label="g.delete"]').exists()).toBe(true)
+    })
+
+    it('hides delete button for non-blueprint nodes', () => {
+      mockIsUserBlueprint.mockReturnValue(false)
+      const { wrapper } = mountComponent({
+        item: createMockItem('node', {
+          data: { name: 'KSampler' }
+        })
+      })
+
+      expect(wrapper.find('[aria-label="g.delete"]').exists()).toBe(false)
+    })
+
+    it('always shows bookmark button', () => {
+      mockIsUserBlueprint.mockReturnValue(true)
+      const { wrapper } = mountComponent({
+        item: createMockItem('node', {
+          data: { name: 'SubgraphBlueprint.test' }
+        })
+      })
+
+      expect(wrapper.find('[aria-label="icon.bookmark"]').exists()).toBe(true)
+    })
+
+    it('calls deleteBlueprint when delete button is clicked', async () => {
+      mockIsUserBlueprint.mockReturnValue(true)
+      const nodeName = 'SubgraphBlueprint.test'
+      const { wrapper } = mountComponent({
+        item: createMockItem('node', {
+          data: { name: nodeName }
+        })
+      })
+
+      await wrapper.find('[aria-label="g.delete"]').trigger('click')
+
+      expect(mockDeleteBlueprint).toHaveBeenCalledWith(nodeName)
     })
   })
 

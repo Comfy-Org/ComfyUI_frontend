@@ -432,6 +432,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     return nodeDef !== undefined && nodeDef.isGlobal === true
   }
 
+  function isUserBlueprint(nodeType?: string): boolean {
+    if (!nodeType?.startsWith(typePrefix)) return false
+    return !isGlobalBlueprint(nodeType.slice(typePrefix.length))
+  }
+
   return {
     deleteBlueprint,
     editBlueprint,
@@ -439,6 +444,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     getBlueprint,
     isGlobalBlueprint,
     isSubgraphBlueprint,
+    isUserBlueprint,
     publishSubgraph,
     subgraphBlueprints,
     typePrefix
