@@ -65,6 +65,29 @@ describe('buildTree', () => {
   })
 })
 
+describe('buildTree workflow keys preserve file extensions', () => {
+  it('should set leaf label to full filename including extension', () => {
+    const workflows = [
+      { key: 'Workflow-A.json' },
+      { key: 'subfolder/Workflow-B.json' },
+      { key: 'my-app.app.json' }
+    ]
+
+    const tree = buildTree(workflows, (w) => w.key.split('/'))
+
+    const leafLabels = (node: TreeNode): string[] =>
+      node.leaf
+        ? [node.key.split('/').pop()!]
+        : (node.children ?? []).flatMap(leafLabels)
+
+    expect(leafLabels(tree)).toEqual([
+      'Workflow-A.json',
+      'Workflow-B.json',
+      'my-app.app.json'
+    ])
+  })
+})
+
 describe('sortedTree', () => {
   const createNode = (label: string, leaf = false): TreeNode => ({
     key: label,
