@@ -61,6 +61,15 @@ describe('ModelInfoPanel', () => {
       expect(wrapper.text()).toContain('my-model.safetensors')
     })
 
+    it('prefers user_metadata.filename over asset.name for filename field', () => {
+      const asset = createMockAsset({
+        name: 'registry-display-name',
+        user_metadata: { filename: 'checkpoints/real-file.safetensors' }
+      })
+      const wrapper = mountPanel(asset)
+      expect(wrapper.text()).toContain('checkpoints/real-file.safetensors')
+    })
+
     it('displays name from user_metadata when present', () => {
       const asset = createMockAsset({
         user_metadata: { name: 'My Custom Model' }
