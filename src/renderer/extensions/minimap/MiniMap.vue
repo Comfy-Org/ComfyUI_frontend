@@ -40,7 +40,7 @@
         size="icon"
         variant="muted-textonly"
         :aria-label="$t('g.close')"
-        data-testid="close-minmap-button"
+        data-testid="close-minimap-button"
         @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
       >
         <i class="icon-[lucide--x]" />

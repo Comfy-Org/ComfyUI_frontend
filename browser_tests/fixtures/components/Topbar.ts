@@ -50,15 +50,30 @@ export class Topbar {
     return classes ? !classes.includes('invisible') : false
   }
 
+  get newWorkflowButton(): Locator {
+    return this.page.locator('.new-blank-workflow-button')
+  }
+
   getWorkflowTab(tabName: string): Locator {
     return this.page
       .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
       .locator('..')
   }
 
+  getTab(index: number): Locator {
+    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+  }
+
+  getActiveTab(): Locator {
+    return this.page.locator(
+      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
+    )
+  }
+
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
-    await tab.getByRole('button', { name: 'Close' }).click({ force: true })
+    await tab.hover()
+    await tab.locator('.close-button').click({ force: true })
   }
 
   getSaveDialog(): Locator {

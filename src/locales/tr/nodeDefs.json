@@ -2190,6 +2190,10 @@
       "image": {
         "name": "görüntü"
       },
+      "keep_aspect": {
+        "name": "oranı_koru",
+        "tooltip": "Kırpmanın çıktı boyutuna sığması için esnetilip esnetilmeyeceği veya en-boy oranını korumak için siyah piksellerle doldurulup doldurulmayacağı."
+      },
       "output_height": {
         "name": "çıktı_yüksekliği",
         "tooltip": "Her kırpmanın yeniden boyutlandırılacağı yükseklik."
@@ -2309,6 +2313,23 @@
     "display_name": "Gürültüyü Devre Dışı Bırak",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "BBox'ları Çiz",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxlar"
+      },
+      "image": {
+        "name": "görsel"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "çıktı_görseli",
         "tooltip": null
       }
     }
@@ -12226,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Tespit",
+    "inputs": {
+      "class_name": {
+        "name": "sınıf_adı",
+        "tooltip": "Tespitleri sınıfa göre filtrele. Filtrelemeyi devre dışı bırakmak için 'all' olarak ayarlayın."
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "max_detections": {
+        "name": "maksimum_tespit",
+        "tooltip": "Görsel başına döndürülecek en fazla tespit sayısı. Güven puanına göre azalan sırada."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "eşik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxlar",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Rastgele Kırpılmış Görseller",
     "inputs": {
@@ -15630,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_görüntüsü",
         "tooltip": null
       }
     }

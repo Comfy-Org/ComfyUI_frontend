@@ -2258,6 +2258,7 @@
     "dataset": "jeu de données",
     "debug": "débogage",
     "deprecated": "déprécié",
+    "detection": "détection",
     "edit_models": "edit_models",
     "flux": "flux",
     "gligen": "gligen",
@@ -3239,6 +3240,7 @@
       "termsAgreement": "En continuant, vous acceptez les {terms} et la {privacy} de Comfy Org.",
       "totalDueToday": "Total dû aujourd'hui"
     },
+    "refreshCredits": "Actualiser les crédits",
     "renewsDate": "Renouvellement le {date}",
     "required": {
       "pollingFailed": "Échec de l'activation de l'abonnement",
