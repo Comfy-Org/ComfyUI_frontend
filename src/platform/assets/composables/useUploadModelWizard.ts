@@ -249,11 +249,21 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         uploadStatus.value = 'processing'
 
         const stopWatch = watch(
-          () => assetDownloadStore.lastCompletedDownload,
-          async (completed) => {
-            if (completed?.taskId === result.task.task_id) {
+          () =>
+            assetDownloadStore.downloadList.find(
+              (d) => d.taskId === result.task.task_id
+            )?.status,
+          async (status) => {
+            if (status === 'completed') {
               uploadStatus.value = 'success'
               await refreshModelCaches()
+              stopWatch()
+            } else if (status === 'failed') {
+              const download = assetDownloadStore.downloadList.find(
+                (d) => d.taskId === result.task.task_id
+              )
+              uploadStatus.value = 'error'
+              uploadError.value = download?.error || 'Download failed'
               stopWatch()
             }
           }
