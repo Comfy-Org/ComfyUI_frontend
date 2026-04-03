@@ -47,7 +47,10 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    // QA pipeline deps — installed inline in CI workflow
+    '@anthropic-ai/claude-agent-sdk',
+    '@google/generative-ai'
   ],
   ignore: [
     // Auto generated API types
