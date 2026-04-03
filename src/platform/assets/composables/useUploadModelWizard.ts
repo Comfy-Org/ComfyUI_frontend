@@ -275,7 +275,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
             }
-          }
+          },
+          { immediate: true }
         )
       } else {
         uploadStatus.value = 'success'
