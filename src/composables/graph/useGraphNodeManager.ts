@@ -16,7 +16,10 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -74,6 +77,7 @@ export interface SafeWidgetData {
     advanced?: boolean
     hidden?: boolean
     read_only?: boolean
+    values?: IWidgetOptions['values']
   }
   /** Input specification from node definition */
   spec?: InputSpec
@@ -222,7 +226,8 @@ function safeWidgetMapper(
       canvasOnly: widget.options.canvasOnly,
       advanced: widget.options?.advanced ?? widget.advanced,
       hidden: widget.options.hidden,
-      read_only: widget.options.read_only
+      read_only: widget.options.read_only,
+      values: widget.options.values
     }
   }
 

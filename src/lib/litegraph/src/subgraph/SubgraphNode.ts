@@ -45,6 +45,7 @@ import {
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import type { ProxyWidgetSelector } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   makePromotionEntryKey,
@@ -116,6 +117,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     hasMissingBoundSourceWidget: boolean
     views: PromotedWidgetView[]
   }
+  private _selectorWidget: IBaseWidget | null = null
 
   // Declared as accessor via Object.defineProperty in constructor.
   // TypeScript doesn't allow overriding a property with get/set syntax,
@@ -295,6 +297,69 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     return views
+  }
+
+  private _getWidgetsWithSelector(): IBaseWidget[] {
+    const views = this._getPromotedViews()
+    const selector = this.properties.proxyWidgetSelector as
+      | ProxyWidgetSelector
+      | undefined
+    if (!selector?.options?.length || !this._selectorWidget) return views
+
+    const selectedOption =
+      selector.options.find((opt) => opt.label === selector.selected) ??
+      selector.options[0]
+    if (!selectedOption?.widgets) return [this._selectorWidget, ...views]
+
+    const allGroupedKeys = new Set(
+      selector.options.flatMap((opt) =>
+        (opt.widgets ?? []).map(([nid, wn]) => `${nid}:${wn}`)
+      )
+    )
+    const selectedKeys = new Set(
+      selectedOption.widgets.map(([nid, wn]) => `${nid}:${wn}`)
+    )
+
+    const filteredViews = views.filter((v) => {
+      const key = `${v.sourceNodeId}:${v.sourceWidgetName}`
+      return !allGroupedKeys.has(key) || selectedKeys.has(key)
+    })
+
+    return [this._selectorWidget, ...filteredViews]
+  }
+
+  private _initSelectorWidget(): void {
+    const selector = this.properties.proxyWidgetSelector as
+      | ProxyWidgetSelector
+      | undefined
+    if (!selector?.options?.length) {
+      this._selectorWidget = null
+      return
+    }
+
+    const validLabels = selector.options.map((o) => o.label)
+    if (!validLabels.includes(selector.selected)) {
+      selector.selected = validLabels[0]
+    }
+
+    this._selectorWidget = {
+      name: selector.name ?? 'selector',
+      type: 'combo',
+      value: selector.selected,
+      y: 0,
+      serialize: false,
+      options: {
+        values: validLabels
+      },
+      callback: (value: unknown) => {
+        selector.selected = String(value)
+        this._selectorWidget!.value = String(value)
+        this._invalidatePromotedViewsCache()
+        const minSize = this.computeSize()
+        this.setSize([this.size[0], minSize[1]])
+        this.graph?.setDirtyCanvas(true, true)
+      }
+    }
   }
 
   private _invalidatePromotedViewsCache(): void {
@@ -695,7 +760,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Synthetic widgets getter — SubgraphNodes have no native widgets.
     Object.defineProperty(this, 'widgets', {
-      get: () => this._getPromotedViews(),
+      get: () => this._getWidgetsWithSelector(),
       set: () => {
         if (import.meta.env.DEV)
           console.warn(
@@ -1096,6 +1161,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
       this.properties.proxyWidgets = serialized
     }
+
+    this._initSelectorWidget()
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {

@@ -10,6 +10,15 @@ const proxyWidgetTupleSchema = z.union([
 const proxyWidgetsPropertySchema = z.array(proxyWidgetTupleSchema)
 type ProxyWidgetsProperty = z.infer<typeof proxyWidgetsPropertySchema>
 
+export interface ProxyWidgetSelector {
+  name?: string
+  selected: string
+  options: {
+    label: string
+    widgets?: string[][]
+  }[]
+}
+
 export function parseProxyWidgets(
   property: NodeProperty | undefined
 ): ProxyWidgetsProperty {
