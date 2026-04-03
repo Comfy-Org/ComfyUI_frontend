@@ -40,6 +40,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
+import { CurveWidgetHelper } from './helpers/CurveWidgetHelper'
 import type { WorkspaceStore } from '../types/globals'
 
 dotenvConfig()
@@ -269,21 +270,30 @@ export class ComfyPage {
     return this.toast.visibleToasts
   }
 
-  async setupUser(username: string) {
+  async setupUser(username: string): Promise<string> {
     const res = await this.request.get(`${this.url}/api/users`)
     if (res.status() !== 200)
       throw new Error(`Failed to retrieve users: ${await res.text()}`)
 
     const apiRes = await res.json()
-    const user = Object.entries(apiRes?.users ?? {}).find(
-      ([, name]) => name === username
-    )
+    const users = apiRes?.users ?? {}
+    const user = Object.entries(users).find(([, name]) => name === username)
     const id = user?.[0]
 
-    return id ? id : await this.createUser(username)
+    if (id) return id
+
+    try {
+      return await this.createUser(username)
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('Duplicate username')) {
+        const fallbackName = `${username}-${Math.floor(Math.random() * 9999)}`
+        return await this.createUser(fallbackName)
+      }
+      throw e
+    }
   }
 
-  async createUser(username: string) {
+  async createUser(username: string): Promise<string> {
     const resp = await this.request.post(`${this.url}/api/users`, {
       data: { username }
     })
@@ -438,6 +448,7 @@ export const testComfySnapToGridGridSize = 50
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
+  curveWidget: (nodeTitleOrId: string | number) => CurveWidgetHelper
 }>({
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
@@ -450,25 +461,17 @@ export const comfyPageFixture = base.extend<{
     try {
       await comfyPage.setupSettings({
         'Comfy.UseNewMenu': 'Top',
-        // Hide canvas menu/info/selection toolbox by default.
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.Graph.CanvasMenu': false,
         'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
         'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
         'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
         'Comfy.EnableTooltips': false,
         'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
         'Comfy.VueNodes.AutoScaleLayout': false,
-        // Disable toast warning about version compatibility, as they may or
-        // may not appear - depending on upstream ComfyUI dependencies
         'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Disable errors tab to prevent missing model detection from
-        // rendering error indicators on nodes during unrelated tests.
         'Comfy.RightSidePanel.ShowErrorsTab': false
       })
     } catch (e) {
@@ -488,6 +491,15 @@ export const comfyPageFixture = base.extend<{
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
     await use(comfyMouse)
+  },
+  curveWidget: async ({ comfyPage, page }, use) => {
+    await use((nodeTitleOrId: string | number) => {
+      const node = comfyPage.vueNodes.getNodeByTitle(nodeTitleOrId as string)
+      const svg = node.locator('svg').filter({
+        has: page.locator('path[data-testid="curve-path"]')
+      })
+      return new CurveWidgetHelper(page, svg)
+    })
   }
 })
 
