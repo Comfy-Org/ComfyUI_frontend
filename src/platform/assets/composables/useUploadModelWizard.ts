@@ -247,6 +247,17 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           )
         }
         uploadStatus.value = 'processing'
+
+        const stopWatch = watch(
+          () => assetDownloadStore.lastCompletedDownload,
+          async (completed) => {
+            if (completed?.taskId === result.task.task_id) {
+              uploadStatus.value = 'success'
+              await refreshModelCaches()
+              stopWatch()
+            }
+          }
+        )
       } else {
         uploadStatus.value = 'success'
         await refreshModelCaches()
