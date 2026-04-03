@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Workflow reopen overwrites unsaved changes', () => {
   test('Re-loading same workflow file should not silently discard unsaved edits', async ({
@@ -22,13 +23,19 @@ test.describe('Workflow reopen overwrites unsaved changes', () => {
       return node?.widgets?.find((w) => w.name === 'seed')?.value as number
     })
 
-    // Step 3: Modify the seed to a distinct value
+    // Step 3: Modify the seed to a distinct value and trigger change tracking
     const modifiedSeed = originalSeed === 99999 ? 88888 : 99999
     await comfyPage.page.evaluate((newSeed) => {
-      const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')
+      const app = window.app!
+      const node = app.graph.nodes.find((n) => n.type === 'KSampler')
       const widget = node?.widgets?.find((w) => w.name === 'seed')
       if (widget) widget.value = newSeed
-      window.app!.graph.setDirtyCanvas(true, true)
+      app.graph.setDirtyCanvas(true, true)
+
+      // Trigger change tracking so isModified reflects the edit — this is
+      // what happens on mouseup / keyup during normal user interaction.
+      const store = (app.extensionManager as WorkspaceStore).workflow
+      store.activeWorkflow?.changeTracker?.checkState?.()
     }, modifiedSeed)
     await comfyPage.nextFrame()
 
