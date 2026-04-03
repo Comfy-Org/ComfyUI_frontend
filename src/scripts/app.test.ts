@@ -139,6 +139,18 @@ describe('ComfyApp', () => {
       expect(pasteImageNodes).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
     })
+
+    it('should process image files with empty MIME type when extension is recognized', async () => {
+      const mockNode = createMockNode({ id: 1 })
+      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode])
+
+      await app.handleFileList([createTestFile('test.jpg', '')])
+
+      expect(pasteImageNodes).toHaveBeenCalledWith(mockCanvas, [
+        expect.any(File)
+      ])
+      expect(mockCanvas.selectItems).toHaveBeenCalledWith([mockNode])
+    })
   })
 
   describe('handleAudioFileList', () => {
@@ -247,6 +259,22 @@ describe('ComfyApp', () => {
       const imageFile = createTestFile('test.png', 'image/png')
 
       await app.handleFile(imageFile)
+
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(pasteImageNode).toHaveBeenCalledWith(
+        mockCanvas,
+        expect.any(DataTransferItemList),
+        mockNode
+      )
+    })
+
+    it('should handle image files with empty MIME type by extension', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
+
+      const mockNode = createMockNode()
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      await app.handleFile(createTestFile('test.jpg', ''))
 
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
       expect(pasteImageNode).toHaveBeenCalledWith(

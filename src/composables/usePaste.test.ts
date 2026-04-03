@@ -183,6 +183,17 @@ describe('pasteImageNode', () => {
     expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
     expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
   })
+
+  it('should accept image files with empty MIME type when extension is recognized', async () => {
+    const mockNode = createMockNode()
+    const imageFile = createImageFile('test.jpg', '')
+    const dataTransfer = createDataTransfer([imageFile])
+
+    await pasteImageNode(mockCanvas, dataTransfer.items, mockNode)
+
+    expect(mockNode.pasteFile).toHaveBeenCalledWith(imageFile)
+    expect(mockNode.pasteFiles).toHaveBeenCalledWith([imageFile])
+  })
 })
 
 describe('pasteImageNodes', () => {

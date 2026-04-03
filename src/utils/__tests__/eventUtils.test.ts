@@ -1,4 +1,10 @@
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  hasAudioType,
+  hasImageType,
+  hasVideoType,
+  isMediaFile
+} from '@/utils/eventUtils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
@@ -158,6 +164,32 @@ describe('eventUtils', () => {
       )
 
       expect(actual).toEqual([])
+    })
+  })
+
+  describe('media type helpers', () => {
+    it('falls back to filename extension when image MIME type is empty', () => {
+      const file = new File([''], 'example.jpg', { type: '' })
+      expect(hasImageType(file)).toBe(true)
+      expect(isMediaFile(file)).toBe(true)
+    })
+
+    it('falls back to filename extension when audio MIME type is empty', () => {
+      const file = new File([''], 'example.mp3', { type: '' })
+      expect(hasAudioType(file)).toBe(true)
+      expect(isMediaFile(file)).toBe(true)
+    })
+
+    it('falls back to filename extension when video MIME type is empty', () => {
+      const file = new File([''], 'example.mp4', { type: '' })
+      expect(hasVideoType(file)).toBe(true)
+      expect(isMediaFile(file)).toBe(true)
+    })
+
+    it('does not classify unknown extensions as media when MIME type is empty', () => {
+      expect(isMediaFile(new File([''], 'example.bin', { type: '' }))).toBe(
+        false
+      )
     })
   })
 })

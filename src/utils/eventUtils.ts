@@ -1,3 +1,5 @@
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
+
 export async function extractFilesFromDragEvent(
   event: DragEvent
 ): Promise<File[]> {
@@ -29,16 +31,31 @@ export async function extractFilesFromDragEvent(
   }
 }
 
-export function hasImageType({ type }: File): boolean {
-  return type.startsWith('image')
+type SupportedMediaType = 'image' | 'audio' | 'video'
+
+function getMediaTypeFromFile({ name, type }: File): SupportedMediaType | null {
+  if (type.startsWith('image/')) return 'image'
+  if (type.startsWith('audio/')) return 'audio'
+  if (type.startsWith('video/')) return 'video'
+
+  const mediaType = getMediaTypeFromFilename(name)
+  return mediaType === 'image' ||
+    mediaType === 'audio' ||
+    mediaType === 'video'
+    ? mediaType
+    : null
 }
 
-export function hasAudioType({ type }: File): boolean {
-  return type.startsWith('audio')
+export function hasImageType(file: File): boolean {
+  return getMediaTypeFromFile(file) === 'image'
 }
 
-export function hasVideoType({ type }: File): boolean {
-  return type.startsWith('video')
+export function hasAudioType(file: File): boolean {
+  return getMediaTypeFromFile(file) === 'audio'
+}
+
+export function hasVideoType(file: File): boolean {
+  return getMediaTypeFromFile(file) === 'video'
 }
 
 export function isMediaFile(file: File): boolean {

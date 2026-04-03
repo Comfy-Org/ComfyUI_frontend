@@ -342,30 +342,5 @@ describe('LGraphNode', () => {
       expect(onDragDrop).toHaveBeenCalled()
       expect(parentListener).toHaveBeenCalled()
     })
-
-    it('should stop propagation when onDragDrop returns a promise', async () => {
-      const onDragDrop = vi.fn().mockResolvedValue(true)
-      mockData.mockLgraphNode = {
-        onDragDrop,
-        onDragOver: vi.fn(),
-        isSubgraphNode: () => false
-      }
-
-      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
-
-      const parentListener = vi.fn()
-      const parent = wrapper.element.parentElement
-      expect(parent).not.toBeNull()
-      parent!.addEventListener('drop', parentListener)
-
-      wrapper.element.dispatchEvent(
-        new Event('drop', { bubbles: true, cancelable: true })
-      )
-
-      await Promise.resolve()
-
-      expect(onDragDrop).toHaveBeenCalled()
-      expect(parentListener).not.toHaveBeenCalled()
-    })
   })
 })

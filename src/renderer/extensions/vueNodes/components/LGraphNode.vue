@@ -814,15 +814,6 @@ const nodeContainerRef = ref<HTMLDivElement>()
 // Drag and drop support
 const isDraggingOver = ref(false)
 
-function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'then' in value &&
-    typeof value.then === 'function'
-  )
-}
-
 function handleDragOver(event: DragEvent) {
   const node = lgraphNode.value
   if (!node || !node.onDragOver) {
@@ -839,20 +830,13 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-async function handleDrop(event: DragEvent) {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
   if (!node?.onDragDrop) return
 
   const handled = node.onDragDrop(event)
-  if (isPromiseLike<boolean>(handled)) {
-    event.preventDefault()
-    event.stopPropagation()
-    await handled
-    return
-  }
-
   if (handled === true) {
     event.preventDefault()
     event.stopPropagation()

@@ -1825,9 +1825,13 @@ export class ComfyApp {
         video: ['LoadVideo', pasteVideoNode]
       }
 
-      const mediaType = Object.keys(mediaNodeTypes).find((t) =>
-        file.type.startsWith(t)
-      )
+      const mediaType: keyof typeof mediaNodeTypes | null = hasImageType(file)
+        ? 'image'
+        : hasAudioType(file)
+          ? 'audio'
+          : hasVideoType(file)
+            ? 'video'
+            : null
       if (mediaType) {
         const [nodeType, pasteFn] = mediaNodeTypes[mediaType]
         const transfer = new DataTransfer()
@@ -1917,7 +1921,7 @@ export class ComfyApp {
    */
   async handleFileList(fileList: File[]) {
     if (fileList.length === 0) return
-    if (!fileList[0].type.startsWith('image')) return
+    if (!hasImageType(fileList[0])) return
 
     const imageNodes = await pasteImageNodes(this.canvas, fileList)
     if (imageNodes.length === 0) return

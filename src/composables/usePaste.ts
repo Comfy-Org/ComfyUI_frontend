@@ -11,6 +11,11 @@ import {
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import {
+  hasAudioType,
+  hasImageType,
+  hasVideoType
+} from '@/utils/eventUtils'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
@@ -64,9 +69,18 @@ function pasteItemsOnNode(
 ): void {
   if (!node) return
 
-  const filteredItems = Array.from(items).filter((item) =>
-    item.type.startsWith(contentType)
-  )
+  const matchesContentType = (file: File) =>
+    contentType === 'image'
+      ? hasImageType(file)
+      : contentType === 'audio'
+        ? hasAudioType(file)
+        : hasVideoType(file)
+
+  const filteredItems = Array.from(items).filter((item) => {
+    if (item.kind !== 'file') return false
+    const file = item.getAsFile()
+    return file ? matchesContentType(file) : false
+  })
 
   const blob = filteredItems[0]?.getAsFile()
   if (!blob) return
