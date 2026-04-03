@@ -115,7 +115,7 @@ const ROW_CLASS =
   'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input rounded'
 
 const ACTION_BTN_CLASS =
-  'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
+  'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>

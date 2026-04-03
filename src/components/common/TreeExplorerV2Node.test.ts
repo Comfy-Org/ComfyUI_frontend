@@ -13,7 +13,7 @@ import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: { en: { g: { delete: 'Delete' } } }
 })
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -222,7 +222,7 @@ describe('TreeExplorerV2Node', () => {
         })
       })
 
-      expect(wrapper.find('[aria-label="g.delete"]').exists()).toBe(true)
+      expect(wrapper.find('[aria-label="Delete"]').exists()).toBe(true)
     })
 
     it('hides delete button for non-blueprint nodes', () => {
@@ -233,7 +233,7 @@ describe('TreeExplorerV2Node', () => {
         })
       })
 
-      expect(wrapper.find('[aria-label="g.delete"]').exists()).toBe(false)
+      expect(wrapper.find('[aria-label="Delete"]').exists()).toBe(false)
     })
 
     it('always shows bookmark button', () => {
@@ -256,7 +256,7 @@ describe('TreeExplorerV2Node', () => {
         })
       })
 
-      await wrapper.find('[aria-label="g.delete"]').trigger('click')
+      await wrapper.find('[aria-label="Delete"]').trigger('click')
 
       expect(mockDeleteBlueprint).toHaveBeenCalledWith(nodeName)
     })

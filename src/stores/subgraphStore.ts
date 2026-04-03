@@ -434,7 +434,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
   function isUserBlueprint(nodeType?: string): boolean {
     if (!nodeType?.startsWith(typePrefix)) return false
-    return !isGlobalBlueprint(nodeType.slice(typePrefix.length))
+    const name = nodeType.slice(typePrefix.length)
+    return name in subgraphCache && !isGlobalBlueprint(name)
   }
 
   return {
