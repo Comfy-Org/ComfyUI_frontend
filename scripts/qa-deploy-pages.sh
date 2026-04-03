@@ -146,7 +146,7 @@ HEADERSEOF
 PURPOSE_HTML=""
 if [ -f pr-context.txt ]; then
   # Extract title line and first paragraph of description
-  PR_TITLE=$(grep -m1 '^Title:' pr-context.txt | sed 's/^Title: //')
+  PR_TITLE=$(grep -m1 '^Title:' pr-context.txt 2>/dev/null | sed 's/^Title: //' || true)
   if [ "$TARGET_TYPE" = "issue" ]; then
     PURPOSE_LABEL="Issue #${TARGET_NUM}"
     PURPOSE_VERB="reports"
@@ -155,8 +155,8 @@ if [ -f pr-context.txt ]; then
     PURPOSE_VERB="aims to"
   fi
   # Get first ~300 chars of description body (after "Description:" line)
-  PR_DESC=$(sed -n '/^Description:/,/^###/p' pr-context.txt | grep -v '^Description:\|^###' | head -5 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
-  [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400)
+  PR_DESC=$(sed -n '/^Description:/,/^###/p' pr-context.txt 2>/dev/null | grep -v '^Description:\|^###' | head -5 | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400 || true)
+  [ -z "$PR_DESC" ] && PR_DESC=$(sed -n '3,8p' pr-context.txt 2>/dev/null | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' | tr '\n' ' ' | head -c 400 || true)
   # Build requirements from QA guide JSON
   REQS_HTML=""
   QA_GUIDE=$(ls qa-guides/qa-guide-*.json 2>/dev/null | head -1 || true)
@@ -223,15 +223,26 @@ for rlog in qa-artifacts/*/research/research-log.json qa-artifacts/*/*/research/
   fi
 done
 
+# Copy generated test code to deploy dir
+for tfile in qa-artifacts/*/research/reproduce.spec.ts qa-artifacts/*/*/research/reproduce.spec.ts qa-artifacts/before/*/research/reproduce.spec.ts; do
+  if [ -f "$tfile" ]; then
+    cp "$tfile" "$DEPLOY_DIR/reproduce.spec.ts"
+    echo "Found test code: $tfile"
+    break
+  fi
+done
+
 # Generate badge SVGs into deploy dir
 # Priority: research-log.json verdict (a11y-verified) > video review verdict (AI interpretation)
 REPRO_COUNT=0 INCONC_COUNT=0 NOT_REPRO_COUNT=0 TOTAL_REPORTS=0
 
 # Try research log first (ground truth from a11y assertions)
 RESEARCH_VERDICT=""
+REPRO_METHOD=""
 if [ -f "$DEPLOY_DIR/research-log.json" ]; then
   RESEARCH_VERDICT=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('verdict',''))" "$DEPLOY_DIR/research-log.json" 2>/dev/null || true)
-  echo "Research verdict (a11y-verified): ${RESEARCH_VERDICT:-none}"
+  REPRO_METHOD=$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('reproducedBy','none'))" "$DEPLOY_DIR/research-log.json" 2>/dev/null || true)
+  echo "Research verdict (a11y-verified): ${RESEARCH_VERDICT:-none} (by: ${REPRO_METHOD:-none})"
   if [ -n "$RESEARCH_VERDICT" ]; then
     TOTAL_REPORTS=1
     case "$RESEARCH_VERDICT" in
@@ -328,7 +339,7 @@ if [ "$TARGET_TYPE" != "issue" ]; then
     if [ -d video-reviews ]; then
       RISK_TEXT=$(sed -n '/^## Overall Risk/,/^## /p' video-reviews/*.md 2>/dev/null | sed 's/\*//g' | head -20 || true)
     fi
-    RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]')
+    RISK_FIRST=$(echo "$RISK_TEXT" | grep -oiP '^\s*(high|medium|moderate|low|minimal|critical)' | head -1 | tr '[:upper:]' '[:lower:]' || true)
     if [ -n "$RISK_FIRST" ]; then
       case "$RISK_FIRST" in
         *low*|*minimal*) FIX_RESULT="APPROVED" FIX_COLOR="#4c1" ;;
@@ -344,15 +355,27 @@ fi
 # Always use vertical box badge
 /tmp/gen-badge-box.sh "$DEPLOY_DIR/badge.svg" "$BADGE_LABEL" \
   "$REPRO_COUNT" "$NOT_REPRO_COUNT" "$FAIL_COUNT" "$TOTAL_REPORTS" \
-  "$FIX_RESULT" "$FIX_COLOR"
+  "$FIX_RESULT" "$FIX_COLOR" "$REPRO_METHOD"
 BADGE_STATUS="${REPRO_RESULT:-UNKNOWN}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}"
 echo "badge_status=${BADGE_STATUS:-FINISHED}" >> "$GITHUB_OUTPUT"
 
-BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
-URL=$(wrangler pages deploy "$DEPLOY_DIR" \
-  --project-name="comfy-qa" \
-  --branch="$BRANCH" 2>&1 \
-  | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+# Remove files exceeding Cloudflare Pages 25MB limit to prevent silent deploy failures
+MAX_SIZE=$((25 * 1024 * 1024))
+find "$DEPLOY_DIR" -type f -size +${MAX_SIZE}c | while read -r big_file; do
+  SIZE_MB=$(( $(stat -c%s "$big_file") / 1024 / 1024 ))
+  echo "Removing oversized file: $(basename "$big_file") (${SIZE_MB}MB > 25MB limit)"
+  rm "$big_file"
+done
 
-echo "url=${URL:-https://${BRANCH}.comfy-qa.pages.dev}" >> "$GITHUB_OUTPUT"
-echo "Deployed to: ${URL}"
+BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
+
+DEPLOY_OUTPUT=$(wrangler pages deploy "$DEPLOY_DIR" \
+  --project-name="comfy-qa" \
+  --branch="$BRANCH" 2>&1) || true
+echo "$DEPLOY_OUTPUT" | tail -5
+
+URL=$(echo "$DEPLOY_OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1 || true)
+FALLBACK_URL="https://${BRANCH}.comfy-qa.pages.dev"
+
+echo "url=${URL:-$FALLBACK_URL}" >> "$GITHUB_OUTPUT"
+echo "Deployed to: ${URL:-$FALLBACK_URL}"

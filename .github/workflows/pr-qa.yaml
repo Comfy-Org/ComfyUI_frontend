@@ -290,7 +290,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_QA }}
           TARGET_TYPE: ${{ needs.resolve-matrix.outputs.target_type }}
         run: |
           MODE="before"
@@ -617,9 +617,9 @@ jobs:
           # Universal vertical box badge — used for all badges (issues + PRs)
           cat > /tmp/gen-badge-box.sh <<'BOXBADGE'
           #!/bin/bash
-          # Usage: gen-badge-box.sh <output-path> <label> <repro> <not_repro> <fail> <total> [fix_result] [fix_color]
+          # Usage: gen-badge-box.sh <output-path> <label> <repro> <not_repro> <fail> <total> [fix_result] [fix_color] [repro_method]
           OUT="$1" LABEL="$2" REPRO="$3" NOREPRO="$4" FAIL="$5" TOTAL="$6"
-          FIX_RESULT="${7:-}" FIX_COLOR="${8:-#4c1}"
+          FIX_RESULT="${7:-}" FIX_COLOR="${8:-#4c1}" REPRO_METHOD="${9:-}"
           W=160
           ROW=18
           HEADER=22
@@ -646,7 +646,13 @@ jobs:
             echo "  <text x='10' y='$((Y+13))' fill='${color}' font-family='Verdana,sans-serif' font-size='11'>${icon} ${text}</text>" >> "$OUT"
             Y=$((Y+ROW))
           }
-          [ "$REPRO" -gt 0 ] 2>/dev/null && add_row "✓" "${REPRO} reproduced" "#58a6ff"
+          REPRO_LABEL="${REPRO} reproduced"
+          case "$REPRO_METHOD" in
+            e2e_test) REPRO_LABEL="${REPRO} via E2E test" ;;
+            video)    REPRO_LABEL="${REPRO} via video" ;;
+            both)     REPRO_LABEL="${REPRO} via E2E+video" ;;
+          esac
+          [ "$REPRO" -gt 0 ] 2>/dev/null && add_row "✓" "$REPRO_LABEL" "#58a6ff"
           [ "$NOREPRO" -gt 0 ] 2>/dev/null && add_row "✗" "${NOREPRO} not reproducible" "#8b949e"
           [ "$FAIL" -gt 0 ] 2>/dev/null && add_row "⚠" "${FAIL} inconclusive" "#d29922"
           [ -n "$FIX_RESULT" ] && add_row "⚙" "Fix: ${FIX_RESULT}" "$FIX_COLOR"
@@ -686,14 +692,6 @@ jobs:
           LABEL="QA"
           [ -n "$NUM" ] && LABEL="#${NUM} QA"
           echo "badge_label=${LABEL}" >> "$GITHUB_OUTPUT"
-
-      - name: Deploy placeholder page — PREPARING
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          BADGE_LABEL: ${{ steps.pr.outputs.badge_label || 'QA' }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: /tmp/deploy-badge.sh "PREPARING" "#2196f3" "$BADGE_LABEL" "$RUN_URL"
 
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -799,12 +797,6 @@ jobs:
               [ -n "$WEBM" ] && convert_video "$WEBM" "$dir/qa-session.mp4"
             fi
           done
-
-      - name: Deploy badge — ANALYZING
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: /tmp/deploy-badge.sh "ANALYZING" "#ff9800" "${{ steps.pr.outputs.badge_label || 'QA' }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Build context for video review
         env:
