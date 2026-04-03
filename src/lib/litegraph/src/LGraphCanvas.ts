@@ -2445,17 +2445,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       let clonedAnchor: LGraphNode | undefined
       if (isMultiSelection) {
-        // Find the top-left of the selection to preserve relative positions
-        let minX = Infinity
-        let minY = Infinity
-        for (const item of this.selectedItems) {
-          if (item.pos[0] < minX) minX = item.pos[0]
-          if (item.pos[1] < minY) minY = item.pos[1]
-        }
-        const items = this._deserializeItems(
-          this._serializeItems(this.selectedItems),
-          { position: [minX + 5, minY + 5] }
-        )
+        if (node.clonable === false) return
+        const items = LGraphCanvas.cloneNodes([...this.selectedItems])
         clonedAnchor = items?.nodes.get(node.id) as LGraphNode | undefined
       } else {
         const items = this._deserializeItems(this._serializeItems([node]), {

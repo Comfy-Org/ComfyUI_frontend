@@ -156,7 +156,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     )
 
     // Select all nodes and alt-drag — internal links should be duplicated
-    await comfyPage.canvas.press('Control+a')
+    await comfyPage.keyboard.selectAll()
     await comfyPage.nextFrame()
 
     await comfyPage.page.mouse.move(
