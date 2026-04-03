@@ -263,7 +263,11 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
                 (d) => d.taskId === result.task.task_id
               )
               uploadStatus.value = 'error'
-              uploadError.value = download?.error || 'Download failed'
+              uploadError.value =
+                download?.error ||
+                t('assetBrowser.downloadFailed', {
+                  name: download?.assetName || ''
+                })
               stopWatch()
             }
           }
