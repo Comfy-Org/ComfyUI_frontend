@@ -115,10 +115,9 @@ describe('ChangeTracker', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const savedGraph = app.graph
-        ;(app as { graph: unknown }).graph = null
+        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
         tracker.captureCanvasState()
-        ;(app as { graph: unknown }).graph = savedGraph
+        spy.mockRestore()
 
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(tracker.activeState).toBe(original)
