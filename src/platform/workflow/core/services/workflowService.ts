@@ -442,9 +442,13 @@ export const useWorkflowService = () => {
         //
         // This prevents accidental duplicate tabs when startup/load flows
         // invoke loadGraphData more than once for the same workflow name.
+        //
+        // However, if the active workflow has unsaved modifications, open a
+        // new tab instead of silently overwriting (fixes #10766).
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
+          !existingWorkflow.isModified &&
           (existingWorkflow.activeState?.id === undefined ||
             workflowData.id === undefined ||
             existingWorkflow.activeState.id === workflowData.id)
