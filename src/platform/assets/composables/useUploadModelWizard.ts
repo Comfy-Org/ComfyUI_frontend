@@ -36,6 +36,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const isUploading = ref(false)
   const uploadStatus = ref<'processing' | 'success' | 'error'>()
   const uploadError = ref('')
+  let stopAsyncWatch: (() => void) | undefined
 
   const wizardData = ref<WizardData>({
     url: '',
@@ -203,6 +204,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   async function uploadModel(): Promise<boolean> {
+    if (isUploading.value) return false
     if (!canUploadModel.value) {
       return false
     }
@@ -248,7 +250,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         }
         uploadStatus.value = 'processing'
 
-        const stopWatch = watch(
+        stopAsyncWatch?.()
+        stopAsyncWatch = watch(
           () =>
             assetDownloadStore.downloadList.find(
               (d) => d.taskId === result.task.task_id
@@ -257,7 +260,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
             if (status === 'completed') {
               uploadStatus.value = 'success'
               await refreshModelCaches()
-              stopWatch()
+              stopAsyncWatch?.()
+              stopAsyncWatch = undefined
             } else if (status === 'failed') {
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
@@ -268,7 +272,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
                 t('assetBrowser.downloadFailed', {
                   name: download?.assetName || ''
                 })
-              stopWatch()
+              stopAsyncWatch?.()
+              stopAsyncWatch = undefined
             }
           }
         )
@@ -296,6 +301,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   function resetWizard() {
+    stopAsyncWatch?.()
+    stopAsyncWatch = undefined
     currentStep.value = 1
     isFetchingMetadata.value = false
     isUploading.value = false
