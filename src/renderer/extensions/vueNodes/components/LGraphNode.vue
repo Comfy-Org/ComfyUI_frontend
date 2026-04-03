@@ -814,6 +814,15 @@ const nodeContainerRef = ref<HTMLDivElement>()
 // Drag and drop support
 const isDraggingOver = ref(false)
 
+function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof (value as PromiseLike<T>).then === 'function'
+  )
+}
+
 function handleDragOver(event: DragEvent) {
   const node = lgraphNode.value
   if (!node || !node.onDragOver) {
@@ -824,22 +833,60 @@ function handleDragOver(event: DragEvent) {
   // Call the litegraph node's onDragOver callback to check if files are valid
   const canDrop = node.onDragOver(event)
   isDraggingOver.value = canDrop
+
+  if (canDrop) {
+    app.dragOverNode = node
+  } else if (app.dragOverNode?.id === node.id) {
+    app.dragOverNode = null
+  }
 }
 
 function handleDragLeave() {
+  const node = lgraphNode.value
   isDraggingOver.value = false
+
+  if (node && app.dragOverNode?.id === node.id) {
+    app.dragOverNode = null
+  }
 }
 
-function handleDrop(event: DragEvent) {
+async function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
 
   const node = lgraphNode.value
   if (!node?.onDragDrop) return
 
-  const handled = node.onDragDrop(event)
+  app.dragOverNode = node
+  let handled: boolean | Promise<boolean>
+  try {
+    handled = node.onDragDrop(event)
+  } catch (error) {
+    if (app.dragOverNode?.id === node.id) {
+      app.dragOverNode = null
+    }
+    throw error
+  }
+
+  if (isPromiseLike<boolean>(handled)) {
+    event.preventDefault()
+    event.stopPropagation()
+    try {
+      await handled
+    } finally {
+      if (app.dragOverNode?.id === node.id) {
+        app.dragOverNode = null
+      }
+    }
+    return
+  }
+
   if (handled === true) {
     event.preventDefault()
     event.stopPropagation()
+  }
+
+  if (app.dragOverNode?.id === node.id) {
+    app.dragOverNode = null
   }
 }
 </script>
