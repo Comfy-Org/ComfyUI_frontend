@@ -139,6 +139,7 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | IRangeWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -339,6 +340,31 @@ export interface ICurveWidget extends IBaseWidget<CurveData, 'curve'> {
 export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   type: 'painter'
   value: string
+}
+
+export interface RangeValue {
+  min: number
+  max: number
+  midpoint?: number
+}
+
+export interface IWidgetRangeOptions extends IWidgetOptions {
+  display?: 'plain' | 'gradient' | 'histogram'
+  gradient_stops?: ColorStop[]
+  show_midpoint?: boolean
+  midpoint_scale?: 'linear' | 'gamma'
+  value_min?: number
+  value_max?: number
+  histogram?: Uint32Array | null
+}
+
+export interface IRangeWidget extends IBaseWidget<
+  RangeValue,
+  'range',
+  IWidgetRangeOptions
+> {
+  type: 'range'
+  value: RangeValue
 }
 
 /**
