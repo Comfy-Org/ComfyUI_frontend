@@ -164,11 +164,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
-import {
-  ensureWorkflowSuffix,
-  getFilenameDetails,
-  getWorkflowSuffix
-} from '@/utils/formatUtil'
+import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
@@ -328,7 +324,9 @@ const renderTreeNode = (
       }
     : { handleClick }
 
-  const label = node.leaf ? getFilenameDetails(node.label).filename : node.label
+  const label = node.leaf
+    ? (node.key.split('/').pop() ?? node.label)
+    : node.label
 
   return {
     key: node.key,
