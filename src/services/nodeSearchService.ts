@@ -1,8 +1,13 @@
-import type { FuseSearchOptions } from 'fuse.js'
+import type { FuseResultMatch, FuseSearchOptions } from 'fuse.js'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { FuseFilter, FuseSearch } from '@/utils/fuseUtil'
+
+interface NodeSearchResult {
+  items: ComfyNodeDefImpl[]
+  matchesByNode: Map<string, readonly FuseResultMatch[]>
+}
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
@@ -97,6 +102,43 @@ export class NodeSearchService {
     }
 
     return options?.limit ? results.slice(0, options.limit) : results
+  }
+
+  public searchNodeWithMatches(
+    query: string,
+    filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = [],
+    options?: FuseSearchOptions,
+    extraOptions: { matchWildcards?: boolean } = {}
+  ): NodeSearchResult {
+    const { matchWildcards = true } = extraOptions
+    const wildcard = matchWildcards ? '*' : undefined
+    const matchedResults = this.nodeFuseSearch.searchWithMatches(query)
+
+    const matchesByNode = new Map<string, readonly FuseResultMatch[]>()
+    for (const r of matchedResults) {
+      matchesByNode.set(r.item.name, r.matches)
+    }
+
+    const matchedNodes = matchedResults.map((r) => r.item)
+    const results = matchedNodes.filter((node) =>
+      filters.every(({ filterDef, value }) => filterDef.matches(node, value))
+    )
+
+    if (matchWildcards) {
+      const alreadyValid = new Set(results.map((r) => r.name))
+      results.push(
+        ...matchedNodes
+          .filter((node) => !alreadyValid.has(node.name))
+          .filter((node) =>
+            filters.every(({ filterDef, value }) =>
+              filterDef.matches(node, value, { wildcard })
+            )
+          )
+      )
+    }
+
+    const items = options?.limit ? results.slice(0, options.limit) : results
+    return { items, matchesByNode }
   }
 
   get nodeFilters(): FuseFilter<ComfyNodeDefImpl, string>[] {

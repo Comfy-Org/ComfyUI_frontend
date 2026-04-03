@@ -99,3 +99,6 @@ export const InjectKeyExpandedKeys: InjectionKey<
 export const InjectKeyContextMenuNode: InjectionKey<
   Ref<RenderedTreeExplorerNode<ComfyNodeDefImpl> | null>
 > = Symbol()
+
+export const InjectKeySearchHighlights: InjectionKey<Ref<Map<string, string>>> =
+  Symbol()
