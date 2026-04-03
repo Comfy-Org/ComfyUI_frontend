@@ -191,6 +191,14 @@ describe('eventUtils', () => {
         false
       )
     })
+
+    it('does not override an explicit non-media MIME with the filename extension', () => {
+      const file = new File([''], 'report.jpg', { type: 'application/pdf' })
+      expect(hasImageType(file)).toBe(false)
+      expect(hasAudioType(file)).toBe(false)
+      expect(hasVideoType(file)).toBe(false)
+      expect(isMediaFile(file)).toBe(false)
+    })
   })
 })
 

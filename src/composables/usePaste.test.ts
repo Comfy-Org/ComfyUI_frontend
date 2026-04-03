@@ -448,6 +448,23 @@ describe('usePaste', () => {
     })
   })
 
+  it('should handle image paste with empty MIME type by extension', async () => {
+    const mockNode = createMockNode()
+    vi.mocked(createNode).mockResolvedValue(mockNode)
+
+    usePaste()
+
+    const file = createImageFile('test.jpg', '')
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
   it('should handle audio paste using createNode helper', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)

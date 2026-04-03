@@ -230,15 +230,19 @@ export const usePaste = () => {
       ? currentNode
       : null
 
-    // Look for image paste data
+    // Look for media paste data
     for (const item of items) {
-      if (item.type.startsWith('image/')) {
+      if (item.kind !== 'file') continue
+      const file = item.getAsFile()
+      if (!file) continue
+
+      if (hasImageType(file)) {
         await pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
-      } else if (item.type.startsWith('video/')) {
+      } else if (hasVideoType(file)) {
         await pasteVideoNode(canvas as LGraphCanvas, items, videoNode)
         return
-      } else if (item.type.startsWith('audio/')) {
+      } else if (hasAudioType(file)) {
         await pasteAudioNode(canvas as LGraphCanvas, items, audioNode)
         return
       }

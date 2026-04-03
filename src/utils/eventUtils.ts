@@ -37,6 +37,7 @@ function getMediaTypeFromFile({ name, type }: File): SupportedMediaType | null {
   if (type.startsWith('image/')) return 'image'
   if (type.startsWith('audio/')) return 'audio'
   if (type.startsWith('video/')) return 'video'
+  if (type) return null
 
   const mediaType = getMediaTypeFromFilename(name)
   return mediaType === 'image' ||
