@@ -149,12 +149,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.resolveDeepest()?.widget.linkedWidgets
   }
 
+  private get _instanceKey(): string {
+    return this.disambiguatingSourceNodeId
+      ? `${this.sourceNodeId}:${this.sourceWidgetName}:${this.disambiguatingSourceNodeId}`
+      : `${this.sourceNodeId}:${this.sourceWidgetName}`
+  }
+
   get value(): IBaseWidget['value'] {
     // Check per-instance values first (populated during configure for
     // multi-instance subgraphs sharing the same blueprint).
-    const instanceKey = `${this.sourceNodeId}:${this.sourceWidgetName}`
-    const instanceValue =
-      this.subgraphNode._instanceWidgetValues.get(instanceKey)
+    const instanceValue = this.subgraphNode._instanceWidgetValues.get(
+      this._instanceKey
+    )
     if (instanceValue !== undefined)
       return instanceValue as IBaseWidget['value']
 
@@ -165,8 +171,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   set value(value: IBaseWidget['value']) {
     // Store per-instance value to avoid overwriting shared inner node state
-    const instanceKey = `${this.sourceNodeId}:${this.sourceWidgetName}`
-    this.subgraphNode._instanceWidgetValues.set(instanceKey, value)
+    this.subgraphNode._instanceWidgetValues.set(this._instanceKey, value)
 
     const linkedWidgets = this.getLinkedInputWidgets()
     if (linkedWidgets.length > 0) {

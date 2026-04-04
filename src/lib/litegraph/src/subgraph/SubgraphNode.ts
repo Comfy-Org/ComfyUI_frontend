@@ -1146,7 +1146,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       let i = 0
       for (const view of views) {
         if (i >= this._pendingWidgetsValues.length) break
-        const key = `${view.sourceNodeId}:${view.sourceWidgetName}`
+        const key = view.disambiguatingSourceNodeId
+          ? `${view.sourceNodeId}:${view.sourceWidgetName}:${view.disambiguatingSourceNodeId}`
+          : `${view.sourceNodeId}:${view.sourceWidgetName}`
         this._instanceWidgetValues.set(key, this._pendingWidgetsValues[i++])
       }
       this._pendingWidgetsValues = undefined
