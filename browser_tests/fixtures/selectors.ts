@@ -44,7 +44,15 @@ export const TestIds = {
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
-    missingModelsGroup: 'error-group-missing-model'
+    missingModelsGroup: 'error-group-missing-model',
+    missingMediaGroup: 'error-group-missing-media',
+    missingMediaRow: 'missing-media-row',
+    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
+    missingMediaLibrarySelect: 'missing-media-library-select',
+    missingMediaStatusCard: 'missing-media-status-card',
+    missingMediaConfirmButton: 'missing-media-confirm-button',
+    missingMediaCancelButton: 'missing-media-cancel-button',
+    missingMediaLocateButton: 'missing-media-locate-button'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -61,14 +69,30 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel'
   },
+  subgraphEditor: {
+    toggle: 'subgraph-editor-toggle',
+    shownSection: 'subgraph-editor-shown-section',
+    hiddenSection: 'subgraph-editor-hidden-section',
+    widgetToggle: 'subgraph-widget-toggle',
+    widgetLabel: 'subgraph-widget-label',
+    iconLink: 'icon-link',
+    iconEye: 'icon-eye',
+    widgetActionsMenuButton: 'widget-actions-menu-button'
+  },
   node: {
-    titleInput: 'node-title-input'
+    titleInput: 'node-title-input',
+    pinIndicator: 'node-pin-indicator',
+    innerWrapper: 'node-inner-wrapper',
+    mainImage: 'main-image'
   },
   selectionToolbox: {
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
     colorRed: 'red'
+  },
+  menu: {
+    moreMenuContent: 'more-menu-content'
   },
   widgets: {
     container: 'node-widgets',
@@ -131,5 +155,7 @@ export type TestIdValue =
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
+  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]

@@ -98,7 +98,8 @@ describe('WidgetActions', () => {
       type: 'TestNode',
       rootGraph: { id: 'graph-test' },
       computeSize: vi.fn(),
-      size: [200, 100]
+      size: [200, 100],
+      isSubgraphNode: () => false
     })
   }
 
@@ -225,7 +226,8 @@ describe('WidgetActions', () => {
     const node = fromAny<LGraphNode, unknown>({
       id: 4,
       type: 'SubgraphNode',
-      rootGraph: { id: 'graph-test' }
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => false
     })
     const widget = {
       name: 'text',

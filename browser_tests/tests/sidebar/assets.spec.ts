@@ -624,21 +624,30 @@ test.describe('Assets sidebar - pagination', () => {
     await comfyPage.assets.clearMocks()
   })
 
-  test('Initially loads a batch of assets with has_more pagination', async ({
+  test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
-    // Create a large set of jobs to trigger pagination
-    const manyJobs = createMockJobs(30)
+    const manyJobs = createMockJobs(250)
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
+
+    // Capture the first history fetch (terminal statuses only).
+    // Queue polling also hits /jobs but with status=in_progress,pending.
+    const firstRequest = comfyPage.page.waitForRequest((req) => {
+      if (!/\/api\/jobs\?/.test(req.url())) return false
+      const url = new URL(req.url())
+      const status = url.searchParams.get('status') ?? ''
+      return status.includes('completed')
+    })
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
     await tab.waitForAssets()
 
-    // Should load at least the first batch
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    const req = await firstRequest
+    const url = new URL(req.url())
+    expect(url.searchParams.get('offset')).toBe('0')
+    expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
   })
 })
 
