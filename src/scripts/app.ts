@@ -596,6 +596,20 @@ export class ComfyApp {
         if (n) {
           this.canvas.setDirty(false, true)
         }
+        console.log('app.documentDrop', {
+          dragOverNodeId: n?.id,
+          dragOverNodeType: n?.type,
+          files: Array.from(event.dataTransfer?.files ?? []).map((f) => ({
+            name: f.name,
+            type: f.type
+          })),
+          items: Array.from(event.dataTransfer?.items ?? []).map((i) => ({
+            kind: i.kind,
+            type: i.type,
+            fileName: i.getAsFile?.()?.name ?? null
+          })),
+          uriList: event.dataTransfer?.getData('text/uri-list') ?? ''
+        })
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return

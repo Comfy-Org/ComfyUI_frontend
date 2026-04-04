@@ -867,6 +867,22 @@ function handleDragLeave() {
 }
 
 async function handleDrop(event: DragEvent) {
+  console.log('LGraphNode.handleDrop', {
+    nodeId: lgraphNode.value?.id,
+    nodeType: lgraphNode.value?.type,
+    hasOnDragDrop: !!lgraphNode.value?.onDragDrop,
+    files: Array.from(event.dataTransfer?.files ?? []).map((f) => ({
+      name: f.name,
+      type: f.type
+    })),
+    items: Array.from(event.dataTransfer?.items ?? []).map((i) => ({
+      kind: i.kind,
+      type: i.type,
+      fileName: i.getAsFile?.()?.name ?? null
+    })),
+    uriList: event.dataTransfer?.getData('text/uri-list') ?? ''
+  })
+
   const node = lgraphNode.value
   if (!node?.onDragDrop) {
     isDraggingOver.value = false
@@ -886,6 +902,7 @@ async function handleDrop(event: DragEvent) {
   event.stopPropagation()
   app.dragOverNode = node
   try {
+    console.log('LGraphNode.handleDrop:callingOnDragDrop')
     await node.onDragDrop(event)
   } finally {
     clearDragOverState(node.id)

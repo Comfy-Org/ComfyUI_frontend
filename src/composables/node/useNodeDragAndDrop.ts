@@ -62,7 +62,23 @@ export const useNodeDragAndDrop = <T>(
   node.onDragOver = isDraggingFiles
 
   node.onDragDrop = async function (e: DragEvent) {
+    console.log('useNodeDragAndDrop.onDragDrop:start', {
+      nodeId: node.id,
+      nodeType: node.type,
+      files: Array.from(e.dataTransfer?.files ?? []).map((f) => ({
+        name: f.name,
+        type: f.type
+      })),
+      items: Array.from(e.dataTransfer?.items ?? []).map((i) => ({
+        kind: i.kind,
+        type: i.type,
+        fileName: i.getAsFile?.()?.name ?? null
+      })),
+      uriList: e.dataTransfer?.getData('text/uri-list') ?? ''
+    })
+
     const valid = isDraggingValidFiles(e)
+    console.log('useNodeDragAndDrop.onDragDrop:valid', valid)
     if (!valid) return false
 
     let files = filterFiles(e.dataTransfer!.files)
@@ -71,6 +87,13 @@ export const useNodeDragAndDrop = <T>(
     }
 
     if (files.length) {
+      console.log(
+        'useNodeDragAndDrop.onDragDrop:acceptedFiles',
+        files.map((f) => ({
+          name: f.name,
+          type: f.type
+        }))
+      )
       await onDrop(files)
       return true
     }
