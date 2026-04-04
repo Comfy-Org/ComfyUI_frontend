@@ -585,8 +585,13 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
-        // Skip if already handled (e.g. file drop onto publish dialog tiles)
-        if (event.defaultPrevented) return
+        const target = event.target
+        const isGraphCanvasDrop =
+          target instanceof Node && this.canvasContainer.contains(target)
+
+        // Vue-node drops may already be defaultPrevented before bubbling here.
+        // Only skip already-handled drops outside the graph canvas area.
+        if (event.defaultPrevented && !isGraphCanvasDrop) return
 
         event.preventDefault()
         event.stopPropagation()
