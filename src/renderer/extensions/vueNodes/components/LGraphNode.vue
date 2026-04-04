@@ -858,10 +858,25 @@ async function handleDrop(event: DragEvent) {
   const node = lgraphNode.value
   if (!node?.onDragDrop) return
 
+  console.log('LGraphNode.handleDrop:start', {
+    nodeId: node.id,
+    nodeType: node.type,
+    defaultPrevented: event.defaultPrevented,
+    files: Array.from(event.dataTransfer?.files ?? []).map((f) => ({
+      name: f.name,
+      type: f.type
+    })),
+    items: Array.from(event.dataTransfer?.items ?? []).map((i) => ({
+      kind: i.kind,
+      type: i.type
+    }))
+  })
+
   app.dragOverNode = node
   let handled: boolean | Promise<boolean>
   try {
     handled = node.onDragDrop(event)
+    console.log('LGraphNode.handleDrop:handled', handled)
   } catch (error) {
     if (app.dragOverNode?.id === node.id) {
       app.dragOverNode = null
