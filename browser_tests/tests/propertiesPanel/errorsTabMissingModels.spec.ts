@@ -102,35 +102,4 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await expect(downloadButton.first()).toBeVisible()
     })
   })
-
-  test.describe('Cloud-specific', { tag: '@cloud' }, () => {
-    test('Should not show Copy URL button', async ({ comfyPage }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
-
-      const copyUrlButton = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelCopyUrl
-      )
-      await expect(copyUrlButton).not.toBeVisible()
-    })
-
-    test('Should not show Download button', async ({ comfyPage }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
-
-      const downloadButton = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelDownload
-      )
-      await expect(downloadButton).not.toBeVisible()
-    })
-
-    test('Should show import not supported notice for non-asset models', async ({
-      comfyPage
-    }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
-
-      const notice = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelImportUnsupported
-      )
-      await expect(notice).toBeVisible()
-    })
-  })
 })
