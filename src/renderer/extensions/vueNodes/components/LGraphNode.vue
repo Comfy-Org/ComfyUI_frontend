@@ -31,10 +31,9 @@
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
-    @dragenter.capture="handleDragEnter"
-    @dragover.capture="handleDragOver"
-    @dragleave.capture="handleDragLeave"
-    @drop.capture="handleDrop"
+    @dragover.prevent.stop="handleDragOver"
+    @dragleave.stop="handleDragLeave"
+    @drop.prevent.stop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -824,10 +823,6 @@ function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
   )
 }
 
-function handleDragEnter(event: DragEvent) {
-  handleDragOver(event)
-}
-
 function handleDragOver(event: DragEvent) {
   const node = lgraphNode.value
   if (!node || !node.onDragOver) {
@@ -840,7 +835,6 @@ function handleDragOver(event: DragEvent) {
   isDraggingOver.value = canDrop
 
   if (canDrop) {
-    event.preventDefault()
     app.dragOverNode = node
   } else if (app.dragOverNode?.id === node.id) {
     app.dragOverNode = null
