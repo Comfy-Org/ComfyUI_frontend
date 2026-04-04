@@ -31,9 +31,9 @@
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
-    @dragover.prevent.stop="handleDragOver"
-    @dragleave.stop="handleDragLeave"
-    @drop.prevent.stop="handleDrop"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -847,6 +847,7 @@ function handleDragLeave() {
 
   if (node && app.dragOverNode?.id === node.id) {
     app.dragOverNode = null
+    app.canvas.setDirty(false, true)
   }
 }
 
@@ -875,6 +876,7 @@ async function handleDrop(event: DragEvent) {
     } finally {
       if (app.dragOverNode?.id === node.id) {
         app.dragOverNode = null
+        app.canvas.setDirty(false, true)
       }
     }
     return
@@ -887,6 +889,7 @@ async function handleDrop(event: DragEvent) {
 
   if (app.dragOverNode?.id === node.id) {
     app.dragOverNode = null
+    app.canvas.setDirty(false, true)
   }
 }
 </script>
