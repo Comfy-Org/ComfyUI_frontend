@@ -7,6 +7,7 @@ import {
   ExecutableNodeDTO,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
+import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -117,7 +118,13 @@ export const graphToPrompt = async (
 
     // Store all node links
     for (const [i, input] of node.inputs.entries()) {
-      const resolvedInput = node.resolveInput(i)
+      let resolvedInput
+      try {
+        resolvedInput = node.resolveInput(i)
+      } catch (e) {
+        if (e instanceof InvalidLinkError) continue
+        throw e
+      }
       if (!resolvedInput) continue
 
       // Resolved to an actual widget value rather than a node connection
