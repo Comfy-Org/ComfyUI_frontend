@@ -1146,10 +1146,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       let i = 0
       for (const view of views) {
         if (i >= this._pendingWidgetsValues.length) break
-        const key = view.disambiguatingSourceNodeId
-          ? `${view.sourceNodeId}:${view.sourceWidgetName}:${view.disambiguatingSourceNodeId}`
-          : `${view.sourceNodeId}:${view.sourceWidgetName}`
-        this._instanceWidgetValues.set(key, this._pendingWidgetsValues[i++])
+        // Use the setter which stores in instance Map AND syncs to inner node
+        view.value = this._pendingWidgetsValues[i++] as typeof view.value
       }
       this._pendingWidgetsValues = undefined
     }
