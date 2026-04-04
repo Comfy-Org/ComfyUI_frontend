@@ -5,6 +5,10 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
+import {
+  interceptClipboardWrite,
+  getClipboardText
+} from '../helpers/clipboardSpy'
 
 async function triggerConfigureError(
   comfyPage: ComfyPage,
@@ -91,20 +95,12 @@ test.describe('Error dialog', () => {
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
     await expect(errorDialog.locator('pre')).toBeVisible()
 
-    await comfyPage.page.evaluate(() => {
-      const w = window as Window & { __copiedText?: string }
-      w.__copiedText = ''
-      navigator.clipboard.writeText = async (text: string) => {
-        w.__copiedText = text
-      }
-    })
+    await interceptClipboardWrite(comfyPage.page)
 
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport).click()
 
     const reportText = await errorDialog.locator('pre').textContent()
-    const copiedText = await comfyPage.page.evaluate(
-      () => (window as Window & { __copiedText?: string }).__copiedText
-    )
+    const copiedText = await getClipboardText(comfyPage.page)
     expect(copiedText).toBe(reportText)
   })
 

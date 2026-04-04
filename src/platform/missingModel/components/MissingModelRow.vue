@@ -16,6 +16,7 @@
         </p>
 
         <Button
+          data-testid="missing-model-copy-name"
           variant="textonly"
           size="icon-sm"
           class="size-8 shrink-0 hover:bg-transparent"
@@ -62,6 +63,7 @@
 
       <Button
         v-if="model.referencingNodes.length > 0"
+        data-testid="missing-model-expand"
         variant="textonly"
         size="icon-sm"
         :aria-label="
@@ -106,6 +108,7 @@
             {{ getNodeDisplayLabel(ref.nodeId, model.representative.nodeType) }}
           </p>
           <Button
+            data-testid="missing-model-locate"
             variant="textonly"
             size="icon-sm"
             :aria-label="t('rightSidePanel.missingModels.locateNode')"
