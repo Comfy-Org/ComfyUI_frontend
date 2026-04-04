@@ -390,17 +390,23 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
-    const borderStyle =
+    const sourceWidgetName = widget.storeName ?? widget.name
+    const isPromoted =
       graphId &&
-      promotionStore.isPromotedByAny(graphId, {
+      (promotionStore.isPromotedByAny(graphId, {
         sourceNodeId: hostNodeId,
-        sourceWidgetName: widget.storeName ?? widget.name,
+        sourceWidgetName,
         disambiguatingSourceNodeId: promotionSourceNodeId
-      })
-        ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+      }) ||
+        promotionStore.isPromotedByAny(graphId, {
+          sourceNodeId: hostNodeId,
+          sourceWidgetName
+        }))
+    const borderStyle = isPromoted
+      ? 'ring ring-component-node-widget-promoted'
+      : mergedOptions.advanced
+        ? 'ring ring-component-node-widget-advanced'
+        : undefined
 
     const linkedUpstream: LinkedUpstreamInfo | undefined =
       slotMetadata?.linked && slotMetadata.originNodeId
