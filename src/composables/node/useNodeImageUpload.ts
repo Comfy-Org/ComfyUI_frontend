@@ -100,22 +100,12 @@ export const useNodeImageUpload = (
     node.isUploading = true
 
     try {
-      console.log('useNodeImageUpload:handleUploadBatch:start', {
-        nodeId: node.id,
-        nodeType: node.type,
-        files: files.map((f) => ({ name: f.name, type: f.type }))
-      })
       node.imgs = undefined
       node.graph?.setDirtyCanvas(true)
       options.onUploadStart?.(files)
 
       const paths = await Promise.all(files.map(handleUpload))
       const validPaths = paths.filter((p): p is string => !!p)
-      console.log('useNodeImageUpload:handleUploadBatch:result', {
-        nodeId: node.id,
-        nodeType: node.type,
-        validPaths
-      })
       if (validPaths.length) {
         onUploadComplete(validPaths)
       } else {

@@ -31,9 +31,9 @@
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
-    @dragover.prevent.stop="handleDragOver"
-    @dragleave.stop="handleDragLeave"
-    @drop.prevent.stop="handleDrop"
+    @dragover.capture="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop.capture="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -813,6 +813,7 @@ const nodeContainerRef = ref<HTMLDivElement>()
 
 // Drag and drop support
 const isDraggingOver = ref(false)
+const URI_DROP_TYPES = ['text/uri-list', 'text/x-moz-url']
 
 function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
   return (
@@ -823,10 +824,39 @@ function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
   )
 }
 
+function clearDragOverState(nodeId?: number | string) {
+  isDraggingOver.value = false
+
+  if (nodeId !== undefined && app.dragOverNode?.id === nodeId) {
+    app.dragOverNode = null
+    app.canvas.setDirty(false, true)
+  }
+}
+
+function hasFileTransfer(event: DragEvent): boolean {
+  const dataTransfer = event.dataTransfer
+  if (!dataTransfer) return false
+
+  return (
+    Array.from(dataTransfer.items).some((item) => item.kind === 'file') ||
+    dataTransfer.files.length > 0
+  )
+}
+
+function isUriOnlyDrop(event: DragEvent): boolean {
+  const dataTransfer = event.dataTransfer
+  if (!dataTransfer) return false
+
+  return (
+    URI_DROP_TYPES.some((type) => dataTransfer.types.includes(type)) &&
+    !hasFileTransfer(event)
+  )
+}
+
 function handleDragOver(event: DragEvent) {
   const node = lgraphNode.value
   if (!node || !node.onDragOver) {
-    isDraggingOver.value = false
+    clearDragOverState(node?.id)
     return
   }
 
@@ -836,76 +866,55 @@ function handleDragOver(event: DragEvent) {
 
   if (canDrop) {
     app.dragOverNode = node
-  } else if (app.dragOverNode?.id === node.id) {
-    app.dragOverNode = null
-    app.canvas.setDirty(false, true)
+    if (hasFileTransfer(event)) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+  } else {
+    clearDragOverState(node.id)
   }
 }
 
 function handleDragLeave() {
-  const node = lgraphNode.value
-  isDraggingOver.value = false
-
-  if (node && app.dragOverNode?.id === node.id) {
-    app.dragOverNode = null
-    app.canvas.setDirty(false, true)
-  }
+  clearDragOverState(lgraphNode.value?.id)
 }
 
 async function handleDrop(event: DragEvent) {
-  isDraggingOver.value = false
-
   const node = lgraphNode.value
-  if (!node?.onDragDrop) return
-
-  console.log('LGraphNode.handleDrop:start', {
-    nodeId: node.id,
-    nodeType: node.type,
-    defaultPrevented: event.defaultPrevented,
-    files: Array.from(event.dataTransfer?.files ?? []).map((f) => ({
-      name: f.name,
-      type: f.type
-    })),
-    items: Array.from(event.dataTransfer?.items ?? []).map((i) => ({
-      kind: i.kind,
-      type: i.type
-    }))
-  })
-
-  app.dragOverNode = node
-  let handled: boolean | Promise<boolean>
-  try {
-    handled = node.onDragDrop(event)
-    console.log('LGraphNode.handleDrop:handled', handled)
-  } catch (error) {
-    if (app.dragOverNode?.id === node.id) {
+  if (!node?.onDragDrop) {
+    isDraggingOver.value = false
+    if (app.dragOverNode) {
       app.dragOverNode = null
-    }
-    throw error
-  }
-
-  if (isPromiseLike<boolean>(handled)) {
-    event.preventDefault()
-    event.stopPropagation()
-    try {
-      await handled
-    } finally {
-      if (app.dragOverNode?.id === node.id) {
-        app.dragOverNode = null
-        app.canvas.setDirty(false, true)
-      }
+      app.canvas.setDirty(false, true)
     }
     return
   }
 
-  if (handled === true) {
-    event.preventDefault()
-    event.stopPropagation()
+  if (isUriOnlyDrop(event) || !hasFileTransfer(event) || !isDraggingOver.value) {
+    clearDragOverState(node.id)
+    return
   }
 
-  if (app.dragOverNode?.id === node.id) {
-    app.dragOverNode = null
-    app.canvas.setDirty(false, true)
+  event.preventDefault()
+  event.stopPropagation()
+  app.dragOverNode = node
+  let handled: boolean | Promise<boolean>
+  try {
+    handled = node.onDragDrop(event)
+  } catch (error) {
+    clearDragOverState(node.id)
+    throw error
   }
+
+  if (isPromiseLike<boolean>(handled)) {
+    try {
+      await handled
+    } finally {
+      clearDragOverState(node.id)
+    }
+    return
+  }
+
+  clearDragOverState(node.id)
 }
 </script>
