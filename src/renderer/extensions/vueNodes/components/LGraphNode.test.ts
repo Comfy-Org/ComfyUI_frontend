@@ -368,5 +368,34 @@ describe('LGraphNode', () => {
       expect(onDragDrop).toHaveBeenCalled()
       expect(parentListener).not.toHaveBeenCalled()
     })
+
+    it('should handle drop from a child element inside the node', async () => {
+      const onDragDrop = vi.fn().mockResolvedValue(true)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(() => true),
+        isSubgraphNode: () => false
+      }
+
+      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+      const child = wrapper.get('[data-testid="node-inner-wrapper"]')
+
+      const parentListener = vi.fn()
+      const parent = wrapper.element.parentElement
+      expect(parent).not.toBeNull()
+      parent!.addEventListener('drop', parentListener)
+
+      child.element.dispatchEvent(
+        new Event('dragover', { bubbles: true, cancelable: true })
+      )
+      child.element.dispatchEvent(
+        new Event('drop', { bubbles: true, cancelable: true })
+      )
+
+      await Promise.resolve()
+
+      expect(onDragDrop).toHaveBeenCalled()
+      expect(parentListener).not.toHaveBeenCalled()
+    })
   })
 })
