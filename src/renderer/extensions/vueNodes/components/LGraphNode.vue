@@ -31,9 +31,9 @@
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
-    @dragover.capture="handleDragOver"
+    @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop.capture="handleDrop"
+    @drop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
@@ -815,15 +815,6 @@ const nodeContainerRef = ref<HTMLDivElement>()
 const isDraggingOver = ref(false)
 const URI_DROP_TYPES = ['text/uri-list', 'text/x-moz-url']
 
-function isPromiseLike<T>(value: unknown): value is PromiseLike<T> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'then' in value &&
-    typeof (value as PromiseLike<T>).then === 'function'
-  )
-}
-
 function clearDragOverState(nodeId?: number | string) {
   isDraggingOver.value = false
 
@@ -866,10 +857,6 @@ function handleDragOver(event: DragEvent) {
 
   if (canDrop) {
     app.dragOverNode = node
-    if (hasFileTransfer(event)) {
-      event.preventDefault()
-      event.stopPropagation()
-    }
   } else {
     clearDragOverState(node.id)
   }
@@ -890,7 +877,7 @@ async function handleDrop(event: DragEvent) {
     return
   }
 
-  if (isUriOnlyDrop(event) || !hasFileTransfer(event) || !isDraggingOver.value) {
+  if (isUriOnlyDrop(event)) {
     clearDragOverState(node.id)
     return
   }
@@ -898,23 +885,10 @@ async function handleDrop(event: DragEvent) {
   event.preventDefault()
   event.stopPropagation()
   app.dragOverNode = node
-  let handled: boolean | Promise<boolean>
   try {
-    handled = node.onDragDrop(event)
-  } catch (error) {
+    await node.onDragDrop(event)
+  } finally {
     clearDragOverState(node.id)
-    throw error
   }
-
-  if (isPromiseLike<boolean>(handled)) {
-    try {
-      await handled
-    } finally {
-      clearDragOverState(node.id)
-    }
-    return
-  }
-
-  clearDragOverState(node.id)
 }
 </script>
