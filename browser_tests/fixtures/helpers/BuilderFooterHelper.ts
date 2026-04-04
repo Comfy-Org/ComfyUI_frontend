@@ -30,6 +30,10 @@ export class BuilderFooterHelper {
     return this.page.getByTestId(TestIds.builder.saveButton)
   }
 
+  get saveGroup(): Locator {
+    return this.page.getByTestId(TestIds.builder.saveGroup)
+  }
+
   get saveAsButton(): Locator {
     return this.page.getByTestId(TestIds.builder.saveAsButton)
   }

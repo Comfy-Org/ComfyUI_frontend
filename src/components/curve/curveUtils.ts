@@ -192,3 +192,15 @@ export function curvesToLUT(
 
   return lut
 }
+
+export function curveDataToFloatLUT(
+  curve: CurveData,
+  size: number = 256
+): Float32Array {
+  const lut = new Float32Array(size)
+  const interpolate = createInterpolator(curve.points, curve.interpolation)
+  for (let i = 0; i < size; i++) {
+    lut[i] = interpolate(i / (size - 1))
+  }
+  return lut
+}

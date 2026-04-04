@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "保持比例",
+        "tooltip": "選擇是否將裁剪內容拉伸以符合輸出尺寸，或以黑色像素填充以保留長寬比。"
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "每個裁切區域調整後的高度。"
@@ -2309,6 +2313,23 @@
     "display_name": "停用雜訊",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "繪製 BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "圖像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "輸出圖像",
         "tooltip": null
       }
     }
@@ -12226,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 偵測",
+    "inputs": {
+      "class_name": {
+        "name": "類別名稱",
+        "tooltip": "依類別篩選偵測結果。設為 'all' 以停用篩選。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "max_detections": {
+        "name": "最大偵測數",
+        "tooltip": "每張圖像最多回傳的偵測數量，依信心分數由高至低排序。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "threshold": {
+        "name": "閾值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "隨機裁切影像",
     "inputs": {
@@ -15630,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
         "tooltip": null
       }
     }

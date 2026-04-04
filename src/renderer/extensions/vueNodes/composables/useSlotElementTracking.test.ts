@@ -19,9 +19,25 @@ import {
 } from './useSlotElementTracking'
 
 const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
+const mockCanvasState = vi.hoisted(() => ({
+  canvas: {} as object | null
+}))
+const mockClientPosToCanvasPos = vi.hoisted(() =>
+  vi.fn(([x, y]: [number, number]) => [x * 0.5, y * 0.5] as [number, number])
+)
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: mockGraph, setDirty: vi.fn() } }
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => mockCanvasState
+}))
+
+vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
+  useSharedCanvasPositionConversion: () => ({
+    clientPosToCanvasPos: mockClientPosToCanvasPos
+  })
 }))
 
 const NODE_ID = 'test-node'
@@ -45,9 +61,10 @@ function createWrapperComponent(type: 'input' | 'output') {
   })
 }
 
-function createSlotElement(): HTMLElement {
+function createSlotElement(collapsed = false): HTMLElement {
   const container = document.createElement('div')
   container.dataset.nodeId = NODE_ID
+  if (collapsed) container.dataset.collapsed = ''
   container.getBoundingClientRect = () =>
     ({
       left: 0,
@@ -113,6 +130,8 @@ describe('useSlotElementTracking', () => {
       actor: 'test'
     })
     mockGraph._nodes = [{ id: 1 }]
+    mockCanvasState.canvas = {}
+    mockClientPosToCanvasPos.mockClear()
   })
 
   it.each([
@@ -250,5 +269,58 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  describe('collapsed node slot sync', () => {
+    function registerCollapsedSlot() {
+      const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+      const slotEl = createSlotElement(true)
+
+      const registryStore = useNodeSlotRegistryStore()
+      const node = registryStore.ensureNode(NODE_ID)
+      node.slots.set(slotKey, {
+        el: slotEl,
+        index: SLOT_INDEX,
+        type: 'input',
+        cachedOffset: { x: 50, y: 60 }
+      })
+
+      return { slotKey, node }
+    }
+
+    it('uses clientPosToCanvasPos for collapsed nodes', () => {
+      const { slotKey } = registerCollapsedSlot()
+
+      syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+      // Slot element center: (10 + 10/2, 30 + 10/2) = (15, 35)
+      const screenCenter: [number, number] = [15, 35]
+      expect(mockClientPosToCanvasPos).toHaveBeenCalledWith(screenCenter)
+
+      // Mock returns x*0.5, y*0.5
+      const layout = layoutStore.getSlotLayout(slotKey)
+      expect(layout).not.toBeNull()
+      expect(layout!.position.x).toBe(screenCenter[0] * 0.5)
+      expect(layout!.position.y).toBe(screenCenter[1] * 0.5)
+    })
+
+    it('clears cachedOffset for collapsed nodes', () => {
+      const { slotKey, node } = registerCollapsedSlot()
+      const entry = node.slots.get(slotKey)!
+      expect(entry.cachedOffset).toBeDefined()
+
+      syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+      expect(entry.cachedOffset).toBeUndefined()
+    })
+
+    it('defers sync when canvas is not initialized', () => {
+      mockCanvasState.canvas = null
+      registerCollapsedSlot()
+
+      syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+      expect(mockClientPosToCanvasPos).not.toHaveBeenCalled()
+    })
   })
 })

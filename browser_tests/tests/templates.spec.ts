@@ -1,7 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { WorkflowTemplates } from '../../src/platform/workflow/templates/types/template'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -243,7 +245,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.page.route(
         '**/templates/index.json',
         async (route, _) => {
-          const response = [
+          const response: WorkflowTemplates[] = [
             {
               moduleName: 'default',
               title: 'Test Templates',
@@ -342,6 +344,73 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(templateGrid).toBeVisible()
       await expect(templateGrid).toHaveScreenshot(
         'template-grid-varying-content.png'
+      )
+    }
+  )
+
+  test(
+    'template cards display overlay tags correctly',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.page.route('**/templates/index.json', async (route) => {
+        const response = [
+          {
+            moduleName: 'default',
+            title: 'Test Templates',
+            type: 'image',
+            templates: [
+              {
+                name: 'tagged-template',
+                title: 'Tagged Template',
+                mediaType: 'image',
+                mediaSubtype: 'webp',
+                description: 'A template with tags.',
+                tags: ['Relight', 'Image Edit']
+              },
+              {
+                name: 'no-tags',
+                title: 'No Tags',
+                mediaType: 'image',
+                mediaSubtype: 'webp',
+                description: 'A template without tags.'
+              }
+            ]
+          }
+        ]
+        await route.fulfill({
+          status: 200,
+          body: JSON.stringify(response),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          }
+        })
+      })
+
+      await comfyPage.page.route('**/templates/**.webp', async (route) => {
+        await route.fulfill({
+          status: 200,
+          path: 'browser_tests/assets/example.webp',
+          headers: {
+            'Content-Type': 'image/webp',
+            'Cache-Control': 'no-store'
+          }
+        })
+      })
+
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+      await expect(comfyPage.templates.content).toBeVisible()
+
+      const taggedCard = comfyPage.page.getByTestId(
+        TestIds.templates.workflowCard('tagged-template')
+      )
+      await expect(taggedCard).toBeVisible({ timeout: 5000 })
+      await expect(taggedCard.getByText('Relight')).toBeVisible()
+      await expect(taggedCard.getByText('Image Edit')).toBeVisible()
+
+      const templateGrid = comfyPage.page.getByTestId(TestIds.templates.content)
+      await expect(templateGrid).toHaveScreenshot(
+        'template-cards-with-overlay-tags.png'
       )
     }
   )
