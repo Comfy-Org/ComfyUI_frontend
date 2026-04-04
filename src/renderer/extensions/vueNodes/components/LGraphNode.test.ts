@@ -162,6 +162,15 @@ function createUriDataTransfer(): DataTransfer {
   return dataTransfer
 }
 
+function createUriDataTransferWithBmpPlaceholder(): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  dataTransfer.items.add(
+    new File([''], 'placeholder.bmp', { type: 'image/bmp' })
+  )
+  dataTransfer.setData('text/uri-list', 'https://example.com/image.png')
+  return dataTransfer
+}
+
 const mockNodeData: VueNodeData = {
   id: 'test-node-123',
   title: 'Test Node',
@@ -441,6 +450,29 @@ describe('LGraphNode', () => {
 
       expect(onDragDrop).toHaveBeenCalled()
       expect(parentListener).not.toHaveBeenCalled()
+    })
+
+    it('should allow URI drops with only bmp placeholders to bubble to parent handlers', async () => {
+      const onDragDrop = vi.fn().mockReturnValue(true)
+      mockData.mockLgraphNode = {
+        onDragDrop,
+        onDragOver: vi.fn(() => true),
+        isSubgraphNode: () => false
+      }
+
+      const wrapper = mountLGraphNode({ nodeData: mockNodeData })
+      const dataTransfer = createUriDataTransferWithBmpPlaceholder()
+
+      const parentListener = vi.fn()
+      const parent = wrapper.element.parentElement
+      expect(parent).not.toBeNull()
+      parent!.addEventListener('drop', parentListener)
+
+      wrapper.element.dispatchEvent(createDragEvent('dragover', dataTransfer))
+      wrapper.element.dispatchEvent(createDragEvent('drop', dataTransfer))
+
+      expect(onDragDrop).not.toHaveBeenCalled()
+      expect(parentListener).toHaveBeenCalled()
     })
   })
 })

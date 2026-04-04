@@ -30,6 +30,15 @@ function createItemsOnlyDataTransfer(file: File): DataTransfer {
   } as unknown as DataTransfer
 }
 
+function createUriTransferWithBmpPlaceholder(): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  dataTransfer.items.add(
+    new File([''], 'placeholder.bmp', { type: 'image/bmp' })
+  )
+  dataTransfer.setData('text/uri-list', 'https://example.com/image.png')
+  return dataTransfer
+}
+
 describe('useNodeDragAndDrop', () => {
   it('drops files from dataTransfer.items when dataTransfer.files is empty', async () => {
     const node = {} as LGraphNode
@@ -45,5 +54,19 @@ describe('useNodeDragAndDrop', () => {
 
     await expect(node.onDragDrop?.(event)).resolves.toBe(true)
     expect(onDrop).toHaveBeenCalledWith([file])
+  })
+
+  it('ignores bmp placeholders so URI drags are not treated as file-backed', async () => {
+    const node = {} as LGraphNode
+    const onDrop = vi.fn().mockResolvedValue([])
+
+    useNodeDragAndDrop(node, {
+      onDrop
+    })
+
+    const event = new FakeDragEvent('drop', createUriTransferWithBmpPlaceholder())
+
+    await expect(node.onDragDrop?.(event)).resolves.toBe(false)
+    expect(onDrop).not.toHaveBeenCalled()
   })
 })

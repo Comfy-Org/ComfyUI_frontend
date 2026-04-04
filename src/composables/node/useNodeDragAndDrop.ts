@@ -31,12 +31,12 @@ export const useNodeDragAndDrop = <T>(
     !!Array.from(items).find((item) => item.kind === 'file')
 
   const filterFiles = (files: FileList | File[]) =>
-    Array.from(files).filter(fileFilter)
+    Array.from(files)
+      .filter((file) => file.type !== 'image/bmp')
+      .filter(fileFilter)
 
   const filterItemFiles = (items: DataTransferItemList | undefined) =>
-    getFilesFromItems(items).filter(fileFilter)
-
-  const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
+    filterFiles(getFilesFromItems(items))
 
   const isDraggingFiles = (e: DragEvent | undefined) => {
     if (!e?.dataTransfer?.items) return false
@@ -48,12 +48,14 @@ export const useNodeDragAndDrop = <T>(
   }
 
   const isDraggingValidFiles = (e: DragEvent | undefined) => {
-    if (e?.dataTransfer?.files?.length) {
-      return hasValidFiles(e.dataTransfer.files)
+    const files = filterFiles(e?.dataTransfer?.files ?? [])
+    if (files.length > 0) {
+      return true
     }
 
-    if (e?.dataTransfer?.items?.length) {
-      return filterItemFiles(e.dataTransfer.items).length > 0
+    const itemFiles = filterItemFiles(e?.dataTransfer?.items)
+    if (itemFiles.length > 0) {
+      return true
     }
 
     return !!e?.dataTransfer?.getData('text/uri-list')
@@ -62,38 +64,15 @@ export const useNodeDragAndDrop = <T>(
   node.onDragOver = isDraggingFiles
 
   node.onDragDrop = async function (e: DragEvent) {
-    console.log('useNodeDragAndDrop.onDragDrop:start', {
-      nodeId: node.id,
-      nodeType: node.type,
-      files: Array.from(e.dataTransfer?.files ?? []).map((f) => ({
-        name: f.name,
-        type: f.type
-      })),
-      items: Array.from(e.dataTransfer?.items ?? []).map((i) => ({
-        kind: i.kind,
-        type: i.type,
-        fileName: i.getAsFile?.()?.name ?? null
-      })),
-      uriList: e.dataTransfer?.getData('text/uri-list') ?? ''
-    })
-
     const valid = isDraggingValidFiles(e)
-    console.log('useNodeDragAndDrop.onDragDrop:valid', valid)
     if (!valid) return false
 
-    let files = filterFiles(e.dataTransfer!.files)
+    let files = filterFiles(e.dataTransfer?.files ?? [])
     if (!files.length) {
       files = filterItemFiles(e.dataTransfer?.items)
     }
 
     if (files.length) {
-      console.log(
-        'useNodeDragAndDrop.onDragDrop:acceptedFiles',
-        files.map((f) => ({
-          name: f.name,
-          type: f.type
-        }))
-      )
       await onDrop(files)
       return true
     }

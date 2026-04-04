@@ -824,13 +824,15 @@ function clearDragOverState(nodeId?: number | string) {
   }
 }
 
-function hasFileTransfer(event: DragEvent): boolean {
+function hasRealFileTransfer(event: DragEvent): boolean {
   const dataTransfer = event.dataTransfer
   if (!dataTransfer) return false
 
   return (
-    Array.from(dataTransfer.items).some((item) => item.kind === 'file') ||
-    dataTransfer.files.length > 0
+    Array.from(dataTransfer.items)
+      .map((item) => item.getAsFile())
+      .some((file) => file && file.type !== 'image/bmp') ||
+    Array.from(dataTransfer.files).some((file) => file.type !== 'image/bmp')
   )
 }
 
@@ -840,7 +842,7 @@ function isUriOnlyDrop(event: DragEvent): boolean {
 
   return (
     URI_DROP_TYPES.some((type) => dataTransfer.types.includes(type)) &&
-    !hasFileTransfer(event)
+    !hasRealFileTransfer(event)
   )
 }
 
@@ -867,22 +869,6 @@ function handleDragLeave() {
 }
 
 async function handleDrop(event: DragEvent) {
-  console.log('LGraphNode.handleDrop', {
-    nodeId: lgraphNode.value?.id,
-    nodeType: lgraphNode.value?.type,
-    hasOnDragDrop: !!lgraphNode.value?.onDragDrop,
-    files: Array.from(event.dataTransfer?.files ?? []).map((f) => ({
-      name: f.name,
-      type: f.type
-    })),
-    items: Array.from(event.dataTransfer?.items ?? []).map((i) => ({
-      kind: i.kind,
-      type: i.type,
-      fileName: i.getAsFile?.()?.name ?? null
-    })),
-    uriList: event.dataTransfer?.getData('text/uri-list') ?? ''
-  })
-
   const node = lgraphNode.value
   if (!node?.onDragDrop) {
     isDraggingOver.value = false
@@ -902,7 +888,6 @@ async function handleDrop(event: DragEvent) {
   event.stopPropagation()
   app.dragOverNode = node
   try {
-    console.log('LGraphNode.handleDrop:callingOnDragDrop')
     await node.onDragDrop(event)
   } finally {
     clearDragOverState(node.id)
