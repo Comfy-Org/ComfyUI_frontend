@@ -96,6 +96,32 @@ describe('eventUtils', () => {
       expect(actual).toEqual([imageFile1, imageFile2])
     })
 
+    it('should return files from dataTransfer.items when dataTransfer.files is empty', async () => {
+      const file = new File([new Uint8Array()], 'image.png', {
+        type: 'image/png'
+      })
+
+      const source = new DataTransfer()
+      source.items.add(file)
+
+      const itemsOnlyTransfer = {
+        items: source.items,
+        files: [] as unknown as FileList,
+        types: [],
+        getData: () => '',
+        setData: () => {},
+        clearData: () => {},
+        dropEffect: 'none',
+        effectAllowed: 'all',
+        setDragImage: () => {}
+      } as unknown as DataTransfer
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer: itemsOnlyTransfer })
+      )
+      expect(actual).toEqual([file])
+    })
+
     it('should return multiple non-image files from dataTransfer', async () => {
       const file1 = new File([new Uint8Array()], 'file1.txt', {
         type: 'text/plain'

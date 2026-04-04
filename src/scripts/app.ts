@@ -593,6 +593,9 @@ export class ComfyApp {
 
         const n = this.dragOverNode
         this.dragOverNode = null
+        if (n) {
+          this.canvas.setDirty(false, true)
+        }
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return

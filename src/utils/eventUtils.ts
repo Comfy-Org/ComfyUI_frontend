@@ -1,9 +1,22 @@
 import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
+function getFilesFromItems(items: DataTransferItemList | undefined): File[] {
+  if (!items) return []
+  return Array.from(items)
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => !!file)
+}
+
 export async function extractFilesFromDragEvent(
   event: DragEvent
 ): Promise<File[]> {
   if (!event.dataTransfer) return []
+
+  const itemFiles = getFilesFromItems(event.dataTransfer.items).filter(
+    (file) => file.type !== 'image/bmp'
+  )
+  if (itemFiles.length > 0) return itemFiles
 
   // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
   const files = Array.from(event.dataTransfer.files).filter(
