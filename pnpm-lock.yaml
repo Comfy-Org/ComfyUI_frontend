@@ -102,6 +102,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.2.0
       version: 4.2.0
+    '@tanstack/vue-virtual':
+      specifier: ^3.13.12
+      version: 3.13.12
     '@testing-library/jest-dom':
       specifier: ^6.9.1
       version: 6.9.1
@@ -458,6 +461,9 @@ importers:
       '@sparkjsdev/spark':
         specifier: 'catalog:'
         version: 0.1.10
+      '@tanstack/vue-virtual':
+        specifier: 'catalog:'
+        version: 3.13.12(vue@3.5.13(typescript@5.9.3))
       '@tiptap/core':
         specifier: 'catalog:'
         version: 2.27.2(@tiptap/pm@2.27.2)

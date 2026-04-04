@@ -30,6 +30,7 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
+  '@tanstack/vue-virtual': ^3.13.12
   '@storybook/addon-docs': ^10.2.10
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
