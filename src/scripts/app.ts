@@ -591,14 +591,24 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
-        const n = this.dragOverNode
+        const previousDragOverNode = this.dragOverNode
         this.dragOverNode = null
-        if (n) {
+        if (previousDragOverNode) {
           this.canvas.setDirty(false, true)
         }
+
+        this.canvas.adjustMouseEvent(event)
+        const dropNode =
+          this.canvas.graph?.getNodeOnPos(event.canvasX, event.canvasY) ??
+          previousDragOverNode
+
         console.log('app.documentDrop', {
-          dragOverNodeId: n?.id,
-          dragOverNodeType: n?.type,
+          previousDragOverNodeId: previousDragOverNode?.id,
+          previousDragOverNodeType: previousDragOverNode?.type,
+          dropNodeId: dropNode?.id,
+          dropNodeType: dropNode?.type,
+          canvasX: event.canvasX,
+          canvasY: event.canvasY,
           files: Array.from(event.dataTransfer?.files ?? []).map((f) => ({
             name: f.name,
             type: f.type
@@ -612,7 +622,7 @@ export class ComfyApp {
         })
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
-        if (await n?.onDragDrop?.(event)) return
+        if (await dropNode?.onDragDrop?.(event)) return
 
         const files = await extractFilesFromDragEvent(event)
         if (files.length === 0) return
