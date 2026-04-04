@@ -1,5 +1,9 @@
 <template>
-  <Button variant="secondary" @click="openGitHubIssues">
+  <Button
+    data-testid="error-dialog-find-issues"
+    variant="secondary"
+    @click="openGitHubIssues"
+  >
     <i class="pi pi-github" />
     {{ $t('g.findIssues') }}
   </Button>

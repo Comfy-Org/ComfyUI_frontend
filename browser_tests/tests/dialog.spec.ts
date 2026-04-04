@@ -379,38 +379,6 @@ test.describe('Support', () => {
   })
 })
 
-test.describe('Error dialog', () => {
-  test('Should display an error dialog when graph configure fails', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(() => {
-      const graph = window.graph!
-      ;(graph as { configure: () => void }).configure = () => {
-        throw new Error('Error on configure!')
-      }
-    })
-
-    await comfyPage.workflow.loadWorkflow('default')
-
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
-    await expect(errorDialog).toBeVisible()
-  })
-
-  test('Should display an error dialog when prompt execution fails', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(async () => {
-      const app = window.app!
-      app.api.queuePrompt = () => {
-        throw new Error('Error on queuePrompt!')
-      }
-      await app.queuePrompt(0)
-    })
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
-    await expect(errorDialog).toBeVisible()
-  })
-})
-
 test.describe('Signin dialog', () => {
   test('Paste content to signin dialog should not paste node on canvas', async ({
     comfyPage
