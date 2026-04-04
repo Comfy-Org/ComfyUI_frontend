@@ -40,7 +40,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     const modelsGroup = comfyPage.page.getByTestId(
       TestIds.dialogs.missingModelsGroup
     )
-    await expect(modelsGroup).toContainText(/fake_model\.safetensors/)
+    await expect(modelsGroup).toContainText(/fake_model\.safetensors\s*\(\d+\)/)
   })
 
   test('Should expand model row to show referencing nodes', async ({
