@@ -150,12 +150,24 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    // Check per-instance values first (populated during configure for
+    // multi-instance subgraphs sharing the same blueprint).
+    const instanceKey = `${this.sourceNodeId}:${this.sourceWidgetName}`
+    const instanceValue =
+      this.subgraphNode._instanceWidgetValues.get(instanceKey)
+    if (instanceValue !== undefined)
+      return instanceValue as IBaseWidget['value']
+
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {
+    // Store per-instance value to avoid overwriting shared inner node state
+    const instanceKey = `${this.sourceNodeId}:${this.sourceWidgetName}`
+    this.subgraphNode._instanceWidgetValues.set(instanceKey, value)
+
     const linkedWidgets = this.getLinkedInputWidgets()
     if (linkedWidgets.length > 0) {
       const widgetStore = useWidgetValueStore()

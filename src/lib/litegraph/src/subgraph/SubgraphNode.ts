@@ -993,7 +993,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  /** Temporarily stored during configure for use by _internalConfigureAfterSlots */
+  private _pendingWidgetsValues?: unknown[]
+
+  /**
+   * Per-instance promoted widget values.
+   * Multiple SubgraphNode instances share the same inner nodes, so
+   * promoted widget values must be stored per-instance to avoid collisions.
+   * Key: `${sourceNodeId}:${sourceWidgetName}`
+   */
+  readonly _instanceWidgetValues = new Map<string, unknown>()
+
   override configure(info: ExportedSubgraphInstance): void {
+    this._pendingWidgetsValues = info.widgets_values
+
     for (const input of this.inputs) {
       if (
         input._listenerController &&
@@ -1123,6 +1136,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
       if (store.isPromoted(this.rootGraph.id, this.id, source)) continue
       store.promote(this.rootGraph.id, this.id, source)
+    }
+
+    // Restore per-instance promoted widget values from serialized widgets_values.
+    // LGraphNode.configure skips promoted widgets (serialize === false), so they
+    // must be applied here after the promoted views are created.
+    if (this._pendingWidgetsValues) {
+      const views = this._getPromotedViews()
+      let i = 0
+      for (const view of views) {
+        if (i >= this._pendingWidgetsValues.length) break
+        const key = `${view.sourceNodeId}:${view.sourceWidgetName}`
+        this._instanceWidgetValues.set(key, this._pendingWidgetsValues[i++])
+      }
+      this._pendingWidgetsValues = undefined
     }
   }
 

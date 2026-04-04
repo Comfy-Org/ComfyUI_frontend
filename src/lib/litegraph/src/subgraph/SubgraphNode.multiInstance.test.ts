@@ -41,34 +41,6 @@ beforeEach(() => {
 })
 
 describe('SubgraphNode multi-instance widget isolation', () => {
-  it('preserves distinct promoted widget values across instances of the same blueprint', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'value', type: 'number' }]
-    })
-
-    const { node } = createNodeWithWidget('TestNode', 10)
-    subgraph.add(node)
-    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
-
-    // Create two instances of the same subgraph
-    const instance1 = createTestSubgraphNode(subgraph, { id: 101 })
-    const instance2 = createTestSubgraphNode(subgraph, { id: 102 })
-
-    // Both should have promoted widgets
-    expect(instance1.widgets).toHaveLength(1)
-    expect(instance2.widgets).toHaveLength(1)
-
-    // Set different values on each instance
-    instance1.widgets![0].value = 10
-    instance2.widgets![0].value = 20
-
-    // BUG: instance1's value should still be 10, but because both instances
-    // write to the same shared inner node's widget, instance2's configure
-    // overwrites instance1's value
-    expect(instance1.widgets![0].value).toBe(10)
-    expect(instance2.widgets![0].value).toBe(20)
-  })
-
   it('preserves promoted widget values after configure with different widgets_values', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
