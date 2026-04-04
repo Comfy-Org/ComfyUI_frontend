@@ -1,8 +1,12 @@
 import type { Page, Route } from '@playwright/test'
+import type { z } from 'zod'
 
-import type { JobsListResponse } from '@comfyorg/ingest-types'
+import type {
+  RawJobListItem,
+  zJobsListResponse
+} from '../../../src/platform/remote/comfyui/jobs/jobTypes'
 
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
@@ -145,7 +149,6 @@ export class AssetsHelper {
       const limit = parseLimit(url, total)
       const visibleJobs = filteredJobs.slice(offset, offset + limit)
 
-      // Response shape matches JobsListResponse from @comfyorg/ingest-types
       const response = {
         jobs: visibleJobs,
         pagination: {
@@ -154,10 +157,7 @@ export class AssetsHelper {
           total,
           has_more: offset + visibleJobs.length < total
         }
-      } satisfies {
-        jobs: unknown[]
-        pagination: JobsListResponse['pagination']
-      }
+      } satisfies JobsListResponse
 
       await route.fulfill({
         status: 200,
