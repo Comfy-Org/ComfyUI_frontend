@@ -38,6 +38,7 @@
     <div
       v-if="isImageInputConnected"
       class="text-center text-xs text-muted-foreground"
+      data-testid="painter-dimension-text"
     >
       {{ canvasWidth }} x {{ canvasHeight }}
     </div>
@@ -100,6 +101,7 @@
       </div>
       <div
         class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+        data-testid="painter-size-row"
       >
         <Slider
           :model-value="[brushSize]"
@@ -123,6 +125,7 @@
         </div>
         <div
           class="flex h-8 w-full items-center gap-2 rounded-lg bg-component-node-widget-background px-4"
+          data-testid="painter-color-row"
         >
           <input
             type="color"
@@ -166,6 +169,7 @@
         </div>
         <div
           class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          data-testid="painter-hardness-row"
         >
           <Slider
             :model-value="[brushHardnessPercent]"
@@ -192,6 +196,7 @@
         </div>
         <div
           class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          data-testid="painter-width-row"
         >
           <Slider
             :model-value="[canvasWidth]"
@@ -214,6 +219,7 @@
         </div>
         <div
           class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          data-testid="painter-height-row"
         >
           <Slider
             :model-value="[canvasHeight]"
