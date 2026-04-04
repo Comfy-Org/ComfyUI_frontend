@@ -321,11 +321,11 @@ describe('LGraphNode', () => {
       expect(parentListener).not.toHaveBeenCalled()
     })
 
-    it('should not stop propagation when onDragDrop returns false', async () => {
+    it('should own the drop event at the Vue node boundary', async () => {
       const onDragDrop = vi.fn().mockReturnValue(false)
       mockData.mockLgraphNode = {
         onDragDrop,
-        onDragOver: vi.fn(),
+        onDragOver: vi.fn(() => true),
         isSubgraphNode: () => false
       }
 
@@ -341,7 +341,7 @@ describe('LGraphNode', () => {
       )
 
       expect(onDragDrop).toHaveBeenCalled()
-      expect(parentListener).toHaveBeenCalled()
+      expect(parentListener).not.toHaveBeenCalled()
     })
 
     it('should stop propagation when onDragDrop returns a promise', async () => {

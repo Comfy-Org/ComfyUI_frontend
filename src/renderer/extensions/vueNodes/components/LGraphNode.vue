@@ -31,9 +31,9 @@
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
-    @dragover.prevent="handleDragOver"
-    @dragleave="handleDragLeave"
-    @drop="handleDrop"
+    @dragover.prevent.stop="handleDragOver"
+    @dragleave.stop="handleDragLeave"
+    @drop.prevent.stop="handleDrop"
   >
     <!-- Selection/Execution Outline Overlay -->
     <AppOutput
