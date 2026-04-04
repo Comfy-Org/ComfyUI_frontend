@@ -11,12 +11,14 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 
+const TEST_NODE_TYPE = 'test/CloneZIndex' as const
+
 class TestNode extends LGraphNode {
-  static override type = 'test/CloneZIndex'
+  static override type = TEST_NODE_TYPE
 
   constructor(title?: string) {
-    super(title ?? 'test/CloneZIndex')
-    this.type = 'test/CloneZIndex'
+    super(title ?? TEST_NODE_TYPE)
+    this.type = TEST_NODE_TYPE
   }
 }
 
@@ -97,6 +99,19 @@ function createLayoutEntry(node: LGraphNode, zIndex: number) {
   })
 }
 
+function setZIndex(nodeId: string, zIndex: number, previousZIndex: number) {
+  layoutStore.applyOperation({
+    type: 'setNodeZIndex',
+    entity: 'node',
+    nodeId,
+    zIndex,
+    previousZIndex,
+    timestamp: Date.now(),
+    source: LayoutSource.Canvas,
+    actor: 'test'
+  })
+}
+
 describe('cloned node z-index in Vue renderer', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
@@ -106,7 +121,7 @@ describe('cloned node z-index in Vue renderer', () => {
     vi.clearAllMocks()
     previousVueNodesMode = LiteGraph.vueNodesMode
     LiteGraph.vueNodesMode = true
-    LiteGraph.registerNodeType('test/CloneZIndex', TestNode)
+    LiteGraph.registerNodeType(TEST_NODE_TYPE, TestNode)
 
     graph = new LGraph()
     canvas = createCanvas(graph)
@@ -132,17 +147,7 @@ describe('cloned node z-index in Vue renderer', () => {
 
     const originalNodeId = String(originalNode.id)
 
-    // Simulate the original node having been brought to front (z-index > 0)
-    layoutStore.applyOperation({
-      type: 'setNodeZIndex',
-      entity: 'node',
-      nodeId: originalNodeId,
-      zIndex: 5,
-      previousZIndex: 0,
-      timestamp: Date.now(),
-      source: LayoutSource.Canvas,
-      actor: 'test'
-    })
+    setZIndex(originalNodeId, 5, 0)
 
     const originalLayout = layoutStore.getNodeLayoutRef(originalNodeId).value
     expect(originalLayout?.zIndex).toBe(5)
@@ -159,5 +164,35 @@ describe('cloned node z-index in Vue renderer', () => {
     const clonedLayout = layoutStore.getNodeLayoutRef(clonedNodeId).value
     expect(clonedLayout).toBeDefined()
     expect(clonedLayout!.zIndex).toBeGreaterThan(originalLayout!.zIndex)
+  })
+
+  it('assigns distinct sequential z-indices when cloning multiple nodes', () => {
+    const nodeA = new TestNode()
+    nodeA.pos = [100, 100]
+    nodeA.size = [200, 100]
+    graph.add(nodeA)
+    setZIndex(String(nodeA.id), 3, 0)
+
+    const nodeB = new TestNode()
+    nodeB.pos = [400, 100]
+    nodeB.size = [200, 100]
+    graph.add(nodeB)
+    setZIndex(String(nodeB.id), 7, 0)
+
+    const result = LGraphCanvas.cloneNodes([nodeA, nodeB])
+    expect(result).toBeDefined()
+    expect(result!.created.length).toBe(2)
+
+    const clonedA = result!.created[0] as LGraphNode
+    const clonedB = result!.created[1] as LGraphNode
+    const layoutA = layoutStore.getNodeLayoutRef(String(clonedA.id)).value!
+    const layoutB = layoutStore.getNodeLayoutRef(String(clonedB.id)).value!
+
+    // Both cloned nodes should be above the highest original (z-index 7)
+    expect(layoutA.zIndex).toBeGreaterThan(7)
+    expect(layoutB.zIndex).toBeGreaterThan(7)
+
+    // Each cloned node should have a distinct z-index
+    expect(layoutA.zIndex).not.toBe(layoutB.zIndex)
   })
 })
