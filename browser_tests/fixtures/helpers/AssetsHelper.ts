@@ -1,5 +1,4 @@
 import type { Page, Route } from '@playwright/test'
-
 import type { JobsListResponse } from '@comfyorg/ingest-types'
 
 import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
@@ -145,7 +144,6 @@ export class AssetsHelper {
       const limit = parseLimit(url, total)
       const visibleJobs = filteredJobs.slice(offset, offset + limit)
 
-      // Response shape matches JobsListResponse from @comfyorg/ingest-types
       const response = {
         jobs: visibleJobs,
         pagination: {

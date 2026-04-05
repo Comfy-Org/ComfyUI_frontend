@@ -1,12 +1,13 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 /** Locate a workflow label in whatever panel is visible (browse or search). */
 function findWorkflow(page: Page, name: string) {
   return page
-    .getByTestId('workflows-sidebar')
+    .getByTestId(TestIds.sidebar.workflows)
     .locator('.node-label', { hasText: name })
 }
 
@@ -18,15 +19,6 @@ test.describe('Workflow sidebar - search', () => {
     })
   })
 
-  test('Search input is visible in workflows tab', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.workflowsTab
-    await tab.open()
-
-    await expect(
-      comfyPage.page.getByPlaceholder('Search Workflow...')
-    ).toBeVisible()
-  })
-
   test('Search filters saved workflows by name', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
@@ -34,9 +26,7 @@ test.describe('Workflow sidebar - search', () => {
     const searchInput = comfyPage.page.getByPlaceholder('Search Workflow...')
     await searchInput.fill('alpha')
 
-    await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(findWorkflow(comfyPage.page, 'alpha-workflow')).toBeVisible()
     await expect(
       findWorkflow(comfyPage.page, 'beta-workflow')
     ).not.toBeVisible()
@@ -54,9 +44,7 @@ test.describe('Workflow sidebar - search', () => {
 
     await searchInput.fill('')
 
-    await expect(tab.getPersistedItem('alpha-workflow')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getPersistedItem('alpha-workflow')).toBeVisible()
     await expect(tab.getPersistedItem('beta-workflow')).toBeVisible()
   })
 
