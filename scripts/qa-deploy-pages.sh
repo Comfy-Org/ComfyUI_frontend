@@ -253,22 +253,27 @@ if [ -f "$DEPLOY_DIR/research-log.json" ]; then
   fi
 fi
 
-# Fall back to video review verdicts if no research log
-if [ -z "$RESEARCH_VERDICT" ] && [ -d video-reviews ]; then
+# Check video review verdicts (always, not just as fallback)
+VIDEO_REPRODUCED=false
+if [ -d video-reviews ]; then
   for rpt in video-reviews/*-qa-video-report.md; do
     [ -f "$rpt" ] || continue
-    TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
-    # Try structured JSON verdict first (from ## Verdict section)
     VERDICT_JSON=$(grep -oP '"verdict":\s*"[A-Z_]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '[A-Z_]+$' || true)
-    RISK_JSON=$(grep -oP '"risk":\s*"[a-z]+' "$rpt" 2>/dev/null | tail -1 | grep -oP '[a-z]+$' || true)
 
     if [ -n "$VERDICT_JSON" ]; then
-      case "$VERDICT_JSON" in
-        REPRODUCED) REPRO_COUNT=$((REPRO_COUNT + 1)) ;;
-        NOT_REPRODUCIBLE) NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1)) ;;
-        INCONCLUSIVE) INCONC_COUNT=$((INCONC_COUNT + 1)) ;;
-      esac
-    else
+      echo "Video review verdict: $VERDICT_JSON ($(basename "$rpt"))"
+      [ "$VERDICT_JSON" = "REPRODUCED" ] && VIDEO_REPRODUCED=true
+      # Only count video as separate report if no research log
+      if [ -z "$RESEARCH_VERDICT" ]; then
+        TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
+        case "$VERDICT_JSON" in
+          REPRODUCED) REPRO_COUNT=$((REPRO_COUNT + 1)) ;;
+          NOT_REPRODUCIBLE) NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1)) ;;
+          INCONCLUSIVE) INCONC_COUNT=$((INCONC_COUNT + 1)) ;;
+        esac
+      fi
+    elif [ -z "$RESEARCH_VERDICT" ]; then
+      TOTAL_REPORTS=$((TOTAL_REPORTS + 1))
       # Fallback: grep Summary section (for older reports without ## Verdict)
       SUMM=$(sed -n '/^## Summary/,/^## /p' "$rpt" 2>/dev/null | head -15)
       if echo "$SUMM" | grep -iq 'INCONCLUSIVE'; then
@@ -277,9 +282,18 @@ if [ -z "$RESEARCH_VERDICT" ] && [ -d video-reviews ]; then
         NOT_REPRO_COUNT=$((NOT_REPRO_COUNT + 1))
       elif echo "$SUMM" | grep -iq 'reproduc\|confirm'; then
         REPRO_COUNT=$((REPRO_COUNT + 1))
+        VIDEO_REPRODUCED=true
       fi
     fi
   done
+fi
+
+# Upgrade reproduction method to "both" when E2E and video agree
+if [ "$REPRO_METHOD" = "e2e_test" ] && [ "$VIDEO_REPRODUCED" = "true" ]; then
+  REPRO_METHOD="both"
+  echo "Upgraded reproducedBy to 'both' (E2E + video review agree)"
+elif [ -z "$RESEARCH_VERDICT" ] && [ "$VIDEO_REPRODUCED" = "true" ]; then
+  REPRO_METHOD="video"
 fi
 FAIL_COUNT=$((TOTAL_REPORTS - REPRO_COUNT - NOT_REPRO_COUNT))
 [ "$FAIL_COUNT" -lt 0 ] && FAIL_COUNT=0
