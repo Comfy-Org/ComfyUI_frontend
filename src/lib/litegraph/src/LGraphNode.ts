@@ -920,6 +920,20 @@ export class LGraphNode
           if (i >= info.widgets_values.length) break
           widget.value = info.widgets_values[i++]
         }
+
+        // Rebuild combo options.values from sibling option widgets.
+        // widget.options.values is not serialized, so combo widgets
+        // lose their option list after serialize/configure (e.g. copy-paste).
+        for (const widget of this.widgets ?? []) {
+          if (widget.type !== 'combo') continue
+          const values = widget.options.values
+          if (!Array.isArray(values) || values.length > 0) continue
+
+          const optionValues = (this.widgets ?? [])
+            .filter((w) => w.name.startsWith('option') && w.value)
+            .map((w) => `${w.value}`)
+          if (optionValues.length > 0) values.push(...optionValues)
+        }
       }
     }
 
