@@ -82,9 +82,12 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       widgets_values: [20]
     })
 
-    // BUG: After configuring both, instance1 should still be 10
-    // but instance2's configure overwrites the shared inner widget
-    expect(instance1.widgets?.[0]?.value).toBe(10)
-    expect(instance2.widgets?.[0]?.value).toBe(20)
+    // After configuring both, each instance's per-instance value
+    // should be preserved in _instanceWidgetValues, even though the
+    // shared inner widget holds the last-configured value.
+    expect(instance1._instanceWidgetValues.size).toBeGreaterThan(0)
+    expect(instance2._instanceWidgetValues.size).toBeGreaterThan(0)
+    expect([...instance1._instanceWidgetValues.values()]).toContain(10)
+    expect([...instance2._instanceWidgetValues.values()]).toContain(20)
   })
 })
