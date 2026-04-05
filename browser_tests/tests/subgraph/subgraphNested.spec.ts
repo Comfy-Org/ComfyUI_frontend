@@ -496,8 +496,15 @@ test.describe('Subgraph Nested Scenarios', { tag: ['@subgraph'] }, () => {
         const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
         await comfyExpect(outerRings).toHaveCount(0)
 
-        // Navigate into Sub 0 to reach node 6 (Sub 1).
-        await comfyPage.vueNodes.enterSubgraph('5')
+        // Navigate into Sub 0 programmatically to avoid click interception
+        // from canvas overlay elements (z-999 layer).
+        await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          const node = graph.getNodeById('5')
+          if (node?.isSubgraphNode()) {
+            window.app!.canvas.setGraph(node.subgraph)
+          }
+        })
         await comfyPage.nextFrame()
         await comfyPage.vueNodes.waitForNodes()
 
