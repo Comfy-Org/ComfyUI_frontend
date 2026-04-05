@@ -390,6 +390,58 @@ describe('scanAllModelCandidates', () => {
     expect(result[1].widgetName).toBe('vae_name')
   })
 
+  it('skips muted nodes (mode === NEVER)', () => {
+    const mutedNode = fromAny<LGraphNode, unknown>({
+      id: 10,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 2, // LGraphEventMode.NEVER
+      _testExecutionId: '10'
+    })
+
+    const graph = makeGraph([mutedNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips bypassed nodes (mode === BYPASS)', () => {
+    const bypassedNode = fromAny<LGraphNode, unknown>({
+      id: 11,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 4, // LGraphEventMode.BYPASS
+      _testExecutionId: '11'
+    })
+
+    const graph = makeGraph([bypassedNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('includes active nodes (mode === ALWAYS)', () => {
+    const activeNode = fromAny<LGraphNode, unknown>({
+      id: 12,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 0, // LGraphEventMode.ALWAYS
+      _testExecutionId: '12'
+    })
+
+    const graph = makeGraph([activeNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].isMissing).toBe(true)
+  })
+
   it('skips subgraph container nodes whose promoted widgets are already scanned via interior nodes', () => {
     const containerNode = fromAny<LGraphNode, unknown>({
       id: 65,
@@ -634,6 +686,88 @@ describe('enrichWithEmbeddedMetadata', () => {
       candidates,
       graphData,
       alwaysInstalled
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips embedded models from muted nodes', async () => {
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 2, // NEVER (muted)
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips embedded models from bypassed nodes', async () => {
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4, // BYPASS
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
     )
 
     expect(result).toHaveLength(0)

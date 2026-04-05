@@ -128,6 +128,23 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       missingModelCandidates.value = null
   }
 
+  function removeMissingModelsByNodeId(nodeId: string) {
+    if (!missingModelCandidates.value) return
+    missingModelCandidates.value = missingModelCandidates.value.filter(
+      (m) => String(m.nodeId) !== nodeId
+    )
+    if (!missingModelCandidates.value.length)
+      missingModelCandidates.value = null
+  }
+
+  function addMissingModels(models: MissingModelCandidate[]) {
+    if (!models.length) return
+    missingModelCandidates.value = [
+      ...(missingModelCandidates.value ?? []),
+      ...models
+    ]
+  }
+
   function hasMissingModelOnNode(nodeLocatorId: string): boolean {
     return missingModelNodeIds.value.has(nodeLocatorId)
   }
@@ -200,8 +217,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelAncestorExecutionIds,
 
     setMissingModels,
+    addMissingModels,
     removeMissingModelByNameOnNodes,
     removeMissingModelByWidget,
+    removeMissingModelsByNodeId,
     clearMissingModels,
     createVerificationAbortController,
 

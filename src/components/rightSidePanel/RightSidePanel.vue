@@ -16,6 +16,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -41,6 +42,7 @@ import TabErrors from './errors/TabErrors.vue'
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
+const missingMediaStore = useMissingMediaStore()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
@@ -58,6 +60,7 @@ const activeMissingNodeGraphIds = computed<Set<string>>(() => {
 })
 
 const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
+const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -142,13 +145,22 @@ const hasMissingModelSelected = computed(
     )
 )
 
+const hasMissingMediaSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingMediaGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
     hasMissingNodeSelected.value ||
-    hasMissingModelSelected.value
+    hasMissingModelSelected.value ||
+    hasMissingMediaSelected.value
   )
 })
 

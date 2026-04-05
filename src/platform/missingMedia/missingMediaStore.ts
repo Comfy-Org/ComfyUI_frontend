@@ -121,6 +121,33 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       missingMediaCandidates.value = null
   }
 
+  function removeMissingMediaByNodeId(nodeId: string) {
+    if (!missingMediaCandidates.value) return
+    const removedNames = new Set(
+      missingMediaCandidates.value
+        .filter((m) => String(m.nodeId) === nodeId)
+        .map((m) => m.name)
+    )
+    missingMediaCandidates.value = missingMediaCandidates.value.filter(
+      (m) => String(m.nodeId) !== nodeId
+    )
+    for (const name of removedNames) {
+      if (!missingMediaCandidates.value.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+    if (!missingMediaCandidates.value.length)
+      missingMediaCandidates.value = null
+  }
+
+  function addMissingMedia(media: MissingMediaCandidate[]) {
+    if (!media.length) return
+    missingMediaCandidates.value = [
+      ...(missingMediaCandidates.value ?? []),
+      ...media
+    ]
+  }
+
   function clearMissingMedia() {
     _verificationAbortController?.abort()
     _verificationAbortController = null
@@ -139,8 +166,10 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     activeMissingMediaGraphIds,
 
     setMissingMedia,
+    addMissingMedia,
     removeMissingMediaByName,
     removeMissingMediaByWidget,
+    removeMissingMediaByNodeId,
     clearMissingMedia,
     createVerificationAbortController,
 

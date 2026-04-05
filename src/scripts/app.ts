@@ -86,6 +86,7 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {
   scanAllModelCandidates,
   enrichWithEmbeddedMetadata,
@@ -93,6 +94,7 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
   verifyCloudMediaCandidates
@@ -1130,14 +1132,16 @@ export class ComfyApp {
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
+      skipAssetScans?: boolean
+      silentAssetErrors?: boolean
     } = {}
   ) {
     const {
-      showMissingNodes = true,
-      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
-      deferWarnings = false
+      deferWarnings = false,
+      skipAssetScans = false,
+      silentAssetErrors = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
@@ -1217,6 +1221,8 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
+        // Skip muted (mode=2) and bypassed (mode=4) nodes
+        if (n.mode === 2 || n.mode === 4) continue
         if (!(n.type in LiteGraph.registered_node_types)) {
           const replacement = nodeReplacementStore.getReplacementFor(n.type)
           const cnrId = getCnrIdFromProperties(
@@ -1415,17 +1421,20 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      await this.runMissingModelPipeline(
-        graphData,
-        missingNodeTypes,
-        showMissingNodes,
-        showMissingModels
-      )
+      if (!skipAssetScans) {
+        await this.runMissingModelPipeline(
+          graphData,
+          missingNodeTypes,
+          silentAssetErrors
+        )
 
-      await this.runMissingMediaPipeline()
+        await this.runMissingMediaPipeline(silentAssetErrors)
+      }
 
       if (!deferWarnings) {
-        useWorkflowService().showPendingWarnings()
+        useWorkflowService().showPendingWarnings(undefined, {
+          silent: silentAssetErrors
+        })
       }
 
       void useSubgraphNavigationStore().updateHash()
@@ -1440,8 +1449,7 @@ export class ComfyApp {
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    showMissingNodes: boolean,
-    showMissingModels: boolean
+    silent: boolean = false
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
@@ -1491,21 +1499,23 @@ export class ComfyApp {
 
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
-      const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodes) {
-        warnings.missingNodeTypes = missingNodeTypes
+      const warnings: PendingWarnings = {
+        ...activeWf.pendingWarnings
       }
-      if (confirmedCandidates.length && showMissingModels) {
-        warnings.missingModelCandidates = confirmedCandidates
-      }
-      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
-        activeWf.pendingWarnings = warnings
-      }
+      warnings.missingNodeTypes = missingNodeTypes.length
+        ? missingNodeTypes
+        : undefined
+      warnings.missingModelCandidates = confirmedCandidates.length
+        ? confirmedCandidates
+        : undefined
+      activeWf.pendingWarnings =
+        warnings.missingNodeTypes ||
+        warnings.missingModelCandidates ||
+        warnings.missingMediaCandidates
+          ? warnings
+          : null
     }
 
-    // Intentionally runs on every graph load (including tab switches and
-    // undo/redo) because missing model state depends on external asset data
-    // that may change between workflow activations.
     if (enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
@@ -1516,8 +1526,11 @@ export class ComfyApp {
               (c) => c.isMissing === true
             )
             if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
             }
+            this.cacheModelCandidates(confirmed)
           })
           .catch((err) => {
             console.warn(
@@ -1551,7 +1564,10 @@ export class ComfyApp {
             })
             .finally(() => {
               if (controller.signal.aborted) return
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
+              this.cacheModelCandidates(confirmed)
             })
 
           void Promise.allSettled(
@@ -1573,11 +1589,48 @@ export class ComfyApp {
     return { missingModels }
   }
 
-  private async runMissingMediaPipeline(): Promise<void> {
+  private cacheModelCandidates(confirmed: MissingModelCandidate[]) {
+    const wf = useWorkspaceStore().workflow.activeWorkflow
+    if (!wf) return
+    wf.pendingWarnings = {
+      ...wf.pendingWarnings,
+      missingModelCandidates: confirmed.length ? confirmed : undefined
+    }
+    if (
+      !wf.pendingWarnings.missingNodeTypes &&
+      !wf.pendingWarnings.missingModelCandidates &&
+      !wf.pendingWarnings.missingMediaCandidates
+    ) {
+      wf.pendingWarnings = null
+    }
+  }
+
+  private cacheMediaCandidates(confirmed: MissingMediaCandidate[]) {
+    const wf = useWorkspaceStore().workflow.activeWorkflow
+    if (!wf) return
+    wf.pendingWarnings = {
+      ...wf.pendingWarnings,
+      missingMediaCandidates: confirmed.length ? confirmed : undefined
+    }
+    if (
+      !wf.pendingWarnings.missingNodeTypes &&
+      !wf.pendingWarnings.missingModelCandidates &&
+      !wf.pendingWarnings.missingMediaCandidates
+    ) {
+      wf.pendingWarnings = null
+    }
+  }
+
+  private async runMissingMediaPipeline(
+    silent: boolean = false
+  ): Promise<void> {
     const missingMediaStore = useMissingMediaStore()
     const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
 
-    if (!candidates.length) return
+    if (!candidates.length) {
+      this.cacheMediaCandidates([])
+      return
+    }
 
     if (isCloud) {
       const controller = missingMediaStore.createVerificationAbortController()
@@ -1586,8 +1639,9 @@ export class ComfyApp {
           if (controller.signal.aborted) return
           const confirmed = candidates.filter((c) => c.isMissing === true)
           if (confirmed.length) {
-            useExecutionErrorStore().surfaceMissingMedia(confirmed)
+            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
           }
+          this.cacheMediaCandidates(confirmed)
         })
         .catch((err) => {
           console.warn(
@@ -1606,8 +1660,9 @@ export class ComfyApp {
     } else {
       const confirmed = candidates.filter((c) => c.isMissing === true)
       if (confirmed.length) {
-        useExecutionErrorStore().surfaceMissingMedia(confirmed)
+        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
       }
+      this.cacheMediaCandidates(confirmed)
     }
   }
 

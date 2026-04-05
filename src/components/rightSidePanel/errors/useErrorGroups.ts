@@ -660,6 +660,65 @@ export function useErrorGroups(
     ]
   }
 
+  function isAssetErrorInSelection(executionNodeId: string): boolean {
+    const nodeIds = selectedNodeInfo.value.nodeIds
+    if (!nodeIds) return true
+
+    // Try missing node cache first
+    const cachedNode = missingNodeCache.value.get(executionNodeId)
+    if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
+
+    // Resolve from graph for model/media candidates
+    if (app.rootGraph) {
+      const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
+      if (graphNode && nodeIds.has(String(graphNode.id))) return true
+    }
+
+    for (const containerExecId of selectedNodeInfo.value
+      .containerExecutionIds) {
+      if (executionNodeId.startsWith(`${containerExecId}:`)) return true
+    }
+
+    return false
+  }
+
+  function buildMissingNodeGroupsFiltered(): ErrorGroup[] {
+    const error = missingNodesStore.missingNodesError
+    if (!error) return []
+
+    const hasRelevant = error.nodeTypes.some((nt) => {
+      if (typeof nt === 'string') return false
+      return nt.nodeId != null && isAssetErrorInSelection(String(nt.nodeId))
+    })
+    if (!hasRelevant) return []
+
+    return buildMissingNodeGroups()
+  }
+
+  function buildMissingModelGroupsFiltered(): ErrorGroup[] {
+    const candidates = missingModelStore.missingModelCandidates
+    if (!candidates?.length) return []
+
+    const hasRelevant = candidates.some(
+      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    )
+    if (!hasRelevant) return []
+
+    return buildMissingModelGroups()
+  }
+
+  function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
+    const candidates = missingMediaStore.missingMediaCandidates
+    if (!candidates?.length) return []
+
+    const hasRelevant = candidates.some(
+      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    )
+    if (!hasRelevant) return []
+
+    return buildMissingMediaGroups()
+  }
+
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
@@ -686,10 +745,18 @@ export function useErrorGroups(
       ? toSortedGroups(regroupByErrorMessage(groupsMap))
       : toSortedGroups(groupsMap)
 
+    const filterByNode = selectedNodeInfo.value.nodeIds !== null
+
     return [
-      ...buildMissingNodeGroups(),
-      ...buildMissingModelGroups(),
-      ...buildMissingMediaGroups(),
+      ...(filterByNode
+        ? buildMissingNodeGroupsFiltered()
+        : buildMissingNodeGroups()),
+      ...(filterByNode
+        ? buildMissingModelGroupsFiltered()
+        : buildMissingModelGroups()),
+      ...(filterByNode
+        ? buildMissingMediaGroupsFiltered()
+        : buildMissingMediaGroups()),
       ...executionGroups
     ]
   })

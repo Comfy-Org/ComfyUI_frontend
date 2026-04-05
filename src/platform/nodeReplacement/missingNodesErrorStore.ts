@@ -64,6 +64,15 @@ export const useMissingNodesErrorStore = defineStore(
       )
     }
 
+    function removeMissingNodesByNodeId(nodeId: string) {
+      if (!missingNodesError.value) return
+      const remaining = missingNodesError.value.nodeTypes.filter((node) => {
+        if (typeof node === 'string') return true
+        return node.nodeId !== nodeId
+      })
+      setMissingNodeTypes(remaining)
+    }
+
     /** Remove specific node types from the missing nodes list (e.g. after replacement). */
     function removeMissingNodesByType(typesToRemove: string[]) {
       if (!missingNodesError.value) return
@@ -115,6 +124,7 @@ export const useMissingNodesErrorStore = defineStore(
       missingNodesError,
       setMissingNodeTypes,
       surfaceMissingNodes,
+      removeMissingNodesByNodeId,
       removeMissingNodesByType,
       hasMissingNodes,
       missingNodeCount,

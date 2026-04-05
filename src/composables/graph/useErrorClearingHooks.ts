@@ -8,12 +8,31 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LGraphEventMode,
+  NodeSlotType
+} from '@/lib/litegraph/src/types/globalEnums'
+import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { isCloud } from '@/platform/distribution/types'
+import { assetService } from '@/platform/assets/services/assetService'
+import { scanNodeModelCandidates } from '@/platform/missingModel/missingModelScan'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import {
+  getExecutionIdByNode,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
 
 function resolvePromotedExecId(
   rootGraph: LGraph,
@@ -121,6 +140,96 @@ function restoreNodeHooksRecursive(node: LGraphNode): void {
   }
 }
 
+function isNodeInactive(mode: number): boolean {
+  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
+}
+
+/** Scan a single node and add confirmed missing model/media to stores. */
+function scanAndAddNodeErrors(node: LGraphNode): void {
+  if (!app.rootGraph) return
+
+  const modelCandidates = scanNodeModelCandidates(
+    app.rootGraph,
+    node,
+    isCloud
+      ? (nodeType, widgetName) =>
+          assetService.shouldUseAssetBrowser(nodeType, widgetName)
+      : () => false,
+    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+  )
+  const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
+  if (confirmedModels.length) {
+    useMissingModelStore().addMissingModels(confirmedModels)
+  }
+
+  const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
+  const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
+  if (confirmedMedia.length) {
+    useMissingMediaStore().addMissingMedia(confirmedMedia)
+  }
+
+  // Check for missing node type
+  const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
+  if (!(originalType in LiteGraph.registered_node_types)) {
+    const execId = getExecutionIdByNode(app.rootGraph, node)
+    if (execId) {
+      const nodeReplacementStore = useNodeReplacementStore()
+      const replacement = nodeReplacementStore.getReplacementFor(originalType)
+      const store = useMissingNodesErrorStore()
+      const existing = store.missingNodesError?.nodeTypes ?? []
+      store.surfaceMissingNodes([
+        ...existing,
+        {
+          type: originalType,
+          nodeId: execId,
+          cnrId: getCnrIdFromNode(node),
+          isReplaceable: replacement !== null,
+          replacement: replacement ?? undefined
+        }
+      ])
+    }
+  }
+}
+
+function scanAddedNode(node: LGraphNode): void {
+  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  scanAndAddNodeErrors(node)
+}
+
+function handleNodeModeChange(
+  nodeId: number,
+  oldMode: number,
+  newMode: number
+): void {
+  if (!app.rootGraph) return
+
+  const wasInactive = isNodeInactive(oldMode)
+  const isNowInactive = isNodeInactive(newMode)
+
+  if (wasInactive === isNowInactive) return
+
+  const node = getNodeByExecutionId(app.rootGraph, String(nodeId))
+  if (!node) return
+
+  const execId = getExecutionIdByNode(app.rootGraph, node)
+  if (!execId) return
+
+  if (isNowInactive) {
+    useMissingModelStore().removeMissingModelsByNodeId(execId)
+    useMissingMediaStore().removeMissingMediaByNodeId(execId)
+    useMissingNodesErrorStore().removeMissingNodesByNodeId(execId)
+  } else {
+    scanAndAddNodeErrors(node)
+    if (
+      useMissingModelStore().hasMissingModels ||
+      useMissingMediaStore().hasMissingMedia ||
+      useMissingNodesErrorStore().hasMissingNodes
+    ) {
+      useExecutionErrorStore().showErrorOverlay()
+    }
+  }
+}
+
 export function installErrorClearingHooks(graph: LGraph): () => void {
   for (const node of graph._nodes ?? []) {
     installNodeHooksRecursive(node)
@@ -129,13 +238,49 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
     installNodeHooksRecursive(node)
+
+    // Scan pasted/duplicated nodes for missing models/media.
+    // Skip during loadGraphData (undo/redo/tab switch) — those are
+    // handled by the full pipeline or cache restore.
+    // Deferred to microtask because onNodeAdded fires before
+    // node.configure() restores widget values.
+    if (!ChangeTracker.isLoadingGraph) {
+      queueMicrotask(() => scanAddedNode(node))
+    }
+
     originalOnNodeAdded?.call(this, node)
   }
 
   const originalOnNodeRemoved = graph.onNodeRemoved
   graph.onNodeRemoved = function (node: LGraphNode) {
+    // node.graph is already null by the time onNodeRemoved fires,
+    // so use the graph that this hook is installed on to build the
+    // execution ID. Root-level nodes use their ID directly; subgraph
+    // interior nodes are handled by LGraph's recursive removal which
+    // calls onNodeRemoved on the subgraph's graph instance.
+    const execId =
+      graph === app.rootGraph
+        ? String(node.id)
+        : getExecutionIdByNode(app.rootGraph, node)
+    if (execId) {
+      useMissingModelStore().removeMissingModelsByNodeId(execId)
+      useMissingMediaStore().removeMissingMediaByNodeId(execId)
+      useMissingNodesErrorStore().removeMissingNodesByNodeId(execId)
+    }
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
+  }
+
+  const originalOnTrigger = graph.onTrigger
+  graph.onTrigger = (event: LGraphTriggerEvent) => {
+    if (event.type === 'node:property:changed' && event.property === 'mode') {
+      handleNodeModeChange(
+        event.nodeId as number,
+        event.oldValue as number,
+        event.newValue as number
+      )
+    }
+    originalOnTrigger?.(event)
   }
 
   return () => {
@@ -144,5 +289,6 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     }
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
+    graph.onTrigger = originalOnTrigger || undefined
   }
 }

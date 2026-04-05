@@ -13,6 +13,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IAssetWidget,
   IBaseWidget,
@@ -22,6 +23,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
@@ -73,27 +75,54 @@ export function scanAllModelCandidates(
     // Skip subgraph container nodes: their promoted widgets are synthetic
     // views of interior widgets, which are already scanned via recursion.
     if (node.isSubgraphNode?.()) continue
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
 
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    if (!executionId) continue
+    candidates.push(
+      ...scanNodeModelCandidates(
+        rootGraph,
+        node,
+        isAssetSupported,
+        getDirectory
+      )
+    )
+  }
 
-    for (const widget of node.widgets) {
-      let candidate: MissingModelCandidate | null = null
+  return candidates
+}
 
-      if (isAssetWidget(widget)) {
-        candidate = scanAssetWidget(node, widget, executionId, getDirectory)
-      } else if (isComboWidget(widget)) {
-        candidate = scanComboWidget(
-          node,
-          widget,
-          executionId,
-          isAssetSupported,
-          getDirectory
-        )
-      }
+/** Scan a single node's widgets for missing model candidates (OSS immediate resolution). */
+export function scanNodeModelCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined
+): MissingModelCandidate[] {
+  if (!node.widgets?.length) return []
 
-      if (candidate) candidates.push(candidate)
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  const candidates: MissingModelCandidate[] = []
+  for (const widget of node.widgets) {
+    let candidate: MissingModelCandidate | null = null
+
+    if (isAssetWidget(widget)) {
+      candidate = scanAssetWidget(node, widget, executionId, getDirectory)
+    } else if (isComboWidget(widget)) {
+      candidate = scanComboWidget(
+        node,
+        widget,
+        executionId,
+        isAssetSupported,
+        getDirectory
+      )
     }
+
+    if (candidate) candidates.push(candidate)
   }
 
   return candidates
@@ -197,8 +226,19 @@ export async function enrichWithEmbeddedMetadata(
     }
   }
 
+  // Workflow-level models (sourceNodeType === '') that are unmatched
+  // should only create candidates when at least one active (non-muted,
+  // non-bypassed) node exists in the graph. When every node is muted or
+  // bypassed, no model is needed for execution.
+  const hasActiveNodes = allNodes.some(
+    (n) => n.mode !== LGraphEventMode.NEVER && n.mode !== LGraphEventMode.BYPASS
+  )
+  const activeUnmatched = unmatched.filter(
+    (m) => m.sourceNodeType !== '' || hasActiveNodes
+  )
+
   const settled = await Promise.allSettled(
-    unmatched.map(async (model) => {
+    activeUnmatched.map(async (model) => {
       const installed = await checkModelInstalled(model.name, model.directory)
       if (installed) return null
 
@@ -242,6 +282,12 @@ function collectEmbeddedModelsWithSource(
   const result: EmbeddedModelWithSource[] = []
 
   for (const node of allNodes) {
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
+
     const selected = getSelectedModelsMetadata(
       node as Parameters<typeof getSelectedModelsMetadata>[0]
     )
