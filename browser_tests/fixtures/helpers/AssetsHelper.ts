@@ -252,20 +252,6 @@ function createOutputFilename(baseFilename: string, index: number): string {
   return `${baseFilename.slice(0, extensionIndex)}-${index + 1}${baseFilename.slice(extensionIndex)}`
 }
 
-function normalizeMediaType(
-  mediaType: string | null | undefined
-): 'images' | 'video' | 'audio' {
-  if (
-    mediaType === 'images' ||
-    mediaType === 'video' ||
-    mediaType === 'audio'
-  ) {
-    return mediaType
-  }
-
-  return 'images'
-}
-
 function getPreviewOutput(
   previewOutput: JobEntry['preview_output'] | undefined
 ): MockPreviewOutput | undefined {
@@ -278,10 +264,14 @@ function outputsFromJobEntry(
   const previewOutput = getPreviewOutput(job.preview_output)
   const outputCount = Math.max(job.outputs_count ?? 1, 1)
   const baseFilename = previewOutput?.filename ?? `output_${job.id}.png`
+  const mediaType: GeneratedAssetOutputSeed['mediaType'] =
+    previewOutput?.mediaType === 'video' || previewOutput?.mediaType === 'audio'
+      ? previewOutput.mediaType
+      : 'images'
   const outputs = Array.from({ length: outputCount }, (_, index) => ({
     filename: createOutputFilename(baseFilename, index),
     displayName: index === 0 ? previewOutput?.display_name : undefined,
-    mediaType: normalizeMediaType(previewOutput?.mediaType),
+    mediaType,
     subfolder: previewOutput?.subfolder ?? '',
     type: previewOutput?.type ?? 'output'
   }))
