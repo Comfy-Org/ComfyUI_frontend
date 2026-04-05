@@ -1,17 +1,17 @@
 import { expect } from '@playwright/test'
+import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import {
   createMockJob,
   createMockJobs
 } from '../../fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
 // ---------------------------------------------------------------------------
 
-const SAMPLE_JOBS: RawJobListItem[] = [
+const SAMPLE_JOBS: JobEntry[] = [
   createMockJob({
     id: 'job-alpha',
     create_time: 1_000_000,

@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
+import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import { createMockJob } from '../../fixtures/helpers/AssetsHelper'
 import { TestIds } from '../../fixtures/selectors'
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
 
 const now = Date.now()
 
-const MOCK_JOBS: RawJobListItem[] = [
+const MOCK_JOBS: JobEntry[] = [
   createMockJob({
     id: 'job-completed-1',
     status: 'completed',

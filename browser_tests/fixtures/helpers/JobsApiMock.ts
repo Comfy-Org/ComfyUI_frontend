@@ -1,17 +1,17 @@
 import type { Page, Route } from '@playwright/test'
-
 import type {
-  JobDetail,
-  RawJobListItem
-} from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+  JobDetailResponse,
+  JobEntry,
+  JobsListResponse
+} from '@comfyorg/ingest-types'
 
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const jobDetailRoutePattern = /\/api\/jobs\/[^/?#]+(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history(?:\?.*)?$/
 
 export type SeededJob = {
-  listItem: RawJobListItem
-  detail: JobDetail
+  listItem: JobEntry
+  detail: JobDetailResponse
 }
 
 function parseLimit(url: URL, total: number): number {
@@ -30,7 +30,7 @@ function parseOffset(url: URL): number {
   return value
 }
 
-function getExecutionDuration(job: RawJobListItem): number {
+function getExecutionDuration(job: JobEntry): number {
   const start = job.execution_start_time ?? 0
   const end = job.execution_end_time ?? 0
   return end - start
@@ -113,18 +113,20 @@ export class JobsApiMock {
         const limit = parseLimit(url, total)
         const visibleJobs = filteredJobs.slice(offset, offset + limit)
 
+        const response = {
+          jobs: visibleJobs,
+          pagination: {
+            offset,
+            limit,
+            total,
+            has_more: offset + visibleJobs.length < total
+          }
+        } satisfies JobsListResponse
+
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({
-            jobs: visibleJobs,
-            pagination: {
-              offset,
-              limit,
-              total,
-              has_more: offset + visibleJobs.length < total
-            }
-          })
+          body: JSON.stringify(response)
         })
       }
 

@@ -3,11 +3,8 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 import type { Page, Route } from '@playwright/test'
+import type { JobDetailResponse, JobEntry } from '@comfyorg/ingest-types'
 
-import type {
-  JobDetail,
-  RawJobListItem
-} from '../../../src/platform/remote/comfyui/jobs/jobTypes'
 import type { ResultItemType, TaskOutput } from '../../../src/schemas/apiSchema'
 
 import { JobsApiMock } from './JobsApiMock'
@@ -24,10 +21,19 @@ type SeededAssetFile = {
   textContent?: string
 }
 
+type MockPreviewOutput = NonNullable<JobEntry['preview_output']> & {
+  filename?: string
+  subfolder?: string
+  type?: ResultItemType
+  nodeId: string
+  mediaType?: string
+  display_name?: string
+}
+
 /** Factory to create a mock completed job with preview output. */
 export function createMockJob(
-  overrides: Partial<RawJobListItem> & { id: string }
-): RawJobListItem {
+  overrides: Partial<JobEntry> & { id: string }
+): JobEntry {
   const now = Date.now()
   return {
     status: 'completed',
@@ -42,7 +48,6 @@ export function createMockJob(
       mediaType: 'images'
     },
     outputs_count: 1,
-    priority: 0,
     ...overrides
   }
 }
@@ -50,8 +55,8 @@ export function createMockJob(
 /** Create multiple mock jobs with sequential IDs and staggered timestamps. */
 export function createMockJobs(
   count: number,
-  baseOverrides?: Partial<RawJobListItem>
-): RawJobListItem[] {
+  baseOverrides?: Partial<JobEntry>
+): JobEntry[] {
   const now = Date.now()
   return Array.from({ length: count }, (_, i) =>
     createMockJob({
@@ -104,8 +109,8 @@ export type GeneratedJobSeed = {
   createTime?: number
   executionStartTime?: number
   executionEndTime?: number
-  workflowId?: string | null
-  workflow?: unknown
+  workflowId?: string
+  workflow?: JobDetailResponse['workflow']
   nodeId?: string
 }
 
@@ -206,7 +211,7 @@ function buildSeededJob(jobSeed: GeneratedJobSeed): SeededJob {
   const executionStartTime = jobSeed.executionStartTime ?? createTime
   const executionEndTime = jobSeed.executionEndTime ?? createTime + 2_000
 
-  const listItem: RawJobListItem = {
+  const listItem: JobEntry = {
     id: jobSeed.jobId,
     status: 'completed',
     create_time: createTime,
@@ -221,10 +226,10 @@ function buildSeededJob(jobSeed: GeneratedJobSeed): SeededJob {
       display_name: preview.displayName
     },
     outputs_count: outputs.length,
-    workflow_id: jobSeed.workflowId ?? null
+    ...(jobSeed.workflowId ? { workflow_id: jobSeed.workflowId } : {})
   }
 
-  const detail: JobDetail = {
+  const detail: JobDetailResponse = {
     ...listItem,
     workflow: jobSeed.workflow,
     outputs: buildTaskOutput(jobSeed, outputs),
@@ -261,10 +266,16 @@ function normalizeMediaType(
   return 'images'
 }
 
-function outputsFromRawJob(
-  job: RawJobListItem
+function getPreviewOutput(
+  previewOutput: JobEntry['preview_output'] | undefined
+): MockPreviewOutput | undefined {
+  return previewOutput as MockPreviewOutput | undefined
+}
+
+function outputsFromJobEntry(
+  job: JobEntry
 ): [GeneratedAssetOutputSeed, ...GeneratedAssetOutputSeed[]] {
-  const previewOutput = job.preview_output
+  const previewOutput = getPreviewOutput(job.preview_output)
   const outputCount = Math.max(job.outputs_count ?? 1, 1)
   const baseFilename = previewOutput?.filename ?? `output_${job.id}.png`
   const outputs = Array.from({ length: outputCount }, (_, index) => ({
@@ -278,14 +289,14 @@ function outputsFromRawJob(
   return [outputs[0], ...outputs.slice(1)]
 }
 
-function generatedJobFromRawJob(job: RawJobListItem): GeneratedJobSeed {
+function generatedJobFromJobEntry(job: JobEntry): GeneratedJobSeed {
   return {
     jobId: job.id,
-    outputs: outputsFromRawJob(job),
+    outputs: outputsFromJobEntry(job),
     createTime: job.create_time,
-    executionStartTime: job.execution_start_time ?? undefined,
-    executionEndTime: job.execution_end_time ?? undefined,
-    workflowId: job.workflow_id ?? null
+    executionStartTime: job.execution_start_time,
+    executionEndTime: job.execution_end_time,
+    workflowId: job.workflow_id
   }
 }
 
@@ -340,7 +351,7 @@ export class AssetsHelper {
 
   async workflowContainerFromFixture(
     relativePath: string = 'default.json'
-  ): Promise<GeneratedJobSeed['workflow']> {
+  ): Promise<JobDetailResponse['workflow']> {
     const workflow = JSON.parse(
       await readFile(getFixturePath(relativePath), 'utf-8')
     )
@@ -390,9 +401,9 @@ export class AssetsHelper {
     await this.ensureViewRoute()
   }
 
-  async mockOutputHistory(jobs: RawJobListItem[]): Promise<void> {
+  async mockOutputHistory(jobs: JobEntry[]): Promise<void> {
     await this.seedAssets({
-      generated: jobs.map(generatedJobFromRawJob),
+      generated: jobs.map(generatedJobFromJobEntry),
       imported: this.importedFiles
     })
   }
