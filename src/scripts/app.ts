@@ -1145,8 +1145,15 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
-    useMissingModelStore().clearMissingModels()
-    useMissingMediaStore().clearMissingMedia()
+    if (skipAssetScans) {
+      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // so cached results restored by showPendingWarnings still display sizes.
+      useMissingModelStore().setMissingModels([])
+      useMissingMediaStore().setMissingMedia([])
+    } else {
+      useMissingModelStore().clearMissingModels()
+      useMissingMediaStore().clearMissingMedia()
+    }
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI

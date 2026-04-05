@@ -682,32 +682,6 @@ export function useErrorGroups(
     return false
   }
 
-  const filteredMissingPackGroups = computed(() => {
-    if (!selectedNodeInfo.value.nodeIds) return missingPackGroups.value
-    return missingPackGroups.value
-      .map((group) => ({
-        ...group,
-        nodeTypes: group.nodeTypes.filter((nt) => {
-          if (typeof nt === 'string') return false
-          return nt.nodeId != null && isAssetErrorInSelection(String(nt.nodeId))
-        })
-      }))
-      .filter((group) => group.nodeTypes.length > 0)
-  })
-
-  const filteredSwapNodeGroups = computed(() => {
-    if (!selectedNodeInfo.value.nodeIds) return swapNodeGroups.value
-    return swapNodeGroups.value
-      .map((group) => ({
-        ...group,
-        nodeTypes: group.nodeTypes.filter((nt) => {
-          if (typeof nt === 'string') return false
-          return nt.nodeId != null && isAssetErrorInSelection(String(nt.nodeId))
-        })
-      }))
-      .filter((group) => group.nodeTypes.length > 0)
-  })
-
   const filteredMissingModelGroups = computed(() => {
     if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
     const candidates = missingModelStore.missingModelCandidates
@@ -759,28 +733,6 @@ export function useErrorGroups(
     if (!filtered.length) return []
     return groupCandidatesByMediaType(filtered)
   })
-
-  function buildMissingNodeGroupsFiltered(): ErrorGroup[] {
-    const groups: ErrorGroup[] = []
-    if (filteredSwapNodeGroups.value.length > 0) {
-      groups.push({
-        type: 'swap_nodes' as const,
-        title: st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
-        priority: 0
-      })
-    }
-    if (filteredMissingPackGroups.value.length > 0) {
-      const error = missingNodesStore.missingNodesError
-      if (error) {
-        groups.push({
-          type: 'missing_node' as const,
-          title: error.message,
-          priority: 1
-        })
-      }
-    }
-    return groups.sort((a, b) => a.priority - b.priority)
-  }
 
   function buildMissingModelGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingModelGroups.value.length) return []
@@ -836,10 +788,10 @@ export function useErrorGroups(
 
     const filterByNode = selectedNodeInfo.value.nodeIds !== null
 
+    // Missing nodes are intentionally unfiltered — they represent
+    // pack-level problems relevant regardless of which node is selected.
     return [
-      ...(filterByNode
-        ? buildMissingNodeGroupsFiltered()
-        : buildMissingNodeGroups()),
+      ...buildMissingNodeGroups(),
       ...(filterByNode
         ? buildMissingModelGroupsFiltered()
         : buildMissingModelGroups()),
@@ -880,9 +832,9 @@ export function useErrorGroups(
     errorNodeCache,
     missingNodeCache,
     groupedErrorMessages,
-    missingPackGroups: filteredMissingPackGroups,
+    missingPackGroups,
     missingModelGroups: filteredMissingModelGroups,
     missingMediaGroups: filteredMissingMediaGroups,
-    swapNodeGroups: filteredSwapNodeGroups
+    swapNodeGroups
   }
 }
