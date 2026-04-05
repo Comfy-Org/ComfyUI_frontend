@@ -458,4 +458,65 @@ test.describe('Subgraph Nested Scenarios', { tag: ['@subgraph'] }, () => {
       })
     }
   )
+
+  /**
+   * Regression test for #10612: promoted widget indicator ring missing on
+   * nested subgraph nodes.
+   *
+   * Uses the 3-level nested fixture (subgraph-nested-promotion):
+   *   Root → Sub 0 (node 5) → Sub 1 (node 6) → Sub 2 (node 9)
+   *
+   * Node 6 (Sub 1) has proxyWidgets promoting widgets from inner nodes,
+   * and those promotions are also promoted up to node 5 (Sub 0). When
+   * navigating into Sub 0, node 6 should show the promoted ring on its
+   * widgets.
+   */
+  test.describe(
+    'Promoted indicator on 3-level nested subgraphs (#10612)',
+    { tag: ['@widget'] },
+    () => {
+      const WORKFLOW = 'subgraphs/subgraph-nested-promotion'
+      const PROMOTED_BORDER_CLASS = 'ring-component-node-widget-promoted'
+
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      })
+
+      test('Intermediate SubgraphNode shows promoted ring inside parent subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(WORKFLOW)
+        await comfyPage.vueNodes.waitForNodes()
+
+        // At root level, node 5 (Sub 0) is the outermost SubgraphNode.
+        // Its widgets are not promoted further, so no ring expected.
+        const outerNode = comfyPage.vueNodes.getNodeLocator('5')
+        await comfyExpect(outerNode).toBeVisible()
+
+        const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
+        await comfyExpect(outerRings).toHaveCount(0)
+
+        // Navigate into Sub 0 to reach node 6 (Sub 1).
+        await comfyPage.vueNodes.enterSubgraph('5')
+        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.waitForNodes()
+
+        // Node 6 (Sub 1) has widgets promoted up to Sub 0 (node 5).
+        // At least one widget should carry the promoted ring.
+        const intermediateNode = comfyPage.vueNodes.getNodeLocator('6')
+        await comfyExpect(intermediateNode).toBeVisible()
+
+        const intermediateRings = intermediateNode.locator(
+          `.${PROMOTED_BORDER_CLASS}`
+        )
+        await comfyExpect(async () => {
+          const count = await intermediateRings.count()
+          expect(
+            count,
+            'Node 6 (Sub 1) should have at least one promoted ring'
+          ).toBeGreaterThan(0)
+        }).toPass({ timeout: 5000 })
+      })
+    }
+  )
 })
