@@ -244,4 +244,97 @@ describe('missingModelStore', () => {
       expect(store.missingModelCandidates).toHaveLength(1)
     })
   })
+
+  describe('addMissingModels', () => {
+    it('appends to existing candidates', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+      ])
+
+      store.addMissingModels([
+        makeModelCandidate('model_b.safetensors', { nodeId: '2' })
+      ])
+
+      expect(store.missingModelCandidates).toHaveLength(2)
+      expect(store.missingModelCandidates![0].name).toBe('model_a.safetensors')
+      expect(store.missingModelCandidates![1].name).toBe('model_b.safetensors')
+    })
+
+    it('works when store is empty (candidates are null)', () => {
+      const store = useMissingModelStore()
+      expect(store.missingModelCandidates).toBeNull()
+
+      store.addMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+      ])
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.hasMissingModels).toBe(true)
+    })
+
+    it('does nothing when given empty array', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '1' })
+      ])
+
+      store.addMissingModels([])
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+    })
+  })
+
+  describe('removeMissingModelsByNodeId', () => {
+    it('removes all candidates matching the nodeId', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: '1',
+          widgetName: 'ckpt_name'
+        }),
+        makeModelCandidate('model_b.safetensors', {
+          nodeId: '1',
+          widgetName: 'vae_name'
+        }),
+        makeModelCandidate('model_c.safetensors', { nodeId: '2' })
+      ])
+
+      store.removeMissingModelsByNodeId('1')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].name).toBe('model_c.safetensors')
+    })
+
+    it('keeps candidates with non-matching nodeId', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '1' }),
+        makeModelCandidate('model_b.safetensors', { nodeId: '2' })
+      ])
+
+      store.removeMissingModelsByNodeId('99')
+
+      expect(store.missingModelCandidates).toHaveLength(2)
+    })
+
+    it('sets candidates to null when all are removed', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '1' }),
+        makeModelCandidate('model_b.safetensors', { nodeId: '1' })
+      ])
+
+      store.removeMissingModelsByNodeId('1')
+
+      expect(store.missingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+    })
+
+    it('does nothing when candidates are null', () => {
+      const store = useMissingModelStore()
+      store.removeMissingModelsByNodeId('1')
+      expect(store.missingModelCandidates).toBeNull()
+    })
+  })
 })

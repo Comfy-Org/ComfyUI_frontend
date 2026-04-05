@@ -194,4 +194,114 @@ describe('useMissingMediaStore', () => {
     store.createVerificationAbortController()
     expect(first.signal.aborted).toBe(true)
   })
+
+  describe('addMissingMedia', () => {
+    it('appends to existing candidates', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+      store.addMissingMedia([makeCandidate('2', 'clip.mp4', 'video')])
+
+      expect(store.missingMediaCandidates).toHaveLength(2)
+      expect(store.missingMediaCandidates![0].name).toBe('photo.png')
+      expect(store.missingMediaCandidates![1].name).toBe('clip.mp4')
+    })
+
+    it('works when store is empty (candidates are null)', () => {
+      const store = useMissingMediaStore()
+      expect(store.missingMediaCandidates).toBeNull()
+
+      store.addMissingMedia([makeCandidate('1', 'photo.png')])
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.hasMissingMedia).toBe(true)
+    })
+
+    it('does nothing when given empty array', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+      store.addMissingMedia([])
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+    })
+  })
+
+  describe('removeMissingMediaByNodeId', () => {
+    it('removes all candidates matching the nodeId', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('1', 'photo.png'),
+        makeCandidate('1', 'other.png'),
+        makeCandidate('2', 'clip.mp4', 'video')
+      ])
+
+      store.removeMissingMediaByNodeId('1')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('clip.mp4')
+    })
+
+    it('keeps candidates with non-matching nodeId', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+      store.removeMissingMediaByNodeId('99')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+    })
+
+    it('sets candidates to null when all are removed', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('1', 'photo.png'),
+        makeCandidate('1', 'other.png')
+      ])
+
+      store.removeMissingMediaByNodeId('1')
+
+      expect(store.missingMediaCandidates).toBeNull()
+      expect(store.hasMissingMedia).toBe(false)
+    })
+
+    it('cleans interaction state for removed names', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('1', 'photo.png'),
+        makeCandidate('2', 'clip.mp4', 'video')
+      ])
+      store.expandState['photo.png'] = true
+      store.uploadState['photo.png'] = {
+        fileName: 'photo.png',
+        status: 'uploaded'
+      }
+      store.pendingSelection['photo.png'] = 'uploaded/photo.png'
+
+      store.removeMissingMediaByNodeId('1')
+
+      expect(store.expandState['photo.png']).toBeUndefined()
+      expect(store.uploadState['photo.png']).toBeUndefined()
+      expect(store.pendingSelection['photo.png']).toBeUndefined()
+    })
+
+    it('preserves interaction state when other candidates share the name', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('1', 'photo.png'),
+        makeCandidate('2', 'photo.png')
+      ])
+      store.pendingSelection['photo.png'] = 'library/photo.png'
+
+      store.removeMissingMediaByNodeId('1')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.pendingSelection['photo.png']).toBe('library/photo.png')
+    })
+
+    it('does nothing when candidates are null', () => {
+      const store = useMissingMediaStore()
+      store.removeMissingMediaByNodeId('1')
+      expect(store.missingMediaCandidates).toBeNull()
+    })
+  })
 })

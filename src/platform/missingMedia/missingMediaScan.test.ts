@@ -6,6 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   scanAllMediaCandidates,
+  scanNodeMediaCandidates,
   verifyCloudMediaCandidates,
   groupCandidatesByName,
   groupCandidatesByMediaType
@@ -68,6 +69,53 @@ function makeMediaNode(
 function makeGraph(nodes: LGraphNode[]): LGraph {
   return fromAny<LGraph, unknown>({ _testNodes: nodes })
 }
+
+describe('scanNodeMediaCandidates', () => {
+  it('returns candidate for a LoadImage node with missing image', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [makeMediaCombo('image', 'photo.png', ['other.png'])],
+      0
+    )
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      nodeId: '1',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'photo.png',
+      isMissing: true
+    })
+  })
+
+  it('returns empty for non-media node types', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'KSampler',
+      [makeMediaCombo('sampler', 'euler', ['euler', 'dpm'])],
+      0
+    )
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
+  it('returns empty for node with no widgets', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(1, 'LoadImage', [], 0)
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+})
 
 describe('scanAllMediaCandidates', () => {
   it('skips muted nodes (mode === NEVER)', () => {

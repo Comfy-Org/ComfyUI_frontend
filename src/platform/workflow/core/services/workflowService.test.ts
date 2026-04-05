@@ -13,6 +13,9 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -115,6 +118,12 @@ vi.mock('@/stores/domWidgetStore', () => ({
   })
 }))
 
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    saveCurrentViewport: vi.fn()
+  })
+}))
+
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({
     get workflow() {
@@ -211,6 +220,95 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
+    })
+
+    it('should NOT call showErrorOverlay when silent is true even with missing nodes', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string): boolean => {
+          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+          return false
+        }
+      )
+      const workflow = createWorkflow({
+        missingNodeTypes: ['CustomNode1']
+      })
+
+      useWorkflowService().showPendingWarnings(workflow, { silent: true })
+
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
+      expect(useExecutionErrorStore().showErrorOverlay).not.toHaveBeenCalled()
+    })
+
+    it('should call showErrorOverlay when silent is false and missing nodes exist', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string): boolean => {
+          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+          return false
+        }
+      )
+      const workflow = createWorkflow({
+        missingNodeTypes: ['CustomNode1']
+      })
+
+      useWorkflowService().showPendingWarnings(workflow)
+
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
+      expect(useExecutionErrorStore().showErrorOverlay).toHaveBeenCalled()
+    })
+  })
+
+  describe('beforeLoadNewGraph', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+
+    beforeEach(() => {
+      enableWarningSettings()
+      workflowStore = useWorkflowStore()
+    })
+
+    it('should cache missingModelCandidates and missingMediaCandidates to activeWorkflow.pendingWarnings', () => {
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      const modelCandidates = [
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          isAssetSupported: false,
+          name: 'missing.safetensors',
+          isMissing: true
+        }
+      ]
+      const mediaCandidates = [
+        {
+          nodeId: '2',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image' as const,
+          name: 'photo.png',
+          isMissing: true
+        }
+      ]
+
+      useMissingModelStore().missingModelCandidates = modelCandidates as never
+      useMissingMediaStore().missingMediaCandidates = mediaCandidates as never
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(activeWorkflow.pendingWarnings).toEqual(
+        expect.objectContaining({
+          missingModelCandidates: modelCandidates,
+          missingMediaCandidates: mediaCandidates
+        })
+      )
     })
   })
 

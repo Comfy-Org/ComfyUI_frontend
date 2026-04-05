@@ -9,6 +9,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import {
   scanAllModelCandidates,
+  scanNodeModelCandidates,
   isModelFileName,
   enrichWithEmbeddedMetadata,
   verifyAssetSupportedCandidates,
@@ -108,6 +109,52 @@ describe('MODEL_FILE_EXTENSIONS', () => {
   it('should contain standard extensions', () => {
     expect(MODEL_FILE_EXTENSIONS.has('.safetensors')).toBe(true)
     expect(MODEL_FILE_EXTENSIONS.has('.ckpt')).toBe(true)
+  })
+})
+
+describe('scanNodeModelCandidates', () => {
+  it('returns candidates for a node with a missing model combo widget', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'missing_model.safetensors', [
+        'existing_model.safetensors'
+      ])
+    ])
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      isAssetSupported: false,
+      name: 'missing_model.safetensors',
+      isMissing: true
+    })
+  })
+
+  it('returns empty array for node with no widgets', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'EmptyNode', [])
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
+  it('returns empty array when executionId is null', () => {
+    const graph = makeGraph([])
+    const node = makeNode(
+      1,
+      'CheckpointLoaderSimple',
+      [makeComboWidget('ckpt_name', 'model.safetensors', [])],
+      ''
+    )
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toEqual([])
   })
 })
 
