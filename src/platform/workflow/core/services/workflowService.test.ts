@@ -159,13 +159,13 @@ describe('useWorkflowService', () => {
       enableWarningSettings()
     })
 
-    it('should do nothing when workflow has no pending warnings', () => {
+    it('should clear missing nodes when workflow has no pending warnings', () => {
       const workflow = createWorkflow(null)
       useWorkflowService().showPendingWarnings(workflow)
 
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).not.toHaveBeenCalled()
+      ).toHaveBeenCalledWith([])
     })
 
     it('should surface missing nodes and cache warnings', () => {

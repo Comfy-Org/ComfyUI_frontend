@@ -580,18 +580,17 @@ export const useWorkflowService = () => {
     options?: { silent?: boolean }
   ) {
     const wf = workflow ?? workflowStore.activeWorkflow
-    if (!wf?.pendingWarnings) return
+    if (!wf) return
 
     const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
-      wf.pendingWarnings
+      wf.pendingWarnings ?? {}
 
-    if (missingNodeTypes?.length) {
-      if (
-        missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes) &&
-        !options?.silent
-      ) {
-        useExecutionErrorStore().showErrorOverlay()
-      }
+    // Always sync missing nodes store (clear when empty).
+    if (
+      missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
+      !options?.silent
+    ) {
+      useExecutionErrorStore().showErrorOverlay()
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)
