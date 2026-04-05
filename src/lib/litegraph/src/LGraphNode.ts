@@ -930,7 +930,12 @@ export class LGraphNode
           if (!Array.isArray(values) || values.length > 0) continue
 
           const optionValues = (this.widgets ?? [])
-            .filter((w) => w.name.startsWith('option') && w.value)
+            .filter(
+              (w) =>
+                w.name.startsWith('option') &&
+                w.value !== undefined &&
+                w.value !== ''
+            )
             .map((w) => `${w.value}`)
           if (optionValues.length > 0) values.push(...optionValues)
         }

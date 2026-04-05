@@ -45,8 +45,6 @@ describe('Widget options.values serialization', () => {
     expect(restored.widgets![2].value).toBe('beta')
     expect(restored.widgets![3].value).toBe('gamma')
 
-    // BUG: combo options.values should also be restored
-    // but configure only restores widget.value, not widget.options
     const restoredValues = restoredCombo.options.values as string[]
     expect(restoredValues).toContain('alpha')
     expect(restoredValues).toContain('beta')
