@@ -682,41 +682,130 @@ export function useErrorGroups(
     return false
   }
 
+  const filteredMissingPackGroups = computed(() => {
+    if (!selectedNodeInfo.value.nodeIds) return missingPackGroups.value
+    return missingPackGroups.value
+      .map((group) => ({
+        ...group,
+        nodeTypes: group.nodeTypes.filter((nt) => {
+          if (typeof nt === 'string') return false
+          return nt.nodeId != null && isAssetErrorInSelection(String(nt.nodeId))
+        })
+      }))
+      .filter((group) => group.nodeTypes.length > 0)
+  })
+
+  const filteredSwapNodeGroups = computed(() => {
+    if (!selectedNodeInfo.value.nodeIds) return swapNodeGroups.value
+    return swapNodeGroups.value
+      .map((group) => ({
+        ...group,
+        nodeTypes: group.nodeTypes.filter((nt) => {
+          if (typeof nt === 'string') return false
+          return nt.nodeId != null && isAssetErrorInSelection(String(nt.nodeId))
+        })
+      }))
+      .filter((group) => group.nodeTypes.length > 0)
+  })
+
+  const filteredMissingModelGroups = computed(() => {
+    if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
+    const candidates = missingModelStore.missingModelCandidates
+    if (!candidates?.length) return []
+    const filtered = candidates.filter(
+      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    )
+    if (!filtered.length) return []
+
+    const map = new Map<
+      string | null | typeof UNSUPPORTED,
+      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
+    >()
+    for (const c of filtered) {
+      const groupKey =
+        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
+      const existing = map.get(groupKey)
+      if (existing) {
+        existing.candidates.push(c)
+      } else {
+        map.set(groupKey, {
+          candidates: [c],
+          isAssetSupported: c.isAssetSupported
+        })
+      }
+    }
+    return Array.from(map.entries())
+      .sort(([dirA], [dirB]) => {
+        if (dirA === UNSUPPORTED) return 1
+        if (dirB === UNSUPPORTED) return -1
+        if (dirA === null) return 1
+        if (dirB === null) return -1
+        return dirA.localeCompare(dirB)
+      })
+      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
+        directory: typeof key === 'string' ? key : null,
+        models: groupCandidatesByName(groupCandidates),
+        isAssetSupported
+      }))
+  })
+
+  const filteredMissingMediaGroups = computed(() => {
+    if (!selectedNodeInfo.value.nodeIds) return missingMediaGroups.value
+    const candidates = missingMediaStore.missingMediaCandidates
+    if (!candidates?.length) return []
+    const filtered = candidates.filter(
+      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    )
+    if (!filtered.length) return []
+    return groupCandidatesByMediaType(filtered)
+  })
+
   function buildMissingNodeGroupsFiltered(): ErrorGroup[] {
-    const error = missingNodesStore.missingNodesError
-    if (!error) return []
-
-    const hasRelevant = error.nodeTypes.some((nt) => {
-      if (typeof nt === 'string') return false
-      return nt.nodeId != null && isAssetErrorInSelection(String(nt.nodeId))
-    })
-    if (!hasRelevant) return []
-
-    return buildMissingNodeGroups()
+    const groups: ErrorGroup[] = []
+    if (filteredSwapNodeGroups.value.length > 0) {
+      groups.push({
+        type: 'swap_nodes' as const,
+        title: st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
+        priority: 0
+      })
+    }
+    if (filteredMissingPackGroups.value.length > 0) {
+      const error = missingNodesStore.missingNodesError
+      if (error) {
+        groups.push({
+          type: 'missing_node' as const,
+          title: error.message,
+          priority: 1
+        })
+      }
+    }
+    return groups.sort((a, b) => a.priority - b.priority)
   }
 
   function buildMissingModelGroupsFiltered(): ErrorGroup[] {
-    const candidates = missingModelStore.missingModelCandidates
-    if (!candidates?.length) return []
-
-    const hasRelevant = candidates.some(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
-    )
-    if (!hasRelevant) return []
-
-    return buildMissingModelGroups()
+    if (!filteredMissingModelGroups.value.length) return []
+    return [
+      {
+        type: 'missing_model' as const,
+        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${filteredMissingModelGroups.value.reduce((count, group) => count + group.models.length, 0)})`,
+        priority: 2
+      }
+    ]
   }
 
   function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
-    const candidates = missingMediaStore.missingMediaCandidates
-    if (!candidates?.length) return []
-
-    const hasRelevant = candidates.some(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    if (!filteredMissingMediaGroups.value.length) return []
+    const totalItems = filteredMissingMediaGroups.value.reduce(
+      (count, group) => count + group.items.length,
+      0
     )
-    if (!hasRelevant) return []
-
-    return buildMissingMediaGroups()
+    return [
+      {
+        type: 'missing_media' as const,
+        title: `${t('rightSidePanel.missingMedia.missingMediaTitle')} (${totalItems})`,
+        priority: 3
+      }
+    ]
   }
 
   const allErrorGroups = computed<ErrorGroup[]>(() => {
@@ -791,9 +880,9 @@ export function useErrorGroups(
     errorNodeCache,
     missingNodeCache,
     groupedErrorMessages,
-    missingPackGroups,
-    missingModelGroups,
-    missingMediaGroups,
-    swapNodeGroups
+    missingPackGroups: filteredMissingPackGroups,
+    missingModelGroups: filteredMissingModelGroups,
+    missingMediaGroups: filteredMissingMediaGroups,
+    swapNodeGroups: filteredSwapNodeGroups
   }
 }
