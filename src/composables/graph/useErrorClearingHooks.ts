@@ -30,8 +30,8 @@ import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
-  getExecutionIdByNode,
-  getNodeByExecutionId
+  collectAllNodes,
+  getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 
 function resolvePromotedExecId(
@@ -144,8 +144,23 @@ function isNodeInactive(mode: number): boolean {
   return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
 }
 
-/** Scan a single node and add confirmed missing model/media to stores. */
+/** Scan a single node and add confirmed missing model/media to stores.
+ *  For subgraph containers, also scans all active interior nodes. */
 function scanAndAddNodeErrors(node: LGraphNode): void {
+  if (!app.rootGraph) return
+
+  if (node.isSubgraphNode?.() && node.subgraph) {
+    for (const innerNode of collectAllNodes(node.subgraph)) {
+      if (isNodeInactive(innerNode.mode)) continue
+      scanSingleNodeErrors(innerNode)
+    }
+    return
+  }
+
+  scanSingleNodeErrors(node)
+}
+
+function scanSingleNodeErrors(node: LGraphNode): void {
   if (!app.rootGraph) return
 
   const modelCandidates = scanNodeModelCandidates(
@@ -193,10 +208,12 @@ function scanAndAddNodeErrors(node: LGraphNode): void {
 
 function scanAddedNode(node: LGraphNode): void {
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (isNodeInactive(node.mode)) return
   scanAndAddNodeErrors(node)
 }
 
 function handleNodeModeChange(
+  localGraph: LGraph,
   nodeId: number,
   oldMode: number,
   newMode: number
@@ -208,16 +225,16 @@ function handleNodeModeChange(
 
   if (wasInactive === isNowInactive) return
 
-  const node = getNodeByExecutionId(app.rootGraph, String(nodeId))
+  // Find the node by local ID in the graph that fired the event,
+  // then compute its execution ID relative to the root graph.
+  const node = localGraph.getNodeById(nodeId)
   if (!node) return
 
   const execId = getExecutionIdByNode(app.rootGraph, node)
   if (!execId) return
 
   if (isNowInactive) {
-    useMissingModelStore().removeMissingModelsByNodeId(execId)
-    useMissingMediaStore().removeMissingMediaByNodeId(execId)
-    useMissingNodesErrorStore().removeMissingNodesByNodeId(execId)
+    removeNodeErrors(node, execId)
   } else {
     scanAndAddNodeErrors(node)
     if (
@@ -226,6 +243,39 @@ function handleNodeModeChange(
       useMissingNodesErrorStore().hasMissingNodes
     ) {
       useExecutionErrorStore().showErrorOverlay()
+    }
+  }
+}
+
+/** Remove all missing asset errors for a node and, if it's a subgraph
+ *  container, for all interior nodes (prefix match on execution ID). */
+function removeNodeErrors(node: LGraphNode, execId: string): void {
+  const modelStore = useMissingModelStore()
+  const mediaStore = useMissingMediaStore()
+  const nodesStore = useMissingNodesErrorStore()
+
+  modelStore.removeMissingModelsByNodeId(execId)
+  mediaStore.removeMissingMediaByNodeId(execId)
+  nodesStore.removeMissingNodesByNodeId(execId)
+
+  // For subgraph containers, also remove errors from interior nodes
+  if (node.isSubgraphNode?.() && node.subgraph) {
+    const prefix = `${execId}:`
+    for (const candidate of modelStore.missingModelCandidates ?? []) {
+      if (String(candidate.nodeId).startsWith(prefix)) {
+        modelStore.removeMissingModelsByNodeId(String(candidate.nodeId))
+      }
+    }
+    for (const candidate of mediaStore.missingMediaCandidates ?? []) {
+      if (String(candidate.nodeId).startsWith(prefix)) {
+        mediaStore.removeMissingMediaByNodeId(String(candidate.nodeId))
+      }
+    }
+    const nodeTypes = nodesStore.missingNodesError?.nodeTypes ?? []
+    for (const nt of nodeTypes) {
+      if (typeof nt !== 'string' && String(nt.nodeId).startsWith(prefix)) {
+        nodesStore.removeMissingNodesByNodeId(String(nt.nodeId))
+      }
     }
   }
 }
@@ -275,6 +325,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   graph.onTrigger = (event: LGraphTriggerEvent) => {
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
+        graph,
         event.nodeId as number,
         event.oldValue as number,
         event.newValue as number
