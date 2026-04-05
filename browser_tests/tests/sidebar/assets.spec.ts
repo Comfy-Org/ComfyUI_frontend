@@ -14,9 +14,9 @@ import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/j
 const SAMPLE_JOBS: RawJobListItem[] = [
   createMockJob({
     id: 'job-alpha',
-    create_time: 1000,
-    execution_start_time: 1000,
-    execution_end_time: 1010,
+    create_time: 1_000_000,
+    execution_start_time: 1_000_000,
+    execution_end_time: 1_010_000,
     preview_output: {
       filename: 'landscape.png',
       subfolder: '',
@@ -28,9 +28,9 @@ const SAMPLE_JOBS: RawJobListItem[] = [
   }),
   createMockJob({
     id: 'job-beta',
-    create_time: 2000,
-    execution_start_time: 2000,
-    execution_end_time: 2003,
+    create_time: 2_000_000,
+    execution_start_time: 2_000_000,
+    execution_end_time: 2_003_000,
     preview_output: {
       filename: 'portrait.png',
       subfolder: '',
@@ -42,9 +42,9 @@ const SAMPLE_JOBS: RawJobListItem[] = [
   }),
   createMockJob({
     id: 'job-gamma',
-    create_time: 3000,
-    execution_start_time: 3000,
-    execution_end_time: 3020,
+    create_time: 3_000_000,
+    execution_start_time: 3_000_000,
+    execution_end_time: 3_020_000,
     preview_output: {
       filename: 'abstract_art.png',
       subfolder: '',

@@ -28,12 +28,12 @@ type SeededAssetFile = {
 export function createMockJob(
   overrides: Partial<RawJobListItem> & { id: string }
 ): RawJobListItem {
-  const now = Date.now() / 1000
+  const now = Date.now()
   return {
     status: 'completed',
     create_time: now,
     execution_start_time: now,
-    execution_end_time: now + 5,
+    execution_end_time: now + 5_000,
     preview_output: {
       filename: `output_${overrides.id}.png`,
       subfolder: '',
@@ -52,13 +52,13 @@ export function createMockJobs(
   count: number,
   baseOverrides?: Partial<RawJobListItem>
 ): RawJobListItem[] {
-  const now = Date.now() / 1000
+  const now = Date.now()
   return Array.from({ length: count }, (_, i) =>
     createMockJob({
       id: `job-${String(i + 1).padStart(3, '0')}`,
-      create_time: now - i * 60,
-      execution_start_time: now - i * 60,
-      execution_end_time: now - i * 60 + 5 + i,
+      create_time: now - i * 60_000,
+      execution_start_time: now - i * 60_000,
+      execution_end_time: now - i * 60_000 + (5 + i) * 1_000,
       preview_output: {
         filename: `image_${String(i + 1).padStart(3, '0')}.png`,
         subfolder: '',
