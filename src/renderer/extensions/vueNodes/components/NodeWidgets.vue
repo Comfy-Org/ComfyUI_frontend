@@ -391,6 +391,10 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       : mergedOptions
 
     const sourceWidgetName = widget.storeName ?? widget.name
+    // Promotions stored for non-SubgraphNode inner nodes omit the
+    // disambiguatingSourceNodeId, but the widget's storeNodeId causes
+    // one to be computed here. Check both key shapes to handle nested
+    // subgraph promotions correctly (#10612).
     const isPromoted =
       graphId &&
       (promotionStore.isPromotedByAny(graphId, {
