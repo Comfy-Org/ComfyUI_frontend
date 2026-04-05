@@ -291,11 +291,22 @@ export async function runResearchPhase(
         toolResult: resultText.slice(0, 1000)
       })
 
-      // Auto-save passing test code for fallback completion
+      // Auto-save passing test code for fallback completion — but only if
+      // the test contains a bug-specific assertion (not just a discovery/debug test)
       if (resultText.startsWith('TEST PASSED')) {
         try {
-          finalTestCode = readFileSync(browserTestPath, 'utf-8')
-          lastPassedTurn = turnCount
+          const code = readFileSync(browserTestPath, 'utf-8')
+          const hasBugAssertion =
+            /expect\s*\(/.test(code) &&
+            !/^\s*expect\([^)]+\)\.toBeDefined\(\)/m.test(code) &&
+            !/^\s*expect\([^)]+\)\.toBeGreaterThan\(0\)/m.test(code) &&
+            !/Inspect|Find|Debug|discover/i.test(
+              code.match(/test\(['"`]([^'"`]+)/)?.[1] ?? ''
+            )
+          if (hasBugAssertion) {
+            finalTestCode = code
+            lastPassedTurn = turnCount
+          }
         } catch {
           // ignore
         }
@@ -392,6 +403,7 @@ export async function runResearchPhase(
 - ALWAYS call done() when finished, even if the test passed — do not keep iterating after a passing test
 - Use \`expect.poll()\` for async assertions: \`await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(8)\`
 - CRITICAL: Your assertions must be SPECIFIC TO THE BUG. A test that asserts \`expect(count).toBeGreaterThan(0)\` proves nothing — it would pass even without the bug. Instead assert the exact broken state, e.g. \`expect(clonedWidgets).toHaveLength(0)\` (missing widgets) or \`expect(zIndex).toBeLessThan(parentZIndex)\` (wrong z-order). If a test passes trivially, it's a false positive.
+- NEVER write "debug", "discovery", or "inspect node types" tests. These waste turns and produce false REPRODUCED verdicts. If you need to discover node type names, use inspect() or readFixture() — not a passing test.
 - If you cannot write a bug-specific assertion, call done() with verdict NOT_REPRODUCIBLE and explain why.
 
 ## ComfyPage Fixture API Reference
