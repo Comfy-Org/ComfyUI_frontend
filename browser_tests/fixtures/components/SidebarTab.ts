@@ -281,6 +281,10 @@ export class AssetsSidebarTab extends SidebarTab {
     super(page, 'assets')
   }
 
+  get root() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
   // --- Tab navigation ---
 
   get generatedTab() {
@@ -299,28 +303,56 @@ export class AssetsSidebarTab extends SidebarTab {
     )
   }
 
-  emptyStateTitle(title: string) {
-    return this.page.getByText(title)
-  }
-
-  // --- Search & filter ---
-
   get searchInput() {
-    return this.page.getByPlaceholder('Search Assets...')
+    return this.root.getByPlaceholder(/Search Assets/i)
   }
 
   get settingsButton() {
-    return this.page.getByRole('button', { name: 'View settings' })
+    return this.root.getByLabel('View settings')
   }
 
-  // --- View mode ---
+  get viewSettingsButton() {
+    return this.settingsButton
+  }
 
   get listViewOption() {
     return this.page.getByText('List view')
   }
 
+  get listViewButton() {
+    return this.listViewOption
+  }
+
   get gridViewOption() {
     return this.page.getByText('Grid view')
+  }
+
+  get gridViewButton() {
+    return this.gridViewOption
+  }
+
+  get backButton() {
+    return this.page.getByRole('button', { name: 'Back to all assets' })
+  }
+
+  get copyJobIdButton() {
+    return this.page.getByRole('button', { name: 'Copy job ID' })
+  }
+
+  get previewDialog() {
+    return this.page.getByRole('dialog', { name: 'Gallery' })
+  }
+
+  emptyStateTitle(title: string) {
+    return this.page.getByText(title)
+  }
+
+  previewImage(filename: string) {
+    return this.previewDialog.getByRole('img', { name: filename })
+  }
+
+  asset(name: string) {
+    return this.getAssetCardByName(name)
   }
 
   // --- Sort options (cloud-only, shown inside settings popover) ---
@@ -336,38 +368,34 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Asset cards ---
 
   get assetCards() {
-    return this.page.locator('[role="button"][data-selected]')
+    return this.root.locator('[role="button"][data-selected]')
   }
 
   getAssetCardByName(name: string) {
-    return this.page.locator('[role="button"][data-selected]', {
-      hasText: name
-    })
+    return this.assetCards.filter({ hasText: name }).first()
   }
 
   get selectedCards() {
-    return this.page.locator('[data-selected="true"]')
+    return this.root.locator('[data-selected="true"]')
   }
 
   // --- List view items ---
 
   get listViewItems() {
-    return this.page.locator(
-      '.sidebar-content-container [role="button"][tabindex="0"]'
-    )
+    return this.root.locator('[role="button"][tabindex="0"]')
   }
 
   // --- Selection footer ---
 
   get selectionFooter() {
-    return this.page
-      .locator('.sidebar-content-container')
-      .locator('..')
-      .locator('[class*="h-18"]')
+    return this.root.locator('..').locator('[class*="h-18"]')
   }
 
   get selectionCountButton() {
-    return this.page.getByText(/Assets Selected: \d+/)
+    return this.root
+      .getByRole('button', { name: /Assets Selected:/ })
+      .or(this.page.getByText(/Assets Selected: \d+/))
+      .first()
   }
 
   get deselectAllButton() {
@@ -381,11 +409,19 @@ export class AssetsSidebarTab extends SidebarTab {
       .first()
   }
 
+  get deleteSelectionButton() {
+    return this.deleteSelectedButton
+  }
+
   get downloadSelectedButton() {
     return this.page
       .getByTestId('assets-download-selected')
       .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
       .first()
+  }
+
+  get downloadSelectionButton() {
+    return this.downloadSelectedButton
   }
 
   // --- Context menu ---
@@ -394,24 +430,103 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
+  contextMenuAction(label: string) {
+    return this.contextMenuItem(label)
+  }
+
   // --- Folder view ---
 
   get backToAssetsButton() {
-    return this.page.getByText('Back to all assets')
+    return this.backButton
   }
 
   // --- Loading ---
 
   get skeletonLoaders() {
-    return this.page.locator('.sidebar-content-container .animate-pulse')
+    return this.root.locator('.animate-pulse')
   }
 
-  // --- Helpers ---
+  async showGenerated() {
+    await this.switchToGenerated()
+  }
+
+  async showImported() {
+    await this.switchToImported()
+  }
+
+  async search(query: string) {
+    await this.searchInput.fill(query)
+  }
+
+  async switchToListView() {
+    await this.openSettingsMenu()
+    await this.listViewOption.click()
+  }
+
+  async switchToGridView() {
+    await this.openSettingsMenu()
+    await this.gridViewOption.click()
+  }
+
+  async openContextMenuForAsset(name: string) {
+    await this.asset(name).click({ button: 'right' })
+    await this.page
+      .locator('.p-contextmenu')
+      .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async runContextMenuAction(assetName: string, actionName: string) {
+    await this.openContextMenuForAsset(assetName)
+    await this.contextMenuAction(actionName).click()
+  }
+
+  async openAssetPreview(name: string) {
+    const asset = this.asset(name)
+    await asset.hover()
+
+    const zoomButton = asset.getByLabel('Zoom in')
+    if (await zoomButton.isVisible().catch(() => false)) {
+      await zoomButton.click()
+      return
+    }
+
+    await asset.dblclick()
+  }
+
+  async openOutputFolder(name: string) {
+    await this.asset(name)
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+
+    await this.backToAssetsButton.waitFor({ state: 'visible' })
+  }
+
+  async toggleStack(name: string) {
+    await this.asset(name)
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+  }
+
+  async selectAssets(names: string[]) {
+    if (names.length === 0) {
+      return
+    }
+
+    await this.asset(names[0]).click()
+
+    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
+    for (const name of names.slice(1)) {
+      await this.asset(name).click({
+        modifiers: [modifier]
+      })
+    }
+  }
 
   override async open() {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
+    await this.root.waitFor({ state: 'visible' })
     await this.generatedTab.waitFor({ state: 'visible' })
   }
 
