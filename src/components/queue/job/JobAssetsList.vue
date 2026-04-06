@@ -78,7 +78,7 @@
       class="job-details-popover fixed z-50"
       :style="{
         top: `${popoverPosition.top}px`,
-        right: `${popoverPosition.right}px`
+        left: `${popoverPosition.left}px`
       }"
       @mouseenter="onPopoverEnter"
       @mouseleave="onPopoverLeave"
@@ -96,6 +96,7 @@ import { useI18n } from 'vue-i18n'
 import { nextTick, ref } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
+import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { useJobDetailsHover } from '@/composables/queue/useJobDetailsHover'
@@ -115,7 +116,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
-const popoverPosition = ref<{ top: number; right: number } | null>(null)
+const popoverPosition = ref<{ top: number; left: number } | null>(null)
 const {
   activeDetails,
   clearHoverTimers,
@@ -138,11 +139,7 @@ function updatePopoverPosition() {
   if (!rowElement) return
 
   const rect = rowElement.getBoundingClientRect()
-  const gap = 8
-  popoverPosition.value = {
-    top: rect.top,
-    right: window.innerWidth - rect.left + gap
-  }
+  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
 }
 
 function onJobLeave(jobId: string) {
