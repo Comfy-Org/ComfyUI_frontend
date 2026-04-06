@@ -1,7 +1,7 @@
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
 import sharp from 'sharp'
-import type { SatoriOptions } from 'satori'
+import type { SatoriOptions, SatoriNode } from 'satori'
 
 const WIDTH = 1200
 const HEIGHT = 630
@@ -267,7 +267,7 @@ function creatorLayout(
   }
 }
 
-export async function renderOgPng(layout: unknown): Promise<Uint8Array> {
+export async function renderOgPng(layout: SatoriNode): Promise<Uint8Array> {
   const fonts = await loadFonts()
   const svg = await satori(layout, {
     width: WIDTH,

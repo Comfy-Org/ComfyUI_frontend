@@ -37,7 +37,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Restore content cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: apps/hub/.content-cache
           key: hub-content-cache-cron-prod-${{ hashFiles('_workflow_templates/templates/**', 'apps/hub/src/**') }}
@@ -59,7 +59,7 @@ jobs:
           PUBLIC_APPROVED_ONLY: 'true'
 
       - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25.2.0
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}

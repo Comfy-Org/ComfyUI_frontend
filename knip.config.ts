@@ -60,7 +60,7 @@ const config: KnipConfig = {
       ]
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'vercel'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
