@@ -1,0 +1,74 @@
+name: Hub Preview
+
+on:
+  pull_request:
+    paths:
+      - 'apps/hub/**'
+  workflow_dispatch:
+
+concurrency:
+  group: hub-preview-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      SKIP_AI_GENERATION: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Checkout templates data
+        uses: actions/checkout@v6
+        with:
+          repository: Comfy-Org/workflow_templates
+          path: _workflow_templates
+          sparse-checkout: templates
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Restore content cache
+        uses: actions/cache@v4
+        with:
+          path: apps/hub/.content-cache
+          key: hub-content-cache-preview-${{ hashFiles('_workflow_templates/templates/**', 'apps/hub/src/**') }}
+          restore-keys: |
+            hub-content-cache-preview-
+
+      - name: Sync templates
+        run: pnpm run sync:en-only
+        working-directory: apps/hub
+        env:
+          HUB_TEMPLATES_DIR: ${{ github.workspace }}/_workflow_templates/templates
+
+      - name: Build Astro site
+        run: pnpm run build
+        working-directory: apps/hub
+        env:
+          PUBLIC_HUB_API_URL: ${{ secrets.HUB_API_URL_PREVIEW }}
+          PUBLIC_COMFY_CLOUD_URL: ${{ secrets.COMFY_CLOUD_URL_PREVIEW }}
+
+      - name: Deploy preview to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.HUB_VERCEL_PROJECT_ID }}
+          working-directory: apps/hub
+          vercel-args: '--prebuilt'
+
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: hub-vercel-preview
+          message: |
+            🚀 **Hub preview deployed:** ${{ steps.deploy.outputs.preview-url }}

@@ -1,0 +1,134 @@
+name: Hub Preview Cron
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build rebuild targets
+        id: targets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          targets='[]'
+
+          # Main with production API (all workflows, no approved filter)
+          targets=$(echo "$targets" | jq -c '. + [{"ref": "main", "is_main": true, "pr": 0, "api_env": "production"}]')
+
+          # Main with test API
+          targets=$(echo "$targets" | jq -c '. + [{"ref": "main", "is_main": true, "pr": 0, "api_env": "test"}]')
+
+          # Find open PRs with the "preview-cron" label
+          prs=$(gh pr list --label "preview-cron" --state open --json number,headRefName)
+          for row in $(echo "$prs" | jq -c '.[]'); do
+            ref=$(echo "$row" | jq -r '.headRefName')
+            num=$(echo "$row" | jq -r '.number')
+            targets=$(echo "$targets" | jq -c \
+              --arg ref "$ref" --argjson num "$num" \
+              '. + [{"ref": $ref, "is_main": false, "pr": $num, "api_env": "test"}]')
+          done
+
+          echo "matrix={\"include\":$targets}" >> "$GITHUB_OUTPUT"
+          echo "### Rebuild targets" >> "$GITHUB_STEP_SUMMARY"
+          echo "$targets" | jq '.' >> "$GITHUB_STEP_SUMMARY"
+
+  rebuild:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    concurrency:
+      group: hub-preview-cron-${{ matrix.ref }}-${{ matrix.api_env }}
+      cancel-in-progress: true
+    env:
+      SKIP_AI_GENERATION: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.ref }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Checkout templates data
+        uses: actions/checkout@v6
+        with:
+          repository: Comfy-Org/workflow_templates
+          path: _workflow_templates
+          sparse-checkout: templates
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Restore content cache
+        uses: actions/cache@v4
+        with:
+          path: apps/hub/.content-cache
+          key: hub-content-cache-cron-${{ matrix.ref }}-${{ matrix.api_env }}-${{ hashFiles('_workflow_templates/templates/**', 'apps/hub/src/**') }}
+          restore-keys: |
+            hub-content-cache-cron-${{ matrix.ref }}-${{ matrix.api_env }}-
+
+      - name: Sync templates
+        run: pnpm run sync:en-only
+        working-directory: apps/hub
+        env:
+          HUB_TEMPLATES_DIR: ${{ github.workspace }}/_workflow_templates/templates
+
+      - name: Build Astro site
+        run: pnpm run build
+        working-directory: apps/hub
+        env:
+          PUBLIC_HUB_API_URL: ${{ matrix.api_env == 'test' && secrets.HUB_API_URL_PREVIEW || secrets.HUB_API_URL_PRODUCTION }}
+          PUBLIC_COMFY_CLOUD_URL: ${{ matrix.api_env == 'test' && secrets.COMFY_CLOUD_URL_PREVIEW || secrets.COMFY_CLOUD_URL_PRODUCTION }}
+
+      - name: Deploy to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.HUB_VERCEL_PROJECT_ID }}
+          working-directory: apps/hub
+          vercel-args: '--prebuilt'
+
+      - name: Alias main preview (prod API)
+        if: matrix.is_main && matrix.api_env == 'production' && secrets.HUB_PREVIEW_ALIAS
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview-url }}
+          ALIAS: ${{ secrets.HUB_PREVIEW_ALIAS }}
+          VERCEL_TOKEN_VAL: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_ORG_ID }}
+        run: |
+          npx vercel alias "$PREVIEW_URL" "$ALIAS" --token="$VERCEL_TOKEN_VAL" --scope="$VERCEL_SCOPE"
+
+      - name: Alias main preview (test API)
+        if: matrix.is_main && matrix.api_env == 'test' && secrets.HUB_PREVIEW_TEST_ALIAS
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview-url }}
+          ALIAS: ${{ secrets.HUB_PREVIEW_TEST_ALIAS }}
+          VERCEL_TOKEN_VAL: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ secrets.VERCEL_ORG_ID }}
+        run: |
+          npx vercel alias "$PREVIEW_URL" "$ALIAS" --token="$VERCEL_TOKEN_VAL" --scope="$VERCEL_SCOPE"
+
+      - name: Comment preview URL on PR
+        if: matrix.pr > 0
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          number: ${{ matrix.pr }}
+          header: hub-preview-cron
+          message: |
+            🔄 **Hub preview cron rebuilt:** ${{ steps.deploy.outputs.preview-url }}
+            _Last rebuild: ${{ github.event.head_commit.timestamp || 'manual trigger' }}_
