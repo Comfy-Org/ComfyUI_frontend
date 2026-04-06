@@ -40,6 +40,9 @@ const MOCK_JOBS: JobEntry[] = [
 test.describe('Queue overlay', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
     await assetScenario.seedGeneratedHistory(MOCK_JOBS)
+    await comfyPage.setupSettings({
+      'Comfy.Queue.QPOV2': false
+    })
     await comfyPage.setup()
   })
 

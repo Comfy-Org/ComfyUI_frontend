@@ -1,4 +1,4 @@
-import type { JobDetailResponse } from '@comfyorg/ingest-types'
+import type { JobDetailResponse, JobEntry } from '@comfyorg/ingest-types'
 
 import type { ResultItemType } from '../../../src/schemas/apiSchema'
 
@@ -20,6 +20,7 @@ export type GeneratedOutputFixture = {
 
 export type GeneratedJobFixture = {
   jobId: string
+  status?: JobEntry['status']
   outputs: [GeneratedOutputFixture, ...GeneratedOutputFixture[]]
   createdAt?: string
   createTime?: number

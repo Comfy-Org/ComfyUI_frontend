@@ -146,6 +146,7 @@ function outputsFromJobEntry(
 function generatedJobFromJobEntry(job: JobEntry): GeneratedJobFixture {
   return {
     jobId: job.id,
+    status: job.status,
     outputs: outputsFromJobEntry(job),
     createTime: job.create_time,
     executionStartTime: job.execution_start_time,
@@ -165,7 +166,7 @@ function buildSeededJob(job: GeneratedJobFixture) {
 
   const listItem: JobEntry = {
     id: job.jobId,
-    status: 'completed',
+    status: job.status ?? 'completed',
     create_time: createTime,
     execution_start_time: executionStartTime,
     execution_end_time: executionEndTime,
