@@ -1536,7 +1536,7 @@ export class ComfyApp {
                 silent
               })
             }
-            this.cacheModelCandidates(confirmed)
+            this.cacheModelCandidates(activeWf, confirmed)
           })
           .catch((err) => {
             console.warn(
@@ -1573,7 +1573,7 @@ export class ComfyApp {
               useExecutionErrorStore().surfaceMissingModels(confirmed, {
                 silent
               })
-              this.cacheModelCandidates(confirmed)
+              this.cacheModelCandidates(activeWf, confirmed)
             })
 
           void Promise.allSettled(
@@ -1607,8 +1607,10 @@ export class ComfyApp {
     }
   }
 
-  private cacheModelCandidates(confirmed: MissingModelCandidate[]) {
-    const wf = useWorkspaceStore().workflow.activeWorkflow
+  private cacheModelCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingModelCandidate[]
+  ) {
     if (!wf) return
     wf.pendingWarnings = {
       ...wf.pendingWarnings,
@@ -1617,8 +1619,10 @@ export class ComfyApp {
     this.cleanupPendingWarnings(wf)
   }
 
-  private cacheMediaCandidates(confirmed: MissingMediaCandidate[]) {
-    const wf = useWorkspaceStore().workflow.activeWorkflow
+  private cacheMediaCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingMediaCandidate[]
+  ) {
     if (!wf) return
     wf.pendingWarnings = {
       ...wf.pendingWarnings,
@@ -1631,10 +1635,11 @@ export class ComfyApp {
     silent: boolean = false
   ): Promise<void> {
     const missingMediaStore = useMissingMediaStore()
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
     const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
 
     if (!candidates.length) {
-      this.cacheMediaCandidates([])
+      this.cacheMediaCandidates(activeWf, [])
       return
     }
 
@@ -1647,7 +1652,7 @@ export class ComfyApp {
           if (confirmed.length) {
             useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
           }
-          this.cacheMediaCandidates(confirmed)
+          this.cacheMediaCandidates(activeWf, confirmed)
         })
         .catch((err) => {
           console.warn(
@@ -1668,7 +1673,7 @@ export class ComfyApp {
       if (confirmed.length) {
         useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
       }
-      this.cacheMediaCandidates(confirmed)
+      this.cacheMediaCandidates(activeWf, confirmed)
     }
   }
 
