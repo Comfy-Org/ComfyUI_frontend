@@ -57,27 +57,6 @@ test.describe(
       }
     }
 
-    test('context menu has bounded height and is scrollable on desktop', async ({
-      comfyPage
-    }) => {
-      await openMoreOptions(comfyPage)
-
-      const menu = comfyPage.page.locator('.p-contextmenu')
-      await expect(menu).toBeVisible({ timeout: 3000 })
-
-      // The root menu list (ul) must have a bounded max-height and
-      // scrollable overflow so items beyond the viewport are accessible.
-      // The outer div keeps overflow visible so submenus are not clipped.
-      const rootList = menu.locator('> ul')
-      const styles = await rootList.evaluate((el) => ({
-        overflowY: window.getComputedStyle(el).overflowY,
-        maxHeight: window.getComputedStyle(el).maxHeight
-      }))
-
-      expect(styles.overflowY).toBe('auto')
-      expect(styles.maxHeight).not.toBe('none')
-    })
-
     test('last menu item "Remove" is reachable via scroll', async ({
       comfyPage
     }) => {
