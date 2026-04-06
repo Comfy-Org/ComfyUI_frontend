@@ -9,100 +9,26 @@
   -->
   <MultiSelect
     v-model="selectedItems"
-    v-bind="{ ...$attrs, options: filteredOptions }"
-    option-label="name"
-    unstyled
-    :max-selected-labels="0"
-    :pt="{
-      root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
-        class: cn(
-          'relative inline-flex cursor-pointer select-none',
-          size === 'md' ? 'h-8' : 'h-10',
-          'rounded-lg bg-secondary-background text-base-foreground',
-          'transition-all duration-200 ease-in-out',
-          'hover:bg-secondary-background-hover',
-          'border-[2.5px] border-solid',
-          selectedCount > 0 ? 'border-base-foreground' : 'border-transparent',
-          'focus-within:border-base-foreground',
-          props.disabled &&
-            'cursor-default opacity-30 hover:bg-secondary-background'
-        )
-      }),
-      labelContainer: {
-        class: cn(
-          'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
-          size === 'md' ? 'pl-3' : 'pl-4'
-        )
-      },
-      label: {
-        class: 'p-0'
-      },
-      dropdown: {
-        class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
-      },
-      header: () => ({
-        class:
-          showSearchBox || showSelectedCount || showClearButton
-            ? 'block'
-            : 'hidden'
-      }),
-      // Overlay & list visuals unchanged
-      overlay: {
-        class: cn(
-          'mt-2 rounded-lg p-2',
-          'bg-base-background',
-          'text-base-foreground',
-          'border border-solid border-border-default'
-        )
-      },
-      listContainer: () => ({
-        style: { maxHeight: `min(${listMaxHeight}, 50vh)` },
-        class: 'scrollbar-custom'
-      }),
-      list: {
-        class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
-      },
-      // Option row hover and focus tone
-      option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
-        class: cn(
-          'flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2',
-          'hover:bg-secondary-background-hover',
-          // Add focus/highlight state for keyboard navigation
-          context?.focused &&
-            'bg-secondary-background-selected hover:bg-secondary-background-selected'
-        )
-      }),
-      // Hide built-in checkboxes entirely via PT (no :deep)
-      pcHeaderCheckbox: {
-        root: { class: 'hidden' },
-        style: { display: 'none' }
-      },
-      pcOptionCheckbox: {
-        root: { class: 'hidden' },
-        style: { display: 'none' }
-      },
-      emptyMessage: {
-        class: 'px-3 pb-4 text-sm text-muted-foreground'
-      }
-    }"
-    :aria-label="label || t('g.multiSelectDropdown')"
-    role="combobox"
-    :aria-expanded="false"
-    aria-haspopup="listbox"
-    :tabindex="0"
+    v-model:open="isOpen"
+    multiple
+    by="value"
+    :disabled
+    ignore-filter
+    :reset-search-term-on-select="false"
   >
-    <template
-      v-if="showSearchBox || showSelectedCount || showClearButton"
-      #header
-    >
-      <div class="flex flex-col px-2 pt-2 pb-0">
-        <SearchInput
-          v-if="showSearchBox"
-          v-model="searchQuery"
-          :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-          :placeholder="searchPlaceholder"
-          size="sm"
-        />
+    <ComboboxAnchor as-child>
+      <ComboboxTrigger
+        v-bind="$attrs"
+        :aria-label="label || t('g.multiSelectDropdown')"
+        :class="
+          cn(
+            selectTriggerVariants({
+              size,
+              border: selectedCount > 0 ? 'active' : 'none'
+            })
+          )
+        "
+      >
         <div
           v-if="showSelectedCount || showClearButton"
           class="mt-2 flex items-center justify-between"
@@ -126,9 +52,11 @@
             {{ $t('g.clearAll') }}
           </Button>
         </div>
-        <div class="my-4 h-px bg-border-default"></div>
-      </div>
-    </template>
+        <div :class="selectDropdownClass">
+          <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+        </div>
+      </ComboboxTrigger>
+    </ComboboxAnchor>
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
@@ -154,6 +82,9 @@
         role="button"
         class="flex cursor-pointer items-center gap-2"
         :style="popoverStyle"
+        :class="selectContentClass"
+        @keydown="onContentKeydown"
+        @focus-outside="preventFocusDismiss"
       >
         <div
           class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
@@ -163,25 +94,49 @@
               : 'bg-secondary-background'
           "
         >
-          <i
-            v-if="slotProps.selected"
-            class="text-bold icon-[lucide--check] text-xs text-base-foreground"
-          />
-        </div>
-        <span>
-          {{ slotProps.option.name }}
-        </span>
-      </div>
-    </template>
-  </MultiSelect>
+          <ComboboxItem
+            v-for="opt in filteredOptions"
+            :key="opt.value"
+            :value="opt"
+            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
+          >
+            <div
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+            >
+              <ComboboxItemIndicator>
+                <i
+                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                />
+              </ComboboxItemIndicator>
+            </div>
+            <span>{{ opt.name }}</span>
+          </ComboboxItem>
+          <ComboboxEmpty :class="selectEmptyMessageClass">
+            {{ $t('g.noResultsFound') }}
+          </ComboboxEmpty>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
 </template>
 
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
-import MultiSelect from 'primevue/multiselect'
-import { computed, useAttrs } from 'vue'
+import type { FocusOutsideEvent } from 'reka-ui'
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxTrigger,
+  ComboboxViewport
+} from 'reka-ui'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -189,6 +144,14 @@ import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
+import {
+  selectContentClass,
+  selectDropdownClass,
+  selectEmptyMessageClass,
+  selectItemVariants,
+  selectTriggerVariants,
+  stopEscapeToDocument
+} from './select.variants'
 import type { SelectOption } from './types'
 
 type Option = SelectOption
@@ -237,7 +200,19 @@ const selectedItems = defineModel<Option[]>({
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
+const isOpen = ref(false)
 const selectedCount = computed(() => selectedItems.value.length)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
+
+function preventFocusDismiss(event: FocusOutsideEvent) {
+  event.preventDefault()
+}
 
 const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,

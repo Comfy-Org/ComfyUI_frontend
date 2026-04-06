@@ -1,94 +1,17 @@
 <template>
-  <!--
-    Note: We explicitly pass options here (not just via $attrs) because:
-    1. Our custom value template needs options to look up labels from values
-    2. PrimeVue's value slot only provides 'value' and 'placeholder', not the selected item's label
-    3. We need to maintain the icon slot functionality in the value template
-    option-label="name" is required because our option template directly accesses option.name
-  -->
-  <Select
-    v-model="selectedItem"
-    v-bind="$attrs"
-    :options="options"
-    option-label="name"
-    option-value="value"
-    unstyled
-    :pt="{
-      root: ({ props }: SelectPassThroughMethodOptions<SelectOption>) => ({
-        class: cn(
-          'relative inline-flex cursor-pointer items-center select-none',
-          size === 'md' ? 'h-8' : 'h-10',
-          'rounded-lg',
-          'bg-secondary-background text-base-foreground',
-          'transition-all duration-200 ease-in-out',
-          'hover:bg-secondary-background-hover',
-          'border-[2.5px] border-solid',
-          invalid
-            ? 'border-destructive-background'
-            : 'border-transparent focus-within:border-node-component-border',
-          props.disabled &&
-            'cursor-default opacity-30 hover:bg-secondary-background'
-        )
-      }),
-      label: {
-        class: cn(
-          'flex flex-1 items-center py-2 whitespace-nowrap outline-hidden',
-          size === 'md' ? 'pl-3' : 'pl-4'
-        )
-      },
-      dropdown: {
-        class:
-          // Right chevron touch area
-          'flex shrink-0 items-center justify-center px-3 py-2'
-      },
-      overlay: {
-        class: cn(
-          'mt-2 rounded-lg p-2',
-          'bg-base-background text-base-foreground',
-          'border border-solid border-border-default'
-        )
-      },
-      listContainer: () => ({
-        style: `max-height: min(${listMaxHeight}, 50vh)`,
-        class: 'scrollbar-custom'
-      }),
-      list: {
-        class:
-          // Same list tone/size as MultiSelect
-          'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
-      },
-      option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
-        class: cn(
-          // Row layout
-          'flex items-center justify-between gap-3 rounded-sm px-2 py-3',
-          'hover:bg-secondary-background-hover',
-          // Add focus state for keyboard navigation
-          context.focused && 'bg-secondary-background-hover',
-          // Selected state + check icon
-          context.selected &&
-            'bg-secondary-background-selected hover:bg-secondary-background-selected'
-        )
-      }),
-      optionLabel: {
-        class: 'truncate'
-      },
-      optionGroupLabel: {
-        class: 'px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground'
-      },
-      emptyMessage: {
-        class: 'px-3 py-2 text-sm text-muted-foreground'
-      }
-    }"
-    :aria-label="label || t('g.singleSelectDropdown')"
-    :aria-busy="loading || undefined"
-    :aria-invalid="invalid || undefined"
-    role="combobox"
-    :aria-expanded="false"
-    aria-haspopup="listbox"
-    :tabindex="0"
-  >
-    <!-- Trigger value -->
-    <template #value="slotProps">
+  <SelectRoot v-model="selectedItem" v-model:open="isOpen" :disabled>
+    <SelectTrigger
+      v-bind="$attrs"
+      :aria-label="label || t('g.singleSelectDropdown')"
+      :aria-busy="loading || undefined"
+      :aria-invalid="invalid || undefined"
+      :class="
+        selectTriggerVariants({
+          size,
+          border: invalid ? 'invalid' : 'none'
+        })
+      "
+    >
       <div
         :class="
           cn('flex items-center gap-2', size === 'md' ? 'text-xs' : 'text-sm')
@@ -99,47 +22,74 @@
           class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
         />
         <slot v-else name="icon" />
-        <span
-          v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-base-foreground"
-        >
-          {{ getLabel(slotProps.value) }}
-        </span>
-        <span v-else class="text-base-foreground">
-          {{ label }}
-        </span>
+        <SelectValue :placeholder="label" class="truncate" />
       </div>
-    </template>
+      <div :class="selectDropdownClass">
+        <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+      </div>
+    </SelectTrigger>
 
-    <!-- Trigger caret (hidden when loading) -->
-    <template #dropdownicon>
-      <i
-        v-if="!loading"
-        class="icon-[lucide--chevron-down] text-muted-foreground"
-      />
-    </template>
-
-    <!-- Option row -->
-    <template #option="{ option, selected }">
-      <div
-        class="flex w-full items-center justify-between gap-3"
+    <SelectPortal>
+      <SelectContent
+        position="popper"
+        :side-offset="8"
+        align="start"
         :style="optionStyle"
+        :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
+        @keydown="onContentKeydown"
       >
-        <span class="truncate">{{ option.name }}</span>
-        <i v-if="selected" class="icon-[lucide--check] text-base-foreground" />
-      </div>
-    </template>
-  </Select>
+        <SelectViewport
+          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+          class="scrollbar-custom w-full"
+        >
+          <SelectItem
+            v-for="opt in options"
+            :key="opt.value"
+            :value="opt.value"
+            :class="selectItemVariants({ layout: 'single' })"
+          >
+            <SelectItemText class="truncate">
+              {{ opt.name }}
+            </SelectItemText>
+            <SelectItemIndicator
+              class="flex shrink-0 items-center justify-center"
+            >
+              <i
+                class="icon-[lucide--check] text-base-foreground"
+                aria-hidden="true"
+              />
+            </SelectItemIndicator>
+          </SelectItem>
+        </SelectViewport>
+      </SelectContent>
+    </SelectPortal>
+  </SelectRoot>
 </template>
 
 <script setup lang="ts">
-import type { SelectPassThroughMethodOptions } from 'primevue/select'
-import Select from 'primevue/select'
-import { computed } from 'vue'
+import {
+  SelectContent,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectPortal,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectViewport
+} from 'reka-ui'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@/utils/tailwindUtil'
 
+import {
+  selectContentClass,
+  selectDropdownClass,
+  selectItemVariants,
+  selectTriggerVariants,
+  stopEscapeToDocument
+} from './select.variants'
 import type { SelectOption } from './types'
 
 defineOptions({
@@ -180,6 +130,14 @@ const {
 const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
+const isOpen = ref(false)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
 
 /**
  * Maps a value to its display label.
