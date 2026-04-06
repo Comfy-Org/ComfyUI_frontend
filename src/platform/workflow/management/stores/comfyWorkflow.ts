@@ -9,9 +9,23 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
+/** An item within an input group. */
+export interface InputGroupItem {
+  key: string
+  pairId?: string
+}
+
+/** A named group of inputs that renders as a collapsible accordion. */
+export interface InputGroup {
+  id: string
+  name: string | null
+  items: InputGroupItem[]
+}
+
 export interface LinearData {
   inputs: [NodeId, string][]
   outputs: NodeId[]
+  inputGroups?: InputGroup[]
 }
 
 export interface PendingWarnings {

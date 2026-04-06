@@ -5,6 +5,7 @@ import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import Popover from '@/components/ui/Popover.vue'
@@ -19,6 +20,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
@@ -27,6 +29,7 @@ const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const inputGroupStore = useInputGroupStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 
 const { toastTo, mobile } = defineProps<{
@@ -101,6 +104,20 @@ function handleDragDrop(e: DragEvent) {
         class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
         <AppModeWidgetList ref="widgetListRef" :mobile />
+        <InputGroupAccordion
+          v-for="(group, idx) in inputGroupStore.inputGroups"
+          :key="group.id"
+          :group
+          :position="
+            inputGroupStore.inputGroups.length === 1
+              ? 'only'
+              : idx === 0
+                ? 'first'
+                : idx === inputGroupStore.inputGroups.length - 1
+                  ? 'last'
+                  : 'middle'
+          "
+        />
       </section>
       <Teleport
         v-if="!jobToastTimeout || pendingJobQueues > 0"

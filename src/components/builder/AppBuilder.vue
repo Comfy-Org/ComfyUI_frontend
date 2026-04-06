@@ -5,6 +5,7 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -28,12 +29,14 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
 const appModeStore = useAppModeStore()
+const inputGroupStore = useInputGroupStore()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
@@ -207,13 +210,43 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       }}
     </div>
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <DraggableList
-        v-if="isArrangeMode"
-        v-model="appModeStore.selectedInputs"
-        class="overflow-x-clip"
-      >
-        <AppModeWidgetList builder-mode />
-      </DraggableList>
+      <template v-if="isArrangeMode">
+        <DraggableList
+          :key="inputGroupStore.groupedItemKeys.size"
+          v-model="appModeStore.selectedInputs"
+          class="overflow-x-clip"
+        >
+          <AppModeWidgetList builder-mode />
+        </DraggableList>
+        <div v-if="inputGroupStore.inputGroups.length" class="px-2 pb-2">
+          <InputGroupAccordion
+            v-for="(group, idx) in inputGroupStore.inputGroups"
+            :key="group.id"
+            :group
+            builder-mode
+            :position="
+              inputGroupStore.inputGroups.length === 1
+                ? 'only'
+                : idx === 0
+                  ? 'first'
+                  : idx === inputGroupStore.inputGroups.length - 1
+                    ? 'last'
+                    : 'middle'
+            "
+          />
+        </div>
+        <div class="flex-1" />
+        <button
+          type="button"
+          class="group/cg flex w-full shrink-0 items-center justify-between border-0 border-t border-border-subtle/40 bg-transparent py-4 pr-5 pl-4 text-sm text-base-foreground outline-none"
+          @click="inputGroupStore.createGroup()"
+        >
+          {{ t('linearMode.groups.createGroup') }}
+          <i
+            class="icon-[lucide--plus] size-5 text-muted-foreground group-hover/cg:text-base-foreground"
+          />
+        </button>
+      </template>
       <PropertiesAccordionItem
         v-if="isSelectInputsMode"
         :label="t('nodeHelpPage.inputs')"

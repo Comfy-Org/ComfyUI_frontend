@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import {
   PopoverArrow,
   PopoverContent,
@@ -11,6 +10,14 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
+export interface PopoverMenuItem {
+  label?: string
+  icon?: string
+  separator?: boolean
+  disabled?: boolean
+  command?: (...args: unknown[]) => void
+}
+
 defineOptions({
   inheritAttrs: false
 })
@@ -21,7 +28,7 @@ const {
   to,
   showArrow = true
 } = defineProps<{
-  entries?: MenuItem[]
+  entries?: PopoverMenuItem[]
   icon?: string
   to?: string | HTMLElement
   showArrow?: boolean

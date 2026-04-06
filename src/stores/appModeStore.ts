@@ -86,6 +86,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       if (!graph) return
       const extra = (graph.extra ??= {})
       extra.linearData = {
+        ...(extra.linearData as Partial<LinearData>),
         inputs: [...data.inputs],
         outputs: [...data.outputs]
       }

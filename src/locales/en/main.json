@@ -3357,6 +3357,16 @@
     "queue": {
       "clickToClear": "Click to clear queue",
       "clear": "Clear queue"
+    },
+    "groups": {
+      "untitled": "Untitled group",
+      "createGroup": "Create group",
+      "ungroup": "Ungroup",
+      "confirmUngroup": "Ungroup inputs?",
+      "ungroupDescription": "The inputs in this group will be moved back to the main list.",
+      "emptyGroup": "Add inputs to this group",
+      "addToGroup": "Add to group",
+      "newGroup": "New group"
     }
   },
   "missingNodes": {
