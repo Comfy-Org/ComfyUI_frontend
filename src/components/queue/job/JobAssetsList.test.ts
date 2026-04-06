@@ -303,4 +303,21 @@ describe('JobAssetsList', () => {
     expect(popover.exists()).toBe(true)
     expect(popover.props('jobId')).toBe('job-2')
   })
+
+  it('does not show details if the hovered row disappears before the show delay ends', async () => {
+    vi.useFakeTimers()
+    const job = buildJob()
+    const wrapper = mountJobAssetsList([job])
+    const jobRow = wrapper.find(`[data-job-id="${job.id}"]`)
+
+    await jobRow.trigger('mouseenter')
+    await wrapper.setProps({ displayedJobGroups: [] })
+    await nextTick()
+
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+
+    expect(wrapper.findComponent(JobDetailsPopoverStub).exists()).toBe(false)
+    expect(wrapper.find('.job-details-popover').exists()).toBe(false)
+  })
 })
