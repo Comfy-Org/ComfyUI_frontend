@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import SiteNav from '../../components/SiteNav.vue'
+import SiteFooter from '../../components/SiteFooter.vue'
+---
+
+<BaseLayout title="作品集 — Comfy">
+  <SiteNav client:load />
+  <main class="bg-black text-white">
+    <!-- Hero -->
+    <section class="mx-auto max-w-5xl px-6 pb-16 pt-32 text-center">
+      <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
+        在 ComfyUI 中<span class="text-brand-yellow">构建、调整与梦想</span>
+      </h1>
+      <p class="mx-auto mt-4 max-w-2xl text-lg text-smoke-700">
+        社区使用 ComfyUI 创作的精彩作品一瞥。
+      </p>
+    </section>
+
+    <!-- Placeholder Grid -->
+    <section class="mx-auto max-w-6xl px-6 pb-24">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+        {Array.from({ length: 6 }).map(() => (
+          <div class="flex aspect-video items-center justify-center rounded-xl border border-white/10 bg-charcoal-600">
+            <p class="text-sm text-smoke-700">社区展示即将上线</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="mx-auto max-w-3xl px-6 pb-32 text-center">
+      <h2 class="text-2xl font-semibold">有很酷的作品想分享？</h2>
+      <a
+        href="https://support.comfy.org/"
+        class="mt-6 inline-block rounded-full bg-brand-yellow px-8 py-3 font-medium text-black transition hover:opacity-90"
+      >
+        联系我们
+      </a>
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>

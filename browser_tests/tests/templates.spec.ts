@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { WorkflowTemplates } from '../../src/platform/workflow/templates/types/template'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 
@@ -115,9 +116,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
 
-    const dialog = comfyPage.page.getByRole('dialog').filter({
-      has: comfyPage.page.getByRole('heading', { name: 'Modèles', exact: true })
-    })
+    const dialog = comfyPage.templatesDialog.filterByHeading('Modèles')
     await expect(dialog).toBeVisible()
 
     // Validate that French-localized strings from the templates index are rendered
@@ -219,8 +218,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(comfyPage.templates.content).toBeVisible()
 
       // Wait for filter bar select components to render
-      const dialog = comfyPage.page.getByRole('dialog')
-      const sortBySelect = dialog.getByRole('combobox', { name: /Sort/ })
+      const sortBySelect = comfyPage.templatesDialog.getCombobox(/Sort/)
       await expect(sortBySelect).toBeVisible()
 
       // Screenshot the filter bar containing MultiSelect and SingleSelect
@@ -244,7 +242,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await comfyPage.page.route(
         '**/templates/index.json',
         async (route, _) => {
-          const response = [
+          const response: WorkflowTemplates[] = [
             {
               moduleName: 'default',
               title: 'Test Templates',

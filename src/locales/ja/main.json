@@ -2258,6 +2258,7 @@
     "dataset": "データセット",
     "debug": "デバッグ",
     "deprecated": "非推奨",
+    "detection": "検出",
     "edit_models": "モデル編集",
     "flux": "flux",
     "gligen": "グライジェン",
@@ -2526,6 +2527,23 @@
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
+    "missingMedia": {
+      "audio": "音声",
+      "cancelSelection": "選択をキャンセル",
+      "collapseNodes": "参照ノードを非表示",
+      "confirmSelection": "選択を確定",
+      "expandNodes": "参照ノードを表示",
+      "image": "画像",
+      "locateNode": "ノードを特定",
+      "missingMediaTitle": "入力がありません",
+      "or": "または",
+      "selectedFromLibrary": "ライブラリから選択済み",
+      "uploadFile": "{type}をアップロード",
+      "uploaded": "アップロード完了",
+      "uploading": "アップロード中...",
+      "useFromLibrary": "ライブラリから使用",
+      "video": "動画"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "このモデルはすでに「{category}」に存在します",
       "assetLoadTimeout": "モデルの検出がタイムアウトしました。ワークフローを再読み込みしてください。",
@@ -3239,6 +3257,7 @@
       "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
       "totalDueToday": "本日のお支払い合計"
     },
+    "refreshCredits": "クレジットを更新",
     "renewsDate": "{date} に更新",
     "required": {
       "pollingFailed": "サブスクリプションの有効化に失敗しました",

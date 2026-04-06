@@ -2258,6 +2258,7 @@
     "dataset": "veri seti",
     "debug": "hata ayıklama",
     "deprecated": "kullanımdan kaldırılmış",
+    "detection": "tespit",
     "edit_models": "modelleri_düzenle",
     "flux": "flux",
     "gligen": "gligen",
@@ -2526,6 +2527,23 @@
     "inputsNone": "GİRİŞ YOK",
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
+    "missingMedia": {
+      "audio": "Ses",
+      "cancelSelection": "Seçimi iptal et",
+      "collapseNodes": "Referans veren düğümleri gizle",
+      "confirmSelection": "Seçimi onayla",
+      "expandNodes": "Referans veren düğümleri göster",
+      "image": "Görseller",
+      "locateNode": "Düğümü bul",
+      "missingMediaTitle": "Eksik Girdiler",
+      "or": "VEYA",
+      "selectedFromLibrary": "Kütüphaneden seçildi",
+      "uploadFile": "{type} Yükle",
+      "uploaded": "Yüklendi",
+      "uploading": "Yükleniyor...",
+      "useFromLibrary": "Kütüphaneden Kullan",
+      "video": "Videolar"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Bu model zaten \"{category}\" içinde mevcut",
       "assetLoadTimeout": "Model algılama zaman aşımına uğradı. Lütfen iş akışını yeniden yüklemeyi deneyin.",
@@ -3239,6 +3257,7 @@
       "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} politikasını kabul etmiş olursunuz.",
       "totalDueToday": "Bugün ödenecek toplam tutar"
     },
+    "refreshCredits": "Kredileri yenile",
     "renewsDate": "{date} tarihinde yenilenir",
     "required": {
       "pollingFailed": "Abonelik etkinleştirme başarısız oldu",

@@ -143,11 +143,16 @@
             <Button
               v-if="shouldShowDeleteButton"
               size="icon"
+              data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button size="icon" @click="handleDownloadSelected">
+            <Button
+              size="icon"
+              data-testid="assets-download-selected"
+              @click="handleDownloadSelected"
+            >
               <i class="icon-[lucide--download] size-4" />
             </Button>
           </template>
@@ -156,12 +161,17 @@
             <Button
               v-if="shouldShowDeleteButton"
               variant="secondary"
+              data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
               <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button variant="secondary" @click="handleDownloadSelected">
+            <Button
+              variant="secondary"
+              data-testid="assets-download-selected"
+              @click="handleDownloadSelected"
+            >
               <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
               <i class="icon-[lucide--download] size-4" />
             </Button>

@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "출력 크기에 맞게 자르기를 늘릴지, 아니면 종횡비를 유지하기 위해 검은색 픽셀로 채울지 여부입니다."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "각 잘라낸 이미지의 높이로 크기가 조정됩니다."
@@ -2309,6 +2313,23 @@
     "display_name": "노이즈 비활성화",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "BBoxes 그리기",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -12226,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 감지",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "클래스로 감지 결과를 필터링합니다. 필터링을 비활성화하려면 'all'로 설정하세요."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "이미지당 반환할 최대 감지 개수입니다. 신뢰도 점수 내림차순으로 정렬됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "무작위 이미지 자르기",
     "inputs": {
@@ -15631,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -17890,6 +17943,241 @@
       },
       "width": {
         "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "첫 프레임 이미지를 기반으로 비디오를 생성합니다. 마지막 프레임 이미지와 오디오를 선택적으로 추가할 수 있습니다.",
+    "display_name": "Wan 2.7 이미지 → 비디오",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "비디오 생성에 사용할 오디오입니다(예: 립싱크, 비트에 맞춘 동작). 길이: 2초~30초. 제공하지 않으면 모델이 자동으로 배경 음악 또는 효과음을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "첫 프레임 이미지입니다. 출력 비율은 이 이미지에서 결정됩니다."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "마지막 프레임 이미지입니다. 모델이 첫 프레임에서 마지막 프레임으로 전환되는 비디오를 생성합니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AI의 도움으로 프롬프트를 확장할지 여부입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드 값입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI가 생성한 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "레퍼런스 자료를 기반으로 인물 또는 오브젝트가 등장하는 비디오를 생성합니다. 단일 캐릭터 연기와 다중 캐릭터 상호작용을 지원합니다.",
+    "display_name": "Wan 2.7 레퍼런스 → 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드 값입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI가 생성한 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Wan 2.7 모델을 사용하여 텍스트 프롬프트 기반으로 비디오를 생성합니다.",
+    "display_name": "Wan 2.7 텍스트 투 비디오",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "비디오 생성에 사용할 오디오(예: 립싱크, 비트에 맞춘 동작). 길이: 3초~30초. 제공하지 않으면 모델이 자동으로 배경 음악이나 효과음을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AI의 도움으로 프롬프트를 확장할지 여부입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI가 생성한 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "비디오가 끝난 지점부터 이어서 생성하며, 마지막 프레임 제어도 선택적으로 지원합니다.",
+    "display_name": "Wan 2.7 비디오 연속 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "이어 생성할 입력 비디오입니다. 길이: 2초~10초. 출력 비율은 이 비디오에서 파생됩니다."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "마지막 프레임 이미지입니다. 이어지는 비디오는 이 프레임으로 전환됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AI의 도움으로 프롬프트를 확장할지 여부입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI가 생성한 워터마크를 결과에 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "텍스트 지시, 참조 이미지 또는 스타일 전송을 사용하여 비디오를 편집합니다.",
+    "display_name": "Wan 2.7 비디오 편집",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': 프롬프트에 따라 오디오를 재생성할지 모델이 결정합니다. 'origin': 입력 비디오의 원본 오디오를 유지합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "편집할 비디오입니다."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI가 생성한 워터마크를 결과에 추가할지 여부입니다."
       }
     },
     "outputs": {

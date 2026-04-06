@@ -2258,6 +2258,7 @@
     "dataset": "jeu de données",
     "debug": "débogage",
     "deprecated": "déprécié",
+    "detection": "détection",
     "edit_models": "edit_models",
     "flux": "flux",
     "gligen": "gligen",
@@ -2526,6 +2527,23 @@
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
+    "missingMedia": {
+      "audio": "Audio",
+      "cancelSelection": "Annuler la sélection",
+      "collapseNodes": "Masquer les nœuds de référence",
+      "confirmSelection": "Confirmer la sélection",
+      "expandNodes": "Afficher les nœuds de référence",
+      "image": "Images",
+      "locateNode": "Localiser le nœud",
+      "missingMediaTitle": "Entrées manquantes",
+      "or": "OU",
+      "selectedFromLibrary": "Sélectionné depuis la bibliothèque",
+      "uploadFile": "Téléverser {type}",
+      "uploaded": "Téléversé",
+      "uploading": "Téléversement en cours...",
+      "useFromLibrary": "Utiliser depuis la bibliothèque",
+      "video": "Vidéos"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Ce modèle existe déjà dans « {category} »",
       "assetLoadTimeout": "Le délai de détection du modèle est dépassé. Essayez de recharger le workflow.",
@@ -3239,6 +3257,7 @@
       "termsAgreement": "En continuant, vous acceptez les {terms} et la {privacy} de Comfy Org.",
       "totalDueToday": "Total dû aujourd'hui"
     },
+    "refreshCredits": "Actualiser les crédits",
     "renewsDate": "Renouvellement le {date}",
     "required": {
       "pollingFailed": "Échec de l'activation de l'abonnement",

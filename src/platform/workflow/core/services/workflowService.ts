@@ -139,7 +139,7 @@ export const useWorkflowService = () => {
     }
 
     if (isSelfOverwrite) {
-      workflow.changeTracker?.checkState()
+      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
       await saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
@@ -156,7 +156,7 @@ export const useWorkflowService = () => {
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
-      target.changeTracker?.checkState()
+      if (workflowStore.isActive(target)) target.changeTracker?.checkState()
 
       await workflowStore.saveWorkflow(target)
     }
@@ -173,7 +173,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      workflow.changeTracker?.checkState()
+      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
 
       const isApp = workflow.initialMode === 'app'
       const expectedPath =

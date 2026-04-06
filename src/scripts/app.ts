@@ -92,6 +92,11 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import {
+  scanAllMediaCandidates,
+  verifyCloudMediaCandidates
+} from '@/platform/missingMedia/missingMediaScan'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -1137,6 +1142,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     useMissingModelStore().clearMissingModels()
+    useMissingMediaStore().clearMissingMedia()
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI
@@ -1416,6 +1422,8 @@ export class ComfyApp {
         showMissingModels
       )
 
+      await this.runMissingMediaPipeline()
+
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings()
       }
@@ -1563,6 +1571,44 @@ export class ComfyApp {
     }
 
     return { missingModels }
+  }
+
+  private async runMissingMediaPipeline(): Promise<void> {
+    const missingMediaStore = useMissingMediaStore()
+    const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+
+    if (!candidates.length) return
+
+    if (isCloud) {
+      const controller = missingMediaStore.createVerificationAbortController()
+      void verifyCloudMediaCandidates(candidates, controller.signal)
+        .then(() => {
+          if (controller.signal.aborted) return
+          const confirmed = candidates.filter((c) => c.isMissing === true)
+          if (confirmed.length) {
+            useExecutionErrorStore().surfaceMissingMedia(confirmed)
+          }
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Media Pipeline] Asset verification failed:',
+            err
+          )
+          useToastStore().add({
+            severity: 'warn',
+            summary: st(
+              'toastMessages.missingMediaVerificationFailed',
+              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+            ),
+            life: 5000
+          })
+        })
+    } else {
+      const confirmed = candidates.filter((c) => c.isMissing === true)
+      if (confirmed.length) {
+        useExecutionErrorStore().surfaceMissingMedia(confirmed)
+      }
+    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
