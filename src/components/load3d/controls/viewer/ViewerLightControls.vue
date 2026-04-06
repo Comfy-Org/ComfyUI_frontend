@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="flex flex-col gap-2">
     <label>{{ $t('load3d.lightIntensity') }}</label>
 
     <Slider
