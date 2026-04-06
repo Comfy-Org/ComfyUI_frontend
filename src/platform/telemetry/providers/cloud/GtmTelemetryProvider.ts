@@ -135,23 +135,19 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    const basePayload = {
+    const payload = {
       method: metadata.method,
-      ...(metadata.user_id ? { user_id: metadata.user_id } : {})
+      ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
+      ...(metadata.email
+        ? {
+            user_data: {
+              email: metadata.email.trim().toLowerCase()
+            }
+          }
+        : {})
     }
 
-    if (metadata.email) {
-      window.dataLayer?.push({
-        user_data: { email: metadata.email.trim().toLowerCase() }
-      })
-    }
-
-    if (metadata.is_new_user) {
-      this.pushEvent('sign_up', basePayload)
-      return
-    }
-
-    this.pushEvent('login', basePayload)
+    this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
