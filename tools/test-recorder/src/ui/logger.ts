@@ -32,6 +32,7 @@ export function header(text: string) {
 }
 
 export function box(lines: string[]) {
+  if (lines.length === 0) return
   const maxLen = Math.max(...lines.map((l) => l.length))
   const border = '─'.repeat(maxLen + 4)
   console.log(`  ┌${border}┐`)

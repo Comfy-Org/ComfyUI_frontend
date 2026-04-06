@@ -25,6 +25,8 @@ export function generateRecordingTemplate(
     ? `  // Load the selected workflow\n  await comfyPage.workflow.loadWorkflow('${options.workflow.replace(/'/g, "\\'")}')\n  await comfyPage.nextFrame()\n`
     : ''
 
+  const safeName = options.testName.replace(/[`$\\]/g, '')
+
   const code = `/**
  * Auto-generated recording session.
  * This file is temporary — it will be deleted after recording.
@@ -36,7 +38,7 @@ import {
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
 
-test('recording: ${options.testName}', async ({ comfyPage }) => {
+test('recording: ${safeName}', async ({ comfyPage }) => {
 ${workflowLine}
   // ┌────────────────────────────────────────────────────────┐
   // │ The Playwright Inspector will open.                     │
