@@ -78,7 +78,7 @@
       class="job-details-popover fixed z-50"
       :style="{
         top: `${popoverPosition.top}px`,
-        right: `${popoverPosition.right}px`
+        left: `${popoverPosition.left}px`
       }"
       @mouseenter="onPopoverEnter"
       @mouseleave="onPopoverLeave"
@@ -96,6 +96,7 @@ import { useI18n } from 'vue-i18n'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
+import { getHoverPopoverPosition } from '@/components/queue/job/getHoverPopoverPosition'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
@@ -115,10 +116,18 @@ const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
 const activeDetails = ref<{ jobId: string; workflowId?: string } | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
-const popoverPosition = ref<{ top: number; right: number } | null>(null)
-const hideTimer = ref<number | null>(null)
-const hideTimerJobId = ref<string | null>(null)
-const showTimer = ref<number | null>(null)
+const popoverPosition = ref<{ top: number; left: number } | null>(null)
+const {
+  activeDetails,
+  clearHoverTimers,
+  resetActiveDetails,
+  scheduleDetailsHide,
+  scheduleDetailsShow
+} = useJobDetailsHover<{ jobId: string; workflowId?: string }>({
+  getActiveId: (details) => details.jobId,
+  getDisplayedJobGroups: () => displayedJobGroups,
+  onReset: clearPopoverAnchor
+})
 
 const clearHideTimer = () => {
   if (hideTimer.value !== null) {
@@ -140,11 +149,7 @@ const updatePopoverPosition = () => {
   if (!rowElement) return
 
   const rect = rowElement.getBoundingClientRect()
-  const gap = 8
-  popoverPosition.value = {
-    top: rect.top,
-    right: window.innerWidth - rect.left + gap
-  }
+  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
 }
 
 const resetActiveDetails = () => {
