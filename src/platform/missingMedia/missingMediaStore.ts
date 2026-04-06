@@ -142,10 +142,16 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   function addMissingMedia(media: MissingMediaCandidate[]) {
     if (!media.length) return
-    missingMediaCandidates.value = [
-      ...(missingMediaCandidates.value ?? []),
-      ...media
-    ]
+    const existing = missingMediaCandidates.value ?? []
+    const existingKeys = new Set(
+      existing.map((m) => `${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    const newMedia = media.filter(
+      (m) =>
+        !existingKeys.has(`${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    if (!newMedia.length) return
+    missingMediaCandidates.value = [...existing, ...newMedia]
   }
 
   function clearMissingMedia() {

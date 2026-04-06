@@ -254,8 +254,6 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModels: loadFromRemote,
-        showMissingNodes: true,
         checkForRerouteMigration: false,
         deferWarnings: true,
         skipAssetScans: !loadFromRemote

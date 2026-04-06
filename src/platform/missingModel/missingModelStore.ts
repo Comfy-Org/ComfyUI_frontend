@@ -128,21 +128,49 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       missingModelCandidates.value = null
   }
 
+  function clearInteractionStateForName(name: string) {
+    delete modelExpandState.value[name]
+    delete selectedLibraryModel.value[name]
+    delete importCategoryMismatch.value[name]
+    delete importTaskIds.value[name]
+    delete urlInputs.value[name]
+    delete urlMetadata.value[name]
+    delete urlFetching.value[name]
+    delete urlErrors.value[name]
+    delete urlImporting.value[name]
+  }
+
   function removeMissingModelsByNodeId(nodeId: string) {
     if (!missingModelCandidates.value) return
+    const removedNames = new Set(
+      missingModelCandidates.value
+        .filter((m) => String(m.nodeId) === nodeId)
+        .map((m) => m.name)
+    )
     missingModelCandidates.value = missingModelCandidates.value.filter(
       (m) => String(m.nodeId) !== nodeId
     )
+    for (const name of removedNames) {
+      if (!missingModelCandidates.value.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
     if (!missingModelCandidates.value.length)
       missingModelCandidates.value = null
   }
 
   function addMissingModels(models: MissingModelCandidate[]) {
     if (!models.length) return
-    missingModelCandidates.value = [
-      ...(missingModelCandidates.value ?? []),
-      ...models
-    ]
+    const existing = missingModelCandidates.value ?? []
+    const existingKeys = new Set(
+      existing.map((m) => `${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    const newModels = models.filter(
+      (m) =>
+        !existingKeys.has(`${String(m.nodeId)}::${m.widgetName}::${m.name}`)
+    )
+    if (!newModels.length) return
+    missingModelCandidates.value = [...existing, ...newModels]
   }
 
   function hasMissingModelOnNode(nodeLocatorId: string): boolean {

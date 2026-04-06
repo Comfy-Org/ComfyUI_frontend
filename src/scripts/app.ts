@@ -21,6 +21,7 @@ import {
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1127,8 +1128,6 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodes?: boolean
-      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
@@ -1231,7 +1230,9 @@ export class ComfyApp {
         if (!(n.type in LiteGraph.registered_node_types)) {
           // Always sanitize so configure() can handle unregistered types,
           // but only report as missing if the node is active.
-          const isMuted = n.mode === 2 || n.mode === 4
+          const isMuted =
+            n.mode === LGraphEventMode.NEVER ||
+            n.mode === LGraphEventMode.BYPASS
           if (!isMuted) {
             const replacement = nodeReplacementStore.getReplacementFor(n.type)
             const cnrId = getCnrIdFromProperties(
@@ -1509,21 +1510,16 @@ export class ComfyApp {
 
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
-      const warnings: PendingWarnings = {
-        ...activeWf.pendingWarnings
+      activeWf.pendingWarnings = {
+        ...activeWf.pendingWarnings,
+        missingNodeTypes: missingNodeTypes.length
+          ? missingNodeTypes
+          : undefined,
+        missingModelCandidates: confirmedCandidates.length
+          ? confirmedCandidates
+          : undefined
       }
-      warnings.missingNodeTypes = missingNodeTypes.length
-        ? missingNodeTypes
-        : undefined
-      warnings.missingModelCandidates = confirmedCandidates.length
-        ? confirmedCandidates
-        : undefined
-      activeWf.pendingWarnings =
-        warnings.missingNodeTypes ||
-        warnings.missingModelCandidates ||
-        warnings.missingMediaCandidates
-          ? warnings
-          : null
+      this.cleanupPendingWarnings(activeWf)
     }
 
     if (enrichedCandidates.length) {
@@ -1599,6 +1595,18 @@ export class ComfyApp {
     return { missingModels }
   }
 
+  private cleanupPendingWarnings(wf: {
+    pendingWarnings: PendingWarnings | null
+  }) {
+    if (
+      !wf.pendingWarnings?.missingNodeTypes &&
+      !wf.pendingWarnings?.missingModelCandidates &&
+      !wf.pendingWarnings?.missingMediaCandidates
+    ) {
+      wf.pendingWarnings = null
+    }
+  }
+
   private cacheModelCandidates(confirmed: MissingModelCandidate[]) {
     const wf = useWorkspaceStore().workflow.activeWorkflow
     if (!wf) return
@@ -1606,13 +1614,7 @@ export class ComfyApp {
       ...wf.pendingWarnings,
       missingModelCandidates: confirmed.length ? confirmed : undefined
     }
-    if (
-      !wf.pendingWarnings.missingNodeTypes &&
-      !wf.pendingWarnings.missingModelCandidates &&
-      !wf.pendingWarnings.missingMediaCandidates
-    ) {
-      wf.pendingWarnings = null
-    }
+    this.cleanupPendingWarnings(wf)
   }
 
   private cacheMediaCandidates(confirmed: MissingMediaCandidate[]) {
@@ -1622,13 +1624,7 @@ export class ComfyApp {
       ...wf.pendingWarnings,
       missingMediaCandidates: confirmed.length ? confirmed : undefined
     }
-    if (
-      !wf.pendingWarnings.missingNodeTypes &&
-      !wf.pendingWarnings.missingModelCandidates &&
-      !wf.pendingWarnings.missingMediaCandidates
-    ) {
-      wf.pendingWarnings = null
-    }
+    this.cleanupPendingWarnings(wf)
   }
 
   private async runMissingMediaPipeline(

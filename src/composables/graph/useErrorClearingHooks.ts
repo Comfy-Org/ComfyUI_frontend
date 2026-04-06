@@ -311,12 +311,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     const execId =
       graph === app.rootGraph
         ? String(node.id)
-        : getExecutionIdByNode(app.rootGraph, node)
-    if (execId) {
-      useMissingModelStore().removeMissingModelsByNodeId(execId)
-      useMissingMediaStore().removeMissingMediaByNodeId(execId)
-      useMissingNodesErrorStore().removeMissingNodesByNodeId(execId)
-    }
+        : (getExecutionIdByNode(app.rootGraph, node) ?? String(node.id))
+    removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
   }
