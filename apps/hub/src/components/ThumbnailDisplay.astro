@@ -1,0 +1,316 @@
+---
+/**
+ * ThumbnailDisplay - Renders template thumbnails with proper variants
+ *
+ * Supports:
+ * - Video playback for webp animations (autoplay on hover)
+ * - compareSlider: Before/after comparison slider (needs 2 thumbnails)
+ * - hoverDissolve: Fades to 2nd image on hover
+ * - zoomHover: Enhanced zoom on hover
+ * - Default: Simple zoom on hover
+ */
+
+import type { ThumbnailVariant } from '../lib/hub-api';
+import { getVideoFrameUrl } from '../lib/video-thumbnail';
+
+interface Props {
+  thumbnails: string[];
+  title: string;
+  variant?: ThumbnailVariant;
+  mediaSubtype?: string;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  sizes?: string;
+  naturalAspect?: boolean;
+}
+
+const {
+  thumbnails,
+  title,
+  variant,
+  mediaSubtype,
+  class: className = '',
+  loading = 'lazy',
+  fetchpriority,
+  sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 640px',
+  naturalAspect = false,
+} = Astro.props;
+
+// If thumbnail is already a full URL, use it directly; otherwise prepend local path
+function thumbUrl(thumb: string): string {
+  if (thumb.startsWith('http://') || thumb.startsWith('https://')) return thumb;
+  return `/workflows/thumbnails/${thumb}`;
+}
+
+const imgClass = naturalAspect ? 'w-full h-auto' : 'w-full h-full object-cover';
+
+const primaryThumb = thumbnails[0];
+const secondaryThumb = thumbnails[1];
+const primarySrc = primaryThumb ? thumbUrl(primaryThumb) : '';
+const secondarySrc = secondaryThumb ? thumbUrl(secondaryThumb) : '';
+const isAnimated = mediaSubtype === 'webp';
+const hasSecondImage = thumbnails.length > 1;
+const isAudio = primaryThumb?.endsWith('.mp3') || primaryThumb?.endsWith('.webm');
+const isVideo = primaryThumb?.endsWith('.mp4') || primaryThumb?.endsWith('.mov');
+const videoPosterUrl = isVideo ? getVideoFrameUrl(primarySrc) : null;
+const secondaryVideoPosterUrl = secondaryThumb && (secondaryThumb.endsWith('.mp4') || secondaryThumb.endsWith('.mov'))
+  ? getVideoFrameUrl(secondarySrc) : null;
+---
+
+{
+  !primaryThumb ? (
+    <div
+      class={`placeholder-thumb flex items-center justify-center bg-white/5 border border-divider-subtle rounded-[var(--radius-banner)] ${className}`}
+    >
+      <div class="flex flex-col items-center gap-3 text-white/30">
+        <svg
+          class="w-12 h-12"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
+          />
+        </svg>
+        <span class="text-sm">{title}</span>
+      </div>
+    </div>
+  ) : isAudio ? (
+    <div
+      class={`audio-thumb flex flex-col items-center justify-center bg-white/5 border border-divider-subtle rounded-[var(--radius-banner)] p-6 ${className}`}
+    >
+      <div class="flex flex-col items-center gap-4 w-full">
+        <svg
+          class="w-10 h-10 text-white/40"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.5"
+            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+          />
+        </svg>
+        <span class="text-sm text-white/50">{title}</span>
+        <audio controls preload="none" class="w-full max-w-[300px]">
+          <source
+            src={primarySrc}
+            type={primaryThumb.endsWith('.mp3') ? 'audio/mpeg' : 'audio/webm'}
+          />
+        </audio>
+      </div>
+    </div>
+  ) : isVideo ? (
+    <div class={`video-thumb flex flex-col gap-2 ${className}`}>
+      <div class="video-fallback-wrapper">
+        <video
+          src={primarySrc}
+          poster={videoPosterUrl || undefined}
+          class={naturalAspect ? 'w-full h-auto' : 'w-full h-full object-cover'}
+          autoplay
+          controls
+          loop
+          muted
+          playsinline
+          preload="auto"
+          data-video-fallback
+        />
+        {videoPosterUrl && (
+          <img
+            src={videoPosterUrl}
+            alt={title}
+            class={`${naturalAspect ? 'w-full h-auto' : 'w-full h-full object-cover'} hidden`}
+            data-video-fallback-img
+            loading="lazy"
+            decoding="async"
+          />
+        )}
+      </div>
+      {secondaryThumb && (
+        <div class="video-fallback-wrapper">
+          <video
+            src={secondarySrc}
+            poster={secondaryVideoPosterUrl || undefined}
+            class={naturalAspect ? 'w-full h-auto' : 'w-full h-full object-cover'}
+            controls
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            data-video-fallback
+          />
+          {secondaryVideoPosterUrl && (
+            <img
+              src={secondaryVideoPosterUrl}
+              alt={`${title} - secondary`}
+              class={`${naturalAspect ? 'w-full h-auto' : 'w-full h-full object-cover'} hidden`}
+              data-video-fallback-img
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  ) : variant === 'compareSlider' && hasSecondImage ? (
+    <div class={`compare-slider relative overflow-hidden ${className}`} data-compare-slider>
+      <img
+        src={secondarySrc}
+        alt={`${title} - After`}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        width="640"
+        height="360"
+        decoding="async"
+        draggable="false"
+        sizes={sizes}
+        class={imgClass}
+      />
+      <div
+        class="compare-overlay absolute inset-0 overflow-hidden"
+        style="clip-path: inset(0 50% 0 0);"
+      >
+        <img
+          src={primarySrc}
+          alt={`${title} - Before`}
+          loading={loading}
+          width="640"
+          height="360"
+          decoding="async"
+          draggable="false"
+          sizes={sizes}
+          class="w-full h-full object-cover"
+        />
+      </div>
+      <div
+        class="compare-handle absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize"
+        style="left: 50%;"
+        role="slider"
+        tabindex="0"
+        aria-label="Comparison slider"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="50"
+      >
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+          <svg
+            class="w-4 h-4 text-gray-600"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path d="M8 12H16M8 12L11 9M8 12L11 15M16 12L13 9M16 12L13 15" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  ) : variant === 'hoverDissolve' && hasSecondImage ? (
+    <div class={`hover-dissolve group relative overflow-hidden ${className}`}>
+      <img
+        src={primarySrc}
+        alt={`${title} - State 1`}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        width="640"
+        height="360"
+        decoding="async"
+        draggable="false"
+        sizes={sizes}
+        class={`${imgClass} transition-opacity duration-500`}
+      />
+      <img
+        src={secondarySrc}
+        alt={`${title} - State 2`}
+        loading={loading}
+        width="640"
+        height="360"
+        decoding="async"
+        draggable="false"
+        sizes={sizes}
+        class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+      />
+    </div>
+  ) : isAnimated ? (
+    <div class={`animated-thumb group relative overflow-hidden ${className}`}>
+      <img
+        src={primarySrc}
+        alt={title}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        width="640"
+        height="360"
+        decoding="async"
+        draggable="false"
+        sizes={sizes}
+        class={imgClass}
+      />
+    </div>
+  ) : variant === 'zoomHover' ? (
+    <div class={`zoom-hover group relative overflow-hidden ${className}`}>
+      <img
+        src={primarySrc}
+        alt={title}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        width="640"
+        height="360"
+        decoding="async"
+        draggable="false"
+        sizes={sizes}
+        class={`${imgClass} transition-transform duration-500 group-hover:scale-125`}
+      />
+    </div>
+  ) : (
+    <div class={`default-thumb group relative overflow-hidden ${className}`}>
+      <img
+        src={primarySrc}
+        alt={title}
+        loading={loading}
+        fetchpriority={fetchpriority}
+        width="640"
+        height="360"
+        decoding="async"
+        draggable="false"
+        sizes={sizes}
+        class={`${imgClass} transition-transform duration-300 group-hover:scale-105`}
+      />
+    </div>
+  )
+}
+
+<script>
+  import '../scripts/compare-slider';
+
+  // Video fallback: show poster image if video fails to load or play
+  document.querySelectorAll<HTMLVideoElement>('[data-video-fallback]').forEach((video) => {
+    const wrapper = video.closest('.video-fallback-wrapper');
+    const fallbackImg = wrapper?.querySelector<HTMLImageElement>('[data-video-fallback-img]');
+    if (!fallbackImg) return;
+
+    function showFallback() {
+      video.classList.add('hidden');
+      fallbackImg!.classList.remove('hidden');
+    }
+
+    video.addEventListener('error', showFallback);
+  });
+</script>
+
+<style>
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+</style>

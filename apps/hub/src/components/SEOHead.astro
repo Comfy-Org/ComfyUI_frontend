@@ -1,0 +1,95 @@
+---
+import HreflangTags from './HreflangTags.astro';
+import { LANGUAGES, DEFAULT_LOCALE } from '../i18n/config';
+import { absoluteUrl } from '../config/site';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  structuredData?: object;
+  /** Base path for hreflang tags (without locale prefix) */
+  hreflangBasePath?: string;
+  /** Locale is accepted for compatibility but computed from URL in HreflangTags */
+  locale?: string;
+}
+
+const {
+  title,
+  description,
+  canonicalUrl,
+  ogImage = '/workflows/og-default.png',
+  ogType = 'website',
+  structuredData,
+  hreflangBasePath,
+} = Astro.props;
+
+const pathname = Astro.url.pathname;
+
+const fullCanonicalUrl = canonicalUrl
+  ? canonicalUrl
+  : absoluteUrl(`${pathname}${pathname.endsWith('/') ? '' : '/'}`);
+const fullOgImage = ogImage.startsWith('http') ? ogImage : absoluteUrl(ogImage);
+
+// Compute hreflang base path if not provided
+// Strip locale prefix from pathname to get the base path
+let computedHreflangBasePath = hreflangBasePath;
+if (!computedHreflangBasePath) {
+  // Check if pathname starts with a locale prefix
+  const pathSegments = pathname.split('/').filter(Boolean);
+  if (pathSegments[0] && pathSegments[0] in LANGUAGES && pathSegments[0] !== DEFAULT_LOCALE) {
+    // Remove locale prefix
+    computedHreflangBasePath = '/' + pathSegments.slice(1).join('/');
+  } else {
+    computedHreflangBasePath = pathname;
+  }
+  // Ensure trailing slash
+  if (!computedHreflangBasePath.endsWith('/')) {
+    computedHreflangBasePath += '/';
+  }
+}
+---
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={fullCanonicalUrl} />
+
+{/* Hreflang tags for international SEO */}
+<HreflangTags basePath={computedHreflangBasePath} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={fullCanonicalUrl} />
+<meta property="og:image" content={fullOgImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:site_name" content="ComfyUI Workflows" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={fullOgImage} />
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="/brand/comfy-c-yellow.svg" />
+
+<!-- Google Fonts: Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+  rel="stylesheet"
+/>
+
+{
+  structuredData && (
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  )
+}

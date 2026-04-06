@@ -89,7 +89,10 @@ export default defineConfig([
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
-      'vitest.setup.ts'
+      'vitest.setup.ts',
+      'apps/hub/.astro/*',
+      'apps/hub/dist/*',
+      'apps/hub/src/content/templates/*'
     ]
   },
   {
@@ -375,6 +378,21 @@ export default defineConfig([
     files: ['apps/website/**/*.vue'],
     rules: {
       '@intlify/vue-i18n/no-raw-text': 'off'
+    }
+  },
+
+  // The hub app has its own i18n system, uses Astro virtual modules,
+  // and has shadcn-style components with implicit reka-ui prop usage
+  {
+    files: ['apps/hub/**/*.vue', 'apps/hub/**/*.astro', 'apps/hub/**/*.ts'],
+    rules: {
+      '@intlify/vue-i18n/no-raw-text': 'off',
+      'import-x/no-unresolved': [
+        'error',
+        { ignore: ['^astro:', '^@astrojs/'] }
+      ],
+      'import-x/no-named-as-default': 'off',
+      'vue/no-unused-properties': 'off'
     }
   },
 

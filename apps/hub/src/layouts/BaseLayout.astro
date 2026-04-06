@@ -1,0 +1,97 @@
+---
+import Analytics from '@vercel/analytics/astro';
+import PostHogAnalytics from '../components/PostHogAnalytics.astro';
+import SEOHead from '../components/SEOHead.astro';
+import '../styles/global.css';
+import { LANGUAGES } from '../i18n/config';
+import type { Locale } from '../i18n/config';
+import { getLocaleFromPath } from '../i18n/utils';
+
+const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  structuredData?: object;
+  locale?: Locale;
+  hreflangBasePath?: string;
+  theme?: 'light' | 'dark';
+  hideDefaultFooter?: boolean;
+}
+
+const {
+  title,
+  description,
+  canonicalUrl,
+  ogImage,
+  ogType,
+  structuredData,
+  locale: propLocale,
+  hreflangBasePath,
+  theme = 'light',
+  hideDefaultFooter = false,
+} = Astro.props;
+
+const hasCustomFooter = Astro.slots.has('footer');
+
+// Detect locale from URL if not provided
+const locale = propLocale || getLocaleFromPath(Astro.url.pathname);
+const langInfo = LANGUAGES[locale];
+const htmlDir = langInfo?.dir || 'ltr';
+
+// Theme-aware classes
+const isDark = theme === 'dark';
+const bodyClasses = isDark
+  ? 'min-h-screen flex flex-col bg-page text-content antialiased'
+  : 'min-h-screen flex flex-col bg-white text-gray-900 antialiased';
+---
+
+<!doctype html>
+<html lang={locale} dir={htmlDir} class="scroll-smooth">
+  <head>
+    {GA_ID && (
+      <>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
+        <script is:inline define:vars={{ GA_ID }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
+          gtag('js', new Date());
+          gtag('config', GA_ID);
+        </script>
+      </>
+    )}
+    <SEOHead
+      title={title}
+      description={description}
+      canonicalUrl={canonicalUrl}
+      ogImage={ogImage}
+      ogType={ogType}
+      structuredData={structuredData}
+      locale={locale}
+      hreflangBasePath={hreflangBasePath}
+    />
+    <slot name="head" />
+  </head>
+  <body class={bodyClasses}>
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    {
+      hasCustomFooter || hideDefaultFooter ? (
+        <slot name="footer" />
+      ) : (
+        <footer>{/* footer here */}</footer>
+      )
+    }
+    <Analytics />
+    <PostHogAnalytics />
+    <script>
+      import('../scripts/vitals');
+    </script>
+  </body>
+</html>

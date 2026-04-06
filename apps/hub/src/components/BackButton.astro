@@ -1,0 +1,46 @@
+---
+import type { Locale } from '../i18n/config';
+import { t } from '../i18n/ui';
+import { localizeUrl } from '../i18n/utils';
+import { cn } from '@comfyorg/tailwind-utils';
+
+interface Props {
+  locale: Locale;
+  class?: string;
+}
+
+const { locale, class: className } = Astro.props;
+const fallbackHref = localizeUrl('/workflows/', locale);
+---
+
+<a
+  href={fallbackHref}
+  data-astro-prefetch
+  data-back-button
+  class={cn(
+    'inline-flex items-center gap-1 h-8 px-4 py-2 border border-divider rounded-full text-sm text-content hover:border-white/60 transition-colors',
+    className
+  )}
+>
+  <svg class="size-4" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path
+      d="M12 8H4M4 8l3-3M4 8l3 3"
+      stroke="currentColor"
+      stroke-width="1.3"
+      stroke-linecap="round"
+      stroke-linejoin="round"></path>
+  </svg>
+  {t('nav.backShort', locale)}
+</a>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('[data-back-button]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (document.referrer && new URL(document.referrer).origin === location.origin) {
+        e.preventDefault();
+        history.back();
+      }
+      // Otherwise the <a href> fallback navigates to /workflows/
+    });
+  });
+</script>

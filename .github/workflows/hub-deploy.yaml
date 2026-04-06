@@ -1,0 +1,80 @@
+name: Deploy Hub
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_ai:
+        description: 'Skip AI content generation'
+        type: boolean
+        default: false
+      force_regenerate:
+        description: 'Force regenerate all content (ignore cache)'
+        type: boolean
+        default: false
+      template_filter:
+        description: 'Regenerate specific template only (e.g. "flux_schnell")'
+        type: string
+        default: ''
+
+concurrency:
+  group: hub-deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PUBLIC_POSTHOG_KEY: ${{ secrets.HUB_POSTHOG_KEY }}
+      PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.HUB_GA_MEASUREMENT_ID }}
+      SKIP_AI_GENERATION: ${{ inputs.skip_ai && 'true' || '' }}
+      FORCE_AI_REGENERATE: ${{ inputs.force_regenerate && 'true' || '' }}
+      AI_TEMPLATE_FILTER: ${{ inputs.template_filter }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Checkout templates data
+        uses: actions/checkout@v6
+        with:
+          repository: Comfy-Org/workflow_templates
+          path: _workflow_templates
+          sparse-checkout: templates
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Restore content cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: apps/hub/.content-cache
+          key: hub-content-cache-${{ hashFiles('_workflow_templates/templates/**', 'apps/hub/src/**') }}
+          restore-keys: |
+            hub-content-cache-
+
+      - name: Sync templates
+        run: pnpm run sync
+        working-directory: apps/hub
+        env:
+          HUB_TEMPLATES_DIR: ${{ github.workspace }}/_workflow_templates/templates
+
+      - name: Build Astro site
+        run: pnpm run build
+        working-directory: apps/hub
+        env:
+          PUBLIC_HUB_API_URL: ${{ secrets.HUB_API_URL_PRODUCTION }}
+          PUBLIC_COMFY_CLOUD_URL: ${{ secrets.COMFY_CLOUD_URL_PRODUCTION }}
+          PUBLIC_APPROVED_ONLY: 'true'
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25.2.0
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.HUB_VERCEL_PROJECT_ID }}
+          working-directory: apps/hub
+          vercel-args: '--prebuilt --prod'

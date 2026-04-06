@@ -1,0 +1,142 @@
+---
+/**
+ * Localized model page (on-demand rendered)
+ * Serves pages like /zh/workflows/model/flux/, /ja/workflows/model/sdxl/, etc.
+ */
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import HubNavbar from '../../../../components/hub/HubNavbar.astro';
+import SiteFooter from '../../../../components/hub/SiteFooter.astro';
+import WorkflowGrid from '../../../../components/hub/WorkflowGrid.vue';
+import HreflangTags from '../../../../components/HreflangTags.astro';
+import BackButton from '../../../../components/BackButton.astro';
+import { LOCALES, DEFAULT_LOCALE } from '../../../../i18n/config';
+import type { Locale } from '../../../../i18n/config';
+import { t } from '../../../../i18n/ui';
+import { localizeUrl } from '../../../../i18n/utils';
+import { slugify } from '../../../../lib/slugify';
+import { SITE_ORIGIN, absoluteUrl } from '../../../../config/site';
+import { modelPath } from '../../../../lib/routes';
+import { badgeVariants } from '../../../../components/ui/badge';
+import { listWorkflowIndex, getProfileCache, serializeIndexEntry, serializeCollectionEntry } from '../../../../lib/hub-api';
+import type { SerializedTemplate } from '../../../../lib/hub-api';
+
+const { locale, name } = Astro.params;
+
+// Validate locale
+if (!locale || !LOCALES.includes(locale as Locale) || locale === DEFAULT_LOCALE) {
+  return Astro.redirect(`/workflows/model/${name || ''}/`);
+}
+
+const typedLocale = locale as Locale;
+const profiles = await getProfileCache();
+
+// Try hub API first, fall back to content collection
+let allTemplates: SerializedTemplate[];
+try {
+  const entries = await listWorkflowIndex();
+  allTemplates = entries.map((e) => serializeIndexEntry(e, profiles));
+} catch (err) {
+  console.error('Hub API failed, falling back to content collection:', err);
+  const collection = (await getCollection('templates')).filter((t) => !t.id.includes('/'));
+  allTemplates = collection.map((t) => serializeCollectionEntry(t.data, profiles));
+}
+
+// Find templates matching this model slug
+const matchingTemplates = allTemplates.filter((tmpl) =>
+  tmpl.models.some((m: string) => slugify(m) === name)
+);
+
+if (matchingTemplates.length === 0) {
+  return Astro.redirect(`/${locale}/workflows/`);
+}
+
+// Get display name from the first matching model
+const modelName =
+  matchingTemplates[0]?.models?.find((m: string) => slugify(m) === name) || name || '';
+
+const basePath = modelPath(name!);
+const canonicalUrl = absoluteUrl(localizeUrl(basePath, typedLocale));
+
+const title = `${modelName} ComfyUI Workflows - Free Templates`;
+const description = `Browse ${matchingTemplates.length} free ComfyUI workflow templates using ${modelName}. Ready-to-use AI generation workflows for image, video, and audio creation.`;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: `${modelName} ComfyUI Workflows`,
+  description,
+  url: canonicalUrl,
+  inLanguage: locale,
+};
+
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: t('labels.models', typedLocale),
+      item: absoluteUrl(localizeUrl('/workflows/model/', typedLocale)),
+    },
+    { '@type': 'ListItem', position: 3, name: modelName },
+  ],
+};
+
+// matchingTemplates are already SerializedTemplate[] with profile data
+const serialized = matchingTemplates;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  ogImage="/workflows/og-default.png"
+  structuredData={structuredData}
+  locale={typedLocale}
+  hreflangBasePath={basePath}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HreflangTags slot="head" basePath={basePath} />
+  <HubNavbar />
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
+    <!-- Back -->
+    <nav class="mb-8">
+      <BackButton locale={typedLocale} />
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-12">
+      <span class={badgeVariants({ variant: 'hub-pill' })}>Model</span>
+      <h1 class="text-3xl font-bold text-white mt-3">
+        {modelName} Workflows
+      </h1>
+      <p class="text-hub-muted text-base mt-2">
+        {matchingTemplates.length} workflow{matchingTemplates.length !== 1 ? 's' : ''}
+      </p>
+    </div>
+
+    <!-- Interactive Grid -->
+    <WorkflowGrid
+      client:load
+      templates={serialized}
+      locale={typedLocale}
+      gridClass="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    />
+  </div>
+
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbStructuredData)}
+  />
+
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>

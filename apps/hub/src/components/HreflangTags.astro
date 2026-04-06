@@ -1,0 +1,43 @@
+---
+/**
+ * HreflangTags - Generates hreflang link tags for international SEO
+ *
+ * Tells search engines about language/region variations of the same content.
+ * Should be included in <head> for all pages that have localized versions.
+ */
+import { LANGUAGES } from '../i18n/config';
+import type { Locale } from '../i18n/config';
+import { localizeUrl } from '../i18n/utils';
+import { absoluteUrl } from '../config/site';
+
+interface Props {
+  /** Base path without locale prefix (e.g., "/workflows/" or "/workflows/flux_schnell/") */
+  basePath: string;
+}
+
+const { basePath } = Astro.props;
+
+// Generate hreflang entries for all supported locales
+// Note: hreflang values should be lowercase (e.g., 'zh-tw' not 'zh-TW')
+const hreflangEntries = Object.keys(LANGUAGES).map((locale) => {
+  const href = absoluteUrl(localizeUrl(basePath, locale as Locale));
+
+  return {
+    hreflang: locale.toLowerCase(),
+    href,
+  };
+});
+
+// Add x-default pointing to the English version
+const xDefaultHref = absoluteUrl(basePath);
+---
+
+{/* Language alternates */}
+{
+  hreflangEntries.map((entry) => (
+    <link rel="alternate" hreflang={entry.hreflang} href={entry.href} />
+  ))
+}
+
+{/* x-default for language negotiation fallback */}
+<link rel="alternate" hreflang="x-default" href={xDefaultHref} />

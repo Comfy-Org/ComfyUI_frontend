@@ -1,0 +1,762 @@
+{
+  "generated": "2026-02-07",
+  "totalModels": 87,
+  "categories": {
+    "specific_model": [
+      {
+        "name": "Wan",
+        "category": "specific_model",
+        "templateCount": 36,
+        "priority": 108,
+        "docFile": "wan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Nano Banana Pro",
+        "category": "specific_model",
+        "templateCount": 29,
+        "priority": 87,
+        "docFile": "nano-banana-pro",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Flux",
+        "category": "specific_model",
+        "templateCount": 24,
+        "priority": 72,
+        "docFile": "flux",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "SDXL",
+        "category": "specific_model",
+        "templateCount": 4,
+        "priority": 12,
+        "docFile": "sdxl",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "ACE-Step",
+        "category": "specific_model",
+        "templateCount": 7,
+        "priority": 21,
+        "docFile": "ace-step",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Seedance",
+        "category": "specific_model",
+        "templateCount": 6,
+        "priority": 18,
+        "docFile": "seedance",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Seedream",
+        "category": "specific_model",
+        "templateCount": 5,
+        "priority": 15,
+        "docFile": "seedream",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "HiDream",
+        "category": "specific_model",
+        "templateCount": 5,
+        "priority": 15,
+        "docFile": "hidream",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Stable Audio",
+        "category": "specific_model",
+        "templateCount": 4,
+        "priority": 12,
+        "docFile": "stable-audio",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Chatter Box",
+        "category": "specific_model",
+        "templateCount": 4,
+        "priority": 12,
+        "docFile": "chatterbox",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Z-Image-Turbo",
+        "category": "specific_model",
+        "templateCount": 4,
+        "priority": 12,
+        "docFile": "z-image",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Kandinsky",
+        "category": "specific_model",
+        "templateCount": 3,
+        "priority": 9,
+        "docFile": "kandinsky",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "OmniGen",
+        "category": "specific_model",
+        "templateCount": 3,
+        "priority": 9,
+        "docFile": "omnigen",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "SeedVR2",
+        "category": "specific_model",
+        "templateCount": 3,
+        "priority": 9,
+        "docFile": "seedvr2",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Chroma",
+        "category": "specific_model",
+        "templateCount": 2,
+        "priority": 6,
+        "docFile": "chroma",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "ChronoEdit",
+        "category": "specific_model",
+        "templateCount": 1,
+        "priority": 3,
+        "docFile": "chronoedit",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "HuMo",
+        "category": "specific_model",
+        "templateCount": 1,
+        "priority": 3,
+        "docFile": "humo",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "NewBie",
+        "category": "specific_model",
+        "templateCount": 1,
+        "priority": 3,
+        "docFile": "newbie",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Ovis-Image",
+        "category": "specific_model",
+        "templateCount": 1,
+        "priority": 3,
+        "docFile": "ovis-image",
+        "hasExistingDoc": false
+      }
+    ],
+    "provider_name": [
+      {
+        "name": "Google",
+        "category": "provider_name",
+        "templateCount": 29,
+        "priority": 0,
+        "mapsTo": ["gemini", "veo", "nano-banana-pro"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "BFL",
+        "category": "provider_name",
+        "templateCount": 28,
+        "priority": 0,
+        "mapsTo": ["flux"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Stability",
+        "category": "provider_name",
+        "templateCount": 19,
+        "priority": 0,
+        "mapsTo": ["sdxl", "stable-audio", "reimagine"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "ByteDance",
+        "category": "provider_name",
+        "templateCount": 11,
+        "priority": 0,
+        "mapsTo": ["seedance", "seedvr2", "seedream"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "OpenAI",
+        "category": "provider_name",
+        "templateCount": 11,
+        "priority": 0,
+        "mapsTo": ["gpt-image-1"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Lightricks",
+        "category": "provider_name",
+        "templateCount": 9,
+        "priority": 0,
+        "mapsTo": ["ltx-video"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Tencent",
+        "category": "provider_name",
+        "templateCount": 5,
+        "priority": 0,
+        "mapsTo": ["hunyuan"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Qwen",
+        "category": "provider_name",
+        "templateCount": 2,
+        "priority": 0,
+        "mapsTo": ["qwen"],
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Nvidia",
+        "category": "provider_name",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": [],
+        "hasExistingDoc": false
+      }
+    ],
+    "api_only": [
+      {
+        "name": "Vidu",
+        "category": "api_only",
+        "templateCount": 10,
+        "priority": 20,
+        "docFile": "vidu",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Kling",
+        "category": "api_only",
+        "templateCount": 9,
+        "priority": 18,
+        "docFile": "kling",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Recraft",
+        "category": "api_only",
+        "templateCount": 6,
+        "priority": 12,
+        "docFile": "recraft",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Runway",
+        "category": "api_only",
+        "templateCount": 5,
+        "priority": 10,
+        "docFile": "runway",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Tripo",
+        "category": "api_only",
+        "templateCount": 5,
+        "priority": 10,
+        "docFile": "tripo",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "GPT-Image-1",
+        "category": "api_only",
+        "templateCount": 4,
+        "priority": 8,
+        "docFile": "gpt-image-1",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "MiniMax",
+        "category": "api_only",
+        "templateCount": 4,
+        "priority": 8,
+        "docFile": "minimax",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Grok",
+        "category": "api_only",
+        "templateCount": 4,
+        "priority": 8,
+        "docFile": "grok",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Luma",
+        "category": "api_only",
+        "templateCount": 4,
+        "priority": 8,
+        "docFile": "luma",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Moonvalley",
+        "category": "api_only",
+        "templateCount": 4,
+        "priority": 8,
+        "docFile": "moonvalley",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Topaz",
+        "category": "api_only",
+        "templateCount": 4,
+        "priority": 8,
+        "docFile": "topaz",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "PixVerse",
+        "category": "api_only",
+        "templateCount": 3,
+        "priority": 6,
+        "docFile": "pixverse",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Meshy",
+        "category": "api_only",
+        "templateCount": 3,
+        "priority": 6,
+        "docFile": "meshy",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Rodin",
+        "category": "api_only",
+        "templateCount": 3,
+        "priority": 6,
+        "docFile": "rodin",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Magnific",
+        "category": "api_only",
+        "templateCount": 3,
+        "priority": 6,
+        "docFile": "magnific",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "WaveSpeed",
+        "category": "api_only",
+        "templateCount": 3,
+        "priority": 6,
+        "docFile": "wavespeed",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "BRIA",
+        "category": "api_only",
+        "templateCount": 2,
+        "priority": 4,
+        "docFile": "bria",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Veo",
+        "category": "api_only",
+        "templateCount": 2,
+        "priority": 4,
+        "docFile": "veo",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "HitPaw",
+        "category": "api_only",
+        "templateCount": 2,
+        "priority": 4,
+        "docFile": "hitpaw",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Z-Image",
+        "category": "api_only",
+        "templateCount": 1,
+        "priority": 2,
+        "docFile": "z-image",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Anima",
+        "category": "api_only",
+        "templateCount": 1,
+        "priority": 2,
+        "docFile": "anima",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Reimagine",
+        "category": "api_only",
+        "templateCount": 1,
+        "priority": 2,
+        "docFile": "reimagine",
+        "mapsTo": ["stability"],
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Ideogram",
+        "category": "api_only",
+        "templateCount": 1,
+        "priority": 2,
+        "docFile": "ideogram",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Gemini3 Pro Image Preview",
+        "category": "api_only",
+        "templateCount": 16,
+        "priority": 32,
+        "docFile": "gemini",
+        "hasExistingDoc": false
+      }
+    ],
+    "utility_model": [
+      {
+        "name": "SVD",
+        "category": "utility_model",
+        "templateCount": 1,
+        "priority": 1,
+        "docFile": "svd",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Real-ESRGAN",
+        "category": "utility_model",
+        "templateCount": 1,
+        "priority": 1,
+        "docFile": "real-esrgan",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Depth Anything v2",
+        "category": "utility_model",
+        "templateCount": 1,
+        "priority": 1,
+        "docFile": "depth-anything-v2",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "FlashVSR",
+        "category": "utility_model",
+        "templateCount": 1,
+        "priority": 1,
+        "docFile": "flashvsr",
+        "hasExistingDoc": false
+      }
+    ],
+    "variant": [
+      {
+        "name": "Wan2.1",
+        "category": "variant",
+        "templateCount": 21,
+        "priority": 0,
+        "mapsTo": "wan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Wan2.2",
+        "category": "variant",
+        "templateCount": 15,
+        "priority": 0,
+        "mapsTo": "wan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Qwen-Image-Edit",
+        "category": "variant",
+        "templateCount": 11,
+        "priority": 0,
+        "mapsTo": "qwen",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "LTX-2",
+        "category": "variant",
+        "templateCount": 9,
+        "priority": 0,
+        "mapsTo": "ltx-video",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Qwen-Image",
+        "category": "variant",
+        "templateCount": 7,
+        "priority": 0,
+        "mapsTo": "qwen",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Hunyuan3D",
+        "category": "variant",
+        "templateCount": 7,
+        "priority": 0,
+        "mapsTo": "hunyuan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Google Gemini Image",
+        "category": "variant",
+        "templateCount": 6,
+        "priority": 0,
+        "mapsTo": "gemini",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Flux.2 Klein",
+        "category": "variant",
+        "templateCount": 6,
+        "priority": 0,
+        "mapsTo": "flux",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Kling O1",
+        "category": "variant",
+        "templateCount": 5,
+        "priority": 0,
+        "mapsTo": "kling",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Vidu Q2",
+        "category": "variant",
+        "templateCount": 5,
+        "priority": 0,
+        "mapsTo": "vidu",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "SD3.5",
+        "category": "variant",
+        "templateCount": 4,
+        "priority": 0,
+        "mapsTo": "sdxl",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Google Gemini",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "gemini",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Flux.2 Dev",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "flux",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Flux.2",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "flux",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Wan2.5",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "wan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Kontext",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "flux",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Wan2.6",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "wan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Hunyuan Video",
+        "category": "variant",
+        "templateCount": 3,
+        "priority": 0,
+        "mapsTo": "hunyuan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Vidu Q3",
+        "category": "variant",
+        "templateCount": 2,
+        "priority": 0,
+        "mapsTo": "vidu",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "LTXV",
+        "category": "variant",
+        "templateCount": 2,
+        "priority": 0,
+        "mapsTo": "ltx-video",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Qwen-Image-Layered",
+        "category": "variant",
+        "templateCount": 2,
+        "priority": 0,
+        "mapsTo": "qwen",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "SD1.5",
+        "category": "variant",
+        "templateCount": 2,
+        "priority": 0,
+        "mapsTo": "sdxl",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Gemini-2.5-Flash",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "gemini",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Qwen-Image 2512",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "qwen",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Seedream 4.0",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "seedream",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "GPT-Image-1.5",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "gpt-image-1",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Kling2.6",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "kling",
+        "hasExistingDoc": false
+      },
+      {
+        "name": "Wan-Move",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "wan",
+        "hasExistingDoc": true
+      },
+      {
+        "name": "Motion Control",
+        "category": "variant",
+        "templateCount": 1,
+        "priority": 0,
+        "mapsTo": "wan",
+        "hasExistingDoc": false
+      }
+    ],
+    "skip": [
+      {
+        "name": "None",
+        "category": "skip",
+        "templateCount": 1,
+        "priority": 0,
+        "hasExistingDoc": false
+      },
+      {
+        "name": "nano-banana",
+        "category": "skip",
+        "templateCount": 1,
+        "priority": 0,
+        "note": "Duplicate of Nano Banana Pro",
+        "hasExistingDoc": false
+      }
+    ]
+  },
+  "priorityOrder": [
+    "wan",
+    "nano-banana-pro",
+    "flux",
+    "gemini",
+    "ace-step",
+    "vidu",
+    "kling",
+    "seedance",
+    "seedream",
+    "hidream",
+    "sdxl",
+    "stable-audio",
+    "chatterbox",
+    "z-image",
+    "recraft",
+    "runway",
+    "tripo",
+    "kandinsky",
+    "omnigen",
+    "seedvr2",
+    "gpt-image-1",
+    "minimax",
+    "grok",
+    "luma",
+    "moonvalley",
+    "topaz",
+    "chroma",
+    "pixverse",
+    "meshy",
+    "rodin",
+    "magnific",
+    "wavespeed",
+    "bria",
+    "veo",
+    "hitpaw",
+    "newbie",
+    "ovis-image",
+    "chronoedit",
+    "humo",
+    "anima",
+    "reimagine",
+    "ideogram",
+    "svd",
+    "real-esrgan",
+    "depth-anything-v2",
+    "flashvsr"
+  ]
+}

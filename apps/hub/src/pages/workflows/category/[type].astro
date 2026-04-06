@@ -1,0 +1,262 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import HubNavbar from '../../../components/hub/HubNavbar.astro';
+import SiteFooter from '../../../components/hub/SiteFooter.astro';
+import WorkflowGrid from '../../../components/hub/WorkflowGrid.vue';
+import HreflangTags from '../../../components/HreflangTags.astro';
+import BackButton from '../../../components/BackButton.astro';
+import { getLocaleFromPath, localizeUrl } from '../../../i18n/utils';
+import { t } from '../../../i18n/ui';
+import { SITE_ORIGIN, absoluteUrl } from '../../../config/site';
+import { categoryPath } from '../../../lib/routes';
+import { badgeVariants } from '../../../components/ui/badge';
+import { listWorkflowIndex, getProfileCache, serializeIndexEntry, serializeCollectionEntry } from '../../../lib/hub-api';
+import type { SerializedTemplate, MediaType } from '../../../lib/hub-api';
+
+const categoryTranslationKeys: Record<MediaType, string> = {
+  image: 'category.image',
+  video: 'category.video',
+  audio: 'category.audio',
+  '3d': 'category.3d',
+};
+
+export async function getStaticPaths() {
+  const mediaTypes: MediaType[] = ['image', 'video', 'audio', '3d'];
+  return mediaTypes.map((type) => ({
+    params: { type },
+    props: { type },
+  }));
+}
+
+const { type } = Astro.props as { type: MediaType };
+const locale = getLocaleFromPath(Astro.url.pathname);
+
+const categoryName = t(categoryTranslationKeys[type], locale);
+const title = `${categoryName} Workflows - ${t('meta.title', locale)}`;
+const description = t('meta.description', locale);
+
+// Try hub API first, fall back to content collection
+const profiles = await getProfileCache();
+let filteredSerialized: SerializedTemplate[];
+try {
+  const entries = await listWorkflowIndex();
+  filteredSerialized = entries
+    .filter((e) => (e.mediaType || 'image') === type)
+    .map((e) => serializeIndexEntry(e, profiles));
+} catch (err) {
+  console.error('Hub API failed, falling back to content collection:', err);
+  const allTemplates = await getCollection('templates');
+  filteredSerialized = allTemplates
+    .filter((tmpl) => !tmpl.id.includes('/'))
+    .filter((tmpl) => tmpl.data.mediaType === type)
+    .sort((a, b) => (b.data.usage || 0) - (a.data.usage || 0))
+    .map((tmpl) => serializeCollectionEntry(tmpl.data, profiles));
+}
+const templates = filteredSerialized;
+
+const basePath = categoryPath(type);
+const canonicalUrl = absoluteUrl(localizeUrl(basePath, locale));
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: categoryName,
+  description: description,
+  url: canonicalUrl,
+};
+
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: t('nav.templates', locale),
+      item: absoluteUrl(localizeUrl('/workflows/', locale)),
+    },
+    { '@type': 'ListItem', position: 3, name: categoryName },
+  ],
+};
+
+const categoryFaqs: Record<MediaType, Array<{ question: string; answer: string }>> = {
+  image: [
+    {
+      question: 'What is AI image generation with ComfyUI?',
+      answer:
+        'AI image generation with ComfyUI uses node-based workflows to create images from text prompts or modify existing images. ComfyUI supports models like Stable Diffusion, SDXL, and Flux for high-quality image synthesis.',
+    },
+    {
+      question: 'What image formats does ComfyUI support?',
+      answer:
+        'ComfyUI supports PNG, JPEG, and WebP output formats. PNG is recommended for lossless quality, while JPEG and WebP offer smaller file sizes. Most workflows default to PNG at configurable resolutions.',
+    },
+    {
+      question: 'What are the hardware requirements for image generation?',
+      answer:
+        'Image generation typically requires a GPU with at least 6GB VRAM for SD 1.5, 8GB+ for SDXL, and 12GB+ for Flux models. CPU-only generation is possible but significantly slower.',
+    },
+    {
+      question: 'How do I improve image generation quality?',
+      answer:
+        'Improve quality by using higher step counts (20-50), appropriate CFG scale (5-12), quality samplers like DPM++ 2M Karras, and detailed prompts. Upscaling workflows can enhance resolution after initial generation.',
+    },
+  ],
+  video: [
+    {
+      question: 'What is AI video generation with ComfyUI?',
+      answer:
+        'AI video generation in ComfyUI creates animated content from text, images, or existing videos using models like AnimateDiff, SVD (Stable Video Diffusion), and Mochi. Workflows can generate short clips, animate still images, or apply effects.',
+    },
+    {
+      question: 'What video durations and frame rates are supported?',
+      answer:
+        'Most video workflows generate 2-6 second clips at 8-24 FPS due to VRAM constraints. AnimateDiff typically produces 16-32 frames, while SVD generates 14-25 frames. Longer videos require frame interpolation or segment stitching.',
+    },
+    {
+      question: 'What are the hardware requirements for video generation?',
+      answer:
+        'Video generation is VRAM-intensive, requiring 12GB+ for AnimateDiff and 16GB+ for SVD/Mochi. Batch processing and temporal attention increase memory usage compared to image generation.',
+    },
+    {
+      question: 'What video formats does ComfyUI output?',
+      answer:
+        'ComfyUI outputs video as image sequences (PNG frames) or encoded MP4/GIF using video combine nodes. H.264 MP4 is common for sharing, while PNG sequences preserve quality for editing.',
+    },
+  ],
+  audio: [
+    {
+      question: 'What is AI audio generation with ComfyUI?',
+      answer:
+        'AI audio generation in ComfyUI creates music, sound effects, and speech using models like AudioLDM, MusicGen, and Bark. Workflows can generate audio from text descriptions or transform existing audio.',
+    },
+    {
+      question: 'What audio formats and quality does ComfyUI support?',
+      answer:
+        'ComfyUI outputs audio as WAV files at various sample rates (16kHz-48kHz). Most models generate at 16kHz or 32kHz. Higher sample rates provide better quality for music generation.',
+    },
+    {
+      question: 'Can I generate music with ComfyUI?',
+      answer:
+        'Yes, ComfyUI supports music generation through MusicGen and similar models. You can create instrumental tracks, specify genres and instruments via text prompts, and control duration up to 30 seconds per generation.',
+    },
+    {
+      question: 'What are the hardware requirements for audio generation?',
+      answer:
+        'Audio generation requires less VRAM than image/video, typically 4-8GB. MusicGen models range from 300M to 3.3B parameters. CPU inference is viable for smaller models.',
+    },
+  ],
+  '3d': [
+    {
+      question: 'What is AI 3D generation with ComfyUI?',
+      answer:
+        'AI 3D generation in ComfyUI creates 3D models, meshes, and point clouds from images or text using models like TripoSR, InstantMesh, and Zero123. Workflows can generate textured meshes ready for use in 3D applications.',
+    },
+    {
+      question: 'What 3D file formats does ComfyUI support?',
+      answer:
+        'ComfyUI exports 3D models as OBJ, GLB/GLTF, and PLY formats. GLB is recommended for web and game engines, OBJ for traditional 3D software, and PLY for point cloud data.',
+    },
+    {
+      question: 'Can I generate 3D models from a single image?',
+      answer:
+        'Yes, image-to-3D workflows using TripoSR or similar models can generate 3D meshes from a single reference image. Multi-view approaches with Zero123 improve quality by generating multiple viewpoints first.',
+    },
+    {
+      question: 'What are the hardware requirements for 3D generation?',
+      answer:
+        '3D generation typically requires 8-12GB VRAM. TripoSR runs on 8GB GPUs, while more complex multi-view pipelines need 12GB+. Mesh refinement and texturing add additional memory requirements.',
+    },
+  ],
+};
+
+const faqItems = categoryFaqs[type] || [];
+
+const faqStructuredData = faqItems.length
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqItems.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    }
+  : null;
+
+// Templates are already serialized above
+const serialized = templates;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  ogImage="/workflows/og-default.png"
+  structuredData={structuredData}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HreflangTags slot="head" basePath={basePath} />
+  <HubNavbar />
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
+    <!-- Back -->
+    <nav class="mb-8">
+      <BackButton locale={locale} />
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-12">
+      <span class={badgeVariants({ variant: 'hub-pill' })}>Category</span>
+      <h1 class="text-3xl font-bold text-white mt-3">
+        {categoryName}
+      </h1>
+      <p class="text-hub-muted text-base mt-2">
+        {templates.length} workflows
+      </p>
+    </div>
+
+    <!-- Interactive Grid -->
+    {
+      templates.length > 0 ? (
+        <WorkflowGrid
+          client:load
+          templates={serialized}
+          locale={locale}
+          gridClass="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        />
+      ) : (
+        <div class="text-center py-16">
+          <p class="text-hub-muted text-lg">No templates found in this category yet.</p>
+          <a
+            href={localizeUrl('/workflows/', locale)}
+            data-astro-prefetch
+            class="mt-4 inline-block text-brand hover:text-brand/80 font-medium"
+          >
+            {t('nav.templates', locale)} →
+          </a>
+        </div>
+      )
+    }
+  </div>
+
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbStructuredData)}
+  />
+  {
+    faqStructuredData && (
+      <script is:inline type="application/ld+json" set:html={JSON.stringify(faqStructuredData)} />
+    )
+  }
+
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>

@@ -1,0 +1,166 @@
+---
+/**
+ * Localized category page (on-demand rendered)
+ * Serves pages like /zh/workflows/category/image/, /ja/workflows/category/video/, etc.
+ */
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import HubNavbar from '../../../../components/hub/HubNavbar.astro';
+import SiteFooter from '../../../../components/hub/SiteFooter.astro';
+import WorkflowGrid from '../../../../components/hub/WorkflowGrid.vue';
+import HreflangTags from '../../../../components/HreflangTags.astro';
+import BackButton from '../../../../components/BackButton.astro';
+import { LOCALES, DEFAULT_LOCALE } from '../../../../i18n/config';
+import type { Locale } from '../../../../i18n/config';
+import { t } from '../../../../i18n/ui';
+import { localizeUrl } from '../../../../i18n/utils';
+import { SITE_ORIGIN, absoluteUrl } from '../../../../config/site';
+import { categoryPath } from '../../../../lib/routes';
+import { badgeVariants } from '../../../../components/ui/badge';
+import { listWorkflowIndex, getProfileCache, serializeIndexEntry, serializeCollectionEntry } from '../../../../lib/hub-api';
+import type { SerializedTemplate, MediaType } from '../../../../lib/hub-api';
+
+const validTypes: MediaType[] = ['image', 'video', 'audio', '3d'];
+
+const categoryTranslationKeys: Record<MediaType, string> = {
+  image: 'category.image',
+  video: 'category.video',
+  audio: 'category.audio',
+  '3d': 'category.3d',
+};
+
+const { locale, type } = Astro.params;
+
+// Validate locale
+if (!locale || !LOCALES.includes(locale as Locale) || locale === DEFAULT_LOCALE) {
+  return Astro.redirect(`/workflows/category/${type || ''}/`);
+}
+
+// Validate type
+if (!type || !validTypes.includes(type as MediaType)) {
+  return Astro.redirect(`/${locale}/workflows/`);
+}
+
+const typedLocale = locale as Locale;
+const mediaType = type as MediaType;
+
+const categoryName = t(categoryTranslationKeys[mediaType], typedLocale);
+const title = `${categoryName} Workflows - ${t('meta.title', typedLocale)}`;
+const description = t('meta.description', typedLocale);
+
+const profiles = await getProfileCache();
+
+// Try hub API first, fall back to content collection
+let templates: SerializedTemplate[];
+try {
+  const entries = await listWorkflowIndex();
+  templates = entries
+    .filter((e) => (e.mediaType || 'image') === mediaType)
+    .map((e) => serializeIndexEntry(e, profiles));
+} catch (err) {
+  console.error('Hub API failed, falling back to content collection:', err);
+  const allTemplates = await getCollection('templates');
+  templates = allTemplates
+    .filter((tmpl) => !tmpl.id.includes('/'))
+    .filter((tmpl) => tmpl.data.mediaType === mediaType)
+    .sort((a, b) => (b.data.usage || 0) - (a.data.usage || 0))
+    .map((tmpl) => serializeCollectionEntry(tmpl.data, profiles));
+}
+
+const basePath = categoryPath(mediaType);
+const canonicalUrl = absoluteUrl(localizeUrl(basePath, typedLocale));
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: categoryName,
+  description: description,
+  url: canonicalUrl,
+  inLanguage: locale,
+};
+
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: t('nav.templates', typedLocale),
+      item: absoluteUrl(localizeUrl('/workflows/', typedLocale)),
+    },
+    { '@type': 'ListItem', position: 3, name: categoryName },
+  ],
+};
+
+// templates are already SerializedTemplate[] with profile data
+const serialized = templates;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  ogImage="/workflows/og-default.png"
+  structuredData={structuredData}
+  locale={typedLocale}
+  hreflangBasePath={basePath}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HreflangTags slot="head" basePath={basePath} />
+  <HubNavbar />
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
+    <!-- Back -->
+    <nav class="mb-8">
+      <BackButton locale={typedLocale} />
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-12">
+      <span class={badgeVariants({ variant: 'hub-pill' })}>Category</span>
+      <h1 class="text-3xl font-bold text-white mt-3">
+        {categoryName}
+      </h1>
+      <p class="text-hub-muted text-base mt-2">
+        {templates.length} workflows
+      </p>
+    </div>
+
+    <!-- Interactive Grid -->
+    {
+      templates.length > 0 ? (
+        <WorkflowGrid
+          client:load
+          templates={serialized}
+          locale={typedLocale}
+          gridClass="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        />
+      ) : (
+        <div class="text-center py-16">
+          <p class="text-hub-muted text-lg">No templates found in this category yet.</p>
+          <a
+            href={localizeUrl('/workflows/', typedLocale)}
+            data-astro-prefetch
+            class="mt-4 inline-block text-brand hover:text-brand/80 font-medium"
+          >
+            {t('nav.templates', typedLocale)} →
+          </a>
+        </div>
+      )
+    }
+  </div>
+
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbStructuredData)}
+  />
+
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>

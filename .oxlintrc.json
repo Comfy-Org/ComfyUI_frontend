@@ -12,6 +12,8 @@
     "playwright-report/*",
     "src/extensions/core/*",
     "src/scripts/*",
+    "apps/hub/scripts/**/*",
+    "apps/hub/src/scripts/*",
     "src/types/generatedManagerTypes.ts",
     "src/types/vue-shim.d.ts",
     "test-results/*",

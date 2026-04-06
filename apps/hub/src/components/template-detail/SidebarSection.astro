@@ -1,0 +1,46 @@
+---
+import { cn } from '@comfyorg/tailwind-utils';
+
+interface Props {
+  title?: string;
+  footerLabel?: string;
+  footerHref?: string;
+  class?: string;
+  contentClass?: string;
+}
+
+const { title, footerLabel, footerHref, class: className, contentClass } = Astro.props;
+---
+
+<div class={cn('flex flex-col gap-4', className)}>
+  {
+    title && (
+      <span class="px-2 text-xs font-semibold text-content-secondary uppercase tracking-wider">
+        {title}
+      </span>
+    )
+  }
+  <div class={cn('border border-white/15 rounded-2xl flex flex-col gap-4 px-4 py-4', contentClass)}>
+    <slot />
+    {
+      footerLabel && footerHref && (
+        <a
+          href={footerHref}
+          data-astro-prefetch
+          class="flex items-center justify-between px-4 h-8 rounded-full text-xs text-content hover:bg-white/5 transition-colors"
+        >
+          {footerLabel}
+          <svg class="size-4" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M6 4l4 4-4 4"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </a>
+      )
+    }
+  </div>
+</div>

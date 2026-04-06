@@ -1,0 +1,84 @@
+---
+/**
+ * Localized templates index page (on-demand rendered)
+ * Serves pages like /zh/workflows/, /ja/workflows/, etc.
+ * Rendered at the edge on first request, then cached by Vercel CDN.
+ */
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import HubNavbar from '../../../components/hub/HubNavbar.astro';
+import HubHero from '../../../components/hub/HubHero.astro';
+import HubBrowse from '../../../components/hub/HubBrowse.vue';
+import SiteFooter from '../../../components/hub/SiteFooter.astro';
+import { LOCALES, DEFAULT_LOCALE } from '../../../i18n/config';
+import type { Locale } from '../../../i18n/config';
+import { t } from '../../../i18n/ui';
+import { absoluteUrl } from '../../../config/site';
+import { listWorkflowIndex, getProfileCache, serializeIndexEntry, serializeCollectionEntry } from '../../../lib/hub-api';
+import type { SerializedTemplate } from '../../../lib/hub-api';
+
+const profiles = await getProfileCache();
+const { locale } = Astro.params;
+
+// Validate locale
+if (!locale || !LOCALES.includes(locale as Locale) || locale === DEFAULT_LOCALE) {
+  return Astro.redirect('/workflows/');
+}
+
+const typedLocale = locale as Locale;
+
+// Try hub API first, fall back to content collection
+let serialized: SerializedTemplate[];
+try {
+  const entries = await listWorkflowIndex();
+  serialized = entries.map((e) => serializeIndexEntry(e, profiles));
+} catch (err) {
+  console.error('Hub API failed, falling back to content collection:', err);
+  const templates = await getCollection('templates');
+  const allTemplates = templates
+    .filter((tmpl) => !tmpl.id.includes('/'))
+    .sort((a, b) => (b.data.usage || 0) - (a.data.usage || 0));
+  serialized = allTemplates.map((tmpl) => serializeCollectionEntry(tmpl.data, profiles));
+}
+
+const canonicalUrl = absoluteUrl('/' + locale + '/workflows/');
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: t('meta.title', typedLocale),
+  description: t('meta.description', typedLocale),
+  url: canonicalUrl,
+  inLanguage: locale,
+};
+
+const mediaTypes = ['image', 'video', 'audio', '3d'];
+---
+
+<BaseLayout
+  title={`${t('meta.title', typedLocale)} - ComfyUI`}
+  description={t('meta.description', typedLocale)}
+  canonicalUrl={canonicalUrl}
+  ogImage="/workflows/og-default.png"
+  structuredData={structuredData}
+  locale={typedLocale}
+  hreflangBasePath="/workflows/"
+  theme="dark"
+  hideDefaultFooter
+>
+  <HubNavbar templates={serialized} />
+
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16">
+    <HubHero />
+
+    <!-- Interactive browse (Vue island) -->
+    <HubBrowse client:load templates={serialized} locale={typedLocale} mediaTypes={mediaTypes} />
+  </div>
+
+  <!-- Custom Footer -->
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>

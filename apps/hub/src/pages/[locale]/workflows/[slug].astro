@@ -1,0 +1,288 @@
+---
+/**
+ * Localized creator profile page OR workflow detail redirect (on-demand rendered)
+ * Serves /{locale}/workflows/{username}/ for creator profiles.
+ * URL segments with a share_id suffix redirect to the detail page.
+ * Template name slugs redirect to the new URL format.
+ * Data source: Hub API (listWorkflowIndex + getProfile).
+ */
+export const prerender = false;
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import HubNavbar from '../../../components/hub/HubNavbar.astro';
+import SiteFooter from '../../../components/hub/SiteFooter.astro';
+import SidebarSection from '../../../components/template-detail/SidebarSection.astro';
+import TemplateDetailPage from '../../../components/template-detail/TemplateDetailPage.astro';
+import BackButton from '../../../components/BackButton.astro';
+import WorkflowGrid from '../../../components/hub/WorkflowGrid.vue';
+import { LOCALES, DEFAULT_LOCALE } from '../../../i18n/config';
+import type { Locale } from '../../../i18n/config';
+import { SITE_ORIGIN, absoluteUrl } from '../../../config/site';
+import { listWorkflowIndex, getProfile, getWorkflow, toTemplateData, extractShareId, getProfileCache, serializeIndexEntry } from '../../../lib/hub-api';
+import type { SerializedTemplate } from '../../../lib/hub-api';
+import { workflowOgUrl, creatorOgUrl } from '../../../lib/og-url';
+
+// ISR: cache for 60s, serve stale for up to 10 min while revalidating
+Astro.response.headers.set(
+  'CDN-Cache-Control',
+  'public, max-age=60, stale-while-revalidate=600'
+);
+
+const { locale, slug } = Astro.params;
+
+// Validate locale
+if (!locale || !LOCALES.includes(locale as Locale) || locale === DEFAULT_LOCALE) {
+  return Astro.redirect('/workflows/');
+}
+
+const typedLocale = locale as Locale;
+
+if (!slug) {
+  return Astro.redirect(`/${locale}/workflows/`);
+}
+
+// If URL contains a share_id suffix, this is a workflow detail page — not a creator profile.
+const detailShareId = extractShareId(slug);
+let isDetailPage = false;
+let detailData: ReturnType<typeof toTemplateData> | null = null;
+
+if (detailShareId) {
+  try {
+    const workflow = await getWorkflow(detailShareId);
+    detailData = toTemplateData(workflow);
+    isDetailPage = true;
+  } catch (err) {
+    const is404 = err instanceof Error && err.message.includes('404');
+    if (!is404) {
+      console.error('Hub API error on ISR detail:', err);
+    }
+    return Astro.redirect(`/${locale}/workflows/`);
+  }
+}
+
+// Check if this is a template slug — redirect to new URL format
+if (!isDetailPage) {
+  let redirectUrl: string | undefined;
+  try {
+    const entries = await listWorkflowIndex();
+    const entry = entries.find((e) => e.name === slug);
+    if (entry && entry.shareId) {
+      redirectUrl = `/${locale}/workflows/${entry.name}-${entry.shareId}/`;
+    }
+  } catch {
+    const templates = await getCollection('templates');
+    const template = templates.find((t) => !t.id.includes('/') && t.data.name === slug);
+    if (template) {
+      // Content collection doesn't have shareId, redirect to English canonical
+      redirectUrl = `/workflows/`;
+    }
+  }
+  if (redirectUrl) {
+    return Astro.redirect(redirectUrl, 301);
+  }
+}
+
+// Fetch profile — try dedicated endpoint first, fall back to index-embedded profiles
+let displayName = slug;
+let avatarUrl: string | null = null;
+let description = '';
+let websiteUrls: string[] = [];
+try {
+  const profile = await getProfile(slug);
+  displayName = profile.display_name || slug;
+  avatarUrl = profile.avatar_url || null;
+  description = profile.description || '';
+  websiteUrls = profile.website_urls || [];
+} catch {
+  // Profile endpoint unavailable — fall back to cached profile from index
+  const cachedProfiles = await getProfileCache();
+  const cached = cachedProfiles.get(slug);
+  if (cached) {
+    displayName = cached.display_name || slug;
+    avatarUrl = cached.avatar_url || null;
+    description = cached.description || '';
+    websiteUrls = cached.website_urls || [];
+  }
+}
+
+// Fetch workflows for this creator from index
+const profiles = await getProfileCache();
+let serialized: SerializedTemplate[] = [];
+
+try {
+  const entries = await listWorkflowIndex();
+  const filtered = entries.filter((e) => (e.profile?.username || e.username) === slug);
+  serialized = filtered.map((e) => serializeIndexEntry(e, profiles));
+} catch (err) {
+  console.error('Hub API failed for creator grid:', err);
+  // Index API failed — show empty grid
+}
+
+// If no profile and no workflows and not a detail page, redirect
+if (!isDetailPage && !displayName && serialized.length === 0) {
+  return Astro.redirect(`/${locale}/workflows/`);
+}
+
+const canonicalUrl = absoluteUrl(`/workflows/${slug}/`);
+
+// Parse social links from website_urls
+function getSocialDisplay(social: string): { label: string; url: string } {
+  const url = social.startsWith('http://') || social.startsWith('https://')
+    ? social
+    : `https://${social}`;
+
+  if (social.includes('x.com') || social.includes('twitter.com')) return { label: 'X', url };
+  if (social.includes('instagram.com')) return { label: 'Instagram', url };
+  if (social.includes('youtube.com') || social.includes('youtu.be')) return { label: 'YouTube', url };
+  if (social.includes('tiktok.com')) return { label: 'TikTok', url };
+  if (social.includes('linkedin.com')) return { label: 'LinkedIn', url };
+  if (social.includes('github.com')) return { label: 'GitHub', url };
+  if (social.includes('facebook.com')) return { label: 'Facebook', url };
+  if (social.includes('threads.net') || social.includes('threads.com')) return { label: 'Threads', url };
+  return { label: 'Website', url };
+}
+
+const socialLinks = websiteUrls.map(getSocialDisplay);
+
+// Detail page variables (only used when isDetailPage is true)
+const detailTitle = detailData ? `${detailData.title || detailData.name} - ComfyUI Workflow` : '';
+const detailCanonicalUrl = detailData ? absoluteUrl(`/workflows/${slug}/`) : '';
+const detailThumbnails = detailData?.thumbnails || [];
+const detailPrimaryThumbnail = detailThumbnails[0] || null;
+const detailOgImage = detailData ? workflowOgUrl(
+  detailData.title || detailData.name,
+  detailPrimaryThumbnail || undefined,
+  detailData.username || undefined
+) : '';
+const detailStructuredData = detailData ? {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: detailData.title || detailData.name,
+  description: detailData.description,
+  image: detailPrimaryThumbnail || undefined,
+  datePublished: detailData.date,
+  inLanguage: locale,
+} : null;
+const detailBreadcrumb = detailData ? {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+    { '@type': 'ListItem', position: 2, name: 'Workflows', item: absoluteUrl('/workflows/') },
+    { '@type': 'ListItem', position: 3, name: detailData.title || detailData.name, item: detailCanonicalUrl },
+  ],
+} : null;
+
+const structuredData = !isDetailPage ? {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  name: displayName,
+  description: description || `Workflows by ${displayName}`,
+  url: canonicalUrl,
+  inLanguage: locale,
+} : null;
+---
+
+{isDetailPage && detailData ? (
+<BaseLayout
+  title={detailTitle}
+  description={detailData.metaDescription || detailData.description}
+  canonicalUrl={detailCanonicalUrl}
+  ogImage={detailOgImage}
+  ogType="article"
+  structuredData={detailStructuredData ?? undefined}
+  hreflangBasePath={`/workflows/${slug}/`}
+  locale={typedLocale}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HubNavbar />
+  <TemplateDetailPage template={{ data: detailData }} locale={typedLocale} />
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(detailBreadcrumb)}
+  />
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>
+) : (
+<BaseLayout
+  title={`${displayName} (@${slug}) - ComfyUI Workflow Templates`}
+  description={description || `Workflows by ${displayName}`}
+  canonicalUrl={canonicalUrl}
+  ogImage={creatorOgUrl(displayName, slug!, avatarUrl || undefined)}
+  structuredData={structuredData ?? undefined}
+  locale={typedLocale}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HubNavbar />
+
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 pb-20">
+    <div class="flex flex-col lg:flex-row gap-8 lg:gap-16 pt-8">
+      <aside class="w-full lg:w-[328px] shrink-0">
+        <div class="lg:sticky lg:top-16 flex flex-col gap-8 pt-8">
+          <BackButton locale={typedLocale} class="self-start" />
+          <SidebarSection contentClass="p-8 gap-6">
+            <div class="flex flex-col gap-4">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  class="size-16 rounded-full object-cover"
+                />
+              ) : (
+                <div class="size-16 rounded-full bg-gradient-to-br from-[#c8ff00] to-[#a0cc00] flex items-center justify-center">
+                  <span class="text-black text-2xl font-bold">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div class="flex flex-col">
+                <p class="text-white text-base font-bold">{displayName}</p>
+                <p class="text-hub-muted text-sm">@{slug}</p>
+              </div>
+            </div>
+
+            {description && (
+              <p class="text-hub-muted text-sm leading-normal">{description}</p>
+            )}
+
+            {
+              socialLinks.length > 0 && (
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-hub-muted">
+                  {socialLinks.map((link) => (
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="underline hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              )
+            }
+          </SidebarSection>
+        </div>
+      </aside>
+
+      <WorkflowGrid
+        client:load
+        templates={serialized}
+        locale={typedLocale}
+        gridClass="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        hideAuthor
+      />
+    </div>
+  </div>
+
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>
+)}

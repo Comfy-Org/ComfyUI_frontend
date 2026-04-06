@@ -1,0 +1,182 @@
+name: Hub CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/hub/**'
+      - '.github/workflows/hub-ci.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/hub/**'
+      - '.github/workflows/hub-ci.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint:
+    name: Lint & Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/hub
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Astro Check
+        run: pnpm run check
+
+      - name: Unit Tests
+        run: pnpm test
+
+      - name: Validate Templates
+        run: pnpm run validate:templates
+        continue-on-error: true
+
+  build:
+    name: Build Hub
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/hub
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build site
+        run: pnpm run build
+        env:
+          HUB_SKIP_SYNC: 'true'
+          SKIP_AI_GENERATION: 'true'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hub-build
+          path: apps/hub/dist
+          retention-days: 1
+
+  seo-audit:
+    name: SEO Audit
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/hub
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download build artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: hub-build
+          path: apps/hub/dist
+
+      - name: Validate sitemap
+        id: sitemap
+        continue-on-error: true
+        run: |
+          echo "## Sitemap Validation" >> $GITHUB_STEP_SUMMARY
+          if pnpm run validate:sitemap 2>&1 | tee sitemap-output.txt; then
+            echo "✅ Sitemap validation passed" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Sitemap validation failed" >> $GITHUB_STEP_SUMMARY
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run SEO audit
+        id: seo
+        continue-on-error: true
+        run: |
+          echo "## SEO Audit" >> $GITHUB_STEP_SUMMARY
+          if pnpm run audit:seo 2>&1 | tee seo-output.txt; then
+            echo "✅ SEO audit passed" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ SEO audit found issues" >> $GITHUB_STEP_SUMMARY
+            echo "status=issues" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check internal links
+        id: links
+        continue-on-error: true
+        run: |
+          echo "## Link Check" >> $GITHUB_STEP_SUMMARY
+          DIST_DIR="dist"
+          if [ ! -d "$DIST_DIR" ]; then
+            echo "⚠️ No build output found at $DIST_DIR" >> $GITHUB_STEP_SUMMARY
+            echo "status=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          BROKEN_FILE="broken-links.txt"
+          : > "$BROKEN_FILE"
+          BROKEN_COUNT=0
+          TOTAL_COUNT=0
+
+          for htmlfile in $(find "$DIST_DIR" -name '*.html' \
+            -not -path "$DIST_DIR/ar/*" -not -path "$DIST_DIR/es/*" -not -path "$DIST_DIR/fr/*" \
+            -not -path "$DIST_DIR/ja/*" -not -path "$DIST_DIR/ko/*" -not -path "$DIST_DIR/pt-BR/*" \
+            -not -path "$DIST_DIR/ru/*" -not -path "$DIST_DIR/tr/*" -not -path "$DIST_DIR/zh/*" \
+            -not -path "$DIST_DIR/zh-TW/*" | head -500); do
+            hrefs=$(grep -oP 'href="(/[^"]*)"' "$htmlfile" | sed 's/href="//;s/"$//' || true)
+            for href in $hrefs; do
+              TOTAL_COUNT=$((TOTAL_COUNT + 1))
+              clean="${href%%#*}"
+              clean="${clean%%\?*}"
+              if [ -z "$clean" ] || [ "$clean" = "/" ]; then continue; fi
+              found=false
+              if [[ "$clean" =~ \.[a-zA-Z0-9]+$ ]]; then
+                [ -f "${DIST_DIR}${clean}" ] && found=true
+              else
+                base="${clean%/}"
+                [ -f "${DIST_DIR}${base}/index.html" ] && found=true
+                [ "$found" = false ] && [ -f "${DIST_DIR}${base}.html" ] && found=true
+                [ "$found" = false ] && [ -f "${DIST_DIR}${clean}" ] && found=true
+                [ "$found" = false ] && [ -d "${DIST_DIR}${base}" ] && found=true
+              fi
+              if [ "$found" = false ]; then
+                BROKEN_COUNT=$((BROKEN_COUNT + 1))
+                echo "- \`${href}\` (in ${htmlfile#${DIST_DIR}/})" >> "$BROKEN_FILE"
+              fi
+            done
+          done
+
+          if [ "$BROKEN_COUNT" -eq 0 ]; then
+            echo "✅ All internal links valid ($TOTAL_COUNT checked)" >> $GITHUB_STEP_SUMMARY
+            echo "status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Found $BROKEN_COUNT broken internal links out of $TOTAL_COUNT" >> $GITHUB_STEP_SUMMARY
+            head -n 50 "$BROKEN_FILE" >> $GITHUB_STEP_SUMMARY
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload SEO reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hub-seo-reports
+          path: |
+            apps/hub/seo-output.txt
+            apps/hub/seo-summary.json
+            apps/hub/broken-links.txt
+          if-no-files-found: ignore
