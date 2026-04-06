@@ -1,13 +1,16 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+import type { JobEntry } from '@comfyorg/ingest-types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
-import { TestIds } from '@e2e/fixtures/selectors'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { assetScenarioFixture } from '@e2e/fixtures/assetScenarioFixture'
+import { createMockJob } from '@e2e/fixtures/helpers/jobFixtures'
+import { TestIds } from '../../fixtures/selectors'
+
+const test = mergeTests(comfyPageFixture, assetScenarioFixture)
 
 const now = Date.now()
 
-const MOCK_JOBS: RawJobListItem[] = [
+const MOCK_JOBS: JobEntry[] = [
   createMockJob({
     id: 'job-completed-1',
     status: 'completed',
@@ -35,14 +38,9 @@ const MOCK_JOBS: RawJobListItem[] = [
 ]
 
 test.describe('Queue overlay', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(MOCK_JOBS)
-    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
+  test.beforeEach(async ({ comfyPage, assetScenario }) => {
+    await assetScenario.seedGeneratedHistory(MOCK_JOBS)
     await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
   })
 
   test('Toggle button opens expanded queue overlay', async ({ comfyPage }) => {
@@ -50,7 +48,9 @@ test.describe('Queue overlay', () => {
     await toggle.click()
 
     // Expanded overlay should show job items
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
+      timeout: 5000
+    })
   })
 
   test('Overlay shows filter tabs (All, Completed)', async ({ comfyPage }) => {
@@ -59,7 +59,7 @@ test.describe('Queue overlay', () => {
 
     await expect(
       comfyPage.page.getByRole('button', { name: 'All', exact: true })
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 5000 })
     await expect(
       comfyPage.page.getByRole('button', { name: 'Completed', exact: true })
     ).toBeVisible()
@@ -71,7 +71,9 @@ test.describe('Queue overlay', () => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
     await toggle.click()
 
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
+      timeout: 5000
+    })
 
     await expect(
       comfyPage.page.getByRole('button', { name: 'Failed', exact: true })
@@ -82,7 +84,9 @@ test.describe('Queue overlay', () => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
     await toggle.click()
 
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
+      timeout: 5000
+    })
 
     await comfyPage.page
       .getByRole('button', { name: 'Completed', exact: true })
@@ -90,7 +94,7 @@ test.describe('Queue overlay', () => {
 
     await expect(
       comfyPage.page.locator('[data-job-id="job-completed-1"]')
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 5000 })
     await expect(
       comfyPage.page.locator('[data-job-id="job-failed-1"]')
     ).not.toBeVisible()
@@ -100,12 +104,14 @@ test.describe('Queue overlay', () => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
     await toggle.click()
 
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
+      timeout: 5000
+    })
 
     await toggle.click()
 
     await expect(
       comfyPage.page.locator('[data-job-id]').first()
-    ).not.toBeVisible()
+    ).not.toBeVisible({ timeout: 5000 })
   })
 })

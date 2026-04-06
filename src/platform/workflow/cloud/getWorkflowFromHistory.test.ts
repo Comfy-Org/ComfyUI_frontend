@@ -23,8 +23,8 @@ const mockWorkflow: ComfyWorkflowJSON = {
 const mockJobDetailResponse: JobDetail = {
   id: 'test-job-id',
   status: 'completed',
-  create_time: 1234567890,
-  update_time: 1234567900,
+  create_time: 1234567890000,
+  update_time: 1234567900000,
   workflow: {
     extra_data: {
       extra_pnginfo: {
