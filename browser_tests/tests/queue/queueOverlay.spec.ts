@@ -48,9 +48,7 @@ test.describe('Queue overlay', () => {
     await toggle.click()
 
     // Expanded overlay should show job items
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
-      timeout: 5000
-    })
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
   })
 
   test('Overlay shows filter tabs (All, Completed)', async ({ comfyPage }) => {
@@ -59,7 +57,7 @@ test.describe('Queue overlay', () => {
 
     await expect(
       comfyPage.page.getByRole('button', { name: 'All', exact: true })
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
     await expect(
       comfyPage.page.getByRole('button', { name: 'Completed', exact: true })
     ).toBeVisible()
@@ -71,9 +69,7 @@ test.describe('Queue overlay', () => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
     await toggle.click()
 
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
-      timeout: 5000
-    })
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
 
     await expect(
       comfyPage.page.getByRole('button', { name: 'Failed', exact: true })
@@ -84,9 +80,7 @@ test.describe('Queue overlay', () => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
     await toggle.click()
 
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
-      timeout: 5000
-    })
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
 
     await comfyPage.page
       .getByRole('button', { name: 'Completed', exact: true })
@@ -94,7 +88,7 @@ test.describe('Queue overlay', () => {
 
     await expect(
       comfyPage.page.locator('[data-job-id="job-completed-1"]')
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
     await expect(
       comfyPage.page.locator('[data-job-id="job-failed-1"]')
     ).not.toBeVisible()
@@ -104,14 +98,12 @@ test.describe('Queue overlay', () => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
     await toggle.click()
 
-    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible({
-      timeout: 5000
-    })
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
 
     await toggle.click()
 
     await expect(
       comfyPage.page.locator('[data-job-id]').first()
-    ).not.toBeVisible({ timeout: 5000 })
+    ).not.toBeVisible()
   })
 })
