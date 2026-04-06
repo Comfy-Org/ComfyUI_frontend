@@ -1,11 +1,21 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { JobListItem as ApiJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 import JobAssetsList from './JobAssetsList.vue'
+
+const JobDetailsPopoverStub = defineComponent({
+  name: 'JobDetailsPopover',
+  props: {
+    jobId: { type: String, required: true },
+    workflowId: { type: String, default: undefined }
+  },
+  template: '<div class="job-details-popover-stub" />'
+})
 
 vi.mock('vue-i18n', () => {
   return {
@@ -46,6 +56,7 @@ const createTaskRef = (preview?: ResultItemImpl): TaskItemImpl => {
     create_time: Date.now(),
     preview_output: null,
     outputs_count: preview ? 1 : 0,
+    workflow_id: 'workflow-1',
     priority: 0
   }
   const flatOutputs = preview ? [preview] : []
@@ -71,7 +82,13 @@ const mountJobAssetsList = (jobs: JobListItem[]) => {
   ]
 
   return mount(JobAssetsList, {
-    props: { displayedJobGroups }
+    props: { displayedJobGroups },
+    global: {
+      stubs: {
+        teleport: true,
+        JobDetailsPopover: JobDetailsPopoverStub
+      }
+    }
   })
 }
 
