@@ -1,5 +1,6 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
+import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
@@ -415,9 +416,10 @@ export class ComfyApi extends EventTarget {
 
       if (authStore.isInitialized) return
 
+      const { isInitialized } = storeToRefs(authStore)
       try {
         await Promise.race([
-          until(authStore.isInitialized),
+          until(isInitialized).toBe(true),
           promiseTimeout(10000)
         ])
       } catch {
