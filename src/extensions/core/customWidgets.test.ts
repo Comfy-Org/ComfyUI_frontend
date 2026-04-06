@@ -30,6 +30,7 @@ describe('PrimitiveFloat widget type bridging', () => {
     })
 
     Object.defineProperty(widget.options, 'gradient_stops', {
+      enumerable: true,
       get: () => properties.gradient_stops,
       set: (v) => {
         properties.gradient_stops = v
