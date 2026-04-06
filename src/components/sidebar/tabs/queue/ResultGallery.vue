@@ -32,7 +32,7 @@
         :src="item.url"
         :contain="false"
         :alt="item.filename"
-        class="galleria-image"
+        class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
       />
       <ResultVideo v-else-if="item.isVideo" :result="item" />
       <ResultAudio v-else-if="item.isAudio" :result="item" />
@@ -136,12 +136,6 @@ onUnmounted(() => {
 <style>
 /* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we
 cannot use scoped style here. */
-img.galleria-image {
-  max-width: 100vw;
-  max-height: 100vh;
-  object-fit: contain;
-}
-
 .p-galleria-close-button {
   /* Set z-index so the close button doesn't get hidden behind the image when image is large */
   z-index: 1;

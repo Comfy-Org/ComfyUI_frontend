@@ -1,5 +1,5 @@
 <template>
-  <video controls width="100%" height="100%">
+  <video controls class="max-h-[90vh] max-w-[90vw]">
     <source :src="url" :type="htmlVideoType" />
     {{ $t('g.videoFailedToLoad') }}
   </video>
