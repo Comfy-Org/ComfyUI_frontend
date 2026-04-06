@@ -29,16 +29,11 @@ const uploadFile = async (
   if (isPasted) body.append('subfolder', 'pasted')
   if (formFields.type) body.append('type', formFields.type)
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS)
-
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
     body,
-    signal: controller.signal
+    signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS)
   })
-
-  clearTimeout(timeoutId)
 
   if (resp.status !== 200) {
     useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
@@ -95,7 +90,7 @@ export const useNodeImageUpload = (
       if (!path) return
       return path
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
         useToastStore().addAlert(t('g.uploadTimedOut'))
       } else {
         useToastStore().addAlert(String(error))
