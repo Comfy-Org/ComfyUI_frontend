@@ -62,7 +62,7 @@ watch(isRenaming, (val) => {
 const showUngroupDialog = ref(false)
 const renameValue = ref('')
 const RENAME_SETTLE_MS = 150
-let renameOpenedAt = 0
+const renameOpenedAt = ref(0)
 
 const displayName = computed(() => group.name ?? autoGroupName(group))
 const resolvedItems = computed(() => resolveGroupItems(group))
@@ -71,13 +71,13 @@ const rows = computed(() => groupedByPair(resolvedItems.value))
 function startRename() {
   if (!builderMode) return
   renameValue.value = displayName.value
-  renameOpenedAt = Date.now()
+  renameOpenedAt.value = Date.now()
   isRenaming.value = true
 }
 
 function confirmRename() {
   // Guard: blur fires immediately on some browsers before the user can type
-  if (Date.now() - renameOpenedAt < RENAME_SETTLE_MS) return
+  if (Date.now() - renameOpenedAt.value < RENAME_SETTLE_MS) return
   const trimmed = renameValue.value.trim()
   inputGroupStore.renameGroup(group.id, trimmed || null)
   isRenaming.value = false
