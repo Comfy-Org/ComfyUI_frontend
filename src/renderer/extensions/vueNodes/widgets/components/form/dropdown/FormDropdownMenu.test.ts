@@ -110,4 +110,19 @@ describe('FormDropdownMenu', () => {
     const virtualGrid = wrapper.findComponent({ name: 'VirtualGrid' })
     expect(virtualGrid.props('maxColumns')).toBe(1)
   })
+
+  it('has data-capture-wheel="true" on the root element', () => {
+    const wrapper = mount(FormDropdownMenu, {
+      props: defaultProps,
+      global: {
+        stubs: {
+          FormDropdownMenuFilter: true,
+          FormDropdownMenuActions: true,
+          VirtualGrid: true
+        }
+      }
+    })
+
+    expect(wrapper.attributes('data-capture-wheel')).toBe('true')
+  })
 })
