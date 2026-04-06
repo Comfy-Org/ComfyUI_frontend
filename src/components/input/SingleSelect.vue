@@ -14,12 +14,15 @@
     >
       <div
         :class="
-          cn('flex items-center gap-2', size === 'md' ? 'text-xs' : 'text-sm')
+          cn(
+            'flex flex-1 items-center gap-2 overflow-hidden py-2',
+            size === 'md' ? 'pl-3 text-xs' : 'pl-4 text-sm'
+          )
         "
       >
         <i
           v-if="loading"
-          class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
+          class="icon-[lucide--loader-circle] shrink-0 animate-spin text-muted-foreground"
         />
         <slot v-else name="icon" />
         <SelectValue :placeholder="label" class="truncate" />
@@ -81,6 +84,7 @@ import {
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
 import {
@@ -102,16 +106,12 @@ const {
   size = 'lg',
   invalid = false,
   loading = false,
+  disabled = false,
   listMaxHeight = '28rem',
   popoverMinWidth,
   popoverMaxWidth
 } = defineProps<{
   label?: string
-  /**
-   * Required for displaying the selected item's label.
-   * Cannot rely on $attrs alone because we need to access options
-   * in getLabel() to map values to their display names.
-   */
   options?: SelectOption[]
   /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
   size?: 'lg' | 'md'
@@ -119,6 +119,8 @@ const {
   invalid?: boolean
   /** Show loading spinner instead of chevron */
   loading?: boolean
+  /** Disable the select */
+  disabled?: boolean
   /** Maximum height of the dropdown panel (default: 28rem) */
   listMaxHeight?: string
   /** Minimum width of the popover (default: auto) */
@@ -139,26 +141,8 @@ function onContentKeydown(event: KeyboardEvent) {
   }
 }
 
-/**
- * Maps a value to its display label.
- * Necessary because PrimeVue's value slot doesn't provide the selected item's label,
- * only the raw value. We need this to show the correct text when an item is selected.
- */
-const getLabel = (val: string | null | undefined) => {
-  if (val == null) return label ?? ''
-  if (!options) return label ?? ''
-  const found = options.find((o) => o.value === val)
-  return found ? found.name : (label ?? '')
-}
-
-// Extract complex style logic from template
-const optionStyle = computed(() => {
-  if (!popoverMinWidth && !popoverMaxWidth) return undefined
-
-  const styles: string[] = []
-  if (popoverMinWidth) styles.push(`min-width: ${popoverMinWidth}`)
-  if (popoverMaxWidth) styles.push(`max-width: ${popoverMaxWidth}`)
-
-  return styles.join('; ')
+const optionStyle = usePopoverSizing({
+  minWidth: popoverMinWidth,
+  maxWidth: popoverMaxWidth
 })
 </script>
