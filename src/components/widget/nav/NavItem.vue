@@ -25,7 +25,7 @@
       :label="String(badge)"
       severity="contrast"
       variant="circle"
-      class="ml-auto"
+      class="ml-auto min-h-5 min-w-5 px-1 text-base-background"
     />
   </div>
 </template>

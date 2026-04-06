@@ -8,8 +8,8 @@ import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
     isInitialized: mockIsInitialized,
     currentUser: mockCurrentUser
   })
@@ -51,6 +51,20 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const mockResumePendingPricingFlow = vi.fn()
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({
+      show: vi.fn(),
+      showPricingTable: vi.fn(),
+      hide: vi.fn(),
+      startTeamWorkspaceUpgradeFlow: vi.fn(),
+      resumePendingPricingFlow: mockResumePendingPricingFlow
+    })
+  })
+)
+
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -81,18 +95,16 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(true)
-      expect(wrapper.find('[role="status"]').exists()).toBe(false)
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
   })
 
   describe('cloud builds - unauthenticated user', () => {
-    it('shows spinner while waiting for Firebase auth', () => {
+    it('hides slot while waiting for Firebase auth', () => {
       mockIsInitialized.value = false
 
       const wrapper = mountComponent()
 
-      expect(wrapper.find('[role="status"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
     })
 
@@ -100,7 +112,7 @@ describe('WorkspaceAuthGate', () => {
       mockIsInitialized.value = false
 
       const wrapper = mountComponent()
-      expect(wrapper.find('[role="status"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
 
       mockIsInitialized.value = true
       mockCurrentUser.value = null
@@ -144,6 +156,16 @@ describe('WorkspaceAuthGate', () => {
       expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(true)
     })
 
+    it('calls resumePendingPricingFlow after successful workspace init', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockWorkspaceStoreInitState.value = 'ready'
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockResumePendingPricingFlow).toHaveBeenCalled()
+    })
+
     it('skips workspace init when store is already initialized', async () => {
       mockTeamWorkspacesEnabled.value = true
       mockWorkspaceStoreInitState.value = 'ready'
@@ -179,8 +201,8 @@ describe('WorkspaceAuthGate', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      // Still showing spinner before timeout
-      expect(wrapper.find('[role="status"]').exists()).toBe(true)
+      // Slot not yet rendered before timeout
+      expect(wrapper.find('[data-testid="slot-content"]').exists()).toBe(false)
 
       // Advance past the 10 second timeout
       await vi.advanceTimersByTimeAsync(10_001)

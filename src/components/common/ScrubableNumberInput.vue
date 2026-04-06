@@ -33,19 +33,20 @@
         spellcheck="false"
         @blur="handleBlur"
         @keyup.enter="handleBlur"
-        @dragstart.prevent
+        @keydown.up.prevent="updateValueBy(step)"
+        @keydown.down.prevent="updateValueBy(-step)"
+        @keydown.page-up.prevent="updateValueBy(10 * step)"
+        @keydown.page-down.prevent="updateValueBy(-10 * step)"
       />
       <div
+        ref="swipeElement"
         :class="
           cn(
-            'absolute inset-0 z-10 cursor-ew-resize',
+            'absolute inset-0 z-10 cursor-ew-resize touch-pan-y',
             textEdit && 'pointer-events-none hidden'
           )
         "
-        @pointerdown="handlePointerDown"
-        @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
-        @pointercancel="resetDrag"
       />
     </div>
     <slot />
@@ -65,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
+import { onClickOutside, usePointerSwipe, whenever } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -73,8 +74,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
-  min,
-  max,
+  min = -Number.MAX_VALUE,
+  max = Number.MAX_VALUE,
   step = 1,
   disabled = false,
   hideButtons = false,
@@ -96,6 +97,7 @@ const modelValue = defineModel<number>({ default: 0 })
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
+const swipeElement = useTemplateRef('swipeElement')
 const textEdit = ref(false)
 
 onClickOutside(container, () => {
@@ -103,21 +105,11 @@ onClickOutside(container, () => {
 })
 
 function clamp(value: number): number {
-  const lo = min ?? -Infinity
-  const hi = max ?? Infinity
-  return Math.min(hi, Math.max(lo, value))
+  return Math.min(max, Math.max(min, value))
 }
 
-const canDecrement = computed(
-  () => modelValue.value > (min ?? -Infinity) && !disabled
-)
-const canIncrement = computed(
-  () => modelValue.value < (max ?? Infinity) && !disabled
-)
-
-const dragging = ref(false)
-const dragDelta = ref(0)
-const hasDragged = ref(false)
+const canDecrement = computed(() => modelValue.value > min && !disabled)
+const canIncrement = computed(() => modelValue.value < max && !disabled)
 
 function handleBlur(e: Event) {
   const target = e.target as HTMLInputElement
@@ -135,41 +127,27 @@ function handleBlur(e: Event) {
   textEdit.value = false
 }
 
-function handlePointerDown(e: PointerEvent) {
-  if (e.button !== 0) return
-  if (disabled) return
-  const target = e.target as HTMLElement
-  target.setPointerCapture(e.pointerId)
-  dragging.value = true
-  dragDelta.value = 0
-  hasDragged.value = false
-}
-
-function handlePointerMove(e: PointerEvent) {
-  if (!dragging.value) return
-  dragDelta.value += e.movementX
-  const steps = (dragDelta.value / 10) | 0
-  if (steps === 0) return
-  hasDragged.value = true
-  const unclipped = modelValue.value + steps * step
-  dragDelta.value %= 10
-  modelValue.value = clamp(unclipped)
-}
-
+let dragDelta = 0
 function handlePointerUp() {
-  if (!dragging.value) return
+  if (isSwiping.value) return
 
-  if (!hasDragged.value) {
-    textEdit.value = true
-    inputField.value?.focus()
-    inputField.value?.select()
-  }
-
-  resetDrag()
+  textEdit.value = true
+  inputField.value?.focus()
+  inputField.value?.select()
 }
 
-function resetDrag() {
-  dragging.value = false
-  dragDelta.value = 0
+const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
+  onSwipeEnd: () => (dragDelta = 0)
+})
+
+whenever(distanceX, () => {
+  if (disabled) return
+  const delta = ((distanceX.value - dragDelta) / 10) | 0
+  dragDelta += delta * 10
+  modelValue.value = clamp(modelValue.value - delta * step)
+})
+
+function updateValueBy(delta: number) {
+  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
 }
 </script>

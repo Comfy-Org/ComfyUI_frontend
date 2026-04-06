@@ -1,11 +1,16 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import fs from 'fs'
 import { describe, expect, it } from 'vitest'
 
 import {
   buildSubgraphExecutionPaths,
+  flattenWorkflowNodes,
   validateComfyWorkflow
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyNode,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
@@ -272,5 +277,54 @@ describe('buildSubgraphExecutionPaths', () => {
     expect(() =>
       buildSubgraphExecutionPaths([node(5, 'def-A')], [defA, defB])
     ).not.toThrow()
+  })
+})
+
+describe('flattenWorkflowNodes', () => {
+  it('returns root nodes when no subgraphs exist', () => {
+    const result = flattenWorkflowNodes({
+      nodes: [node(1, 'KSampler'), node(2, 'CLIPLoader')]
+    } as ComfyWorkflowJSON)
+
+    expect(result).toHaveLength(2)
+    expect(result.map((n) => n.id)).toEqual([1, 2])
+  })
+
+  it('returns empty array when nodes is undefined', () => {
+    const result = flattenWorkflowNodes({} as ComfyWorkflowJSON)
+    expect(result).toEqual([])
+  })
+
+  it('includes subgraph nodes with prefixed IDs', () => {
+    const result = flattenWorkflowNodes(
+      fromPartial<ComfyWorkflowJSON>({
+        nodes: [node(5, 'def-A')],
+        definitions: {
+          subgraphs: [
+            subgraphDef('def-A', [node(10, 'Inner'), node(20, 'Inner2')])
+          ]
+        }
+      })
+    )
+
+    expect(result).toHaveLength(3) // 1 root + 2 subgraph
+    expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:20'])
+  })
+
+  it('prefixes nested subgraph nodes with full execution path', () => {
+    const result = flattenWorkflowNodes(
+      fromPartial<ComfyWorkflowJSON>({
+        nodes: [node(5, 'def-A')],
+        definitions: {
+          subgraphs: [
+            subgraphDef('def-A', [node(10, 'def-B')]),
+            subgraphDef('def-B', [node(3, 'Leaf')])
+          ]
+        }
+      })
+    )
+
+    // root:5, def-A inner: 5:10, def-B inner: 5:10:3
+    expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:10:3'])
   })
 })

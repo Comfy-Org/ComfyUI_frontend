@@ -290,7 +290,6 @@ describe('WidgetImageCompare Display', () => {
 
       const slider = wrapper.find('[role="presentation"]')
       expect(slider.exists()).toBe(true)
-      expect(slider.classes()).toContain('bg-white')
     })
 
     it('does not render slider when no images', () => {

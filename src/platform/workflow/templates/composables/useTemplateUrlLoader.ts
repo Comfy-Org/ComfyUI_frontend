@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useTelemetry } from '@/platform/telemetry'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useTemplateWorkflows } from './useTemplateWorkflows'
@@ -121,6 +123,7 @@ export function useTemplateUrlLoader() {
         })
       } else if (modeParam === 'linear') {
         // Set linear mode after successful template load
+        useTelemetry()?.trackEnterLinear({ source: 'template_url' })
         canvasStore.linearMode = true
       }
     } catch (error) {

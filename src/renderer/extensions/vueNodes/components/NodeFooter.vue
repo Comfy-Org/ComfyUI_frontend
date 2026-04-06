@@ -28,12 +28,67 @@
           '-z-10 bg-node-component-header-surface'
         )
       "
-      :style="{ backgroundColor: headerColor }"
+      :style="headerColorStyle"
       @click.stop="$emit('enterSubgraph')"
     >
       <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
         <i class="icon-[comfy--workflow] size-4 shrink-0" />
+      </div>
+    </Button>
+  </template>
+
+  <!-- Case 1b: Advanced + Error (Dual Tabs, Regular Nodes) -->
+  <template
+    v-else-if="
+      !isSubgraph &&
+      hasAnyError &&
+      showErrorsTabEnabled &&
+      (showAdvancedInputsButton || showAdvancedState)
+    "
+  >
+    <Button
+      variant="textonly"
+      :class="
+        cn(
+          getTabStyles(false),
+          errorTabWidth,
+          '-z-5 bg-destructive-background text-white hover:bg-destructive-background-hover'
+        )
+      "
+      @click.stop="$emit('openErrors')"
+    >
+      <div class="flex size-full items-center justify-center gap-2">
+        <span class="truncate">{{ t('g.error') }}</span>
+        <i class="icon-[lucide--info] size-4 shrink-0" />
+      </div>
+    </Button>
+
+    <Button
+      variant="textonly"
+      :class="
+        cn(
+          getTabStyles(true),
+          enterTabFullWidth,
+          '-z-10 bg-node-component-header-surface'
+        )
+      "
+      :style="headerColorStyle"
+      @click.stop="$emit('toggleAdvanced')"
+    >
+      <div class="ml-auto flex h-full w-1/2 items-center justify-center gap-2">
+        <span class="truncate">{{
+          showAdvancedState
+            ? t('rightSidePanel.hideAdvancedShort')
+            : t('rightSidePanel.showAdvancedShort')
+        }}</span>
+        <i
+          :class="
+            showAdvancedState
+              ? 'icon-[lucide--chevron-up] size-4 shrink-0'
+              : 'icon-[lucide--settings-2] size-4 shrink-0'
+          "
+        />
       </div>
     </Button>
   </template>
@@ -70,7 +125,7 @@
           '-z-10 bg-node-component-header-surface'
         )
       "
-      :style="{ backgroundColor: headerColor }"
+      :style="headerColorStyle"
       @click.stop="$emit('enterSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
@@ -81,17 +136,20 @@
   </template>
 
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
-  <div
+  <Button
     v-else-if="showAdvancedInputsButton || showAdvancedState"
-    class="relative -z-1 -mt-5 flex h-7 w-full divide-x divide-component-node-border overflow-hidden rounded-t-none rounded-b-2xl text-xs"
+    variant="textonly"
+    :class="
+      cn(
+        getTabStyles(true),
+        hasAnyError ? 'w-[calc(100%+8px)]' : 'w-full',
+        '-z-10 bg-node-component-header-surface'
+      )
+    "
+    :style="headerColorStyle"
+    @click.stop="$emit('toggleAdvanced')"
   >
-    <Button
-      variant="textonly"
-      :class="
-        cn('h-full flex-1 rounded-none', isCollapsed ? 'py-2' : 'pt-7 pb-2')
-      "
-      @click.stop="$emit('toggleAdvanced')"
-    >
+    <div class="flex size-full items-center justify-center gap-2">
       <template v-if="showAdvancedState">
         <span class="truncate">{{
           t('rightSidePanel.hideAdvancedInputsButton')
@@ -104,8 +162,8 @@
         }}</span>
         <i class="icon-[lucide--settings-2] size-4 shrink-0" />
       </template>
-    </Button>
-  </div>
+    </div>
+  </Button>
 </template>
 
 <script setup lang="ts">
@@ -176,6 +234,10 @@ const getTabStyles = (isBackground = false) => {
     props.hasAnyError ? '-translate-x-1 translate-y-0.5' : 'translate-y-0.5'
   )
 }
+
+const headerColorStyle = computed(() =>
+  props.headerColor ? { backgroundColor: props.headerColor } : undefined
+)
 
 // Case 1 context: Split widths
 const errorTabWidth = 'w-[calc(50%+4px)]'

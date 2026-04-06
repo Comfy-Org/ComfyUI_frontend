@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
@@ -7,8 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-
+import { usePromotionStore } from '@/stores/promotionStore'
 import WidgetActions from './WidgetActions.vue'
 
 const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
@@ -91,10 +93,14 @@ describe('WidgetActions', () => {
   }
 
   function createMockNode(): LGraphNode {
-    return {
+    return fromAny<LGraphNode, unknown>({
       id: 1,
-      type: 'TestNode'
-    } as LGraphNode
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      computeSize: vi.fn(),
+      size: [200, 100],
+      isSubgraphNode: () => false
+    })
   }
 
   function mountWidgetActions(widget: IBaseWidget, node: LGraphNode) {
@@ -205,5 +211,68 @@ describe('WidgetActions', () => {
     await resetButton?.trigger('click')
 
     expect(wrapper.emitted('resetToDefault')![0]).toEqual(['option1'])
+  })
+
+  it('demotes promoted widgets by immediate interior node identity when shown from parent context', async () => {
+    mockGetInputSpecForWidget.mockReturnValue({
+      type: 'CUSTOM'
+    })
+    const parentSubgraphNode = fromAny<SubgraphNode, unknown>({
+      id: 4,
+      rootGraph: { id: 'graph-test' },
+      computeSize: vi.fn(),
+      size: [300, 150]
+    })
+    const node = fromAny<LGraphNode, unknown>({
+      id: 4,
+      type: 'SubgraphNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => false
+    })
+    const widget = {
+      name: 'text',
+      type: 'text',
+      value: 'value',
+      label: 'Text',
+      options: {},
+      y: 0,
+      sourceNodeId: '3',
+      sourceWidgetName: 'text',
+      disambiguatingSourceNodeId: '1'
+    } as IBaseWidget
+
+    const promotionStore = usePromotionStore()
+    promotionStore.promote('graph-test', 4, {
+      sourceNodeId: '3',
+      sourceWidgetName: 'text',
+      disambiguatingSourceNodeId: '1'
+    })
+
+    const wrapper = mount(WidgetActions, {
+      props: {
+        widget,
+        node,
+        label: 'Text',
+        parents: [parentSubgraphNode],
+        isShownOnParents: true
+      },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    const hideButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Hide input'))
+    expect(hideButton).toBeDefined()
+    await hideButton?.trigger('click')
+
+    expect(
+      promotionStore.isPromoted('graph-test', 4, {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+    ).toBe(false)
   })
 })

@@ -33,13 +33,27 @@ jobs:
           path: dist/
           retention-days: 1
 
+      # Build cloud distribution for @cloud tagged tests
+      # NX_SKIP_NX_CACHE=true is required because `nx build` was already run
+      # for the OSS distribution above. Without skipping cache, Nx returns
+      # the cached OSS build since env vars aren't part of the cache key.
+      - name: Build cloud frontend
+        run: NX_SKIP_NX_CACHE=true pnpm build:cloud
+
+      - name: Upload cloud frontend
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-dist-cloud
+          path: dist/
+          retention-days: 1
+
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.13
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -87,7 +101,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.13
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -97,14 +111,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome]
+        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Download built frontend
         uses: actions/download-artifact@v7
         with:
-          name: frontend-dist
+          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -144,7 +158,7 @@ jobs:
     if: ${{ !cancelled() }}
     steps:
       - name: Install pnpm
-        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
           version: 10
 

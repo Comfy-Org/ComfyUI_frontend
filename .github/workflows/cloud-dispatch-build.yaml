@@ -46,18 +46,30 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
           if [ "${EVENT_NAME}" = "pull_request" ]; then
             REF="${PR_HEAD_SHA}"
             BRANCH="${PR_HEAD_REF}"
+
+            # Derive variant from all PR labels (default to cpu for frontend-only previews)
+            VARIANT="cpu"
+            echo "${PR_LABELS}" | grep -q '"preview-gpu"' && VARIANT="gpu"
           else
             REF="${GITHUB_SHA}"
             BRANCH="${GITHUB_REF_NAME}"
+            PR_NUMBER=""
+            VARIANT=""
           fi
           payload="$(jq -nc \
             --arg ref "${REF}" \
             --arg branch "${BRANCH}" \
-            '{ref: $ref, branch: $branch}')"
+            --arg pr_number "${PR_NUMBER}" \
+            --arg variant "${VARIANT}" \
+            '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant}')"
           echo "json=${payload}" >> "${GITHUB_OUTPUT}"
 
       - name: Dispatch to cloud repo

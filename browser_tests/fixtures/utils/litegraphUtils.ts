@@ -281,6 +281,14 @@ export class NodeReference {
   getType(): Promise<string> {
     return this.getProperty('type')
   }
+  async centerOnNode(): Promise<void> {
+    await this.comfyPage.page.evaluate((id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      window.app!.canvas.centerOnNode(node)
+    }, this.id)
+    await this.comfyPage.nextFrame()
+  }
   async getPosition(): Promise<Position> {
     const pos = await this.comfyPage.canvasOps.convertOffsetToCanvas(
       await this.getProperty<[number, number]>('pos')
@@ -382,6 +390,11 @@ export class NodeReference {
   async copy() {
     await this.click('title')
     await this.comfyPage.clipboard.copy()
+    await this.comfyPage.nextFrame()
+  }
+  async delete(): Promise<void> {
+    await this.click('title')
+    await this.comfyPage.page.keyboard.press('Delete')
     await this.comfyPage.nextFrame()
   }
   async connectWidget(

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -9,6 +10,10 @@ test.beforeEach(async ({ comfyPage }) => {
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.setup()
   })
 
@@ -20,16 +25,14 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
       await comfyPage.page.keyboard.press('Escape')
 
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-      await expect(
-        comfyPage.page.locator('[data-testid="error-overlay"]')
-      ).toBeVisible()
-      await comfyPage.page
-        .locator('[data-testid="error-overlay"]')
-        .getByRole('button', { name: 'Dismiss' })
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
-      await comfyPage.page
-        .locator('[data-testid="error-overlay"]')
-        .waitFor({ state: 'hidden' })
+      await errorOverlay.waitFor({ state: 'hidden' })
       await expect(comfyPage.canvas).toHaveScreenshot(
         'execution-error-unconnected-slot.png'
       )

@@ -78,4 +78,66 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 
     await expect(minimapContainer).toBeVisible()
   })
+
+  test('Close button hides minimap', async ({ comfyPage }) => {
+    const minimap = comfyPage.page.locator('.litegraph-minimap')
+    await expect(minimap).toBeVisible()
+
+    await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
+    await expect(minimap).not.toBeVisible()
+
+    const toggleButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
+    await expect(toggleButton).toBeVisible()
+  })
+
+  test(
+    'Panning canvas moves minimap viewport',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const minimap = comfyPage.page.locator('.litegraph-minimap')
+      await expect(minimap).toBeVisible()
+
+      await expect(minimap).toHaveScreenshot('minimap-before-pan.png')
+
+      await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        canvas.ds.scale = 3
+        canvas.ds.offset[0] = -800
+        canvas.ds.offset[1] = -600
+        canvas.setDirty(true, true)
+      })
+      await expect(minimap).toHaveScreenshot('minimap-after-pan.png')
+    }
+  )
+
+  test(
+    'Viewport rectangle is visible and positioned within minimap',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const minimap = comfyPage.page.locator('.litegraph-minimap')
+      await expect(minimap).toBeVisible()
+
+      const viewport = minimap.locator('.minimap-viewport')
+      await expect(viewport).toBeVisible()
+
+      const minimapBox = await minimap.boundingBox()
+      const viewportBox = await viewport.boundingBox()
+
+      expect(minimapBox).toBeTruthy()
+      expect(viewportBox).toBeTruthy()
+      expect(viewportBox!.width).toBeGreaterThan(0)
+      expect(viewportBox!.height).toBeGreaterThan(0)
+
+      expect(viewportBox!.x + viewportBox!.width).toBeGreaterThan(minimapBox!.x)
+      expect(viewportBox!.y + viewportBox!.height).toBeGreaterThan(
+        minimapBox!.y
+      )
+      expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
+      expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
+
+      await expect(minimap).toHaveScreenshot('minimap-with-viewport.png')
+    }
+  )
 })

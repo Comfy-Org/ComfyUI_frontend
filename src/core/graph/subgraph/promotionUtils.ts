@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/vue'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
@@ -10,7 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
-} from '@/composables/node/useNodeCanvasImagePreview'
+} from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -23,6 +25,53 @@ export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
 export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
+}
+
+/**
+ * Returns true if the given promotion entry corresponds to a linked promotion
+ * on the subgraph node. Linked promotions are driven by subgraph input
+ * connections and cannot be independently hidden or shown.
+ */
+export function isLinkedPromotion(
+  subgraphNode: SubgraphNode,
+  sourceNodeId: string,
+  sourceWidgetName: string
+): boolean {
+  return subgraphNode.inputs.some((input) => {
+    const w = input._widget
+    return (
+      w &&
+      isPromotedWidgetView(w) &&
+      w.sourceNodeId === sourceNodeId &&
+      w.sourceWidgetName === sourceWidgetName
+    )
+  })
+}
+
+export function getSourceNodeId(w: IBaseWidget): string | undefined {
+  if (!isPromotedWidgetView(w)) return undefined
+  return w.disambiguatingSourceNodeId ?? w.sourceNodeId
+}
+
+function toPromotionSource(
+  node: PartialNode,
+  widget: IBaseWidget
+): PromotedWidgetSource {
+  return {
+    sourceNodeId: String(node.id),
+    sourceWidgetName: getWidgetName(widget),
+    disambiguatingSourceNodeId: isPromotedWidgetView(widget)
+      ? widget.disambiguatingSourceNodeId
+      : undefined
+  }
+}
+
+function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
+  for (const parent of parents) {
+    parent.computeSize(parent.size)
+    parent.setDirtyCanvas(true, true)
+  }
+  useCanvasStore().canvas?.setDirty(true, true)
 }
 
 /** Known non-$$ preview widget types added by core or popular extensions. */
@@ -50,13 +99,16 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(
-    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  )
-  const widgetName = getWidgetName(widget)
+  const source = toPromotionSource(node, widget)
   for (const parent of parents) {
-    store.promote(parent.rootGraph.id, parent.id, nodeId, widgetName)
+    store.promote(parent.rootGraph.id, parent.id, source)
   }
+  refreshPromotedWidgetRendering(parents)
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Promoted widget "${source.sourceWidgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 export function demoteWidget(
@@ -65,13 +117,16 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const store = usePromotionStore()
-  const nodeId = String(
-    isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  )
-  const widgetName = getWidgetName(widget)
+  const source = toPromotionSource(node, widget)
   for (const parent of parents) {
-    store.demote(parent.rootGraph.id, parent.id, nodeId, widgetName)
+    store.demote(parent.rootGraph.id, parent.id, source)
   }
+  refreshPromotedWidgetRendering(parents)
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Demoted widget "${source.sourceWidgetName}" on node ${node.id}`,
+    level: 'info'
+  })
 }
 
 function getParentNodes(): SubgraphNode[] {
@@ -99,10 +154,9 @@ export function addWidgetPromotionOptions(
 ) {
   const store = usePromotionStore()
   const parents = getParentNodes()
-  const nodeId = String(node.id)
-  const widgetName = getWidgetName(widget)
+  const source = toPromotionSource(node, widget)
   const promotableParents = parents.filter(
-    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
+    (s) => !store.isPromoted(s.rootGraph.id, s.id, source)
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -136,10 +190,9 @@ export function tryToggleWidgetPromotion() {
   const parents = getParentNodes()
   if (!parents.length || !widget) return
   const store = usePromotionStore()
-  const nodeId = String(node.id)
-  const widgetName = getWidgetName(widget)
+  const source = toPromotionSource(node, widget)
   const promotableParents = parents.filter(
-    (s) => !store.isPromoted(s.rootGraph.id, s.id, nodeId, widgetName)
+    (s) => !store.isPromoted(s.rootGraph.id, s.id, source)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
@@ -208,12 +261,10 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
       const widget = node.widgets?.find(isPreviewPseudoWidget)
       if (!widget) return
       if (
-        store.isPromoted(
-          subgraphNode.rootGraph.id,
-          subgraphNode.id,
-          String(node.id),
-          widget.name
-        )
+        store.isPromoted(subgraphNode.rootGraph.id, subgraphNode.id, {
+          sourceNodeId: String(node.id),
+          sourceWidgetName: widget.name
+        })
       )
         return
       promoteWidget(node, widget, [subgraphNode])
@@ -231,20 +282,18 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     // includes this node and onDrawBackground can call updatePreviews on it
     // once execution outputs arrive.
     if (supportsVirtualCanvasImagePreview(node)) {
+      const canvasSource: PromotedWidgetSource = {
+        sourceNodeId: String(node.id),
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
       if (
         !store.isPromoted(
           subgraphNode.rootGraph.id,
           subgraphNode.id,
-          String(node.id),
-          CANVAS_IMAGE_PREVIEW_WIDGET
+          canvasSource
         )
       ) {
-        store.promote(
-          subgraphNode.rootGraph.id,
-          subgraphNode.id,
-          String(node.id),
-          CANVAS_IMAGE_PREVIEW_WIDGET
-        )
+        store.promote(subgraphNode.rootGraph.id, subgraphNode.id, canvasSource)
       }
       continue
     }
@@ -260,8 +309,7 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     store.promote(
       subgraphNode.rootGraph.id,
       subgraphNode.id,
-      String(n.id),
-      getWidgetName(w)
+      toPromotionSource(n, w)
     )
   }
   subgraphNode.computeSize(subgraphNode.size)
@@ -274,17 +322,16 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
     subgraphNode.rootGraph.id,
     subgraphNode.id
   )
-  const removedEntries: Array<{ interiorNodeId: string; widgetName: string }> =
-    []
+  const removedEntries: PromotedWidgetSource[] = []
 
   const validEntries = entries.filter((entry) => {
-    const node = subgraph.getNodeById(entry.interiorNodeId)
+    const node = subgraph.getNodeById(entry.sourceNodeId)
     if (!node) {
       removedEntries.push(entry)
       return false
     }
     const hasWidget = getPromotableWidgets(node).some(
-      (iw) => iw.name === entry.widgetName
+      (iw) => iw.name === entry.sourceWidgetName
     )
     if (!hasWidget) {
       removedEntries.push(entry)
@@ -304,4 +351,26 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   }
 
   store.setPromotions(subgraphNode.rootGraph.id, subgraphNode.id, validEntries)
+  refreshPromotedWidgetRendering([subgraphNode])
+  Sentry.addBreadcrumb({
+    category: 'subgraph',
+    message: `Pruned ${removedEntries.length} disconnected promotion(s) from subgraph node ${subgraphNode.id}`,
+    level: 'info'
+  })
+}
+
+export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
+  const promotionStore = usePromotionStore()
+  const { id: subgraphNodeId, rootGraph, subgraph } = subgraphNode
+
+  return subgraph.nodes.some((interiorNode) =>
+    (interiorNode.widgets ?? []).some(
+      (widget) =>
+        !widget.computedDisabled &&
+        !promotionStore.isPromoted(rootGraph.id, subgraphNodeId, {
+          sourceNodeId: String(interiorNode.id),
+          sourceWidgetName: widget.name
+        })
+    )
+  )
 }

@@ -27,7 +27,7 @@ cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 
 ### Node.js & Playwright Prerequisites
 
-Ensure you have the Node.js version from `.nvmrc` installed (currently v24).
+Ensure you have the Node.js version specified in `.nvmrc` installed.
 Then, set up the Chromium test driver:
 
 ```bash
@@ -75,7 +75,7 @@ For tests that specifically need to test release functionality, see the example 
 **Always use UI mode for development:**
 
 ```bash
-pnpm exec playwright test --ui
+pnpm test:browser:local --ui
 ```
 
 UI mode features:
@@ -91,29 +91,8 @@ UI mode features:
 For CI or headless testing:
 
 ```bash
-pnpm exec playwright test                    # Run all tests
-pnpm exec playwright test widget.spec.ts     # Run specific test file
-```
-
-### Local Development Config
-
-For debugging, you can try adjusting these settings in `playwright.config.ts`:
-
-```typescript
-export default defineConfig({
-  // VERY HELPFUL: Skip screenshot tests locally
-  grep: process.env.CI ? undefined : /^(?!.*screenshot).*$/
-
-  retries: 0, // No retries while debugging. Increase if writing new tests. that may be flaky.
-  workers: 1, // Single worker for easier debugging. Increase to match CPU cores if you want to run a lot of tests in parallel.
-  timeout: 30000, // Longer timeout for breakpoints
-
-  use: {
-    trace: 'on', // Always capture traces (CI uses 'on-first-retry')
-    video: 'on' // Always record video (CI uses 'retain-on-failure')
-  },
-
-})
+pnpm test:browser:local                    # Run all tests
+pnpm test:browser:local widget.spec.ts     # Run specific test file
 ```
 
 ## Test Structure
@@ -140,7 +119,7 @@ When writing new tests, follow these patterns:
 
 ```typescript
 // Import the test fixture
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Feature Name', () => {
   // Set up test environment if needed
@@ -168,6 +147,12 @@ Always check for existing helpers and fixtures before implementing new ones:
 - **Utility Functions**: Check `browser_tests/utils/` and `browser_tests/fixtures/utils/` for shared utilities
 
 Most common testing needs are already addressed by these helpers, which will make your tests more consistent and reliable.
+
+### Import Conventions
+
+- Prefer `@e2e/*` for imports within `browser_tests/`
+- Continue using `@/*` for imports from `src/`
+- Avoid introducing new deep relative imports within `browser_tests/` when the alias is available
 
 ### Key Testing Patterns
 
@@ -385,7 +370,7 @@ export default defineConfig({
 Option 2 - Generate local baselines for comparison:
 
 ```bash
-pnpm exec playwright test --update-snapshots
+pnpm test:browser:local --update-snapshots
 ```
 
 ### Creating New Screenshot Baselines

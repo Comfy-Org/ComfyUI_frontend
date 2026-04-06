@@ -17,6 +17,8 @@
         overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
+      @show="refreshOptions"
+      @filter="refreshOptions"
     >
       <template #dropdownicon>
         <i
@@ -31,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -51,25 +53,30 @@ interface Props {
 
 const props = defineProps<Props>()
 
+function resolveValues(values: unknown): string[] {
+  if (typeof values === 'function') return values()
+  if (Array.isArray(values)) return values
+  return []
+}
+
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
     const values = props.widget.options?.values
-    return (Array.isArray(values) ? values[0] : undefined) ?? ''
+    const resolved = typeof values === 'function' ? values() : values
+    return Array.isArray(resolved) ? (resolved[0] ?? '') : ''
   }
 })
 
 // Transform compatibility props for overlay positioning
 const transformCompatProps = useTransformCompatOverlayProps()
 
-// Extract select options from widget options
+const refreshTrigger = ref(0)
+function refreshOptions() {
+  refreshTrigger.value++
+}
 const selectOptions = computed(() => {
-  const options = props.widget.options
-
-  if (options?.values && Array.isArray(options.values)) {
-    return options.values
-  }
-
-  return []
+  void refreshTrigger.value
+  return resolveValues(props.widget.options?.values)
 })
 const invalid = computed(
   () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)

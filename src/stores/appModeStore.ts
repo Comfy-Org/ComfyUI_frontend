@@ -1,15 +1,19 @@
 import { defineStore } from 'pinia'
-import { reactive, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 export function nodeTypeValidForApp(type: string) {
@@ -18,13 +22,16 @@ export function nodeTypeValidForApp(type: string) {
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
+  const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
-  const selectedInputs = reactive<[NodeId, string][]>([])
-  const selectedOutputs = reactive<NodeId[]>([])
-  const hasOutputs = computed(() => !!selectedOutputs.length)
+  const showVueNodeSwitchPopup = ref(false)
+
+  const selectedInputs = ref<[NodeId, string][]>([])
+  const selectedOutputs = ref<NodeId[]>([])
+  const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
@@ -51,8 +58,8 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
-    selectedInputs.splice(0, selectedInputs.length, ...inputs)
-    selectedOutputs.splice(0, selectedOutputs.length, ...outputs)
+    selectedInputs.value = inputs
+    selectedOutputs.value = outputs
   }
 
   function resetSelectedToWorkflow() {
@@ -62,24 +69,16 @@ export const useAppModeStore = defineStore('appMode', () => {
     loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
   }
 
-  watch(
-    () => workflowStore.activeWorkflow,
-    (newWorkflow) => {
-      if (newWorkflow) {
-        loadSelections(
-          newWorkflow.changeTracker?.activeState?.extra?.linearData
-        )
-      } else {
-        loadSelections(undefined)
-      }
-    },
-    { immediate: true }
+  useEventListener(
+    () => app.rootGraph?.events,
+    'configured',
+    resetSelectedToWorkflow
   )
 
   watch(
     () =>
       isBuilderMode.value
-        ? { inputs: selectedInputs, outputs: selectedOutputs }
+        ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
@@ -90,21 +89,38 @@ export const useAppModeStore = defineStore('appMode', () => {
         inputs: [...data.inputs],
         outputs: [...data.outputs]
       }
+      workflowStore.activeWorkflow?.changeTracker?.checkState()
     },
     { deep: true }
   )
 
-  let unwatch: () => void | undefined
-  watch(isSelectMode, (inSelect) => {
+  let unwatchReadOnly: (() => void) | undefined
+  function enforceReadOnly(inSelect: boolean) {
     const { state } = getCanvas()
     if (!state) return
     state.readOnly = inSelect
-    unwatch?.()
+    unwatchReadOnly?.()
     if (inSelect)
-      unwatch = watch(
+      unwatchReadOnly = watch(
         () => state.readOnly,
         () => (state.readOnly = true)
       )
+  }
+
+  function autoEnableVueNodes(inSelect: boolean) {
+    if (!inSelect) return
+    if (!settingStore.get('Comfy.VueNodes.Enabled')) {
+      void settingStore.set('Comfy.VueNodes.Enabled', true)
+
+      if (!settingStore.get('Comfy.AppBuilder.VueNodeSwitchDismissed')) {
+        showVueNodeSwitchPopup.value = true
+      }
+    }
+  }
+
+  watch(isSelectMode, (inSelect) => {
+    enforceReadOnly(inSelect)
+    autoEnableVueNodes(inSelect)
   })
 
   function enterBuilder() {
@@ -130,14 +146,28 @@ export const useAppModeStore = defineStore('appMode', () => {
     setMode('graph')
   }
 
+  function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
+    const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
+    const storeName = isPromotedWidgetView(widget)
+      ? widget.sourceWidgetName
+      : widget.name
+    const index = selectedInputs.value.findIndex(
+      ([id, name]) => storeId == id && storeName === name
+    )
+    if (index !== -1) selectedInputs.value.splice(index, 1)
+  }
+
   return {
     enterBuilder,
     exitBuilder,
     hasNodes,
     hasOutputs,
+    loadSelections,
     pruneLinearData,
+    removeSelectedInput,
     resetSelectedToWorkflow,
     selectedInputs,
-    selectedOutputs
+    selectedOutputs,
+    showVueNodeSwitchPopup
   }
 })

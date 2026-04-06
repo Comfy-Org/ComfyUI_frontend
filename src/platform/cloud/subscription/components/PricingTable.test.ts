@@ -31,8 +31,8 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
-  useFirebaseAuthActions: () => ({
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
     accessBillingPortal: mockAccessBillingPortal,
     reportError: mockReportError
   })
@@ -56,13 +56,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () =>
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () =>
     reactive({
       getAuthHeader: mockGetAuthHeader,
       userId: computed(() => mockUserId.value)
     }),
-  FirebaseAuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {}
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -107,6 +107,8 @@ const i18n = createI18n({
         videoEstimateHelp: 'How is this calculated?',
         videoEstimateExplanation: 'Based on average usage.',
         videoEstimateTryTemplate: 'Try template',
+        soloUseOnly: 'Solo use only',
+        needTeamWorkspace: 'Need team workspace?',
         maxDuration: {
           standard: '30 min',
           creator: '30 min',
@@ -294,6 +296,22 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
+    })
+  })
+
+  describe('team workspace link', () => {
+    it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      const teamLink = wrapper
+        .findAll('button')
+        .find((btn) => btn.text().includes('Need team workspace?'))
+
+      expect(teamLink).toBeDefined()
+      await teamLink?.trigger('click')
+
+      expect(wrapper.emitted('chooseTeamWorkspace')).toHaveLength(1)
     })
   })
 })

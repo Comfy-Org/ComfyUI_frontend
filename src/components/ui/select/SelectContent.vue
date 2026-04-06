@@ -64,6 +64,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         )
       "
     >
+      <slot name="prepend" />
       <SelectScrollUpButton />
       <SelectViewport
         :class="

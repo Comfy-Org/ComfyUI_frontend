@@ -24,7 +24,13 @@ vi.mock('@/platform/telemetry/topupTracker', () => ({
 
 const hoisted = vi.hoisted(() => ({
   mockNodeDefsByName: {} as Record<string, unknown>,
-  mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[]
+  mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[],
+  mockActiveWorkflow: null as null | {
+    filename: string
+    fullFilename: string
+  },
+  mockKnownTemplateNames: new Set<string>(),
+  mockTemplateByName: null as null | { sourceModule?: string }
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -35,7 +41,9 @@ vi.mock('@/stores/nodeDefStore', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
-    activeWorkflow: null
+    get activeWorkflow() {
+      return hoisted.mockActiveWorkflow
+    }
   })
 }))
 
@@ -43,7 +51,11 @@ vi.mock(
   '@/platform/workflow/templates/repositories/workflowTemplatesStore',
   () => ({
     useWorkflowTemplatesStore: () => ({
-      knownTemplateNames: new Set()
+      get knownTemplateNames() {
+        return hoisted.mockKnownTemplateNames
+      },
+      getTemplateByName: (_name: string) => hoisted.mockTemplateByName,
+      getEnglishMetadata: () => null
     })
   })
 )
@@ -85,6 +97,9 @@ describe('getExecutionContext', () => {
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]
     }
+    hoisted.mockActiveWorkflow = null
+    hoisted.mockKnownTemplateNames = new Set()
+    hoisted.mockTemplateByName = null
   })
 
   it('returns has_toolkit_nodes false when no toolkit nodes are present', () => {
@@ -174,5 +189,51 @@ describe('getExecutionContext', () => {
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual(['ImageCrop'])
+  })
+
+  describe('template detection', () => {
+    it('detects a regular template by name', () => {
+      hoisted.mockKnownTemplateNames = new Set(['flux-dev'])
+      hoisted.mockTemplateByName = { sourceModule: 'default' }
+      hoisted.mockActiveWorkflow = {
+        filename: 'flux-dev',
+        fullFilename: 'flux-dev.json'
+      }
+
+      const context = getExecutionContext()
+
+      expect(context.is_template).toBe(true)
+      expect(context.workflow_name).toBe('flux-dev')
+    })
+
+    it('detects an app mode template whose name ends with .app', () => {
+      hoisted.mockKnownTemplateNames = new Set([
+        'templates-qwen_multiangle.app'
+      ])
+      hoisted.mockTemplateByName = { sourceModule: 'default' }
+      // getFilenameDetails strips ".app.json" as a compound extension, yielding
+      // filename = "templates-qwen_multiangle" — the previous code would fail here.
+      hoisted.mockActiveWorkflow = {
+        filename: 'templates-qwen_multiangle',
+        fullFilename: 'templates-qwen_multiangle.app.json'
+      }
+
+      const context = getExecutionContext()
+
+      expect(context.is_template).toBe(true)
+      expect(context.workflow_name).toBe('templates-qwen_multiangle.app')
+    })
+
+    it('does not flag a non-template workflow as a template', () => {
+      hoisted.mockKnownTemplateNames = new Set(['flux-dev'])
+      hoisted.mockActiveWorkflow = {
+        filename: 'my-custom-workflow',
+        fullFilename: 'my-custom-workflow.json'
+      }
+
+      const context = getExecutionContext()
+
+      expect(context.is_template).toBe(false)
+    })
   })
 })

@@ -91,6 +91,12 @@ export class CanvasHelper {
     await this.page.mouse.move(10, 10)
   }
 
+  async isReadOnly(): Promise<boolean> {
+    return this.page.evaluate(() => {
+      return window.app!.canvas.state.readOnly
+    })
+  }
+
   async getScale(): Promise<number> {
     return this.page.evaluate(() => {
       return window.app!.canvas.ds.scale
@@ -161,6 +167,39 @@ export class CanvasHelper {
       x: screenPos.x + deltaX,
       y: screenPos.y + deltaY
     })
+  }
+
+  /**
+   * Pan the canvas back and forth in a sweep pattern using middle-mouse drag.
+   * Each step advances one animation frame, giving per-frame measurement
+   * granularity for performance tests.
+   */
+  async panSweep(options?: {
+    steps?: number
+    dx?: number
+    dy?: number
+  }): Promise<void> {
+    const { steps = 120, dx = 8, dy = 3 } = options ?? {}
+    const box = await this.canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+    await this.page.mouse.move(centerX, centerY)
+    await this.page.mouse.down({ button: 'middle' })
+
+    // Sweep forward
+    for (let i = 0; i < steps; i++) {
+      await this.page.mouse.move(centerX + i * dx, centerY + i * dy)
+      await this.nextFrame()
+    }
+    // Sweep back
+    for (let i = steps; i > 0; i--) {
+      await this.page.mouse.move(centerX + i * dx, centerY + i * dy)
+      await this.nextFrame()
+    }
+
+    await this.page.mouse.up({ button: 'middle' })
   }
 
   async disconnectEdge(): Promise<void> {

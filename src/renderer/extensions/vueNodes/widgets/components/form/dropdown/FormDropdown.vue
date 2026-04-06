@@ -4,6 +4,7 @@ import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
@@ -50,6 +51,7 @@ interface Props {
 }
 
 const { t } = useI18n()
+const overlayProps = useTransformCompatOverlayProps()
 
 const {
   placeholder,
@@ -90,11 +92,11 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
 const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
   default: () => new Set()
 })
+const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
-const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
@@ -105,13 +107,17 @@ const maxSelectable = computed(() => {
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
 const filteredItems = computedAsync(async (onCancel) => {
+  if (!isOpen.value) {
+    return items
+  }
+
   let cleanupFn: (() => void) | undefined
   onCancel(() => cleanupFn?.())
   const result = await searcher(debouncedSearchQuery.value, items, (cb) => {
     cleanupFn = cb
   })
   return result
-}, [])
+}, items)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
@@ -125,6 +131,10 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
   return sorter || defaultSorter.value
 })
 const sortedItems = computed(() => {
+  if (!isOpen.value) {
+    return items
+  }
+
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
@@ -135,14 +145,14 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 const toggleDropdown = (event: Event) => {
   if (disabled) return
   if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle(event, triggerRef.value)
+    popoverRef.value.toggle?.(event, triggerRef.value)
     isOpen.value = !isOpen.value
   }
 }
 
 const closeDropdown = () => {
   if (popoverRef.value) {
-    popoverRef.value.hide()
+    popoverRef.value.hide?.()
     isOpen.value = false
   }
 }
@@ -201,6 +211,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       ref="popoverRef"
       :dismissable="true"
       :close-on-escape="true"
+      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {

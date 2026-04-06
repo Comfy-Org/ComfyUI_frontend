@@ -133,21 +133,6 @@ describe('TransformPane', () => {
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
-        'pointerdown',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
-        'pointerup',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
-        'pointercancel',
-        expect.any(Function),
-        expect.any(Object)
-      )
     })
 
     it('should remove event listeners on unmount', async () => {
@@ -166,43 +151,10 @@ describe('TransformPane', () => {
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
-        'pointerdown',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
-        'pointerup',
-        expect.any(Function),
-        expect.any(Object)
-      )
-      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
-        'pointercancel',
-        expect.any(Function),
-        expect.any(Object)
-      )
     })
   })
 
   describe('interaction state management', () => {
-    it('should apply interacting class during interactions', async () => {
-      const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      // Simulate interaction start by checking internal state
-      // Note: This tests the CSS class application logic
-      const transformPane = wrapper.find('[data-testid="transform-pane"]')
-
-      // Initially should not have interacting class
-      expect(transformPane.classes()).not.toContain(
-        'transform-pane--interacting'
-      )
-    })
-
     it('should handle pointer events for node delegation', async () => {
       const mockCanvas = createMockLGraphCanvas()
       const wrapper = mount(TransformPane, {

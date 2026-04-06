@@ -9,11 +9,15 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { st } from '@/i18n'
+import { app } from '@/scripts/app'
+import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -36,12 +40,24 @@ import TabErrors from './errors/TabErrors.vue'
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
+const missingModelStore = useMissingModelStore()
+const missingNodesErrorStore = useMissingNodesErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds, activeMissingNodeGraphIds } =
-  storeToRefs(executionErrorStore)
+const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
+
+const activeMissingNodeGraphIds = computed<Set<string>>(() => {
+  if (!app.isGraphReady) return new Set()
+  return getActiveGraphNodeIds(
+    app.rootGraph,
+    canvasStore.currentGraph ?? app.rootGraph,
+    missingNodesErrorStore.missingAncestorExecutionIds
+  )
+})
+
+const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
 
 const { findParentGroup } = useGraphHierarchy()
 
@@ -118,12 +134,21 @@ const hasMissingNodeSelected = computed(
     )
 )
 
+const hasMissingModelSelected = computed(
+  () =>
+    hasSelection.value &&
+    selectedNodes.value.some((node) =>
+      activeMissingModelGraphIds.value.has(String(node.id))
+    )
+)
+
 const hasRelevantErrors = computed(() => {
   if (!hasSelection.value) return hasAnyError.value
   return (
     hasDirectNodeError.value ||
     hasContainerInternalError.value ||
-    hasMissingNodeSelected.value
+    hasMissingNodeSelected.value ||
+    hasMissingModelSelected.value
   )
 })
 
@@ -278,6 +303,7 @@ function handleTitleCancel() {
             v-if="isSingleSubgraphNode"
             variant="secondary"
             size="icon"
+            data-testid="subgraph-editor-toggle"
             :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(
@@ -314,7 +340,11 @@ function handleTitleCancel() {
             :value="tab.value"
           >
             {{ tab.label() }}
-            <i v-if="tab.icon" :class="cn(tab.icon, 'size-4')" />
+            <i
+              v-if="tab.icon"
+              aria-hidden="true"
+              :class="cn(tab.icon, 'size-4')"
+            />
           </Tab>
         </TabList>
       </nav>

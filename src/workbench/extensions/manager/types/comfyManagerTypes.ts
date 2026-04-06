@@ -19,7 +19,8 @@ export enum ManagerTab {
   UpdateAvailable = 'updateAvailable',
   Conflicting = 'conflicting',
   Workflow = 'workflow',
-  Missing = 'missing'
+  Missing = 'missing',
+  Unresolved = 'unresolved'
 }
 
 export type TaskLog = {

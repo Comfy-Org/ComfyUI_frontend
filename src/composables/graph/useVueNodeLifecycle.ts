@@ -9,7 +9,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
-import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
 
 function useVueNodeLifecycleIndividual() {
@@ -17,7 +16,7 @@ function useVueNodeLifecycleIndividual() {
   const layoutMutations = useLayoutMutations()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
-  const { startSync } = useLayoutSync()
+  const { startSync, stopSync } = useLayoutSync()
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -55,11 +54,13 @@ function useVueNodeLifecycleIndividual() {
       )
     }
 
-    // Initialize layout sync (one-way: Layout Store → LiteGraph)
+    // Start sync AFTER seeding so bootstrap operations don't trigger
+    // the Layout→LiteGraph writeback loop redundantly.
     startSync(canvasStore.canvas)
   }
 
   const disposeNodeManagerAndSyncs = () => {
+    stopSync()
     if (!nodeManager.value) return
 
     try {
@@ -76,9 +77,6 @@ function useVueNodeLifecycleIndividual() {
     (enabled) => {
       if (enabled) {
         initializeNodeManager()
-        ensureCorrectLayoutScale(
-          comfyApp.canvas?.graph?.extra.workflowRendererVersion
-        )
       }
     },
     { immediate: true }
@@ -87,26 +85,35 @@ function useVueNodeLifecycleIndividual() {
   whenever(
     () => !shouldRenderVueNodes.value,
     () => {
-      ensureCorrectLayoutScale(
-        comfyApp.canvas?.graph?.extra.workflowRendererVersion
-      )
       disposeNodeManagerAndSyncs()
+
+      // Force arrange() on all nodes so input.pos is computed before
+      // the first legacy drawConnections frame (which may run before
+      // drawNode on the foreground canvas).
+      const graph = comfyApp.canvas?.graph
+      if (!graph) {
+        comfyApp.canvas?.setDirty(true, true)
+        return
+      }
+      for (const node of graph._nodes) {
+        if (node.flags.collapsed) continue
+        try {
+          node.arrange()
+        } catch {
+          /* skip nodes not fully initialized */
+        }
+      }
+
       comfyApp.canvas?.setDirty(true, true)
     }
   )
 
-  // Consolidated watch for slot layout sync management
+  // Clear stale slot layouts when switching modes
   watch(
     () => shouldRenderVueNodes.value,
-    (vueMode, oldVueMode) => {
-      const modeChanged = vueMode !== oldVueMode
-
-      // Clear stale slot layouts when switching modes
-      if (modeChanged) {
-        layoutStore.clearAllSlotLayouts()
-      }
-    },
-    { immediate: true, flush: 'sync' }
+    () => {
+      layoutStore.clearAllSlotLayouts()
+    }
   )
 
   // Handle case where Vue nodes are enabled but graph starts empty

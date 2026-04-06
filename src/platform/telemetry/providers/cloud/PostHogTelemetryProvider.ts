@@ -1,13 +1,17 @@
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
+  DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -33,7 +37,8 @@ import type {
   TemplateMetadata,
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
-  WorkflowImportMetadata
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { getExecutionContext } from '../../utils/getExecutionContext'
@@ -98,13 +103,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
+            const serverConfig = remoteConfig.value?.posthog_config ?? {}
             this.posthog!.init(apiKey, {
               api_host:
-                window.__CONFIG__?.posthog_api_host || 'https://ph.comfy.org',
+                window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
+              ui_host: 'https://us.posthog.com',
               autocapture: false,
               capture_pageview: false,
               capture_pageleave: false,
-              persistence: 'localStorage+cookie'
+              persistence: 'localStorage+cookie',
+              debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              ...serverConfig
             })
             this.isInitialized = true
             this.flushEventQueue()
@@ -112,6 +121,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             useCurrentUser().onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
+                this.setSubscriptionProperties()
               }
             })
           })
@@ -204,6 +214,19 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  private setSubscriptionProperties(): void {
+    const { subscriptionTier } = useSubscription()
+    watch(
+      subscriptionTier,
+      (tier) => {
+        if (tier && this.posthog) {
+          this.posthog.people.set({ subscription_tier: tier })
+        }
+      },
+      { immediate: true }
+    )
+  }
+
   trackSignupOpened(): void {
     this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
   }
@@ -255,6 +278,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     trigger_source?: ExecutionTriggerSource
   }): void {
     const executionContext = getExecutionContext()
+    const { mode, isAppMode } = useAppMode()
 
     const runButtonProperties: RunButtonProperties = {
       subscribe_to_run: options?.subscribe_to_run || false,
@@ -267,7 +291,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       api_node_names: executionContext.api_node_names,
       has_toolkit_nodes: executionContext.has_toolkit_nodes,
       toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source
+      trigger_source: options?.trigger_source,
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value
     }
 
     this.lastTriggerSource = options?.trigger_source
@@ -342,8 +368,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.trackEvent(TelemetryEvents.DEFAULT_VIEW_SET, metadata)
+  }
+
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

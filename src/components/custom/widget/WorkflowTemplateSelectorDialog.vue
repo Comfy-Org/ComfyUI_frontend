@@ -14,10 +14,10 @@
     </template>
 
     <template #header>
-      <SearchBox
+      <SearchInput
         v-model="searchQuery"
         size="lg"
-        class="max-w-[384px]"
+        class="max-w-96 flex-1"
         autofocus
       />
     </template>
@@ -178,7 +178,7 @@
             v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
-            size="compact"
+            size="tall"
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
@@ -265,10 +265,11 @@
                 </template>
                 <template #bottom-right>
                   <template v-if="template.tags && template.tags.length > 0">
-                    <SquareChip
+                    <Tag
                       v-for="tag in template.tags"
                       :key="tag"
                       :label="tag"
+                      shape="overlay"
                     />
                   </template>
                 </template>
@@ -317,6 +318,20 @@
                         <i class="icon-[lucide--info] size-4" />
                       </Button>
                     </div>
+                  </div>
+                  <div class="flex">
+                    <span
+                      class="text-neutral flex items-center gap-1.5 text-xs font-bold"
+                    >
+                      <template v-if="isAppTemplate(template)">
+                        <i class="icon-[lucide--panels-top-left]" />
+                        {{ $t('builderToolbar.app', 'App') }}
+                      </template>
+                      <template v-else>
+                        <i class="icon-[lucide--workflow]" />
+                        {{ $t('builderToolbar.nodeGraph', 'Node Graph') }}
+                      </template>
+                    </span>
                   </div>
                 </div>
               </CardBottom>
@@ -388,8 +403,8 @@ import { useI18n } from 'vue-i18n'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
+import Tag from '@/components/chip/Tag.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -482,6 +497,8 @@ const {
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
+
+const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)

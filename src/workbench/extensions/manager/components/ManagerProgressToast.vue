@@ -135,6 +135,7 @@ whenever(() => !isExpanded.value, resetUserScrolling)
 
 function closeToast() {
   comfyManagerStore.resetTaskState()
+  isRestartCompleted.value = false
   isExpanded.value = false
 }
 
@@ -245,8 +246,10 @@ onBeforeUnmount(() => {
     </template>
 
     <template #footer="{ toggle }">
-      <div class="flex w-full items-center justify-between px-6 py-2 shadow-lg">
-        <div class="flex items-center text-base leading-none">
+      <div
+        class="flex w-full items-center justify-between gap-4 px-6 py-2 shadow-lg"
+      >
+        <div class="flex min-w-0 items-center text-base leading-none">
           <div class="flex items-center">
             <template v-if="isInProgress">
               <DotSpinner duration="1s" class="mr-2" />
@@ -262,7 +265,7 @@ onBeforeUnmount(() => {
             </template>
           </div>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex shrink-0 items-center gap-4">
           <span v-if="isInProgress" class="text-sm text-muted-foreground">
             {{ completedTasksCount }} {{ t('g.progressCountOf') }}
             {{ totalTasksCount }}

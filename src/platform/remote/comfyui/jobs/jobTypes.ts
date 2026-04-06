@@ -18,14 +18,16 @@ const zJobStatus = z.enum([
   'cancelled'
 ])
 
-const zPreviewOutput = z.object({
-  filename: z.string(),
-  subfolder: z.string(),
-  type: resultItemType,
-  nodeId: z.string(),
-  mediaType: z.string(),
-  display_name: z.string().optional()
-})
+const zPreviewOutput = z
+  .object({
+    filename: z.string().optional(),
+    subfolder: z.string().optional(),
+    type: resultItemType.optional(),
+    nodeId: z.string(),
+    mediaType: z.string(),
+    display_name: z.string().optional()
+  })
+  .passthrough()
 
 /**
  * Execution error from Jobs API.

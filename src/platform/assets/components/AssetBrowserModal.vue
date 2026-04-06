@@ -26,12 +26,12 @@
         class="flex w-full items-center justify-between gap-2"
         @click.self="focusedAsset = null"
       >
-        <SearchBox
+        <SearchInput
           v-model="searchQuery"
           :autofocus="true"
           size="lg"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
-          class="max-w-96"
+          class="max-w-lg flex-1"
         />
         <Button
           v-if="isUploadButtonEnabled"
@@ -88,7 +88,7 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

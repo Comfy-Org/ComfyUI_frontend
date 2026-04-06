@@ -7,11 +7,16 @@ import WidgetTextarea from './WidgetTextarea.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
+const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: vi.fn().mockReturnValue({
     copyToClipboard: mockCopyToClipboard
   })
+}))
+
+vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+  isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
 
 function createTextareaWidget(
@@ -275,5 +280,45 @@ describe('WidgetTextarea Value Binding', () => {
       expect(emitted).toBeDefined()
       expect(emitted?.[0]).toContain(formattedText)
     })
+  })
+})
+
+describe('WidgetTextarea contextmenu', () => {
+  it('prevents browser menu on first right-click (menu closed)', () => {
+    mockIsNodeOptionsOpen.mockReturnValue(false)
+    const widget = createTextareaWidget('test')
+    const wrapper = mountComponent(widget, 'test')
+    const textarea = wrapper.find('textarea')
+
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault')
+    const stopPropagationSpy = vi.spyOn(event, 'stopPropagation')
+
+    textarea.element.dispatchEvent(event)
+
+    expect(preventDefaultSpy).toHaveBeenCalled()
+    expect(stopPropagationSpy).not.toHaveBeenCalled()
+  })
+
+  it('allows browser menu on second right-click (menu open)', () => {
+    mockIsNodeOptionsOpen.mockReturnValue(true)
+    const widget = createTextareaWidget('test')
+    const wrapper = mountComponent(widget, 'test')
+    const textarea = wrapper.find('textarea')
+
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault')
+    const stopPropagationSpy = vi.spyOn(event, 'stopPropagation')
+
+    textarea.element.dispatchEvent(event)
+
+    expect(preventDefaultSpy).not.toHaveBeenCalled()
+    expect(stopPropagationSpy).toHaveBeenCalled()
   })
 })

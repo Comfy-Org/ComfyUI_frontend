@@ -176,6 +176,9 @@ export function useManagerDisplayPacks(
         return sortPacks(filterNotInstalled(base))
       }
 
+      case ManagerTab.Unresolved:
+        return []
+
       default:
         return searchResults.value
     }

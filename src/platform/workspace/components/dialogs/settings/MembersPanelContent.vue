@@ -32,7 +32,7 @@
           v-if="uiConfig.showSearch && !isSingleSeatPlan"
           class="flex items-start gap-2"
         >
-          <SearchBox
+          <SearchInput
             v-model="searchQuery"
             :placeholder="$t('g.search')"
             size="lg"
@@ -153,7 +153,7 @@
                       </span>
                       <span
                         v-if="uiConfig.showRoleBadge"
-                        class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                        class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                       >
                         {{ $t('workspaceSwitcher.roleOwner') }}
                       </span>
@@ -202,7 +202,7 @@
                       </span>
                       <span
                         v-if="uiConfig.showRoleBadge"
-                        class="rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                        class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                       >
                         {{ getRoleBadgeLabel(member.role) }}
                       </span>
@@ -367,7 +367,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

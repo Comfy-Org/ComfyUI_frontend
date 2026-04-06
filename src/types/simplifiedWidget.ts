@@ -38,6 +38,11 @@ export type SafeControlWidget = {
   update: (value: WidgetValue) => void
 }
 
+export interface LinkedUpstreamInfo {
+  nodeId: string
+  outputName?: string
+}
+
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
   O extends IWidgetOptions = IWidgetOptions
@@ -71,10 +76,17 @@ export interface SimplifiedWidget<
   /** Optional serialization method for custom value handling */
   serializeValue?: () => unknown
 
+  /** NodeLocatorId for the node that owns this widget's execution outputs */
+  nodeLocatorId?: string
+
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
 
+  tooltip?: string
+
   controlWidget?: SafeControlWidget
+
+  linkedUpstream?: LinkedUpstreamInfo
 }
 
 export interface SimplifiedControlWidget<

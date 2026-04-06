@@ -75,6 +75,49 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 import { useExtensionService } from './extensionService'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
+async function reencodeAsPngBlob(
+  blob: Blob,
+  width: number,
+  height: number
+): Promise<Blob> {
+  const canvas = $el('canvas', { width, height }) as HTMLCanvasElement
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Could not get canvas context')
+
+  let image: ImageBitmap | HTMLImageElement
+  if (typeof window.createImageBitmap === 'undefined') {
+    const img = new Image()
+    const loaded = new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('Image load failed'))
+    })
+    img.src = URL.createObjectURL(blob)
+    try {
+      await loaded
+    } finally {
+      URL.revokeObjectURL(img.src)
+    }
+    image = img
+  } else {
+    image = await createImageBitmap(blob)
+  }
+
+  try {
+    ctx.drawImage(image, 0, 0)
+  } finally {
+    if ('close' in image && typeof image.close === 'function') {
+      image.close()
+    }
+  }
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((result) => {
+      if (result) resolve(result)
+      else reject(new Error('PNG conversion failed'))
+    }, 'image/png')
+  })
+}
+
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
 }
@@ -216,14 +259,18 @@ export const useLitegraphService = () => {
    */
   function addNodeInput(node: LGraphNode, inputSpec: InputSpec) {
     addInputSocket(node, inputSpec)
-    addInputWidget(node, inputSpec)
+    addInputWidget(node, inputSpec, { dynamic: true })
   }
 
   /**
    * @internal Add a widget to the node. For both primitive types and custom widgets
    * (unless `socketless`), an input socket is also added.
    */
-  function addInputWidget(node: LGraphNode, inputSpec: InputSpec) {
+  function addInputWidget(
+    node: LGraphNode,
+    inputSpec: InputSpec,
+    { dynamic }: { dynamic?: boolean } = {}
+  ) {
     const widgetInputSpec = { ...inputSpec }
     if (inputSpec.widgetType) {
       widgetInputSpec.type = inputSpec.widgetType
@@ -254,6 +301,7 @@ export const useLitegraphService = () => {
         advanced: inputSpec.advanced,
         hidden: inputSpec.hidden
       })
+      if (dynamic) widget.tooltip = inputSpec.tooltip
     }
 
     if (!widget?.options?.socketless) {
@@ -600,58 +648,24 @@ export const useLitegraphService = () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
-            // @ts-expect-error fixme ts strict error
-            const writeImage = async (blob) => {
-              await navigator.clipboard.write([
-                new ClipboardItem({
-                  [blob.type]: blob
-                })
-              ])
-            }
-
             try {
               const data = await fetch(url)
               const blob = await data.blob()
               try {
-                await writeImage(blob)
+                await navigator.clipboard.write([
+                  new ClipboardItem({ [blob.type]: blob })
+                ])
               } catch (error) {
                 // Chrome seems to only support PNG on write, convert and try again
                 if (blob.type !== 'image/png') {
-                  const canvas = $el('canvas', {
-                    width: img.naturalWidth,
-                    height: img.naturalHeight
-                  }) as HTMLCanvasElement
-                  const ctx = canvas.getContext('2d')
-                  // @ts-expect-error fixme ts strict error
-                  let image
-                  if (typeof window.createImageBitmap === 'undefined') {
-                    image = new Image()
-                    const p = new Promise((resolve, reject) => {
-                      // @ts-expect-error fixme ts strict error
-                      image.onload = resolve
-                      // @ts-expect-error fixme ts strict error
-                      image.onerror = reject
-                    }).finally(() => {
-                      // @ts-expect-error fixme ts strict error
-                      URL.revokeObjectURL(image.src)
-                    })
-                    image.src = URL.createObjectURL(blob)
-                    await p
-                  } else {
-                    image = await createImageBitmap(blob)
-                  }
-                  try {
-                    // @ts-expect-error fixme ts strict error
-                    ctx.drawImage(image, 0, 0)
-                    canvas.toBlob(writeImage, 'image/png')
-                  } finally {
-                    // @ts-expect-error fixme ts strict error
-                    if (typeof image.close === 'function') {
-                      // @ts-expect-error fixme ts strict error
-                      image.close()
-                    }
-                  }
-
+                  const pngBlob = await reencodeAsPngBlob(
+                    blob,
+                    img.naturalWidth,
+                    img.naturalHeight
+                  )
+                  await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': pngBlob })
+                  ])
                   return
                 }
                 throw error

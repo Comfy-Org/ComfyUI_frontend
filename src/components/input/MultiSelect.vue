@@ -1,203 +1,198 @@
 <template>
-  <!--
-    Note: Unlike SingleSelect, we don't need an explicit options prop because:
-    1. Our value template only shows a static label (not dynamic based on selection)
-    2. We display a count badge instead of actual selected labels
-    3. All PrimeVue props (including options) are passed via v-bind="$attrs"
-    option-label="name" is required because our option template directly accesses option.name
-    max-selected-labels="0" is required to show count badge instead of selected item labels
-  -->
-  <MultiSelect
+  <ComboboxRoot
     v-model="selectedItems"
-    v-bind="{ ...$attrs, options: filteredOptions }"
-    option-label="name"
-    unstyled
-    :max-selected-labels="0"
-    :pt="{
-      root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
-        class: cn(
-          'relative inline-flex h-10 cursor-pointer select-none',
-          'rounded-lg bg-secondary-background text-base-foreground',
-          'transition-all duration-200 ease-in-out',
-          'border-[2.5px] border-solid',
-          selectedCount > 0
-            ? 'border-node-component-border'
-            : 'border-transparent',
-          'focus-within:border-node-component-border',
-          { 'cursor-default opacity-60': props.disabled }
-        )
-      }),
-      labelContainer: {
-        class:
-          'flex-1 flex items-center overflow-hidden whitespace-nowrap pl-4 py-2 '
-      },
-      label: {
-        class: 'p-0'
-      },
-      dropdown: {
-        class: 'flex shrink-0 cursor-pointer items-center justify-center px-3'
-      },
-      header: () => ({
-        class:
-          showSearchBox || showSelectedCount || showClearButton
-            ? 'block'
-            : 'hidden'
-      }),
-      // Overlay & list visuals unchanged
-      overlay: {
-        class: cn(
-          'mt-2 rounded-lg p-2',
-          'bg-base-background',
-          'text-base-foreground',
-          'border border-solid border-border-default'
-        )
-      },
-      listContainer: () => ({
-        style: { maxHeight: `min(${listMaxHeight}, 50vh)` },
-        class: 'scrollbar-custom'
-      }),
-      list: {
-        class: 'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
-      },
-      // Option row hover and focus tone
-      option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
-        class: cn(
-          'flex h-10 cursor-pointer items-center gap-2 rounded-lg px-2',
-          'hover:bg-secondary-background-hover',
-          // Add focus/highlight state for keyboard navigation
-          context?.focused &&
-            'bg-secondary-background-selected hover:bg-secondary-background-selected'
-        )
-      }),
-      // Hide built-in checkboxes entirely via PT (no :deep)
-      pcHeaderCheckbox: {
-        root: { class: 'hidden' },
-        style: { display: 'none' }
-      },
-      pcOptionCheckbox: {
-        root: { class: 'hidden' },
-        style: { display: 'none' }
-      },
-      emptyMessage: {
-        class: 'px-3 pb-4 text-sm text-muted-foreground'
-      }
-    }"
-    :aria-label="label || t('g.multiSelectDropdown')"
-    role="combobox"
-    :aria-expanded="false"
-    aria-haspopup="listbox"
-    :tabindex="0"
+    v-model:open="isOpen"
+    multiple
+    by="value"
+    :disabled
+    ignore-filter
+    :reset-search-term-on-select="false"
   >
-    <template
-      v-if="showSearchBox || showSelectedCount || showClearButton"
-      #header
-    >
-      <div class="flex flex-col px-2 pt-2 pb-0">
-        <SearchBox
-          v-if="showSearchBox"
-          v-model="searchQuery"
-          :class="showSelectedCount || showClearButton ? 'mb-2' : ''"
-          :show-order="true"
-          :show-border="true"
-          :place-holder="searchPlaceholder"
-        />
-        <div
-          v-if="showSelectedCount || showClearButton"
-          class="mt-2 flex items-center justify-between"
-        >
-          <span
-            v-if="showSelectedCount"
-            class="px-1 text-sm text-base-foreground"
-          >
-            {{
-              selectedCount > 0
-                ? $t('g.itemsSelected', { selectedCount })
-                : $t('g.itemSelected', { selectedCount })
-            }}
-          </span>
-          <Button
-            v-if="showClearButton"
-            variant="textonly"
-            size="md"
-            @click.stop="selectedItems = []"
-          >
-            {{ $t('g.clearAll') }}
-          </Button>
-        </div>
-        <div class="my-4 h-px bg-border-default"></div>
-      </div>
-    </template>
-
-    <!-- Trigger value (keep text scale identical) -->
-    <template #value>
-      <span class="text-sm">
-        {{ label }}
-      </span>
-      <span
-        v-if="selectedCount > 0"
-        class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-primary-background text-xs font-semibold text-base-foreground"
-      >
-        {{ selectedCount }}
-      </span>
-    </template>
-
-    <!-- Chevron size identical to current -->
-    <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
-    </template>
-
-    <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
-    <template #option="slotProps">
-      <div
-        role="button"
-        class="flex cursor-pointer items-center gap-2"
-        :style="popoverStyle"
+    <ComboboxAnchor as-child>
+      <ComboboxTrigger
+        v-bind="$attrs"
+        :aria-label="label || t('g.multiSelectDropdown')"
+        :class="
+          cn(
+            selectTriggerVariants({
+              size,
+              border: selectedCount > 0 ? 'active' : 'none'
+            })
+          )
+        "
       >
         <div
-          class="flex size-4 shrink-0 items-center justify-center rounded-sm p-0.5 transition-all duration-200"
           :class="
-            slotProps.selected
-              ? 'bg-primary-background'
-              : 'bg-secondary-background'
+            cn(
+              'flex flex-1 items-center overflow-hidden py-2 whitespace-nowrap',
+              size === 'md' ? 'pl-3' : 'pl-4'
+            )
           "
         >
-          <i
-            v-if="slotProps.selected"
-            class="text-bold icon-[lucide--check] text-xs text-base-foreground"
-          />
+          <span :class="size === 'md' ? 'text-xs' : 'text-sm'">
+            {{ label }}
+          </span>
+          <span
+            v-if="selectedCount > 0"
+            class="pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 items-center justify-center rounded-full bg-base-foreground text-xs font-semibold text-base-background"
+          >
+            {{ selectedCount }}
+          </span>
         </div>
-        <span>
-          {{ slotProps.option.name }}
-        </span>
-      </div>
-    </template>
-  </MultiSelect>
+        <div :class="selectDropdownClass">
+          <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+        </div>
+      </ComboboxTrigger>
+    </ComboboxAnchor>
+
+    <ComboboxPortal>
+      <ComboboxContent
+        position="popper"
+        :side-offset="8"
+        align="start"
+        :style="popoverStyle"
+        :class="selectContentClass"
+        @keydown="onContentKeydown"
+        @focus-outside="preventFocusDismiss"
+      >
+        <div
+          v-if="showSearchBox || showSelectedCount || showClearButton"
+          class="flex flex-col px-2 pt-2 pb-0"
+        >
+          <div
+            v-if="showSearchBox"
+            :class="
+              cn(
+                'flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5',
+                (showSelectedCount || showClearButton) && 'mb-2'
+              )
+            "
+          >
+            <i
+              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+            />
+            <ComboboxInput
+              v-model="searchQuery"
+              :placeholder="searchPlaceholder ?? t('g.search')"
+              class="w-full border-none bg-transparent text-sm outline-none"
+            />
+          </div>
+          <div
+            v-if="showSelectedCount || showClearButton"
+            class="mt-2 flex items-center justify-between"
+          >
+            <span
+              v-if="showSelectedCount"
+              class="px-1 text-sm text-base-foreground"
+            >
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
+            </span>
+            <Button
+              v-if="showClearButton"
+              variant="textonly"
+              size="md"
+              @click.stop="selectedItems = []"
+            >
+              {{ $t('g.clearAll') }}
+            </Button>
+          </div>
+          <div class="my-4 h-px bg-border-default" />
+        </div>
+
+        <ComboboxViewport
+          :class="
+            cn(
+              'flex flex-col gap-0 p-0 text-sm',
+              'scrollbar-custom overflow-y-auto',
+              'min-w-(--reka-combobox-trigger-width)'
+            )
+          "
+          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+        >
+          <ComboboxItem
+            v-for="opt in filteredOptions"
+            :key="opt.value"
+            :value="opt"
+            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
+          >
+            <div
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+            >
+              <ComboboxItemIndicator>
+                <i
+                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                />
+              </ComboboxItemIndicator>
+            </div>
+            <span>{{ opt.name }}</span>
+          </ComboboxItem>
+          <ComboboxEmpty :class="selectEmptyMessageClass">
+            {{ $t('g.noResultsFound') }}
+          </ComboboxEmpty>
+        </ComboboxViewport>
+      </ComboboxContent>
+    </ComboboxPortal>
+  </ComboboxRoot>
 </template>
 
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
-import MultiSelect from 'primevue/multiselect'
-import { computed, useAttrs } from 'vue'
+import type { FocusOutsideEvent } from 'reka-ui'
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxTrigger,
+  ComboboxViewport
+} from 'reka-ui'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/common/SearchBox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
+import {
+  selectContentClass,
+  selectDropdownClass,
+  selectEmptyMessageClass,
+  selectItemVariants,
+  selectTriggerVariants,
+  stopEscapeToDocument
+} from './select.variants'
 import type { SelectOption } from './types'
-
-type Option = SelectOption
 
 defineOptions({
   inheritAttrs: false
 })
 
-interface Props {
+const {
+  label,
+  options = [],
+  size = 'lg',
+  disabled = false,
+  showSearchBox = false,
+  showSelectedCount = false,
+  showClearButton = false,
+  searchPlaceholder,
+  listMaxHeight = '28rem',
+  popoverMinWidth,
+  popoverMaxWidth
+} = defineProps<{
   /** Input label shown on the trigger button */
   label?: string
+  /** Available options */
+  options?: SelectOption[]
+  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
+  size?: 'lg' | 'md'
+  /** Disable the select */
+  disabled?: boolean
   /** Show search box in the panel header */
   showSearchBox?: boolean
   /** Show selected count text in the panel header */
@@ -212,37 +207,34 @@ interface Props {
   popoverMinWidth?: string
   /** Maximum width of the popover (default: auto) */
   popoverMaxWidth?: string
-  // Note: options prop is intentionally omitted.
-  // It's passed via $attrs to maximize PrimeVue API compatibility
-}
-const {
-  label,
-  showSearchBox = false,
-  showSelectedCount = false,
-  showClearButton = false,
-  searchPlaceholder = 'Search...',
-  listMaxHeight = '28rem',
-  popoverMinWidth,
-  popoverMaxWidth
-} = defineProps<Props>()
+}>()
 
-const selectedItems = defineModel<Option[]>({
+const selectedItems = defineModel<SelectOption[]>({
   required: true
 })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const { t } = useI18n()
+const isOpen = ref(false)
 const selectedCount = computed(() => selectedItems.value.length)
+
+function onContentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    stopEscapeToDocument(event)
+    isOpen.value = false
+  }
+}
+
+function preventFocusDismiss(event: FocusOutsideEvent) {
+  event.preventDefault()
+}
 
 const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,
   maxWidth: popoverMaxWidth
 })
-const attrs = useAttrs()
-const originalOptions = computed(() => (attrs.options as Option[]) || [])
 
-// Use VueUse's useFuse for better reactivity and performance
-const fuseOptions: UseFuseOptions<Option> = {
+const fuseOptions: UseFuseOptions<SelectOption> = {
   fuseOptions: {
     keys: ['name', 'value'],
     threshold: 0.3,
@@ -251,23 +243,20 @@ const fuseOptions: UseFuseOptions<Option> = {
   matchAllWhenSearchEmpty: true
 }
 
-const { results } = useFuse(searchQuery, originalOptions, fuseOptions)
+const { results } = useFuse(searchQuery, () => options, fuseOptions)
 
-// Filter options based on search, but always include selected items
 const filteredOptions = computed(() => {
   if (!searchQuery.value || searchQuery.value.trim() === '') {
-    return originalOptions.value
+    return options
   }
 
-  // results.value already contains the search results from useFuse
   const searchResults = results.value.map(
-    (result: { item: Option }) => result.item
+    (result: { item: SelectOption }) => result.item
   )
 
-  // Include selected items that aren't in search results
   const selectedButNotInResults = selectedItems.value.filter(
     (item) =>
-      !searchResults.some((result: Option) => result.value === item.value)
+      !searchResults.some((result: SelectOption) => result.value === item.value)
   )
 
   return [...selectedButNotInResults, ...searchResults]

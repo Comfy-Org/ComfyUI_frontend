@@ -1,23 +1,11 @@
 <template>
   <div class="flex h-full flex-col">
-    <div v-if="assetItems.length" class="px-2">
-      <div
-        class="flex items-center p-2 font-inter text-sm/normal font-normal text-muted-foreground"
-      >
-        {{
-          t(
-            assetType === 'input'
-              ? 'sideToolbar.importedAssetsHeader'
-              : 'sideToolbar.generatedAssetsHeader'
-          )
-        }}
-      </div>
-    </div>
-
     <VirtualGrid
       class="flex-1"
       :items="assetItems"
       :grid-style="listGridStyle"
+      :max-columns="1"
+      :default-item-height="48"
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
@@ -88,6 +76,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -103,15 +92,13 @@ const {
   selectableAssets,
   isSelected,
   isStackExpanded,
-  toggleStack,
-  assetType = 'output'
+  toggleStack
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
-  assetType?: 'input' | 'output'
 }>()
 
 const assetsStore = useAssetsStore()
@@ -131,10 +118,6 @@ const listGridStyle = {
   gridTemplateColumns: 'minmax(0, 1fr)',
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
-
-function getAssetDisplayName(asset: AssetItem): string {
-  return asset.display_name || asset.name
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {

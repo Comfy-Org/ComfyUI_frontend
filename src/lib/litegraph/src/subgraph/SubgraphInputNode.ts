@@ -15,6 +15,7 @@ import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
+import { nextUniqueName } from '@/lib/litegraph/src/strings'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
@@ -130,8 +131,10 @@ export class SubgraphInputNode
     if (slot === -1) {
       // This indicates a connection is being made from the "Empty" slot.
       // We need to create a new, concrete input on the subgraph that matches the target.
+      const existingNames = this.subgraph.inputs.map((input) => input.name)
+      const uniqueName = nextUniqueName(inputSlot.slot.name, existingNames)
       const newSubgraphInput = this.subgraph.addInput(
-        inputSlot.slot.name,
+        uniqueName,
         String(inputSlot.slot.type ?? '')
       )
       const newSlotIndex = this.slots.indexOf(newSubgraphInput)
@@ -206,6 +209,14 @@ export class SubgraphInputNode
         link.id
       )
     }
+
+    if (subgraphInput.linkIds.length === 0) {
+      subgraphInput._widget = undefined
+    }
+    subgraphInput.events.dispatch('input-disconnected', {
+      input: subgraphInput
+    })
+
     const slotIndex = node.inputs.findIndex((inp) => inp === input)
     if (slotIndex !== -1) {
       node.onConnectionsChange?.(

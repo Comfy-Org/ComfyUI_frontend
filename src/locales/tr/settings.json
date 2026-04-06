@@ -25,6 +25,10 @@
     },
     "tooltip": "Özel: Sistem başlık çubuğunu ComfyUI'nin Üst menüsüyle değiştirin"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "Animasyonları devre dışı bırak",
+    "tooltip": "Çoğu CSS animasyonunu ve geçişini kapatır. Görüntüleme GPU'su aynı zamanda üretim için kullanıldığında çıkarımı hızlandırır."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "Tuval arka plan resmi",
     "tooltip": "Tuval arka planı için resim URL'si. Çıktılar panelindeki bir resme sağ tıklayıp \"Arka Plan Olarak Ayarla\"yı seçerek kullanabilir veya yükleme düğmesini kullanarak kendi resminizi yükleyebilirsiniz."
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "Ondalık sayı widget yuvarlama ondalık basamakları [0 = otomatik].",
     "tooltip": "(sayfanın yeniden yüklenmesini gerektirir)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "Otomatik kaydırma hızı",
+    "tooltip": "Tuval kenarına sürükleyerek otomatik kaydırma sırasında maksimum hız. Otomatik kaydırmayı devre dışı bırakmak için 0 olarak ayarlayın."
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "Sol alt köşede tuval bilgilerini göster (fps, vb.)"
@@ -454,9 +462,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "Eksik model uyarısını göster"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Eksik düğüm uyarısını göster"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"
   },
@@ -480,6 +485,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Yakınlaştırıldığında düğüm birleşik widget menülerini (listeleri) ölçeklendir"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "Grup çocuklarını tıklayınca seç",
+    "tooltip": "Etkinleştirildiğinde, bir gruba tıklamak içindeki tüm düğüm ve öğeleri seçer"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "Yeni düğümleri her zaman küçült",

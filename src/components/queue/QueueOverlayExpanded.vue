@@ -20,7 +20,7 @@
       @update:selected-sort-mode="$emit('update:selectedSortMode', $event)"
     />
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 flex-1">
       <JobAssetsList
         :displayed-job-groups="displayedJobGroups"
         @cancel-item="onCancelItemEvent"

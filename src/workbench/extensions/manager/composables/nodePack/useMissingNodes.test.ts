@@ -94,6 +94,7 @@ describe('useMissingNodes', () => {
 
     mockUseWorkflowPacks.mockReturnValue({
       workflowPacks: ref([]),
+      unresolvedNodeNames: ref([]),
       isLoading: ref(false),
       error: ref(null),
       startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -119,6 +120,7 @@ describe('useMissingNodes', () => {
     it('filters out installed packs correctly', () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref(mockWorkflowPacks),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -140,6 +142,7 @@ describe('useMissingNodes', () => {
     it('returns empty array when all packs are installed', () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref(mockWorkflowPacks),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -158,6 +161,7 @@ describe('useMissingNodes', () => {
     it('returns all packs when none are installed', () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref(mockWorkflowPacks),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -191,6 +195,7 @@ describe('useMissingNodes', () => {
     it('fetches even when packs already exist (watch always fires with immediate:true)', async () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref(mockWorkflowPacks),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -206,6 +211,7 @@ describe('useMissingNodes', () => {
     it('fetches even when already loading (watch fires regardless of loading state)', async () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref([]),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(true),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -223,6 +229,7 @@ describe('useMissingNodes', () => {
     it('exposes loading state from useWorkflowPacks', () => {
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref([]),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(true),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -239,6 +246,7 @@ describe('useMissingNodes', () => {
       const testError = 'Failed to fetch workflow packs'
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: ref([]),
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(testError),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -257,6 +265,7 @@ describe('useMissingNodes', () => {
       const workflowPacksRef = ref<WorkflowPack[]>([])
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: workflowPacksRef,
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -283,6 +292,7 @@ describe('useMissingNodes', () => {
       const workflowPacksRef = ref(mockWorkflowPacks)
       mockUseWorkflowPacks.mockReturnValue({
         workflowPacks: workflowPacksRef,
+        unresolvedNodeNames: ref([]),
         isLoading: ref(false),
         error: ref(null),
         startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
@@ -303,6 +313,68 @@ describe('useMissingNodes', () => {
       // Should clear missing nodes
       expect(missingNodePacks.value).toHaveLength(0)
       expect(hasMissingNodes.value).toBe(false)
+    })
+  })
+
+  describe('unresolved nodes', () => {
+    it('reports hasMissingNodes when unresolvedNodeNames is non-empty', () => {
+      mockUseWorkflowPacks.mockReturnValue({
+        workflowPacks: ref([]),
+        unresolvedNodeNames: ref(['UnknownNode1', 'UnknownNode2']),
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
+        isReady: ref(true),
+        filterWorkflowPack: vi.fn()
+      })
+
+      const { hasMissingNodes, unresolvedNodeNames } = useMissingNodes()
+
+      expect(hasMissingNodes.value).toBe(true)
+      expect(unresolvedNodeNames.value).toEqual([
+        'UnknownNode1',
+        'UnknownNode2'
+      ])
+    })
+
+    it('does not report hasMissingNodes when unresolvedNodeNames is empty', () => {
+      mockUseWorkflowPacks.mockReturnValue({
+        workflowPacks: ref([]),
+        unresolvedNodeNames: ref([]),
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
+        isReady: ref(true),
+        filterWorkflowPack: vi.fn()
+      })
+
+      const { hasMissingNodes } = useMissingNodes()
+
+      expect(hasMissingNodes.value).toBe(false)
+    })
+
+    it('updates reactively when unresolvedNodeNames changes', async () => {
+      const unresolvedRef = ref<string[]>([])
+      mockUseWorkflowPacks.mockReturnValue({
+        workflowPacks: ref([]),
+        unresolvedNodeNames: unresolvedRef,
+        isLoading: ref(false),
+        error: ref(null),
+        startFetchWorkflowPacks: mockStartFetchWorkflowPacks,
+        isReady: ref(true),
+        filterWorkflowPack: vi.fn()
+      })
+
+      const { hasMissingNodes, unresolvedNodeNames } = useMissingNodes()
+
+      expect(hasMissingNodes.value).toBe(false)
+      expect(unresolvedNodeNames.value).toEqual([])
+
+      unresolvedRef.value = ['NewMissingNode']
+      await nextTick()
+
+      expect(hasMissingNodes.value).toBe(true)
+      expect(unresolvedNodeNames.value).toEqual(['NewMissingNode'])
     })
   })
 

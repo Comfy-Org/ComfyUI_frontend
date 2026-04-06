@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Преобразование числа",
+    "inputs": {
+      "value": {
+        "name": "значение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Переключатель",
     "inputs": {
@@ -1736,6 +1752,10 @@
         "name": "замкнутый_цикл",
         "tooltip": "Замыкать ли цикл контекстного окна; применимо только к циклическим расписаниям."
       },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Список индексов латентных пространств, которые нужно сохранить в тензорах кондиционирования для каждого окна. Например, если указать '0', для каждого окна будет использоваться исходное стартовое изображение."
+      },
       "context_length": {
         "name": "длина_контекста",
         "tooltip": "Длина контекстного окна."
@@ -1767,6 +1787,10 @@
       "model": {
         "name": "модель",
         "tooltip": "Модель, к которой применяются контекстные окна во время сэмплирования."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Разделять ли несколько кондиционирований (созданных с помощью ConditionCombine) по каждому окну на основе индекса региона."
       }
     },
     "outputs": {
@@ -2166,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Растягивать ли обрезку до нужного размера или добавлять чёрные поля для сохранения соотношения сторон."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Высота, до которой изменяется каждый обрезанный фрагмент."
@@ -2206,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Редактор кривых",
+    "inputs": {
+      "curve": {
+        "name": "кривая"
+      },
+      "histogram": {
+        "name": "гистограмма"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "кривая",
         "tooltip": null
       }
     }
@@ -2268,6 +2313,23 @@
     "display_name": "Отключить шум",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Нарисовать BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3207,6 +3269,21 @@
       }
     }
   },
+  "FluxKVCache": {
+    "description": "Включает оптимизацию KV Cache для эталонных изображений в моделях семейства Flux.",
+    "display_name": "Flux KV Cache",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, для которой будет использоваться KV Cache."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Патченная модель с включённым KV Cache."
+      }
+    }
+  },
   "FluxKontextImageScale": {
     "description": "Этот узел изменяет размер изображения до более оптимального для flux kontext.",
     "display_name": "FluxKontextImageScale",
@@ -3589,6 +3666,14 @@
     "description": "Применяет фрагментные шейдеры GLSL ES к изображениям. u_resolution (vec2) всегда доступен.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "булевы",
+        "tooltip": "Булевы значения доступны как u_bool0-9 (bool) в коде шейдера"
+      },
+      "curves": {
+        "name": "кривые",
+        "tooltip": "Кривые доступны как u_curve0-3 (sampler2D, 1D LUT) в коде шейдера. Используйте sample с texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Числа с плавающей точкой доступны как u_float0-4 в коде шейдера"
@@ -3800,6 +3885,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Первое изображение из процесса мышления модели. Доступно только при уровне мышления HIGH и модальности IMAGE+TEXT."
       }
     }
   },
@@ -4065,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Расширьте существующее видео с плавным продолжением на основе текстового запроса.",
+    "display_name": "Grok Video Extend",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для расширения видео."
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовое описание того, что должно произойти дальше в видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Исходное видео для расширения. Формат MP4, 2-15 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Генерировать видео по запросу или изображению",
     "display_name": "Grok Video",
@@ -4097,6 +4219,41 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "description": "Генерируйте видео, используя референсные изображения в качестве стиля и содержания.",
+    "display_name": "Grok Reference-to-Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение сторон"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
       }
     },
     "outputs": {
@@ -6717,6 +6874,54 @@
     "outputs": {
       "0": {
         "name": "выходное изображение",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Установите эталонное аудио для переноса идентичности диктора с помощью ID-LoRA. Кодирует эталонный аудиоклип в conditioning и при необходимости вносит изменения в модель с помощью identity guidance (дополнительный прямой проход без эталона, усиливающий эффект идентичности диктора).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE для кодирования."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Конец диапазона сигмы, в котором активна identity guidance."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Сила identity guidance. Выполняет дополнительный прямой проход без эталона на каждом шаге для усиления идентичности диктора. Установите 0 для отключения (без дополнительного прохода)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Эталонный аудиоклип, идентичность диктора которого будет перенесена. Рекомендуется ~5 секунд (длительность обучения). Более короткие или длинные клипы могут ухудшить перенос голосовой идентичности."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Начало диапазона сигмы, в котором активна identity guidance."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11291,6 +11496,35 @@
       }
     }
   },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Необязательное базовое изображение для рисования поверх"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Объединение пар кондиционирования",
     "inputs": {
@@ -11905,6 +12139,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "description": "Векторизация растрового изображения в SVG с помощью Quiver AI.",
+    "display_name": "Quiver Image to SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Автоматически обрезать по доминирующему объекту."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Входное изображение для векторизации."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для векторизации SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Генерация SVG по текстовому запросу с помощью Quiver AI.",
+    "display_name": "Quiver Text to SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Дополнительные рекомендации по стилю или форматированию."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого SVG-результата."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "До 4 референсных изображений для направления генерации."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -11925,6 +12244,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Обнаружение",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Фильтровать обнаружения по классу. Установите 'all', чтобы отключить фильтрацию."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Максимальное количество обнаружений на изображение. В порядке убывания оценки уверенности."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },
@@ -12852,6 +13199,133 @@
       "1": {
         "name": "height",
         "tooltip": "Вычисленная высота в пикселях (кратна 8)."
+      }
+    }
+  },
+  "ReveImageCreateNode": {
+    "description": "Генерируйте изображения по текстовым описаниям с помощью Reve.",
+    "display_name": "Reve Создание изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. Максимум 2560 символов."
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageEditNode": {
+    "description": "Редактируйте изображения с помощью естественно-языковых инструкций в Reve.",
+    "display_name": "Reve Редактирование изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "edit_instruction": {
+        "name": "edit_instruction",
+        "tooltip": "Текстовое описание того, как редактировать изображение. Максимум 2560 символов."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение для редактирования."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для редактирования."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ReveImageRemixNode": {
+    "description": "Комбинируйте референсные изображения с текстовыми подсказками для создания новых изображений с помощью Reve.",
+    "display_name": "Reve Ремикс изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Версия модели для ремикса."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_test_time_scaling": {
+        "name": "test_time_scaling"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. Можно использовать XML-теги img для ссылки на определённые изображения по индексу, например <img>0</img>, <img>1</img> и т.д."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "remove_background": {
+        "name": "remove_background",
+        "tooltip": "Удалить фон с сгенерированного изображения. Может потребоваться дополнительная оплата."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; результаты не являются детерминированными независимо от seed."
+      },
+      "upscale": {
+        "name": "upscale",
+        "tooltip": "Увеличить разрешение сгенерированного изображения. Может потребоваться дополнительная оплата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -15080,6 +15554,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "После загрузки 3D-модели выполните перерисовку текстуры 3D-модели.",
+    "display_name": "Hunyuan3D: Редактирование 3D-текстуры",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель в формате FBX. Модель должна содержать менее 100000 полигонов."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Опишите редактирование текстуры. Поддерживается до 1024 символов UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет необходимостью повторного запуска узла; результат всегда недетерминированный, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
     "inputs": {
@@ -15128,6 +15637,22 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
       }
     }
   },
@@ -15154,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
         "tooltip": null
       }
     }
@@ -15228,6 +15757,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -15441,6 +15974,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "штраф за повторение"
       },
@@ -15455,6 +15991,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "мышление",
+        "tooltip": "Работать в режиме мышления, если модель это поддерживает."
       }
     },
     "outputs": {
@@ -15485,6 +16025,9 @@
       "sampling_mode_min_p": {
         "name": "минимальное p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "штраф за присутствие"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "штраф за повторение"
       },
@@ -15499,6 +16042,10 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "мышление",
+        "tooltip": "Работать в режиме мышления, если модель это поддерживает."
       }
     },
     "outputs": {
@@ -15767,6 +16314,10 @@
       "positive": {
         "name": "позитивное условие",
         "tooltip": "Позитивное условие, используемое для обучения."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "При использовании training_dtype 'none' и обучении на квантизированной модели, при включении выполняется обратное распространение с квантизированным матричным умножением."
       },
       "rank": {
         "name": "ранг",
@@ -17392,6 +17943,241 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "Создайте видео из изображения первого кадра с возможностью добавить изображение последнего кадра и аудио.",
+    "display_name": "Wan 2.7 Изображение в Видео",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для управления генерацией видео (например, синхронизация губ, движение в ритм музыки). Длительность: 2–30 сек. Если не указано, модель автоматически сгенерирует подходящую фоновую музыку или звуковые эффекты."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Изображение первого кадра. Соотношение сторон результата определяется этим изображением."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Изображение последнего кадра. Модель создаёт видео с переходом от первого к последнему кадру."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшить ли промпт с помощью AI."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Создайте видео с участием человека или объекта на основе референсных материалов. Поддерживает выступления одного персонажа и взаимодействие нескольких персонажей.",
+    "display_name": "Wan 2.7 Референс в Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Генерирует видео на основе текстового запроса с использованием модели Wan 2.7.",
+    "display_name": "Wan 2.7 Текст в видео",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для управления генерацией видео (например, синхронизация губ, движение в ритм музыки). Длительность: 3–30 сек. Если не указано, модель автоматически сгенерирует подходящую фоновую музыку или звуковые эффекты."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли запрос с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Продолжает видео с того места, где оно закончилось, с возможностью контроля последнего кадра.",
+    "display_name": "Wan 2.7 Продолжение видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "Входное видео для продолжения. Длительность: 2–10 сек. Соотношение сторон результата определяется этим видео."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Изображение последнего кадра. Продолжение будет переходить к этому кадру."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли запрос с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Редактируйте видео с помощью текстовых инструкций, референсных изображений или переноса стиля.",
+    "display_name": "Wan 2.7 Редактирование видео",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': модель решает, нужно ли перегенерировать аудио на основе запроса. 'origin': сохранить оригинальное аудио из входного видео."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для редактирования."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
       }
     },
     "outputs": {

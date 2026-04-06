@@ -4,18 +4,45 @@
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
-    <!-- Image Wrapper -->
+    <!-- Grid View -->
     <div
-      ref="imageWrapperEl"
-      class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-[5px] bg-transparent"
+      v-if="viewMode === 'grid'"
+      data-testid="image-grid"
+      class="group/panel relative grid w-full gap-1 overflow-hidden rounded-sm p-1"
+      :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
+    >
+      <button
+        v-for="(url, index) in imageUrls"
+        :key="index"
+        class="focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+        :aria-label="
+          $t('g.viewImageOfTotal', {
+            index: index + 1,
+            total: imageUrls.length
+          })
+        "
+        @pointerdown="trackPointerStart"
+        @click="handleGridThumbnailClick($event, index)"
+      >
+        <img
+          :src="url"
+          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+          draggable="false"
+          class="pointer-events-none size-full object-contain"
+        />
+      </button>
+    </div>
+
+    <!-- Gallery View (Image Wrapper) -->
+    <div
+      v-if="viewMode === 'gallery'"
+      ref="galleryPanelEl"
+      class="group/panel relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
       tabindex="0"
-      role="img"
+      role="region"
+      :aria-roledescription="$t('g.imageGallery')"
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
-      @mouseenter="handleMouseEnter"
-      @mouseleave="handleMouseLeave"
-      @focusin="handleFocusIn"
-      @focusout="handleFocusOut"
     >
       <!-- Error State -->
       <div
@@ -33,13 +60,15 @@
       </div>
       <!-- Loading State -->
       <div v-if="showLoader && !imageError" class="size-full">
-        <Skeleton border-radius="5px" width="100%" height="100%" />
+        <Skeleton class="size-full rounded-sm" />
       </div>
       <!-- Main Image -->
       <img
         v-if="!imageError"
+        data-testid="main-image"
         :src="currentImageUrl"
         :alt="imageAltText"
+        draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
@@ -47,8 +76,7 @@
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
-        v-if="isHovered || isFocused"
-        class="actions absolute top-2 right-2 flex gap-2.5"
+        class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
         <!-- Mask/Edit Button -->
         <button
@@ -71,21 +99,29 @@
           <i class="icon-[lucide--download] size-4" />
         </button>
 
-        <!-- Close Button -->
+        <!-- Back to Grid Button -->
         <button
+          v-if="hasMultipleImages"
           :class="actionButtonClass"
-          :title="$t('g.removeImage')"
-          :aria-label="$t('g.removeImage')"
-          @click="handleRemove"
+          :title="$t('g.viewGrid')"
+          :aria-label="$t('g.viewGrid')"
+          @click="viewMode = 'grid'"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--layout-grid] size-4" />
         </button>
       </div>
     </div>
 
-    <!-- Image Dimensions -->
-    <div class="pt-2 text-center text-xs text-base-foreground">
-      <span v-if="imageError" class="text-red-400">
+    <!-- Image Dimensions (gallery mode only) -->
+    <div
+      v-if="viewMode === 'gallery'"
+      class="pt-2 text-center text-xs text-base-foreground"
+    >
+      <span
+        v-if="imageError"
+        class="text-error"
+        data-testid="error-loading-image"
+      >
         {{ $t('g.errorLoadingImage') }}
       </span>
       <span v-else-if="showLoader" class="text-base-foreground">
@@ -95,11 +131,23 @@
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
     </div>
-    <!-- Multiple Images Navigation -->
+
+    <!-- Multiple Images Navigation (gallery mode only) -->
     <div
-      v-if="hasMultipleImages"
-      class="flex flex-wrap justify-center gap-1 pt-4"
+      v-if="viewMode === 'gallery' && hasMultipleImages"
+      class="flex flex-wrap items-center justify-center gap-1 pt-4"
     >
+      <!-- Back to Grid button -->
+      <button
+        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
+        :title="$t('g.viewGrid')"
+        :aria-label="$t('g.viewGrid')"
+        @click="viewMode = 'grid'"
+      >
+        <i class="icon-[lucide--layout-grid] size-3.5" />
+      </button>
+
+      <!-- Navigation Dots -->
       <button
         v-for="(_, index) in imageUrls"
         :key="index"
@@ -119,15 +167,16 @@
 
 <script setup lang="ts">
 import { useTimeoutFn } from '@vueuse/core'
-import { useToast } from 'primevue'
-import Skeleton from 'primevue/skeleton'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { app } from '@/scripts/app'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { resolveNode } from '@/utils/litegraphUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -136,24 +185,28 @@ interface ImagePreviewProps {
   readonly nodeId?: string
 }
 
-const props = defineProps<ImagePreviewProps>()
+const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const toastStore = useToastStore()
 
 const actionButtonClass =
-  'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
+  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
 
-// Component state
+type ViewMode = 'gallery' | 'grid'
+
+function defaultViewMode(urls: readonly string[]): ViewMode {
+  return urls.length > 1 ? 'grid' : 'gallery'
+}
+
 const currentIndex = ref(0)
-const isHovered = ref(false)
-const isFocused = ref(false)
+const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
+const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
-
-const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -164,14 +217,23 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
-// Computed values
-const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
-const hasMultipleImages = computed(() => props.imageUrls.length > 1)
-const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
+const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const hasMultipleImages = computed(() => imageUrls.length > 1)
+const imageAltText = computed(() =>
+  t('g.viewImageOfTotal', {
+    index: currentIndex.value + 1,
+    total: imageUrls.length
+  })
+)
+const gridCols = computed(() => {
+  const count = imageUrls.length
+  if (count <= 4) return 2
+  if (count <= 9) return 3
+  return 4
+})
 
-// Watch for URL changes and reset state
 watch(
-  () => props.imageUrls,
+  () => imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -189,14 +251,14 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
 
+    viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
 )
 
-// Event handlers
-const handleImageLoad = (event: Event) => {
+function handleImageLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   stopDelayedLoader()
@@ -206,107 +268,101 @@ const handleImageLoad = (event: Event) => {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
-  if (props.nodeId) {
-    nodeOutputStore.syncLegacyNodeImgs(props.nodeId, img, currentIndex.value)
+  if (nodeId) {
+    nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
 }
 
-const handleImageError = () => {
+function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
   actualDimensions.value = null
 }
 
-const handleEditMask = () => {
-  if (!props.nodeId) return
-  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+function handleEditMask() {
+  if (!nodeId) return
+  const node = resolveNode(Number(nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
 
-const handleDownload = () => {
+function handleDownload() {
   try {
     downloadFile(currentImageUrl.value)
-  } catch (error) {
-    useToast().add({
+  } catch {
+    toastStore.add({
       severity: 'error',
-      summary: 'Error',
-      detail: t('g.failedToDownloadImage'),
-      group: 'image-preview'
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
     })
   }
 }
 
-const handleRemove = () => {
-  if (!props.nodeId) return
-  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
-  nodeOutputStore.removeNodeOutputs(props.nodeId)
-  if (node) {
-    node.imgs = undefined
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      imageWidget.value = ''
-    }
-  }
-}
-
-const setCurrentIndex = (index: number) => {
+function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < props.imageUrls.length) {
-    const urlChanged = props.imageUrls[index] !== currentImageUrl.value
+  if (index >= 0 && index < imageUrls.length) {
+    const urlChanged = imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
     imageError.value = false
     if (urlChanged) startDelayedLoader()
   }
 }
 
-const handleMouseEnter = () => {
-  isHovered.value = true
+const CLICK_THRESHOLD = 3
+let pointerStartPos = { x: 0, y: 0 }
+
+function trackPointerStart(event: PointerEvent) {
+  pointerStartPos = { x: event.clientX, y: event.clientY }
 }
 
-const handleMouseLeave = () => {
-  isHovered.value = false
+function handleGridThumbnailClick(event: MouseEvent, index: number) {
+  const dx = event.clientX - pointerStartPos.x
+  const dy = event.clientY - pointerStartPos.y
+  if (Math.abs(dx) > CLICK_THRESHOLD || Math.abs(dy) > CLICK_THRESHOLD) return
+  openImageInGallery(index)
 }
 
-const handleFocusIn = () => {
-  isFocused.value = true
+async function openImageInGallery(index: number) {
+  setCurrentIndex(index)
+  viewMode.value = 'gallery'
+  await nextTick()
+  galleryPanelEl.value?.focus()
 }
 
-const handleFocusOut = (event: FocusEvent) => {
-  // Only unfocus if focus is leaving the wrapper entirely
-  if (!imageWrapperEl.value?.contains(event.relatedTarget as Node)) {
-    isFocused.value = false
-  }
-}
-
-const getNavigationDotClass = (index: number) => {
-  return [
-    'w-2 h-2 rounded-full transition-all duration-200 border-0 cursor-pointer p-0',
+function getNavigationDotClass(index: number) {
+  return cn(
+    'size-2 cursor-pointer rounded-full border-0 p-0 transition-all duration-200',
     index === currentIndex.value
       ? 'bg-base-foreground'
       : 'bg-base-foreground/50 hover:bg-base-foreground/80'
-  ]
+  )
 }
 
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1) return
+function handleKeyDown(event: KeyboardEvent) {
+  if (
+    event.key === 'Escape' &&
+    viewMode.value === 'gallery' &&
+    hasMultipleImages.value
+  ) {
+    event.preventDefault()
+    viewMode.value = 'grid'
+    return
+  }
+
+  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0
-          ? currentIndex.value - 1
-          : props.imageUrls.length - 1
+        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < props.imageUrls.length - 1
-          ? currentIndex.value + 1
-          : 0
+        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
@@ -315,12 +371,12 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(props.imageUrls.length - 1)
+      setCurrentIndex(imageUrls.length - 1)
       break
   }
 }
 
-const getImageFilename = (url: string): string => {
+function getImageFilename(url: string): string {
   if (!url) return t('g.imageDoesNotExist')
   try {
     return new URL(url).searchParams.get('filename') || t('g.unknownFile')

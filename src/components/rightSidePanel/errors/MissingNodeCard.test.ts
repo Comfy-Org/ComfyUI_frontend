@@ -1,36 +1,64 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import PrimeVue from 'primevue/config'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const mockIsCloud = { value: false }
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-const mockApplyChanges = vi.fn()
-const mockIsRestarting = ref(false)
+const mockMissingCoreNodes = vi.hoisted(() => ({
+  value: {} as Record<string, { type: string }[]>
+}))
+const mockSystemStats = vi.hoisted(() => ({
+  value: null as { system?: { comfyui_version?: string } } | null
+}))
+
+vi.mock(
+  '@/workbench/extensions/manager/composables/nodePack/useMissingNodes',
+  () => ({
+    useMissingNodes: () => ({
+      missingCoreNodes: mockMissingCoreNodes,
+      missingNodePacks: { value: [] },
+      isLoading: { value: false },
+      error: { value: null },
+      hasMissingNodes: { value: false }
+    })
+  })
+)
+
+vi.mock('@/stores/systemStatsStore', () => ({
+  useSystemStatsStore: () => ({
+    get systemStats() {
+      return mockSystemStats.value
+    }
+  })
+}))
+
+const mockApplyChanges = vi.hoisted(() => vi.fn())
+const mockIsRestarting = vi.hoisted(() => ({ value: false }))
 vi.mock('@/workbench/extensions/manager/composables/useApplyChanges', () => ({
   useApplyChanges: () => ({
-    isRestarting: mockIsRestarting,
+    get isRestarting() {
+      return mockIsRestarting.value
+    },
     applyChanges: mockApplyChanges
   })
 }))
 
-const mockIsPackInstalled = vi.fn(() => false)
+const mockIsPackInstalled = vi.hoisted(() => vi.fn(() => false))
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: () => ({
     isPackInstalled: mockIsPackInstalled
   })
 }))
 
-const mockShouldShowManagerButtons = { value: false }
+const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
 vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
   useManagerState: () => ({
     shouldShowManagerButtons: mockShouldShowManagerButtons
@@ -61,6 +89,13 @@ const i18n = createI18n({
             'To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.',
           applyChanges: 'Apply Changes'
         }
+      },
+      loadWorkflowWarning: {
+        outdatedVersion:
+          'Some nodes require a newer version of ComfyUI (current: {version}).',
+        outdatedVersionGeneric:
+          'Some nodes require a newer version of ComfyUI.',
+        coreNodesFromVersion: 'Requires ComfyUI {version}:'
       }
     }
   },
@@ -93,7 +128,7 @@ function mountCard(
       ...props
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
+      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       stubs: {
         DotSpinner: { template: '<span role="status" aria-label="loading" />' }
       }
@@ -109,6 +144,8 @@ describe('MissingNodeCard', () => {
     mockIsCloud.value = false
     mockShouldShowManagerButtons.value = false
     mockIsRestarting.value = false
+    mockMissingCoreNodes.value = {}
+    mockSystemStats.value = null
   })
 
   describe('Rendering & Props', () => {
@@ -232,6 +269,83 @@ describe('MissingNodeCard', () => {
       await row.vm.$emit('open-manager-info', 'pack-0')
       expect(wrapper.emitted('openManagerInfo')).toBeTruthy()
       expect(wrapper.emitted('openManagerInfo')?.[0]).toEqual(['pack-0'])
+    })
+  })
+
+  describe('Core Node Version Warning', () => {
+    it('does not render warning when no missing core nodes', () => {
+      const wrapper = mountCard()
+      expect(wrapper.text()).not.toContain('newer version of ComfyUI')
+    })
+
+    it('renders warning with version when missing core nodes exist', () => {
+      mockMissingCoreNodes.value = {
+        '1.2.0': [{ type: 'TestNode' }]
+      }
+      mockSystemStats.value = { system: { comfyui_version: '1.0.0' } }
+      const wrapper = mountCard()
+      expect(wrapper.text()).toContain('(current: 1.0.0)')
+      expect(wrapper.text()).toContain('Requires ComfyUI 1.2.0:')
+      expect(wrapper.text()).toContain('TestNode')
+    })
+
+    it('renders generic message when version is unavailable', () => {
+      mockMissingCoreNodes.value = {
+        '1.2.0': [{ type: 'TestNode' }]
+      }
+      const wrapper = mountCard()
+      expect(wrapper.text()).toContain(
+        'Some nodes require a newer version of ComfyUI.'
+      )
+    })
+
+    it('does not render warning on Cloud', () => {
+      mockIsCloud.value = true
+      mockMissingCoreNodes.value = {
+        '1.2.0': [{ type: 'TestNode' }]
+      }
+      const wrapper = mountCard()
+      expect(wrapper.text()).not.toContain('newer version of ComfyUI')
+    })
+
+    it('deduplicates and sorts node names within a version', () => {
+      mockMissingCoreNodes.value = {
+        '1.2.0': [
+          { type: 'ZebraNode' },
+          { type: 'AlphaNode' },
+          { type: 'ZebraNode' }
+        ]
+      }
+      const wrapper = mountCard()
+      expect(wrapper.text()).toContain('AlphaNode, ZebraNode')
+      expect(wrapper.text().match(/ZebraNode/g)?.length).toBe(1)
+    })
+
+    it('sorts versions in descending order', () => {
+      mockMissingCoreNodes.value = {
+        '1.1.0': [{ type: 'Node1' }],
+        '1.3.0': [{ type: 'Node3' }],
+        '1.2.0': [{ type: 'Node2' }]
+      }
+      const wrapper = mountCard()
+      const text = wrapper.text()
+      const v13 = text.indexOf('1.3.0')
+      const v12 = text.indexOf('1.2.0')
+      const v11 = text.indexOf('1.1.0')
+      expect(v13).toBeLessThan(v12)
+      expect(v12).toBeLessThan(v11)
+    })
+
+    it('handles empty string version key without crashing', () => {
+      mockMissingCoreNodes.value = {
+        '': [{ type: 'NoVersionNode' }],
+        '1.2.0': [{ type: 'VersionedNode' }]
+      }
+      const wrapper = mountCard()
+      expect(wrapper.text()).toContain('Requires ComfyUI 1.2.0:')
+      expect(wrapper.text()).toContain('VersionedNode')
+      expect(wrapper.text()).toContain('unknown')
+      expect(wrapper.text()).toContain('NoVersionNode')
     })
   })
 })

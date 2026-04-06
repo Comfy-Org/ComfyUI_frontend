@@ -155,6 +155,93 @@ describe('VirtualGrid', () => {
     wrapper.unmount()
   })
 
+  it('emits approach-end for single-column list when scrolled near bottom', async () => {
+    const items = createItems(50)
+    mockedWidth.value = 400
+    mockedHeight.value = 600
+    mockedScrollY.value = 0
+
+    const wrapper = mount(VirtualGrid<TestItem>, {
+      props: {
+        items,
+        gridStyle: {
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)'
+        },
+        defaultItemHeight: 48,
+        defaultItemWidth: 200,
+        maxColumns: 1,
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      attachTo: document.body
+    })
+
+    await nextTick()
+
+    expect(wrapper.emitted('approach-end')).toBeUndefined()
+
+    // Scroll near the end: 50 items * 48px = 2400px total
+    // viewRows = ceil(600/48) = 13, buffer = 1
+    // Need toCol >= items.length - cols*bufferRows = 50 - 1 = 49
+    // toCol = (offsetRows + bufferRows + viewRows) * cols
+    // offsetRows = floor(scrollY / 48)
+    // Need (offsetRows + 1 + 13) * 1 >= 49 → offsetRows >= 35
+    // scrollY = 35 * 48 = 1680
+    mockedScrollY.value = 1680
+    await nextTick()
+
+    expect(wrapper.emitted('approach-end')).toBeDefined()
+
+    wrapper.unmount()
+  })
+
+  it('does not emit approach-end without maxColumns in single-column layout', async () => {
+    // Demonstrates the bug: without maxColumns=1, cols is calculated
+    // from width/itemWidth (400/200 = 2), causing incorrect row math
+    const items = createItems(50)
+    mockedWidth.value = 400
+    mockedHeight.value = 600
+    mockedScrollY.value = 0
+
+    const wrapper = mount(VirtualGrid<TestItem>, {
+      props: {
+        items,
+        gridStyle: {
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)'
+        },
+        defaultItemHeight: 48,
+        defaultItemWidth: 200,
+        // No maxColumns — cols will be floor(400/200) = 2
+        bufferRows: 1
+      },
+      slots: {
+        item: `<template #item="{ item }">
+          <div class="test-item">{{ item.name }}</div>
+        </template>`
+      },
+      attachTo: document.body
+    })
+
+    await nextTick()
+
+    // Same scroll position as the passing test
+    mockedScrollY.value = 1680
+    await nextTick()
+
+    // With cols=2, toCol = (35+1+13)*2 = 98, which exceeds items.length (50)
+    // remainingCol = 50-98 = -48, hasMoreToRender = false → isNearEnd = false
+    // The approach-end never fires at the correct scroll position
+    expect(wrapper.emitted('approach-end')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
   it('forces cols to maxColumns when maxColumns is finite', async () => {
     mockedWidth.value = 100
     mockedHeight.value = 200

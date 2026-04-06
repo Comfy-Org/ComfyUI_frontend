@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -69,7 +68,7 @@ vi.mock('./nodeLibrary/NodeDragPreview.vue', () => ({
   }
 }))
 
-vi.mock('@/components/common/SearchBoxV2.vue', () => ({
+vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchBox',
     template: '<input data-testid="search-box" />',
@@ -96,12 +95,6 @@ describe('NodeLibrarySidebarTabV2', () => {
     return mount(NodeLibrarySidebarTabV2, {
       global: {
         plugins: [createTestingPinia({ stubActions: false }), i18n],
-        components: {
-          TabsRoot,
-          TabsList,
-          TabsTrigger,
-          TabsContent
-        },
         stubs: {
           teleport: true
         }
@@ -112,7 +105,7 @@ describe('NodeLibrarySidebarTabV2', () => {
   it('should render with tabs', () => {
     const wrapper = mountComponent()
 
-    const triggers = wrapper.findAllComponents(TabsTrigger)
+    const triggers = wrapper.findAll('[role="tab"]')
     expect(triggers).toHaveLength(3)
   })
 
