@@ -10,7 +10,7 @@
     :data-collapsed="isCollapsed || undefined"
     :class="
       cn(
-        'group/node lg-node absolute text-sm',
+        'group/node lg-node absolute isolate text-sm',
         'flex min-w-(--min-node-width) flex-col contain-layout contain-style',
         cursorClass,
         isSelected && 'outline-node-component-outline',
