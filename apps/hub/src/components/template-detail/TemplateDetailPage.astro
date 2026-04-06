@@ -1,0 +1,360 @@
+---
+import ThumbnailDisplay from '../ThumbnailDisplay.astro';
+import BackButton from '../BackButton.astro';
+import SidebarSection from './SidebarSection.astro';
+import CollapsibleBadgeList from './CollapsibleBadgeList.vue';
+import type { Locale } from '../../i18n/config';
+import { t } from '../../i18n/ui';
+import { localizeUrl } from '../../i18n/utils';
+import { getCloudCtaUrl, getWorkflowDownloadUrl } from '../../lib/urls';
+import { slugify } from '../../lib/slugify';
+import { tagSlug, tagDisplayName } from '../../lib/tag-aliases';
+import { getProfileCache } from '../../lib/hub-api';
+import type { MediaType, ThumbnailVariant } from '../../lib/hub-api';
+
+interface Props {
+  template: {
+    data: {
+      name: string;
+      shareId?: string;
+      title?: string;
+      description: string;
+      extendedDescription?: string;
+      mediaType: MediaType;
+      mediaSubtype?: string;
+      thumbnailVariant?: ThumbnailVariant;
+      thumbnails?: string[];
+      detailImages?: string[];
+      includeOnDistributions?: string[];
+      tags?: string[];
+      models?: string[];
+      username?: string;
+      date?: string;
+    };
+  };
+  locale: Locale;
+}
+
+const { template, locale } = Astro.props;
+const { data } = template;
+
+const profiles = await getProfileCache();
+const profile = data.username ? profiles.get(data.username) : null;
+const authorName = profile?.display_name || data.username || 'ComfyUI';
+const authorAvatarUrl = profile?.avatar_url || null;
+const authorProfileUrl = data.username
+  ? localizeUrl(`/workflows/${slugify(data.username)}/`, locale)
+  : null;
+const thumbnails = data.detailImages?.length ? data.detailImages : (data.thumbnails || []);
+const showCloudCta = !data.includeOnDistributions || data.includeOnDistributions.includes('cloud');
+const cloudTemplateId = data.shareId || data.name;
+const downloadUrl = data.shareId
+  ? getWorkflowDownloadUrl(data.shareId, data.name)
+  : `/workflows/${data.name}.json`;
+
+const mediaTypeLabels: Record<string, string> = {
+  image: t('category.image', locale),
+  video: t('category.video', locale),
+  audio: t('category.audio', locale),
+  '3d': t('category.3d', locale),
+};
+
+function formatRelativeDate(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return '1 day ago';
+  if (diffDays < 30) return `${diffDays} days ago`;
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths === 1) return '1 month ago';
+  if (diffMonths < 12) return `${diffMonths} months ago`;
+  const diffYears = Math.floor(diffMonths / 12);
+  if (diffYears === 1) return '1 year ago';
+  return `${diffYears} years ago`;
+}
+---
+
+<article
+  class="template-detail-page bg-page min-h-screen text-content scroll-smooth"
+  data-template={data.name}
+  data-media-type={data.mediaType}
+  data-author={data.username || ''}
+>
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 pt-4 lg:pt-16 pb-32">
+    <div class="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-between w-full">
+      <div class="w-[140px]">
+        {/* Back button */}
+        <BackButton
+          locale={locale}
+          class="self-start lg:sticky lg:top-24 lg:col-start-1 lg:row-start-1 lg:row-span-2"
+        />
+      </div>
+
+      <div class="flex-1 min-w-0">
+        {/* Thumbnail */}
+        {
+          thumbnails.length > 0 && (
+            <div class="rounded-lg overflow-hidden">
+              <ThumbnailDisplay
+                thumbnails={thumbnails}
+                title={data.title || data.name}
+                variant={data.thumbnailVariant}
+                mediaSubtype={data.mediaSubtype}
+                class={data.detailImages?.length ? 'w-full' : 'w-full aspect-square'}
+                naturalAspect={!!data.detailImages?.length}
+                loading="eager"
+                fetchpriority="high"
+                sizes="(min-width: 1024px) 60vw, 100vw"
+              />
+            </div>
+          )
+        }
+
+        {/* Full description */}
+        <div class="flex flex-col gap-6 lg:mt-12 scroll-mt-8" id="description">
+          <hr class="border-0 border-t border-divider lg:hidden" />
+          {
+            data.extendedDescription && (
+              <div class="flex flex-col gap-4">
+                {data.extendedDescription
+                  .split('\n\n')
+                  .filter(Boolean)
+                  .map((paragraph: string) => (
+                    <p class="text-base leading-relaxed text-content-secondary">
+                      {paragraph.trim()}
+                    </p>
+                  ))}
+              </div>
+            )
+          }
+        </div>
+      </div>
+
+      {/* Sidebar */}
+      <aside class="flex flex-col lg:min-w-93.75 lg:max-w-93.75">
+        <div class="flex flex-col gap-6 lg:sticky lg:top-24">
+          {/* Workflow */}
+          <SidebarSection title="Workflow">
+            <div class="min-w-0">
+              <h1 class="text-base font-semibold text-content">{data.title || data.name}</h1>
+              {
+                data.description && (
+                  <div class="workflow-description-wrap mt-2">
+                    <p class="text-sm text-hub-muted line-clamp-3 workflow-description-text">
+                      {data.description}
+                    </p>
+                    <button
+                      type="button"
+                      class="workflow-show-more hidden text-xs text-content-secondary hover:text-content transition-colors mt-1"
+                    >
+                      Show more
+                    </button>
+                  </div>
+                )
+              }
+            </div>
+          </SidebarSection>
+
+          {/* Creator */}
+          <SidebarSection title={t('labels.createdBy', locale)}>
+            <div class="flex items-center gap-3">
+              <div class="size-8 shrink-0 rounded-full overflow-hidden">
+                {
+                  authorAvatarUrl ? (
+                    <img
+                      src={authorAvatarUrl}
+                      alt={authorName}
+                      class="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="w-full h-full rounded-full bg-gradient-to-br from-[#c8ff00] to-[#a0cc00] flex items-center justify-center text-xs font-bold text-black">
+                      {authorName.charAt(0).toUpperCase()}
+                    </div>
+                  )
+                }
+              </div>
+              <div class="flex flex-col">
+                {
+                  authorProfileUrl ? (
+                    <a
+                      href={authorProfileUrl}
+                      class="font-semibold text-base text-content hover:opacity-80 transition-opacity"
+                      data-astro-prefetch
+                    >
+                      {authorName}
+                    </a>
+                  ) : (
+                    <span class="font-semibold text-base text-content">{authorName}</span>
+                  )
+                }
+                {
+                  data.date && (
+                    <span class="text-base text-content-secondary">
+                      {formatRelativeDate(data.date)}
+                    </span>
+                  )
+                }
+              </div>
+            </div>
+          </SidebarSection>
+
+          {/* Action buttons */}
+          <div class="flex flex-col gap-3">
+            {showCloudCta && (
+              <a
+                href={getCloudCtaUrl(cloudTemplateId, 'hero')}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="run-cloud-btn flex flex-col items-center justify-center py-2 bg-brand rounded-full text-sm text-page hover:opacity-90 transition-opacity"
+                data-template={data.name}
+                data-author={data.username || ''}
+                data-location="hero"
+              >
+                <span class="font-bold">{t('cta.tryCloud', locale)}</span>
+                <span class="font-normal text-xs">{t('cta.tryCloudSubline', locale)}</span>
+              </a>
+            )}
+            <a
+              href={downloadUrl}
+              download
+              class="download-json-btn flex items-center justify-center h-10 border border-divider rounded-full text-sm text-content hover:border-white/60 transition-colors"
+              data-template={data.name}
+              data-author={data.username || ''}
+            >
+              {t('cta.downloadJson', locale)}
+            </a>
+          </div>
+
+          {/* Categories */}
+          {
+            data.tags && data.tags.length > 0 && (
+              <SidebarSection title={t('labels.categories', locale)}>
+                <CollapsibleBadgeList
+                  client:load
+                  items={[
+                    {
+                      label: mediaTypeLabels[data.mediaType],
+                      href: localizeUrl(`/workflows/category/${data.mediaType}/`, locale),
+                    },
+                    ...data.tags.map((tag: string) => ({
+                      label: tagDisplayName(tag),
+                      href: localizeUrl(`/workflows/tag/${tagSlug(tag)}/`, locale),
+                    })),
+                  ]}
+                />
+              </SidebarSection>
+            )
+          }
+
+          {/* Models */}
+          {
+            data.models && data.models.length > 0 && (
+              <SidebarSection title={t('labels.models', locale)}>
+                <CollapsibleBadgeList
+                  client:load
+                  items={data.models.map((model: string) => ({
+                    label: model,
+                    href: localizeUrl(`/workflows/model/${slugify(model)}/`, locale),
+                  }))}
+                />
+              </SidebarSection>
+            )
+          }
+        </div>
+      </aside>
+    </div>
+  </div>
+</article>
+
+<script is:inline define:vars={{ templateName: data.name }}>
+  // Run on Cloud button — Vercel analytics
+  document.querySelectorAll('.run-cloud-btn').forEach((link) => {
+    link.addEventListener('click', () => {
+      const loc = link.getAttribute('data-location') || 'hero';
+      if (window.va) {
+        window.va('event', { name: 'cta_click', template: templateName, location: loc });
+      }
+    });
+  });
+
+  // Download JSON button — Vercel analytics
+  document.querySelectorAll('.download-json-btn').forEach((link) => {
+    link.addEventListener('click', () => {
+      if (window.va) {
+        window.va('event', { name: 'download_json', template: templateName });
+      }
+    });
+  });
+
+  // Share button
+  const shareBtn = document.getElementById('share-workflow-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', function () {
+      const url = window.location.href;
+
+      function showCopied() {
+        const textNode = shareBtn.lastChild;
+        if (textNode) {
+          const original = textNode.textContent;
+          textNode.textContent = ' Link copied!';
+          setTimeout(function () {
+            textNode.textContent = original;
+          }, 2000);
+        }
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard
+          .writeText(url)
+          .then(showCopied)
+          .catch(function () {
+            fallbackCopy(url);
+          });
+      } else {
+        fallbackCopy(url);
+      }
+
+      function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showCopied();
+        } catch {
+          // silent fail
+        }
+        document.body.removeChild(textarea);
+      }
+    });
+  }
+
+  // Accordion for workflow description
+  const descText = document.querySelector('.workflow-description-text');
+  const showMoreBtn = document.querySelector('.workflow-show-more');
+  if (descText && showMoreBtn) {
+    // Check if text is clamped (overflowing)
+    if (descText.scrollHeight > descText.clientHeight) {
+      showMoreBtn.classList.remove('hidden');
+    }
+    let expanded = false;
+    showMoreBtn.addEventListener('click', () => {
+      expanded = !expanded;
+      if (expanded) {
+        descText.classList.remove('line-clamp-3');
+        showMoreBtn.textContent = 'Show less';
+      } else {
+        descText.classList.add('line-clamp-3');
+        showMoreBtn.textContent = 'Show more';
+      }
+    });
+  }
+</script>

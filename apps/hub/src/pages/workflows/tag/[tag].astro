@@ -1,0 +1,138 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import HubNavbar from '../../../components/hub/HubNavbar.astro';
+import SiteFooter from '../../../components/hub/SiteFooter.astro';
+import WorkflowGrid from '../../../components/hub/WorkflowGrid.vue';
+import HreflangTags from '../../../components/HreflangTags.astro';
+import BackButton from '../../../components/BackButton.astro';
+import { getLocaleFromPath, localizeUrl } from '../../../i18n/utils';
+import { t } from '../../../i18n/ui';
+import { tagSlug, tagDisplayName } from '../../../lib/tag-aliases';
+import { SITE_ORIGIN, absoluteUrl } from '../../../config/site';
+import { badgeVariants } from '../../../components/ui/badge';
+import { listWorkflowIndex, getProfileCache, serializeIndexEntry, serializeCollectionEntry } from '../../../lib/hub-api';
+import type { SerializedTemplate } from '../../../lib/hub-api';
+
+export async function getStaticPaths() {
+  const profiles = await getProfileCache();
+
+  // Try hub API first, fall back to content collection
+  let allSerialized: SerializedTemplate[];
+  try {
+    const entries = await listWorkflowIndex();
+    allSerialized = entries.map((e) => serializeIndexEntry(e, profiles));
+  } catch (err) {
+    console.error('Hub API failed, falling back to content collection:', err);
+    const collection = (await getCollection('templates')).filter((t) => !t.id.includes('/'));
+    allSerialized = collection.map((t) => serializeCollectionEntry(t.data, profiles));
+  }
+
+  const tagMap = new Map<
+    string,
+    { slug: string; originalTag: string; templates: SerializedTemplate[] }
+  >();
+
+  for (const template of allSerialized) {
+    for (const tag of template.tags) {
+      if (!tag || typeof tag !== 'string' || tag.trim() === '') continue;
+      const slug = tagSlug(tag);
+      if (!slug) continue;
+      if (!tagMap.has(slug)) {
+        tagMap.set(slug, { slug, originalTag: tag, templates: [] });
+      }
+      tagMap.get(slug)!.templates.push(template);
+    }
+  }
+
+  return Array.from(tagMap.values())
+    .filter(({ slug }) => slug && slug.length > 0)
+    .map(({ slug, originalTag, templates }) => ({
+      params: { tag: slug },
+      props: {
+        tagName: tagDisplayName(originalTag),
+        templates,
+      },
+    }));
+}
+
+const { tagName, templates } = Astro.props as { tagName: string; templates: SerializedTemplate[] };
+const { tag } = Astro.params;
+
+const locale = getLocaleFromPath(Astro.url.pathname);
+const basePath = `/workflows/tag/${tag}/`;
+const canonicalUrl = absoluteUrl(localizeUrl(basePath, locale));
+
+const title = `${tagName} ComfyUI Workflows - ${t('nav.templates', locale)}`;
+const description = `Browse ${templates.length} ComfyUI workflow templates tagged with "${tagName}". Free, ready-to-use AI generation workflows.`;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: `${tagName} ComfyUI Workflows`,
+  description,
+  url: canonicalUrl,
+};
+
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: t('nav.templates', locale),
+      item: absoluteUrl(localizeUrl('/workflows/', locale)),
+    },
+    { '@type': 'ListItem', position: 3, name: tagName },
+  ],
+};
+
+// Templates are already serialized from getStaticPaths
+const serialized = templates;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  ogImage="/workflows/og-default.png"
+  structuredData={structuredData}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HreflangTags basePath={basePath} slot="head" />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbStructuredData)} />
+
+  <HubNavbar />
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-16 py-12">
+    <!-- Back -->
+    <nav class="mb-8">
+      <BackButton locale={locale} />
+    </nav>
+
+    <!-- Header -->
+    <div class="mb-12 text-center">
+      <span class={badgeVariants({ variant: 'hub-pill' })}>Tag</span>
+      <h1 class="text-3xl font-bold text-white mt-3">
+        {tagName}
+      </h1>
+      <p class="text-hub-muted text-base mt-2">
+        {templates.length} workflow{templates.length !== 1 ? 's' : ''}
+      </p>
+    </div>
+
+    <!-- Interactive Grid -->
+    <WorkflowGrid
+      client:load
+      templates={serialized}
+      locale={locale}
+      gridClass="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    />
+  </div>
+
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>

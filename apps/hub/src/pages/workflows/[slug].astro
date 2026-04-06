@@ -1,0 +1,190 @@
+---
+/**
+ * Workflow detail page — pre-rendered at build time.
+ * URL: /workflows/{name}-{share_id}/
+ *
+ * Also handles legacy redirects: /workflows/{old-slug}/ (no share_id)
+ * redirects to the new URL format with 301.
+ *
+ * Data source: listWorkflowIndex() → fallback: content collection.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HubNavbar from '../../components/hub/HubNavbar.astro';
+import SiteFooter from '../../components/hub/SiteFooter.astro';
+import TemplateDetailPage from '../../components/template-detail/TemplateDetailPage.astro';
+import { DEFAULT_LOCALE } from '../../i18n/config';
+import { getTemplatesForLocale } from '../../lib/templates';
+import { SITE_ORIGIN, absoluteUrl } from '../../config/site';
+import { listWorkflowIndex } from '../../lib/hub-api';
+import type { HubWorkflowTemplateEntry } from '../../lib/hub-api';
+import { workflowOgUrl } from '../../lib/og-url';
+
+export async function getStaticPaths() {
+  let entries: HubWorkflowTemplateEntry[] = [];
+  try {
+    entries = await listWorkflowIndex();
+  } catch {
+    // Fallback to content collection
+    const templates = await getTemplatesForLocale(DEFAULT_LOCALE);
+    return templates.map((t) => ({
+      params: { slug: t.data.name },
+      props: { entry: null, legacySlug: t.data.name, legacyShareId: null },
+    }));
+  }
+
+  const paths = [];
+
+  for (const entry of entries) {
+    const shareId = entry.shareId || '';
+    const name = entry.name || shareId;
+
+    // New URL: /workflows/{name}-{shareId}/
+    paths.push({
+      params: { slug: `${name}-${shareId}` },
+      props: { entry, legacySlug: null, legacyShareId: null },
+    });
+
+    // Legacy redirect: /workflows/{name}/ → /workflows/{name}-{shareId}/
+    // Also handles UGC where name == shareId (card links use /workflows/{name}/)
+    paths.push({
+      params: { slug: name },
+      props: { entry: null, legacySlug: name, legacyShareId: shareId },
+    });
+  }
+
+  return paths;
+}
+
+interface Props {
+  entry: HubWorkflowTemplateEntry | null;
+  legacySlug: string | null;
+  legacyShareId: string | null;
+}
+
+const { entry, legacySlug, legacyShareId } = Astro.props;
+
+// Legacy redirect: old URL without share_id
+if (!entry && legacySlug) {
+  if (legacyShareId) {
+    return Astro.redirect(`/workflows/${legacySlug}-${legacyShareId}/`, 301);
+  }
+  return Astro.redirect('/workflows/');
+}
+
+// No data — shouldn't happen for pre-rendered pages
+if (!entry) {
+  return Astro.redirect('/workflows/');
+}
+
+const locale = DEFAULT_LOCALE;
+const data = {
+  name: entry.name,
+  shareId: entry.shareId || '',
+  title: entry.title || entry.name,
+  description: entry.description || '',
+  mediaType: entry.mediaType || 'image',
+  mediaSubtype: entry.mediaSubtype,
+  thumbnailVariant: entry.thumbnailVariant,
+  thumbnails: [entry.thumbnailUrl, entry.thumbnailComparisonUrl].filter(Boolean) as string[],
+  tags: entry.tags || [],
+  models: entry.models || [],
+  username: entry.profile?.username || entry.username || '',
+  date: entry.date || '',
+  tutorialUrl: entry.tutorialUrl,
+  extendedDescription: entry.extendedDescription || '',
+  metaDescription: entry.metaDescription || entry.description || '',
+  howToUse: entry.howToUse || [],
+  suggestedUseCases: entry.suggestedUseCases || [],
+  faqItems: entry.faqItems || [],
+  contentTemplate: entry.contentTemplate,
+};
+
+const title = `${data.title} - ComfyUI Workflow`;
+const urlSlug = `${data.name}-${data.shareId}`;
+const canonicalUrl = absoluteUrl(`/workflows/${urlSlug}/`);
+
+const thumbnails = data.thumbnails;
+const primaryThumbnail = thumbnails[0] || null;
+const ogImage = workflowOgUrl(
+  data.title || data.name,
+  primaryThumbnail ? primaryThumbnail : undefined,
+  data.username || undefined
+);
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: data.title,
+  description: data.description,
+  image: primaryThumbnail || undefined,
+  datePublished: data.date,
+  inLanguage: 'en',
+};
+
+const faqStructuredData = data.faqItems?.length
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: data.faqItems.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: { '@type': 'Answer', text: item.answer },
+      })),
+    }
+  : null;
+
+const breadcrumbStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+    { '@type': 'ListItem', position: 2, name: 'Workflows', item: absoluteUrl('/workflows/') },
+    { '@type': 'ListItem', position: 3, name: data.title, item: canonicalUrl },
+  ],
+};
+
+const softwareAppStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: data.title,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Windows, macOS, Linux',
+  description: data.metaDescription || data.description,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+
+<BaseLayout
+  title={title}
+  description={data.metaDescription || data.description}
+  canonicalUrl={canonicalUrl}
+  ogImage={ogImage}
+  ogType="article"
+  structuredData={structuredData}
+  hreflangBasePath={`/workflows/${urlSlug}/`}
+  theme="dark"
+  hideDefaultFooter
+>
+  <HubNavbar />
+  <TemplateDetailPage template={{ data }} locale={locale} />
+
+  {
+    faqStructuredData && (
+      <script is:inline type="application/ld+json" set:html={JSON.stringify(faqStructuredData)} />
+    )
+  }
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(softwareAppStructuredData)}
+  />
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbStructuredData)}
+  />
+
+  <Fragment slot="footer">
+    <SiteFooter />
+  </Fragment>
+</BaseLayout>

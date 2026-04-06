@@ -1,0 +1,124 @@
+{
+  "name": "@comfyorg/hub",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "sync": "tsx scripts/sync-templates.ts",
+    "sync:en-only": "tsx scripts/sync-templates.ts --en-only",
+    "sync:tutorials": "tsx scripts/sync-tutorials.ts",
+    "generate:ai": "node --env-file-if-exists=.env --import tsx/esm scripts/generate-ai.ts",
+    "generate:previews": "tsx scripts/generate-previews.ts",
+    "prebuild": "tsx scripts/prebuild-parallel.ts",
+    "build:search-index": "tsx scripts/build-search-index.ts",
+    "validate:templates": "tsx scripts/validate-templates.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "catalog:",
+    "@astrojs/vercel": "catalog:",
+    "@astrojs/vue": "catalog:",
+    "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
+    "@resvg/resvg-js": "^2.6.2",
+    "@tailwindcss/vite": "catalog:",
+    "@vercel/analytics": "catalog:",
+    "@vercel/og": "^0.8.6",
+    "@vueuse/core": "catalog:",
+    "astro": "catalog:",
+    "cheerio": "1.0.0-rc.12",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "catalog:",
+    "minisearch": "^7.2.0",
+    "posthog-js": "catalog:",
+    "reka-ui": "catalog:",
+    "satori": "^0.19.1",
+    "sharp": "^0.34.5",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "vue": "catalog:",
+    "web-vitals": "^4.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@types/node": "catalog:",
+    "node-html-parser": "^7.0.2",
+    "openai": "^4.0.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "optionalDependencies": {
+    "canvas": "^2.11.0"
+  },
+  "nx": {
+    "tags": [
+      "scope:hub",
+      "type:app"
+    ],
+    "targets": {
+      "dev": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/hub",
+          "command": "astro dev --port 4321"
+        }
+      },
+      "serve": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "options": {
+          "cwd": "apps/hub",
+          "command": "astro dev --port 4321"
+        }
+      },
+      "build": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "options": {
+          "cwd": "apps/hub",
+          "command": "astro build"
+        },
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      },
+      "preview": {
+        "executor": "nx:run-commands",
+        "continuous": true,
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "cwd": "apps/hub",
+          "command": "astro preview"
+        }
+      },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "cwd": "apps/hub",
+          "command": "astro check"
+        }
+      },
+      "sync": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/hub",
+          "command": "pnpm run sync"
+        }
+      }
+    }
+  }
+}

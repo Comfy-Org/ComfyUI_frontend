@@ -1,0 +1,9 @@
+dist/
+.astro/
+.content-cache/
+src/content/templates/
+public/workflows/thumbnails/
+public/workflows/avatars/
+public/previews/
+public/search-index.json
+knowledge/tutorials/

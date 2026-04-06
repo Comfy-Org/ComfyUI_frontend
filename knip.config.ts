@@ -38,6 +38,26 @@ const config: KnipConfig = {
       ],
       project: ['src/**/*.{astro,vue,ts}', '*.{js,ts,mjs}'],
       ignoreDependencies: ['@comfyorg/design-system', '@vercel/analytics']
+    },
+    'apps/hub': {
+      entry: [
+        'src/pages/**/*.astro',
+        'src/layouts/**/*.astro',
+        'src/components/**/*.{astro,vue,ts}',
+        'src/styles/global.css',
+        'src/scripts/**/*.ts',
+        'src/lib/**/*.ts',
+        'src/i18n/**/*.ts',
+        'src/composables/**/*.ts',
+        'scripts/**/*.ts'
+      ],
+      project: ['src/**/*.{astro,vue,ts}', 'scripts/**/*.ts', '*.{js,ts,mjs}'],
+      ignoreDependencies: [
+        '@vercel/og',
+        'clsx',
+        'lucide-vue-next',
+        'tailwind-merge'
+      ]
     }
   },
   ignoreBinaries: ['python3'],

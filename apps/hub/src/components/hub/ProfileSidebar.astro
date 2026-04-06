@@ -1,0 +1,124 @@
+---
+/**
+ * ProfileSidebar - User profile info sidebar
+ * Avatar (overlapping banner), name with verified badge, handle, bio, link, stats
+ */
+interface Props {
+  displayName: string;
+  handle: string;
+  verified?: boolean;
+  bio: string;
+  avatarUrl?: string;
+  link?: string;
+  views: number;
+  likes: number;
+  runs: number;
+}
+
+const {
+  displayName,
+  handle,
+  verified = false,
+  bio,
+  avatarUrl,
+  link,
+  views,
+  likes,
+  runs,
+} = Astro.props;
+
+const formatStat = (n: number): string => {
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+  return String(n);
+};
+---
+
+<div class="flex flex-col">
+  <!-- Avatar (overlaps banner) -->
+  <div class="mb-4">
+    {
+      avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={displayName}
+          class="size-20 rounded-full object-cover border-4 border-page"
+        />
+      ) : (
+        <div class="size-20 rounded-full bg-gradient-to-br from-[#c8ff00] to-[#a0cc00] flex items-center justify-center border-4 border-page">
+          <span class="text-black text-2xl font-bold">{displayName.charAt(0).toUpperCase()}</span>
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Name + Verified -->
+  <div class="flex items-center gap-1.5">
+    <h1 class="text-white font-semibold text-xl">{displayName}</h1>
+    {
+      verified && (
+        <svg
+          class="size-5 text-brand"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-label="Verified"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      )
+    }
+  </div>
+
+  <!-- Handle -->
+  <p class="text-white/40 text-sm mt-1">@{handle}</p>
+
+  <!-- Bio -->
+  <p class="text-white/60 text-sm leading-relaxed mt-4">{bio}</p>
+
+  <!-- Link -->
+  {
+    link && (
+      <a
+        href={`https://${link}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-blue-400 text-sm hover:underline mt-3 inline-flex items-center gap-1.5"
+      >
+        <svg
+          class="size-3.5 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+          />
+        </svg>
+        {link}
+      </a>
+    )
+  }
+
+  <!-- Stats -->
+  <div class="space-y-2">
+    <div class="flex items-center gap-3">
+      <span class="text-white/40 text-sm w-12">Views</span>
+      <span class="text-white font-semibold text-sm">{formatStat(views)}</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-white/40 text-sm w-12">Likes</span>
+      <span class="text-white font-semibold text-sm">{formatStat(likes)}</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-white/40 text-sm w-12">Runs</span>
+      <span class="text-white font-semibold text-sm">{formatStat(runs)}</span>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,118 @@
+@layer base {
+  :root {
+    /* Brand Colors */
+    --color-bg-page: #171718;
+    --color-bg-nav: #171718;
+    --color-accent: #f0ff41;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: rgb(255 255 255 / 0.7);
+    --color-text-muted: rgb(255 255 255 / 0.4);
+    --color-border: rgb(255 255 255 / 0.3);
+    --color-border-subtle: rgb(255 255 255 / 0.1);
+
+    /* Typography — from Figma text styles */
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+    /* style_A8TKUQ / style_WD8PV9: Title */
+    --text-title-size: 2rem;
+    --text-title-weight: 500;
+    --text-title-lh: normal;
+
+    /* style_3Y77IV / style_YM4QIK: Section heading */
+    --text-heading-size: 2rem;
+    --text-heading-weight: 400;
+    --text-heading-lh: 1.5625rem;
+
+    /* body-text-regular-compact / style_SV0QW2: Body text compact */
+    --text-body-size: 1rem;
+    --text-body-weight: 400;
+    --text-body-lh: 1.2102;
+
+    /* style_A7CS9O / style_DT3GIA / style_1JZLRJ: Label/medium text */
+    --text-label-size: 1rem;
+    --text-label-weight: 500;
+    --text-label-lh: 1.2102;
+
+    /* style_B92JTN / style_6S726Q: Body text reading */
+    --text-reading-size: 1rem;
+    --text-reading-weight: 400;
+    --text-reading-lh: 1.7857;
+
+    /* style_VIQSMO / style_TB6RQ3: Metadata label (uppercase) */
+    --text-meta-size: 1rem;
+    --text-meta-weight: 400;
+    --text-meta-lh: normal;
+    --text-meta-ls: 0.7px;
+
+    /* style_YRNXU7 / style_OHMR2R: Pill/tag text */
+    --text-pill-size: 1rem;
+    --text-pill-weight: 400;
+    --text-pill-lh: 1.2102;
+
+    /* Layout — from Figma layout styles */
+    --layout-page-width: 1600px;
+    --layout-content-start: 364px;
+    --layout-sidebar-width: 300px;
+    --layout-main-width: 600px;
+    --layout-column-gap: 100px;
+    --layout-content-max: 1000px;
+
+    /* Sidebar spacing */
+    --gap-header-meta: 120px;
+    --gap-header-items: 40px;
+    --gap-meta-items: 50px;
+    --gap-meta-label: 20px;
+
+    /* Main content spacing */
+    --gap-banner-text: 50px;
+    --gap-text-sections: 50px;
+
+    /* Component tokens */
+    --pill-height: 32px;
+    --pill-radius: 10px;
+    --pill-border: 0.5px;
+    --pill-padding: 6px 10px;
+    --pill-gap: 10px;
+
+    --btn-height: 40px;
+    --btn-radius: 8px;
+    --btn-padding: 8px 16px;
+
+    --download-height: 36px;
+    --download-gap: 9px;
+    --download-radius: 10px;
+    --download-padding: 0 10px;
+
+    --badge-height: 32px;
+    --badge-radius: 50px;
+    --badge-icon-size: 32px;
+
+    --icon-size: 16px;
+    --icon-stroke: 1.3px;
+
+    --avatar-size: 24px;
+    --avatar-gap: 12px;
+
+    /* Mobile */
+    --mobile-px: 33px;
+    --mobile-py: 36px;
+    --mobile-content-width: 336px;
+    --mobile-gap: 50px;
+
+    /* Desktop */
+    --desktop-py: 89px;
+
+    /* Border radius */
+    --radius-banner: 8px;
+
+    /* Hub page semantic tokens (from Figma design system) */
+    --hub-bg-secondary: #262729;
+    --hub-border: #494a50;
+    --hub-border-secondary: #6b6b6b;
+    --hub-border-subtle: #3c3d42;
+    --hub-muted-bg: #55565e;
+    --hub-muted-fg: #8a8a8a;
+    --hub-selected-bg: #494a50;
+    --hub-sidebar-width: 200px;
+  }
+}

@@ -1,0 +1,64 @@
+---
+// PostHog analytics initialization — loaded on every page via BaseLayout.
+// All PostHog event tracking is centralised here via global event delegation.
+---
+
+<script>
+  import {
+    initPostHog,
+    trackRunButtonClicked,
+    trackSignupCtaClicked,
+    trackDownloadButtonClicked,
+    trackShareButtonClicked,
+    trackTemplateViewed,
+  } from '../lib/posthog';
+
+  initPostHog();
+
+  // Template detail page view
+  const detailPage = document.querySelector('.template-detail-page');
+  if (detailPage) {
+    const name = detailPage.getAttribute('data-template') || '';
+    const mediaType = detailPage.getAttribute('data-media-type') || '';
+    const author = detailPage.getAttribute('data-author') || undefined;
+    if (name) {
+      trackTemplateViewed(name, mediaType, author);
+    }
+  }
+
+  // Global click delegation
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Run on Cloud button
+    const runBtn = target.closest('.run-cloud-btn');
+    if (runBtn) {
+      const templateName = runBtn.getAttribute('data-template') || '';
+      const location = runBtn.getAttribute('data-location') || 'unknown';
+      const author = runBtn.getAttribute('data-author') || undefined;
+      if (templateName) {
+        trackRunButtonClicked(templateName, location, author);
+      } else {
+        trackSignupCtaClicked(location);
+      }
+      return;
+    }
+
+    // Download JSON button
+    const downloadBtn = target.closest('.download-json-btn');
+    if (downloadBtn) {
+      const templateName = downloadBtn.getAttribute('data-template') || '';
+      const author = downloadBtn.getAttribute('data-author') || undefined;
+      if (templateName) trackDownloadButtonClicked(templateName, author);
+      return;
+    }
+
+    // Share button
+    const shareBtn = target.closest('#share-workflow-btn');
+    if (shareBtn) {
+      const templateName = shareBtn.getAttribute('data-template') || '';
+      const author = shareBtn.getAttribute('data-author') || undefined;
+      if (templateName) trackShareButtonClicked(templateName, author);
+    }
+  });
+</script>

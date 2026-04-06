@@ -1,0 +1,24 @@
+---
+/**
+ * LoadMore - "Load more workflows" button with showing count
+ * Static only - no JS wired up
+ */
+interface Props {
+  showing: number;
+  total: number;
+}
+
+const { showing, total } = Astro.props;
+---
+
+<div class="flex flex-col items-center gap-3 pt-4">
+  <button
+    class="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-8 py-3 text-sm font-medium text-white hover:bg-white/10 hover:border-white/25 transition-colors"
+    disabled
+  >
+    Load more workflows
+  </button>
+  <span class="text-sm text-white/40">
+    Showing {showing} of {total}
+  </span>
+</div>

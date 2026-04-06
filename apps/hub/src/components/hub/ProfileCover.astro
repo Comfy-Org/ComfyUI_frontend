@@ -1,0 +1,21 @@
+---
+/**
+ * ProfileCover - Full-width banner image for profile pages
+ * Shows a cover/hero image with rounded corners
+ */
+interface Props {
+  imageUrl?: string;
+}
+
+const { imageUrl } = Astro.props;
+---
+
+<div class="w-full h-[250px] rounded-xl overflow-hidden mt-6 relative">
+  {
+    imageUrl ? (
+      <img src={imageUrl} alt="" class="w-full h-full object-cover" />
+    ) : (
+      <div class="absolute inset-0 bg-gradient-to-br from-amber-900/80 via-orange-800/40 to-neutral-900" />
+    )
+  }
+</div>

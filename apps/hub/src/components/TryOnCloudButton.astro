@@ -1,0 +1,66 @@
+---
+import { getCloudCtaUrl } from '../lib/urls';
+
+interface Props {
+  templateName: string;
+  size?: 'small' | 'medium' | 'large';
+  class?: string;
+}
+
+const { templateName, size = 'medium', class: className } = Astro.props;
+
+const cloudUrl = getCloudCtaUrl(templateName, 'template-card');
+
+const sizeClasses = {
+  small: 'btn-small',
+  medium: 'btn-medium',
+  large: 'btn-large',
+};
+---
+
+<a
+  href={cloudUrl}
+  class:list={['try-cloud-btn run-cloud-btn', sizeClasses[size], className]}
+  target="_blank"
+  rel="noopener noreferrer"
+  data-template={templateName}
+  data-location="template-card"
+>
+  Try on Comfy Cloud
+</a>
+
+<style>
+  .try-cloud-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .try-cloud-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  }
+
+  .btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-medium {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+  }
+</style>
