@@ -31,6 +31,7 @@
     "audioProgress": "Audio progress",
     "viewImageOfTotal": "View image {index} of {total}",
     "viewVideoOfTotal": "View video {index} of {total}",
+    "imageLightbox": "Image preview",
     "imagePreview": "Image preview - Use arrow keys to navigate between images",
     "videoPreview": "Video preview - Use arrow keys to navigate between videos",
     "galleryImage": "Gallery image",
@@ -856,9 +857,9 @@
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
       "sections": {
-        "favorites": "Favorites",
-        "favoriteNode": "Favorite Node",
-        "unfavoriteNode": "Unfavorite Node",
+        "favorites": "Bookmarks",
+        "favoriteNode": "Bookmark Node",
+        "unfavoriteNode": "Unbookmark Node",
         "bookmarked": "Bookmarked",
         "subgraphBlueprints": "Subgraph Blueprints",
         "myBlueprints": "My Blueprints",
@@ -867,7 +868,7 @@
         "comfyNodes": "Comfy Nodes",
         "extensions": "Extensions"
       },
-      "noBookmarkedNodes": "No favorites yet"
+      "noBookmarkedNodes": "No bookmarks yet"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
@@ -1155,6 +1156,7 @@
   },
   "maskEditor": {
     "title": "Mask Editor",
+    "openMaskEditor": "Open in Mask Editor",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -1971,6 +1973,10 @@
     "y": "Y",
     "width": "Width",
     "height": "Height"
+  },
+  "curveWidget": {
+    "monotone_cubic": "Smooth",
+    "linear": "Linear"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -3101,6 +3107,7 @@
   },
   "comfyHubPublish": {
     "title": "Publish to ComfyHub",
+    "unsavedDescription": "You must save your workflow before publishing to ComfyHub. Save it now to continue.",
     "stepDescribe": "Describe your workflow",
     "stepExamples": "Add output examples",
     "stepFinish": "Finish publishing",
@@ -3108,12 +3115,6 @@
     "workflowNamePlaceholder": "Tip: enter a descriptive name that's easy to search",
     "workflowDescription": "Workflow description",
     "workflowDescriptionPlaceholder": "What makes your workflow exciting and special? Be specific so people know what to expect.",
-    "workflowType": "Workflow type",
-    "workflowTypePlaceholder": "Select the type",
-    "workflowTypeImageGeneration": "Image generation",
-    "workflowTypeVideoGeneration": "Video generation",
-    "workflowTypeUpscaling": "Upscaling",
-    "workflowTypeEditing": "Editing",
     "tags": "Tags",
     "tagsDescription": "Select tags so people can find your workflow faster",
     "tagsPlaceholder": "Enter tags that match your workflow to help people find it e.g #nanobanana, #anime or #faceswap",
@@ -3140,11 +3141,17 @@
     "examplesDescription": "Add up to {total} additional sample images",
     "uploadAnImage": "Click to browse or drag an image",
     "uploadExampleImage": "Upload example image",
+    "removeExampleImage": "Remove example image",
     "exampleImage": "Example image {index}",
+    "exampleImagePosition": "Example image {index} of {total}",
     "videoPreview": "Video thumbnail preview",
     "maxExamples": "You can select up to {max} examples",
+    "shareAs": "Share as",
+    "additionalInfo": "Additional information",
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
-    "createProfileCta": "Create a profile"
+    "createProfileCta": "Create a profile",
+    "publishFailedTitle": "Publish failed",
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
@@ -3163,6 +3170,7 @@
     "namePlaceholder": "Enter your name here",
     "usernameLabel": "Your username (required)",
     "usernamePlaceholder": "@",
+    "usernameError": "3–42 lowercase alphanumeric characters and hyphens, must start and end with a letter or number",
     "descriptionLabel": "Your description",
     "descriptionPlaceholder": "Tell the community about yourself...",
     "createProfile": "Create profile",
@@ -3189,6 +3197,14 @@
     "title": "Introducing Nodes 2.0",
     "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
+  },
+  "appBuilder": {
+    "vueNodeSwitch": {
+      "title": "Switched over to Nodes 2.0",
+      "content": "For the best experience, App builder uses Nodes 2.0. You can switch back after building the app from the main menu.",
+      "dontShowAgain": "Don't show again",
+      "dismiss": "Dismiss"
+    }
   },
   "vueNodesMigration": {
     "message": "Prefer the legacy design?",
@@ -3567,9 +3583,9 @@
     "removeBackground": "Remove Background",
     "imageCompare": "Image compare",
     "extractFrame": "Extract frame",
-    "loadStyleLora": "Load style (LoRA)",
+    "loadStyleLora": "Load style",
     "lipsync": "Lipsync",
-    "textGenerationLLM": "Text generation (LLM)",
+    "textGenerationLLM": "Text generation",
     "textTo3DModel": "Text to 3D model",
     "imageTo3DModel": "Image to 3D Model",
     "musicGeneration": "Music generation",

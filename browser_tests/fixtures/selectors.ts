@@ -42,6 +42,16 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel'
   },
+  subgraphEditor: {
+    toggle: 'subgraph-editor-toggle',
+    shownSection: 'subgraph-editor-shown-section',
+    hiddenSection: 'subgraph-editor-hidden-section',
+    widgetToggle: 'subgraph-widget-toggle',
+    widgetLabel: 'subgraph-widget-label',
+    iconLink: 'icon-link',
+    iconEye: 'icon-eye',
+    widgetActionsMenuButton: 'widget-actions-menu-button'
+  },
   node: {
     titleInput: 'node-title-input'
   },
@@ -51,11 +61,20 @@ export const TestIds = {
     colorBlue: 'blue',
     colorRed: 'red'
   },
+  menu: {
+    moreMenuContent: 'more-menu-content'
+  },
   widgets: {
+    container: 'node-widgets',
+    widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button'
+  },
+  builder: {
+    ioItem: 'builder-io-item',
+    widgetActionsMenu: 'widget-actions-menu'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -83,9 +102,12 @@ export type TestIdValue =
   | (typeof TestIds.node)[keyof typeof TestIds.node]
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
+  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
+  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]

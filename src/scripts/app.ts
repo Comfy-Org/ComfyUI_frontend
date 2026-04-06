@@ -6,6 +6,7 @@ import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { st, t } from '@/i18n'
@@ -578,6 +579,9 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
+        // Skip if already handled (e.g. file drop onto publish dialog tiles)
+        if (event.defaultPrevented) return
+
         event.preventDefault()
         event.stopPropagation()
 
@@ -1138,6 +1142,12 @@ export class ComfyApp {
     useMissingModelStore().clearMissingModels()
 
     if (clean !== false) {
+      // Reset canvas context before configuring a new graph so subgraph UI
+      // state from the previous workflow cannot leak into the newly loaded
+      // one, and so `clean()` can clear the root graph even when the user is
+      // currently inside a subgraph.
+      this.canvas.setGraph(this.rootGraph)
+
       this.clean()
     }
 
@@ -1281,6 +1291,7 @@ export class ComfyApp {
 
     ChangeTracker.isLoadingGraph = true
     try {
+      let normalizedMainGraph = false
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
@@ -1290,7 +1301,10 @@ export class ComfyApp {
           this.rootGraph.extra.workflowRendererVersion
 
         // Scale main graph
-        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
+        normalizedMainGraph = ensureCorrectLayoutScale(
+          originalMainGraphRenderer,
+          this.rootGraph
+        )
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)
@@ -1367,6 +1381,10 @@ export class ComfyApp {
 
         useExtensionService().invokeExtensions('loadedGraphNode', node)
       })
+
+      if (normalizedMainGraph) {
+        syncLayoutStoreNodeBoundsFromGraph(this.rootGraph)
+      }
 
       await useExtensionService().invokeExtensionsAsync(
         'afterConfigureGraph',

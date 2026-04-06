@@ -21,6 +21,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
@@ -135,7 +136,7 @@ export const useWorkflowService = () => {
       }
     }
 
-    workflow.changeTracker?.checkState()
+    if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
 
     if (isSelfOverwrite) {
       await saveWorkflow(workflow)
@@ -160,7 +161,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      workflow.changeTracker?.checkState()
+      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
 
       const isApp = workflow.initialMode === 'app'
       const expectedPath =
@@ -404,6 +405,7 @@ export const useWorkflowService = () => {
     // Determine the initial app mode for fresh loads from serialized state.
     // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
+    useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
       if (!wasAppMode && workflow.initialMode === 'app') {

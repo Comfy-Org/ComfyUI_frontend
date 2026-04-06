@@ -488,8 +488,13 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
-  // Scoped per-store instance; incremented to dedupe concurrent update() calls
-  let updateRequestId = 0
+  // Single-flight coalescing: at most one fetch in flight at a time.
+  // If update() is called while a fetch is running, the call is coalesced
+  // and a single re-fetch fires after the current one completes.
+  // This prevents both request spam and UI starvation (where a rapid stream
+  // of calls causes every response to be discarded by a stale-request guard).
+  let inFlight = false
+  let dirty = false
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -514,15 +519,19 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
-    const requestId = ++updateRequestId
+    if (inFlight) {
+      dirty = true
+      return
+    }
+
+    inFlight = true
+    dirty = false
     isLoading.value = true
     try {
       const [queue, history] = await Promise.all([
         api.getQueue(),
         api.getHistory(maxHistoryItems.value)
       ])
-
-      if (requestId !== updateRequestId) return
 
       // API returns pre-sorted data (sort_by=create_time&order=desc)
       runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
@@ -582,11 +591,10 @@ export const useQueueStore = defineStore('queue', () => {
       }
       hasFetchedHistorySnapshot.value = true
     } finally {
-      // Only clear loading if this is the latest request.
-      // A stale request completing (success or error) should not touch loading state
-      // since a newer request is responsible for it.
-      if (requestId === updateRequestId) {
-        isLoading.value = false
+      isLoading.value = false
+      inFlight = false
+      if (dirty) {
+        void update()
       }
     }
   }

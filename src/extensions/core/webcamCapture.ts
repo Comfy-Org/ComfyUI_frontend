@@ -108,7 +108,7 @@ app.registerExtension({
       'waiting for camera...',
       'capture',
       capture,
-      { canvasOnly: true }
+      {}
     )
     btn.disabled = true
     btn.serializeValue = () => undefined
