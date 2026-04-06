@@ -116,7 +116,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
-const popoverPosition = ref<{ top: number; right: number } | null>(null)
+const popoverPosition = ref<{ top: number; left: number } | null>(null)
 const {
   activeDetails,
   clearHoverTimers,
