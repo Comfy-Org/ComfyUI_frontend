@@ -5,7 +5,7 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { api } from '@/scripts/api'
+import { getServerCapability } from '@/services/serverCapabilities'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 /**
@@ -30,7 +30,7 @@ export enum ServerFeatureFlag {
 }
 
 /**
- * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
+ * Resolves a feature flag value with dev override > remoteConfig > serverCapability priority.
  */
 function resolveFlag<T>(
   flagKey: string,
@@ -39,23 +39,29 @@ function resolveFlag<T>(
 ): T {
   const override = getDevOverride<T>(flagKey)
   if (override !== undefined) return override
-  return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
+  return remoteConfigValue ?? getServerCapability(flagKey, defaultValue)
 }
 
 /**
- * Composable for reactive access to server-side feature flags
+ * Composable for reactive access to feature flags
  */
 export function useFeatureFlags() {
   const flags = reactive({
+    // Direct server-only flags — resolved via getServerCapability() only
     get supportsPreviewMetadata() {
-      return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
+      return getServerCapability(
+        ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA,
+        false
+      )
     },
     get maxUploadSize() {
-      return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
+      return getServerCapability(ServerFeatureFlag.MAX_UPLOAD_SIZE)
     },
     get supportsManagerV4() {
-      return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
+      return getServerCapability(ServerFeatureFlag.MANAGER_SUPPORTS_V4, false)
     },
+
+    // Flags with remoteConfig override — resolved via resolveFlag()
     get modelUploadButtonEnabled() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
@@ -84,6 +90,7 @@ export function useFeatureFlags() {
         false
       )
     },
+    // Flags with extra conditional logic (isNightly/isCloud guards)
     get linearToggleEnabled() {
       if (isNightly) return true
 
@@ -110,7 +117,7 @@ export function useFeatureFlags() {
 
       return (
         remoteConfig.value.team_workspaces_enabled ??
-        api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+        getServerCapability(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
       )
     },
     get userSecretsEnabled() {
@@ -120,15 +127,16 @@ export function useFeatureFlags() {
         false
       )
     },
+    // Direct server-only flags with defaults
     get nodeReplacementsEnabled() {
-      return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+      return getServerCapability(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get nodeLibraryEssentialsEnabled() {
       if (isNightly || import.meta.env.DEV) return true
 
       return (
         remoteConfig.value.node_library_essentials_enabled ??
-        api.getServerFeature(
+        getServerCapability(
           ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
           false
         )
@@ -160,7 +168,7 @@ export function useFeatureFlags() {
   })
 
   const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
-    computed(() => api.getServerFeature(featurePath, defaultValue))
+    computed(() => getServerCapability(featurePath, defaultValue))
 
   return {
     flags: readonly(flags),

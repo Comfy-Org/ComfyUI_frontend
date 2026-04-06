@@ -787,9 +787,7 @@ export class ComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
-    api.addEventListener('feature_flags', () => {
-      void useNodeReplacementStore().load()
-    })
+    void useNodeReplacementStore().load()
 
     api.init()
   }

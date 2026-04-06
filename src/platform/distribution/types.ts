@@ -16,6 +16,10 @@ const DISTRIBUTION: Distribution = __DISTRIBUTION__
 export const isDesktop = DISTRIBUTION === 'desktop'
 export const isCloud = DISTRIBUTION === 'cloud'
 
+export function getApiBase(): string {
+  return isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/')
+}
+
 /**
  * Whether this is a nightly build (from main branch).
  * Nightly builds may show experimental features and surveys.

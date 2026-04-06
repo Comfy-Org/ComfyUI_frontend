@@ -15,6 +15,7 @@ declare module '~icons/*' {
 declare global {
   interface Window {
     __COMFYUI_FRONTEND_VERSION__: string
+    __setServerCapability?: (key: string, value: unknown) => void
   }
 
   interface ImportMetaEnv {

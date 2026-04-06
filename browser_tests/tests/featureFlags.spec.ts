@@ -37,7 +37,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
 
       // Monitor for server feature flags
       const checkInterval = setInterval(() => {
-        const flags = window.app?.api?.serverFeatureFlags?.value
+        const flags = window.app?.api?.serverFeatureFlags
         if (flags && Object.keys(flags).length > 0) {
           window.__capturedMessages!.serverFeatureFlags = flags
           clearInterval(checkInterval)
@@ -93,7 +93,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
   }) => {
     // Get the actual server feature flags from the backend
     const serverFlags = await comfyPage.page.evaluate(() => {
-      return window.app!.api.serverFeatureFlags.value
+      return window.app!.api.serverFeatureFlags
     })
 
     // Verify we received real feature flags from the backend
@@ -126,8 +126,8 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     // Test that the method only returns true for boolean true values
     const testResults = await comfyPage.page.evaluate(() => {
       // Temporarily modify serverFeatureFlags to test behavior
-      const original = window.app!.api.serverFeatureFlags.value
-      window.app!.api.serverFeatureFlags.value = {
+      const original = window.app!.api.serverFeatureFlags
+      window.app!.api.serverFeatureFlags = {
         bool_true: true,
         bool_false: false,
         string_value: 'yes',
@@ -144,7 +144,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       }
 
       // Restore original
-      window.app!.api.serverFeatureFlags.value = original
+      window.app!.api.serverFeatureFlags = original
       return results
     })
 
@@ -279,8 +279,8 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       // Monitor when feature flags arrive by checking periodically
       const checkFeatureFlags = setInterval(() => {
         if (
-          window.app?.api?.serverFeatureFlags?.value
-            ?.supports_preview_metadata !== undefined
+          window.app?.api?.serverFeatureFlags?.supports_preview_metadata !==
+          undefined
         ) {
           window.__appReadiness!.featureFlagsReceived = true
           clearInterval(checkFeatureFlags)
@@ -317,8 +317,8 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     // Wait for feature flags to be received
     await newPage.waitForFunction(
       () =>
-        window.app?.api?.serverFeatureFlags?.value
-          ?.supports_preview_metadata !== undefined,
+        window.app?.api?.serverFeatureFlags?.supports_preview_metadata !==
+        undefined,
       {
         timeout: 10000
       }
@@ -328,7 +328,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     const readiness = await newPage.evaluate(() => {
       return {
         ...window.__appReadiness,
-        currentFlags: window.app!.api.serverFeatureFlags.value
+        currentFlags: window.app!.api.serverFeatureFlags
       }
     })
 
