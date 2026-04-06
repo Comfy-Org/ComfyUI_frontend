@@ -83,6 +83,14 @@ export class AppModeHelper {
     return this.page.locator('[data-testid="linear-widgets"]')
   }
 
+  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
+  get imagePickerPopover(): Locator {
+    return this.page
+      .getByRole('dialog')
+      .filter({ has: this.page.getByRole('button', { name: 'All' }) })
+      .first()
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").
