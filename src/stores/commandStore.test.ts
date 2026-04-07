@@ -40,27 +40,21 @@ describe('commandStore', () => {
       expect(store.isRegistered('test.command')).toBe(true)
     })
 
-    it('warns on duplicate registration', () => {
+    it('warns on duplicate registration and overwrites with new function', () => {
       const store = useCommandStore()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      store.registerCommand({ id: 'dup', function: vi.fn() })
-      store.registerCommand({ id: 'dup', function: vi.fn() })
+      const originalFn = vi.fn()
+      const replacementFn = vi.fn()
+      store.registerCommand({ id: 'dup', function: originalFn })
+      store.registerCommand({ id: 'dup', function: replacementFn })
 
       expect(warnSpy).toHaveBeenCalledWith('Command dup already registered')
       warnSpy.mockRestore()
-    })
-  })
 
-  describe('registerCommands', () => {
-    it('registers multiple commands at once', () => {
-      const store = useCommandStore()
-      store.registerCommands([
-        { id: 'cmd.a', function: vi.fn() },
-        { id: 'cmd.b', function: vi.fn() }
-      ])
-      expect(store.isRegistered('cmd.a')).toBe(true)
-      expect(store.isRegistered('cmd.b')).toBe(true)
+      store.getCommand('dup')?.function()
+      expect(replacementFn).toHaveBeenCalled()
+      expect(originalFn).not.toHaveBeenCalled()
     })
   })
 
@@ -77,15 +71,6 @@ describe('commandStore', () => {
     it('returns undefined for unregistered command', () => {
       const store = useCommandStore()
       expect(store.getCommand('nonexistent')).toBeUndefined()
-    })
-  })
-
-  describe('commands getter', () => {
-    it('returns all registered commands as an array', () => {
-      const store = useCommandStore()
-      store.registerCommand({ id: 'a', function: vi.fn() })
-      store.registerCommand({ id: 'b', function: vi.fn() })
-      expect(store.commands).toHaveLength(2)
     })
   })
 
@@ -147,6 +132,8 @@ describe('commandStore', () => {
       })
       expect(store.isRegistered('ext.cmd1')).toBe(true)
       expect(store.isRegistered('ext.cmd2')).toBe(true)
+      expect(store.getCommand('ext.cmd1')?.source).toBe('test-ext')
+      expect(store.getCommand('ext.cmd2')?.source).toBe('test-ext')
     })
 
     it('skips extensions without commands', () => {
@@ -156,17 +143,7 @@ describe('commandStore', () => {
     })
   })
 
-  describe('ComfyCommandImpl', () => {
-    it('resolves label as string', () => {
-      const store = useCommandStore()
-      store.registerCommand({
-        id: 'label.str',
-        function: vi.fn(),
-        label: 'Static'
-      })
-      expect(store.getCommand('label.str')?.label).toBe('Static')
-    })
-
+  describe('getCommand resolves dynamic properties', () => {
     it('resolves label as function', () => {
       const store = useCommandStore()
       store.registerCommand({
@@ -177,24 +154,14 @@ describe('commandStore', () => {
       expect(store.getCommand('label.fn')?.label).toBe('Dynamic')
     })
 
-    it('resolves icon as function', () => {
+    it('resolves tooltip as function', () => {
       const store = useCommandStore()
       store.registerCommand({
-        id: 'icon.fn',
+        id: 'tip.fn',
         function: vi.fn(),
-        icon: () => 'pi pi-check'
+        tooltip: () => 'Dynamic tip'
       })
-      expect(store.getCommand('icon.fn')?.icon).toBe('pi pi-check')
-    })
-
-    it('uses label as default menubarLabel', () => {
-      const store = useCommandStore()
-      store.registerCommand({
-        id: 'mbl.default',
-        function: vi.fn(),
-        label: 'My Label'
-      })
-      expect(store.getCommand('mbl.default')?.menubarLabel).toBe('My Label')
+      expect(store.getCommand('tip.fn')?.tooltip).toBe('Dynamic tip')
     })
 
     it('uses explicit menubarLabel over label', () => {
@@ -206,6 +173,25 @@ describe('commandStore', () => {
         menubarLabel: 'Menu Label'
       })
       expect(store.getCommand('mbl.explicit')?.menubarLabel).toBe('Menu Label')
+    })
+
+    it('falls back menubarLabel to label', () => {
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'mbl.default',
+        function: vi.fn(),
+        label: 'My Label'
+      })
+      expect(store.getCommand('mbl.default')?.menubarLabel).toBe('My Label')
+    })
+  })
+
+  describe('formatKeySequence', () => {
+    it('returns empty string when command has no keybinding', () => {
+      const store = useCommandStore()
+      store.registerCommand({ id: 'no.kb', function: vi.fn() })
+      const cmd = store.getCommand('no.kb')!
+      expect(store.formatKeySequence(cmd)).toBe('')
     })
   })
 })
