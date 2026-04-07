@@ -33,8 +33,26 @@ type MockPreviewOutput = NonNullable<JobEntry['preview_output']> & {
   display_name?: string
 }
 
+type SeededFileLocation = {
+  filename: string
+  type: string
+  subfolder: string
+}
+
 function getFixturePath(relativePath: string): string {
   return path.resolve(helperDir, '../../assets', relativePath)
+}
+
+function buildSeededFileKey({
+  filename,
+  type,
+  subfolder
+}: SeededFileLocation): string {
+  return new URLSearchParams({
+    filename,
+    type,
+    subfolder
+  }).toString()
 }
 
 function defaultFileFor(filename: string): SeededAssetFile {
@@ -192,6 +210,24 @@ function buildSeededJob(job: GeneratedJobFixture) {
   return { listItem, detail }
 }
 
+function outputLocation(output: GeneratedOutputFixture): SeededFileLocation {
+  return {
+    filename: output.filename,
+    type: output.type ?? 'output',
+    subfolder: output.subfolder ?? ''
+  }
+}
+
+function importedAssetLocation(
+  asset: ImportedAssetFixture
+): SeededFileLocation {
+  return {
+    filename: asset.name,
+    type: 'input',
+    subfolder: ''
+  }
+}
+
 export class AssetScenarioHelper {
   private readonly jobsBackend: InMemoryJobsBackend
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
@@ -258,7 +294,7 @@ export class AssetScenarioHelper {
     for (const job of this.generatedJobs) {
       for (const output of job.outputs) {
         const fallback = defaultFileFor(output.filename)
-        this.seededFiles.set(output.filename, {
+        this.seededFiles.set(buildSeededFileKey(outputLocation(output)), {
           filePath: output.filePath ?? fallback.filePath,
           contentType: output.contentType ?? fallback.contentType,
           textContent: fallback.textContent
@@ -268,7 +304,7 @@ export class AssetScenarioHelper {
 
     for (const asset of this.importedFiles) {
       const fallback = defaultFileFor(asset.name)
-      this.seededFiles.set(asset.name, {
+      this.seededFiles.set(buildSeededFileKey(importedAssetLocation(asset)), {
         filePath: asset.filePath ?? fallback.filePath,
         contentType: asset.contentType ?? fallback.contentType,
         textContent: fallback.textContent
@@ -304,6 +340,8 @@ export class AssetScenarioHelper {
     this.viewRouteHandler = async (route: Route) => {
       const url = new URL(route.request().url())
       const filename = url.searchParams.get('filename')
+      const type = url.searchParams.get('type') ?? 'output'
+      const subfolder = url.searchParams.get('subfolder') ?? ''
 
       if (!filename) {
         await route.fulfill({
@@ -315,7 +353,13 @@ export class AssetScenarioHelper {
       }
 
       const seededFile =
-        this.seededFiles.get(filename) ?? defaultFileFor(filename)
+        this.seededFiles.get(
+          buildSeededFileKey({
+            filename,
+            type,
+            subfolder
+          })
+        ) ?? defaultFileFor(filename)
 
       if (seededFile.filePath) {
         const body = await readFile(seededFile.filePath)
