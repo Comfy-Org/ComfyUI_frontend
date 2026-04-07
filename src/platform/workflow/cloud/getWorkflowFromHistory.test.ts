@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
+  extractPrompt,
   extractWorkflow,
   fetchJobDetail
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -121,6 +122,97 @@ describe('extractWorkflow', () => {
     }
 
     const result = await extractWorkflow(jobWithoutWorkflow)
+
+    expect(result).toBeUndefined()
+  })
+})
+
+const mockApiPrompt = {
+  '1': {
+    class_type: 'SolidMask',
+    inputs: { value: 1, width: 512, height: 512 }
+  },
+  '2': {
+    class_type: 'MaskToImage',
+    inputs: { mask: ['1', 0] }
+  },
+  '3': {
+    class_type: 'SaveImage',
+    inputs: { images: ['2', 0], filename_prefix: 'test' }
+  }
+}
+
+const mockApiJobDetail: JobDetail = {
+  id: 'api-job-id',
+  status: 'completed',
+  create_time: 1234567890,
+  update_time: 1234567900,
+  workflow: {
+    prompt: mockApiPrompt,
+    extra_data: {}
+  },
+  outputs: {}
+}
+
+describe('extractPrompt', () => {
+  it('should extract prompt from API-dispatched job detail', () => {
+    const result = extractPrompt(mockApiJobDetail)
+
+    expect(result).toEqual(mockApiPrompt)
+  })
+
+  it('should return undefined when job is undefined', () => {
+    const result = extractPrompt(undefined)
+
+    expect(result).toBeUndefined()
+  })
+
+  it('should return undefined when workflow has no prompt', () => {
+    const jobWithoutPrompt: JobDetail = {
+      ...mockApiJobDetail,
+      workflow: { extra_data: {} }
+    }
+
+    const result = extractPrompt(jobWithoutPrompt)
+
+    expect(result).toBeUndefined()
+  })
+
+  it('should return undefined when prompt is empty', () => {
+    const jobWithEmptyPrompt: JobDetail = {
+      ...mockApiJobDetail,
+      workflow: { prompt: {}, extra_data: {} }
+    }
+
+    const result = extractPrompt(jobWithEmptyPrompt)
+
+    expect(result).toBeUndefined()
+  })
+
+  it('should return undefined when prompt nodes lack class_type', () => {
+    const jobWithInvalidPrompt: JobDetail = {
+      ...mockApiJobDetail,
+      workflow: {
+        prompt: { '1': { inputs: { value: 1 } } },
+        extra_data: {}
+      }
+    }
+
+    const result = extractPrompt(jobWithInvalidPrompt)
+
+    expect(result).toBeUndefined()
+  })
+
+  it('should return undefined when prompt nodes lack inputs', () => {
+    const jobWithInvalidPrompt: JobDetail = {
+      ...mockApiJobDetail,
+      workflow: {
+        prompt: { '1': { class_type: 'SolidMask' } },
+        extra_data: {}
+      }
+    }
+
+    const result = extractPrompt(jobWithInvalidPrompt)
 
     expect(result).toBeUndefined()
   })
