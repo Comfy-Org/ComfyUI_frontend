@@ -94,13 +94,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
     })
   })
-  // The 500ms fixed delay on the search results is causing flakiness
-  // Potential solution: add a spinner state when the search is in progress,
-  // and observe that state from the test. Blocker: the PrimeVue AutoComplete
-  // does not have a v-model on the query, so we cannot observe the raw
-  // query update, and thus cannot set the spinning state between the raw query
-  // update and the debounced search update.
-  test.skip(
+  test(
     'Can be added to canvas using search',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
@@ -108,7 +102,16 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
       await comfyPage.canvasOps.doubleClick()
       await comfyPage.nextFrame()
-      await comfyPage.searchBox.fillAndSelectFirstNode(groupNodeName)
+      await comfyPage.searchBox.input.waitFor({ state: 'visible' })
+      await comfyPage.searchBox.input.fill(groupNodeName)
+      await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
+
+      const exactGroupNodeResult = comfyPage.searchBox.dropdown
+        .locator(`li[aria-label="${groupNodeName}"]`)
+        .first()
+      await expect(exactGroupNodeResult).toBeVisible()
+      await exactGroupNodeResult.click()
+
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-node-copy-added-from-search.png'
       )

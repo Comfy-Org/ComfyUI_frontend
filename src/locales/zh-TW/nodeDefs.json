@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "保持比例",
+        "tooltip": "選擇是否將裁剪內容拉伸以符合輸出尺寸，或以黑色像素填充以保留長寬比。"
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "每個裁切區域調整後的高度。"
@@ -2309,6 +2313,23 @@
     "display_name": "停用雜訊",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "繪製 BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "圖像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "輸出圖像",
         "tooltip": null
       }
     }
@@ -12226,6 +12247,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 偵測",
+    "inputs": {
+      "class_name": {
+        "name": "類別名稱",
+        "tooltip": "依類別篩選偵測結果。設為 'all' 以停用篩選。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "max_detections": {
+        "name": "最大偵測數",
+        "tooltip": "每張圖像最多回傳的偵測數量，依信心分數由高至低排序。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "threshold": {
+        "name": "閾值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "隨機裁切影像",
     "inputs": {
@@ -15631,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -17890,6 +17943,241 @@
       },
       "width": {
         "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "從首幀圖像產生影片，可選擇加入末幀圖像與音訊。",
+    "display_name": "Wan 2.7 圖像轉影片",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於驅動影片生成的音訊（如對嘴、節奏動作）。時長：2秒至30秒。若未提供，模型會自動產生相符的背景音樂或音效。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首幀圖像。輸出長寬比將依此圖像決定。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "末幀圖像。模型將產生從首幀到末幀的過渡影片。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的隨機種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "根據參考素材生成包含人物或物件的影片。支援單一角色表演與多角色互動。",
+    "display_name": "Wan 2.7 參考生成影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的隨機種子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 產生的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "使用 Wan 2.7 模型根據文字提示生成影片。",
+    "display_name": "Wan 2.7 文字轉影片",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於驅動影片生成的音訊（如對嘴、節奏同步動作）。時長：3秒至30秒。若未提供，模型會自動生成匹配的背景音樂或音效。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "從影片結束處繼續生成影片，可選擇最後一幀控制。",
+    "display_name": "Wan 2.7 影片續接",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "要續接的輸入影片。時長：2秒至10秒。輸出長寬比將依此影片決定。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最後一幀圖像。續接內容將朝此幀過渡。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 協助增強提示詞。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "使用文字指令、參考圖像或風格轉換編輯影片。",
+    "display_name": "Wan 2.7 影片編輯",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "「auto」：模型根據提示詞決定是否重新生成音訊。「origin」：保留輸入影片的原始音訊。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於生成的種子值。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要編輯的影片。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否在結果中加入 AI 生成的浮水印。"
       }
     },
     "outputs": {

@@ -1,5 +1,7 @@
 import type { Locator } from '@playwright/test'
 
+import { TestIds } from '../selectors'
+
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
   constructor(private readonly locator: Locator) {}
@@ -18,6 +20,10 @@ export class VueNodeFixture {
 
   get body(): Locator {
     return this.locator.locator('[data-testid^="node-body-"]')
+  }
+
+  get pinIndicator(): Locator {
+    return this.locator.getByTestId(TestIds.node.pinIndicator)
   }
 
   get collapseButton(): Locator {

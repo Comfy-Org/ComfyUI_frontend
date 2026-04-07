@@ -2258,6 +2258,7 @@
     "dataset": "مجموعة بيانات",
     "debug": "تصحيح",
     "deprecated": "مهمل",
+    "detection": "الكشف",
     "edit_models": "تحرير النماذج",
     "flux": "تدفق",
     "gligen": "gligen",
@@ -2526,6 +2527,23 @@
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
+    "missingMedia": {
+      "audio": "الصوتيات",
+      "cancelSelection": "إلغاء الاختيار",
+      "collapseNodes": "إخفاء العقد المشار إليها",
+      "confirmSelection": "تأكيد الاختيار",
+      "expandNodes": "عرض العقد المشار إليها",
+      "image": "الصور",
+      "locateNode": "تحديد موقع العقدة",
+      "missingMediaTitle": "المدخلات المفقودة",
+      "or": "أو",
+      "selectedFromLibrary": "تم الاختيار من المكتبة",
+      "uploadFile": "رفع {type}",
+      "uploaded": "تم الرفع",
+      "uploading": "جاري الرفع...",
+      "useFromLibrary": "استخدام من المكتبة",
+      "video": "الفيديوهات"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "هذا النموذج موجود بالفعل في \"{category}\"",
       "assetLoadTimeout": "انتهت مهلة اكتشاف النموذج. حاول إعادة تحميل سير العمل.",
@@ -3239,6 +3257,7 @@
       "termsAgreement": "بالمتابعة، أنت توافق على {terms} و{privacy} الخاصة بـ Comfy Org.",
       "totalDueToday": "الإجمالي المستحق اليوم"
     },
+    "refreshCredits": "تحديث الرصيد",
     "renewsDate": "تجديد في {date}",
     "required": {
       "pollingFailed": "فشل تفعيل الاشتراك",

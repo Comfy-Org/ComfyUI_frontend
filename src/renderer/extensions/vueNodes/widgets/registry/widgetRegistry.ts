@@ -233,7 +233,8 @@ const EXPANDING_TYPES = [
   'markdown',
   'load3D',
   'curve',
-  'painter'
+  'painter',
+  'imagecompare'
 ] as const
 
 export function shouldExpand(type: string): boolean {

@@ -2258,6 +2258,7 @@
     "dataset": "conjunto de datos",
     "debug": "depurar",
     "deprecated": "obsoleto",
+    "detection": "detección",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",
@@ -2526,6 +2527,23 @@
     "inputsNone": "SIN ENTRADAS",
     "inputsNoneTooltip": "El nodo no tiene entradas",
     "locateNode": "Localizar nodo en el lienzo",
+    "missingMedia": {
+      "audio": "Audio",
+      "cancelSelection": "Cancelar selección",
+      "collapseNodes": "Ocultar nodos de referencia",
+      "confirmSelection": "Confirmar selección",
+      "expandNodes": "Mostrar nodos de referencia",
+      "image": "Imágenes",
+      "locateNode": "Localizar nodo",
+      "missingMediaTitle": "Entradas faltantes",
+      "or": "O",
+      "selectedFromLibrary": "Seleccionado de la biblioteca",
+      "uploadFile": "Subir {type}",
+      "uploaded": "Subido",
+      "uploading": "Subiendo...",
+      "useFromLibrary": "Usar de la biblioteca",
+      "video": "Videos"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Este modelo ya existe en \"{category}\"",
       "assetLoadTimeout": "El tiempo de detección del modelo se agotó. Intenta recargar el flujo de trabajo.",
@@ -3239,6 +3257,7 @@
       "termsAgreement": "Al continuar, aceptas los {terms} y la {privacy} de Comfy Org.",
       "totalDueToday": "Total a pagar hoy"
     },
+    "refreshCredits": "Actualizar créditos",
     "renewsDate": "Se renueva el {date}",
     "required": {
       "pollingFailed": "Error al activar la suscripción",
