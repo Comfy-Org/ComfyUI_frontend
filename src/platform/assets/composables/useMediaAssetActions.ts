@@ -150,20 +150,23 @@ export function useMediaAssetActions() {
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
-          const jobId = asset.prompt_id || metadata?.jobId || asset.id
+          const jobId = asset.prompt_id || metadata?.jobId
+          if (!jobId) {
+            assetIds.push(asset.id)
+            continue
+          }
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
           // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
-          const filterKey = asset.prompt_id || metadata?.jobId
-          if (filterKey && asset.name && metadata?.outputCount == null) {
-            if (!jobAssetNameFilters[filterKey]) {
-              jobAssetNameFilters[filterKey] = []
+          if (asset.name && metadata?.outputCount == null) {
+            if (!jobAssetNameFilters[jobId]) {
+              jobAssetNameFilters[jobId] = []
             }
-            if (!jobAssetNameFilters[filterKey].includes(asset.name)) {
-              jobAssetNameFilters[filterKey].push(asset.name)
+            if (!jobAssetNameFilters[jobId].includes(asset.name)) {
+              jobAssetNameFilters[jobId].push(asset.name)
             }
           }
         } else {
