@@ -1,5 +1,5 @@
 /* eslint-disable vue/one-component-per-file, vue/require-prop-types */
-import type { RenderResult } from '@testing-library/vue'
+import type { RenderOptions, RenderResult } from '@testing-library/vue'
 import type { ComponentMountingOptions } from '@vue/test-utils'
 
 import { createTestingPinia } from '@pinia/testing'
@@ -117,8 +117,8 @@ function renderWithDefaults<C>(
   const { setupUser = true, global: globalOptions, ...rest } = options ?? {}
   const user = setupUser ? userEvent.setup() : undefined
 
-  const result = render(
-    component as Parameters<typeof render>[0],
+  const result = render<C>(
+    component,
     {
       global: {
         ...globalOptions,
@@ -129,7 +129,7 @@ function renderWithDefaults<C>(
         }
       },
       ...rest
-    } as Parameters<typeof render>[1]
+    } as RenderOptions<C>
   )
 
   return { ...result, user }
