@@ -24,7 +24,8 @@ const zRemoteWidgetConfig = z.object({
   control_after_refresh: z.enum(['first', 'last']).optional(),
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional(),
-  item_schema: zRemoteItemSchema.optional()
+  item_schema: zRemoteItemSchema.optional(),
+  use_comfy_api: z.boolean().optional()
 })
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),

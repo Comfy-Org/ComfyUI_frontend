@@ -4,20 +4,15 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
- * Check if a route is a comfy-api proxy route.
- * These routes need the comfy-api base URL prepended and always require auth.
- */
-function isProxyRoute(route: string): boolean {
-  return route.startsWith('/proxy/')
-}
-
-/**
  * Resolve a RemoteOptions route to a full URL.
- * - "/proxy/..." routes → prepend getComfyApiBaseUrl()
- * - Everything else → use as-is
+ * - useComfyApi=true → prepend getComfyApiBaseUrl()
+ * - Otherwise → use as-is
  */
-export function resolveRoute(route: string): string {
-  if (isProxyRoute(route)) {
+export function resolveRoute(
+  route: string,
+  useComfyApi?: boolean
+): string {
+  if (useComfyApi) {
     return getComfyApiBaseUrl() + route
   }
   return route
@@ -25,13 +20,13 @@ export function resolveRoute(route: string): string {
 
 /**
  * Get auth headers for a remote request.
- * - "/proxy/..." routes → ALWAYS inject auth (comfy-api requires it)
- * - Other routes → only inject auth in cloud mode
+ * - useComfyApi=true → inject auth headers (comfy-api requires it)
+ * - Otherwise → no auth headers injected
  */
 export async function getRemoteAuthHeaders(
-  route: string
+  useComfyApi?: boolean
 ): Promise<Record<string, any>> {
-  if (isProxyRoute(route)) {
+  if (useComfyApi) {
     const authStore = useAuthStore()
     const authHeader = await authStore.getAuthHeader()
     if (authHeader) {
@@ -50,9 +45,11 @@ export async function fetchRemoteRoute(
     params?: Record<string, string>
     timeout?: number
     signal?: AbortSignal
+    useComfyApi?: boolean
   } = {}
 ) {
-  const url = resolveRoute(route)
-  const authHeaders = await getRemoteAuthHeaders(route)
-  return axios.get(url, { ...options, ...authHeaders })
+  const { useComfyApi, ...requestOptions } = options
+  const url = resolveRoute(route, useComfyApi)
+  const authHeaders = await getRemoteAuthHeaders(useComfyApi)
+  return axios.get(url, { ...requestOptions, ...authHeaders })
 }

@@ -64,8 +64,8 @@ const fetchData = async (
 ) => {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
 
-  const url = resolveRoute(route)
-  const authHeaders = await getRemoteAuthHeaders(route)
+  const url = resolveRoute(route, config.use_comfy_api)
+  const authHeaders = await getRemoteAuthHeaders(config.use_comfy_api)
 
   const res = await axios.get(url, {
     params: query_params,

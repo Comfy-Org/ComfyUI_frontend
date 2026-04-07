@@ -45,7 +45,8 @@ async function fetchItems() {
   try {
     const res = await fetchRemoteRoute(remoteConfig.value.route, {
       params: remoteConfig.value.query_params,
-      timeout: remoteConfig.value.timeout ?? 30000
+      timeout: remoteConfig.value.timeout ?? 30000,
+      useComfyApi: remoteConfig.value.use_comfy_api
     })
     const data = remoteConfig.value.response_key
       ? res.data[remoteConfig.value.response_key]
