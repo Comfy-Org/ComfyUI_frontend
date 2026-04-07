@@ -156,20 +156,24 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
-    // Per-instance value takes priority — multiple SubgraphNode instances
-    // share the same inner graph, so the widget state store (keyed by
-    // inner node ID) would return the last-configured value for all
-    // instances.  The per-instance map is kept in sync by the setter.
-    const instanceValue = this.subgraphNode._instanceWidgetValues.get(
-      this._instanceKey
-    )
-    if (instanceValue !== undefined)
-      return instanceValue as IBaseWidget['value']
-
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
-
     return this.resolveAtHost()?.widget.value
+  }
+
+  /**
+   * Execution-time serialization — returns the per-instance value stored
+   * during configure, falling back to the regular value getter.
+   *
+   * The widget state store is shared across instances (keyed by inner node
+   * ID), so the regular getter returns the last-configured value for all
+   * instances.  graphToPrompt already prefers serializeValue over .value,
+   * so this is the hook that makes multi-instance execution correct.
+   */
+  serializeValue(): IBaseWidget['value'] {
+    const v = this.subgraphNode._instanceWidgetValues.get(this._instanceKey)
+    if (v !== undefined) return v as IBaseWidget['value']
+    return this.value
   }
 
   set value(value: IBaseWidget['value']) {
