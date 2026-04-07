@@ -80,7 +80,10 @@ export const TestIds = {
     widgetActionsMenuButton: 'widget-actions-menu-button'
   },
   node: {
-    titleInput: 'node-title-input'
+    titleInput: 'node-title-input',
+    pinIndicator: 'node-pin-indicator',
+    innerWrapper: 'node-inner-wrapper',
+    mainImage: 'main-image'
   },
   selectionToolbox: {
     colorPickerButton: 'color-picker-button',
