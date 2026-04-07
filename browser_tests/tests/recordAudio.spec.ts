@@ -20,9 +20,15 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
     await comfyPage.nextFrame()
 
     // Verify the RecordAudio node was added
-    const recordAudioNodes =
-      await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')
-    expect(recordAudioNodes.length).toBe(1)
+    await expect
+      .poll(
+        async () =>
+          (await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')).length,
+        {
+          timeout: 5000
+        }
+      )
+      .toBe(1)
 
     // Take a screenshot of the canvas with the RecordAudio node
     await expect(comfyPage.canvas).toHaveScreenshot('record_audio_node.png')

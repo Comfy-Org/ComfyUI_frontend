@@ -113,6 +113,14 @@ test.describe(
         'reroute/single-native-reroute-default-workflow'
       )
 
+      const checkpointNode = await comfyPage.nodeOps.getNodeRefById(4)
+      const positiveClipNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const negativeClipNode = await comfyPage.nodeOps.getNodeRefById(7)
+
+      const checkpointClipOutput = await checkpointNode.getOutput(1)
+      const positiveClipInput = await positiveClipNode.getInput(0)
+      const negativeClipInput = await negativeClipNode.getInput(0)
+
       // Dynamically read the rendered link marker position from the canvas,
       // targeting link 5 (CLIP from CheckpointLoaderSimple to negative CLIPTextEncode).
       const middlePoint = await comfyPage.page.waitForFunction(() => {
@@ -126,18 +134,27 @@ test.describe(
         return null
       })
       const pos = await middlePoint.jsonValue()
+      if (!pos) throw new Error('Rendered midpoint for link 5 was not found')
 
       // Click the middle point of the link to open the context menu.
-      await comfyPage.page.mouse.click(pos!.x, pos!.y)
+      await comfyPage.page.mouse.click(pos.x, pos.y)
 
       // Click the "Delete" context menu option.
       await comfyPage.page
         .locator('.litecontextmenu .litemenu-entry', { hasText: 'Delete' })
         .click()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'native_reroute_delete_from_midpoint_context_menu.png'
-      )
+      await expect
+        .poll(async () => ({
+          checkpointClipOutputLinks: await checkpointClipOutput.getLinkCount(),
+          positiveClipInputLinks: await positiveClipInput.getLinkCount(),
+          negativeClipInputLinks: await negativeClipInput.getLinkCount()
+        }))
+        .toEqual({
+          checkpointClipOutputLinks: 1,
+          positiveClipInputLinks: 1,
+          negativeClipInputLinks: 0
+        })
     })
   }
 )
