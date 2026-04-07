@@ -97,7 +97,9 @@ const socials = [
           :key="link.href"
           :href="link.href"
           :target="link.href.startsWith('http') ? '_blank' : undefined"
-          :rel="link.href.startsWith('http') ? 'noopener noreferrer' : undefined"
+          :rel="
+            link.href.startsWith('http') ? 'noopener noreferrer' : undefined
+          "
           class="text-sm text-smoke-700 transition-colors hover:text-white"
         >
           {{ link.label }}
