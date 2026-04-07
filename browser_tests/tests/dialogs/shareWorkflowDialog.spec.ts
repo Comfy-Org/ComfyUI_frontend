@@ -4,7 +4,6 @@ import { expect } from '@playwright/test'
 import type { AssetInfo } from '../../../src/schemas/apiSchema'
 import { comfyPageFixture } from '../../fixtures/ComfyPage'
 import { TestIds } from '../../fixtures/selectors'
-import type { WorkspaceStore } from '../../types/globals'
 
 interface PublishRecord {
   workflow_id: string
@@ -101,37 +100,26 @@ async function mockShareableAssets(
 
 /**
  * Dismiss stale PrimeVue dialog masks left by cloud-mode's onboarding flow
- * or auth-triggered modals.  Tries Escape first; falls back to forceful DOM
- * removal because PrimeVue's transition system can leave orphaned mask
- * elements that block subsequent dialog interactions.
+ * or auth-triggered modals by pressing Escape until they clear.
  */
 async function dismissOverlays(page: Page): Promise<void> {
   const mask = page.locator('.p-dialog-mask')
-  if ((await mask.count()) > 0) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if ((await mask.count()) === 0) break
     await page.keyboard.press('Escape')
     await mask
       .first()
       .waitFor({ state: 'hidden', timeout: 2000 })
       .catch(() => {})
   }
-  // Force-remove orphaned masks that CSS transitions left behind (cloud-only)
-  if ((await mask.count()) > 0) {
-    await page.evaluate(() => {
-      document
-        .querySelectorAll('.p-dialog-mask')
-        .forEach((el) => el.remove())
-    })
-  }
 }
 
 /**
- * Save the active workflow via store methods instead of the topbar Save button.
- * In cloud mode, comfyPage.menu.topbar.saveWorkflow() is unreliable because
- * auth timing and fetchApi() retries cause intermittent 409 Conflict errors.
- * Driving the store directly avoids these cloud-specific timing issues.
+ * Save the active workflow via the topbar Save menu action.
+ * Mocks the userdata POST endpoint to avoid real server calls in tests.
  */
 async function saveAndWait(
-  comfyPage: { page: Page },
+  comfyPage: { page: Page; menu: { topbar: { saveWorkflow: (name: string) => Promise<void> } } },
   workflowName: string
 ): Promise<void> {
   const filename = workflowName + (workflowName.endsWith('.json') ? '' : '.json')
@@ -154,75 +142,7 @@ async function saveAndWait(
     }
   )
 
-  const evalResult = await comfyPage.page.evaluate(async (name: string) => {
-    const store = (window.app!.extensionManager as WorkspaceStore).workflow
-    const workflow = store.activeWorkflow
-    if (!workflow) return { error: 'No active workflow' }
-
-    const wasTemporary = workflow.isTemporary
-    const oldPath = workflow.path
-
-    const newPath =
-      workflow.directory +
-      '/' +
-      name +
-      (name.endsWith('.json') ? '' : '.json')
-
-    if (workflow.isTemporary) {
-      await store.renameWorkflow(workflow, newPath)
-    }
-    workflow.changeTracker?.checkState()
-    await store.saveWorkflow(workflow)
-
-    return {
-      oldPath,
-      newPath,
-      wasTemporary,
-      afterPath: workflow.path,
-      afterSize: workflow.size,
-      afterIsTemporary: workflow.isTemporary
-    }
-  }, workflowName)
-
-  if ('error' in evalResult) {
-    throw new Error(`saveAndWait failed: ${evalResult.error}`)
-  }
-
-  // In cloud mode, the detach/attach cycle during saveWorkflow can trigger
-  // reactivity that switches activeWorkflow to a new default tab.
-  // Re-open the saved workflow to ensure it's the active one.
-  await comfyPage.page.evaluate(async (savedPath: string) => {
-    const store = (window.app!.extensionManager as WorkspaceStore).workflow
-    const saved = store.getWorkflowByPath(savedPath)
-    if (saved && store.activeWorkflow?.path !== savedPath) {
-      await store.openWorkflow(saved)
-    }
-  }, evalResult.afterPath)
-
-  await expect
-    .poll(
-      () =>
-        comfyPage.page.evaluate(() => {
-          const wf = (window.app!.extensionManager as WorkspaceStore).workflow
-            .activeWorkflow
-          return wf && !wf.isTemporary ? wf.path : null
-        }),
-      { timeout: 5000 }
-    )
-    .toBe(evalResult.afterPath)
-
-  // After save, the detach/attach cycle and graph serialization differences
-  // can cause changeTracker.checkState() to set isModified back to true.
-  // Force isModified=false and reset the changeTracker so the share dialog
-  // sees a clean saved state.
-  await comfyPage.page.evaluate(() => {
-    const wf = (window.app!.extensionManager as WorkspaceStore).workflow
-      .activeWorkflow
-    if (wf) {
-      wf.isModified = false
-      wf.changeTracker?.reset()
-    }
-  })
+  await comfyPage.menu.topbar.saveWorkflow(workflowName)
 }
 
 async function openShareDialog(page: Page): Promise<void> {
