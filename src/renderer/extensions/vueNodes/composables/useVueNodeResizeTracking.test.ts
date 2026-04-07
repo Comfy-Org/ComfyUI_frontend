@@ -181,7 +181,9 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).toHaveBeenCalledTimes(1)
+    // When layout store already has correct position, getBoundingClientRect
+    // is not needed — position is read from the store instead.
+    expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
@@ -192,13 +194,13 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).toHaveBeenCalledTimes(1)
+    expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
-  it('updates bounds on first observation when size matches but position differs', () => {
+  it('preserves layout store position when size matches but DOM position differs', () => {
     const nodeId = 'test-node'
     const width = 240
     const height = 180
@@ -209,7 +211,6 @@ describe('useVueNodeResizeTracking', () => {
       left: 100,
       top: 200
     })
-    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
 
     seedNodeLayout({
       nodeId,
@@ -221,20 +222,10 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).toHaveBeenCalledTimes(1)
-    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId,
-        bounds: {
-          x: 100,
-          y: 200 + titleHeight,
-          width,
-          height
-        }
-      }
-    ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+    // Position from DOM should NOT override layout store position
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
   })
 
   it('updates node bounds + slot layouts when size changes', () => {
