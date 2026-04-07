@@ -119,6 +119,24 @@ describe('useAuthActions', () => {
       expect(mockSaveWorkflow).toHaveBeenCalledWith(workflows[0])
       expect(mockSaveWorkflow).toHaveBeenCalledWith(workflows[1])
       expect(mockAuthLogout).toHaveBeenCalledOnce()
+
+      const lastSaveOrder = Math.max(
+        ...mockSaveWorkflow.mock.invocationCallOrder
+      )
+      const logoutOrder = mockAuthLogout.mock.invocationCallOrder[0]
+      expect(lastSaveOrder).toBeLessThan(logoutOrder)
+    })
+
+    it('should not log out when saving a workflow fails', async () => {
+      mockModifiedWorkflows.value = [{ path: 'workflow1.json' }]
+      mockConfirm.mockResolvedValue(true)
+      mockSaveWorkflow.mockRejectedValueOnce(new Error('Save failed'))
+
+      const { logout } = useAuthActions()
+      await logout()
+
+      expect(mockSaveWorkflow).toHaveBeenCalledOnce()
+      expect(mockAuthLogout).not.toHaveBeenCalled()
     })
 
     it("should log out without saving when user clicks Don't Save", async () => {
