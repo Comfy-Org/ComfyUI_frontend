@@ -5,6 +5,7 @@ import {
 
 test.describe('App mode usage', () => {
   test('Drag and Drop', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     const { centerPanel } = comfyPage.appMode
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
     await expect(centerPanel).toBeVisible()
