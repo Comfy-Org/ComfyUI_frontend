@@ -41,11 +41,11 @@ test.describe('App mode usage', () => {
       await expect(mobile.navigation).toBeVisible()
 
       await mobile.navigateTab('assets')
-      await expect(mobile.contentPanel).toContainClass('left-[200vw]')
+      await expect(mobile.contentPanel).toHaveAccessibleName('Assets')
 
       const buttons = await mobile.navigationTabs.all()
       await buttons[0].dragTo(buttons[2], { steps: 5 })
-      await expect(mobile.contentPanel).toContainClass('left-[100vw]')
+      await expect(mobile.contentPanel).toHaveAccessibleName('Outputs')
 
       await mobile.navigateTab('run')
       await expect(comfyPage.appMode.linearWidgets).toBeInViewport({ ratio: 1 })
