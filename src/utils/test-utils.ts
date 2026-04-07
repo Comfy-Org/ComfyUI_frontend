@@ -117,20 +117,17 @@ function renderWithDefaults<C>(
   const { setupUser = true, global: globalOptions, ...rest } = options ?? {}
   const user = setupUser ? userEvent.setup() : undefined
 
-  const result = render<C>(
-    component,
-    {
-      global: {
-        ...globalOptions,
-        plugins: [...createDefaultPlugins(), ...(globalOptions?.plugins ?? [])],
-        directives: {
-          ...defaultDirectiveStubs,
-          ...globalOptions?.directives
-        }
-      },
-      ...rest
-    } as RenderOptions<C>
-  )
+  const result = render<C>(component, {
+    global: {
+      ...globalOptions,
+      plugins: [...createDefaultPlugins(), ...(globalOptions?.plugins ?? [])],
+      directives: {
+        ...defaultDirectiveStubs,
+        ...globalOptions?.directives
+      }
+    },
+    ...rest
+  } as RenderOptions<C>)
 
   return { ...result, user }
 }
