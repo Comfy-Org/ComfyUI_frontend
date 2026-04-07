@@ -412,6 +412,47 @@ describe('SubgraphWidgetPromotion', () => {
         [String(nestedNode.id), 'noise_seed', String(samplerNode.id)]
       ])
     })
+
+    it('should preserve promoted widget entries after cloning', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'text', type: 'STRING' }]
+      })
+
+      const interiorNode = new LGraphNode('CLIPTextEncode')
+      const interiorInput = interiorNode.addInput('text', 'STRING')
+      interiorNode.addOutput('CONDITIONING', 'CONDITIONING')
+      interiorNode.addWidget('text', 'text', '', () => {})
+      interiorInput.widget = { name: 'text' }
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostNode = createTestSubgraphNode(subgraph)
+
+      // serialize() syncs the promotion store into properties.proxyWidgets
+      const serialized = hostNode.serialize()
+      const originalProxyWidgets = serialized.properties!
+        .proxyWidgets as string[][]
+
+      expect(originalProxyWidgets.length).toBeGreaterThan(0)
+      expect(
+        originalProxyWidgets.some(([, widgetName]) => widgetName === 'text')
+      ).toBe(true)
+
+      // Simulate clone: create a second SubgraphNode configured from serialized data
+      const cloneNode = createTestSubgraphNode(subgraph)
+      cloneNode.configure(serialized)
+      const cloneProxyWidgets = cloneNode.properties.proxyWidgets as string[][]
+
+      expect(cloneProxyWidgets.length).toBeGreaterThan(0)
+      expect(
+        cloneProxyWidgets.some(([, widgetName]) => widgetName === 'text')
+      ).toBe(true)
+
+      // Clone's proxyWidgets should reference the same interior node
+      const originalNodeIds = originalProxyWidgets.map(([nodeId]) => nodeId)
+      const cloneNodeIds = cloneProxyWidgets.map(([nodeId]) => nodeId)
+      expect(cloneNodeIds).toStrictEqual(originalNodeIds)
+    })
   })
 
   describe('Tooltip Promotion', () => {
