@@ -23,10 +23,10 @@ For SHOULD items with conflicts: if conflict resolution requires more than trivi
 
 **Before categorizing, filter by branch scope:**
 
-| Target branch | Skip if PR is...                                                    |
-| ------------- | ------------------------------------------------------------------- |
+| Target branch | Skip if PR is...                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `core/*`      | Cloud-only (team workspaces, cloud queue, cloud-only login). Note: app mode and Firebase auth are NOT cloud-only. |
-| `cloud/*`     | Local-only features not present on cloud branch                     |
+| `cloud/*`     | Local-only features not present on cloud branch                                                                   |
 
 Cloud-only PRs backported to `core/*` are wasted effort — `core/*` branches serve local/self-hosted users who never see cloud features. Check PR titles, descriptions, and files changed for cloud-specific indicators.
 

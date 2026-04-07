@@ -5,9 +5,9 @@
 Maintain `execution-log.md` with per-branch tables (this is internal, markdown tables are fine here):
 
 ```markdown
-| PR#   | Title | Status  | Backport PR | Notes   |
-| ----- | ----- | ------- | ----------- | ------- |
-| #XXXX | Title | merged  | #YYYY       | Details |
+| PR#   | Title | Status | Backport PR | Notes   |
+| ----- | ----- | ------ | ----------- | ------- |
+| #XXXX | Title | merged | #YYYY       | Details |
 ```
 
 ## Wave Verification Log
@@ -85,7 +85,7 @@ Both shareable files (author accountability + status update) must follow these r
 - No emojis (no checkmarks, no arrows, no icons)
 - No markdown tables (use plain lists with dashes)
 - No headers (no # or ##)
-- No bold (**) or italic (*)
+- No bold (\*_) or italic (_)
 - No inline code backticks
 - Use -- instead of em dash
 - Use plain dashes (-) for lists with 4-space indent for nesting

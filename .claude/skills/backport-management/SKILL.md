@@ -38,21 +38,23 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 
 **Critical: Match PRs to the correct target branches.**
 
-| Branch prefix | Scope                          | Example                                   |
-| ------------- | ------------------------------ | ----------------------------------------- |
-| `cloud/*`     | Cloud-hosted ComfyUI only      | Team workspaces, cloud queue, cloud-only login |
-| `core/*`      | Local/self-hosted ComfyUI only | Core editor, local workflows, node system |
+| Branch prefix | Scope                          | Example                                           |
+| ------------- | ------------------------------ | ------------------------------------------------- |
+| `cloud/*`     | Cloud-hosted ComfyUI only      | Team workspaces, cloud queue, cloud-only login    |
+| `core/*`      | Local/self-hosted ComfyUI only | Core editor, local workflows, node system         |
 | Both          | Shared infrastructure          | App mode, Firebase auth (API nodes), payment URLs |
 
 ### What Goes Where
 
 **Both core + cloud:**
+
 - **App mode** PRs — app mode is NOT cloud-only
 - **Firebase auth** PRs — Firebase auth is on core for API nodes
 - **Payment redirect** PRs — payment infrastructure shared
 - **Bug fixes** touching shared components
 
 **Cloud-only (skip for core):**
+
 - Team workspaces
 - Cloud queue virtualization
 - Hide API key login
@@ -116,7 +118,7 @@ In the 2026-04-06 session: core/1.42 got 18/26 auto-PRs, cloud/1.42 got only 1/2
 | **Modify/delete (removed)**  | Target removed files the PR modifies | `git rm $FILE` — file no longer relevant                        |
 | **Content conflicts**        | Marker-based (`<<<<<<<`)             | Accept theirs via python regex (see below)                      |
 | **Component rewrites**       | 4+ markers in `.vue`, library change | Use `git show SHA:path > path` — do NOT accept-theirs           |
-| **Import-only conflicts**    | Only import lines differ             | Keep both imports if both used; remove unused after              |
+| **Import-only conflicts**    | Only import lines differ             | Keep both imports if both used; remove unused after             |
 | **Add/add**                  | Both sides added same file           | Accept theirs, verify no logic conflict                         |
 | **Locale/JSON files**        | i18n key additions                   | Accept theirs, validate JSON after                              |
 
@@ -203,6 +205,7 @@ Present PRs in batches of 5-10, grouped by theme (visual bugs, interaction bugs,
 ```
 
 Each row includes:
+
 - PR number and title
 - Target branches
 - Agent recommendation: `Rec: Y` or `Rec: N` with brief reasoning
