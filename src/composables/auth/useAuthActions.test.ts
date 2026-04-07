@@ -105,6 +105,7 @@ describe('useAuthActions', () => {
 
       expect(mockAuthLogout).not.toHaveBeenCalled()
       expect(mockSaveWorkflow).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('should save all modified workflows then log out when user clicks Save', async () => {
