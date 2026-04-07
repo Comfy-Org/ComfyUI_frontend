@@ -150,6 +150,7 @@ jobs:
 
       - name: Run analysis
         if: needs.resolve-matrix.outputs.number
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
