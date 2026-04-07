@@ -342,7 +342,8 @@ export abstract class SubgraphIONodeBase<
     if (!dragState) return
 
     dragState.cursorY = cursorY
-    dragState.toIndex = this._getSlotInsertIndex(cursorY, dragState.rowHeight)
+    const midY = cursorY - dragState.grabOffsetY + dragState.rowHeight / 2
+    dragState.toIndex = this._getSlotInsertIndex(midY, dragState.rowHeight)
     this.subgraph.setDirtyCanvas(true, true)
   }
 

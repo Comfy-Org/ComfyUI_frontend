@@ -50,6 +50,52 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
     expect(result.innerAfter).not.toEqual(result.innerBefore)
   })
 
+  test('reorderOutput updates inner slot order and outer SubgraphNode pins', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-with-promoted-text-widget'
+    )
+    await comfyPage.nextFrame()
+
+    const result = await comfyPage.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const sgNode = graph._nodes.find(
+        (n: { isSubgraphNode?: () => boolean }) => n.isSubgraphNode?.()
+      ) as
+        | {
+            subgraph?: {
+              outputs: Array<{ name: string }>
+              reorderOutput: (from: number, to: number) => void
+            }
+            outputs: Array<{ name: string }>
+          }
+        | undefined
+
+      if (!sgNode?.subgraph) return { error: 'No subgraph node' }
+      if (sgNode.subgraph.outputs.length < 2)
+        return { error: 'Need 2+ outputs to test reorder' }
+
+      const innerBefore = sgNode.subgraph.outputs.map((o) => o.name)
+      const outerBefore = sgNode.outputs.map((o) => o.name)
+
+      sgNode.subgraph.reorderOutput(0, 1)
+
+      const innerAfter = sgNode.subgraph.outputs.map((o) => o.name)
+      const outerAfter = sgNode.outputs.map((o) => o.name)
+
+      return { innerBefore, outerBefore, innerAfter, outerAfter }
+    })
+
+    if ('error' in result) {
+      test.skip(true, result.error as string)
+      return
+    }
+
+    expect(result.innerAfter).toEqual(result.outerAfter)
+    expect(result.innerAfter).not.toEqual(result.innerBefore)
+  })
+
   test('reorder is stable across serialize/configure cycle', async ({
     comfyPage
   }) => {

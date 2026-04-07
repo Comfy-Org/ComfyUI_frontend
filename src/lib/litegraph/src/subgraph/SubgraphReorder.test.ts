@@ -96,6 +96,35 @@ describe('Subgraph.reorderOutput', () => {
 
     expect(subgraph.outputs.map((o) => o.name)).toEqual(['z', 'x', 'y'])
   })
+
+  it('fixes link target_slot indices after reorder', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [
+        { name: 'x', type: 'STRING' },
+        { name: 'y', type: 'INT' },
+        { name: 'z', type: 'FLOAT' }
+      ]
+    })
+
+    const nodeX = new LGraphNode('NodeX')
+    nodeX.addOutput('value', 'STRING')
+    subgraph.add(nodeX)
+    subgraph.outputNode.slots[0].connect(nodeX.outputs[0], nodeX)
+
+    const nodeZ = new LGraphNode('NodeZ')
+    nodeZ.addOutput('value', 'FLOAT')
+    subgraph.add(nodeZ)
+    subgraph.outputNode.slots[2].connect(nodeZ.outputs[0], nodeZ)
+
+    subgraph.reorderOutput(0, 2)
+
+    for (const [i, output] of subgraph.outputs.entries()) {
+      for (const linkId of output.linkIds) {
+        const link = subgraph._links.get(linkId)
+        expect(link?.target_slot).toBe(i)
+      }
+    }
+  })
 })
 
 describe('SubgraphNode syncs on reorder events', () => {
