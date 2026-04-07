@@ -14,11 +14,12 @@ test.describe('App mode usage', () => {
     await expect(centerPanel).not.toBeVisible()
 
     //prep a load image
+    await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
-    const loadImage = await comfyPage.vueNodes.getNodeLocator('12')
+    const loadImage = await comfyPage.vueNodes.getNodeLocator('10')
     await expect(loadImage).toBeVisible()
 
-    await comfyPage.appMode.enterAppModeWithInputs([['12', 'image']])
+    await comfyPage.appMode.enterAppModeWithInputs([['10', 'image']])
     await expect(centerPanel).toBeVisible()
     //an app with an image input will upload the image to the input
     await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
