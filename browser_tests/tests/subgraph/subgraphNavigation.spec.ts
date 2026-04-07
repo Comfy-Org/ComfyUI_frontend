@@ -86,24 +86,25 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
+      const backButton = breadcrumb.locator('.back-button')
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()
 
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
-      await expect(breadcrumb).toBeVisible()
+      await expect(backButton).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
 
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
-      await expect(breadcrumb).toBeHidden()
+      await expect(backButton).toHaveCount(0)
 
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
       expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
-      await expect(breadcrumb).toBeHidden()
+      await expect(backButton).toHaveCount(0)
     })
   })
 
