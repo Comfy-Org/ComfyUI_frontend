@@ -1,34 +1,51 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { TestIds } from '../fixtures/selectors'
 import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
+
+async function ensurePropertiesPanel(comfyPage: ComfyPage) {
+  const panel = comfyPage.menu.propertiesPanel.root
+  if (!(await panel.isVisible())) {
+    await comfyPage.actionbar.propertiesButton.click()
+  }
+  await expect(panel).toBeVisible()
+  return panel
+}
+
+async function openSubgraphEditor(comfyPage: ComfyPage) {
+  await ensurePropertiesPanel(comfyPage)
+  const editorToggle = comfyPage.page.getByTestId(TestIds.subgraphEditor.toggle)
+  await expect(editorToggle).toBeVisible()
+  await editorToggle.click()
+  const shownSection = comfyPage.page.getByTestId(
+    TestIds.subgraphEditor.shownSection
+  )
+  await expect(shownSection).toBeVisible()
+  return shownSection
+}
 
 test.describe(
   'Subgraph promoted widget ordering',
   { tag: ['@subgraph', '@widget'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     })
 
-    test('demote then re-promote preserves widget order', async ({
+    test('demote then re-promote via sidebar preserves widget order', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('default')
-
-      // Create a subgraph from the KSampler node which has multiple
-      // auto-promoted widgets (seed, steps, cfg, etc.)
       await comfyPage.vueNodes.waitForNodes()
 
-      // Select KSampler and convert to subgraph via evaluate
-      // (LG nodeRef helpers don't work reliably in Vue nodes mode)
+      // Create a subgraph from KSampler (multiple auto-promoted widgets)
       const nodeId = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
         const ksampler = graph._nodes.find((n) => n.type === 'KSampler')
         if (!ksampler) throw new Error('KSampler not found')
-
         window.app!.canvas.selectNode(ksampler)
         const result = graph.convertToSubgraph(new Set([ksampler]))
         if (!result) throw new Error('convertToSubgraph failed')
@@ -37,64 +54,47 @@ test.describe(
       await comfyPage.nextFrame()
       await comfyPage.vueNodes.waitForNodes()
 
-      // Verify promoted widgets render in the Vue node body
       const subgraphVueNode = comfyPage.vueNodes.getNodeLocator(nodeId)
       await expect(subgraphVueNode).toBeVisible()
 
-      const widgetsContainer = subgraphVueNode.getByTestId(
-        TestIds.widgets.container
-      )
-      await expect(widgetsContainer).toBeVisible()
+      // Select the subgraph node and open SubgraphEditor sidebar
+      await subgraphVueNode.click()
+      const shownSection = await openSubgraphEditor(comfyPage)
 
-      // Get the initial promoted widget order
+      // Capture initial widget order from the sidebar labels
+      const labels = shownSection.getByTestId(
+        TestIds.subgraphEditor.widgetLabel
+      )
+      const initialLabels = await labels.allTextContents()
+      expect(initialLabels.length).toBeGreaterThanOrEqual(2)
+
+      // Also capture initial order from the promotion store (source of truth)
       const initialOrder = await getPromotedWidgetNames(comfyPage, nodeId)
-      expect(initialOrder.length).toBeGreaterThanOrEqual(2)
 
-      // Demote then re-promote the first widget via the promotion store.
-      // Pinia store access pattern: see getPiniaStoreInBrowser in
-      // browser_tests/helpers/promotedWidgets.ts
-      const finalOrder = await comfyPage.page.evaluate(
-        ([id, widgetName]) => {
-          const el = document.getElementById('vue-app') as never as {
-            __vue_app__: {
-              config: {
-                globalProperties: {
-                  $pinia: {
-                    _s: Map<
-                      string,
-                      Record<string, (...args: unknown[]) => unknown>
-                    >
-                  }
-                }
-              }
-            }
-          }
-          const store =
-            el.__vue_app__.config.globalProperties.$pinia._s.get('promotion')
-          if (!store) throw new Error('promotionStore not found')
-
-          const node = window.app!.canvas.graph!.getNodeById(id)
-          if (!node) throw new Error(`Node "${id}" not found`)
-          const graphId = (node as typeof node & { rootGraph?: { id: string } })
-            .rootGraph?.id
-
-          const entries = store.getPromotions(graphId, node.id) as {
-            sourceWidgetName: string
-          }[]
-          const target = entries.find((e) => e.sourceWidgetName === widgetName)
-          if (!target) throw new Error(`Widget "${widgetName}" not found`)
-
-          store.demote(graphId, node.id, target)
-          node.computeSize(node.size)
-
-          store.promote(graphId, node.id, target)
-          node.computeSize(node.size)
-
-          return (node.widgets ?? []).map((w: { name: string }) => w.name)
-        },
-        [nodeId, initialOrder[0]]
+      // Hide the first widget via the sidebar toggle (demote)
+      const toggleButtons = shownSection.getByTestId(
+        TestIds.subgraphEditor.widgetToggle
       )
+      await toggleButtons.first().click()
 
+      // The hidden section should now contain the demoted widget
+      const hiddenSection = comfyPage.page.getByTestId(
+        TestIds.subgraphEditor.hiddenSection
+      )
+      await expect(hiddenSection).toBeVisible()
+
+      // Re-show the widget via the hidden section toggle (promote)
+      const hiddenToggle = hiddenSection.getByTestId(
+        TestIds.subgraphEditor.widgetToggle
+      )
+      await hiddenToggle.first().click()
+
+      // Verify the shown section order is restored
+      const restoredLabels = await labels.allTextContents()
+      expect(restoredLabels).toEqual(initialLabels)
+
+      // Also verify the promotion store order matches
+      const finalOrder = await getPromotedWidgetNames(comfyPage, nodeId)
       expect(finalOrder).toEqual(initialOrder)
     })
   }
