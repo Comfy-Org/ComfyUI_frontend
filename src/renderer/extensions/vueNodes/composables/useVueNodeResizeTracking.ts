@@ -186,13 +186,21 @@ const resizeObserver = new ResizeObserver((entries) => {
       continue
     }
 
-    // Screen-space rect
-    const rect = element.getBoundingClientRect()
-    const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
-    const topLeftCanvas = { x: cx, y: cy }
+    const existingPos = nodeLayout?.position
+    let posX: number
+    let posY: number
+    if (existingPos) {
+      posX = existingPos.x
+      posY = existingPos.y
+    } else {
+      const rect = element.getBoundingClientRect()
+      const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
+      posX = cx
+      posY = cy + LiteGraph.NODE_TITLE_HEIGHT
+    }
     const bounds: Bounds = {
-      x: topLeftCanvas.x,
-      y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
+      x: posX,
+      y: posY,
       width,
       height
     }
