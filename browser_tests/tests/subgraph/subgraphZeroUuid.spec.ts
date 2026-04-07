@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import type { ComfyWorkflowJSON } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 
 test.describe(
   'Zero UUID workflow: subgraph undo rendering',
@@ -12,21 +11,15 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.page.reload() // Reload page as we need to enter in Vue mode
       await comfyPage.page.waitForFunction(() => !!window.app?.graph)
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test('Undo after subgraph enter/exit renders all nodes when workflow starts with zero UUID', async ({
       comfyPage
     }) => {
-      await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
-      await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
-      await comfyPage.page.evaluate(async () => {
-        const serialized = window.app!.rootGraph.serialize()
-        await window.app!.loadGraphData({
-          ...serialized,
-          id: '00000000-0000-0000-0000-000000000000'
-        } as ComfyWorkflowJSON)
-      })
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/basic-subgraph-zero-uuid'
+      )
+      await comfyPage.vueNodes.waitForNodes()
 
       const assertInSubgraph = async (inSubgraph: boolean) => {
         await expect
@@ -34,32 +27,23 @@ test.describe(
           .toBe(inSubgraph)
       }
 
-      const assertVueNodeCount = async () => {
-        await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
-      }
+      // Root graph has 1 subgraph node, rendered in the DOM
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
 
-      const assertGraphNodeCount = async () => {
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
-        await assertVueNodeCount()
-      }
-
-      await assertGraphNodeCount()
-
-      // Enter subgraph
       await comfyPage.vueNodes.enterSubgraph()
       await assertInSubgraph(true)
 
-      // Exit subgraph
       await comfyPage.subgraph.exitViaBreadcrumb()
       await assertInSubgraph(false)
 
-      // Undo
       await comfyPage.canvas.focus()
       await comfyPage.keyboard.undo()
       await comfyPage.nextFrame()
 
-      // All graph nodes must have Vue nodes
-      await assertGraphNodeCount()
+      // After undo, the subgraph node is still visible and rendered
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     })
   }
 )
