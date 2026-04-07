@@ -274,7 +274,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const { displayNameByViewKey, reconcileEntries } =
       this._buildPromotionReconcileState(entries, linkedEntries)
 
-    const views = this._promotedViewManager.reconcile(
+    const reconciledViews = this._promotedViewManager.reconcile(
       reconcileEntries,
       (entry) =>
         createPromotedWidgetView(
@@ -286,6 +286,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           entry.slotName
         )
     )
+
+    const views = this._reorderViewsByStoreEntries(reconciledViews, entries)
 
     this._promotedViewsCache = {
       version: this._cacheVersion,
@@ -415,6 +417,57 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const added = desiredEntries.filter((e) => !currentKeys.has(makeKey(e)))
 
     return [...preserved, ...added]
+  }
+
+  /**
+   * Reorders reconciled views to follow the current store entry order,
+   * but only when the view set exactly matches the store entries (pure
+   * reorder). When entries were added or removed (e.g. connection change),
+   * the reconcile order is preserved.
+   */
+  private _reorderViewsByStoreEntries(
+    views: PromotedWidgetView[],
+    storeEntries: PromotedWidgetSource[]
+  ): PromotedWidgetView[] {
+    if (views.length <= 1 || storeEntries.length === 0) return views
+
+    const makeKey = (e: PromotedWidgetSource) =>
+      this._makePromotionEntryKey(
+        e.sourceNodeId,
+        e.sourceWidgetName,
+        e.disambiguatingSourceNodeId
+      )
+
+    const storeKeys = new Set(storeEntries.map(makeKey))
+    const viewKeys = new Set(views.map(makeKey))
+
+    if (storeKeys.size !== viewKeys.size) return views
+    for (const key of viewKeys) {
+      if (!storeKeys.has(key)) return views
+    }
+
+    const viewsByKey = new Map<string, PromotedWidgetView[]>()
+    for (const v of views) {
+      const key = makeKey(v)
+      const group = viewsByKey.get(key)
+      if (group) group.push(v)
+      else viewsByKey.set(key, [v])
+    }
+
+    const emittedKeys = new Set<string>()
+    const ordered: PromotedWidgetView[] = []
+
+    for (const entry of storeEntries) {
+      const key = makeKey(entry)
+      if (emittedKeys.has(key)) continue
+      const group = viewsByKey.get(key)
+      if (group) {
+        ordered.push(...group)
+        emittedKeys.add(key)
+      }
+    }
+
+    return ordered
   }
 
   private _collectLinkedAndFallbackEntries(
