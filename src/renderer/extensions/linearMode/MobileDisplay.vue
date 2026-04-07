@@ -199,6 +199,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           class="absolute h-full w-screen overflow-y-auto contain-size"
           role="tabpanel"
           :aria-hidden="activeIndex !== 0"
+          :aria-label="t(tabs[0][0])"
         >
           <LinearControls mobile @navigate-outputs="activeIndex = 1" />
         </div>
@@ -206,6 +207,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           class="absolute top-0 left-[100vw] flex h-full w-screen flex-col bg-base-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 1"
+          :aria-label="t(tabs[1][0])"
         >
           <MobileError
             v-if="executionErrorStore.isErrorOverlayOpen"
@@ -217,6 +219,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           class="absolute top-0 left-[200vw] h-full w-screen bg-base-background"
           role="tabpanel"
           :aria-hidden="activeIndex !== 2"
+          :aria-label="t(tabs[2][0])"
         />
       </div>
     </div>
