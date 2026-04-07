@@ -131,6 +131,15 @@ export function useMediaAssetActions() {
     }
   }
 
+  /**
+   * Build and dispatch a ZIP export for the given assets.
+   *
+   * Assets split into job-level selections (gallery cards representing a whole
+   * job, identified by `outputCount` being set in metadata) and individual
+   * asset selections. Job-level selections count as `outputCount` files in the
+   * resulting toast and are deduplicated by `jobId` so that mixed selections
+   * (the same job selected both as a whole and per-asset) don't double-count.
+   */
   async function downloadMultipleAssetsAsZip(assets: AssetItem[]) {
     const assetExportStore = useAssetExportStore()
 
@@ -138,6 +147,8 @@ export function useMediaAssetActions() {
       const jobIds: string[] = []
       const assetIds: string[] = []
       const jobAssetNameFilters: Record<string, string[]> = {}
+      const countedJobLevelIds = new Set<string>()
+      let fileCount = 0
 
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
@@ -157,8 +168,23 @@ export function useMediaAssetActions() {
               jobAssetNameFilters[metadata.jobId].push(asset.name)
             }
           }
+          // Count outputCount once per job: selecting multiple assets from the
+          // same job-level entry (same jobId with outputCount set) still
+          // represents a single job-wide export of outputCount files. Once a
+          // job has been counted at the job level, skip any further assets
+          // from the same jobId so mixed selections don't double-count.
+          const outputCount = metadata?.outputCount
+          if (countedJobLevelIds.has(jobId)) {
+            // already counted at the job level, ignore this asset
+          } else if (typeof outputCount === 'number') {
+            fileCount += outputCount
+            countedJobLevelIds.add(jobId)
+          } else {
+            fileCount += 1
+          }
         } else {
           assetIds.push(asset.id)
+          fileCount += 1
         }
       }
 
@@ -176,7 +202,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'info',
         summary: t('exportToast.exportStarted'),
-        detail: t('mediaAsset.selection.exportStarted', assets.length),
+        detail: t('mediaAsset.selection.exportStarted', fileCount),
         life: 3000
       })
     } catch (error) {

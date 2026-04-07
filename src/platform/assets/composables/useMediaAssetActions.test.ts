@@ -19,19 +19,25 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const mockToastAdd = vi.hoisted(() => vi.fn())
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({
-    add: vi.fn()
+    add: mockToastAdd
   })
 }))
 
+const mockI18nT = vi.hoisted(() =>
+  vi.fn((key: string, count?: number) =>
+    typeof count === 'number' ? `${key}:${count}` : key
+  )
+)
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key
+    t: mockI18nT
   }),
   createI18n: () => ({
     global: {
-      t: (key: string) => key
+      t: mockI18nT
     }
   })
 }))
@@ -372,6 +378,115 @@ describe('useMediaAssetActions', () => {
       expect(payload.job_asset_name_filters).toEqual({
         job2: ['img2.png']
       })
+    })
+  })
+
+  describe('downloadMultipleAssets - export toast file count', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockCreateAssetExport.mockClear()
+      mockTrackExport.mockClear()
+      mockToastAdd.mockClear()
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    function createOutputAsset(
+      id: string,
+      name: string,
+      jobId: string,
+      outputCount?: number
+    ): AssetItem {
+      return createMockAsset({
+        id,
+        name,
+        tags: ['output'],
+        user_metadata: { jobId, nodeId: '1', subfolder: '', outputCount }
+      })
+    }
+
+    type ToastArg = { severity?: string; detail?: unknown }
+
+    async function getExportToastDetail(): Promise<unknown> {
+      await vi.waitFor(() => {
+        const hasInfoToast = mockToastAdd.mock.calls.some(
+          ([arg]) => (arg as ToastArg).severity === 'info'
+        )
+        expect(hasInfoToast).toBe(true)
+      })
+      const exportToastCall = mockToastAdd.mock.calls.find(
+        ([arg]) => (arg as ToastArg).severity === 'info'
+      )
+      if (!exportToastCall) throw new Error('export info toast not found')
+      return (exportToastCall[0] as ToastArg).detail
+    }
+
+    it('sums outputCount across job-level selections', async () => {
+      // 3 jobs each with 2 outputs => 6 files total
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
+      const j2 = createOutputAsset('a2', 'img2.png', 'job2', 2)
+      const j3 = createOutputAsset('a3', 'img3.png', 'job3', 2)
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1, j2, j3])
+
+      const detail = await getExportToastDetail()
+      expect(detail).toBe('mediaAsset.selection.exportStarted:6')
+    })
+
+    it('counts assets without outputCount as a single file each', async () => {
+      const a1 = createOutputAsset('a1', 'img1.png', 'job1')
+      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([a1, a2])
+
+      const detail = await getExportToastDetail()
+      expect(detail).toBe('mediaAsset.selection.exportStarted:2')
+    })
+
+    it('counts outputCount once per job when multiple job-level assets share a jobId', async () => {
+      // User selects 2 cards from the same job-level stack (outputCount=3
+      // on each). The export is still one job-wide export of 3 files.
+      const j1a = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const j1b = createOutputAsset('a2', 'img2.png', 'job1', 3)
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1a, j1b])
+
+      const detail = await getExportToastDetail()
+      expect(detail).toBe('mediaAsset.selection.exportStarted:3')
+    })
+
+    it('mixes job-level and asset-level selections correctly', async () => {
+      // job1 = job-level selection with 3 outputs
+      // job2 = 2 individually selected outputs (no outputCount)
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const j2a = createOutputAsset('a2', 'out2a.png', 'job2')
+      const j2b = createOutputAsset('a3', 'out2b.png', 'job2')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1, j2a, j2b])
+
+      const detail = await getExportToastDetail()
+      expect(detail).toBe('mediaAsset.selection.exportStarted:5')
+    })
+
+    it('does not double-count when a job-level and asset-level selection share a jobId', async () => {
+      // job1 is selected at the job level (outputCount=3) and the user also
+      // selects one individual output from the same job. The export is still
+      // one job-wide export of 3 files, not 4.
+      const j1Job = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const j1Asset = createOutputAsset('a2', 'img2.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1Job, j1Asset])
+
+      const detail = await getExportToastDetail()
+      expect(detail).toBe('mediaAsset.selection.exportStarted:3')
     })
   })
 
