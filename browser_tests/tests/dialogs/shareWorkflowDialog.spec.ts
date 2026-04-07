@@ -119,10 +119,14 @@ async function dismissOverlays(page: Page): Promise<void> {
  * Mocks the userdata POST endpoint to avoid real server calls in tests.
  */
 async function saveAndWait(
-  comfyPage: { page: Page; menu: { topbar: { saveWorkflow: (name: string) => Promise<void> } } },
+  comfyPage: {
+    page: Page
+    menu: { topbar: { saveWorkflow: (name: string) => Promise<void> } }
+  },
   workflowName: string
 ): Promise<void> {
-  const filename = workflowName + (workflowName.endsWith('.json') ? '' : '.json')
+  const filename =
+    workflowName + (workflowName.endsWith('.json') ? '' : '.json')
   await comfyPage.page.route(
     /\/api\/userdata\/workflows(%2F|\/).*$/,
     async (route) => {
