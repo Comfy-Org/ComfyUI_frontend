@@ -89,6 +89,15 @@ class Load3dUtils {
     return uploadPath
   }
 
+  static getFilenameExtension(url: string): string | undefined {
+    const queryString = url.split('?')[1]
+    if (queryString) {
+      const filename = new URLSearchParams(queryString).get('filename')
+      if (filename) return filename.split('.').pop()?.toLowerCase()
+    }
+    return url.split('?')[0].split('.').pop()?.toLowerCase()
+  }
+
   static splitFilePath(path: string): [string, string] {
     const folder_separator = path.lastIndexOf('/')
     if (folder_separator === -1) {

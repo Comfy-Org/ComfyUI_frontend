@@ -6,8 +6,9 @@
     @pointerup.stop
     @wheel.stop
   >
-    <div class="show-menu relative">
+    <div class="relative">
       <Button
+        ref="menuTriggerRef"
         variant="textonly"
         size="icon"
         :aria-label="$t('menu.showMenu')"
@@ -19,6 +20,7 @@
 
       <div
         v-show="isMenuOpen"
+        ref="menuPanelRef"
         class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
       >
         <div class="flex flex-col">
@@ -70,10 +72,18 @@
         v-model:fov="cameraConfig!.fov"
       />
 
+      <HDRIControls
+        v-if="showLightControls"
+        v-model:hdri-config="lightConfig!.hdri"
+        :hdri-supported="hdriSupported"
+        @update-hdri-file="handleHDRIFileUpdate"
+      />
+
       <LightControls
         v-if="showLightControls"
         v-model:light-intensity="lightConfig!.intensity"
         v-model:material-mode="modelConfig!.materialMode"
+        :hdri-enabled="lightConfig?.hdri?.enabled ?? false"
       />
 
       <ExportControls
@@ -85,10 +95,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import ExportControls from '@/components/load3d/controls/ExportControls.vue'
+import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import LightControls from '@/components/load3d/controls/LightControls.vue'
 import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
@@ -104,11 +116,13 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   isSplatModel = false,
   isPlyModel = false,
-  hasSkeleton = false
+  hasSkeleton = false,
+  hdriSupported = false
 } = defineProps<{
   isSplatModel?: boolean
   isPlyModel?: boolean
   hasSkeleton?: boolean
+  hdriSupported?: boolean
 }>()
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')
@@ -117,6 +131,17 @@ const cameraConfig = defineModel<CameraConfig>('cameraConfig')
 const lightConfig = defineModel<LightConfig>('lightConfig')
 
 const isMenuOpen = ref(false)
+const menuPanelRef = ref<HTMLElement | null>(null)
+const menuTriggerRef = ref<InstanceType<typeof Button> | null>(null)
+
+useDismissableOverlay({
+  isOpen: isMenuOpen,
+  getOverlayEl: () => menuPanelRef.value,
+  getTriggerEl: () => menuTriggerRef.value?.$el ?? null,
+  onDismiss: () => {
+    isMenuOpen.value = false
+  }
+})
 const activeCategory = ref<string>('scene')
 const categoryLabels: Record<string, string> = {
   scene: 'load3d.scene',
@@ -175,6 +200,7 @@ const getCategoryIcon = (category: string) => {
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void
   (e: 'exportModel', format: string): void
+  (e: 'updateHdriFile', file: File | null): void
 }>()
 
 const handleBackgroundImageUpdate = (file: File | null) => {
@@ -185,19 +211,7 @@ const handleExportModel = (format: string) => {
   emit('exportModel', format)
 }
 
-const closeSlider = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-
-  if (!target.closest('.show-menu')) {
-    isMenuOpen.value = false
-  }
+const handleHDRIFileUpdate = (file: File | null) => {
+  emit('updateHdriFile', file)
 }
-
-onMounted(() => {
-  document.addEventListener('click', closeSlider)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', closeSlider)
-})
 </script>

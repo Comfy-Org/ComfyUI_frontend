@@ -25,8 +25,10 @@
         :is-splat-model="isSplatModel"
         :is-ply-model="isPlyModel"
         :has-skeleton="hasSkeleton"
+        :hdri-supported="hdriSupported"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
+        @update-hdri-file="handleHDRIFileUpdate"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -113,6 +115,7 @@ const {
   lightConfig,
 
   // other state
+  hdriSupported,
   isRecording,
   isPreview,
   isSplatModel,
@@ -139,6 +142,7 @@ const {
   handleClearRecording,
   handleSeek,
   handleBackgroundImageUpdate,
+  handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
   cleanup

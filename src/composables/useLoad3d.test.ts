@@ -72,7 +72,13 @@ describe('useLoad3d', () => {
           state: null
         },
         'Light Config': {
-          intensity: 5
+          intensity: 5,
+          hdri: {
+            enabled: false,
+            hdriPath: '',
+            showAsBackground: false,
+            intensity: 1
+          }
         },
         'Resource Folder': ''
       },
@@ -122,6 +128,12 @@ describe('useLoad3d', () => {
       isPlyModel: vi.fn().mockReturnValue(false),
       hasSkeleton: vi.fn().mockReturnValue(false),
       setShowSkeleton: vi.fn(),
+      supportsHDRI: vi.fn().mockReturnValue(false),
+      loadHDRI: vi.fn().mockResolvedValue(undefined),
+      setHDRIEnabled: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      clearHDRI: vi.fn(),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       remove: vi.fn(),
@@ -167,7 +179,13 @@ describe('useLoad3d', () => {
         fov: 75
       })
       expect(composable.lightConfig.value).toEqual({
-        intensity: 5
+        intensity: 5,
+        hdri: {
+          enabled: false,
+          hdriPath: '',
+          showAsBackground: false,
+          intensity: 1
+        }
       })
       expect(composable.isRecording.value).toBe(false)
       expect(composable.hasRecording.value).toBe(false)
@@ -476,7 +494,7 @@ describe('useLoad3d', () => {
       await nextTick()
 
       expect(mockLoad3d.setLightIntensity).toHaveBeenCalledWith(10)
-      expect(mockNode.properties['Light Config']).toEqual({
+      expect(mockNode.properties['Light Config']).toMatchObject({
         intensity: 10
       })
     })
@@ -909,6 +927,146 @@ describe('useLoad3d', () => {
         'test.glb',
         'output'
       )
+    })
+  })
+
+  describe('hdri controls', () => {
+    it('should update hdriSupported on modelLoadingEnd', async () => {
+      let modelLoadingEndHandler: (() => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+      vi.mocked(mockLoad3d.supportsHDRI!).mockReturnValue(true)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      modelLoadingEndHandler?.()
+
+      expect(composable.hdriSupported.value).toBe(true)
+    })
+
+    it('should disable hdri when model does not support it', async () => {
+      let modelLoadingEndHandler: (() => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+      vi.mocked(mockLoad3d.supportsHDRI!).mockReturnValue(false)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, enabled: true }
+      }
+      modelLoadingEndHandler?.()
+
+      expect(composable.hdriSupported.value).toBe(false)
+      expect(composable.lightConfig.value.hdri!.enabled).toBe(false)
+    })
+
+    it('should call setHDRIEnabled when hdriConfig.enabled changes', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, enabled: true }
+      }
+      await nextTick()
+
+      expect(mockLoad3d.setHDRIEnabled).toHaveBeenCalledWith(true)
+    })
+
+    it('should call setHDRIAsBackground when hdriConfig.showAsBackground changes', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, showAsBackground: true }
+      }
+      await nextTick()
+
+      expect(mockLoad3d.setHDRIAsBackground).toHaveBeenCalledWith(true)
+    })
+
+    it('should call setHDRIIntensity when hdriConfig.intensity changes', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: { ...composable.lightConfig.value.hdri!, intensity: 2.5 }
+      }
+      await nextTick()
+
+      expect(mockLoad3d.setHDRIIntensity).toHaveBeenCalledWith(2.5)
+    })
+
+    it('should upload file, load HDRI and update hdriConfig', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/env.hdr')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+        '/view?filename=env.hdr'
+      )
+      vi.mocked(api.apiURL).mockReturnValue(
+        'http://localhost/view?filename=env.hdr'
+      )
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.hdriSupported.value = true
+
+      const file = new File([''], 'env.hdr', { type: 'image/x-hdr' })
+      await composable.handleHDRIFileUpdate(file)
+
+      expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalledWith(
+        'http://localhost/view?filename=env.hdr'
+      )
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('3d/env.hdr')
+      expect(composable.lightConfig.value.hdri!.enabled).toBe(true)
+    })
+
+    it('should clear HDRI when file is null', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      composable.lightConfig.value = {
+        ...composable.lightConfig.value,
+        hdri: {
+          enabled: true,
+          hdriPath: '3d/env.hdr',
+          showAsBackground: true,
+          intensity: 1
+        }
+      }
+
+      await composable.handleHDRIFileUpdate(null)
+
+      expect(mockLoad3d.clearHDRI).toHaveBeenCalled()
+      expect(composable.lightConfig.value.hdri!.hdriPath).toBe('')
+      expect(composable.lightConfig.value.hdri!.enabled).toBe(false)
     })
   })
 

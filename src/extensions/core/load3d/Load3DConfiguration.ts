@@ -3,6 +3,7 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
   CameraState,
+  HDRIConfig,
   LightConfig,
   ModelConfig,
   SceneConfig
@@ -113,6 +114,7 @@ class Load3DConfiguration {
 
     const lightConfig = this.loadLightConfig()
     this.applyLightConfig(lightConfig)
+    if (lightConfig.hdri) void this.applyHDRI(lightConfig.hdri)
   }
 
   private loadSceneConfig(): SceneConfig {
@@ -140,13 +142,27 @@ class Load3DConfiguration {
   }
 
   private loadLightConfig(): LightConfig {
+    const hdriDefaults: HDRIConfig = {
+      enabled: false,
+      hdriPath: '',
+      showAsBackground: false,
+      intensity: 1
+    }
+
     if (this.properties && 'Light Config' in this.properties) {
-      return this.properties['Light Config'] as LightConfig
+      const saved = this.properties['Light Config'] as Partial<LightConfig>
+      return {
+        intensity:
+          saved.intensity ??
+          (useSettingStore().get('Comfy.Load3D.LightIntensity') as number),
+        hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
+      }
     }
 
     return {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity')
-    } as LightConfig
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity') as number,
+      hdri: hdriDefaults
+    }
   }
 
   private loadModelConfig(): ModelConfig {
@@ -188,6 +204,26 @@ class Load3DConfiguration {
 
   private applyLightConfig(config: LightConfig) {
     this.load3d.setLightIntensity(config.intensity)
+  }
+
+  private async applyHDRI(config: HDRIConfig): Promise<void> {
+    if (!config.hdriPath) return
+    try {
+      const hdriUrl = api.apiURL(
+        Load3dUtils.getResourceURL(
+          ...Load3dUtils.splitFilePath(config.hdriPath),
+          'input'
+        )
+      )
+      await this.load3d.loadHDRI(hdriUrl)
+      this.load3d.setHDRIIntensity(config.intensity)
+      this.load3d.setHDRIAsBackground(config.showAsBackground)
+      if (config.enabled) {
+        this.load3d.setHDRIEnabled(true)
+      }
+    } catch (error) {
+      console.warn('Failed to restore HDRI:', error)
+    }
   }
 
   private applyModelConfig(config: ModelConfig) {

@@ -6,6 +6,7 @@ import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
+import { HDRIManager } from './HDRIManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
@@ -13,6 +14,8 @@ import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
+import { HDRI_COMPATIBLE_MODEL_EXTENSIONS } from './constants'
+import Load3dUtils from './Load3dUtils'
 import {
   type CameraState,
   type CaptureResult,
@@ -54,6 +57,7 @@ class Load3d {
   cameraManager: CameraManager
   controlsManager: ControlsManager
   lightingManager: LightingManager
+  hdriManager: HDRIManager
   viewHelperManager: ViewHelperManager
   loaderManager: LoaderManager
   modelManager: SceneModelManager
@@ -93,6 +97,8 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1.0
     this.renderer.domElement.classList.add(
       'absolute',
       'inset-0',
@@ -123,6 +129,12 @@ class Load3d {
 
     this.lightingManager = new LightingManager(
       this.sceneManager.scene,
+      this.eventManager
+    )
+
+    this.hdriManager = new HDRIManager(
+      this.sceneManager.scene,
+      this.renderer,
       this.eventManager
     )
 
@@ -635,6 +647,40 @@ class Load3d {
     this.forceRender()
   }
 
+  supportsHDRI(): boolean {
+    const url = this.modelManager.originalURL
+    if (!url) return false
+    const ext = Load3dUtils.getFilenameExtension(url)
+    return ext ? HDRI_COMPATIBLE_MODEL_EXTENSIONS.has(`.${ext}`) : false
+  }
+
+  async loadHDRI(url: string): Promise<void> {
+    await this.hdriManager.loadHDRI(url)
+    this.forceRender()
+  }
+
+  setHDRIEnabled(enabled: boolean): void {
+    this.hdriManager.setEnabled(enabled)
+    this.lightingManager.setHDRIMode(enabled)
+    this.forceRender()
+  }
+
+  setHDRIAsBackground(show: boolean): void {
+    this.hdriManager.setShowAsBackground(show)
+    this.forceRender()
+  }
+
+  setHDRIIntensity(intensity: number): void {
+    this.hdriManager.setIntensity(intensity)
+    this.forceRender()
+  }
+
+  clearHDRI(): void {
+    this.hdriManager.clear()
+    this.lightingManager.setHDRIMode(false)
+    this.forceRender()
+  }
+
   setTargetSize(width: number, height: number): void {
     this.targetWidth = width
     this.targetHeight = height
@@ -858,6 +904,7 @@ class Load3d {
     this.cameraManager.dispose()
     this.controlsManager.dispose()
     this.lightingManager.dispose()
+    this.hdriManager.dispose()
     this.viewHelperManager.dispose()
     this.loaderManager.dispose()
     this.modelManager.dispose()
