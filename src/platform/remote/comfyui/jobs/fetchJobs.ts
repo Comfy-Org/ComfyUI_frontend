@@ -176,18 +176,5 @@ export function extractPrompt(
   const prompt = parsed.data.prompt
   if (!prompt || Object.keys(prompt).length === 0) return undefined
 
-  const isValid = Object.values(prompt).every((node) => {
-    if (!node || typeof node !== 'object' || Array.isArray(node)) return false
-    const record = node as Record<string, unknown>
-    return (
-      typeof record.class_type === 'string' &&
-      record.inputs !== null &&
-      typeof record.inputs === 'object' &&
-      !Array.isArray(record.inputs)
-    )
-  })
-
-  if (!isValid) return undefined
-
   return prompt as ComfyApiWorkflow
 }

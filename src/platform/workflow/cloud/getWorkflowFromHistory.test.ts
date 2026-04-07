@@ -188,32 +188,4 @@ describe('extractPrompt', () => {
 
     expect(result).toBeUndefined()
   })
-
-  it('should return undefined when prompt nodes lack class_type', () => {
-    const jobWithInvalidPrompt: JobDetail = {
-      ...mockApiJobDetail,
-      workflow: {
-        prompt: { '1': { inputs: { value: 1 } } },
-        extra_data: {}
-      }
-    }
-
-    const result = extractPrompt(jobWithInvalidPrompt)
-
-    expect(result).toBeUndefined()
-  })
-
-  it('should return undefined when prompt nodes lack inputs', () => {
-    const jobWithInvalidPrompt: JobDetail = {
-      ...mockApiJobDetail,
-      workflow: {
-        prompt: { '1': { class_type: 'SolidMask' } },
-        extra_data: {}
-      }
-    }
-
-    const result = extractPrompt(jobWithInvalidPrompt)
-
-    expect(result).toBeUndefined()
-  })
 })
