@@ -166,6 +166,8 @@ function categoryBtnClass(id: string) {
 }
 
 const expandedCategory = ref(selectedCategory.value)
+// Skips the watch when selectCategory/collapseCategory set selectedCategory,
+// so their expandedCategory toggle isn't immediately undone.
 let lastEmittedCategory = ''
 
 watch(selectedCategory, (val) => {

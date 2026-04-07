@@ -32,7 +32,7 @@
               v-else-if="showSourceBadge && isCustom"
               :class="badgePillClass"
             >
-              <span class="truncate text-[10px]">
+              <span class="truncate text-2xs">
                 {{ nodeDef.nodeSource.displayText }}
               </span>
             </span>

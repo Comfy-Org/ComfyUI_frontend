@@ -79,7 +79,7 @@
               :current-query="searchQuery"
               show-description
               :show-source-badge="rootFilter !== 'essentials'"
-              :hide-bookmark-icon="effectiveCategory === 'favorites'"
+              :hide-bookmark-icon="selectedCategory === 'favorites'"
             />
           </div>
           <div
@@ -243,10 +243,8 @@ const searchResults = computed(() => {
   })
 })
 
-const effectiveCategory = computed(() => selectedCategory.value)
-
 const sidebarCategory = computed({
-  get: () => effectiveCategory.value,
+  get: () => selectedCategory.value,
   set: (category: string) => {
     selectedCategory.value = category
   }
@@ -286,7 +284,7 @@ function getCategoryResults(baseNodes: ComfyNodeDefImpl[], category: string) {
 
 const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   const baseNodes = rootFilteredNodeDefs.value
-  const category = effectiveCategory.value
+  const category = selectedCategory.value
 
   if (category === DEFAULT_CATEGORY) return getMostRelevantResults(baseNodes)
 
