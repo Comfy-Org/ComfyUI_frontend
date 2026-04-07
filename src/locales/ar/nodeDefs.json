@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "مخطط تكراري للصورة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الإضاءة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "أحمر",
+        "tooltip": null
+      },
+      "3": {
+        "name": "أخضر",
+        "tooltip": null
+      },
+      "4": {
+        "name": "أزرق",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "عكس الصورة",
     "inputs": {

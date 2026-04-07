@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "图像直方图",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "亮度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "红色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "绿色",
+        "tooltip": null
+      },
+      "4": {
+        "name": "蓝色",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "反转图像",
     "inputs": {
