@@ -55,7 +55,7 @@
         :selected-category="selectedCategory"
         :expanded-category="expandedCategory"
         :hide-chevrons="hideChevrons"
-        :focus-parent="() => buttonEl?.focus()"
+        :focus-parent="focusSelf"
         @select="$emit('select', $event)"
         @collapse="$emit('collapse', $event)"
       />
@@ -103,10 +103,15 @@ const emit = defineEmits<{
   collapse: [key: string]
 }>()
 
-const buttonEl = ref<HTMLButtonElement>()
+const buttonEl = ref<InstanceType<typeof Button>>()
 const childRefs = ref<{ focus?: () => void }[]>([])
 
-defineExpose({ focus: () => buttonEl.value?.focus() })
+function focusSelf() {
+  const el = buttonEl.value?.$el as HTMLElement | undefined
+  el?.focus()
+}
+
+defineExpose({ focus: focusSelf })
 
 const isExpanded = computed(
   () =>
