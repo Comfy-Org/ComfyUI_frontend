@@ -13,8 +13,12 @@ const SAVE_IMAGE_NODE = '9'
 const KSAMPLER_NODE = '3'
 
 /** Queue a prompt, intercept it, and send execution_start. */
-async function startExecution(comfyPage: ComfyPage, mock: MockWebSocket) {
-  const exec = new ExecutionHelper(comfyPage, mock)
+async function startExecution(
+  comfyPage: ComfyPage,
+  mock: MockWebSocket,
+  exec?: ExecutionHelper
+) {
+  exec ??= new ExecutionHelper(comfyPage, mock)
   const jobId = await exec.run()
   // Allow storeJob() to complete before sending WS events
   await comfyPage.nextFrame()
@@ -244,16 +248,15 @@ test.describe('Output History', { tag: '@ui' }, () => {
     exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('second.png'))
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(2)
 
-    // The first item should still be selected
+    // The first item should still be selected (not auto-followed to second)
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem
+    ).toHaveCount(1)
     await expect(
       comfyPage.appMode.outputHistory.selectedInProgressItem.getByTestId(
         'linear-image-output'
       )
-    ).toBeVisible()
-    // And there should be exactly one selected item
-    await expect(
-      comfyPage.appMode.outputHistory.selectedInProgressItem
-    ).toHaveCount(1)
+    ).toHaveAttribute('src', /first\.png/)
   })
 
   test('Non-output node executed events are filtered', async ({
@@ -316,7 +319,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(firstItem).not.toBeInViewport()
 
     // Start a new execution to get an in-progress item
-    await startExecution(comfyPage, mock)
+    await startExecution(comfyPage, mock, exec)
 
     // In-progress item is visible despite scrolling
     await expect(
