@@ -1,3 +1,5 @@
+# Codecov configuration for PR coverage comments
+# Docs: https://docs.codecov.com/docs/pull-request-comments
 comment:
   layout: 'header, diff, flags, files'
   behavior: default
