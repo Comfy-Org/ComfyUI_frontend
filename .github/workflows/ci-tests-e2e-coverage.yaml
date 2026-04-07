@@ -1,0 +1,64 @@
+name: 'CI: E2E Coverage'
+
+on:
+  push:
+    branches: [main, core/*]
+    paths-ignore: ['**/*.md']
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths-ignore: ['**/*.md']
+
+concurrency:
+  group: e2e-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Run Playwright tests with coverage
+        id: tests
+        continue-on-error: true
+        run: >
+          COLLECT_COVERAGE=true
+          pnpm exec playwright test
+          --project=chromium
+          --workers=2
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload coverage data
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage
+          path: coverage/playwright/
+          retention-days: 30
+          if-no-files-found: warn
