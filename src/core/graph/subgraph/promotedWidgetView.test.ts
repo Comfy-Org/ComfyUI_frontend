@@ -889,6 +889,191 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
+  test('syncPromotions preserves reorder among linked-only widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'slot_a', type: '*' },
+        { name: 'slot_b', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 98 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const nodeA = new LGraphNode('NodeA')
+    const inputA = nodeA.addInput('slot_a', '*')
+    nodeA.addWidget('text', 'slot_a', 'a', () => {})
+    inputA.widget = { name: 'slot_a' }
+    subgraph.add(nodeA)
+    subgraph.inputNode.slots[0].connect(inputA, nodeA)
+
+    const nodeB = new LGraphNode('NodeB')
+    const inputB = nodeB.addInput('slot_b', '*')
+    nodeB.addWidget('text', 'slot_b', 'b', () => {})
+    inputB.widget = { name: 'slot_b' }
+    subgraph.add(nodeB)
+    subgraph.inputNode.slots[1].connect(inputB, nodeB)
+
+    // Initial order: A, B — then user reorders to B, A
+    setPromotions(subgraphNode, [
+      [String(nodeB.id), 'slot_b'],
+      [String(nodeA.id), 'slot_a']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(promotions).toStrictEqual([
+      { sourceNodeId: String(nodeB.id), sourceWidgetName: 'slot_b' },
+      { sourceNodeId: String(nodeA.id), sourceWidgetName: 'slot_a' }
+    ])
+  })
+
+  test('syncPromotions preserves reorder in mixed 3-widget scenario', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'slot_a', type: '*' },
+        { name: 'slot_b', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 99 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedA = new LGraphNode('LinkedA')
+    const inputA = linkedA.addInput('slot_a', '*')
+    linkedA.addWidget('text', 'slot_a', 'a', () => {})
+    inputA.widget = { name: 'slot_a' }
+    subgraph.add(linkedA)
+    subgraph.inputNode.slots[0].connect(inputA, linkedA)
+
+    const linkedB = new LGraphNode('LinkedB')
+    const inputB = linkedB.addInput('slot_b', '*')
+    linkedB.addWidget('text', 'slot_b', 'b', () => {})
+    inputB.widget = { name: 'slot_b' }
+    subgraph.add(linkedB)
+    subgraph.inputNode.slots[1].connect(inputB, linkedB)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'indep', 'c', () => {})
+    subgraph.add(independentNode)
+
+    // User reorders: independent between the two linked
+    setPromotions(subgraphNode, [
+      [String(linkedA.id), 'slot_a'],
+      [String(independentNode.id), 'indep'],
+      [String(linkedB.id), 'slot_b']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+    expect(promotions).toStrictEqual([
+      { sourceNodeId: String(linkedA.id), sourceWidgetName: 'slot_a' },
+      { sourceNodeId: String(independentNode.id), sourceWidgetName: 'indep' },
+      { sourceNodeId: String(linkedB.id), sourceWidgetName: 'slot_b' }
+    ])
+  })
+
+  test('syncPromotions appends new linked entry while preserving existing order', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'slot_a', type: '*' },
+        { name: 'slot_b', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 100 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const nodeA = new LGraphNode('NodeA')
+    const inputA = nodeA.addInput('slot_a', '*')
+    nodeA.addWidget('text', 'slot_a', 'a', () => {})
+    inputA.widget = { name: 'slot_a' }
+    subgraph.add(nodeA)
+    subgraph.inputNode.slots[0].connect(inputA, nodeA)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'indep', 'b', () => {})
+    subgraph.add(independentNode)
+
+    // Store has only independent + first linked (slot_b not yet connected)
+    setPromotions(subgraphNode, [
+      [String(independentNode.id), 'indep'],
+      [String(nodeA.id), 'slot_a']
+    ])
+
+    // Now connect slot_b
+    const nodeB = new LGraphNode('NodeB')
+    const inputB = nodeB.addInput('slot_b', '*')
+    nodeB.addWidget('text', 'slot_b', 'c', () => {})
+    inputB.widget = { name: 'slot_b' }
+    subgraph.add(nodeB)
+    subgraph.inputNode.slots[1].connect(inputB, nodeB)
+
+    callSyncPromotions(subgraphNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+
+    // Existing entries keep their order, new linked entry appended
+    expect(promotions).toStrictEqual([
+      { sourceNodeId: String(independentNode.id), sourceWidgetName: 'indep' },
+      { sourceNodeId: String(nodeA.id), sourceWidgetName: 'slot_a' },
+      { sourceNodeId: String(nodeB.id), sourceWidgetName: 'slot_b' }
+    ])
+  })
+
+  test('syncPromotions removes stale entry while preserving order of remaining', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'slot_a', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 101 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('slot_a', '*')
+    linkedNode.addWidget('text', 'slot_a', 'a', () => {})
+    linkedInput.widget = { name: 'slot_a' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const indepA = new LGraphNode('IndepA')
+    indepA.addWidget('text', 'indep_a', 'b', () => {})
+    subgraph.add(indepA)
+
+    const indepB = new LGraphNode('IndepB')
+    indepB.addWidget('text', 'indep_b', 'c', () => {})
+    subgraph.add(indepB)
+
+    // User has reordered: indepB, linked, indepA, stale
+    setPromotions(subgraphNode, [
+      [String(indepB.id), 'indep_b'],
+      [String(linkedNode.id), 'slot_a'],
+      [String(indepA.id), 'indep_a'],
+      ['9999', 'gone']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+
+    // Stale entry removed, remaining order preserved
+    expect(promotions).toStrictEqual([
+      { sourceNodeId: String(indepB.id), sourceWidgetName: 'indep_b' },
+      { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'slot_a' },
+      { sourceNodeId: String(indepA.id), sourceWidgetName: 'indep_a' }
+    ])
+  })
+
   test('syncPromotions prunes stale deep-alias entries for nested linked promotions', () => {
     const { subgraphNodeB } = createTwoLevelNestedSubgraph()
     const linkedView = promotedWidgets(subgraphNodeB)[0]
