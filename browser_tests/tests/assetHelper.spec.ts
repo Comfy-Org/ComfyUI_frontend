@@ -1,6 +1,7 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { assetApiFixture } from '../fixtures/assetApiFixture'
+import { comfyPageFixture } from '../fixtures/ComfyPage'
 import {
   createAssetHelper,
   withModels,
@@ -16,6 +17,8 @@ import {
   STABLE_INPUT_IMAGE,
   STABLE_OUTPUT
 } from '../fixtures/data/assetFixtures'
+
+const test = mergeTests(comfyPageFixture, assetApiFixture)
 
 test.describe('AssetHelper', () => {
   test.describe('operators and configuration', () => {
@@ -66,8 +69,7 @@ test.describe('AssetHelper', () => {
   })
 
   test.describe('mock API routes', () => {
-    test('GET /assets returns all assets', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('GET /assets returns all assets', async ({ comfyPage, assetApi }) => {
       assetApi.configure(
         withAsset(STABLE_CHECKPOINT),
         withAsset(STABLE_INPUT_IMAGE)
@@ -87,12 +89,12 @@ test.describe('AssetHelper', () => {
       expect(data.assets).toHaveLength(2)
       expect(data.total).toBe(2)
       expect(data.has_more).toBe(false)
-
-      await assetApi.clearMocks()
     })
 
-    test('GET /assets respects pagination params', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('GET /assets respects pagination params', async ({
+      comfyPage,
+      assetApi
+    }) => {
       assetApi.configure(
         withModels(5),
         withPagination({ total: 10, hasMore: true })
@@ -110,12 +112,12 @@ test.describe('AssetHelper', () => {
       expect(data.assets).toHaveLength(2)
       expect(data.total).toBe(10)
       expect(data.has_more).toBe(true)
-
-      await assetApi.clearMocks()
     })
 
-    test('GET /assets filters by include_tags', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('GET /assets filters by include_tags', async ({
+      comfyPage,
+      assetApi
+    }) => {
       assetApi.configure(
         withAsset(STABLE_CHECKPOINT),
         withAsset(STABLE_LORA),
@@ -129,14 +131,12 @@ test.describe('AssetHelper', () => {
       const data = body as { assets: Array<{ id: string }> }
       expect(data.assets).toHaveLength(1)
       expect(data.assets[0].id).toBe(STABLE_CHECKPOINT.id)
-
-      await assetApi.clearMocks()
     })
 
     test('GET /assets/:id returns single asset or 404', async ({
-      comfyPage
+      comfyPage,
+      assetApi
     }) => {
-      const { assetApi } = comfyPage
       assetApi.configure(withAsset(STABLE_CHECKPOINT))
       await assetApi.mock()
 
@@ -151,12 +151,12 @@ test.describe('AssetHelper', () => {
         `${comfyPage.url}/api/assets/nonexistent-id`
       )
       expect(notFound.status).toBe(404)
-
-      await assetApi.clearMocks()
     })
 
-    test('PUT /assets/:id updates asset in store', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('PUT /assets/:id updates asset in store', async ({
+      comfyPage,
+      assetApi
+    }) => {
       assetApi.configure(withAsset(STABLE_CHECKPOINT))
       await assetApi.mock()
 
@@ -175,14 +175,12 @@ test.describe('AssetHelper', () => {
       expect(assetApi.getAsset(STABLE_CHECKPOINT.id)?.name).toBe(
         'renamed.safetensors'
       )
-
-      await assetApi.clearMocks()
     })
 
     test('DELETE /assets/:id removes asset from store', async ({
-      comfyPage
+      comfyPage,
+      assetApi
     }) => {
-      const { assetApi } = comfyPage
       assetApi.configure(withAsset(STABLE_CHECKPOINT), withAsset(STABLE_LORA))
       await assetApi.mock()
 
@@ -193,11 +191,12 @@ test.describe('AssetHelper', () => {
       expect(status).toBe(204)
       expect(assetApi.assetCount).toBe(1)
       expect(assetApi.getAsset(STABLE_CHECKPOINT.id)).toBeUndefined()
-
-      await assetApi.clearMocks()
     })
 
-    test('POST /assets returns upload response', async ({ comfyPage }) => {
+    test('POST /assets returns upload response', async ({
+      comfyPage,
+      assetApi
+    }) => {
       const customUpload = {
         id: 'custom-upload-001',
         name: 'custom.safetensors',
@@ -205,7 +204,6 @@ test.describe('AssetHelper', () => {
         created_at: '2025-01-01T00:00:00Z',
         created_new: true
       }
-      const { assetApi } = comfyPage
       assetApi.configure(withUploadResponse(customUpload))
       await assetApi.mock()
 
@@ -217,14 +215,12 @@ test.describe('AssetHelper', () => {
       const data = body as { id: string; name: string }
       expect(data.id).toBe('custom-upload-001')
       expect(data.name).toBe('custom.safetensors')
-
-      await assetApi.clearMocks()
     })
 
     test('POST /assets/download returns async download response', async ({
-      comfyPage
+      comfyPage,
+      assetApi
     }) => {
-      const { assetApi } = comfyPage
       await assetApi.mock()
 
       const { status, body } = await assetApi.fetch(
@@ -235,14 +231,14 @@ test.describe('AssetHelper', () => {
       const data = body as { task_id: string; status: string }
       expect(data.task_id).toBe('download-task-001')
       expect(data.status).toBe('created')
-
-      await assetApi.clearMocks()
     })
   })
 
   test.describe('mutation tracking', () => {
-    test('tracks POST, PUT, DELETE mutations', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('tracks POST, PUT, DELETE mutations', async ({
+      comfyPage,
+      assetApi
+    }) => {
       assetApi.configure(withAsset(STABLE_CHECKPOINT))
       await assetApi.mock()
 
@@ -265,12 +261,12 @@ test.describe('AssetHelper', () => {
       expect(mutations[0].method).toBe('POST')
       expect(mutations[1].method).toBe('PUT')
       expect(mutations[2].method).toBe('DELETE')
-
-      await assetApi.clearMocks()
     })
 
-    test('GET requests are not tracked as mutations', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('GET requests are not tracked as mutations', async ({
+      comfyPage,
+      assetApi
+    }) => {
       assetApi.configure(withAsset(STABLE_CHECKPOINT))
       await assetApi.mock()
 
@@ -280,14 +276,14 @@ test.describe('AssetHelper', () => {
       )
 
       expect(assetApi.getMutations()).toHaveLength(0)
-
-      await assetApi.clearMocks()
     })
   })
 
   test.describe('mockError', () => {
-    test('returns error status for all asset routes', async ({ comfyPage }) => {
-      const { assetApi } = comfyPage
+    test('returns error status for all asset routes', async ({
+      comfyPage,
+      assetApi
+    }) => {
       await assetApi.mockError(503, 'Service Unavailable')
 
       const { status, body } = await assetApi.fetch(
@@ -296,16 +292,14 @@ test.describe('AssetHelper', () => {
       expect(status).toBe(503)
       const data = body as { error: string }
       expect(data.error).toBe('Service Unavailable')
-
-      await assetApi.clearMocks()
     })
   })
 
   test.describe('clearMocks', () => {
     test('resets store, mutations, and unroutes handlers', async ({
-      comfyPage
+      comfyPage,
+      assetApi
     }) => {
-      const { assetApi } = comfyPage
       assetApi.configure(withAsset(STABLE_CHECKPOINT))
       await assetApi.mock()
 
