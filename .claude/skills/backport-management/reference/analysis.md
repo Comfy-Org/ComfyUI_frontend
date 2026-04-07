@@ -23,10 +23,10 @@ For SHOULD items with conflicts: if conflict resolution requires more than trivi
 
 **Before categorizing, filter by branch scope:**
 
-| Target branch | Skip if PR is...                                                    |
-| ------------- | ------------------------------------------------------------------- |
-| `core/*`      | Cloud-only (app mode, cloud auth, cloud billing, cloud-specific UI) |
-| `cloud/*`     | Local-only features not present on cloud branch                     |
+| Target branch | Skip if PR is...                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `core/*`      | Cloud-only (team workspaces, cloud queue, cloud-only login). Note: app mode and Firebase auth are NOT cloud-only. |
+| `cloud/*`     | Local-only features not present on cloud branch                                                                   |
 
 Cloud-only PRs backported to `core/*` are wasted effort — `core/*` branches serve local/self-hosted users who never see cloud features. Check PR titles, descriptions, and files changed for cloud-specific indicators.
 
@@ -61,8 +61,6 @@ done
 
 ## Human Review Checkpoint
 
-Present decisions.md before execution. Include:
+Use the Interactive Approval Flow (see SKILL.md) to review all candidates interactively. Do not write a static decisions.md for the human to edit — instead, present batches of 5-10 PRs with context and recommendations, and collect Y/N/? responses in conversation.
 
-1. All MUST/SHOULD/SKIP categorizations with rationale
-2. Questions for human (feature existence, scope, deps)
-3. Estimated effort per branch
+All candidates must be reviewed (MUST, SHOULD, and borderline items), not just a subset.

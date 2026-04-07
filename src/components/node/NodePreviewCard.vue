@@ -54,14 +54,14 @@
         class="flex flex-col gap-1"
       >
         <h4
-          class="m-0 text-xxs font-semibold tracking-wide text-muted-foreground uppercase"
+          class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
         >
           {{ $t('nodeHelpPage.inputs') }}
         </h4>
         <div
           v-for="input in inputs"
           :key="input.name"
-          class="flex items-center justify-between gap-2 text-xxs"
+          class="flex items-center justify-between gap-2 text-2xs"
         >
           <span class="text-foreground shrink-0">{{ input.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
@@ -76,14 +76,14 @@
         class="flex flex-col gap-1"
       >
         <h4
-          class="m-0 text-xxs font-semibold tracking-wide text-muted-foreground uppercase"
+          class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
         >
           {{ $t('nodeHelpPage.outputs') }}
         </h4>
         <div
           v-for="output in outputs"
           :key="output.name"
-          class="flex items-center justify-between gap-2 text-xxs"
+          class="flex items-center justify-between gap-2 text-2xs"
         >
           <span class="text-foreground shrink-0">{{ output.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{

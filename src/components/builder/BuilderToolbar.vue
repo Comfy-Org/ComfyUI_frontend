@@ -23,55 +23,21 @@
           <StepLabel :step />
         </button>
 
-        <div class="mx-1 h-px w-4 bg-border-default" role="separator" />
-      </template>
-
-      <!-- Default view -->
-      <ConnectOutputPopover
-        v-if="!hasOutputs"
-        :is-select-active="isSelectStep"
-        @switch="navigateToStep('builder:outputs')"
-      >
-        <button :class="cn(stepClasses, 'bg-transparent opacity-30')">
-          <StepBadge
-            :step="defaultViewStep"
-            :index="steps.length"
-            :model-value="activeStep"
-          />
-          <StepLabel :step="defaultViewStep" />
-        </button>
-      </ConnectOutputPopover>
-      <button
-        v-else
-        :class="
-          cn(
-            stepClasses,
-            activeStep === 'setDefaultView'
-              ? 'bg-interface-builder-mode-background'
-              : 'bg-transparent hover:bg-secondary-background'
-          )
-        "
-        @click="navigateToStep('setDefaultView')"
-      >
-        <StepBadge
-          :step="defaultViewStep"
-          :index="steps.length"
-          :model-value="activeStep"
+        <div
+          v-if="index < steps.length - 1"
+          class="mx-1 h-px w-4 bg-border-default"
+          role="separator"
         />
-        <StepLabel :step="defaultViewStep" />
-      </button>
+      </template>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import ConnectOutputPopover from './ConnectOutputPopover.vue'
 import StepBadge from './StepBadge.vue'
 import StepLabel from './StepLabel.vue'
 import type { BuilderToolbarStep } from './types'
@@ -79,9 +45,7 @@ import type { BuilderStepId } from './useBuilderSteps'
 import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
-const appModeStore = useAppModeStore()
-const { hasOutputs } = storeToRefs(appModeStore)
-const { activeStep, isSelectStep, navigateToStep } = useBuilderSteps()
+const { activeStep, navigateToStep } = useBuilderSteps()
 
 const stepClasses =
   'inline-flex h-14 min-h-8 cursor-pointer items-center gap-3 rounded-lg py-2 pr-4 pl-2 transition-colors border-none'
@@ -107,11 +71,5 @@ const arrangeStep: BuilderToolbarStep<BuilderStepId> = {
   icon: 'icon-[lucide--layout-panel-left]'
 }
 
-const defaultViewStep: BuilderToolbarStep<BuilderStepId> = {
-  id: 'setDefaultView',
-  title: t('builderToolbar.defaultView'),
-  subtitle: t('builderToolbar.defaultViewDescription'),
-  icon: 'icon-[lucide--eye]'
-}
 const steps = [selectInputsStep, selectOutputsStep, arrangeStep]
 </script>

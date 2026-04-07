@@ -2190,6 +2190,10 @@
       "image": {
         "name": "الصورة"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "ما إذا كان سيتم تمديد الاقتصاص ليتناسب مع حجم الإخراج، أو إضافة حواف سوداء للحفاظ على نسبة العرض إلى الارتفاع."
+      },
       "output_height": {
         "name": "ارتفاع الناتج",
         "tooltip": "الارتفاع الذي يتم تغيير حجم كل قص إليه."
@@ -2309,6 +2313,23 @@
     "display_name": "تعطيل الضجيج",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "رسم مربعات الإحاطة",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "تطبيق مظللات GLSL ES على الصور. المتغير u_resolution (vec2) متوفر دائماً.",
     "display_name": "مظلل GLSL",
     "inputs": {
+      "bools": {
+        "name": "القيم المنطقية",
+        "tooltip": "القيم المنطقية متوفرة كـ u_bool0-9 (bool) في كود الشادر"
+      },
+      "curves": {
+        "name": "المنحنيات",
+        "tooltip": "المنحنيات متوفرة كـ u_curve0-3 (sampler2D, 1D LUT) في كود الشادر. قم بأخذ العينة باستخدام texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "القيم العشرية متوفرة كـ u_float0-4 في كود المظلل"
@@ -4974,6 +5003,36 @@
       "0": {
         "name": "الصور",
         "tooltip": "الصور المعالجة"
+      }
+    }
+  },
+  "ImageHistogram": {
+    "display_name": "مخطط تكراري للصورة",
+    "inputs": {
+      "image": {
+        "name": "صورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الإضاءة",
+        "tooltip": null
+      },
+      "2": {
+        "name": "أحمر",
+        "tooltip": null
+      },
+      "3": {
+        "name": "أخضر",
+        "tooltip": null
+      },
+      "4": {
+        "name": "أزرق",
+        "tooltip": null
       }
     }
   },
@@ -12218,6 +12277,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "اكتشاف RT-DETR",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "تصفية الاكتشافات حسب الفئة. اختر 'all' لتعطيل التصفية."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "الحد الأقصى لعدد الاكتشافات التي سيتم إرجاعها لكل صورة. بالترتيب التنازلي حسب درجة الثقة."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "قص عشوائي للصور",
     "inputs": {
@@ -15623,6 +15710,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "صورة UV",
+        "tooltip": null
       }
     }
   },
@@ -17882,6 +17973,241 @@
       },
       "width": {
         "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "إنشاء فيديو من صورة الإطار الأول، مع إمكانية إضافة صورة الإطار الأخير وصوت اختياري.",
+    "display_name": "وان 2.7 من صورة إلى فيديو",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم لتوجيه توليد الفيديو (مثل مزامنة الشفاه أو حركة متوافقة مع الإيقاع). المدة: ۲-۳۰ ثانية. إذا لم يتم توفيره، يقوم النموذج تلقائيًا بإنشاء موسيقى خلفية أو مؤثرات صوتية مناسبة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "first_frame": {
+        "name": "الإطار الأول",
+        "tooltip": "صورة الإطار الأول. يتم اشتقاق نسبة العرض إلى الارتفاع للإخراج من هذه الصورة."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير. يقوم النموذج بإنشاء فيديو ينتقل من الإطار الأول إلى الأخير."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "model_prompt": {
+        "name": "توجيه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt_extend": {
+        "name": "تعزيز التوجيه",
+        "tooltip": "ما إذا كان سيتم تعزيز التوجيه بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "إنشاء فيديو يعرض شخصًا أو كائنًا من مواد مرجعية. يدعم أداء شخصية واحدة وتفاعل عدة شخصيات.",
+    "display_name": "وان 2.7 من مرجع إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "model_prompt": {
+        "name": "توجيه"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "ينشئ فيديو بناءً على وصف نصي باستخدام نموذج وان 2.7.",
+    "display_name": "وان 2.7 تحويل النص إلى فيديو",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم لتوجيه توليد الفيديو (مثل مزامنة الشفاه أو الحركة المتوافقة مع الإيقاع). المدة: ٣-٣٠ ثانية. إذا لم يتم توفيره، سيقوم النموذج تلقائيًا بإنشاء موسيقى خلفية أو مؤثرات صوتية مناسبة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "الوصف السلبي"
+      },
+      "model_prompt": {
+        "name": "الوصف"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt_extend": {
+        "name": "توسيع الوصف",
+        "tooltip": "ما إذا كان سيتم تعزيز الوصف بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "استكمال الفيديو من حيث توقف، مع إمكانية التحكم في الإطار الأخير.",
+    "display_name": "وان 2.7 استكمال الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "first_clip": {
+        "name": "المقطع الأول",
+        "tooltip": "الفيديو المدخل للاستكمال منه. المدة: ٢-١٠ ثوانٍ. يتم اشتقاق نسبة العرض إلى الارتفاع من هذا الفيديو."
+      },
+      "last_frame": {
+        "name": "الإطار الأخير",
+        "tooltip": "صورة الإطار الأخير. سيتم الانتقال في الاستكمال نحو هذا الإطار."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "الوصف السلبي"
+      },
+      "model_prompt": {
+        "name": "الوصف"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt_extend": {
+        "name": "توسيع الوصف",
+        "tooltip": "ما إذا كان سيتم تعزيز الوصف بمساعدة الذكاء الاصطناعي."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "تحرير فيديو باستخدام تعليمات نصية أو صور مرجعية أو نقل النمط.",
+    "display_name": "وان 2.7 تحرير الفيديو",
+    "inputs": {
+      "audio_setting": {
+        "name": "إعداد الصوت",
+        "tooltip": "'تلقائي': يقرر النموذج ما إذا كان سيعيد توليد الصوت بناءً على الوصف. 'الأصلي': الحفاظ على الصوت الأصلي من الفيديو المدخل."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الوصف"
+      },
+      "model_ratio": {
+        "name": "النسبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة في التوليد."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المراد تحريره."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "ما إذا كان سيتم إضافة علامة مائية مولدة بالذكاء الاصطناعي إلى النتيجة."
       }
     },
     "outputs": {

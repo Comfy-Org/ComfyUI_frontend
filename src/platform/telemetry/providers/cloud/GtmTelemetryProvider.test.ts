@@ -230,6 +230,48 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
+    it('pushes normalized email inside the auth event payload', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackAuth({
+        method: 'email',
+        is_new_user: true,
+        user_id: 'uid-123',
+        email: '  Test@Example.com  '
+      })
+
+      const dl = window.dataLayer as Record<string, unknown>[]
+      const authEvent = dl.find((entry) => entry.event === 'sign_up')
+      expect(authEvent).toMatchObject({
+        event: 'sign_up',
+        method: 'email',
+        user_id: 'uid-123',
+        user_data: {
+          email: 'test@example.com'
+        }
+      })
+      expect(
+        dl.some((entry) => 'user_data' in entry && !('event' in entry))
+      ).toBe(false)
+    })
+
+    it('omits user_data when email is absent', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: false,
+        user_id: 'uid-456'
+      })
+
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'login',
+        method: 'google',
+        user_id: 'uid-456'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
+    })
+
     it('does not push events when not initialized', () => {
       window.__CONFIG__ = {}
       const provider = new GtmTelemetryProvider()

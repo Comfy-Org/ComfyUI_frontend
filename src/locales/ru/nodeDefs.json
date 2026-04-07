@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Растягивать ли обрезку до нужного размера или добавлять чёрные поля для сохранения соотношения сторон."
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "Высота, до которой изменяется каждый обрезанный фрагмент."
@@ -2309,6 +2313,23 @@
     "display_name": "Отключить шум",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Нарисовать BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "Применяет фрагментные шейдеры GLSL ES к изображениям. u_resolution (vec2) всегда доступен.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "булевы",
+        "tooltip": "Булевы значения доступны как u_bool0-9 (bool) в коде шейдера"
+      },
+      "curves": {
+        "name": "кривые",
+        "tooltip": "Кривые доступны как u_curve0-3 (sampler2D, 1D LUT) в коде шейдера. Используйте sample с texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Числа с плавающей точкой доступны как u_float0-4 в коде шейдера"
@@ -4974,6 +5003,36 @@
       "0": {
         "name": "изображения",
         "tooltip": "Обработанные изображения"
+      }
+    }
+  },
+  "ImageHistogram": {
+    "display_name": "Гистограмма изображения",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "яркость",
+        "tooltip": null
+      },
+      "2": {
+        "name": "красный",
+        "tooltip": null
+      },
+      "3": {
+        "name": "зелёный",
+        "tooltip": null
+      },
+      "4": {
+        "name": "синий",
+        "tooltip": null
       }
     }
   },
@@ -12218,6 +12277,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Обнаружение",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Фильтровать обнаружения по классу. Установите 'all', чтобы отключить фильтрацию."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Максимальное количество обнаружений на изображение. В порядке убывания оценки уверенности."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Случайное кадрирование изображений",
     "inputs": {
@@ -15623,6 +15710,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -17882,6 +17973,241 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "Создайте видео из изображения первого кадра с возможностью добавить изображение последнего кадра и аудио.",
+    "display_name": "Wan 2.7 Изображение в Видео",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для управления генерацией видео (например, синхронизация губ, движение в ритм музыки). Длительность: 2–30 сек. Если не указано, модель автоматически сгенерирует подходящую фоновую музыку или звуковые эффекты."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Изображение первого кадра. Соотношение сторон результата определяется этим изображением."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Изображение последнего кадра. Модель создаёт видео с переходом от первого к последнему кадру."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшить ли промпт с помощью AI."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Создайте видео с участием человека или объекта на основе референсных материалов. Поддерживает выступления одного персонажа и взаимодействие нескольких персонажей.",
+    "display_name": "Wan 2.7 Референс в Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Генерирует видео на основе текстового запроса с использованием модели Wan 2.7.",
+    "display_name": "Wan 2.7 Текст в видео",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для управления генерацией видео (например, синхронизация губ, движение в ритм музыки). Длительность: 3–30 сек. Если не указано, модель автоматически сгенерирует подходящую фоновую музыку или звуковые эффекты."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли запрос с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Продолжает видео с того места, где оно закончилось, с возможностью контроля последнего кадра.",
+    "display_name": "Wan 2.7 Продолжение видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "Входное видео для продолжения. Длительность: 2–10 сек. Соотношение сторон результата определяется этим видео."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Изображение последнего кадра. Продолжение будет переходить к этому кадру."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли запрос с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Редактируйте видео с помощью текстовых инструкций, референсных изображений или переноса стиля.",
+    "display_name": "Wan 2.7 Редактирование видео",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': модель решает, нужно ли перегенерировать аудио на основе запроса. 'origin': сохранить оригинальное аудио из входного видео."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для редактирования."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
       }
     },
     "outputs": {
