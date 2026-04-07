@@ -4,6 +4,7 @@ import {
 } from '../fixtures/ComfyPage'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { fitToViewInstant } from '../helpers/fitToView'
+import type { WorkspaceStore } from '../types/globals'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 // TODO: there might be a better solution for this
@@ -32,6 +33,56 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
   await comfyPage.nextFrame()
 
   return comfyPage.page.getByTestId('properties-panel')
+}
+
+async function setLocaleAndWaitForWorkflowReload(
+  comfyPage: ComfyPage,
+  locale: string
+) {
+  await comfyPage.page.evaluate(async (targetLocale) => {
+    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow
+
+    if (!workflow) {
+      throw new Error('No active workflow while waiting for locale reload')
+    }
+
+    const changeTracker = workflow.changeTracker.constructor as unknown as {
+      isLoadingGraph: boolean
+    }
+
+    let sawLoading = false
+    const waitForReload = new Promise<void>((resolve, reject) => {
+      const timeoutAt = performance.now() + 5000
+
+      const tick = () => {
+        if (changeTracker.isLoadingGraph) {
+          sawLoading = true
+        }
+
+        if (sawLoading && !changeTracker.isLoadingGraph) {
+          resolve()
+          return
+        }
+
+        if (performance.now() > timeoutAt) {
+          reject(
+            new Error(
+              `Timed out waiting for workflow reload after setting locale to ${targetLocale}`
+            )
+          )
+          return
+        }
+
+        requestAnimationFrame(tick)
+      }
+
+      tick()
+    })
+
+    await window.app!.extensionManager.setting.set('Comfy.Locale', targetLocale)
+    await waitForReload
+  }, locale)
 }
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
@@ -427,7 +478,7 @@ This is English documentation.
       })
 
       // Set locale to Japanese
-      await comfyPage.settings.setSetting('Comfy.Locale', 'ja')
+      await setLocaleAndWaitForWorkflowReload(comfyPage, 'ja')
 
       try {
         await comfyPage.workflow.loadWorkflow('default')
@@ -439,7 +490,7 @@ This is English documentation.
         await expect(helpPage).toContainText('KSamplerノード')
         await expect(helpPage).toContainText('これは日本語のドキュメントです')
       } finally {
-        await comfyPage.settings.setSetting('Comfy.Locale', 'en')
+        await setLocaleAndWaitForWorkflowReload(comfyPage, 'en')
       }
     })
 

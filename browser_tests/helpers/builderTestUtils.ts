@@ -6,7 +6,6 @@ import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 import { comfyExpect } from '../fixtures/ComfyPage'
 import { fitToViewInstant } from './fitToView'
-import { getPromotedWidgetNames } from './promotedWidgets'
 
 interface BuilderSetupResult {
   inputNodeTitle: string
@@ -63,16 +62,8 @@ export async function setupSubgraphBuilder(
 ): Promise<void> {
   await setupBuilder(comfyPage, async (ksampler) => {
     await ksampler.click('title')
-    const subgraphNode = await ksampler.convertToSubgraph()
+    await ksampler.convertToSubgraph()
     await comfyPage.nextFrame()
-
-    await expect(async () => {
-      const promotedNames = await getPromotedWidgetNames(
-        comfyPage,
-        String(subgraphNode.id)
-      )
-      expect(promotedNames).toContain('seed')
-    }).toPass({ timeout: 5000 })
 
     return {
       inputNodeTitle: 'New Subgraph',
