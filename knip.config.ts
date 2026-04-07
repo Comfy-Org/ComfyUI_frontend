@@ -50,7 +50,8 @@ const config: KnipConfig = {
     '@primevue/icons',
     // QA pipeline deps — installed inline in CI workflow
     '@anthropic-ai/claude-agent-sdk',
-    '@google/generative-ai'
+    '@google/generative-ai',
+    'demowright'
   ],
   ignore: [
     // Auto generated API types

@@ -91,3 +91,9 @@
 2. Agent ran out of turn budget (30 turns / 120s)
 3. Gemini Flash (old agent) ignores prompt hints
    **Fix**: Use hybrid agent (Claude Sonnet 4.6 + Gemini vision). Claude's superior reasoning follows instructions precisely.
+
+## False REPRODUCED from Discovery Tests
+
+**Symptom**: Badge says REPRODUCED but the test was a debug/discovery test (e.g., "Find String Multiline node type") with trivial assertions like `expect(x).toBeDefined()`.
+**Cause**: The auto-complete logic saved any passing test as proof of reproduction, including discovery tests that pass trivially.
+**Fix**: Auto-complete now validates test code for bug-specific assertions — discovery tests (with names containing "Inspect", "Find", "Debug") and trivial assertions (`toBeDefined()`, `toBeGreaterThan(0)`) are excluded from auto-save.

@@ -1965,52 +1965,28 @@ async function main() {
         )
         console.warn(`Evidence: ${research.evidence.slice(0, 200)}`)
 
-        // ═══ Phase 2: Run passing test with video recording ═══
+        // ═══ Phase 2: Run passing test with demowright video recording ═══
         if (research.verdict === 'REPRODUCED' && research.testCode) {
-          console.warn('Phase 2: Recording test execution with video')
+          console.warn('Phase 2: Recording test execution with demowright')
           const projectRoot = process.cwd()
           const browserTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
-          // Inject cursor overlay into the test — add page.addInitScript in beforeEach
-          const cursorScript = `await comfyPage.page.addInitScript(() => {
-  var c=document.createElement('div');c.id='qa-cursor';
-  c.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5"><path d="M4 2l14 10-6.5 1.5L15 21l-3.5-1.5L8 21l-1.5-7.5L2 16z"/></svg>';
-  Object.assign(c.style,{position:'fixed',zIndex:'2147483647',pointerEvents:'none',width:'20px',height:'20px',margin:'-2px 0 0 -2px',opacity:'0.95'});
-  if(document.body)document.body.appendChild(c);
-  else document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(c)});
-  document.addEventListener('mousemove',function(e){c.style.left=e.clientX+'px';c.style.top=e.clientY+'px'});
-});`
-          // Insert cursor injection after the first line of the test body (after async ({ comfyPage }) => {)
-          let testCode = research.testCode
-          const testBodyMatch = testCode.match(
-            /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
-          )
-          if (testBodyMatch && testBodyMatch.index !== undefined) {
-            const insertPos = testBodyMatch.index + testBodyMatch[0].length
-            testCode =
-              testCode.slice(0, insertPos) +
-              '\n    ' +
-              cursorScript +
-              '\n' +
-              testCode.slice(insertPos)
-          }
-          // Inject 800ms pauses between actions for human-readable video
-          // Uses comfyPage.page since test code uses comfyPageFixture
-          testCode = testCode.replace(
-            /(\n\s*)(await\s+(?:comfyPage|topbar|firstNode|page|canvas|expect))/g,
-            '$1await comfyPage.page.waitForTimeout(800);\n$1$2'
-          )
-          writeFileSync(browserTestFile, testCode)
+          // Write the test as-is — demowright handles cursor, keyboard, slowdown
+          writeFileSync(browserTestFile, research.testCode)
           try {
             const output = execSync(
-              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=30000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
+              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=60000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
               {
-                timeout: 90000,
+                timeout: 120000,
                 encoding: 'utf-8',
                 env: {
                   ...process.env,
                   COMFYUI_BASE_URL: opts.serverUrl,
-                  PLAYWRIGHT_LOCAL: '1' // Enables video=on + trace=on in playwright.config.ts
+                  PLAYWRIGHT_LOCAL: '1',
+                  NODE_OPTIONS: '--require demowright/register',
+                  QA_HUD_DELAY: '300',
+                  QA_HUD_CURSOR_STYLE: 'default',
+                  QA_HUD_KEY_FADE: '2000'
                 }
               }
             )

@@ -10,6 +10,8 @@
 name: 'PR: QA'
 
 on:
+  push:
+    branches: [sno-qa-*]
   pull_request:
     types: [labeled]
     branches: [main]
@@ -90,6 +92,9 @@ jobs:
             NUM=$(gh pr list --repo "$REPO" \
               --head "$BRANCH" --state open \
               --json number --jq '.[0].number // empty')
+            if [ -z "$NUM" ]; then
+              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
+            fi
           fi
           echo "number=${NUM}" >> "$GITHUB_OUTPUT"
 
@@ -198,7 +203,7 @@ jobs:
           include_build_step: false
 
       - name: Install QA dependencies
-        run: pnpm add -D @google/generative-ai@^0.24.1 @anthropic-ai/claude-agent-sdk@^0.2.85
+        run: pnpm add -D @google/generative-ai@^0.24.1 @anthropic-ai/claude-agent-sdk@^0.2.85 demowright@^0.1.0
 
       - name: Cache main branch dist
         id: cache-main-dist
@@ -374,7 +379,7 @@ jobs:
           include_build_step: true
 
       - name: Install QA dependencies
-        run: pnpm add -D @google/generative-ai@^0.24.1
+        run: pnpm add -D @google/generative-ai@^0.24.1 demowright@^0.1.0
 
       - name: Setup ComfyUI server (no launch)
         uses: ./.github/actions/setup-comfyui-server
@@ -473,7 +478,8 @@ jobs:
     needs: [resolve-matrix, analyze-pr, qa-before, qa-after]
     if: >-
       always() &&
-      (needs.qa-after.result == 'success' || needs.qa-before.result == 'success')
+      (needs.qa-after.result == 'success' || needs.qa-before.result == 'success') &&
+      (github.event.pull_request.number || github.event.issue.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -650,6 +656,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           NUM="${PR_NUM:-$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')}"
+          [ -z "$NUM" ] && NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
           echo "number=${NUM}" >> "$GITHUB_OUTPUT"
 
           if [ -n "$NUM" ]; then
