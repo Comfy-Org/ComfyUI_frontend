@@ -1,26 +1,13 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../../../fixtures/ComfyPage'
 
 type CropValue = { x: number; y: number; width: number; height: number } | null
 
-async function getCropValue(comfyPage: ComfyPage): Promise<CropValue> {
-  return comfyPage.page.evaluate(() => {
-    const n = window.app!.graph.getNodeById(2)
-    const w = n?.widgets?.find((w) => w.type === 'imagecrop')
-    const v = w?.value as Record<string, number> | undefined
-    return v ? { x: v.x, y: v.y, width: v.width, height: v.height } : null
-  })
-}
-
-test.describe('Image Crop', () => {
+test.describe('Image Crop', { tag: '@widget' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
   })
 
   test.describe('without source image', () => {
@@ -62,6 +49,15 @@ test.describe('Image Crop', () => {
   })
 
   test.describe('with source image after execution', () => {
+    async function getCropValue(comfyPage: ComfyPage): Promise<CropValue> {
+      return comfyPage.page.evaluate(() => {
+        const n = window.app!.graph.getNodeById(2)
+        const w = n?.widgets?.find((w) => w.type === 'imagecrop')
+        const v = w?.value as Record<string, number> | undefined
+        return v ? { x: v.x, y: v.y, width: v.width, height: v.height } : null
+      })
+    }
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/image_crop_with_source')
       await comfyPage.vueNodes.waitForNodes()
@@ -85,14 +81,6 @@ test.describe('Image Crop', () => {
         await expect(node.locator('.cursor-move')).toBeVisible()
         await comfyPage.nextFrame()
         await comfyPage.nextFrame()
-        await comfyPage.page.evaluate(() =>
-          Promise.all(
-            document
-              .getAnimations()
-              .filter((a) => a.playState === 'running')
-              .map((a) => a.finished.catch(() => undefined))
-          )
-        )
         await expect(node).toHaveScreenshot('image-crop-with-source.png', {
           maxDiffPixelRatio: 0.02
         })
@@ -106,16 +94,14 @@ test.describe('Image Crop', () => {
         const node = comfyPage.vueNodes.getNodeLocator('2')
         const cropBox = node.locator('.cursor-move')
         const box = await cropBox.boundingBox()
-        expect(box, 'Crop box not found').not.toBeNull()
+        if (!box) throw new Error('Crop box not found')
 
         const valueBefore = await getCropValue(comfyPage)
-        expect(
-          valueBefore,
-          'Widget value missing — check fixture setup'
-        ).not.toBeNull()
+        if (!valueBefore)
+          throw new Error('Widget value missing — check fixture setup')
 
-        const startX = box!.x + box!.width / 2
-        const startY = box!.y + box!.height / 2
+        const startX = box.x + box.width / 2
+        const startY = box.y + box.height / 2
 
         const pointerOpts = { bubbles: true, cancelable: true, pointerId: 1 }
         await cropBox.dispatchEvent('pointerdown', {
@@ -144,10 +130,10 @@ test.describe('Image Crop', () => {
 
         await expect(async () => {
           const valueAfter = await getCropValue(comfyPage)
-          expect(valueAfter?.x).toBeGreaterThan(valueBefore!.x)
-          expect(valueAfter?.y).toBeGreaterThan(valueBefore!.y)
-          expect(valueAfter?.width).toBe(valueBefore!.width)
-          expect(valueAfter?.height).toBe(valueBefore!.height)
+          expect(valueAfter?.x).toBeGreaterThan(valueBefore.x)
+          expect(valueAfter?.y).toBeGreaterThan(valueBefore.y)
+          expect(valueAfter?.width).toBe(valueBefore.width)
+          expect(valueAfter?.height).toBe(valueBefore.height)
         }).toPass()
 
         await expect(node).toHaveScreenshot('image-crop-after-drag.png')
