@@ -12,7 +12,7 @@
         :key="preset.id"
         as-child
       >
-        <button
+        <Button
           type="button"
           :data-testid="`category-${preset.id}`"
           :aria-current="selectedCategory === preset.id || undefined"
@@ -20,7 +20,7 @@
           @click="selectCategory(preset.id)"
         >
           {{ preset.label }}
-        </button>
+        </Button>
       </RovingFocusItem>
     </div>
 
@@ -62,6 +62,7 @@ import NodeSearchCategoryTreeNode, {
   CATEGORY_SELECTED_CLASS,
   CATEGORY_UNSELECTED_CLASS
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -157,7 +158,7 @@ watch(
 
 function categoryBtnClass(id: string) {
   return cn(
-    'cursor-pointer rounded-lg border-none bg-transparent py-2.5 pr-3 text-left font-inter text-sm transition-colors',
+    'h-auto justify-start bg-transparent py-2.5 pr-3 text-sm font-normal',
     hideChevrons ? 'pl-3' : 'pl-9',
     selectedCategory.value === id
       ? CATEGORY_SELECTED_CLASS

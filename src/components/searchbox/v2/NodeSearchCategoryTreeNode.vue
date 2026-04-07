@@ -10,7 +10,7 @@
     "
   >
     <RovingFocusItem as-child>
-      <button
+      <Button
         ref="buttonEl"
         type="button"
         role="treeitem"
@@ -20,7 +20,7 @@
         :style="{ paddingLeft: `${0.75 + depth * 1.25}rem` }"
         :class="
           cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent py-2.5 pr-3 text-left font-inter text-sm transition-colors',
+            'h-auto w-full gap-2 bg-transparent py-2.5 pr-3 text-left text-sm font-normal',
             selectedCategory === node.key
               ? CATEGORY_SELECTED_CLASS
               : CATEGORY_UNSELECTED_CLASS
@@ -43,7 +43,7 @@
           "
         />
         <span class="flex-1 truncate">{{ node.label }}</span>
-      </button>
+      </Button>
     </RovingFocusItem>
     <div v-if="isExpanded && node.children?.length" role="group">
       <NodeSearchCategoryTreeNode
@@ -79,7 +79,7 @@ export const CATEGORY_UNSELECTED_CLASS =
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { RovingFocusItem } from 'reka-ui'
-
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
