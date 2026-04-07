@@ -12,6 +12,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
@@ -138,11 +139,19 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // Cache miss — fit to content after the canvas has the new graph.
-      // rAF fires after layout + paint, when nodes are positioned.
-      const expectedGraphId = graphId
+      // Cache miss — fit to content only if no nodes are currently visible.
+      // loadGraphData may have already restored extra.ds or called fitView
+      // for templates, so only intervene when the viewport is truly empty.
       requestAnimationFrame(() => {
-        if (getActiveGraphId() !== expectedGraphId) return
+        if (getActiveGraphId() !== graphId) return
+        if (!canvas.graph) return
+
+        const nodes = canvas.graph.nodes
+        if (!nodes?.length) return
+
+        canvas.ds.computeVisibleArea(canvas.viewport)
+        if (anyItemOverlapsRect(nodes, canvas.ds.visible_area)) return
+
         useLitegraphService().fitView()
       })
     }
