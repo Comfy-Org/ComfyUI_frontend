@@ -111,7 +111,12 @@ export const TestIds = {
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
     widgetActionsMenu: 'widget-actions-menu',
-    opensAs: 'builder-opens-as'
+    opensAs: 'builder-opens-as',
+    widgetItem: 'builder-widget-item',
+    widgetLabel: 'builder-widget-label'
+  },
+  appMode: {
+    widgetItem: 'app-mode-widget-item'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -149,6 +154,7 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],

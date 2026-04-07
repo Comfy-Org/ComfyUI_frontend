@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import SiteNav from '../components/SiteNav.vue'
+import SiteFooter from '../components/SiteFooter.vue'
+---
+
+<BaseLayout title="Gallery — Comfy">
+  <SiteNav client:load />
+  <main class="bg-black text-white">
+    <!-- Hero -->
+    <section class="mx-auto max-w-5xl px-6 pb-16 pt-32 text-center">
+      <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
+        Built, Tweaked, and <span class="text-brand-yellow">Dreamed</span> in ComfyUI
+      </h1>
+      <p class="mx-auto mt-4 max-w-2xl text-lg text-smoke-700">
+        A small glimpse of what's being created with ComfyUI by the community.
+      </p>
+    </section>
+
+    <!-- Placeholder Grid -->
+    <section class="mx-auto max-w-6xl px-6 pb-24">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+        {Array.from({ length: 6 }).map(() => (
+          <div class="flex aspect-video items-center justify-center rounded-xl border border-white/10 bg-charcoal-600">
+            <p class="text-sm text-smoke-700">Community showcase coming soon</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="mx-auto max-w-3xl px-6 pb-32 text-center">
+      <h2 class="text-2xl font-semibold">Have something cool to share?</h2>
+      <a
+        href="https://support.comfy.org/"
+        class="mt-6 inline-block rounded-full bg-brand-yellow px-8 py-3 font-medium text-black transition hover:opacity-90"
+      >
+        Get in Touch
+      </a>
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>

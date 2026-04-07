@@ -194,6 +194,29 @@ test.describe('Assets sidebar - grid view display', () => {
     const count = await tab.assetCards.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })
+  test('Displays svg outputs', async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({
+        id: 'job-alpha',
+        create_time: 1000,
+        execution_start_time: 1000,
+        execution_end_time: 1010,
+        preview_output: {
+          filename: 'logo.svg',
+          subfolder: '',
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
+        },
+        outputs_count: 1
+      })
+    ])
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+  })
 })
 
 // ==========================================================================
@@ -674,5 +697,85 @@ test.describe('Assets sidebar - settings menu', () => {
 
     await expect(tab.listViewOption).toBeVisible()
     await expect(tab.gridViewOption).toBeVisible()
+  })
+})
+
+// ==========================================================================
+// 11. Delete confirmation
+// ==========================================================================
+
+test.describe('Assets sidebar - delete confirmation', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+    await comfyPage.assets.mockDeleteHistory()
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Right-click delete shows confirmation dialog', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText('Delete this asset?')).toBeVisible()
+    await expect(
+      dialog.getByText('This asset will be permanently removed.')
+    ).toBeVisible()
+  })
+
+  test('Confirming delete removes asset and shows success toast', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.confirmDialog.delete.click()
+
+    await expect(dialog).not.toBeVisible()
+    await expect(tab.assetCards).toHaveCount(initialCount - 1, {
+      timeout: 5000
+    })
+
+    const successToast = comfyPage.page.locator('.p-toast-message-success')
+    await expect(successToast).toBeVisible({ timeout: 5000 })
+  })
+
+  test('Cancelling delete preserves asset', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.confirmDialog.reject.click()
+
+    await expect(dialog).not.toBeVisible()
+    await expect(tab.assetCards).toHaveCount(initialCount)
   })
 })

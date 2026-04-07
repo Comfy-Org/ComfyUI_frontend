@@ -58,6 +58,16 @@ export class WorkflowHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async waitForDraftPersisted({ timeout = 5000 } = {}) {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        Object.keys(localStorage).some((k) =>
+          k.startsWith('Comfy.Workflow.Draft.v2:')
+        ),
+      { timeout }
+    )
+  }
+
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)

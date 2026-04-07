@@ -187,6 +187,35 @@ describe('useSubgraphStore', () => {
     expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
   })
 
+  describe('isUserBlueprint', () => {
+    it('should return true for user blueprints', async () => {
+      await mockFetch({ 'test.json': mockGraph })
+      expect(store.isUserBlueprint('SubgraphBlueprint.test')).toBe(true)
+    })
+
+    it('should return false for global blueprints', async () => {
+      await mockFetch(
+        {},
+        {
+          global_bp: {
+            name: 'Global Blueprint',
+            info: { node_pack: 'comfy_essentials' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+      expect(store.isUserBlueprint('SubgraphBlueprint.global_bp')).toBe(false)
+    })
+
+    it('should return false for non-blueprint node types', () => {
+      expect(store.isUserBlueprint('KSampler')).toBe(false)
+    })
+
+    it('should return false for undefined', () => {
+      expect(store.isUserBlueprint(undefined)).toBe(false)
+    })
+  })
+
   describe('blueprint badge display', () => {
     it('should set isGlobal flag on global blueprints', async () => {
       await mockFetch(

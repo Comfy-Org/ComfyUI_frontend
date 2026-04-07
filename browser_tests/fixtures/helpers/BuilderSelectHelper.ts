@@ -1,8 +1,35 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
-import type { NodeReference } from '../utils/litegraphUtils'
 import { TestIds } from '../selectors'
+
+/**
+ * Drag an element from one index to another within a list of locators.
+ * Uses mousedown/mousemove/mouseup to trigger the DraggableList library.
+ *
+ * DraggableList toggles position when the dragged item's center crosses
+ * past an idle item's center. To reliably land at the target position,
+ * we overshoot slightly past the target's far edge.
+ */
+async function dragByIndex(items: Locator, fromIndex: number, toIndex: number) {
+  const fromBox = await items.nth(fromIndex).boundingBox()
+  const toBox = await items.nth(toIndex).boundingBox()
+  if (!fromBox || !toBox) throw new Error('Item not visible for drag')
+
+  const draggingDown = toIndex > fromIndex
+  const targetY = draggingDown
+    ? toBox.y + toBox.height * 0.9
+    : toBox.y + toBox.height * 0.1
+
+  const page = items.page()
+  await page.mouse.move(
+    fromBox.x + fromBox.width / 2,
+    fromBox.y + fromBox.height / 2
+  )
+  await page.mouse.down()
+  await page.mouse.move(toBox.x + toBox.width / 2, targetY, { steps: 10 })
+  await page.mouse.up()
+}
 
 export class BuilderSelectHelper {
   constructor(private readonly comfyPage: ComfyPage) {}
@@ -99,41 +126,69 @@ export class BuilderSelectHelper {
     await this.comfyPage.nextFrame()
   }
 
-  /** Center on a node and click its first widget to select it as input. */
-  async selectInputWidget(node: NodeReference) {
+  /**
+   * Click a widget on the canvas to select it as a builder input.
+   * @param nodeTitle The displayed title of the node.
+   * @param widgetName The widget name to click.
+   */
+  async selectInputWidget(nodeTitle: string, widgetName: string) {
     await this.comfyPage.canvasOps.setScale(1)
-    await node.centerOnNode()
-
-    const widgetRef = await node.getWidget(0)
-    const widgetPos = await widgetRef.getPosition()
-    const titleHeight = await this.page.evaluate(
-      () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
-    )
-    await this.page.mouse.click(widgetPos.x, widgetPos.y + titleHeight)
+    const nodeRef = (
+      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    )[0]
+    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    await nodeRef.centerOnNode()
+    const widgetLocator = this.comfyPage.vueNodes
+      .getNodeLocator(String(nodeRef.id))
+      .getByLabel(widgetName, { exact: true })
+    await widgetLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
 
-  /** Click the first SaveImage/PreviewImage node on the canvas. */
-  async selectOutputNode() {
-    const saveImageNodeId = await this.page.evaluate(() => {
-      const node = window.app!.rootGraph.nodes.find(
-        (n: { type?: string }) =>
-          n.type === 'SaveImage' || n.type === 'PreviewImage'
-      )
-      return node ? String(node.id) : null
-    })
-    if (!saveImageNodeId)
-      throw new Error('SaveImage/PreviewImage node not found')
-    const saveImageRef =
-      await this.comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-    await saveImageRef.centerOnNode()
+  /** All IoItem title locators in the inputs step sidebar. */
+  get inputItemTitles(): Locator {
+    return this.page.getByTestId(TestIds.builder.ioItemTitle)
+  }
 
-    const canvasBox = await this.page.locator('#graph-canvas').boundingBox()
-    if (!canvasBox) throw new Error('Canvas not found')
-    await this.page.mouse.click(
-      canvasBox.x + canvasBox.width / 2,
-      canvasBox.y + canvasBox.height / 2
+  /** All widget label locators in the preview/arrange sidebar. */
+  get previewWidgetLabels(): Locator {
+    return this.page.getByTestId(TestIds.builder.widgetLabel)
+  }
+
+  /**
+   * Drag an IoItem from one index to another in the inputs step.
+   * Items are identified by their 0-based position among visible IoItems.
+   */
+  async dragInputItem(fromIndex: number, toIndex: number) {
+    const items = this.page.getByTestId(TestIds.builder.ioItem)
+    await dragByIndex(items, fromIndex, toIndex)
+    await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Drag a widget item from one index to another in the preview/arrange step.
+   */
+  async dragPreviewItem(fromIndex: number, toIndex: number) {
+    const items = this.page.getByTestId(TestIds.builder.widgetItem)
+    await dragByIndex(items, fromIndex, toIndex)
+    await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Click an output node on the canvas to select it as a builder output.
+   * @param nodeTitle The displayed title of the output node.
+   */
+  async selectOutputNode(nodeTitle: string) {
+    await this.comfyPage.canvasOps.setScale(1)
+    const nodeRef = (
+      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    )[0]
+    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    await nodeRef.centerOnNode()
+    const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
+      String(nodeRef.id)
     )
+    await nodeLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
 }

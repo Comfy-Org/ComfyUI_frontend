@@ -2,44 +2,13 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
 import type { AppModeHelper } from '../fixtures/helpers/AppModeHelper'
-import { setupBuilder } from '../helpers/builderTestUtils'
+import {
+  builderSaveAs,
+  openWorkflowFromSidebar,
+  setupBuilder
+} from '../helpers/builderTestUtils'
 import { fitToViewInstant } from '../helpers/fitToView'
-
-/**
- * Open the save-as dialog, fill name + view type, click save,
- * and wait for the success dialog.
- */
-async function builderSaveAs(
-  appMode: AppModeHelper,
-  workflowName: string,
-  viewType: 'App' | 'Node graph'
-) {
-  await appMode.footer.saveAsButton.click()
-  await expect(appMode.saveAs.nameInput).toBeVisible({ timeout: 5000 })
-  await appMode.saveAs.fillAndSave(workflowName, viewType)
-  await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
-}
-
-/**
- * Load a different workflow, then reopen the named one from the sidebar.
- * Caller must ensure the page is in graph mode (not builder or app mode)
- * before calling.
- */
-async function openWorkflowFromSidebar(comfyPage: ComfyPage, name: string) {
-  await comfyPage.workflow.loadWorkflow('default')
-  await comfyPage.nextFrame()
-  const { workflowsTab } = comfyPage.menu
-  await workflowsTab.open()
-  await workflowsTab.getPersistedItem(name).dblclick()
-  await comfyPage.nextFrame()
-
-  await expect(async () => {
-    const path = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(path).toContain(name)
-  }).toPass({ timeout: 5000 })
-}
 
 /**
  * After a first save, open save-as again from the chevron,
@@ -57,13 +26,7 @@ async function reSaveAs(
 
 test.describe('Builder save flow', { tag: ['@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
       true
@@ -203,10 +166,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     // Select I/O to enable the button
     await appMode.steps.goToInputs()
-    const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
-    await appMode.select.selectInputWidget(ksampler)
+    await appMode.select.selectInputWidget('KSampler', 'seed')
     await appMode.steps.goToOutputs()
-    await appMode.select.selectOutputNode()
+    await appMode.select.selectOutputNode('Save Image')
 
     // State 2: Enabled "Save as" (unsaved, has outputs)
     const enabledBox = await appMode.footer.saveAsButton.boundingBox()
