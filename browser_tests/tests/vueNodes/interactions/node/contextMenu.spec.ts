@@ -213,6 +213,22 @@ test.describe('Vue Node Context Menu', () => {
         .locator('[data-node-id] img')
         .first()
         .waitFor({ state: 'visible' })
+
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
+      if (!loadImageNode) throw new Error('Load Image node not found')
+
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              (nodeId) =>
+                window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+              loadImageNode.id
+            ),
+          { timeout: 5_000 }
+        )
+        .toBeGreaterThan(0)
     })
 
     test('should copy image to clipboard via context menu', async ({

@@ -368,14 +368,21 @@ test.describe('Node library sidebar', () => {
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page.getByLabel('Delete').click()
     await comfyPage.nextFrame()
-    expect(
-      await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-    ).toEqual([])
-    expect(
-      await comfyPage.settings.getSetting(
-        'Comfy.NodeLibrary.BookmarksCustomization'
+    await expect
+      .poll(
+        () => comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2'),
+        { timeout: 2_000 }
       )
-    ).toEqual({})
+      .toEqual([])
+    await expect
+      .poll(
+        () =>
+          comfyPage.settings.getSetting(
+            'Comfy.NodeLibrary.BookmarksCustomization'
+          ),
+        { timeout: 2_000 }
+      )
+      .toEqual({})
   })
 
   test('Can filter nodes in both trees', async ({ comfyPage }) => {
