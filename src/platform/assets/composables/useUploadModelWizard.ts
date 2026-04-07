@@ -251,18 +251,21 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         uploadStatus.value = 'processing'
 
         stopAsyncWatch?.()
-        stopAsyncWatch = watch(
+        let resolved = false
+        const stop = watch(
           () =>
             assetDownloadStore.downloadList.find(
               (d) => d.taskId === result.task.task_id
             )?.status,
           async (status) => {
             if (status === 'completed') {
+              resolved = true
               uploadStatus.value = 'success'
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
             } else if (status === 'failed') {
+              resolved = true
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
               )
@@ -278,6 +281,12 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           },
           { immediate: true }
         )
+        if (resolved) {
+          stop()
+          stopAsyncWatch = undefined
+        } else {
+          stopAsyncWatch = stop
+        }
       } else {
         uploadStatus.value = 'success'
         await refreshModelCaches()

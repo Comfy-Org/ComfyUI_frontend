@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
 
@@ -81,8 +80,6 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadStatus.value).toBe('processing')
 
     // Simulate WebSocket: download completes
-    const downloadStore = useAssetDownloadStore()
-    downloadStore.$patch({})
     const detail = {
       task_id: 'task-123',
       asset_id: 'asset-456',
@@ -92,7 +89,6 @@ describe('useUploadModelWizard', () => {
       progress: 100,
       status: 'completed' as const
     }
-    // Directly call the store's internal handler via the event system
     const event = new CustomEvent('asset_download', { detail })
     const { api } = await import('@/scripts/api')
     const handler = vi
@@ -100,35 +96,11 @@ describe('useUploadModelWizard', () => {
       .mock.calls.find((c) => c[0] === 'asset_download')?.[1] as
       | ((e: CustomEvent) => void)
       | undefined
-
-    // If handler was registered, call it; otherwise set store state directly
-    if (handler) {
-      handler(event)
-    } else {
-      // Manually update store state as WS handler would
-      downloadStore.downloadList.push?.({
-        taskId: 'task-123',
-        assetId: 'asset-456',
-        assetName: 'model.safetensors',
-        bytesTotal: 1000,
-        bytesDownloaded: 1000,
-        progress: 100,
-        status: 'completed',
-        lastUpdate: Date.now(),
-        modelType: 'checkpoints'
-      })
-      downloadStore.$patch({
-        lastCompletedDownload: {
-          taskId: 'task-123',
-          modelType: 'checkpoints',
-          timestamp: Date.now()
-        }
-      })
-    }
+    expect(handler).toBeDefined()
+    handler!(event)
 
     await nextTick()
 
-    // BUG: uploadStatus should be 'success' but remains 'processing'
     expect(wizard.uploadStatus.value).toBe('success')
   })
 
@@ -174,9 +146,8 @@ describe('useUploadModelWizard', () => {
       }
     })
 
-    if (handler) {
-      handler(failEvent)
-    }
+    expect(handler).toBeDefined()
+    handler!(failEvent)
 
     await nextTick()
 
