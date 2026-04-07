@@ -6,18 +6,18 @@ Evaluate approaches for collecting code coverage data from Playwright E2E tests 
 
 ## Current Project Context
 
-| Aspect | Details |
-|---|---|
-| **Bundler** | Vite (via `vitest/config`'s `defineConfig`) |
-| **Unit test coverage** | `@vitest/coverage-v8` already in devDependencies |
-| **Playwright tests** | 59 spec files in `browser_tests/tests/` |
-| **Playwright fixture** | Custom `comfyPageFixture` extending `@playwright/test`'s `base.extend` |
-| **Browser targets** | Chromium-only (Desktop Chrome, Mobile Chrome, 2x/0.5x scale variants). Firefox/WebKit are commented out in `playwright.config.ts` |
-| **Test runner** | `pnpm test:browser` / `pnpm test:browser:local` |
-| **Source maps** | Enabled by default (`GENERATE_SOURCEMAP !== 'false'`) |
-| **Build configuration** | Complex — conditional plugins for Sentry, DevTools, font exclusion, meta injection, etc. |
-| **Global setup/teardown** | Backs up/restores ComfyUI user data; writes perf reports on teardown |
-| **Vitest coverage config** | `coverage: { reporter: ['text', 'json', 'html'] }` in `vite.config.mts` |
+| Aspect                     | Details                                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Bundler**                | Vite (via `vitest/config`'s `defineConfig`)                                                                                       |
+| **Unit test coverage**     | `@vitest/coverage-v8` already in devDependencies                                                                                  |
+| **Playwright tests**       | 59 spec files in `browser_tests/tests/`                                                                                           |
+| **Playwright fixture**     | Custom `comfyPageFixture` extending `@playwright/test`'s `base.extend`                                                            |
+| **Browser targets**        | Chromium-only (Desktop Chrome, Mobile Chrome, 2x/0.5x scale variants). Firefox/WebKit are commented out in `playwright.config.ts` |
+| **Test runner**            | `pnpm test:browser` / `pnpm test:browser:local`                                                                                   |
+| **Source maps**            | Enabled by default (`GENERATE_SOURCEMAP !== 'false'`)                                                                             |
+| **Build configuration**    | Complex — conditional plugins for Sentry, DevTools, font exclusion, meta injection, etc.                                          |
+| **Global setup/teardown**  | Backs up/restores ComfyUI user data; writes perf reports on teardown                                                              |
+| **Vitest coverage config** | `coverage: { reporter: ['text', 'json', 'html'] }` in `vite.config.mts`                                                           |
 
 ## Approach 1: V8 Coverage via `page.coverage` API
 
@@ -155,19 +155,19 @@ const INSTRUMENT_COVERAGE = process.env.INSTRUMENT_COVERAGE === 'true'
 
 ## Side-by-Side Comparison
 
-| Criteria | V8 (`@bgotink/playwright-coverage`) | Istanbul (`vite-plugin-istanbul`) |
-|---|---|---|
-| **Browser support** | Chromium only | All browsers |
-| **Build changes** | None | Conditional Vite plugin |
-| **Source map accuracy** | Good (post-bundle) | Excellent (pre-bundle) |
-| **Vue SFC coverage** | Partial (template compilation artifacts) | Full (instruments compiled output) |
-| **Runtime overhead** | Low (~5%) | Medium (~10–30%) |
-| **Bundle size impact** | None | 2–3× increase when instrumented |
-| **Setup complexity** | Low | Medium |
-| **Maintenance** | Low (Playwright built-in API) | Medium (plugin compatibility) |
-| **Mergeable with Vitest** | Yes (via lcov) | Yes (via lcov) |
-| **Existing team familiarity** | High (`@vitest/coverage-v8`) | Low (new tooling) |
-| **Estimated effort** | 1–2 days | 2–3 days |
+| Criteria                      | V8 (`@bgotink/playwright-coverage`)      | Istanbul (`vite-plugin-istanbul`)  |
+| ----------------------------- | ---------------------------------------- | ---------------------------------- |
+| **Browser support**           | Chromium only                            | All browsers                       |
+| **Build changes**             | None                                     | Conditional Vite plugin            |
+| **Source map accuracy**       | Good (post-bundle)                       | Excellent (pre-bundle)             |
+| **Vue SFC coverage**          | Partial (template compilation artifacts) | Full (instruments compiled output) |
+| **Runtime overhead**          | Low (~5%)                                | Medium (~10–30%)                   |
+| **Bundle size impact**        | None                                     | 2–3× increase when instrumented    |
+| **Setup complexity**          | Low                                      | Medium                             |
+| **Maintenance**               | Low (Playwright built-in API)            | Medium (plugin compatibility)      |
+| **Mergeable with Vitest**     | Yes (via lcov)                           | Yes (via lcov)                     |
+| **Existing team familiarity** | High (`@vitest/coverage-v8`)             | Low (new tooling)                  |
+| **Estimated effort**          | 1–2 days                                 | 2–3 days                           |
 
 ## Risk Assessment
 
