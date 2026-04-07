@@ -26,12 +26,38 @@ test.describe('App mode usage', () => {
     await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
     await expect(centerPanel).toBeVisible()
   })
-  test('Widget Interaction', async ({ comfyPage }) => {
+  test('Widet Interaction', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([
-      ['4', 'seed'],
-      ['4', 'sampler_name'],
+      ['3', 'seed'],
+      ['3', 'sampler_name'],
       ['6', 'text']
     ])
+    const seed = comfyPage.appMode.linearWidgets.getByLabel('seed', {
+      exact: true
+    })
+    const { input, incrementButton, decrementButton } =
+      comfyPage.vueNodes.getInputNumberControls(seed)
+    const initialValue = Number(await input.inputValue())
+
+    await seed.dragTo(incrementButton, { steps: 5 })
+    const intermediateValue = Number(await input.inputValue())
+    await expect(intermediateValue).toBeGreaterThan(initialValue)
+
+    await seed.dragTo(decrementButton, { steps: 5 })
+    const endValue = Number(await input.inputValue())
+    await expect(endValue).toBeLessThan(intermediateValue)
+
+    const sampler = comfyPage.appMode.linearWidgets.getByLabel('sampler_name', {
+      exact: true
+    })
+    await sampler.click()
+
+    await comfyPage.page.getByRole('searchbox').fill('uni')
+    await comfyPage.page.keyboard.press('ArrowDown')
+    await comfyPage.page.keyboard.press('Enter')
+    await expect(sampler).toHaveText('uni_pc')
+
+    //verify values are consistent with litegraph
   })
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
