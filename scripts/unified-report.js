@@ -13,6 +13,7 @@ function getArg(name) {
 
 const sizeStatus = getArg('size-status') ?? 'pending'
 const perfStatus = getArg('perf-status') ?? 'pending'
+const coverageStatus = getArg('coverage-status') ?? 'skip'
 
 /** @type {string[]} */
 const lines = []
@@ -71,5 +72,31 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   lines.push('')
   lines.push('> ⏳ Performance tests in progress…')
 }
+
+// --- Coverage section ---
+if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
+  try {
+    const coverageReport = execFileSync(
+      'node',
+      ['scripts/coverage-report.js', 'temp/coverage/coverage.lcov'],
+      { encoding: 'utf-8' }
+    ).trimEnd()
+    lines.push('')
+    lines.push(coverageReport)
+  } catch {
+    lines.push('')
+    lines.push('## 🔬 E2E Coverage')
+    lines.push('')
+    lines.push(
+      '> ⚠️ Failed to render coverage report. Check the CI workflow logs.'
+    )
+  }
+} else if (coverageStatus === 'failed') {
+  lines.push('')
+  lines.push('## 🔬 E2E Coverage')
+  lines.push('')
+  lines.push('> ⚠️ Coverage collection failed. Check the CI workflow logs.')
+}
+// coverageStatus === 'skip' (default) — don't show section at all
 
 process.stdout.write(lines.join('\n') + '\n')
