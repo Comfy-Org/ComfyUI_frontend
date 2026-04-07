@@ -78,16 +78,17 @@ function onCustomComboCreated(this: LGraphNode) {
     const widgetName = `option${newCount}`
     const widget = node.addWidget('string', widgetName, '', () => {})
     if (!widget) return
+    let localValue = `${widget.value ?? ''}`
 
     Object.defineProperty(widget, 'value', {
       get() {
-        return useWidgetValueStore().getWidget(
-          app.rootGraph.id,
-          node.id,
-          widgetName
-        )?.value
+        return (
+          useWidgetValueStore().getWidget(app.rootGraph.id, node.id, widgetName)
+            ?.value ?? localValue
+        )
       },
       set(v: string) {
+        localValue = v
         const state = useWidgetValueStore().getWidget(
           app.rootGraph.id,
           node.id,
