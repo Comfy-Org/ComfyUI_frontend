@@ -129,6 +129,7 @@
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
+    "dontSave": "Don't Save",
     "cancel": "Cancel",
     "close": "Close",
     "closeDialog": "Close dialog",
@@ -2172,7 +2173,7 @@
       "success": "Signed out successfully",
       "successDetail": "You have been signed out of your account.",
       "unsavedChangesTitle": "Unsaved Changes",
-      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Do you want to continue?"
+      "unsavedChangesMessage": "You have unsaved changes that will be lost when you sign out. Would you like to save before signing out?"
     },
     "passwordUpdate": {
       "success": "Password Updated",

@@ -86,7 +86,7 @@
       <template v-else-if="type === 'dirtyClose'">
         <Button variant="secondary" @click="onDeny">
           <i class="pi pi-times" />
-          {{ $t('g.no') }}
+          {{ $t('g.dontSave') }}
         </Button>
         <Button @click="onConfirm">
           <i class="pi pi-save" />
