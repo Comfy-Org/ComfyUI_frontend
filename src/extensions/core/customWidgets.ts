@@ -63,7 +63,7 @@ function onCustomComboCreated(this: LGraphNode) {
         (w) => w.name.startsWith('option') && w.value
       ).map((w) => `${w.value}`)
     )
-    if (app.configuringGraph) return
+    if (app.configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values[0] ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -71,6 +71,9 @@ function onCustomComboCreated(this: LGraphNode) {
   comboWidget.callback = useChainCallback(comboWidget.callback, () =>
     this.applyToGraph!()
   )
+  this.onAdded = useChainCallback(this.onAdded, function () {
+    updateCombo()
+  })
 
   function addOption(node: LGraphNode) {
     if (!node.widgets) return
