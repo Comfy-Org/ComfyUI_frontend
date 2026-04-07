@@ -73,6 +73,10 @@ export const TestIds = {
     subgraphEnterButton: 'subgraph-enter-button'
   },
   builder: {
+    footerNav: 'builder-footer-nav',
+    saveButton: 'builder-save-button',
+    saveAsButton: 'builder-save-as-button',
+    saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     widgetActionsMenu: 'widget-actions-menu'
   },
