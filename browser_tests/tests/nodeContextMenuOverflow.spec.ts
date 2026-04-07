@@ -8,8 +8,8 @@ test.describe(
   { tag: '@ui' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      // Keep the viewport short enough that the More Options menu must overflow.
-      await comfyPage.page.setViewportSize({ width: 1280, height: 640 })
+      // Keep the viewport well below the menu content height so overflow is guaranteed.
+      await comfyPage.page.setViewportSize({ width: 1280, height: 520 })
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
