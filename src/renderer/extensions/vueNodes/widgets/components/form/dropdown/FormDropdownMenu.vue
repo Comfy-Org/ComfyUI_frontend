@@ -13,6 +13,7 @@ import type {
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
+import { MENU_HEIGHT, MENU_WIDTH } from './types'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
@@ -98,7 +99,8 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
 <template>
   <div
     data-testid="form-dropdown-menu"
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
+    class="flex flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
+    :style="{ height: `${MENU_HEIGHT}px`, width: `${MENU_WIDTH}px` }"
     data-capture-wheel="true"
   >
     <FormDropdownMenuFilter
