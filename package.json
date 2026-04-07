@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.43.11",
+  "version": "1.43.13",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -73,6 +73,7 @@
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
     "@sparkjsdev/spark": "catalog:",
+    "@tanstack/vue-virtual": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-link": "catalog:",
     "@tiptap/extension-table": "catalog:",

@@ -196,6 +196,56 @@ body: JSON.stringify([mockRelease])
 body: JSON.stringify([{ id: 1, project: 'comfyui', version: 'v0.3.44', ... }])
 ```
 
+## When to Use `page.evaluate`
+
+### Acceptable (use sparingly)
+
+Reading internal state that has no UI representation (prefer locator
+assertions whenever possible):
+
+```typescript
+// Reading graph/store values
+const nodeCount = await page.evaluate(() => window.app!.graph!.nodes.length)
+const linkSlot = await page.evaluate(() => window.app!.graph!.links.get(1)?.target_slot)
+
+// Reading computed properties or store state
+await page.evaluate(() => useWorkflowStore().activeWorkflow)
+
+// Setting up test fixtures (registering extensions, mock error handlers)
+await page.evaluate(() => {
+  window.app!.registerExtension({ name: 'TestExt', settings: [...] })
+})
+```
+
+### Avoid
+
+Performing actions that have a UI equivalent — use Playwright locators and user
+interactions instead:
+
+```typescript
+// Bad: setting a widget value programmatically
+await page.evaluate(() => { node.widgets![0].value = 512 })
+// Good: click the widget and type the value
+await widgetLocator.click()
+await widgetLocator.fill('512')
+
+// Bad: dispatching synthetic DOM events
+await page.evaluate(() => { btn.dispatchEvent(new MouseEvent('click', ...)) })
+// Good: use Playwright's click
+await page.getByTestId('more-options-button').click()
+
+// Bad: calling store actions that correspond to user interactions
+await page.evaluate(() => { app.queuePrompt(0) })
+// Good: click the Queue button
+await page.getByRole('button', { name: 'Queue' }).click()
+```
+
+### Preferred
+
+Use helper methods from `browser_tests/fixtures/helpers/` that wrap real user
+interactions (e.g., `comfyPage.settings.setSetting`, `comfyPage.nodeOps`,
+`comfyPage.workflow.loadWorkflow`).
+
 ## Running Tests
 
 ```bash

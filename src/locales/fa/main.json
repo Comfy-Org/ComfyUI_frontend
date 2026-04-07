@@ -2527,6 +2527,23 @@
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
+    "missingMedia": {
+      "audio": "صدا",
+      "cancelSelection": "لغو انتخاب",
+      "collapseNodes": "پنهان کردن nodeهای ارجاع‌دهنده",
+      "confirmSelection": "تأیید انتخاب",
+      "expandNodes": "نمایش nodeهای ارجاع‌دهنده",
+      "image": "تصاویر",
+      "locateNode": "یافتن node",
+      "missingMediaTitle": "ورودی‌های گمشده",
+      "or": "یا",
+      "selectedFromLibrary": "انتخاب شده از کتابخانه",
+      "uploadFile": "بارگذاری {type}",
+      "uploaded": "بارگذاری شد",
+      "uploading": "در حال بارگذاری...",
+      "useFromLibrary": "استفاده از کتابخانه",
+      "video": "ویدیوها"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "این مدل قبلاً در «{category}» وجود دارد",
       "assetLoadTimeout": "شناسایی مدل زمان‌بر شد. لطفاً workflow را مجدداً بارگذاری کنید.",

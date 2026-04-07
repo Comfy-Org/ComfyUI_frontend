@@ -61,7 +61,7 @@ test.describe('Job history sidebar - display', () => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
 
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
     await expect
       .poll(() => tab.jobItems.count(), { timeout: 5000 })
       .toBeGreaterThanOrEqual(1)
@@ -79,8 +79,7 @@ test.describe('Job history sidebar - display', () => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
 
-    // Wait for job items to render (store needs to process the data)
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
     await expect(tab.failedTab).toBeVisible()
   })
 
@@ -114,7 +113,7 @@ test.describe('Job history sidebar - filter tabs', () => {
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
 
     await tab.completedTab.click()
 
@@ -129,7 +128,7 @@ test.describe('Job history sidebar - filter tabs', () => {
   test('Failed tab filters to failed jobs only', async ({ comfyPage }) => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
 
     await tab.failedTab.click()
 
@@ -140,7 +139,7 @@ test.describe('Job history sidebar - filter tabs', () => {
   test('All tab shows all jobs again', async ({ comfyPage }) => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
 
     // Switch to Completed then back to All
     await tab.completedTab.click()
@@ -173,7 +172,7 @@ test.describe('Job history sidebar - search', () => {
   test('Search filters jobs by text', async ({ comfyPage }) => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
 
     const initialCount = await tab.jobItems.count()
 
@@ -181,10 +180,9 @@ test.describe('Job history sidebar - search', () => {
     await tab.searchInput.fill('failed')
 
     // Wait for filter to reduce count (150ms debounce)
-    await expect(async () => {
-      const count = await tab.jobItems.count()
-      expect(count).toBeLessThan(initialCount)
-    }).toPass({ timeout: 5000 })
+    await expect
+      .poll(() => tab.jobItems.count(), { timeout: 5000 })
+      .toBeLessThan(initialCount)
   })
 })
 
@@ -241,7 +239,7 @@ test.describe('Job history sidebar - completed only', () => {
   }) => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
-    await expect(tab.jobItems.first()).toBeVisible({ timeout: 5000 })
+    await tab.waitForJobsLoad()
 
     await expect(tab.failedTab).not.toBeVisible()
     await expect(tab.allTab).toBeVisible()
