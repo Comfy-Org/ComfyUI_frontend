@@ -106,7 +106,7 @@ test.describe('App mode builder selection', () => {
 
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await ksampler.header.dblclick({ force: true })
-    expect(ksampler.titleInput).not.toBeVisible()
+    await expect(ksampler.titleInput).not.toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
