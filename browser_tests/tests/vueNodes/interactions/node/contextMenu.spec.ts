@@ -10,17 +10,14 @@ import { TestIds } from '../../../../fixtures/selectors'
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
 async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
-  await comfyPage.page.getByRole('menuitem', { name, exact: true }).click()
+  await comfyPage.contextMenu.clickMenuItemExact(name)
   await comfyPage.nextFrame()
 }
 
 async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
   const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
-  await fixture.header.click()
-  await fixture.header.click({ button: 'right' })
-  const menu = comfyPage.contextMenu.primeVueMenu
-  await menu.waitFor({ state: 'visible' })
-  return menu
+  await comfyPage.contextMenu.openForVueNode(fixture.header)
+  return comfyPage.contextMenu.primeVueMenu
 }
 
 async function openMultiNodeContextMenu(
