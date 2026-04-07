@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "画像ヒストグラム",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "輝度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "赤",
+        "tooltip": null
+      },
+      "3": {
+        "name": "緑",
+        "tooltip": null
+      },
+      "4": {
+        "name": "青",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "画像を反転",
     "inputs": {

@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Görüntü Histogramı",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "parlaklık",
+        "tooltip": null
+      },
+      "2": {
+        "name": "kırmızı",
+        "tooltip": null
+      },
+      "3": {
+        "name": "yeşil",
+        "tooltip": null
+      },
+      "4": {
+        "name": "mavi",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Görüntüyü Ters Çevir",
     "inputs": {

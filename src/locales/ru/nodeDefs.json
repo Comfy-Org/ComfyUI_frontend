@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Гистограмма изображения",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "яркость",
+        "tooltip": null
+      },
+      "2": {
+        "name": "красный",
+        "tooltip": null
+      },
+      "3": {
+        "name": "зелёный",
+        "tooltip": null
+      },
+      "4": {
+        "name": "синий",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Инвертировать изображение",
     "inputs": {
