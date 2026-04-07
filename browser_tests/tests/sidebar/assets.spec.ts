@@ -215,7 +215,7 @@ test.describe('Assets sidebar - grid view display', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
   })
 })
 
