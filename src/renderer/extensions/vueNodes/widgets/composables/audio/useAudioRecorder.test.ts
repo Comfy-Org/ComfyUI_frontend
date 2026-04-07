@@ -3,47 +3,24 @@ import { effectScope } from 'vue'
 
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
 
-const mockMediaRecorder = vi.hoisted(() => {
-  let onstopHandler: (() => void) | null = null
-  let ondataHandler: ((e: { data: Blob }) => void) | null = null
-  const instance = {
-    state: 'recording' as string,
-    start: vi.fn(),
-    stop: vi.fn(() => {
-      instance.state = 'inactive'
-      onstopHandler?.()
-    }),
-    get onstop() {
-      return onstopHandler
-    },
-    set onstop(fn) {
-      onstopHandler = fn
-    },
-    get ondataavailable() {
-      return ondataHandler
-    },
-    set ondataavailable(fn) {
-      ondataHandler = fn
-    },
-    pushData(data: Blob) {
-      ondataHandler?.({ data })
-    },
-    reset() {
-      instance.state = 'recording'
-      onstopHandler = null
-      ondataHandler = null
-      instance.start.mockClear()
-      instance.stop.mockClear()
+const MockMediaRecorder = vi.hoisted(() =>
+  vi.fn(
+    class {
+      state = 'recording'
+      start = vi.fn()
+      onstop: (() => void) | null = null
+      ondataavailable: ((e: { data: Blob }) => void) | null = null
+
+      stop = vi.fn(() => {
+        this.state = 'inactive'
+        this.onstop?.()
+      })
     }
-  }
-  return instance
-})
+  )
+)
 
 vi.mock('extendable-media-recorder', () => ({
-  // Must be a regular function (not arrow) to support `new`
-  MediaRecorder: vi.fn(function () {
-    return mockMediaRecorder
-  })
+  MediaRecorder: MockMediaRecorder
 }))
 
 vi.mock('@/services/audioService', () => ({
@@ -65,9 +42,13 @@ vi.stubGlobal('navigator', {
   mediaDevices: { getUserMedia: mockGetUserMedia }
 })
 
+function recorderInstance() {
+  return MockMediaRecorder.mock.instances[0]
+}
+
 describe('useAudioRecorder', () => {
   beforeEach(() => {
-    mockMediaRecorder.reset()
+    MockMediaRecorder.mockClear()
     mockGetUserMedia.mockResolvedValue(createMockStream())
   })
 
@@ -83,7 +64,7 @@ describe('useAudioRecorder', () => {
 
     expect(isRecording.value).toBe(true)
     expect(mockGetUserMedia).toHaveBeenCalledWith({ audio: true })
-    expect(mockMediaRecorder.start).toHaveBeenCalledWith(100)
+    expect(recorderInstance().start).toHaveBeenCalledWith(100)
 
     scope.stop()
   })
@@ -113,7 +94,9 @@ describe('useAudioRecorder', () => {
     )!
 
     await startRecording()
-    mockMediaRecorder.pushData(new Blob(['audio'], { type: 'audio/wav' }))
+    recorderInstance().ondataavailable?.({
+      data: new Blob(['audio'], { type: 'audio/wav' })
+    })
     stopRecording()
 
     await vi.waitFor(() => expect(recordedURL.value).not.toBeNull())
@@ -130,7 +113,9 @@ describe('useAudioRecorder', () => {
     )!
 
     await startRecording()
-    mockMediaRecorder.pushData(new Blob(['chunk'], { type: 'audio/wav' }))
+    recorderInstance().ondataavailable?.({
+      data: new Blob(['chunk'], { type: 'audio/wav' })
+    })
     stopRecording()
 
     await vi.waitFor(() => expect(onComplete).toHaveBeenCalled())

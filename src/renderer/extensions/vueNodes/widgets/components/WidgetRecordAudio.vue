@@ -170,15 +170,18 @@ function handleRecordingComplete(blob: Blob) {
   if (!node?.widgets) return
   for (const w of node.widgets) {
     if (
-      isDOMWidget<HTMLAudioElement, string>(w) &&
-      w.element instanceof HTMLAudioElement
-    ) {
-      if (w.element.src.startsWith('blob:')) {
-        URL.revokeObjectURL(w.element.src)
-      }
-      w.element.src = URL.createObjectURL(blob)
-      break
+      !(
+        isDOMWidget<HTMLAudioElement, string>(w) &&
+        w.element instanceof HTMLAudioElement
+      )
+    )
+      continue
+
+    if (w.element.src.startsWith('blob:')) {
+      URL.revokeObjectURL(w.element.src)
     }
+    w.element.src = URL.createObjectURL(blob)
+    break
   }
 }
 
