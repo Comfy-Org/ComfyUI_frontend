@@ -303,6 +303,7 @@ function handleTitleCancel() {
             v-if="isSingleSubgraphNode"
             variant="secondary"
             size="icon"
+            data-testid="subgraph-editor-toggle"
             :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(

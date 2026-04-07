@@ -15680,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_görüntüsü",
+        "tooltip": null
       }
     }
   },
@@ -17939,6 +17943,241 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "İlk kare görüntüsünden bir video oluşturun, isteğe bağlı olarak son kare görüntüsü ve ses ekleyin.",
+    "display_name": "Wan 2.7 Görüntüden Videoya",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Video oluşturmayı yönlendiren ses (ör. dudak senkronizasyonu, ritme uygun hareket). Süre: 2-30 saniye. Sağlanmazsa, model otomatik olarak uyumlu arka plan müziği veya ses efektleri üretir."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "İlk kare görüntüsü. Çıktı en-boy oranı bu görüntüden alınır."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Son kare görüntüsü. Model, ilk kareden son kareye geçiş yapan bir video oluşturur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istek"
+      },
+      "model_prompt": {
+        "name": "istek"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "İsteğin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Referans materyallerden bir kişi veya nesne içeren video oluşturun. Tek karakterli performansları ve çok karakterli etkileşimleri destekler.",
+    "display_name": "Wan 2.7 Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istek"
+      },
+      "model_prompt": {
+        "name": "istek"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Wan 2.7 modeli kullanılarak bir metin istemine dayalı video oluşturur.",
+    "display_name": "Wan 2.7 Metinden Videoya",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Video oluşturmayı yönlendirmek için ses (ör. dudak senkronizasyonu, ritme uygun hareket). Süre: 3-30 sn. Sağlanmazsa, model otomatik olarak uygun arka plan müziği veya ses efektleri üretir."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt_extend": {
+        "name": "istem_genişlet",
+        "tooltip": "İstemin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Bir videoyu kaldığı yerden devam ettirin, isteğe bağlı olarak son kare kontrolüyle.",
+    "display_name": "Wan 2.7 Video Devamı",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "first_clip": {
+        "name": "ilk_klip",
+        "tooltip": "Devam edilecek giriş videosu. Süre: 2-10 sn. Çıktı en-boy oranı bu videodan alınır."
+      },
+      "last_frame": {
+        "name": "son_kare",
+        "tooltip": "Son kare görseli. Devam bu kareye doğru geçiş yapacaktır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt_extend": {
+        "name": "istem_genişlet",
+        "tooltip": "İstemin yapay zeka yardımıyla geliştirilip geliştirilmeyeceği."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Bir videoyu metin talimatları, referans görseller veya stil transferi ile düzenleyin.",
+    "display_name": "Wan 2.7 Video Düzenleme",
+    "inputs": {
+      "audio_setting": {
+        "name": "ses_ayarı",
+        "tooltip": "'auto': model, isteme göre sesi yeniden oluşturup oluşturmayacağına karar verir. 'origin': giriş videosundaki orijinal sesi korur."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_ratio": {
+        "name": "oran"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için kullanılacak tohum."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek video."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Sonuca yapay zeka tarafından oluşturulan bir filigran eklenip eklenmeyeceği."
       }
     },
     "outputs": {

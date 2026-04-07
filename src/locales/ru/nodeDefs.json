@@ -15680,6 +15680,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -17939,6 +17943,241 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "Создайте видео из изображения первого кадра с возможностью добавить изображение последнего кадра и аудио.",
+    "display_name": "Wan 2.7 Изображение в Видео",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для управления генерацией видео (например, синхронизация губ, движение в ритм музыки). Длительность: 2–30 сек. Если не указано, модель автоматически сгенерирует подходящую фоновую музыку или звуковые эффекты."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Изображение первого кадра. Соотношение сторон результата определяется этим изображением."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Изображение последнего кадра. Модель создаёт видео с переходом от первого к последнему кадру."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшить ли промпт с помощью AI."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Создайте видео с участием человека или объекта на основе референсных материалов. Поддерживает выступления одного персонажа и взаимодействие нескольких персонажей.",
+    "display_name": "Wan 2.7 Референс в Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Генерирует видео на основе текстового запроса с использованием модели Wan 2.7.",
+    "display_name": "Wan 2.7 Текст в видео",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для управления генерацией видео (например, синхронизация губ, движение в ритм музыки). Длительность: 3–30 сек. Если не указано, модель автоматически сгенерирует подходящую фоновую музыку или звуковые эффекты."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли запрос с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Продолжает видео с того места, где оно закончилось, с возможностью контроля последнего кадра.",
+    "display_name": "Wan 2.7 Продолжение видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "Входное видео для продолжения. Длительность: 2–10 сек. Соотношение сторон результата определяется этим видео."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Изображение последнего кадра. Продолжение будет переходить к этому кадру."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли запрос с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Редактируйте видео с помощью текстовых инструкций, референсных изображений или переноса стиля.",
+    "display_name": "Wan 2.7 Редактирование видео",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': модель решает, нужно ли перегенерировать аудио на основе запроса. 'origin': сохранить оригинальное аудио из входного видео."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для редактирования."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак, сгенерированный ИИ, к результату."
       }
     },
     "outputs": {

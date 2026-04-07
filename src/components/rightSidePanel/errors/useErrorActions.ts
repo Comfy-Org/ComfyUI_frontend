@@ -20,7 +20,7 @@ export function useErrorActions() {
       is_external: true,
       source: 'error_dialog'
     })
-    void commandStore.execute('Comfy.ContactSupport')
+    return commandStore.execute('Comfy.ContactSupport')
   }
 
   function findOnGitHub(errorMessage: string) {

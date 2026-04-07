@@ -230,7 +230,7 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
-    it('pushes normalized email as user_data before auth event', () => {
+    it('pushes normalized email inside the auth event payload', () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
@@ -241,20 +241,21 @@ describe('GtmTelemetryProvider', () => {
       })
 
       const dl = window.dataLayer as Record<string, unknown>[]
-      const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toMatchObject({
-        user_data: { email: 'test@example.com' }
+      const authEvent = dl.find((entry) => entry.event === 'sign_up')
+      expect(authEvent).toMatchObject({
+        event: 'sign_up',
+        method: 'email',
+        user_id: 'uid-123',
+        user_data: {
+          email: 'test@example.com'
+        }
       })
-
-      // Verify user_data is pushed before the sign_up event
-      const userDataIndex = dl.findIndex((entry) => 'user_data' in entry)
-      const signUpIndex = dl.findIndex(
-        (entry) => (entry as Record<string, unknown>).event === 'sign_up'
-      )
-      expect(userDataIndex).toBeLessThan(signUpIndex)
+      expect(
+        dl.some((entry) => 'user_data' in entry && !('event' in entry))
+      ).toBe(false)
     })
 
-    it('does not push user_data when email is absent', () => {
+    it('omits user_data when email is absent', () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
@@ -263,9 +264,12 @@ describe('GtmTelemetryProvider', () => {
         user_id: 'uid-456'
       })
 
-      const dl = window.dataLayer as Record<string, unknown>[]
-      const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toBeUndefined()
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'login',
+        method: 'google',
+        user_id: 'uid-456'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
     })
 
     it('does not push events when not initialized', () => {

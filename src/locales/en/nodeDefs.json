@@ -798,7 +798,7 @@
     }
   },
   "CaseConverter": {
-    "display_name": "Case Converter",
+    "display_name": "Text Case Converter",
     "inputs": {
       "string": {
         "name": "string"
@@ -12840,7 +12840,7 @@
     }
   },
   "RegexExtract": {
-    "display_name": "Regex Extract",
+    "display_name": "Text Extract Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -12871,7 +12871,7 @@
     }
   },
   "RegexMatch": {
-    "display_name": "Regex Match",
+    "display_name": "Text Match",
     "inputs": {
       "string": {
         "name": "string"
@@ -12897,7 +12897,7 @@
     }
   },
   "RegexReplace": {
-    "display_name": "Regex Replace",
+    "display_name": "Text Replace (Regex)",
     "description": "Find and replace text using regex patterns.",
     "inputs": {
       "string": {
@@ -15220,7 +15220,7 @@
     }
   },
   "StringCompare": {
-    "display_name": "Compare",
+    "display_name": "Text Compare",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15242,7 +15242,7 @@
     }
   },
   "StringConcatenate": {
-    "display_name": "Concatenate",
+    "display_name": "Text Concatenate",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15261,7 +15261,7 @@
     }
   },
   "StringContains": {
-    "display_name": "Contains",
+    "display_name": "Text Contains",
     "inputs": {
       "string": {
         "name": "string"
@@ -15281,7 +15281,7 @@
     }
   },
   "StringLength": {
-    "display_name": "Length",
+    "display_name": "Text Length",
     "inputs": {
       "string": {
         "name": "string"
@@ -15295,7 +15295,7 @@
     }
   },
   "StringReplace": {
-    "display_name": "Replace",
+    "display_name": "Text Replace",
     "inputs": {
       "string": {
         "name": "string"
@@ -15314,7 +15314,7 @@
     }
   },
   "StringSubstring": {
-    "display_name": "Substring",
+    "display_name": "Text Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -15333,7 +15333,7 @@
     }
   },
   "StringTrim": {
-    "display_name": "Trim",
+    "display_name": "Text Trim",
     "inputs": {
       "string": {
         "name": "string"
@@ -15679,6 +15679,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
         "tooltip": null
       }
     }
@@ -17964,6 +17968,241 @@
       },
       "start_image": {
         "name": "start_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "display_name": "Wan 2.7 Image to Video",
+    "description": "Generate a video from a first-frame image, with optional last-frame image and audio.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image. The output aspect ratio is derived from this image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The model generates a video transitioning from first to last frame."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio for driving video generation (e.g., lip sync, beat-matched motion). Duration: 2s-30s. If not provided, the model automatically generates matching background music or sound effects."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "display_name": "Wan 2.7 Reference to Video",
+    "description": "Generate a video featuring a person or object from reference materials. Supports single-character performances and multi-character interactions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "display_name": "Wan 2.7 Text to Video",
+    "description": "Generates a video based on a text prompt using the Wan 2.7 model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio for driving video generation (e.g., lip sync, beat-matched motion). Duration: 3s-30s. If not provided, the model automatically generates matching background music or sound effects."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "display_name": "Wan 2.7 Video Continuation",
+    "description": "Continue a video from where it left off, with optional last-frame control.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "Input video to continue from. Duration: 2s-10s. The output aspect ratio is derived from this video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The continuation will transition towards this frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "display_name": "Wan 2.7 Video Edit",
+    "description": "Edit a video using text instructions, reference images, or style transfer.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The video to edit."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': model decides whether to regenerate audio based on the prompt. 'origin': preserve the original audio from the input video."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {

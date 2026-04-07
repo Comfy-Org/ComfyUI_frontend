@@ -1743,8 +1743,8 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "camera": "camera",
     "Wan": "Wan",
+    "camera": "camera",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
@@ -3528,6 +3528,23 @@
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
       "downloadAll": "Download all"
+    },
+    "missingMedia": {
+      "missingMediaTitle": "Missing Inputs",
+      "image": "Images",
+      "video": "Videos",
+      "audio": "Audio",
+      "locateNode": "Locate node",
+      "expandNodes": "Show referencing nodes",
+      "collapseNodes": "Hide referencing nodes",
+      "uploadFile": "Upload {type}",
+      "uploading": "Uploading...",
+      "uploaded": "Uploaded",
+      "selectedFromLibrary": "Selected from library",
+      "useFromLibrary": "Use from Library",
+      "confirmSelection": "Confirm selection",
+      "cancelSelection": "Cancel selection",
+      "or": "OR"
     }
   },
   "errorOverlay": {

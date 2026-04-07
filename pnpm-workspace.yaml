@@ -30,6 +30,7 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
+  '@tanstack/vue-virtual': ^3.13.12
   '@storybook/addon-docs': ^10.2.10
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
@@ -46,6 +47,7 @@ catalog:
   '@tiptap/extension-table-row': ^2.27.2
   '@tiptap/pm': 2.27.2
   '@tiptap/starter-kit': ^2.27.2
+  '@total-typescript/shoehorn': ^0.1.2
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
