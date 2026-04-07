@@ -73,9 +73,7 @@ function bar(covered, total) {
 const lines = []
 lines.push('## 🔬 E2E Coverage')
 lines.push('')
-lines.push(
-  '| Metric | Covered | Total | Pct | |'
-)
+lines.push('| Metric | Covered | Total | Pct | |')
 lines.push('|---|--:|--:|--:|---|')
 lines.push(
   `| Lines | ${coveredLines.toLocaleString()} | ${totalLines.toLocaleString()} | ${pct(coveredLines, totalLines)} | ${bar(coveredLines, totalLines)} |`
