@@ -42,10 +42,11 @@ const defaultDirectiveStubs: Record<string, () => void> = {
  *
  * Use via `global.stubs` in render options:
  * ```ts
- * render(MyComponent, { global: { stubs: { Button: stubs.Button } } })
+ * render(MyComponent, { global: { stubs: { Skeleton: stubs.Skeleton } } })
  * ```
  *
- * Or use `renderWithDefaults` which auto-applies these as defaults.
+ * Or use `renderWithDefaults` which provides plugins and directives.
+ * Import `stubs` and pass them via `global.stubs` when needed.
  */
 const SkeletonStub = defineComponent({
   name: 'Skeleton',
