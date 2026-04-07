@@ -48,10 +48,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.menu.topbar.saveWorkflow(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
-      await comfyPage.nextFrame()
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow'
-      ])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(['Unsaved Workflow'])
     })
   })
 

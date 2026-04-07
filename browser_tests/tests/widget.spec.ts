@@ -321,6 +321,17 @@ test.describe(
         waitForUpload: true
       })
 
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              (loadId) => window.app!.nodeOutputs[loadId]?.images?.length ?? 0,
+              loadAnimatedWebpNode.id
+            ),
+          { timeout: 10_000 }
+        )
+        .toBeGreaterThan(0)
+
       // Get the SaveAnimatedWEBP node
       const saveNodes =
         await comfyPage.nodeOps.getNodeRefsByType('SaveAnimatedWEBP')
@@ -337,11 +348,23 @@ test.describe(
         },
         [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
       )
-      await comfyPage.nextFrame()
-      await comfyPage.nextFrame()
-      await expect(
-        comfyPage.page.locator('.dom-widget').locator('img')
-      ).toHaveCount(2, { timeout: 10_000 })
+
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              ([loadId, saveId]) => {
+                const graph = window.app!.graph
+
+                return [loadId, saveId].map(
+                  (nodeId) => (graph.getNodeById(nodeId)?.imgs?.length ?? 0) > 0
+                )
+              },
+              [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
+            ),
+          { timeout: 10_000 }
+        )
+        .toEqual([true, true])
     })
   }
 )
