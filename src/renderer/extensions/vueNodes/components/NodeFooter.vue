@@ -125,7 +125,7 @@
     v-else-if="isSubgraph"
     :class="
       cn(
-        'isolate -z-1 -mt-5 box-border flex',
+        footerWrapperBase,
         hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
       )
     "
@@ -156,7 +156,7 @@
     v-else-if="showAdvancedInputsButton || showAdvancedState"
     :class="
       cn(
-        'isolate -z-1 -mt-5 box-border flex',
+        footerWrapperBase,
         hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
       )
     "
@@ -227,42 +227,33 @@ defineEmits<{
   (e: 'toggleAdvanced'): void
 }>()
 
-const footerRadiusClass = computed(() => {
-  const isError = hasAnyError
-  switch (shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return isError ? 'rounded-br-[20px]' : 'rounded-br-[17px]'
-    default:
-      return isError ? 'rounded-b-[20px]' : 'rounded-b-[17px]'
-  }
-})
+function getBottomRadius(
+  nodeShape: RenderShape | undefined,
+  size: string,
+  corners: 'both' | 'right' = 'both'
+): string {
+  if (nodeShape === RenderShape.BOX) return ''
+  const prefix =
+    nodeShape === RenderShape.CARD || corners === 'right'
+      ? 'rounded-br'
+      : 'rounded-b'
+  return `${prefix}-[${size}]`
+}
 
-const errorRadiusClass = computed(() => {
-  switch (shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-      return 'rounded-br-[20px]'
-    default:
-      return 'rounded-b-[20px]'
-  }
-})
+const footerRadiusClass = computed(() =>
+  getBottomRadius(shape, hasAnyError ? '20px' : '17px')
+)
 
-const enterRadiusClass = computed(() => {
-  switch (shape) {
-    case RenderShape.BOX:
-      return ''
-    case RenderShape.CARD:
-    default:
-      return 'rounded-br-[20px]'
-  }
-})
+const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))
+
+const enterRadiusClass = computed(() => getBottomRadius(shape, '20px', 'right'))
 
 const tabStyles = 'pointer-events-auto h-9 text-xs'
-const errorWrapperStyles =
-  'isolate -z-1 -mx-1 -mt-5 -mb-2 box-border flex w-[calc(100%+8px)] pb-1'
+const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
+const errorWrapperStyles = cn(
+  footerWrapperBase,
+  '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1'
+)
 
 const headerColorStyle = computed(() =>
   headerColor ? { backgroundColor: headerColor } : undefined
