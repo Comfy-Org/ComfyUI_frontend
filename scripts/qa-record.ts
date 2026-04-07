@@ -1971,8 +1971,25 @@ async function main() {
           const projectRoot = process.cwd()
           const browserTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
-          // Write the test as-is — demowright handles cursor, keyboard, slowdown
-          writeFileSync(browserTestFile, research.testCode)
+
+          // Inject demowright annotate() calls for title card and summary
+          const issueTitle = issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
+          const titleAnnotation = `
+    // demowright: title card
+    const { annotate: _annotate } = await import('demowright/helpers')
+    await _annotate(comfyPage.page, ${JSON.stringify(issueTitle)})
+`
+          let testCode = research.testCode
+          const bodyMatch = testCode.match(
+            /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
+          )
+          if (bodyMatch?.index !== undefined) {
+            const pos = bodyMatch.index + bodyMatch[0].length
+            testCode =
+              testCode.slice(0, pos) + titleAnnotation + testCode.slice(pos)
+          }
+
+          writeFileSync(browserTestFile, testCode)
           try {
             const output = execSync(
               `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=60000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
