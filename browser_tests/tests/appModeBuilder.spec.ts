@@ -6,8 +6,7 @@ import { VueNodeFixture } from '../fixtures/utils/vueNodeFixtures'
 
 test.describe('App mode builder selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.featureFlags.setFlag('linear_toggle_enabled', true)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.appMode.enableLinearMode()
   })
 
   test('Can independently select inputs of same name', async ({
