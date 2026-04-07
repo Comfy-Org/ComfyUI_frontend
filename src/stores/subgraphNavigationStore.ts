@@ -8,6 +8,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
+import { useLitegraphService } from '@/services/litegraphService'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
@@ -102,23 +104,34 @@ export const useSubgraphNavigationStore = defineStore(
      * @param graphId The graph ID to restore. Use 'root' for root graph, or omit to use current context.
      */
     const restoreViewport = (graphId: string) => {
-      const viewport = viewportCache.get(graphId)
-      if (!viewport) return
-
       const canvas = app.canvas
       if (!canvas) return
 
-      canvas.ds.scale = viewport.scale
-      canvas.ds.offset[0] = viewport.offset[0]
-      canvas.ds.offset[1] = viewport.offset[1]
-      canvas.setDirty(true, true)
+      const viewport = viewportCache.get(graphId)
+      if (viewport) {
+        canvas.ds.scale = viewport.scale
+        canvas.ds.offset[0] = viewport.offset[0]
+        canvas.ds.offset[1] = viewport.offset[1]
+        canvas.setDirty(true, true)
+        return
+      }
+
+      // Cache miss — fit to content only if no nodes are currently visible.
+      // loadGraphData may have already restored extra.ds or called fitView
+      // for templates, so only intervene when the viewport is truly empty.
+      requestAnimationFrame(() => {
+        if (!canvas.graph) return
+
+        const nodes = canvas.graph.nodes
+        if (!nodes?.length) return
+
+        canvas.ds.computeVisibleArea(canvas.viewport)
+        if (anyItemOverlapsRect(nodes, canvas.ds.visible_area)) return
+
+        useLitegraphService().fitView()
+      })
     }
 
-    /**
-     * Update the navigation stack when the active subgraph changes.
-     * @param subgraph The new active subgraph.
-     * @param prevSubgraph The previous active subgraph.
-     */
     const onNavigated = (
       subgraph: Subgraph | undefined,
       prevSubgraph: Subgraph | undefined

@@ -22,11 +22,12 @@ vi.mock('@/scripts/app', () => {
     ds: {
       scale: 1,
       offset: [0, 0],
-      state: {
-        scale: 1,
-        offset: [0, 0]
-      }
+      state: { scale: 1, offset: [0, 0] },
+      fitToBounds: vi.fn(),
+      visible_area: [0, 0, 1000, 1000],
+      computeVisibleArea: vi.fn()
     },
+    viewport: [0, 0, 1000, 1000],
     setDirty: mockSetDirty
   }
 
