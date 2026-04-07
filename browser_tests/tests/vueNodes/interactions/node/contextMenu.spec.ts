@@ -222,13 +222,16 @@ test.describe('Vue Node Context Menu', () => {
       await clickExactMenuItem(comfyPage, 'Copy Image')
 
       // Verify the clipboard contains an image
-      const hasImage = await comfyPage.page.evaluate(async () => {
-        const items = await navigator.clipboard.read()
-        return items.some((item) =>
-          item.types.some((t) => t.startsWith('image/'))
-        )
-      })
-      expect(hasImage).toBe(true)
+      await expect
+        .poll(async () => {
+          return comfyPage.page.evaluate(async () => {
+            const items = await navigator.clipboard.read()
+            return items.some((item) =>
+              item.types.some((t) => t.startsWith('image/'))
+            )
+          })
+        })
+        .toBe(true)
     })
 
     test('should paste image to LoadImage node via context menu', async ({
