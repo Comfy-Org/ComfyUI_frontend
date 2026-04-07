@@ -385,11 +385,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       fallbackStoredEntries
     )
 
+    const desiredEntries = shouldPersistLinkedOnly
+      ? linkedPromotionEntries
+      : [...linkedPromotionEntries, ...fallbackStoredEntries]
+
     return {
-      mergedEntries: shouldPersistLinkedOnly
-        ? linkedPromotionEntries
-        : [...linkedPromotionEntries, ...fallbackStoredEntries]
+      mergedEntries: this._orderPreservingMerge(entries, desiredEntries)
     }
+  }
+
+  private _orderPreservingMerge(
+    currentEntries: PromotedWidgetSource[],
+    desiredEntries: PromotedWidgetSource[]
+  ): PromotedWidgetSource[] {
+    const makeKey = (e: PromotedWidgetSource) =>
+      this._makePromotionEntryKey(
+        e.sourceNodeId,
+        e.sourceWidgetName,
+        e.disambiguatingSourceNodeId
+      )
+
+    const desiredByKey = new Map(desiredEntries.map((e) => [makeKey(e), e]))
+    const currentKeys = new Set(currentEntries.map(makeKey))
+
+    const preserved = currentEntries
+      .filter((e) => desiredByKey.has(makeKey(e)))
+      .map((e) => desiredByKey.get(makeKey(e))!)
+
+    const added = desiredEntries.filter((e) => !currentKeys.has(makeKey(e)))
+
+    return [...preserved, ...added]
   }
 
   private _collectLinkedAndFallbackEntries(

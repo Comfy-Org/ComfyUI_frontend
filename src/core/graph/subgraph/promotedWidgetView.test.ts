@@ -840,8 +840,52 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.id
     )
     expect(promotions).toStrictEqual([
-      { sourceNodeId: String(linkedNodeA.id), sourceWidgetName: 'string_a' },
-      { sourceNodeId: String(independentNode.id), sourceWidgetName: 'string_a' }
+      {
+        sourceNodeId: String(independentNode.id),
+        sourceWidgetName: 'string_a'
+      },
+      { sourceNodeId: String(linkedNodeA.id), sourceWidgetName: 'string_a' }
+    ])
+  })
+
+  test('syncPromotions preserves user-reordered store order', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'widget_a', type: '*' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 97 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedNode = new LGraphNode('LinkedNode')
+    const linkedInput = linkedNode.addInput('widget_a', '*')
+    linkedNode.addWidget('text', 'widget_a', 'val_a', () => {})
+    linkedInput.widget = { name: 'widget_a' }
+    subgraph.add(linkedNode)
+    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'indep_widget', 'val_b', () => {})
+    subgraph.add(independentNode)
+
+    // Simulate user reorder: independent first, then linked
+    setPromotions(subgraphNode, [
+      [String(independentNode.id), 'indep_widget'],
+      [String(linkedNode.id), 'widget_a']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    const promotions = usePromotionStore().getPromotions(
+      subgraphNode.rootGraph.id,
+      subgraphNode.id
+    )
+
+    // Order must be preserved: independent first, linked second
+    expect(promotions).toStrictEqual([
+      {
+        sourceNodeId: String(independentNode.id),
+        sourceWidgetName: 'indep_widget'
+      },
+      { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'widget_a' }
     ])
   })
 
