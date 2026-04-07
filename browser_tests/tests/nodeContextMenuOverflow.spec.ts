@@ -23,11 +23,11 @@ test.describe(
         throw new Error('No KSampler nodes found')
       }
 
-      // Drag the KSampler to the center of the screen
+      // Drag the KSampler toward the lower-left so the menu has limited space below it.
       const nodePos = await ksamplerNodes[0].getPosition()
       const viewportSize = comfyPage.page.viewportSize()!
       const centerX = viewportSize.width / 3
-      const centerY = viewportSize.height / 2
+      const centerY = viewportSize.height * 0.75
       await comfyPage.canvasOps.dragAndDrop(
         { x: nodePos.x, y: nodePos.y },
         { x: centerX, y: centerY }
