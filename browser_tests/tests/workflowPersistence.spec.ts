@@ -381,7 +381,10 @@ test.describe('Workflow Persistence', () => {
     })
 
     // Click "Save" in the dirty close dialog
-    const saveButton = comfyPage.page.getByRole('button', { name: 'Save' })
+    const saveButton = comfyPage.page.getByRole('button', {
+      name: 'Save',
+      exact: true
+    })
     await saveButton.waitFor({ state: 'visible' })
     await saveButton.click()
     await comfyPage.workflow.waitForWorkflowIdle()
