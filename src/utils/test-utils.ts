@@ -1,4 +1,4 @@
-/* eslint-disable vue/one-component-per-file, vue/require-prop-types, vue/no-reserved-component-names */
+/* eslint-disable vue/one-component-per-file, vue/require-prop-types */
 import type { RenderResult } from '@testing-library/vue'
 import type { ComponentMountingOptions } from '@vue/test-utils'
 
@@ -47,33 +47,6 @@ const defaultDirectiveStubs: Record<string, () => void> = {
  *
  * Or use `renderWithDefaults` which auto-applies these as defaults.
  */
-const ButtonStub = defineComponent({
-  name: 'Button',
-  props: [
-    'disabled',
-    'loading',
-    'variant',
-    'size',
-    'label',
-    'icon',
-    'severity'
-  ],
-  emits: ['click'],
-  setup(props, { slots, emit }) {
-    return () =>
-      h(
-        'button',
-        {
-          disabled: props.disabled || props.loading,
-          'data-testid': props.label,
-          'data-icon': props.icon,
-          onClick: () => emit('click')
-        },
-        slots.default?.() ?? props.label
-      )
-  }
-})
-
 const SkeletonStub = defineComponent({
   name: 'Skeleton',
   setup() {
@@ -107,27 +80,11 @@ const MessageStub = defineComponent({
   }
 })
 
-const DialogStub = defineComponent({
-  name: 'Dialog',
-  props: ['visible', 'modal', 'header'],
-  setup(props, { slots }) {
-    return () =>
-      props.visible
-        ? h('div', { role: 'dialog', 'data-testid': 'dialog' }, [
-            props.header ? h('div', props.header) : null,
-            slots.default?.()
-          ])
-        : null
-  }
-})
-
 const stubs = {
-  Button: ButtonStub,
   Skeleton: SkeletonStub,
   Tag: TagStub,
   Badge: BadgeStub,
-  Message: MessageStub,
-  Dialog: DialogStub
+  Message: MessageStub
 } as const
 
 type RenderWithDefaultsResult = RenderResult & {
