@@ -484,7 +484,16 @@ export class SubgraphHelper {
     await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
     await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
     await this.comfyPage.nextFrame()
-    await this.comfyPage.canvas.click()
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
     await this.comfyPage.canvas.press('Control+a')
     await this.comfyPage.nextFrame()
     await this.page.evaluate(() => {
@@ -493,7 +502,16 @@ export class SubgraphHelper {
     })
     await this.comfyPage.nextFrame()
     await this.exitViaBreadcrumb()
-    await this.comfyPage.canvas.click()
+    await this.comfyPage.canvas.dispatchEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
+    await this.comfyPage.canvas.dispatchEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      button: 0
+    })
     await this.comfyPage.nextFrame()
   }
 

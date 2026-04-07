@@ -460,11 +460,8 @@ test.describe('Workflow Persistence', () => {
       .getWorkflowTab('Unsaved Workflow')
       .click({ button: 'middle' })
 
-    // Click "Save" in the dirty close dialog (scoped to dialog)
-    const dialog = comfyPage.page.getByRole('dialog')
-    const saveButton = dialog.getByRole('button', { name: 'Save' })
-    await saveButton.waitFor({ state: 'visible' })
-    await saveButton.click()
+    // Click "Save" in the dirty close dialog
+    await comfyPage.confirmDialog.click('save')
 
     // Fill in the filename dialog
     const saveDialog = comfyPage.menu.topbar.getSaveDialog()

@@ -4,6 +4,7 @@ packages:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
+  '@astrojs/sitemap': ^3.7.1
   '@astrojs/vue': ^5.0.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
@@ -30,6 +31,7 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
+  '@tanstack/vue-virtual': ^3.13.12
   '@storybook/addon-docs': ^10.2.10
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
