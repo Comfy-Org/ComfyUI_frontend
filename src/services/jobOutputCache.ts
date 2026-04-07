@@ -40,10 +40,10 @@ export function findActiveIndex(
 }
 
 /**
- * Gets previewable outputs for a task, with lazy loading, caching, and request deduping.
+ * Gets inspectable outputs for a task, with lazy loading, caching, and request deduping.
  * Returns null if a newer request superseded this one while loading.
  */
-export async function getOutputsForTask(
+export async function getInspectableOutputsForTask(
   task: TaskItemImpl
 ): Promise<ResultItemImpl[] | null> {
   const requestId = String(task.jobId)
@@ -53,12 +53,12 @@ export async function getOutputsForTask(
   const needsLazyLoad = outputsCount > 1
 
   if (!needsLazyLoad) {
-    return [...task.previewableOutputs]
+    return [...task.inspectableOutputs]
   }
 
   const cached = taskCache.get(requestId)
   if (cached) {
-    return [...cached.previewableOutputs]
+    return [...cached.inspectableOutputs]
   }
 
   try {
@@ -70,11 +70,20 @@ export async function getOutputsForTask(
     }
 
     taskCache.set(requestId, loadedTask)
-    return [...loadedTask.previewableOutputs]
+    return [...loadedTask.inspectableOutputs]
   } catch (error) {
-    console.warn('Failed to load full outputs, using preview:', error)
-    return [...task.previewableOutputs]
+    console.warn(
+      'Failed to load full outputs, using inspectable outputs:',
+      error
+    )
+    return [...task.inspectableOutputs]
   }
+}
+
+export async function getOutputsForTask(
+  task: TaskItemImpl
+): Promise<ResultItemImpl[] | null> {
+  return getInspectableOutputsForTask(task)
 }
 
 function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {

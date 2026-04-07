@@ -223,12 +223,15 @@ describe('TaskItemImpl', () => {
     const output = task.previewOutput
 
     expect(task.previewableOutputs).toHaveLength(1)
+    expect(task.inspectableOutputs).toHaveLength(1)
     expect(output?.filename).toBe('mesh-output.ply')
+    expect(task.inspectableOutput?.filename).toBe('mesh-output.ply')
     expect(output?.is3D).toBe(true)
     expect(output?.supportsPreview).toBe(true)
+    expect(output?.supportsInspection).toBe(true)
   })
 
-  it('should not treat USDZ output as previewable 3D media', () => {
+  it('should surface USDZ output without treating it as inspectable 3D media', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'usdz-job'),
       preview_output: {
@@ -242,8 +245,13 @@ describe('TaskItemImpl', () => {
 
     const task = new TaskItemImpl(job)
 
-    expect(task.previewableOutputs).toHaveLength(0)
-    expect(task.previewOutput).toBeUndefined()
+    expect(task.previewableOutputs).toHaveLength(1)
+    expect(task.previewOutput?.filename).toBe('mesh-output.usdz')
+    expect(task.previewOutput?.is3D).toBe(true)
+    expect(task.previewOutput?.supportsPreview).toBe(true)
+    expect(task.previewOutput?.supportsInspection).toBe(false)
+    expect(task.inspectableOutputs).toHaveLength(0)
+    expect(task.inspectableOutput).toBeUndefined()
   })
 
   describe('error extraction getters', () => {

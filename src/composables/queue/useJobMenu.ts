@@ -242,13 +242,14 @@ export function useJobMenu(
     const state = item?.state
     if (!state) return []
     const hasPreviewAsset = !!item?.taskRef?.previewOutput
+    const hasInspectableAsset = !!item?.taskRef?.inspectableOutput
     if (state === 'completed') {
       return [
         {
           key: 'inspect-asset',
           label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
           icon: 'icon-[lucide--zoom-in]',
-          disabled: !hasPreviewAsset || !onInspectAsset,
+          disabled: !hasInspectableAsset || !onInspectAsset,
           onClick: onInspectAsset
             ? () => {
                 const item = currentMenuItem()

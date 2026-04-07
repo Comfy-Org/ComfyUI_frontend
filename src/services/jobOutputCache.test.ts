@@ -11,6 +11,7 @@ import {
   findActiveIndex,
   getJobDetail,
   getJobWorkflow,
+  getInspectableOutputsForTask,
   getOutputsForTask
 } from '@/services/jobOutputCache'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
@@ -29,7 +30,16 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
+function createResultItem(
+  url: string,
+  {
+    supportsPreview = true,
+    supportsInspection = supportsPreview
+  }: {
+    supportsPreview?: boolean
+    supportsInspection?: boolean
+  } = {}
+): ResultItemImpl {
   const item = new ResultItemImpl({
     filename: url,
     subfolder: '',
@@ -39,6 +49,9 @@ function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
   })
   Object.defineProperty(item, 'url', { get: () => url })
   Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
+  Object.defineProperty(item, 'supportsInspection', {
+    get: () => supportsInspection
+  })
   return item
 }
 
@@ -101,14 +114,28 @@ describe('jobOutputCache', () => {
     })
   })
 
-  describe('getOutputsForTask', () => {
-    it('returns previewable outputs directly when no lazy load needed', async () => {
+  describe('getInspectableOutputsForTask', () => {
+    it('returns inspectable outputs directly when no lazy load needed', async () => {
       const outputs = [createResultItem('p-1'), createResultItem('p-2')]
       const task = createTask(undefined, outputs, 1)
 
-      const result = await getOutputsForTask(task)
+      const result = await getInspectableOutputsForTask(task)
 
       expect(result).toEqual(outputs)
+    })
+
+    it('filters out surfaced outputs that are not inspectable', async () => {
+      const outputs = [
+        createResultItem('mesh.usdz', {
+          supportsPreview: true,
+          supportsInspection: false
+        })
+      ]
+      const task = createTask(undefined, outputs, 1)
+
+      const result = await getInspectableOutputsForTask(task)
+
+      expect(result).toEqual([])
     })
 
     it('lazy loads when outputsCount > 1', async () => {
@@ -123,7 +150,7 @@ describe('jobOutputCache', () => {
       const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
-      const result = await getOutputsForTask(task)
+      const result = await getInspectableOutputsForTask(task)
 
       expect(result).toEqual(fullOutputs)
       expect(task.loadFullOutputs).toHaveBeenCalled()
@@ -138,11 +165,11 @@ describe('jobOutputCache', () => {
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
       // First call should load
-      await getOutputsForTask(task)
+      await getInspectableOutputsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
 
       // Second call should use cache
-      await getOutputsForTask(task)
+      await getInspectableOutputsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
     })
 
@@ -155,7 +182,7 @@ describe('jobOutputCache', () => {
         .fn()
         .mockRejectedValue(new Error('Network error'))
 
-      const result = await getOutputsForTask(task)
+      const result = await getInspectableOutputsForTask(task)
 
       expect(result).toEqual([previewOutput])
     })
@@ -184,14 +211,25 @@ describe('jobOutputCache', () => {
       task2.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask2)
 
       // Start task1, then immediately start task2
-      const promise1 = getOutputsForTask(task1)
-      const promise2 = getOutputsForTask(task2)
+      const promise1 = getInspectableOutputsForTask(task1)
+      const promise2 = getInspectableOutputsForTask(task2)
 
       const [result1, result2] = await Promise.all([promise1, promise2])
 
       // Task2 should succeed, task1 should return null (superseded)
       expect(result1).toBeNull()
       expect(result2).toEqual([createResultItem('full-2')])
+    })
+  })
+
+  describe('getOutputsForTask', () => {
+    it('aliases getInspectableOutputsForTask', async () => {
+      const outputs = [createResultItem('p-1')]
+      const task = createTask(undefined, outputs, 1)
+
+      const result = await getOutputsForTask(task)
+
+      expect(result).toEqual(outputs)
     })
   })
 
