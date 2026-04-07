@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -195,25 +196,27 @@ describe('appModeStore', () => {
       outputs: number[]
     ) {
       const workflow = createBuilderWorkflow('app')
-      workflow.changeTracker = createMockChangeTracker({
-        activeState: {
-          last_node_id: 0,
-          last_link_id: 0,
-          nodes: [],
-          links: [],
-          groups: [],
-          config: {},
-          version: 0.4,
-          extra: { linearData: { inputs, outputs } }
-        }
-      } as unknown as Partial<ChangeTracker>)
+      workflow.changeTracker = createMockChangeTracker(
+        fromPartial<Partial<ChangeTracker>>({
+          activeState: {
+            last_node_id: 0,
+            last_link_id: 0,
+            nodes: [],
+            links: [],
+            groups: [],
+            config: {},
+            version: 0.4,
+            extra: { linearData: { inputs, outputs } }
+          }
+        })
+      )
       return workflow
     }
 
     it('removes inputs referencing deleted nodes on load', async () => {
       const node1 = mockNode(1)
       mockResolveNode.mockImplementation((id) =>
-        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
 
       store.loadSelections({
@@ -229,7 +232,7 @@ describe('appModeStore', () => {
     it('keeps inputs for existing nodes even if widget is missing', async () => {
       const node1 = mockNode(1)
       mockResolveNode.mockImplementation((id) =>
-        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
 
       store.loadSelections({
@@ -248,7 +251,7 @@ describe('appModeStore', () => {
     it('removes outputs referencing deleted nodes on load', async () => {
       const node1 = mockNode(1)
       mockResolveNode.mockImplementation((id) =>
-        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
 
       store.loadSelections({ outputs: [1, 99] })
@@ -271,7 +274,7 @@ describe('appModeStore', () => {
 
       // After graph configures, nodes become resolvable
       mockResolveNode.mockImplementation((id) =>
-        id == 1 ? (node1 as unknown as LGraphNode) : undefined
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
       ;(app.rootGraph.events as EventTarget).dispatchEvent(
         new Event('configured')

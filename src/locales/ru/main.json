@@ -2527,6 +2527,23 @@
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
+    "missingMedia": {
+      "audio": "Аудио",
+      "cancelSelection": "Отменить выбор",
+      "collapseNodes": "Скрыть ссылающиеся узлы",
+      "confirmSelection": "Подтвердить выбор",
+      "expandNodes": "Показать ссылающиеся узлы",
+      "image": "Изображения",
+      "locateNode": "Найти узел",
+      "missingMediaTitle": "Отсутствующие входные данные",
+      "or": "ИЛИ",
+      "selectedFromLibrary": "Выбрано из библиотеки",
+      "uploadFile": "Загрузить {type}",
+      "uploaded": "Загружено",
+      "uploading": "Загрузка...",
+      "useFromLibrary": "Использовать из библиотеки",
+      "video": "Видео"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Эта модель уже существует в «{category}»",
       "assetLoadTimeout": "Время ожидания обнаружения модели истекло. Попробуйте перезагрузить рабочий процесс.",

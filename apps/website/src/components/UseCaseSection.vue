@@ -37,6 +37,8 @@ const activeCategory = ref(0)
             <button
               v-for="(category, index) in categories"
               :key="category"
+              type="button"
+              :aria-pressed="index === activeCategory"
               class="transition-colors"
               :class="
                 index === activeCategory
