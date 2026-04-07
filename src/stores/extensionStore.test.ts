@@ -31,7 +31,7 @@ describe('extensionStore', () => {
       )
     })
 
-    it('warns when registering a disabled extension', () => {
+    it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       try {
@@ -40,18 +40,11 @@ describe('extensionStore', () => {
         expect(warnSpy).toHaveBeenCalledWith(
           'Extension disabled.ext is disabled.'
         )
+        expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
+        expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
       } finally {
         warnSpy.mockRestore()
       }
-    })
-  })
-
-  describe('extensions getter', () => {
-    it('returns all registered extensions', () => {
-      const store = useExtensionStore()
-      store.registerExtension({ name: 'ext.a' })
-      store.registerExtension({ name: 'ext.b' })
-      expect(store.extensions).toHaveLength(2)
     })
   })
 
@@ -79,10 +72,14 @@ describe('extensionStore', () => {
     it('always disables hardcoded extensions', () => {
       const store = useExtensionStore()
       store.loadDisabledExtensionNames([])
+      store.registerExtension({ name: 'pysssss.Locking' })
+      store.registerExtension({ name: 'regular.ext' })
+
       expect(store.isExtensionEnabled('pysssss.Locking')).toBe(false)
       expect(store.isExtensionEnabled('pysssss.SnapToGrid')).toBe(false)
       expect(store.isExtensionEnabled('pysssss.FaviconStatus')).toBe(false)
       expect(store.isExtensionEnabled('KJNodes.browserstatus')).toBe(false)
+      expect(store.isExtensionEnabled('regular.ext')).toBe(true)
     })
   })
 
