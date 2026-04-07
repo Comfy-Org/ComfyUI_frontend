@@ -53,16 +53,16 @@ describe('widgetStore', () => {
 
     it('returns true for v2 spec with known type', () => {
       const store = useWidgetStore()
-      expect(
-        store.inputIsWidget({ type: 'STRING', name: 'test_input' })
-      ).toBe(true)
+      expect(store.inputIsWidget({ type: 'STRING', name: 'test_input' })).toBe(
+        true
+      )
     })
 
     it('returns false for v2 spec with unknown type', () => {
       const store = useWidgetStore()
-      expect(
-        store.inputIsWidget({ type: 'LATENT', name: 'test_input' })
-      ).toBe(false)
+      expect(store.inputIsWidget({ type: 'LATENT', name: 'test_input' })).toBe(
+        false
+      )
     })
 
     it('returns true for custom registered type', () => {
