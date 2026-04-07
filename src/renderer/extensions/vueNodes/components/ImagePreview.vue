@@ -98,8 +98,8 @@
           :disabled="isClearingMask"
           @click.stop="handleClearMask"
         >
-          <i v-if="isClearingMask" class="pi pi-spinner pi-spin h-4 w-4" />
-          <i v-else class="icon-[lucide--eraser] h-4 w-4" />
+          <i v-if="isClearingMask" class="pi pi-spinner pi-spin size-4" />
+          <i v-else class="icon-[lucide--eraser] size-4" />
         </button>
 
         <!-- Download Button -->
@@ -298,6 +298,13 @@ function handleEditMask() {
   const node = resolveNode(Number(nodeId))
   if (!node) return
   openMaskEditor(node)
+}
+
+async function handleClearMask() {
+  if (!nodeId) return
+  const node = resolveNode(Number(nodeId))
+  if (!node) return
+  await clearMask(node)
 }
 
 function handleDownload() {
