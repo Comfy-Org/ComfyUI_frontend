@@ -46,39 +46,43 @@ test.describe(
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
-      // Retry once if menu didn't open
-      const menuVisible = await comfyPage.page
-        .locator('.p-contextmenu')
-        .isVisible()
-        .catch(() => false)
-      if (!menuVisible) {
-        await moreOptionsBtn.click({ force: true })
-        await comfyPage.nextFrame()
-      }
+      const menu = comfyPage.page.locator('.p-contextmenu')
+      await expect(menu).toBeVisible({ timeout: 3000 })
+
+      return menu
     }
 
     test('last menu item "Remove" is reachable via scroll', async ({
       comfyPage
     }) => {
-      await openMoreOptions(comfyPage)
+      const menu = await openMoreOptions(comfyPage)
+      const rootList = menu.locator(':scope > ul')
 
-      const menu = comfyPage.page.locator('.p-contextmenu')
-      await expect(menu).toBeVisible({ timeout: 3000 })
+      const { clientHeight, scrollHeight } = await rootList.evaluate((el) => ({
+        clientHeight: el.clientHeight,
+        scrollHeight: el.scrollHeight
+      }))
+      expect(
+        scrollHeight,
+        'Menu should overflow vertically so this test exercises the viewport clamp'
+      ).toBeGreaterThan(clientHeight)
 
       // "Remove" is the last item in the More Options menu.
-      // It must be scrollable into view even if the menu overflows.
+      // It must become reachable by scrolling the bounded menu list.
       const removeItem = menu.getByText('Remove', { exact: true })
-      await removeItem.scrollIntoViewIfNeeded()
+      const didScroll = await rootList.evaluate((el) => {
+        const previousScrollTop = el.scrollTop
+        el.scrollTo({ top: el.scrollHeight })
+        return el.scrollTop > previousScrollTop
+      })
+      expect(didScroll).toBe(true)
       await expect(removeItem).toBeVisible()
     })
 
     test('last menu item "Remove" is clickable and removes the node', async ({
       comfyPage
     }) => {
-      await openMoreOptions(comfyPage)
-
-      const menu = comfyPage.page.locator('.p-contextmenu')
-      await expect(menu).toBeVisible({ timeout: 3000 })
+      const menu = await openMoreOptions(comfyPage)
 
       const removeItem = menu.getByText('Remove', { exact: true })
       await removeItem.scrollIntoViewIfNeeded()
