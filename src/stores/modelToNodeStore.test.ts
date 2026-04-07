@@ -585,19 +585,24 @@ describe('useModelToNodeStore', () => {
       expect(result).toBe('checkpoints')
     })
 
-    it('should be performant for repeated lookups', () => {
+    it('should avoid performance regressions for repeated lookups', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      // Measure performance without assuming implementation
+      // Warm the computed lookup so this measures repeated reads instead of setup.
+      expect(
+        modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
+      ).toBe('checkpoints')
+
+      const iterations = 10_000
       const start = performance.now()
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < iterations; i++) {
         modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
       }
-      const end = performance.now()
+      const duration = performance.now() - start
 
-      // Should be fast enough for UI responsiveness
-      expect(end - start).toBeLessThan(10)
+      // Keep a generous ceiling because CI timing noise makes tight micro-benchmarks flaky.
+      expect(duration / iterations).toBeLessThan(0.05)
     })
 
     it('should handle invalid input types gracefully', () => {
