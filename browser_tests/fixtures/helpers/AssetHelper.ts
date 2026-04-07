@@ -1,6 +1,10 @@
 import type { Page, Route } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  ListAssetsResponse,
+  UpdateAssetData
+} from '@comfyorg/ingest-types'
 import {
   generateModels,
   generateInputFiles,
@@ -235,13 +239,17 @@ export class AssetHelper {
     return route.fulfill({ status: 404, json: { error: 'Not found' } })
   }
 
-  private handleUpdateAsset(route: Route, path: string, body: unknown) {
+  private handleUpdateAsset(
+    route: Route,
+    path: string,
+    body: UpdateAssetData['body'] | null
+  ) {
     const id = path.split('/').pop()!
     const asset = this.store.get(id)
     if (asset) {
       const updated = {
         ...asset,
-        ...(body as Record<string, unknown>),
+        ...(body ?? {}),
         updated_at: new Date().toISOString()
       }
       this.store.set(id, updated)
