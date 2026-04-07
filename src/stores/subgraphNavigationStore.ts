@@ -12,6 +12,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
@@ -149,17 +150,7 @@ export const useSubgraphNavigationStore = defineStore(
         if (!nodes?.length) return
 
         canvas.ds.computeVisibleArea(canvas.viewport)
-        const area = canvas.visible_area
-        if (area.width && area.height) {
-          const hasVisible = nodes.some(
-            (n: { pos: number[]; size: number[] }) =>
-              n.pos[0] + n.size[0] > area.x &&
-              n.pos[0] < area.x + area.width &&
-              n.pos[1] + n.size[1] > area.y &&
-              n.pos[1] < area.y + area.height
-          )
-          if (hasVisible) return
-        }
+        if (anyItemOverlapsRect(nodes, canvas.ds.visible_area)) return
 
         useLitegraphService().fitView()
       })
