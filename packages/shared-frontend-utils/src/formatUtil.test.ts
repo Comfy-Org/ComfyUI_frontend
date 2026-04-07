@@ -174,12 +174,14 @@ describe('formatUtil', () => {
     it('returns a normalized lowercase extension when present', () => {
       expect(getFileExtension('mesh.PLY')).toBe('ply')
       expect(getFileExtension('/path/to/file.glb')).toBe('glb')
+      expect(getFileExtension('C:\\path.with.dot\\file.OBJ')).toBe('obj')
     })
 
     it('returns null when no extension is present', () => {
       expect(getFileExtension('README')).toBe(null)
       expect(getFileExtension('')).toBe(null)
       expect(getFileExtension(undefined)).toBe(null)
+      expect(getFileExtension('C:\\path.with.dot\\README')).toBe(null)
     })
   })
 

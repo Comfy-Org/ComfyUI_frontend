@@ -630,7 +630,7 @@ export function getFileExtension(
   filename: string | null | undefined
 ): string | null {
   if (!filename) return null
-  const fullFilename = filename.split('/').pop() ?? filename
+  const fullFilename = filename.split(/[/\\]/).pop() ?? filename
   const dotIndex = fullFilename.lastIndexOf('.')
   if (dotIndex <= 0) return null
   return fullFilename.slice(dotIndex + 1).toLowerCase()
