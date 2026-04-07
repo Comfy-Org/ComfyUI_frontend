@@ -742,14 +742,9 @@ jobs:
           if command -v ffmpeg &>/dev/null; then
             echo "ffmpeg already installed"
           else
-            echo "Downloading static ffmpeg..."
-            TMP=$(mktemp -d)
-            curl -sL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" | tar xJ -C "$TMP"
-            sudo cp "$TMP"/ffmpeg-*/ffmpeg "$TMP"/ffmpeg-*/ffprobe /usr/local/bin/
-            rm -rf "$TMP"
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
           fi
           ffmpeg -version | head -1
-          ffprobe -version | head -1
 
       - name: Convert videos to mp4
         run: |
