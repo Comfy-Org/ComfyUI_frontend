@@ -65,7 +65,8 @@ describe('CustomCombo copy/paste', () => {
 
   it('preserves combo options and selected value through clone and paste', () => {
     const graph = new LGraph()
-    const appWithRootGraph = app as typeof app & { rootGraphInternal?: LGraph }
+    type AppWithRootGraph = { rootGraphInternal?: LGraph }
+    const appWithRootGraph = app as unknown as AppWithRootGraph
     const previousRootGraph = appWithRootGraph.rootGraphInternal
     appWithRootGraph.rootGraphInternal = graph
 
