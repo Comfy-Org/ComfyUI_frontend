@@ -16,7 +16,9 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
     await expect(comfyPage.searchBox.input).toHaveCount(1)
 
     // Search for and add the RecordAudio node
-    await comfyPage.searchBox.fillAndSelectFirstNode('RecordAudio')
+    await comfyPage.searchBox.fillAndSelectFirstNode('Record Audio', {
+      exact: true
+    })
     await comfyPage.nextFrame()
 
     // Verify the RecordAudio node was added
