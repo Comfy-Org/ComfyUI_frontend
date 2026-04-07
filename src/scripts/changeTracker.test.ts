@@ -60,6 +60,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
 let nodeIdCounter = 0
@@ -161,7 +162,7 @@ describe('ChangeTracker', () => {
     })
 
     describe('state capture', () => {
-      it('pushes to undoQueue and updates activeState when state differs', () => {
+      it('pushes to undoQueue, updates activeState, and calls updateModified', () => {
         const initial = createState(1)
         const tracker = createTracker(initial)
         const changed = createState(2)
@@ -172,6 +173,10 @@ describe('ChangeTracker', () => {
         expect(tracker.undoQueue).toHaveLength(1)
         expect(tracker.undoQueue[0]).toEqual(initial)
         expect(tracker.activeState).toEqual(changed)
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
       })
 
       it('does not push when state is identical', () => {
@@ -192,6 +197,23 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(tracker.redoQueue).toHaveLength(0)
+      })
+
+      it('produces a single undo entry for a beforeChange/afterChange transaction', () => {
+        const tracker = createTracker(createState(1))
+        const intermediate = createState(2)
+        const final = createState(3)
+
+        tracker.beforeChange()
+        mockCanvasState(intermediate)
+        tracker.captureCanvasState()
+        expect(tracker.undoQueue).toHaveLength(0)
+
+        mockCanvasState(final)
+        tracker.afterChange()
+
+        expect(tracker.undoQueue).toHaveLength(1)
+        expect(tracker.activeState).toEqual(final)
       })
 
       it('caps undoQueue at MAX_HISTORY', () => {
@@ -220,6 +242,16 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(changed)
       expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
       expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
+    })
+
+    it('is a no-op during undo/redo to avoid overwriting viewport', () => {
+      const tracker = createTracker(createState(1))
+      tracker._restoringState = true
+
+      tracker.deactivate()
+
+      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
     })
 
     it('is a full no-op when called on inactive tracker', () => {

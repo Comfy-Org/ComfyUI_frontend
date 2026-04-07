@@ -73,7 +73,7 @@ These locations call `captureCanvasState()` directly:
 - `useCoreCommands.ts` — After metadata/subgraph commands
 
 `workflowService.ts` calls `captureCanvasState()` indirectly via
-`deactivate()` and `prepareForSave()` (see Lifecycle Methods above).
+`deactivate()` and `prepareForSave()` (see Lifecycle Methods below).
 
 ## Lifecycle Methods
 

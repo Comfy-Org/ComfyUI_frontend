@@ -26,6 +26,10 @@ const logger = log.getLogger('ChangeTracker')
 // Change to debug for more verbose logging
 logger.setLevel('info')
 
+function isActiveTracker(tracker: ChangeTracker): boolean {
+  return useWorkflowStore().activeWorkflow?.changeTracker === tracker
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -99,11 +103,14 @@ export class ChangeTracker {
    * PRECONDITION: must be called while this workflow is still the active one
    * (before the activeWorkflow pointer is moved). If called after the pointer
    * has already moved, this is a no-op to avoid freezing wrong viewport data.
+   * Also skipped during undo/redo to avoid overwriting viewport with
+   * intermediate canvas state.
+   *
+   * @internal Not part of the public extension API.
    */
   deactivate() {
-    const isActive = useWorkflowStore().activeWorkflow?.changeTracker === this
-    if (!isActive) {
-      if (import.meta.env.DEV) {
+    if (!isActiveTracker(this) || this._restoringState) {
+      if (import.meta.env.DEV && !this._restoringState) {
         logger.error(
           'deactivate() called on inactive tracker for:',
           this.workflow.path
@@ -119,10 +126,11 @@ export class ChangeTracker {
    * Ensure activeState is up-to-date for persistence.
    * Active workflow: flushes canvas → activeState.
    * Inactive workflow: no-op (activeState was frozen by deactivate()).
+   *
+   * @internal Not part of the public extension API.
    */
   prepareForSave() {
-    const isActive = useWorkflowStore().activeWorkflow?.changeTracker === this
-    if (isActive) this.captureCanvasState()
+    if (isActiveTracker(this)) this.captureCanvasState()
   }
 
   restore() {
@@ -186,8 +194,7 @@ export class ChangeTracker {
     )
       return
 
-    const activeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-    if (activeTracker !== this) {
+    if (!isActiveTracker(this)) {
       if (import.meta.env.DEV) {
         logger.error(
           'captureCanvasState called on inactive tracker for:',
@@ -217,13 +224,16 @@ export class ChangeTracker {
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
-    if (import.meta.env.DEV) {
+    if (!ChangeTracker._checkStateWarned) {
+      ChangeTracker._checkStateWarned = true
       logger.warn(
         'checkState() is deprecated — use captureCanvasState() instead.'
       )
     }
     this.captureCanvasState()
   }
+
+  private static _checkStateWarned = false
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
