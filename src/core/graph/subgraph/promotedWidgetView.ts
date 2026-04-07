@@ -156,19 +156,20 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    // Per-instance value takes priority — multiple SubgraphNode instances
+    // share the same inner graph, so the widget state store (keyed by
+    // inner node ID) would return the last-configured value for all
+    // instances.  The per-instance map is kept in sync by the setter.
+    const instanceValue = this.subgraphNode._instanceWidgetValues.get(
+      this._instanceKey
+    )
+    if (instanceValue !== undefined)
+      return instanceValue as IBaseWidget['value']
+
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
-    return this.resolveAtHost()?.widget.value
-  }
 
-  /**
-   * Read the per-instance value stored during configure.
-   * Used by graphToPrompt to get the correct execution value when
-   * multiple SubgraphNode instances share the same blueprint.
-   */
-  getInstanceValue(): IBaseWidget['value'] | undefined {
-    const v = this.subgraphNode._instanceWidgetValues.get(this._instanceKey)
-    return v as IBaseWidget['value'] | undefined
+    return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {

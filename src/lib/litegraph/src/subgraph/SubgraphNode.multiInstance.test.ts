@@ -82,12 +82,14 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       widgets_values: [20]
     })
 
-    // After configuring both, each instance's per-instance value
-    // should be preserved in _instanceWidgetValues, even though the
-    // shared inner widget holds the last-configured value.
-    expect(instance1._instanceWidgetValues.size).toBeGreaterThan(0)
-    expect(instance2._instanceWidgetValues.size).toBeGreaterThan(0)
-    expect([...instance1._instanceWidgetValues.values()]).toContain(10)
-    expect([...instance2._instanceWidgetValues.values()]).toContain(20)
+    // Each instance's promoted widget .value getter should return
+    // its own configured value, not the last-written shared value.
+    const widgets1 = instance1.widgets!
+    const widgets2 = instance2.widgets!
+
+    expect(widgets1.length).toBeGreaterThan(0)
+    expect(widgets2.length).toBeGreaterThan(0)
+    expect(widgets1[0].value).toBe(10)
+    expect(widgets2[0].value).toBe(20)
   })
 })
