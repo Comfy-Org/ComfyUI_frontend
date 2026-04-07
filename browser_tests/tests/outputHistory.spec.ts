@@ -72,6 +72,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(
       comfyPage.appMode.outputHistory.latentPreviews.first()
     ).toBeVisible()
+    await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
   })
 
   test('Image output replaces skeleton on executed', async ({
@@ -90,6 +91,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(
       comfyPage.appMode.outputHistory.imageOutputs.first()
     ).toBeVisible()
+    await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
   })
 
   test('Multiple outputs from single execution', async ({
@@ -103,13 +105,11 @@ test.describe('Output History', { tag: '@ui' }, () => {
       comfyPage.appMode.outputHistory.inProgressItems.first()
     ).toBeVisible()
 
-    exec.executed(jobId, SAVE_IMAGE_NODE, {
-      images: [
-        { filename: 'output_001.png', subfolder: '', type: 'output' },
-        { filename: 'output_002.png', subfolder: '', type: 'output' },
-        { filename: 'output_003.png', subfolder: '', type: 'output' }
-      ]
-    })
+    exec.executed(
+      jobId,
+      SAVE_IMAGE_NODE,
+      imageOutput('output_001.png', 'output_002.png', 'output_003.png')
+    )
 
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(3)
   })
@@ -218,16 +218,21 @@ test.describe('Output History', { tag: '@ui' }, () => {
       comfyPage.appMode.outputHistory.selectedInProgressItem
     ).toBeVisible()
 
-    // After executed, the image item should be auto-selected
-    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('auto_select.png'))
-    await expect(
-      comfyPage.appMode.outputHistory.selectedInProgressItem
-    ).toBeVisible()
+    // First image is auto-selected
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('first.png'))
     await expect(
       comfyPage.appMode.outputHistory.selectedInProgressItem.getByTestId(
         'linear-image-output'
       )
-    ).toBeVisible()
+    ).toHaveAttribute('src', /first\.png/)
+
+    // Second image arrives — selection auto-follows without user click
+    exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('second.png'))
+    await expect(
+      comfyPage.appMode.outputHistory.selectedInProgressItem.getByTestId(
+        'linear-image-output'
+      )
+    ).toHaveAttribute('src', /second\.png/)
   })
 
   test('Clicking item breaks auto-follow during execution', async ({
