@@ -1194,6 +1194,8 @@
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
+    "cannotClearWhenOpenSummary": "Warning",
+    "cannotClearWhenOpenDetail": "Please close the mask editor before clearing masks.",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",

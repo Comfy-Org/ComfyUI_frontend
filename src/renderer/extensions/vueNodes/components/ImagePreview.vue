@@ -304,7 +304,15 @@ async function handleClearMask() {
   if (!nodeId) return
   const node = resolveNode(Number(nodeId))
   if (!node) return
-  await clearMask(node)
+  try {
+    await clearMask(node)
+  } catch {
+    toastStore.add({
+      severity: 'error',
+      summary: t('maskEditor.clearMaskError'),
+      detail: t('maskEditor.clearMaskFailed')
+    })
+  }
 }
 
 function handleDownload() {
