@@ -94,4 +94,79 @@ test.describe('Load3D', () => {
       await expect(load3d.recordingButton).toBeVisible()
     }
   )
+
+  test(
+    'Uploads a 3D model via button and renders it',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      const uploadResponsePromise = comfyPage.page.waitForResponse(
+        (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+        { timeout: 15000 }
+      )
+
+      const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
+      await load3d.getUploadButton('upload 3d model').click()
+      const fileChooser = await fileChooserPromise
+      await fileChooser.setFiles(comfyPage.assetPath('cube.obj'))
+
+      await uploadResponsePromise
+
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(() => {
+              const n = window.app!.graph.getNodeById(1)
+              const w = n?.widgets?.find((w) => w.name === 'model_file')
+              return w?.value
+            }),
+          { timeout: 15000 }
+        )
+        .toContain('cube.obj')
+
+      await load3d.waitForModelLoaded()
+      await comfyPage.nextFrame()
+
+      await expect(load3d.node).toHaveScreenshot(
+        'load3d-uploaded-cube-obj.png',
+        { maxDiffPixelRatio: 0.1 }
+      )
+    }
+  )
+
+  test(
+    'Drag-and-drops a 3D model onto the canvas',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      const canvasBox = await load3d.canvas.boundingBox()
+      const dropPosition = {
+        x: canvasBox!.x + canvasBox!.width / 2,
+        y: canvasBox!.y + canvasBox!.height / 2
+      }
+
+      await comfyPage.dragDrop.dragAndDropFile('cube.obj', {
+        dropPosition,
+        waitForUpload: true
+      })
+
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(() => {
+              const n = window.app!.graph.getNodeById(1)
+              const w = n?.widgets?.find((w) => w.name === 'model_file')
+              return w?.value
+            }),
+          { timeout: 15000 }
+        )
+        .toContain('cube.obj')
+
+      await load3d.waitForModelLoaded()
+      await comfyPage.nextFrame()
+
+      await expect(load3d.node).toHaveScreenshot(
+        'load3d-dropped-cube-obj.png',
+        { maxDiffPixelRatio: 0.1 }
+      )
+    }
+  )
 })

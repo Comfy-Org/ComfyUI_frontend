@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 export class Load3DHelper {
@@ -19,6 +20,10 @@ export class Load3DHelper {
     return this.node.locator('input[type="color"]')
   }
 
+  get openViewerButton(): Locator {
+    return this.node.getByRole('button', { name: /open in 3d viewer/i })
+  }
+
   getUploadButton(label: string): Locator {
     return this.node.getByText(label)
   }
@@ -36,5 +41,11 @@ export class Load3DHelper {
       ;(el as HTMLInputElement).value = value
       el.dispatchEvent(new Event('input', { bubbles: true }))
     }, hex)
+  }
+
+  async waitForModelLoaded(): Promise<void> {
+    await expect(this.node.getByTestId('loading-overlay')).toBeHidden({
+      timeout: 30000
+    })
   }
 }

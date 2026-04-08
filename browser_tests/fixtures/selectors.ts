@@ -155,6 +155,9 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  loading: {
+    overlay: 'loading-overlay'
   }
 } as const
 
@@ -185,3 +188,4 @@ export type TestIdValue =
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
