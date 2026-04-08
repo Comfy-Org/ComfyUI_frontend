@@ -130,7 +130,6 @@ class LayoutStoreImpl implements LayoutStore {
   // CustomRef cache and trigger functions
   private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
   private nodeTriggers = new Map<NodeId, () => void>()
-  private collapsedSizes = new Map<NodeId, Size>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -243,11 +242,7 @@ class LayoutStoreImpl implements LayoutStore {
           get: () => {
             track()
             const ynode = this.ynodes.get(nodeId)
-            const layout = ynode ? yNodeToLayout(ynode) : null
-            const collapsedSize = this.collapsedSizes.get(nodeId)
-            return layout && collapsedSize
-              ? { ...layout, collapsedSize }
-              : layout
+            return ynode ? yNodeToLayout(ynode) : null
           },
           set: (newLayout: NodeLayout | null) => {
             if (newLayout === null) {
@@ -1006,7 +1001,6 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
-      this.collapsedSizes.clear()
       // Note: We intentionally do NOT clear nodeRefs and nodeTriggers here.
       // Vue components may already hold references to these refs, and clearing
       // them would break the reactivity chain. The refs will be reused when
@@ -1554,12 +1548,22 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   updateNodeCollapsedSize(nodeId: NodeId, size: Size): void {
-    this.collapsedSizes.set(nodeId, size)
+    const ynode = this.ynodes.get(nodeId)
+    if (!ynode) return
+    ynode.set('collapsedSize', size)
     this.nodeTriggers.get(nodeId)?.()
   }
 
   getNodeCollapsedSize(nodeId: NodeId): Size | undefined {
-    return this.collapsedSizes.get(nodeId)
+    return this.ynodes.get(nodeId)?.get('collapsedSize') as Size | undefined
+  }
+
+  clearNodeCollapsedSize(nodeId: NodeId): void {
+    const ynode = this.ynodes.get(nodeId)
+    if (ynode?.has('collapsedSize')) {
+      ynode.delete('collapsedSize')
+      this.nodeTriggers.get(nodeId)?.()
+    }
   }
 }
 

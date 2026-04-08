@@ -161,6 +161,11 @@ const resizeObserver = new ResizeObserver((entries) => {
       continue
     }
 
+    // Clear stale collapsedSize when node is expanded
+    if (elementType === 'node' && nodeId) {
+      layoutStore.clearNodeCollapsedSize(nodeId)
+    }
+
     // Measure the full root element (including footer in flow).
     // min-height is applied to the root, so footer height in node.size
     // does not accumulate on Vue/legacy mode switching.

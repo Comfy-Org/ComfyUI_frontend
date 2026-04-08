@@ -68,7 +68,9 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
     setSource: testState.setSource,
     getNodeLayoutRef: (nodeId: NodeId): Ref<NodeLayout | null> =>
-      ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null)
+      ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null),
+    clearNodeCollapsedSize: vi.fn(),
+    updateNodeCollapsedSize: vi.fn()
   }
 }))
 

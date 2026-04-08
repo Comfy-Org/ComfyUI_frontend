@@ -355,6 +355,15 @@ export class LiteGraphGlobal {
    */
   vueNodesMode: boolean = false
 
+  /**
+   * Optional accessor for collapsed node dimensions in Vue mode.
+   * Set by the Vue layer to provide DOM-measured collapsed sizes
+   * that measure() can use instead of canvas text measurement.
+   */
+  getCollapsedSize?: (
+    nodeId: string | number
+  ) => { width: number; height: number } | undefined
+
   // Special Rendering Values pulled out of app.ts patches
   nodeOpacity = 1
   nodeLightness: number | undefined = undefined

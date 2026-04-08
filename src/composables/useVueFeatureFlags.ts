@@ -6,6 +6,7 @@ import { createSharedComposable } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { LiteGraph } from '../lib/litegraph/src/litegraph'
 
@@ -25,6 +26,10 @@ function useVueFeatureFlagsIndividual() {
     shouldRenderVueNodes,
     () => {
       LiteGraph.vueNodesMode = shouldRenderVueNodes.value
+      LiteGraph.getCollapsedSize = shouldRenderVueNodes.value
+        ? (nodeId) =>
+            layoutStore.getNodeCollapsedSize(String(nodeId)) ?? undefined
+        : undefined
     },
     { immediate: true }
   )
