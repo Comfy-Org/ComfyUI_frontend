@@ -217,7 +217,7 @@ test.describe(
 
         await expect(promoteEntry).toBeVisible()
         await promoteEntry.click()
-        await comfyPage.nextFrame()
+        await expect(promoteEntry).toBeHidden()
 
         // Navigate back to parent
         await comfyPage.subgraph.exitViaBreadcrumb()
@@ -252,12 +252,12 @@ test.describe(
 
         await expect(promoteEntry).toBeVisible()
         await promoteEntry.click()
-        await comfyPage.nextFrame()
+        // Wait for the context menu to close, confirming the action completed.
+        await expect(promoteEntry).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await fitToViewInstant(comfyPage)
-        await comfyPage.nextFrame()
         await comfyPage.nextFrame()
 
         await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '2', 0)
@@ -283,7 +283,7 @@ test.describe(
 
         await expect(unpromoteEntry).toBeVisible()
         await unpromoteEntry.click()
-        await comfyPage.nextFrame()
+        await expect(unpromoteEntry).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
