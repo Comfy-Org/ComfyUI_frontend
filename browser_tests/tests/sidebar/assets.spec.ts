@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   createMockJob,
   createMockJobs
-} from '../../fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+} from '@e2e/fixtures/helpers/AssetsHelper'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -193,6 +193,29 @@ test.describe('Assets sidebar - grid view display', () => {
     // Imported tab should show the mocked files
     const count = await tab.assetCards.count()
     expect(count).toBeGreaterThanOrEqual(1)
+  })
+  test('Displays svg outputs', async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({
+        id: 'job-alpha',
+        create_time: 1000,
+        execution_start_time: 1000,
+        execution_end_time: 1010,
+        preview_output: {
+          filename: 'logo.svg',
+          subfolder: '',
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
+        },
+        outputs_count: 1
+      })
+    ])
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
   })
 })
 

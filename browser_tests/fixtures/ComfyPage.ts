@@ -2,7 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
-import { NodeBadgeMode } from '../../src/types/nodeSource'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
 import { ComfyTemplates } from '@e2e/helpers/templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -29,6 +29,8 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
@@ -43,7 +45,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
 
@@ -177,6 +179,7 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
+  public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
 
   /** Worker index to test user ID */
@@ -227,6 +230,7 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
+    this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
   }
 
@@ -448,6 +452,7 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
+    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {

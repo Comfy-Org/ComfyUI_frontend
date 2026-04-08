@@ -1,21 +1,15 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 import {
   saveAndReopenInAppMode,
   setupSubgraphBuilder
-} from '../helpers/builderTestUtils'
+} from '@e2e/helpers/builderTestUtils'
 
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
       true
