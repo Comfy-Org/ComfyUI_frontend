@@ -34,5 +34,4 @@ describe('RoleBadge', () => {
     const wrapper = mountRoleBadge('member')
     expect(wrapper.text()).toBe('Member')
   })
-
 })
