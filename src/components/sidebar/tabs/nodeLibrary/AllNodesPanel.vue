@@ -12,7 +12,6 @@
       :root="favoritesRoot"
       show-context-menu
       @node-click="(node) => emit('nodeClick', node)"
-      @add-to-favorites="handleAddToFavorites"
     />
     <div v-else class="px-6 py-2 text-xs text-muted-background">
       {{ $t('sideToolbar.nodeLibraryTab.noBookmarkedNodes') }}
@@ -31,7 +30,6 @@
         :root="section.root"
         show-context-menu
         @node-click="(node) => emit('nodeClick', node)"
-        @add-to-favorites="handleAddToFavorites"
       />
     </div>
   </div>
@@ -71,12 +69,4 @@ const hasFavorites = computed(
 const favoritesRoot = computed(() =>
   fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
 )
-
-function handleAddToFavorites(
-  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-) {
-  if (node.data) {
-    nodeBookmarkStore.toggleBookmark(node.data)
-  }
-}
 </script>

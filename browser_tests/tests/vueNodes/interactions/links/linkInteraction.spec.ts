@@ -1,13 +1,13 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '../../../../../src/platform/workflow/validation/schemas/workflowSchema'
-import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import { getMiddlePoint } from '../../../../fixtures/utils/litegraphUtils'
-import { fitToViewInstant } from '../../../../helpers/fitToView'
+} from '@e2e/fixtures/ComfyPage'
+import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()

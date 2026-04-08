@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
-import { TestIds } from '../selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 class SidebarTab {
   constructor(
@@ -100,6 +100,59 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 }
 
+export class NodeLibrarySidebarTabV2 extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'node-library')
+  }
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search...')
+  }
+
+  get sidebarContent() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  getTab(name: string) {
+    return this.sidebarContent.getByRole('tab', { name, exact: true })
+  }
+
+  get allTab() {
+    return this.getTab('All')
+  }
+
+  get blueprintsTab() {
+    return this.getTab('Blueprints')
+  }
+
+  get sortButton() {
+    return this.sidebarContent.getByRole('button', { name: 'Sort' })
+  }
+
+  getFolder(folderName: string) {
+    return this.sidebarContent
+      .getByRole('treeitem', { name: folderName })
+      .first()
+  }
+
+  getNode(nodeName: string) {
+    return this.sidebarContent.getByRole('treeitem', { name: nodeName }).first()
+  }
+
+  async expandFolder(folderName: string) {
+    const folder = this.getFolder(folderName)
+    const isExpanded = await folder.getAttribute('aria-expanded')
+    if (isExpanded !== 'true') {
+      await folder.click()
+    }
+  }
+
+  override async open() {
+    await super.open()
+    await this.searchInput.waitFor({ state: 'visible' })
+  }
+}
+
 export class WorkflowsSidebarTab extends SidebarTab {
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -167,6 +220,59 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
       .click()
+  }
+}
+
+export class ModelLibrarySidebarTab extends SidebarTab {
+  constructor(public override readonly page: Page) {
+    super(page, 'model-library')
+  }
+
+  get searchInput() {
+    return this.page.getByPlaceholder('Search Models...')
+  }
+
+  get modelTree() {
+    return this.page.locator('.model-lib-tree-explorer')
+  }
+
+  get refreshButton() {
+    return this.page.getByRole('button', { name: 'Refresh' })
+  }
+
+  get loadAllFoldersButton() {
+    return this.page.getByRole('button', { name: 'Load All Folders' })
+  }
+
+  get folderNodes() {
+    return this.modelTree.locator('.p-tree-node:not(.p-tree-node-leaf)')
+  }
+
+  get leafNodes() {
+    return this.modelTree.locator('.p-tree-node-leaf')
+  }
+
+  get modelPreview() {
+    return this.page.locator('.model-lib-model-preview')
+  }
+
+  override async open() {
+    await super.open()
+    await this.modelTree.waitFor({ state: 'visible' })
+  }
+
+  getFolderByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node:not(.p-tree-node-leaf)')
+      .filter({ hasText: label })
+      .first()
+  }
+
+  getLeafByLabel(label: string) {
+    return this.modelTree
+      .locator('.p-tree-node-leaf')
+      .filter({ hasText: label })
+      .first()
   }
 }
 

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Zoom Controls', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -93,9 +93,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const input = comfyPage.page
       .getByTestId(TestIds.canvas.zoomPercentageInput)
       .locator('input')
-    await input.focus()
-    await comfyPage.page.keyboard.press('Control+a')
-    await input.pressSequentially('100')
+    await input.fill('100')
     await input.press('Enter')
     await comfyPage.nextFrame()
 
