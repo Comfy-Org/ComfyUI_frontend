@@ -11,6 +11,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
@@ -1006,5 +1007,27 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
+  })
+})
+
+describe('Zero UUID handling in configure', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia())
+  })
+
+  it('rejects zeroUuid for root graphs and assigns a new ID', () => {
+    const graph = new LGraph()
+    const data = graph.serialize()
+    data.id = zeroUuid
+    graph.configure(data)
+    expect(graph.id).not.toBe(zeroUuid)
+  })
+
+  it('preserves zeroUuid for subgraphs', () => {
+    const graph = new LGraph()
+    const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
+    const subgraph = graph.createSubgraph(subgraphData)
+    subgraph.configure(subgraphData)
+    expect(subgraph.id).toBe(zeroUuid)
   })
 })
