@@ -224,6 +224,7 @@
     ],
     "patchedDependencies": {
       "@bgotink/playwright-coverage@0.3.2": "patches/@bgotink__playwright-coverage@0.3.2.patch"
-    }
+    },
+    "patchedDependencies//comment": "Patch adds local-filesystem sourcemap fallback and source-path rewriting for Vite builds. Only patches lib/data.js (runtime). TODO: upstream these fixes to eliminate the patch."
   }
 }
