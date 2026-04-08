@@ -17,6 +17,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
+import * as PromotionEntryResolver from '@/lib/litegraph/src/subgraph/PromotionEntryResolver'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -1681,22 +1682,10 @@ describe('widgets getter caching', () => {
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
     const reconcileSpy = vi.spyOn(
-      fromAny<
-        {
-          _buildPromotionReconcileState: (
-            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
-            linkedEntries: Array<{
-              inputName: string
-              inputKey: string
-              sourceNodeId: string
-              sourceWidgetName: string
-            }>
-          ) => unknown
-        },
-        unknown
-      >(subgraphNode),
-      '_buildPromotionReconcileState'
+      PromotionEntryResolver,
+      'resolvePromotionEntries'
     )
+    reconcileSpy.mockClear()
 
     void subgraphNode.widgets
     void subgraphNode.widgets
@@ -1714,22 +1703,10 @@ describe('widgets getter caching', () => {
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
     const reconcileSpy = vi.spyOn(
-      fromAny<
-        {
-          _buildPromotionReconcileState: (
-            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
-            linkedEntries: Array<{
-              inputName: string
-              inputKey: string
-              sourceNodeId: string
-              sourceWidgetName: string
-            }>
-          ) => unknown
-        },
-        unknown
-      >(subgraphNode),
-      '_buildPromotionReconcileState'
+      PromotionEntryResolver,
+      'resolvePromotionEntries'
     )
+    reconcileSpy.mockClear()
 
     void subgraphNode.widgets
     fakeCanvas.frame += 1
