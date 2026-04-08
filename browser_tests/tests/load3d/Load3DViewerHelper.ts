@@ -13,7 +13,7 @@ export class Load3DViewerHelper {
   }
 
   get sidebar(): Locator {
-    return this.dialog.locator('.w-72')
+    return this.dialog.getByTestId('load3d-viewer-sidebar')
   }
 
   get cancelButton(): Locator {

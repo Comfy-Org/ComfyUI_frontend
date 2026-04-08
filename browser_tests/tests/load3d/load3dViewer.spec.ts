@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from './Load3DHelper'
 import { Load3DViewerHelper } from './Load3DViewerHelper'
 
@@ -26,7 +27,7 @@ test.describe('Load3D Viewer', () => {
     const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
     await load3d.getUploadButton('upload 3d model').click()
     const fileChooser = await fileChooserPromise
-    await fileChooser.setFiles(comfyPage.assetPath('cube.obj'))
+    await fileChooser.setFiles(assetPath('cube.obj'))
     await uploadResponsePromise
 
     await load3d.waitForModelLoaded()

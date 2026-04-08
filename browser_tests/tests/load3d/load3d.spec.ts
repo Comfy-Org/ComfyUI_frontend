@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from './Load3DHelper'
 
 test.describe('Load3D', () => {
@@ -107,21 +108,11 @@ test.describe('Load3D', () => {
       const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
       await load3d.getUploadButton('upload 3d model').click()
       const fileChooser = await fileChooserPromise
-      await fileChooser.setFiles(comfyPage.assetPath('cube.obj'))
+      await fileChooser.setFiles(assetPath('cube.obj'))
 
       await uploadResponsePromise
 
-      await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const n = window.app!.graph.getNodeById(1)
-              const w = n?.widgets?.find((w) => w.name === 'model_file')
-              return w?.value
-            }),
-          { timeout: 15000 }
-        )
-        .toContain('cube.obj')
+      await load3d.waitForWidgetValue(1, 'model_file', 'cube.obj')
 
       await load3d.waitForModelLoaded()
       await comfyPage.nextFrame()
@@ -138,6 +129,7 @@ test.describe('Load3D', () => {
     { tag: ['@screenshot'] },
     async ({ comfyPage }) => {
       const canvasBox = await load3d.canvas.boundingBox()
+      expect(canvasBox, 'Canvas bounding box should exist').not.toBeNull()
       const dropPosition = {
         x: canvasBox!.x + canvasBox!.width / 2,
         y: canvasBox!.y + canvasBox!.height / 2
@@ -148,17 +140,7 @@ test.describe('Load3D', () => {
         waitForUpload: true
       })
 
-      await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const n = window.app!.graph.getNodeById(1)
-              const w = n?.widgets?.find((w) => w.name === 'model_file')
-              return w?.value
-            }),
-          { timeout: 15000 }
-        )
-        .toContain('cube.obj')
+      await load3d.waitForWidgetValue(1, 'model_file', 'cube.obj')
 
       await load3d.waitForModelLoaded()
       await comfyPage.nextFrame()

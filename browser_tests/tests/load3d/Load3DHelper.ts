@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
+import { TestIds } from '@e2e/fixtures/selectors'
+
 export class Load3DHelper {
   constructor(readonly node: Locator) {}
 
@@ -43,8 +45,29 @@ export class Load3DHelper {
     }, hex)
   }
 
+  async waitForWidgetValue(
+    nodeId: number,
+    widgetName: string,
+    expected: string
+  ): Promise<void> {
+    await expect
+      .poll(
+        () =>
+          this.node.page().evaluate(
+            ({ nodeId, widgetName }) => {
+              const n = window.app!.graph.getNodeById(nodeId)
+              const w = n?.widgets?.find((w) => w.name === widgetName)
+              return w?.value
+            },
+            { nodeId, widgetName }
+          ),
+        { timeout: 15000 }
+      )
+      .toContain(expected)
+  }
+
   async waitForModelLoaded(): Promise<void> {
-    await expect(this.node.getByTestId('loading-overlay')).toBeHidden({
+    await expect(this.node.getByTestId(TestIds.loading.overlay)).toBeHidden({
       timeout: 30000
     })
   }
