@@ -1600,28 +1600,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     ctx.restore()
   }
 
-  /**
-   * Synchronizes widget values from this SubgraphNode instance to the
-   * corresponding widgets in the subgraph definition before serialization.
-   * This ensures nested subgraph widget values are preserved when saving.
-   */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization.
-    // Only sync for inputs that are linked to a promoted widget via _widget.
-    for (const input of this.inputs) {
-      if (!input._widget) continue
-
-      const subgraphInput =
-        input._subgraphSlot ??
-        this.subgraph.inputNode.slots.find((slot) => slot.name === input.name)
-      if (!subgraphInput) continue
-
-      const connectedWidgets = subgraphInput.getConnectedWidgets()
-      for (const connectedWidget of connectedWidgets) {
-        connectedWidget.value = input._widget.value
-      }
-    }
-
     // Write promotion store state back to properties for serialization
     const entries = usePromotionStore().getPromotions(
       this.rootGraph.id,
@@ -1629,7 +1608,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
     this.properties.proxyWidgets = this._serializeEntries(entries)
 
-    return super.serialize()
+    const serialized = super.serialize()
+    const views = this._getPromotedViews()
+
+    if (views.length > 0) {
+      serialized.widgets_values = views.map((view) => {
+        const value = view.serializeValue
+          ? view.serializeValue(this, -1)
+          : view.value
+        return value != null && typeof value === 'object'
+          ? JSON.parse(JSON.stringify(value))
+          : (value ?? null)
+      })
+    }
+
+    return serialized
   }
   override clone() {
     const clone = super.clone()

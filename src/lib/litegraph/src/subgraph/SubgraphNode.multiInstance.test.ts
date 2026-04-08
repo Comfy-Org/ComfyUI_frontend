@@ -91,5 +91,45 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(widgets2[0].value).toBe(20)
     expect(widgets1[0].serializeValue!(instance1, 0)).toBe(10)
     expect(widgets2[0].serializeValue!(instance2, 0)).toBe(20)
+    expect(instance1.serialize().widgets_values).toEqual([10])
+    expect(instance2.serialize().widgets_values).toEqual([20])
+  })
+
+  it('round-trips per-instance widget values through serialize and configure', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 0)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const originalInstance = createTestSubgraphNode(subgraph, { id: 301 })
+    originalInstance.configure({
+      id: 301,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [33]
+    })
+
+    const serialized = originalInstance.serialize()
+
+    const restoredInstance = createTestSubgraphNode(subgraph, { id: 302 })
+    restoredInstance.configure({
+      ...serialized,
+      id: 302,
+      type: subgraph.id
+    })
+
+    const restoredWidget = restoredInstance.widgets?.[0]
+    expect(restoredWidget?.value).toBe(33)
+    expect(restoredWidget?.serializeValue?.(restoredInstance, 0)).toBe(33)
   })
 })
