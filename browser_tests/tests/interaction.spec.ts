@@ -335,7 +335,6 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      await comfyPage.delay(1000)
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNodeToggler
       })
@@ -358,14 +357,10 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
-    await comfyPage.delay(300)
-    await comfyPage.canvas.click({
-      position: {
-        x: 10,
-        y: 10
-      }
-    })
-    await expect(legacyPrompt).toBeHidden()
+    await expect(async () => {
+      await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
+      await expect(legacyPrompt).toBeHidden()
+    }).toPass({ timeout: 2_000 })
   })
 
   test('Can close prompt dialog with canvas click (text widget)', async ({
@@ -381,14 +376,10 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
-    await comfyPage.delay(300)
-    await comfyPage.canvas.click({
-      position: {
-        x: 10,
-        y: 10
-      }
-    })
-    await expect(legacyPrompt).toBeHidden()
+    await expect(async () => {
+      await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
+      await expect(legacyPrompt).toBeHidden()
+    }).toPass({ timeout: 2_000 })
   })
 
   test(
