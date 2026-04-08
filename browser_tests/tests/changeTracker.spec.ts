@@ -27,12 +27,12 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     })
 
     test('Can undo multiple operations', async ({ comfyPage }) => {
-      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
-      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
-      expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
+      await expect.poll(() => comfyPage.toast.getToastErrorCount()).toBe(0)
       await expect
         .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
         .toBe(false)
@@ -164,7 +164,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   })
 
   test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
-    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
       window.app!.graph!.extra.foo = 'bar'
     })
@@ -174,7 +174,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   })
 
   test('Ignores changes in workflow.ds', async ({ comfyPage }) => {
-    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.canvasOps.pan({ x: 10, y: 10 })
     await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
   })
