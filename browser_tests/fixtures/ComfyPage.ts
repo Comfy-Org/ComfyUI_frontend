@@ -34,6 +34,7 @@ import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -181,6 +182,7 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
+  public readonly cloudAuth: CloudAuthHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -232,6 +234,7 @@ export class ComfyPage {
     this.assets = new AssetsHelper(page)
     this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
+    this.cloudAuth = new CloudAuthHelper(page)
   }
 
   get visibleToasts() {
@@ -442,6 +445,10 @@ export const comfyPageFixture = base.extend<{
       })
     } catch (e) {
       console.error(e)
+    }
+
+    if (testInfo.tags.includes('@cloud')) {
+      await comfyPage.cloudAuth.mockAuth()
     }
 
     await comfyPage.setup()
