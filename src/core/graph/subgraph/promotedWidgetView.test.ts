@@ -34,7 +34,6 @@ import {
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import * as PromotionEntryResolver from '@/lib/litegraph/src/subgraph/PromotionEntryResolver'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -1452,16 +1451,29 @@ describe('widgets getter caching', () => {
     const fakeCanvas = { frame: 12 } as Pick<LGraphCanvas, 'frame'>
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
-    const resolveSpy = vi.spyOn(
-      PromotionEntryResolver,
-      'resolvePromotionEntries'
+    const reconcileSpy = vi.spyOn(
+      fromAny<
+        {
+          _buildPromotionReconcileState: (
+            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
+            linkedEntries: Array<{
+              inputName: string
+              inputKey: string
+              sourceNodeId: string
+              sourceWidgetName: string
+            }>
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
+      '_buildPromotionReconcileState'
     )
 
     void subgraphNode.widgets
     void subgraphNode.widgets
     void subgraphNode.widgets
 
-    expect(resolveSpy).toHaveBeenCalledTimes(1)
+    expect(reconcileSpy).toHaveBeenCalledTimes(1)
   })
 
   test('does not re-run reconciliation when only canvas frame advances', () => {
@@ -1472,17 +1484,29 @@ describe('widgets getter caching', () => {
     const fakeCanvas = { frame: 24 } as Pick<LGraphCanvas, 'frame'>
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
-    const resolveSpy = vi.spyOn(
-      PromotionEntryResolver,
-      'resolvePromotionEntries'
+    const reconcileSpy = vi.spyOn(
+      fromAny<
+        {
+          _buildPromotionReconcileState: (
+            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
+            linkedEntries: Array<{
+              inputName: string
+              inputKey: string
+              sourceNodeId: string
+              sourceWidgetName: string
+            }>
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
+      '_buildPromotionReconcileState'
     )
 
     void subgraphNode.widgets
-    const callsAfterFirst = resolveSpy.mock.calls.length
     fakeCanvas.frame += 1
     void subgraphNode.widgets
 
-    expect(resolveSpy.mock.calls.length - callsAfterFirst).toBe(0)
+    expect(reconcileSpy).toHaveBeenCalledTimes(1)
   })
 
   test('does not re-resolve linked entries when linked input state is unchanged', () => {
@@ -2415,389 +2439,5 @@ describe('DOM widget promotion', () => {
     expect(mockDomWidgetStore.clearPositionOverride).toHaveBeenCalledWith(
       'dom-widget-widgetB'
     )
-  })
-})
-
-describe('promotion entry resolution invariants', () => {
-  test('syncPromotions preserves entry order: linked before fallback', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 200 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNode = new LGraphNode('LinkedNode')
-    const linkedInput = linkedNode.addInput('string_a', '*')
-    linkedNode.addWidget('text', 'string_a', 'linked', () => {})
-    linkedInput.widget = { name: 'string_a' }
-    subgraph.add(linkedNode)
-
-    const independentNode = new LGraphNode('IndependentNode')
-    independentNode.addWidget('text', 'indep_widget', 'independent', () => {})
-    subgraph.add(independentNode)
-
-    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-
-    // Store entries in reverse order: independent first, then linked
-    usePromotionStore().setPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      [
-        {
-          sourceNodeId: String(independentNode.id),
-          sourceWidgetName: 'indep_widget'
-        },
-        { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'string_a' }
-      ]
-    )
-
-    callSyncPromotions(subgraphNode)
-
-    const promotions = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-    expect(promotions[0]).toStrictEqual({
-      sourceNodeId: String(linkedNode.id),
-      sourceWidgetName: 'string_a'
-    })
-    expect(promotions[1]).toStrictEqual({
-      sourceNodeId: String(independentNode.id),
-      sourceWidgetName: 'indep_widget'
-    })
-  })
-
-  test('syncPromotions produces stable state after convergence', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 201 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNode = new LGraphNode('LinkedNode')
-    const linkedInput = linkedNode.addInput('string_a', '*')
-    linkedNode.addWidget('text', 'string_a', 'val', () => {})
-    linkedInput.widget = { name: 'string_a' }
-    subgraph.add(linkedNode)
-    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-
-    setPromotions(subgraphNode, [[String(linkedNode.id), 'string_a']])
-
-    // Multiple syncs should converge to same state
-    callSyncPromotions(subgraphNode)
-    const afterFirst = [
-      ...usePromotionStore().getPromotions(
-        subgraphNode.rootGraph.id,
-        subgraphNode.id
-      )
-    ]
-
-    callSyncPromotions(subgraphNode)
-    const afterSecond = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-
-    expect(afterSecond).toStrictEqual(afterFirst)
-
-    callSyncPromotions(subgraphNode)
-    const afterThird = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-
-    expect(afterThird).toStrictEqual(afterFirst)
-  })
-
-  test('syncPromotions with disambiguatingSourceNodeId preserves it through round-trip', () => {
-    const { subgraphNodeB } = createTwoLevelNestedSubgraph()
-
-    // Access widgets to trigger initial promotion setup
-    const widgets = promotedWidgets(subgraphNodeB)
-    expect(widgets).toHaveLength(1)
-
-    // Get the initial promotions (linked resolution may produce disambiguating IDs)
-    const promotionsBefore = usePromotionStore().getPromotions(
-      subgraphNodeB.rootGraph.id,
-      subgraphNodeB.id
-    )
-
-    callSyncPromotions(subgraphNodeB)
-
-    const promotionsAfter = usePromotionStore().getPromotions(
-      subgraphNodeB.rootGraph.id,
-      subgraphNodeB.id
-    )
-
-    // Verify disambiguation info survives sync
-    for (const entry of promotionsBefore) {
-      const match = promotionsAfter.find(
-        (e) =>
-          e.sourceNodeId === entry.sourceNodeId &&
-          e.sourceWidgetName === entry.sourceWidgetName
-      )
-      expect(match).toBeDefined()
-      expect(match?.disambiguatingSourceNodeId).toBe(
-        entry.disambiguatingSourceNodeId
-      )
-    }
-  })
-
-  test('widgets getter returns linked views with labels from input labels', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [
-        { name: 'Custom Label A', type: '*' },
-        { name: 'Custom Label B', type: '*' }
-      ]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 202 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const nodeA = new LGraphNode('NodeA')
-    const inputA = nodeA.addInput('Custom Label A', '*')
-    nodeA.addWidget('text', 'widgetA', 'a', () => {})
-    inputA.widget = { name: 'widgetA' }
-    subgraph.add(nodeA)
-
-    const nodeB = new LGraphNode('NodeB')
-    const inputB = nodeB.addInput('Custom Label B', '*')
-    nodeB.addWidget('text', 'widgetB', 'b', () => {})
-    inputB.widget = { name: 'widgetB' }
-    subgraph.add(nodeB)
-
-    subgraph.inputNode.slots[0].connect(inputA, nodeA)
-    subgraph.inputNode.slots[1].connect(inputB, nodeB)
-
-    const widgets = promotedWidgets(subgraphNode)
-    expect(widgets).toHaveLength(2)
-    expect(widgets[0].label).toBe('Custom Label A')
-    expect(widgets[1].label).toBe('Custom Label B')
-  })
-
-  test('widgets getter deduplicates by view key, not by source entry key', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [
-        { name: 'input_1', type: '*' },
-        { name: 'input_2', type: '*' }
-      ]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 203 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const sharedNode = new LGraphNode('SharedNode')
-    const sharedInput1 = sharedNode.addInput('input_1', '*')
-    const sharedInput2 = sharedNode.addInput('input_2', '*')
-    sharedNode.addWidget('number', 'value', 1, () => {})
-    sharedInput1.widget = { name: 'value' }
-    sharedInput2.widget = { name: 'value' }
-    subgraph.add(sharedNode)
-
-    subgraph.inputNode.slots[0].connect(sharedInput1, sharedNode)
-    subgraph.inputNode.slots[1].connect(sharedInput2, sharedNode)
-
-    const widgets = promotedWidgets(subgraphNode)
-    // Two inputs linked to same concrete widget produce two separate views
-    expect(widgets).toHaveLength(2)
-    expect(widgets[0].sourceNodeId).toBe(String(sharedNode.id))
-    expect(widgets[1].sourceNodeId).toBe(String(sharedNode.id))
-  })
-
-  test('widgets getter excludes connected-but-not-linked entries from fallback', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 204 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const connectedNode = new LGraphNode('ConnectedNode')
-    const connectedInput = connectedNode.addInput('string_a', '*')
-    connectedNode.addWidget('text', 'string_a', 'val', () => {})
-    connectedInput.widget = { name: 'string_a' }
-    subgraph.add(connectedNode)
-
-    subgraph.inputNode.slots[0].connect(connectedInput, connectedNode)
-
-    // Also add an independent store entry referencing the same widget
-    usePromotionStore().promote(subgraphNode.rootGraph.id, subgraphNode.id, {
-      sourceNodeId: String(connectedNode.id),
-      sourceWidgetName: 'string_a'
-    })
-
-    const widgets = promotedWidgets(subgraphNode)
-    // Connected widget appears as linked view, independent duplicate is excluded
-    expect(widgets).toHaveLength(1)
-    expect(widgets[0].sourceNodeId).toBe(String(connectedNode.id))
-  })
-
-  test('full linked coverage with valid fallback source widgets does NOT prune fallback', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 205 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNode = new LGraphNode('LinkedNode')
-    const linkedInput = linkedNode.addInput('string_a', '*')
-    linkedNode.addWidget('text', 'string_a', 'linked', () => {})
-    linkedInput.widget = { name: 'string_a' }
-    subgraph.add(linkedNode)
-
-    const independentNode = new LGraphNode('IndependentNode')
-    independentNode.addWidget('text', 'other_widget', 'independent', () => {})
-    subgraph.add(independentNode)
-
-    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-
-    usePromotionStore().setPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      [
-        { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'string_a' },
-        {
-          sourceNodeId: String(independentNode.id),
-          sourceWidgetName: 'other_widget'
-        }
-      ]
-    )
-
-    callSyncPromotions(subgraphNode)
-
-    const promotions = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-    // Fallback entry has valid source widget → not pruned despite full linked coverage
-    expect(promotions).toHaveLength(2)
-    expect(
-      promotions.some(
-        (e) =>
-          e.sourceNodeId === String(independentNode.id) &&
-          e.sourceWidgetName === 'other_widget'
-      )
-    ).toBe(true)
-  })
-
-  test('alias pruning removes fallback entries whose concrete resolution matches a linked entry', () => {
-    const nestedSubgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-
-    const concreteNode = new LGraphNode('ConcreteNode')
-    const concreteInput = concreteNode.addInput('string_a', '*')
-    concreteNode.addWidget('text', 'string_a', 'value', () => {})
-    concreteInput.widget = { name: 'string_a' }
-    nestedSubgraph.add(concreteNode)
-    nestedSubgraph.inputNode.slots[0].connect(concreteInput, concreteNode)
-
-    const hostSubgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-
-    const activeAlias = createTestSubgraphNode(nestedSubgraph, { id: 210 })
-    const staleAlias = createTestSubgraphNode(nestedSubgraph, { id: 211 })
-    hostSubgraph.add(activeAlias)
-    hostSubgraph.add(staleAlias)
-
-    activeAlias._internalConfigureAfterSlots()
-    staleAlias._internalConfigureAfterSlots()
-    hostSubgraph.inputNode.slots[0].connect(activeAlias.inputs[0], activeAlias)
-
-    const hostNode = createTestSubgraphNode(hostSubgraph, { id: 212 })
-    hostNode.graph?.add(hostNode)
-
-    usePromotionStore().setPromotions(hostNode.rootGraph.id, hostNode.id, [
-      { sourceNodeId: String(activeAlias.id), sourceWidgetName: 'string_a' },
-      { sourceNodeId: String(staleAlias.id), sourceWidgetName: 'string_a' }
-    ])
-
-    callSyncPromotions(hostNode)
-
-    const promotions = usePromotionStore().getPromotions(
-      hostNode.rootGraph.id,
-      hostNode.id
-    )
-    // Stale alias resolves to same concrete as linked entry → pruned
-    expect(promotions).toHaveLength(1)
-    expect(promotions[0].sourceNodeId).toBe(String(activeAlias.id))
-  })
-
-  test('alias pruning keeps fallback entries when concrete resolution fails', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 213 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNode = new LGraphNode('LinkedNode')
-    const linkedInput = linkedNode.addInput('string_a', '*')
-    linkedNode.addWidget('text', 'string_a', 'linked', () => {})
-    linkedInput.widget = { name: 'string_a' }
-    subgraph.add(linkedNode)
-
-    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-
-    // Add an entry referencing a non-existent node (resolution will fail)
-    usePromotionStore().setPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      [
-        { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'string_a' },
-        { sourceNodeId: '9999', sourceWidgetName: 'unknown_widget' }
-      ]
-    )
-
-    callSyncPromotions(subgraphNode)
-
-    const promotions = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-    // Entry for non-existent node is filtered by _getFallbackStoredEntries
-    // because the node doesn't exist, so _pruneStaleAliasFallbackEntries
-    // removes it. Only the linked entry survives.
-    expect(promotions).toStrictEqual([
-      { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'string_a' }
-    ])
-  })
-
-  test('widgets getter and syncPromotions agree on entry count for mixed scenario', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 214 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNode = new LGraphNode('LinkedNode')
-    const linkedInput = linkedNode.addInput('string_a', '*')
-    linkedNode.addWidget('text', 'string_a', 'linked', () => {})
-    linkedInput.widget = { name: 'string_a' }
-    subgraph.add(linkedNode)
-
-    const independentNode = new LGraphNode('IndependentNode')
-    independentNode.addWidget('text', 'indep_widget', 'independent', () => {})
-    subgraph.add(independentNode)
-
-    subgraph.inputNode.slots[0].connect(linkedInput, linkedNode)
-
-    usePromotionStore().setPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id,
-      [
-        { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'string_a' },
-        {
-          sourceNodeId: String(independentNode.id),
-          sourceWidgetName: 'indep_widget'
-        }
-      ]
-    )
-
-    callSyncPromotions(subgraphNode)
-
-    const promotions = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-    const widgets = promotedWidgets(subgraphNode)
-    expect(widgets).toHaveLength(promotions.length)
   })
 })
