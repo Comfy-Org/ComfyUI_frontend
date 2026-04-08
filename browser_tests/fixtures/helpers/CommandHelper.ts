@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { KeyCombo } from '../../../src/platform/keybindings/types'
+import type { KeyCombo } from '@/platform/keybindings/types'
 
 export class CommandHelper {
   constructor(private readonly page: Page) {}
@@ -41,6 +41,7 @@ export class CommandHelper {
           commands: [
             {
               id: commandId,
+              // oxlint-disable-next-line no-eval -- intentional: eval reconstructs a serialized function inside Playwright's page context
               function: eval(commandStr)
             }
           ]
@@ -76,6 +77,7 @@ export class CommandHelper {
           commands: [
             {
               id: commandId,
+              // oxlint-disable-next-line no-eval -- intentional: eval reconstructs a serialized function inside Playwright's page context
               function: eval(commandStr)
             }
           ]

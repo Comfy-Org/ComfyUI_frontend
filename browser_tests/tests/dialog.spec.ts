@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '../../src/platform/keybindings/types'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import type { Keybinding } from '@/platform/keybindings/types'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')

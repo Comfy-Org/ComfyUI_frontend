@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   createAssetHelper,
   withModels,
@@ -9,13 +9,13 @@ import {
   withAsset,
   withPagination,
   withUploadResponse
-} from '../fixtures/helpers/AssetHelper'
+} from '@e2e/fixtures/helpers/AssetHelper'
 import {
   STABLE_CHECKPOINT,
   STABLE_LORA,
   STABLE_INPUT_IMAGE,
   STABLE_OUTPUT
-} from '../fixtures/data/assetFixtures'
+} from '@e2e/fixtures/data/assetFixtures'
 
 test.describe('AssetHelper', () => {
   test.describe('operators and configuration', () => {

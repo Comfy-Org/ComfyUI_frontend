@@ -1,13 +1,13 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
-import { AppModeWidgetHelper } from './AppModeWidgetHelper'
-import { BuilderFooterHelper } from './BuilderFooterHelper'
-import { BuilderSaveAsHelper } from './BuilderSaveAsHelper'
-import { BuilderSelectHelper } from './BuilderSelectHelper'
-import { BuilderStepsHelper } from './BuilderStepsHelper'
+import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
+import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
+import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
+import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
+import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 
 export class AppModeHelper {
   readonly steps: BuilderStepsHelper
