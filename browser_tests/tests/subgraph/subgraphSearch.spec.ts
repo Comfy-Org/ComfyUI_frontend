@@ -23,7 +23,7 @@ async function exitSubgraphAndPublish(
     name: blueprintName
   })
 
-  await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+  await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5_000 })
   await comfyPage.toast.closeToasts(1)
 }
 
@@ -36,7 +36,7 @@ async function searchAndExpectResult(
   await expect(comfyPage.searchBox.input).toHaveCount(1)
   await comfyPage.searchBox.input.fill(searchTerm)
   await expect(comfyPage.searchBox.findResult(expectedResult)).toBeVisible({
-    timeout: 10000
+    timeout: 10_000
   })
 }
 
@@ -49,31 +49,16 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
     )
   })
 
-  test('Can set search aliases on subgraph and find via search', async ({
-    comfyPage
-  }) => {
-    const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
-
-    await comfyPage.command.executeCommand('Comfy.Subgraph.SetSearchAliases', {
-      aliases: 'qwerty,unicorn'
-    })
-
-    const blueprintName = `test-aliases-${Date.now()}`
-    await exitSubgraphAndPublish(comfyPage, subgraphNode, blueprintName)
-    await searchAndExpectResult(comfyPage, 'unicorn', blueprintName)
-  })
-
   test('Can set description on subgraph', async ({ comfyPage }) => {
     await createSubgraphAndNavigateInto(comfyPage)
 
     await comfyPage.command.executeCommand('Comfy.Subgraph.SetDescription', {
       description: 'This is a test description'
     })
-    // Verify the description was set on the subgraph's extra
     await expect
       .poll(() =>
         comfyPage.page.evaluate(() => {
-          const subgraph = window['app']!.canvas.subgraph
+          const subgraph = window.app!.canvas.subgraph
           return (subgraph?.extra as Record<string, unknown>)
             ?.BlueprintDescription
         })
@@ -81,7 +66,7 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
       .toBe('This is a test description')
   })
 
-  test('Search aliases persist after publish and reload', async ({
+  test('Published search aliases remain searchable after reload', async ({
     comfyPage
   }) => {
     const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
@@ -93,10 +78,9 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
     const blueprintName = `test-persist-${Date.now()}`
     await exitSubgraphAndPublish(comfyPage, subgraphNode, blueprintName)
 
-    // Reload the page to ensure aliases are persisted
     await comfyPage.page.reload()
     await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].extensionManager
+      () => window.app && window.app.extensionManager
     )
     await comfyPage.nextFrame()
 

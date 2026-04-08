@@ -116,6 +116,14 @@ export class WorkflowHelper {
     })
   }
 
+  async waitForActiveWorkflow(): Promise<void> {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        (window.app!.extensionManager as WorkspaceStore).workflow
+          .activeWorkflow !== null
+    )
+  }
+
   async getActiveWorkflowPath(): Promise<string | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow

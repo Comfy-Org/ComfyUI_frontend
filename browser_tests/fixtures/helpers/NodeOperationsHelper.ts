@@ -30,6 +30,12 @@ export class NodeOperationsHelper {
     })
   }
 
+  /** Remove all nodes from the graph and clean. */
+  async clearGraph() {
+    await this.comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
+    await this.comfyPage.command.executeCommand('Comfy.ClearWorkflow')
+  }
+
   /** Reads from `window.app.graph` (the root workflow graph). */
   async getNodeCount(): Promise<number> {
     return await this.page.evaluate(() => window.app!.graph.nodes.length)
