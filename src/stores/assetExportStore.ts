@@ -97,9 +97,13 @@ export const useAssetExportStore = defineStore('assetExport', () => {
   function handleAssetExport(data: AssetExportWsMessage) {
     const existing = exports.value.get(data.task_id)
 
+    // Ignore exports not tracked by this tab — the server broadcasts
+    // asset_export to every open tab, causing duplicate downloads otherwise.
+    if (!existing) return
+
     if (
-      (existing?.status === 'completed' || existing?.status === 'failed') &&
-      existing?.downloadTriggered
+      (existing.status === 'completed' || existing.status === 'failed') &&
+      existing.downloadTriggered
     ) {
       return
     }
