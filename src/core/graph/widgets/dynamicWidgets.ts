@@ -511,7 +511,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       lastInput
     )
   }
-  const removalChecks = groupInputs.slice((min - 1) * stride)
+  const removalChecks = groupInputs.slice(min * stride)
   let i
   for (i = removalChecks.length - stride; i >= 0; i -= stride) {
     if (removalChecks.slice(i, i + stride).some((inp) => inp.link)) break
@@ -597,6 +597,6 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
     prefix,
     inputSpecs: inputsV2
   }
-  for (let i = 0; i === 0 || i < min; i++)
+  for (let i = 0; i === 0 || i < min + 1; i++)
     addAutogrowGroup(i, inputSpecV2.name, node)
 }
