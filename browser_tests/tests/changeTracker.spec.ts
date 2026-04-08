@@ -33,29 +33,37 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
       expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
-      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(false)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.nodeOps.getFirstNodeRef())!
       await node.click('title')
       await node.click('collapse')
       await expect(node).toBeCollapsed()
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
-      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
-      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(true)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
-      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(2)
-      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(true)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(2)
+      await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       await comfyPage.keyboard.undo()
       await expect(node).not.toBeBypassed()
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(true)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
       await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(1)
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
 
       await comfyPage.keyboard.undo()
       await expect(node).not.toBeCollapsed()
