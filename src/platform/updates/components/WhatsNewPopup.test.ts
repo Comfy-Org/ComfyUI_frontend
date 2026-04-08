@@ -1,5 +1,6 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container */
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -62,10 +63,8 @@ vi.mock('../common/releaseStore', () => ({
 }))
 
 describe('WhatsNewPopup', () => {
-  let wrapper: VueWrapper
-
-  const mountComponent = (props = {}) => {
-    return mount(WhatsNewPopup, {
+  const renderComponent = (props = {}) => {
+    return render(WhatsNewPopup, {
       global: {
         plugins: [PrimeVue],
         components: { Button },
@@ -75,7 +74,6 @@ describe('WhatsNewPopup', () => {
           }
         },
         stubs: {
-          // Stub Lucide icons
           'i-lucide-x': true,
           'i-lucide-external-link': true
         }
@@ -86,7 +84,6 @@ describe('WhatsNewPopup', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset store state
     mockReleaseStore.recentRelease = null
     mockReleaseStore.shouldShowPopup = false
     mockReleaseStore.releases = []
@@ -101,14 +98,18 @@ describe('WhatsNewPopup', () => {
       content: '# Test Release\n\nSome content'
     } as ReleaseNote
 
-    wrapper = mountComponent()
-    expect(wrapper.find('.whats-new-popup').exists()).toBe(true)
+    const { container } = renderComponent()
+    /* eslint-disable testing-library/no-node-access */
+    expect(container.querySelector('.whats-new-popup')).not.toBeNull()
+    /* eslint-enable testing-library/no-node-access */
   })
 
   it('does not render when shouldShow is false', () => {
     mockReleaseStore.shouldShowPopup = false
-    wrapper = mountComponent()
-    expect(wrapper.find('.whats-new-popup').exists()).toBe(false)
+    const { container } = renderComponent()
+    /* eslint-disable testing-library/no-node-access */
+    expect(container.querySelector('.whats-new-popup')).toBeNull()
+    /* eslint-enable testing-library/no-node-access */
   })
 
   it('calls handleWhatsNewSeen when close button is clicked', async () => {
@@ -118,10 +119,10 @@ describe('WhatsNewPopup', () => {
       content: '# Test Release'
     } as ReleaseNote
 
-    wrapper = mountComponent()
+    const user = userEvent.setup()
+    renderComponent()
 
-    const closeButton = wrapper.findComponent(Button)
-    await closeButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: /close/i }))
 
     expect(mockReleaseStore.handleWhatsNewSeen).toHaveBeenCalledWith('1.2.3')
   })
@@ -133,10 +134,10 @@ describe('WhatsNewPopup', () => {
       content: '# Test Release'
     } as ReleaseNote
 
-    wrapper = mountComponent()
+    renderComponent()
 
-    const learnMoreLink = wrapper.find('.learn-more-link')
-    expect(learnMoreLink.attributes('href')).toContain(
+    const learnMoreLink = screen.getByRole('link')
+    expect(learnMoreLink.getAttribute('href')).toContain(
       'docs.comfy.org/changelog'
     )
   })
@@ -148,11 +149,11 @@ describe('WhatsNewPopup', () => {
       content: ''
     } as ReleaseNote
 
-    wrapper = mountComponent()
+    const { container } = renderComponent()
 
-    // Should render fallback content
-    const contentElement = wrapper.find('.content-text')
-    expect(contentElement.exists()).toBe(true)
+    /* eslint-disable testing-library/no-node-access */
+    expect(container.querySelector('.content-text')).not.toBeNull()
+    /* eslint-enable testing-library/no-node-access */
   })
 
   it('emits whats-new-dismissed event when popup is closed', async () => {
@@ -162,30 +163,29 @@ describe('WhatsNewPopup', () => {
       content: '# Test Release'
     } as ReleaseNote
 
-    wrapper = mountComponent()
+    const onDismissed = vi.fn()
+    const user = userEvent.setup()
+    renderComponent({ 'onWhats-new-dismissed': onDismissed })
 
-    // Call the close method directly instead of triggering DOM event
-    await (
-      wrapper.vm as typeof wrapper.vm & { closePopup: () => Promise<void> }
-    ).closePopup()
+    await user.click(screen.getByRole('button', { name: /close/i }))
 
-    expect(wrapper.emitted('whats-new-dismissed')).toBeTruthy()
+    expect(onDismissed).toHaveBeenCalled()
   })
 
   it('fetches releases on mount when not already loaded', async () => {
     mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.releases = [] // Empty releases array
+    mockReleaseStore.releases = []
 
-    wrapper = mountComponent()
+    renderComponent()
 
     expect(mockReleaseStore.fetchReleases).toHaveBeenCalled()
   })
 
   it('does not fetch releases when already loaded', async () => {
     mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.releases = [{ version: '1.0.0' } as ReleaseNote] // Non-empty releases array
+    mockReleaseStore.releases = [{ version: '1.0.0' } as ReleaseNote]
 
-    wrapper = mountComponent()
+    renderComponent()
 
     expect(mockReleaseStore.fetchReleases).not.toHaveBeenCalled()
   })
@@ -205,9 +205,8 @@ describe('WhatsNewPopup', () => {
       content: '# Original Title\n\nContent'
     } as ReleaseNote
 
-    wrapper = mountComponent()
+    renderComponent()
 
-    // Should call markdown renderer with original content (no modification)
     expect(mockMarkdownRenderer).toHaveBeenCalledWith(
       '# Original Title\n\nContent'
     )

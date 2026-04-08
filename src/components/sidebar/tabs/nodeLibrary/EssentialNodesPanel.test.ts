@@ -1,5 +1,7 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { nextTick, ref } from 'vue'
+/* eslint-disable testing-library/no-node-access */
+/* eslint-disable testing-library/no-container */
+import { render, waitFor } from '@testing-library/vue'
+import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -80,7 +82,7 @@ describe('EssentialNodesPanel', () => {
     }
   }
 
-  function mountComponent(
+  function renderComponent(
     root = createMockRoot(),
     expandedKeys: string[] = [],
     flatNodes: RenderedTreeExplorerNode<ComfyNodeDefImpl>[] = []
@@ -93,7 +95,7 @@ describe('EssentialNodesPanel', () => {
         return { root, flatNodes, keys }
       }
     }
-    return mount(WrapperComponent, {
+    return render(WrapperComponent, {
       global: {
         stubs: {
           Teleport: true,
@@ -112,6 +114,9 @@ describe('EssentialNodesPanel', () => {
           },
           CollapsibleContent: {
             template: '<div class="collapsible-content"><slot /></div>'
+          },
+          EssentialNodeCard: {
+            template: '<div data-testid="essential-node-card" />'
           }
         }
       }
@@ -120,54 +125,54 @@ describe('EssentialNodesPanel', () => {
 
   describe('folder rendering', () => {
     it('should render all top-level folders', () => {
-      const wrapper = mountComponent()
-      const triggers = wrapper.findAll('.collapsible-trigger')
-      expect(triggers).toHaveLength(3)
+      const { container } = renderComponent()
+      expect(container.querySelectorAll('.collapsible-trigger')).toHaveLength(3)
     })
 
     it('should display folder labels', () => {
-      const wrapper = mountComponent()
-      expect(wrapper.text()).toContain('images')
-      expect(wrapper.text()).toContain('video')
-      expect(wrapper.text()).toContain('audio')
+      const { container } = renderComponent()
+      expect(container.textContent).toContain('images')
+      expect(container.textContent).toContain('video')
+      expect(container.textContent).toContain('audio')
     })
   })
 
   describe('default expansion', () => {
     it('should expand all folders by default when expandedKeys is empty', async () => {
-      const wrapper = mountComponent(createMockRoot(), [])
-      await nextTick()
-      await flushPromises()
-      await nextTick()
+      const { container } = renderComponent(createMockRoot(), [])
 
-      const roots = wrapper.findAll('.collapsible-root')
-      expect(roots[0].attributes('data-state')).toBe('open')
-      expect(roots[1].attributes('data-state')).toBe('open')
-      expect(roots[2].attributes('data-state')).toBe('open')
+      await waitFor(() => {
+        const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots[0].getAttribute('data-state')).toBe('open')
+        expect(roots[1].getAttribute('data-state')).toBe('open')
+        expect(roots[2].getAttribute('data-state')).toBe('open')
+      })
     })
 
     it('should respect provided expandedKeys', async () => {
-      const wrapper = mountComponent(createMockRoot(), ['folder-audio'])
-      await nextTick()
+      const { container } = renderComponent(createMockRoot(), ['folder-audio'])
 
-      const roots = wrapper.findAll('.collapsible-root')
-      expect(roots[0].attributes('data-state')).toBe('closed')
-      expect(roots[1].attributes('data-state')).toBe('closed')
-      expect(roots[2].attributes('data-state')).toBe('open')
+      await waitFor(() => {
+        const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots[0].getAttribute('data-state')).toBe('closed')
+        expect(roots[1].getAttribute('data-state')).toBe('closed')
+        expect(roots[2].getAttribute('data-state')).toBe('open')
+      })
     })
 
     it('should expand all provided keys', async () => {
-      const wrapper = mountComponent(createMockRoot(), [
+      const { container } = renderComponent(createMockRoot(), [
         'folder-images',
         'folder-video',
         'folder-audio'
       ])
-      await nextTick()
 
-      const roots = wrapper.findAll('.collapsible-root')
-      expect(roots[0].attributes('data-state')).toBe('open')
-      expect(roots[1].attributes('data-state')).toBe('open')
-      expect(roots[2].attributes('data-state')).toBe('open')
+      await waitFor(() => {
+        const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots[0].getAttribute('data-state')).toBe('open')
+        expect(roots[1].getAttribute('data-state')).toBe('open')
+        expect(roots[2].getAttribute('data-state')).toBe('open')
+      })
     })
   })
 
@@ -187,21 +192,22 @@ describe('EssentialNodesPanel', () => {
         ]
       }
 
-      const wrapper = mountComponent(root, [])
-      await nextTick()
-      await flushPromises()
-      await nextTick()
+      const { container } = renderComponent(root, [])
 
-      const roots = wrapper.findAll('.collapsible-root')
-      expect(roots).toHaveLength(1)
-      expect(roots[0].attributes('data-state')).toBe('open')
+      await waitFor(() => {
+        const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots).toHaveLength(1)
+        expect(roots[0].getAttribute('data-state')).toBe('open')
+      })
     })
   })
 
   describe('node cards', () => {
     it('should render node cards for each node in expanded folders', () => {
-      const wrapper = mountComponent(createMockRoot(), ['folder-images'])
-      const cards = wrapper.findAllComponents({ name: 'EssentialNodeCard' })
+      const { container } = renderComponent(createMockRoot(), ['folder-images'])
+      const cards = container.querySelectorAll(
+        '[data-testid="essential-node-card"]'
+      )
       expect(cards.length).toBeGreaterThanOrEqual(2)
     })
   })
@@ -213,11 +219,13 @@ describe('EssentialNodesPanel', () => {
         createMockNode('LoadImage'),
         createMockNode('SaveImage')
       ]
-      const wrapper = mountComponent(createMockRoot(), [], flatNodes)
+      const { container } = renderComponent(createMockRoot(), [], flatNodes)
 
-      expect(wrapper.findAll('.collapsible-root')).toHaveLength(0)
+      expect(container.querySelectorAll('.collapsible-root')).toHaveLength(0)
 
-      const cards = wrapper.findAllComponents({ name: 'EssentialNodeCard' })
+      const cards = container.querySelectorAll(
+        '[data-testid="essential-node-card"]'
+      )
       expect(cards).toHaveLength(3)
     })
   })
