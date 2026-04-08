@@ -1,16 +1,16 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../../fixtures/ComfyPage'
-import type { PromotedWidgetEntry } from '../../helpers/promotedWidgets'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { PromotedWidgetEntry } from '@e2e/helpers/promotedWidgets'
 
-import { comfyPageFixture as test, comfyExpect } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
-import { TestIds } from '../../fixtures/selectors'
+import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   getPromotedWidgets,
   getPromotedWidgetNames,
   getPromotedWidgetCount
-} from '../../helpers/promotedWidgets'
+} from '@e2e/helpers/promotedWidgets'
 
 const expectPromotedWidgetsToResolveToInteriorNodes = async (
   comfyPage: ComfyPage,

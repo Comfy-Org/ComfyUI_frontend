@@ -2,7 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
-import { NodeBadgeMode } from '../../src/types/nodeSource'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
 import { ComfyTemplates } from '@e2e/helpers/templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -45,7 +45,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
 

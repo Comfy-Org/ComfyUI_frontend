@@ -3,8 +3,8 @@ import type { Page } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Error overlay See Errors flow', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

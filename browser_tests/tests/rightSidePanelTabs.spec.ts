@@ -1,8 +1,8 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

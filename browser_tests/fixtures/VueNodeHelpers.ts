@@ -3,8 +3,8 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from './selectors'
-import { VueNodeFixture } from './utils/vueNodeFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
   constructor(private page: Page) {}

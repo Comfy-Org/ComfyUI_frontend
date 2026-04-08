@@ -1,14 +1,11 @@
 import type { Locator } from '@playwright/test'
 
-import type {
-  LGraph,
-  LGraphNode
-} from '../../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyPage } from '../ComfyPage'
-import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
-import type { Position, Size } from '../types'
-import { NodeReference } from '../utils/litegraphUtils'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { Position, Size } from '@e2e/fixtures/types'
+import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class NodeOperationsHelper {
   constructor(private comfyPage: ComfyPage) {}

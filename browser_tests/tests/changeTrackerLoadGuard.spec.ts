@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { WorkspaceStore } from '../types/globals'
+} from '@e2e/fixtures/ComfyPage'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.describe(
   'Change Tracker - isLoadingGraph guard',

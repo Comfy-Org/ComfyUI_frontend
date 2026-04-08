@@ -1,4 +1,4 @@
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export type PromotedWidgetEntry = [string, string]
 
