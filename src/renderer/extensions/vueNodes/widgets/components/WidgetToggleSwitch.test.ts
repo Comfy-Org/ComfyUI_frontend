@@ -1,8 +1,11 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable vue/no-unused-emit-declarations */
+/* eslint-disable testing-library/no-node-access */
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import ToggleSwitch from 'primevue/toggleswitch'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
@@ -26,6 +29,20 @@ const i18n = createI18n({
   }
 })
 
+const ToggleSwitchStub = defineComponent({
+  name: 'ToggleSwitch',
+  props: {
+    modelValue: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
+    ariaLabel: { type: String, default: '' }
+  },
+  emits: ['update:modelValue'],
+  template: `<div data-testid="toggle-switch" :data-model-value="String(modelValue)" :data-disabled="String(disabled)">
+    <button data-testid="toggle-switch-on" @click="$emit('update:modelValue', true)">on</button>
+    <button data-testid="toggle-switch-off" @click="$emit('update:modelValue', false)">off</button>
+  </div>`
+})
+
 describe('WidgetToggleSwitch Value Binding', () => {
   const createToggleWidget = (
     value: boolean = false,
@@ -43,157 +60,143 @@ describe('WidgetToggleSwitch Value Binding', () => {
   const mountComponent = (
     widget: SimplifiedWidget<boolean>,
     modelValue: boolean,
-    readonly = false
+    onModelUpdate?: (value: boolean | undefined) => void
   ) => {
-    return mount(WidgetToggleSwitch, {
+    const user = userEvent.setup()
+    const result = render(WidgetToggleSwitch, {
       props: {
         widget,
         modelValue,
-        readonly
+        ...(onModelUpdate ? { 'onUpdate:modelValue': onModelUpdate } : {})
       },
       global: {
         plugins: [PrimeVue, i18n],
-        components: { ToggleSwitch, ToggleGroup, ToggleGroupItem }
+        stubs: { ToggleSwitch: ToggleSwitchStub },
+        components: { ToggleGroup, ToggleGroupItem }
       }
     })
+    return { ...result, user }
   }
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when toggled from false to true', async () => {
       const widget = createToggleWidget(false)
-      const wrapper = mountComponent(widget, false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
-      await toggle.setValue(true)
+      await user.click(screen.getByTestId('toggle-switch-on'))
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(true)
+      expect(onModelUpdate).toHaveBeenCalledWith(true)
     })
 
     it('emits Vue event when toggled from true to false', async () => {
       const widget = createToggleWidget(true)
-      const wrapper = mountComponent(widget, true)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, true, onModelUpdate)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
-      await toggle.setValue(false)
+      await user.click(screen.getByTestId('toggle-switch-off'))
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(false)
+      expect(onModelUpdate).toHaveBeenCalledWith(false)
     })
 
     it('handles value changes gracefully', async () => {
       const widget = createToggleWidget(false)
-      const wrapper = mountComponent(widget, false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
-      await toggle.setValue(true)
-      await toggle.setValue(false)
+      await user.click(screen.getByTestId('toggle-switch-on'))
+      await user.click(screen.getByTestId('toggle-switch-off'))
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toHaveLength(2)
-      expect(emitted![0]).toContain(true)
-      expect(emitted![1]).toContain(false)
+      expect(onModelUpdate).toHaveBeenCalledTimes(2)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(1, true)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(2, false)
     })
   })
 
   describe('Component Rendering', () => {
     it('renders toggle switch component', () => {
       const widget = createToggleWidget(false)
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
-        true
-      )
+      expect(screen.getByTestId('toggle-switch')).toBeDefined()
     })
 
     it('displays correct initial state for false', () => {
       const widget = createToggleWidget(false)
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
-      expect(toggle.props('modelValue')).toBe(false)
+      expect(
+        screen.getByTestId('toggle-switch').getAttribute('data-model-value')
+      ).toBe('false')
     })
 
     it('displays correct initial state for true', () => {
       const widget = createToggleWidget(true)
-      const wrapper = mountComponent(widget, true)
+      mountComponent(widget, true)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
-      expect(toggle.props('modelValue')).toBe(true)
+      expect(
+        screen.getByTestId('toggle-switch').getAttribute('data-model-value')
+      ).toBe('true')
     })
   })
 
   describe('Multiple Value Changes', () => {
     it('handles rapid toggling correctly', async () => {
       const widget = createToggleWidget(false)
-      const wrapper = mountComponent(widget, false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
+      await user.click(screen.getByTestId('toggle-switch-on'))
+      await user.click(screen.getByTestId('toggle-switch-off'))
+      await user.click(screen.getByTestId('toggle-switch-on'))
 
-      await toggle.setValue(true)
-      await toggle.setValue(false)
-      await toggle.setValue(true)
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toHaveLength(3)
-      expect(emitted![0]).toContain(true)
-      expect(emitted![1]).toContain(false)
-      expect(emitted![2]).toContain(true)
+      expect(onModelUpdate).toHaveBeenCalledTimes(3)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(1, true)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(2, false)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(3, true)
     })
 
     it('maintains state consistency during multiple changes', async () => {
       const widget = createToggleWidget(false)
-      const wrapper = mountComponent(widget, false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const toggle = wrapper.findComponent({ name: 'ToggleSwitch' })
+      await user.click(screen.getByTestId('toggle-switch-on'))
+      await user.click(screen.getByTestId('toggle-switch-off'))
+      await user.click(screen.getByTestId('toggle-switch-on'))
+      await user.click(screen.getByTestId('toggle-switch-off'))
 
-      await toggle.setValue(true)
-      await toggle.setValue(false)
-      await toggle.setValue(true)
-      await toggle.setValue(false)
-
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toHaveLength(4)
-      expect(emitted![0]).toContain(true)
-      expect(emitted![1]).toContain(false)
-      expect(emitted![2]).toContain(true)
-      expect(emitted![3]).toContain(false)
+      expect(onModelUpdate).toHaveBeenCalledTimes(4)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(1, true)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(2, false)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(3, true)
+      expect(onModelUpdate).toHaveBeenNthCalledWith(4, false)
     })
   })
 
   describe('Label Display (label_on/label_off)', () => {
     it('renders ToggleGroup when labels are provided', () => {
       const widget = createToggleWidget(false, { on: 'inside', off: 'outside' })
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      expect(wrapper.findComponent({ name: 'ToggleGroupRoot' }).exists()).toBe(
-        true
-      )
-      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
-        false
-      )
+      expect(screen.getByRole('group')).toBeDefined()
+      expect(screen.queryByTestId('toggle-switch')).toBeNull()
     })
 
     it('renders ToggleSwitch when no labels are provided', () => {
       const widget = createToggleWidget(false, {})
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
-        true
-      )
-      expect(wrapper.findComponent({ name: 'ToggleGroupRoot' }).exists()).toBe(
-        false
-      )
+      expect(screen.getByTestId('toggle-switch')).toBeDefined()
+      expect(screen.queryByRole('group')).toBeNull()
     })
 
     it('displays both on and off labels in ToggleGroup', () => {
       const widget = createToggleWidget(false, { on: 'inside', off: 'outside' })
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      expect(wrapper.text()).toContain('inside')
-      expect(wrapper.text()).toContain('outside')
+      expect(screen.getByText('inside')).toBeDefined()
+      expect(screen.getByText('outside')).toBeDefined()
     })
 
     it('selects correct option based on boolean value (false)', () => {
@@ -201,10 +204,12 @@ describe('WidgetToggleSwitch Value Binding', () => {
         on: 'enabled',
         off: 'disabled'
       })
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroupRoot' })
-      expect(toggleGroup.props('modelValue')).toBe('off')
+      const offButton = screen.getByText('disabled')
+      const onButton = screen.getByText('enabled')
+      expect(offButton.closest('button')).toHaveAttribute('data-state', 'on')
+      expect(onButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
     it('selects correct option based on boolean value (true)', () => {
@@ -212,10 +217,12 @@ describe('WidgetToggleSwitch Value Binding', () => {
         on: 'enabled',
         off: 'disabled'
       })
-      const wrapper = mountComponent(widget, true)
+      mountComponent(widget, true)
 
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroupRoot' })
-      expect(toggleGroup.props('modelValue')).toBe('on')
+      const offButton = screen.getByText('disabled')
+      const onButton = screen.getByText('enabled')
+      expect(onButton.closest('button')).toHaveAttribute('data-state', 'on')
+      expect(offButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
     it('emits true when "on" option is clicked', async () => {
@@ -223,15 +230,12 @@ describe('WidgetToggleSwitch Value Binding', () => {
         on: 'enabled',
         off: 'disabled'
       })
-      const wrapper = mountComponent(widget, false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const buttons = wrapper.findAll('button')
-      const onButton = buttons.find((b) => b.text() === 'enabled')
-      await onButton!.trigger('click')
+      await user.click(screen.getByText('enabled'))
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(true)
+      expect(onModelUpdate).toHaveBeenCalledWith(true)
     })
 
     it('emits false when "off" option is clicked', async () => {
@@ -239,40 +243,34 @@ describe('WidgetToggleSwitch Value Binding', () => {
         on: 'enabled',
         off: 'disabled'
       })
-      const wrapper = mountComponent(widget, true)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, true, onModelUpdate)
 
-      const buttons = wrapper.findAll('button')
-      const offButton = buttons.find((b) => b.text() === 'disabled')
-      await offButton!.trigger('click')
+      await user.click(screen.getByText('disabled'))
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(false)
+      expect(onModelUpdate).toHaveBeenCalledWith(false)
     })
 
     it('falls back to i18n defaults when only partial options provided', () => {
       const widgetOnOnly = createToggleWidget(true, { on: 'active' })
-      const wrapperOn = mountComponent(widgetOnOnly, true)
-      expect(wrapperOn.text()).toContain('active')
-      expect(wrapperOn.text()).toContain('false')
+      const { unmount: unmountFirst } = mountComponent(widgetOnOnly, true)
+      expect(screen.getByText('active')).toBeDefined()
+      expect(screen.getByText('false')).toBeDefined()
+      unmountFirst()
 
       const widgetOffOnly = createToggleWidget(false, { off: 'inactive' })
-      const wrapperOff = mountComponent(widgetOffOnly, false)
-      expect(wrapperOff.text()).toContain('inactive')
-      expect(wrapperOff.text()).toContain('true')
+      mountComponent(widgetOffOnly, false)
+      expect(screen.getByText('inactive')).toBeDefined()
+      expect(screen.getByText('true')).toBeDefined()
     })
 
     it('treats empty string labels as explicit values', () => {
       const widget = createToggleWidget(false, { on: '', off: 'disabled' })
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      expect(wrapper.findComponent({ name: 'ToggleGroupRoot' }).exists()).toBe(
-        true
-      )
-      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
-        false
-      )
-      expect(wrapper.text()).not.toContain('true')
+      expect(screen.getByRole('group')).toBeDefined()
+      expect(screen.queryByTestId('toggle-switch')).toBeNull()
+      expect(screen.queryByText('true')).toBeNull()
     })
 
     it('disables ToggleGroup when read_only option is set', () => {
@@ -281,21 +279,22 @@ describe('WidgetToggleSwitch Value Binding', () => {
         off: 'no',
         read_only: true
       })
-      const wrapper = mountComponent(widget, false)
+      mountComponent(widget, false)
 
-      const toggleGroup = wrapper.findComponent({ name: 'ToggleGroupRoot' })
-      expect(toggleGroup.props('disabled')).toBe(true)
+      const buttons = screen.getAllByRole('button')
+      for (const button of buttons) {
+        expect(button).toBeDisabled()
+      }
     })
 
     it('does not emit when clicking already-selected option', async () => {
       const widget = createToggleWidget(false, { on: 'yes', off: 'no' })
-      const wrapper = mountComponent(widget, false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
 
-      const buttons = wrapper.findAll('button')
-      const offButton = buttons.find((b) => b.text() === 'no')
-      await offButton!.trigger('click')
+      await user.click(screen.getByText('no'))
 
-      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+      expect(onModelUpdate).not.toHaveBeenCalled()
     })
   })
 })
