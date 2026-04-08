@@ -1,16 +1,33 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { mockSystemStats } from '../../fixtures/data/systemStats'
+
+const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
 test.describe('Settings dialog', { tag: '@ui' }, () => {
-  test('About panel shows version badges', async ({ comfyPage }) => {
+  test('About panel renders mocked version from server', async ({
+    comfyPage
+  }) => {
+    const stats = {
+      ...mockSystemStats,
+      system: {
+        ...mockSystemStats.system,
+        comfyui_version: MOCK_COMFYUI_VERSION
+      }
+    }
+    await comfyPage.page.route('**/system_stats**', async (route) => {
+      await route.fulfill({ json: stats })
+    })
+    await comfyPage.setup()
+
     const dialog = comfyPage.settingDialog
     await dialog.open()
     await dialog.goToAboutPanel()
 
     const aboutPanel = comfyPage.page.getByTestId('about-panel')
     await expect(aboutPanel).toBeVisible()
-    await expect(aboutPanel.locator('.about-badge').first()).toBeVisible()
+    await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
     await expect(aboutPanel).toContainText('ComfyUI_frontend')
   })
 
