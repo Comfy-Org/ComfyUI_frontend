@@ -24,9 +24,9 @@ async function openMoreOptions(comfyPage: ComfyPage) {
   await moreOptionsBtn.click({ force: true })
   await comfyPage.nextFrame()
 
-  await expect(
-    comfyPage.page.getByText('Rename', { exact: true })
-  ).toBeVisible()
+  // Wait for the context menu to appear by checking for 'Copy', which is
+  // always present regardless of single or multi-node selection.
+  await expect(comfyPage.page.getByText('Copy', { exact: true })).toBeVisible()
 }
 
 test.beforeEach(async ({ comfyPage }) => {
