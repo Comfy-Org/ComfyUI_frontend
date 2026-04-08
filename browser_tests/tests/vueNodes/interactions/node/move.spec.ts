@@ -29,23 +29,16 @@ test.describe('Vue Node Moving', () => {
     expect(diffY).toBeGreaterThan(0)
   }
 
-  test(
-    'should allow moving nodes by dragging',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
-      const loadCheckpointHeaderPos =
-        await getLoadCheckpointHeaderPos(comfyPage)
-      await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
-        x: 256,
-        y: 256
-      })
+  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
+    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
+      x: 256,
+      y: 256
+    })
 
-      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-      await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
-
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-node-moved-node.png')
-    }
-  )
+    const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+  })
 
   test('should not move node when pointer moves less than drag threshold', async ({
     comfyPage

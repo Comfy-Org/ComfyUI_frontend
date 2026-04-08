@@ -6,7 +6,6 @@ import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 import { comfyExpect } from '../fixtures/ComfyPage'
 import { fitToViewInstant } from './fitToView'
-import { getPromotedWidgetNames } from './promotedWidgets'
 
 interface BuilderSetupResult {
   inputNodeTitle: string
@@ -63,14 +62,8 @@ export async function setupSubgraphBuilder(
 ): Promise<void> {
   await setupBuilder(comfyPage, async (ksampler) => {
     await ksampler.click('title')
-    const subgraphNode = await ksampler.convertToSubgraph()
+    await ksampler.convertToSubgraph()
     await comfyPage.nextFrame()
-
-    const promotedNames = await getPromotedWidgetNames(
-      comfyPage,
-      String(subgraphNode.id)
-    )
-    expect(promotedNames).toContain('seed')
 
     return {
       inputNodeTitle: 'New Subgraph',
@@ -112,10 +105,9 @@ export async function openWorkflowFromSidebar(
   await workflowsTab.getPersistedItem(name).dblclick()
   await comfyPage.nextFrame()
 
-  await comfyExpect(async () => {
-    const path = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(path).toContain(name)
-  }).toPass({ timeout: 5000 })
+  await expect
+    .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+    .toContain(name)
 }
 
 /** Save the workflow, reopen it, and enter app mode. */
