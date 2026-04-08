@@ -316,6 +316,9 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
       await route.fulfill({ json: MOCK_ALGOLIA_EMPTY })
     })
+    await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
+      await route.fulfill({ json: MOCK_ALGOLIA_EMPTY })
+    })
 
     await openManagerDialog(comfyPage)
 
@@ -330,9 +333,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
-  test('Sort dropdown is visible and changes sort order', async ({
-    comfyPage
-  }) => {
+  test('Sort dropdown is visible', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 
     const dialog = comfyPage.page.getByRole('dialog')
