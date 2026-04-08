@@ -49,7 +49,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    fireEvent.keyDown(tiles[1], { key: 'ArrowLeft', shiftKey: true })
+    await fireEvent.keyDown(tiles[1], { key: 'ArrowLeft', shiftKey: true })
 
     expect(onUpdateExampleImages).toHaveBeenCalled()
     const reordered = onUpdateExampleImages.mock.calls[0][0] as ExampleImage[]
@@ -63,7 +63,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    fireEvent.keyDown(tiles[1], { key: 'ArrowRight', shiftKey: true })
+    await fireEvent.keyDown(tiles[1], { key: 'ArrowRight', shiftKey: true })
 
     expect(onUpdateExampleImages).toHaveBeenCalled()
     const reordered = onUpdateExampleImages.mock.calls[0][0] as ExampleImage[]
@@ -77,7 +77,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    fireEvent.keyDown(tiles[0], { key: 'ArrowLeft', shiftKey: true })
+    await fireEvent.keyDown(tiles[0], { key: 'ArrowLeft', shiftKey: true })
 
     expect(onUpdateExampleImages).not.toHaveBeenCalled()
   })
@@ -89,7 +89,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
-    fireEvent.keyDown(tiles[2], { key: 'ArrowRight', shiftKey: true })
+    await fireEvent.keyDown(tiles[2], { key: 'ArrowRight', shiftKey: true })
 
     expect(onUpdateExampleImages).not.toHaveBeenCalled()
   })

@@ -141,7 +141,7 @@ describe('BaseTerminal', () => {
     mockTerminal.hasSelection.mockReturnValue(false)
     const { container } = renderBaseTerminal()
 
-    fireEvent.mouseEnter(container.firstElementChild!)
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
     const button = screen.getByRole('button')
@@ -159,7 +159,7 @@ describe('BaseTerminal', () => {
     selectionCallback()
     await nextTick()
 
-    fireEvent.mouseEnter(container.firstElementChild!)
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
     const button = screen.getByRole('button')
@@ -173,7 +173,7 @@ describe('BaseTerminal', () => {
 
     const { container } = renderBaseTerminal()
 
-    fireEvent.mouseEnter(container.firstElementChild!)
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
     const button = screen.getByRole('button')
@@ -194,7 +194,7 @@ describe('BaseTerminal', () => {
 
     const { container } = renderBaseTerminal()
 
-    fireEvent.mouseEnter(container.firstElementChild!)
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
     const button = screen.getByRole('button')
@@ -212,7 +212,7 @@ describe('BaseTerminal', () => {
 
     const { container } = renderBaseTerminal()
 
-    fireEvent.mouseEnter(container.firstElementChild!)
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
     const button = screen.getByRole('button')

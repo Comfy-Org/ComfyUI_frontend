@@ -72,7 +72,7 @@ describe('VideoPreview', () => {
 
       // Simulate initial video load
       const videoEl = container.querySelector('video') as HTMLVideoElement
-      fireEvent.loadedData(videoEl)
+      await fireEvent.loadedData(videoEl)
       await nextTick()
       expect(
         container.querySelector('[aria-busy="true"]')
@@ -100,7 +100,7 @@ describe('VideoPreview', () => {
 
       // Simulate initial video load
       const videoEl = container.querySelector('video') as HTMLVideoElement
-      fireEvent.loadedData(videoEl)
+      await fireEvent.loadedData(videoEl)
       await nextTick()
       expect(
         container.querySelector('[aria-busy="true"]')

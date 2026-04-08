@@ -123,7 +123,7 @@ describe('MissingModelUrlInput', () => {
       renderComponent()
       const input = screen.getByRole('textbox') as HTMLInputElement
       input.value = 'https://example.com/model.safetensors'
-      fireEvent.input(input)
+      await fireEvent.input(input)
       expect(mockHandleUrlInput).toHaveBeenCalledWith(
         MODEL_KEY,
         'https://example.com/model.safetensors'

@@ -225,7 +225,7 @@ describe('ImagePreview', () => {
       await switchToGallery(user)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -240,10 +240,10 @@ describe('ImagePreview', () => {
       await switchToGallery(user)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
-      fireEvent.keyDown(preview, { key: 'ArrowLeft' })
+      await fireEvent.keyDown(preview, { key: 'ArrowLeft' })
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -258,9 +258,9 @@ describe('ImagePreview', () => {
       await switchToGallery(user)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -275,7 +275,7 @@ describe('ImagePreview', () => {
       await switchToGallery(user)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowLeft' })
+      await fireEvent.keyDown(preview, { key: 'ArrowLeft' })
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -290,10 +290,10 @@ describe('ImagePreview', () => {
       await switchToGallery(user)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
-      fireEvent.keyDown(preview, { key: 'Home' })
+      await fireEvent.keyDown(preview, { key: 'Home' })
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -308,7 +308,7 @@ describe('ImagePreview', () => {
       await switchToGallery(user)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'End' })
+      await fireEvent.keyDown(preview, { key: 'End' })
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
@@ -326,7 +326,7 @@ describe('ImagePreview', () => {
       expect(gridThumbnails).toHaveLength(2)
 
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
       expect(screen.queryByRole('region')).not.toBeInTheDocument()
@@ -339,7 +339,7 @@ describe('ImagePreview', () => {
 
       const initialSrc = screen.getByRole('img').getAttribute('src')
       const preview = container.querySelector('.image-preview') as HTMLElement
-      fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
       await nextTick()
 
       expect(screen.getByRole('img')).toHaveAttribute('src', initialSrc!)
@@ -446,7 +446,7 @@ describe('ImagePreview', () => {
         await switchToGallery(user)
 
         // Simulate initial image load
-        fireEvent.load(screen.getByRole('img'))
+        await fireEvent.load(screen.getByRole('img'))
         await nextTick()
         expect(
           container.querySelector('[aria-busy="true"]')
@@ -485,7 +485,7 @@ describe('ImagePreview', () => {
         void user
 
         // Simulate image load completing
-        fireEvent.load(screen.getByRole('img'))
+        await fireEvent.load(screen.getByRole('img'))
         await nextTick()
 
         // Verify loader is hidden after load
@@ -522,7 +522,7 @@ describe('ImagePreview', () => {
         })
 
         // Simulate image load completing
-        fireEvent.load(screen.getByRole('img'))
+        await fireEvent.load(screen.getByRole('img'))
         await nextTick()
 
         // Verify loader is hidden

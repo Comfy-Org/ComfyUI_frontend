@@ -297,7 +297,7 @@ describe('DisplayCarousel Accessibility', () => {
   it('shows controls on focusin for keyboard users', async () => {
     const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     expect(
@@ -311,11 +311,11 @@ describe('DisplayCarousel Accessibility', () => {
   it('hides controls on focusout when focus leaves component', async () => {
     const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     // Focus leaves the image container entirely
-    fireEvent.focusOut(findImageContainer(container), {
+    await fireEvent.focusOut(findImageContainer(container), {
       relatedTarget: null
     })
     await nextTick()
@@ -332,7 +332,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const user = userEvent.setup()
 
     // Trigger focus on image container to reveal toggle button
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     const toggleBtn = screen.getByRole('button', {
@@ -351,7 +351,7 @@ describe('DisplayCarousel Grid Mode', () => {
   it('does not show grid toggle for single image', async () => {
     const { container } = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     expect(
@@ -364,7 +364,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const user = userEvent.setup()
 
     // Switch to grid via focus on image container
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
     await user.click(
       screen.getByRole('button', { name: 'Switch to grid view' })
@@ -385,7 +385,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const user = userEvent.setup()
 
     // Show controls
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     const toggleBtn = screen.getByRole('button', {
@@ -402,7 +402,7 @@ describe('DisplayCarousel Grid Mode', () => {
     await user.click(gridButtons[0])
     await nextTick()
 
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     // Icon should still be undo-2
@@ -418,7 +418,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const user = userEvent.setup()
 
     // Switch to grid
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
     await user.click(
       screen.getByRole('button', { name: 'Switch to grid view' })
@@ -431,7 +431,7 @@ describe('DisplayCarousel Grid Mode', () => {
     await nextTick()
 
     // Hover to reveal controls
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     // Should still show grid view button (same icon always)
@@ -445,7 +445,7 @@ describe('DisplayCarousel Grid Mode', () => {
     const user = userEvent.setup()
 
     // Switch to grid via focus on image container
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
     await user.click(
       screen.getByRole('button', { name: 'Switch to grid view' })
@@ -473,7 +473,7 @@ describe('DisplayCarousel Grid Mode', () => {
     })
 
     // Switch to grid via focus on image container
-    fireEvent.focusIn(findImageContainer(container))
+    await fireEvent.focusIn(findImageContainer(container))
     await nextTick()
     const user = userEvent.setup()
     await user.click(
