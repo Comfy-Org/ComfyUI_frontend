@@ -145,6 +145,26 @@ export class BuilderSelectHelper {
     await this.comfyPage.nextFrame()
   }
 
+  /**
+   * Get the subtitle locator for a builder IoItem by its title text.
+   * Useful for asserting "Widget not visible" on disconnected inputs.
+   */
+  getInputItemSubtitle(title: string): Locator {
+    return this.page
+      .getByTestId(TestIds.builder.ioItem)
+      .filter({
+        has: this.page
+          .getByTestId(TestIds.builder.ioItemTitle)
+          .getByText(title, { exact: true })
+      })
+      .getByTestId(TestIds.builder.ioItemSubtitle)
+  }
+
+  /** All IoItem locators in the current step sidebar. */
+  get inputItems(): Locator {
+    return this.page.getByTestId(TestIds.builder.ioItem)
+  }
+
   /** All IoItem title locators in the inputs step sidebar. */
   get inputItemTitles(): Locator {
     return this.page.getByTestId(TestIds.builder.ioItemTitle)
