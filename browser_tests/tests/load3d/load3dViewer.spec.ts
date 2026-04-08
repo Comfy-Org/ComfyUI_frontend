@@ -30,6 +30,7 @@ test.describe('Load3D Viewer', () => {
     await fileChooser.setFiles(assetPath('cube.obj'))
     await uploadResponsePromise
 
+    await load3d.waitForWidgetValue(1, 'model_file', 'cube.obj')
     await load3d.waitForModelLoaded()
   })
 
