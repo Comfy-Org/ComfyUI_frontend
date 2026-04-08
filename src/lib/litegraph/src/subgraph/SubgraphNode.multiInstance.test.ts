@@ -41,7 +41,7 @@ beforeEach(() => {
 })
 
 describe('SubgraphNode multi-instance widget isolation', () => {
-  it('serializeValue returns per-instance values after configure', () => {
+  it('preserves per-instance widget values after configure', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
@@ -82,13 +82,13 @@ describe('SubgraphNode multi-instance widget isolation', () => {
       widgets_values: [20]
     })
 
-    // Each instance's promoted widget serializeValue (used by graphToPrompt)
-    // should return its own configured value, not the last-written shared value.
     const widgets1 = instance1.widgets!
     const widgets2 = instance2.widgets!
 
     expect(widgets1.length).toBeGreaterThan(0)
     expect(widgets2.length).toBeGreaterThan(0)
+    expect(widgets1[0].value).toBe(10)
+    expect(widgets2[0].value).toBe(20)
     expect(widgets1[0].serializeValue!(instance1, 0)).toBe(10)
     expect(widgets2[0].serializeValue!(instance2, 0)).toBe(20)
   })

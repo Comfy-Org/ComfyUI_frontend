@@ -156,6 +156,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    const instanceValue = this.subgraphNode._instanceWidgetValues.get(
+      this._instanceKey
+    )
+    if (instanceValue !== undefined)
+      return instanceValue as IBaseWidget['value']
+
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
