@@ -4,6 +4,7 @@ import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
 
 import { OutputHistoryComponent } from '../components/OutputHistory'
+import { AppModeWidgetHelper } from './AppModeWidgetHelper'
 import { BuilderFooterHelper } from './BuilderFooterHelper'
 import { BuilderSaveAsHelper } from './BuilderSaveAsHelper'
 import { BuilderSelectHelper } from './BuilderSelectHelper'
@@ -15,6 +16,7 @@ export class AppModeHelper {
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
   readonly outputHistory: OutputHistoryComponent
+  readonly widgets: AppModeWidgetHelper
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.steps = new BuilderStepsHelper(comfyPage)
@@ -22,10 +24,22 @@ export class AppModeHelper {
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.widgets = new AppModeWidgetHelper(comfyPage)
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  /** Enable the linear mode feature flag and top menu. */
+  async enableLinearMode() {
+    await this.page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        linear_toggle_enabled: true
+      }
+    })
+    await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   }
 
   /** Enter builder mode via the "Workflow actions" dropdown → "Build app". */
@@ -96,6 +110,13 @@ export class AppModeHelper {
       .getByRole('dialog')
       .filter({ has: this.page.getByRole('button', { name: 'All' }) })
       .first()
+  }
+
+  /** The Run button in the app mode footer. */
+  get runButton(): Locator {
+    return this.page
+      .getByTestId('linear-run-button')
+      .getByRole('button', { name: /run/i })
   }
 
   /**

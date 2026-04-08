@@ -26,13 +26,7 @@ async function reSaveAs(
 
 test.describe('Builder save flow', { tag: ['@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
     await comfyPage.settings.setSetting(
       'Comfy.AppBuilder.VueNodeSwitchDismissed',
       true

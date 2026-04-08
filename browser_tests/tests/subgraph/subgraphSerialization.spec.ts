@@ -334,12 +334,12 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
       await subgraphNode.navigateIntoSubgraph()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
   })
 

@@ -41,8 +41,9 @@ test.describe(
       await comfyPage.page.keyboard.press('Control+v')
       await comfyPage.nextFrame()
 
-      const finalNodeCount = await comfyPage.subgraph.getNodeCount()
-      expect(finalNodeCount).toBe(initialNodeCount + 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getNodeCount())
+        .toBe(initialNodeCount + 1)
     })
 
     test('Can undo and redo operations in subgraph', async ({ comfyPage }) => {
@@ -63,15 +64,17 @@ test.describe(
       await comfyPage.keyboard.undo()
       await comfyPage.nextFrame()
 
-      const afterUndoCount = await comfyPage.subgraph.getNodeCount()
-      expect(afterUndoCount).toBe(initialCount - 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getNodeCount())
+        .toBe(initialCount - 1)
 
       // Redo
       await comfyPage.keyboard.redo()
       await comfyPage.nextFrame()
 
-      const afterRedoCount = await comfyPage.subgraph.getNodeCount()
-      expect(afterRedoCount).toBe(initialCount)
+      await expect
+        .poll(() => comfyPage.subgraph.getNodeCount())
+        .toBe(initialCount)
     })
   }
 )
