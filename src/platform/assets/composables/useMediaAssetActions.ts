@@ -154,13 +154,22 @@ export function useMediaAssetActions() {
         if (getAssetType(asset) === 'output') {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
           const jobId = metadata?.jobId || asset.id
+          const outputCount = metadata?.outputCount
+
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
+
           // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
+          if (typeof outputCount === 'number') {
+            delete jobAssetNameFilters[jobId]
+          } else if (
+            metadata?.jobId &&
+            asset.name &&
+            !countedJobLevelIds.has(jobId)
+          ) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
             }
@@ -173,12 +182,13 @@ export function useMediaAssetActions() {
           // represents a single job-wide export of outputCount files. Once a
           // job has been counted at the job level, skip any further assets
           // from the same jobId so mixed selections don't double-count.
-          const outputCount = metadata?.outputCount
-          if (countedJobLevelIds.has(jobId)) {
+          if (typeof outputCount === 'number') {
+            if (!countedJobLevelIds.has(jobId)) {
+              countedJobLevelIds.add(jobId)
+              fileCount += outputCount
+            }
+          } else if (countedJobLevelIds.has(jobId)) {
             // already counted at the job level, ignore this asset
-          } else if (typeof outputCount === 'number') {
-            fileCount += outputCount
-            countedJobLevelIds.add(jobId)
           } else {
             fileCount += 1
           }

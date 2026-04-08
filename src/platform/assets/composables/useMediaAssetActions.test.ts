@@ -379,6 +379,22 @@ describe('useMediaAssetActions', () => {
         job2: ['img2.png']
       })
     })
+
+    it('should omit name filters when job-level and asset-level selections share a jobId', async () => {
+      const jobLevelAsset = createOutputAsset('a1', 'img1.png', 'job1', 3)
+      const assetLevelSelection = createOutputAsset('a2', 'img2.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([jobLevelAsset, assetLevelSelection])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.job_ids).toEqual(['job1'])
+      expect(payload.job_asset_name_filters).toBeUndefined()
+    })
   })
 
   describe('downloadMultipleAssets - export toast file count', () => {
