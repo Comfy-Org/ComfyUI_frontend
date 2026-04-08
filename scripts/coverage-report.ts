@@ -1,4 +1,3 @@
-// @ts-check
 import { existsSync, readFileSync } from 'node:fs'
 
 /**
@@ -25,8 +24,7 @@ let coveredFunctions = 0
 let totalBranches = 0
 let coveredBranches = 0
 
-/** @type {Map<string, { lines: number, covered: number }>} */
-const fileStats = new Map()
+const fileStats = new Map<string, { lines: number; covered: number }>()
 let currentFile = ''
 
 for (const line of lcov.split('\n')) {
@@ -55,14 +53,12 @@ for (const line of lcov.split('\n')) {
   }
 }
 
-/** @param {number} covered @param {number} total */
-function pct(covered, total) {
+function pct(covered: number, total: number): string {
   if (total === 0) return '—'
   return ((covered / total) * 100).toFixed(1) + '%'
 }
 
-/** @param {number} covered @param {number} total */
-function bar(covered, total) {
+function bar(covered: number, total: number): string {
   if (total === 0) return '—'
   const p = (covered / total) * 100
   if (p >= 80) return '🟢'
@@ -70,18 +66,18 @@ function bar(covered, total) {
   return '🔴'
 }
 
-const lines = []
-lines.push('## 🔬 E2E Coverage')
-lines.push('')
-lines.push('| Metric | Covered | Total | Pct | |')
-lines.push('|---|--:|--:|--:|---|')
-lines.push(
+const output: string[] = []
+output.push('## 🔬 E2E Coverage')
+output.push('')
+output.push('| Metric | Covered | Total | Pct | |')
+output.push('|---|--:|--:|--:|---|')
+output.push(
   `| Lines | ${coveredLines.toLocaleString()} | ${totalLines.toLocaleString()} | ${pct(coveredLines, totalLines)} | ${bar(coveredLines, totalLines)} |`
 )
-lines.push(
+output.push(
   `| Functions | ${coveredFunctions.toLocaleString()} | ${totalFunctions.toLocaleString()} | ${pct(coveredFunctions, totalFunctions)} | ${bar(coveredFunctions, totalFunctions)} |`
 )
-lines.push(
+output.push(
   `| Branches | ${coveredBranches.toLocaleString()} | ${totalBranches.toLocaleString()} | ${pct(coveredBranches, totalBranches)} | ${bar(coveredBranches, totalBranches)} |`
 )
 
@@ -90,7 +86,7 @@ const uncovered = [...fileStats.entries()]
   .filter(([, s]) => s.lines > 0)
   .map(([file, s]) => ({
     file: file.replace(/^.*\/src\//, 'src/'),
-    pct: s.lines > 0 ? (s.covered / s.lines) * 100 : 100,
+    pct: (s.covered / s.lines) * 100,
     missed: s.lines - s.covered
   }))
   .filter((f) => f.missed > 0)
@@ -98,17 +94,17 @@ const uncovered = [...fileStats.entries()]
   .slice(0, 10)
 
 if (uncovered.length > 0) {
-  lines.push('')
-  lines.push('<details>')
-  lines.push('<summary>Top 10 files by uncovered lines</summary>')
-  lines.push('')
-  lines.push('| File | Coverage | Missed |')
-  lines.push('|---|--:|--:|')
+  output.push('')
+  output.push('<details>')
+  output.push('<summary>Top 10 files by uncovered lines</summary>')
+  output.push('')
+  output.push('| File | Coverage | Missed |')
+  output.push('|---|--:|--:|')
   for (const f of uncovered) {
-    lines.push(`| \`${f.file}\` | ${f.pct.toFixed(1)}% | ${f.missed} |`)
+    output.push(`| \`${f.file}\` | ${f.pct.toFixed(1)}% | ${f.missed} |`)
   }
-  lines.push('')
-  lines.push('</details>')
+  output.push('')
+  output.push('</details>')
 }
 
-process.stdout.write(lines.join('\n') + '\n')
+process.stdout.write(output.join('\n') + '\n')
