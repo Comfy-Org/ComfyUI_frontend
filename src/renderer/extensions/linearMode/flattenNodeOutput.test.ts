@@ -11,7 +11,7 @@ function makeOutput(
 
 describe(flattenNodeOutput, () => {
   it('returns empty array for output with no known media types', () => {
-    const result = flattenNodeOutput(['1', makeOutput({ text: 'hello' })])
+    const result = flattenNodeOutput(['1', makeOutput({ unknown: 'hello' })])
     expect(result).toEqual([])
   })
 
