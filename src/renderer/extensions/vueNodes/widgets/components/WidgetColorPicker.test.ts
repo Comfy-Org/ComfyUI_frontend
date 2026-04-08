@@ -107,13 +107,6 @@ describe('WidgetColorPicker Value Binding', () => {
 
       expect(screen.getByTestId('layout-field')).toBeInTheDocument()
     })
-
-    it('uses default color when no value provided', () => {
-      const widget = createColorWidget('')
-      renderComponent(widget, '')
-
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
-    })
   })
 
   describe('Widget Layout Integration', () => {
@@ -137,18 +130,13 @@ describe('WidgetColorPicker Value Binding', () => {
   })
 
   describe('Edge Cases', () => {
-    it('handles empty color value', () => {
+    it('renders color picker with empty value', () => {
       const widget = createColorWidget('')
       renderComponent(widget, '')
 
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
-    })
-
-    it('handles widget with no options', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
+      const input = screen.getByTestId('color-picker-input')
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveValue('#000000')
     })
   })
 })

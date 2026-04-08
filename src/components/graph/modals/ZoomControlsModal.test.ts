@@ -6,14 +6,32 @@ import { createI18n } from 'vue-i18n'
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
 
 const mockExecute = vi.fn()
-const mockGetCommand = vi.fn().mockReturnValue({
+const mockGetCommand = vi.fn().mockImplementation((commandId: string) => ({
   keybinding: {
     combo: {
-      getKeySequences: () => ['Ctrl', '+']
+      getKeySequences: () => [
+        'Ctrl',
+        commandId === 'Comfy.Canvas.ZoomIn'
+          ? '+'
+          : commandId === 'Comfy.Canvas.ZoomOut'
+            ? '-'
+            : '0'
+      ]
     }
   }
-})
-const mockFormatKeySequence = vi.fn().mockReturnValue('Ctrl+')
+}))
+const mockFormatKeySequence = vi
+  .fn()
+  .mockImplementation(
+    (command: {
+      keybinding: { combo: { getKeySequences: () => string[] } }
+    }) => {
+      const seq = command.keybinding.combo.getKeySequences()
+      if (seq.includes('+')) return 'Ctrl+'
+      if (seq.includes('-')) return 'Ctrl-'
+      return 'Ctrl+0'
+    }
+  )
 const mockSetAppZoom = vi.fn()
 const mockSettingGet = vi.fn().mockReturnValue(true)
 
@@ -78,7 +96,7 @@ describe('ZoomControlsModal', () => {
     renderComponent()
 
     const zoomInButton = screen.getByTestId('zoom-in-action')
-    await user.pointer({ keys: '[MouseLeft>]', target: zoomInButton })
+    await user.click(zoomInButton)
 
     expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.ZoomIn')
   })
@@ -88,7 +106,7 @@ describe('ZoomControlsModal', () => {
     renderComponent()
 
     const zoomOutButton = screen.getByTestId('zoom-out-action')
-    await user.pointer({ keys: '[MouseLeft>]', target: zoomOutButton })
+    await user.click(zoomOutButton)
 
     expect(mockExecute).toHaveBeenCalledWith('Comfy.Canvas.ZoomOut')
   })
@@ -142,8 +160,12 @@ describe('ZoomControlsModal', () => {
   it('should display keyboard shortcuts for commands', () => {
     renderComponent()
 
-    expect(screen.getAllByText('Ctrl+')).toHaveLength(3)
-    expect(mockFormatKeySequence).toHaveBeenCalled()
+    expect(screen.getByText('Ctrl+')).toBeInTheDocument()
+    expect(screen.getByText('Ctrl-')).toBeInTheDocument()
+    expect(screen.getByText('Ctrl+0')).toBeInTheDocument()
+    expect(mockGetCommand).toHaveBeenCalledWith('Comfy.Canvas.ZoomIn')
+    expect(mockGetCommand).toHaveBeenCalledWith('Comfy.Canvas.ZoomOut')
+    expect(mockGetCommand).toHaveBeenCalledWith('Comfy.Canvas.FitView')
   })
 
   it('should not be visible when visible prop is false', () => {

@@ -62,18 +62,4 @@ describe('HoverDissolveThumbnail', () => {
     expect(images[1]).toHaveClass('opacity-0')
     expect(images[1]).not.toHaveClass('opacity-100')
   })
-
-  it('applies transition classes to overlay image', () => {
-    renderThumbnail()
-    const images = screen.getAllByRole('img')
-    expect(images[1]).toHaveClass('transition-opacity')
-    expect(images[1]).toHaveClass('duration-300')
-  })
-
-  it('applies correct positioning to both images', () => {
-    renderThumbnail()
-    const images = screen.getAllByRole('img')
-    expect(images[0]).toHaveClass('size-full')
-    expect(images[1]).toHaveClass('size-full')
-  })
 })

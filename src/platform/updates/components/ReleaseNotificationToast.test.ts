@@ -128,9 +128,8 @@ describe('ReleaseNotificationToast', () => {
       content: '# Test Release\n\nSome content'
     } as ReleaseNote
 
-    const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.release-toast-popup')).toBeInTheDocument()
+    renderComponent()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
   })
 
   it('displays rocket icon', () => {
@@ -140,9 +139,11 @@ describe('ReleaseNotificationToast', () => {
     } as ReleaseNote
 
     const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const rocketIcon = container.querySelector('i.icon-\\[lucide--rocket\\]')
-    expect(rocketIcon).toBeInTheDocument()
+    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    expect(
+      container.querySelector('.icon-\\[lucide--rocket\\]')
+    ).toBeInTheDocument()
+    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('displays release version', () => {
@@ -314,44 +315,45 @@ describe('ReleaseNotificationToast', () => {
 
   it('auto-hides after timeout', async () => {
     vi.useFakeTimers()
+    try {
+      mockReleaseStore.recentRelease = {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
 
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+      renderComponent()
 
-    const { container } = renderComponent()
+      expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.release-toast-popup')).toBeInTheDocument()
+      vi.advanceTimersByTime(8000)
+      await nextTick()
 
-    vi.advanceTimersByTime(8000)
-    await nextTick()
-
-    expect(vi.getTimerCount()).toBe(0)
-
-    vi.useRealTimers()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {
     vi.useFakeTimers()
+    try {
+      mockReleaseStore.recentRelease = {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
 
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderComponent()
 
-    renderComponent()
+      vi.advanceTimersByTime(1000)
 
-    vi.advanceTimersByTime(1000)
+      await user.click(screen.getByRole('button', { name: /skip/i }))
 
-    await user.click(screen.getByRole('button', { name: /skip/i }))
-
-    expect(vi.getTimerCount()).toBe(0)
-    expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
-
-    vi.useRealTimers()
+      expect(vi.getTimerCount()).toBe(0)
+      expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

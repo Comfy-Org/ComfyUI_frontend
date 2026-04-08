@@ -116,8 +116,7 @@ describe('ImagePreview', () => {
     expect(navigationDots).toHaveLength(0)
   })
 
-  it('shows mask/edit button only for single images', async () => {
-    // Multiple images in gallery mode - should not show mask button
+  it('does not show mask/edit button for multiple images in gallery mode', async () => {
     renderImagePreview()
     const user = userEvent.setup()
     await switchToGallery(user)
@@ -125,8 +124,9 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Edit or mask image' })
     ).not.toBeInTheDocument()
+  })
 
-    // Single image - should show mask button
+  it('shows mask/edit button for single images', () => {
     renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })

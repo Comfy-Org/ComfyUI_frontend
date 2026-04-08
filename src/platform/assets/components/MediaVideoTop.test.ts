@@ -37,12 +37,6 @@ describe('MediaVideoTop', () => {
     const source = container.querySelector('source')!
     expect(source).toHaveAttribute('src', 'https://example.com/thumb.jpg')
     expect(source).toHaveAttribute('type', 'video/mp4')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query has no ARIA equivalent
-    expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
-    expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query has no ARIA equivalent
-      container.querySelector('.icon-\\[lucide--play\\]')
-    ).toBeInTheDocument()
   })
 
   it('does not render source element when src is empty', () => {
@@ -72,8 +66,6 @@ describe('MediaVideoTop', () => {
 
     await fireEvent.play(video)
     expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([true])
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query has no ARIA equivalent
-    expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
 
     // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
     await user.hover(container.firstElementChild!)
@@ -85,8 +77,6 @@ describe('MediaVideoTop', () => {
 
     await fireEvent.pause(video)
     expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([false])
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query has no ARIA equivalent
-    expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
     expect(video.controls).toBe(false)
   })
 

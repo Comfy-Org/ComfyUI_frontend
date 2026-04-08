@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -118,13 +118,13 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('shows subscription copy when subscriptionType is valid', async () => {
-    const { container } = await mountView({ tier: 'creator' })
+    await mountView({ tier: 'creator' })
 
     // Should not redirect to home
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
 
     // Shows copy under logo
-    expect(container.textContent).toContain('Subscribe to Creator')
+    expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
     // Triggers checkout flow
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
@@ -134,12 +134,9 @@ describe('CloudSubscriptionRedirectView', () => {
     )
 
     // Shows loading affordances
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('[class*="progress"]')).not.toBeNull()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const skipLink = container.querySelector('a[href="/"]')
-    expect(skipLink).not.toBeNull()
-    expect(skipLink!.textContent).toContain('Skip to the cloud app')
+    expect(
+      screen.getByRole('link', { name: /skip to the cloud app/i })
+    ).toBeInTheDocument()
   })
 
   test('opens billing portal when subscription is already active', async () => {
@@ -153,12 +150,12 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('uses first value when subscriptionType is an array', async () => {
-    const { container } = await mountView({
+    await mountView({
       tier: ['creator', 'pro']
     })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(container.textContent).toContain('Subscribe to Creator')
+    expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',

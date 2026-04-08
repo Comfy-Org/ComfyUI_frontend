@@ -87,7 +87,7 @@ describe('ActiveJobCard', () => {
     )
 
     expect(container.textContent).toContain('65%')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- progress bar has no ARIA role in happy-dom
     const progressBar = container.querySelector('.bg-blue-500')
     expect(progressBar).not.toBeNull()
     expect(progressBar).toHaveStyle({ width: '65%' })
@@ -103,14 +103,14 @@ describe('ActiveJobCard', () => {
     )
 
     expect(container.textContent).toContain('In queue...')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- progress bar has no ARIA role in happy-dom
     expect(container.querySelector('.bg-blue-500')).toBeNull()
   })
 
   it('shows spinner for pending state', () => {
     const { container } = renderComponent(createJob({ state: 'pending' }))
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- spinner icon has no ARIA role in happy-dom
     const spinner = container.querySelector('[class*="lucide--loader-circle"]')
     expect(spinner).not.toBeNull()
     expect(spinner).toHaveClass('animate-spin')
@@ -121,7 +121,7 @@ describe('ActiveJobCard', () => {
       createJob({ state: 'failed', title: 'Failed' })
     )
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- error icon has no ARIA role in happy-dom
     const errorIcon = container.querySelector('[class*="lucide--circle-alert"]')
     expect(errorIcon).not.toBeNull()
     expect(container.textContent).toContain('Failed')

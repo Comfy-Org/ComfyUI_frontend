@@ -71,8 +71,9 @@ describe('VideoPreview', () => {
 
       // Simulate initial video load
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const videoEl = container.querySelector('video') as HTMLVideoElement
-      await fireEvent.loadedData(videoEl)
+      const videoEl = container.querySelector('video')
+      expect(videoEl).not.toBeNull()
+      await fireEvent.loadedData(videoEl!)
       await nextTick()
       expect(
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -102,8 +103,9 @@ describe('VideoPreview', () => {
 
       // Simulate initial video load
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const videoEl = container.querySelector('video') as HTMLVideoElement
-      await fireEvent.loadedData(videoEl)
+      const videoEl = container.querySelector('video')
+      expect(videoEl).not.toBeNull()
+      await fireEvent.loadedData(videoEl!)
       await nextTick()
       expect(
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access

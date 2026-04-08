@@ -207,7 +207,7 @@ function createComponent(overrides = {}) {
           emits: ['click']
         },
         Skeleton: {
-          template: '<div class="skeleton"></div>'
+          template: '<div role="status" aria-label="Loading"></div>'
         }
       }
     },
@@ -290,31 +290,34 @@ describe('SubscriptionPanel', () => {
 
     it('shows loading skeleton when fetching balance', () => {
       mockCreditsData.isLoadingBalance = true
-      const { container } = createComponent()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
+      createComponent()
+      expect(
+        screen.getAllByRole('status', { name: 'Loading' }).length
+      ).toBeGreaterThan(0)
     })
 
     it('hides skeleton when balance loaded', () => {
       mockCreditsData.isLoadingBalance = false
-      const { container } = createComponent()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
+      createComponent()
+      expect(screen.queryAllByRole('status', { name: 'Loading' })).toHaveLength(
+        0
+      )
     })
 
     it('renders refill date with literal slashes', () => {
       vi.useFakeTimers()
       vi.stubEnv('TZ', 'UTC')
-
-      mockIsActiveSubscription.value = true
-      const { container } = createComponent()
-      expect(container.textContent).toMatch(
-        /Included \(Refills \d{2}\/\d{2}\/\d{2}\)/
-      )
-      expect(container.textContent).not.toContain('&#x2F;')
-
-      vi.useRealTimers()
-      vi.unstubAllEnvs()
+      try {
+        mockIsActiveSubscription.value = true
+        const { container } = createComponent()
+        expect(container.textContent).toMatch(
+          /Included \(Refills \d{2}\/\d{2}\/\d{2}\)/
+        )
+        expect(container.textContent).not.toContain('&#x2F;')
+      } finally {
+        vi.useRealTimers()
+        vi.unstubAllEnvs()
+      }
     })
   })
 

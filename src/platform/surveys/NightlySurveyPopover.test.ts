@@ -77,8 +77,7 @@ describe('NightlySurveyPopover', () => {
         stubs: {
           Teleport: true
         }
-      },
-      container: document.body.appendChild(document.createElement('div'))
+      }
     })
   }
 

@@ -69,7 +69,7 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
 vi.mock('./MissingPackGroupRow.vue', () => ({
   default: {
     name: 'MissingPackGroupRow',
-    template: `<div class="pack-row"
+    template: `<div class="pack-row" data-testid="pack-row"
       :data-show-info-button="String(showInfoButton)"
       :data-show-node-id-badge="String(showNodeIdBadge)"
     >
@@ -175,26 +175,23 @@ describe('MissingNodeCard', () => {
     })
 
     it('renders correct number of MissingPackGroupRow components', () => {
-      const { container } = renderCard({ missingPackGroups: makePackGroups(3) })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.pack-row')).toHaveLength(3)
+      renderCard({ missingPackGroups: makePackGroups(3) })
+      expect(screen.getAllByTestId('pack-row')).toHaveLength(3)
     })
 
     it('renders zero rows when missingPackGroups is empty', () => {
-      const { container } = renderCard({ missingPackGroups: [] })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.pack-row')).toHaveLength(0)
+      renderCard({ missingPackGroups: [] })
+      expect(screen.queryAllByTestId('pack-row')).toHaveLength(0)
     })
 
     it('passes props correctly to MissingPackGroupRow children', () => {
-      const { container } = renderCard({
+      renderCard({
         showInfoButton: true,
         showNodeIdBadge: true
       })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const row = container.querySelector('.pack-row')
-      expect(row?.getAttribute('data-show-info-button')).toBe('true')
-      expect(row?.getAttribute('data-show-node-id-badge')).toBe('true')
+      const row = screen.getAllByTestId('pack-row')[0]
+      expect(row.getAttribute('data-show-info-button')).toBe('true')
+      expect(row.getAttribute('data-show-node-id-badge')).toBe('true')
     })
   })
 

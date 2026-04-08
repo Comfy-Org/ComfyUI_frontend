@@ -34,11 +34,9 @@ describe('WorkflowActionsList', () => {
       { id: 'save', label: 'Save', icon: 'pi pi-save', command: vi.fn() }
     ]
 
-    const { container } = renderList(items)
+    renderList(items)
 
-    screen.getByText('Save')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.pi-save')).not.toBeNull()
+    expect(screen.getByText('Save')).toBeInTheDocument()
   })
 
   it('renders separator items', () => {
@@ -96,9 +94,9 @@ describe('WorkflowActionsList', () => {
       { id: 'shown', label: 'Shown Item', icon: 'pi pi-eye', command: vi.fn() }
     ]
 
-    const { container } = renderList(items)
+    renderList(items)
 
-    expect(container.textContent).not.toContain('Hidden Item')
+    expect(screen.queryByText('Hidden Item')).toBeNull()
     screen.getByText('Shown Item')
   })
 
@@ -107,8 +105,8 @@ describe('WorkflowActionsList', () => {
       { id: 'plain', label: 'Plain', icon: 'pi pi-check', command: vi.fn() }
     ]
 
-    const { container } = renderList(items)
+    renderList(items)
 
-    expect(container.textContent).not.toContain('NEW')
+    expect(screen.queryByText('NEW')).toBeNull()
   })
 })

@@ -143,6 +143,7 @@ describe('EssentialNodesPanel', () => {
       await waitFor(() => {
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots).toHaveLength(3)
         expect(roots[0].getAttribute('data-state')).toBe('open')
         expect(roots[1].getAttribute('data-state')).toBe('open')
         expect(roots[2].getAttribute('data-state')).toBe('open')
@@ -155,6 +156,7 @@ describe('EssentialNodesPanel', () => {
       await waitFor(() => {
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots).toHaveLength(3)
         expect(roots[0].getAttribute('data-state')).toBe('closed')
         expect(roots[1].getAttribute('data-state')).toBe('closed')
         expect(roots[2].getAttribute('data-state')).toBe('open')
@@ -171,6 +173,7 @@ describe('EssentialNodesPanel', () => {
       await waitFor(() => {
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
+        expect(roots).toHaveLength(3)
         expect(roots[0].getAttribute('data-state')).toBe('open')
         expect(roots[1].getAttribute('data-state')).toBe('open')
         expect(roots[2].getAttribute('data-state')).toBe('open')
