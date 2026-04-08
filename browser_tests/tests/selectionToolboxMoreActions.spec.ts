@@ -17,6 +17,7 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
+// force: true is needed because the canvas overlay (z-999) intercepts pointer events
 async function openMoreOptions(comfyPage: ComfyPage) {
   const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
   await expect(moreOptionsBtn).toBeVisible()
@@ -56,7 +57,7 @@ test.describe(
         .click({ force: true })
       await comfyPage.nextFrame()
 
-      expect(await nodeRef.isPinned()).toBe(true)
+      await expect.poll(() => nodeRef.isPinned()).toBe(true)
 
       await openMoreOptions(comfyPage)
       await comfyPage.page
@@ -64,7 +65,7 @@ test.describe(
         .click({ force: true })
       await comfyPage.nextFrame()
 
-      expect(await nodeRef.isPinned()).toBe(false)
+      await expect.poll(() => nodeRef.isPinned()).toBe(false)
     })
 
     test('minimize and expand node via More Options menu', async ({
@@ -83,7 +84,7 @@ test.describe(
         .click({ force: true })
       await comfyPage.nextFrame()
 
-      expect(await nodeRef.isCollapsed()).toBe(true)
+      await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
 
       await openMoreOptions(comfyPage)
       await comfyPage.page
@@ -91,7 +92,7 @@ test.describe(
         .click({ force: true })
       await comfyPage.nextFrame()
 
-      expect(await nodeRef.isCollapsed()).toBe(false)
+      await expect.poll(() => nodeRef.isCollapsed()).toBe(false)
     })
 
     test('adjust size via More Options menu', async ({ comfyPage }) => {
@@ -117,8 +118,11 @@ test.describe(
       )
       await comfyPage.nextFrame()
 
+      await expect
+        .poll(async () => (await nodeRef.getSize()).width)
+        .toBeGreaterThan(initialSize.width)
+
       const enlargedSize = await nodeRef.getSize()
-      expect(enlargedSize.width).toBeGreaterThan(initialSize.width)
 
       await selectNodeWithPan(comfyPage, nodeRef)
       await openMoreOptions(comfyPage)
@@ -127,8 +131,9 @@ test.describe(
         .click({ force: true })
       await comfyPage.nextFrame()
 
-      const adjustedSize = await nodeRef.getSize()
-      expect(adjustedSize.width).toBeLessThan(enlargedSize.width)
+      await expect
+        .poll(async () => (await nodeRef.getSize()).width)
+        .toBeLessThan(enlargedSize.width)
     })
 
     test('copy via More Options menu', async ({ comfyPage }) => {
@@ -292,12 +297,6 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByTitle('VAE Decode')
       )[0]
 
-      const posBefore = {
-        ksampler: await ksampler.getPosition(),
-        emptyLatent: await emptyLatent.getPosition(),
-        vaeDecode: await vaeDecode.getPosition()
-      }
-
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Distribute Nodes', { exact: true })
@@ -316,13 +315,15 @@ test.describe(
         vaeDecode: await vaeDecode.getPosition()
       }
 
-      // At least one node's position should have changed
-      const anyMoved =
-        posBefore.ksampler.x !== posAfter.ksampler.x ||
-        posBefore.emptyLatent.x !== posAfter.emptyLatent.x ||
-        posBefore.vaeDecode.x !== posAfter.vaeDecode.x
-
-      expect(anyMoved).toBe(true)
+      // After horizontal distribution, the middle node's X should be
+      // between the leftmost and rightmost nodes
+      const xValues = [
+        posAfter.ksampler.x,
+        posAfter.emptyLatent.x,
+        posAfter.vaeDecode.x
+      ].sort((a, b) => a - b)
+      expect(xValues[1]).toBeGreaterThanOrEqual(xValues[0])
+      expect(xValues[1]).toBeLessThanOrEqual(xValues[2])
     })
 
     test('distribute nodes vertically via More Options menu', async ({
@@ -345,12 +346,6 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByTitle('VAE Decode')
       )[0]
 
-      const posBefore = {
-        ksampler: await ksampler.getPosition(),
-        emptyLatent: await emptyLatent.getPosition(),
-        vaeDecode: await vaeDecode.getPosition()
-      }
-
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Distribute Nodes', { exact: true })
@@ -369,12 +364,15 @@ test.describe(
         vaeDecode: await vaeDecode.getPosition()
       }
 
-      const anyMoved =
-        posBefore.ksampler.y !== posAfter.ksampler.y ||
-        posBefore.emptyLatent.y !== posAfter.emptyLatent.y ||
-        posBefore.vaeDecode.y !== posAfter.vaeDecode.y
-
-      expect(anyMoved).toBe(true)
+      // After vertical distribution, the middle node's Y should be
+      // between the topmost and bottommost nodes
+      const yValues = [
+        posAfter.ksampler.y,
+        posAfter.emptyLatent.y,
+        posAfter.vaeDecode.y
+      ].sort((a, b) => a - b)
+      expect(yValues[1]).toBeGreaterThanOrEqual(yValues[0])
+      expect(yValues[1]).toBeLessThanOrEqual(yValues[2])
     })
 
     test('alignment options not shown for single node selection', async ({
@@ -429,15 +427,15 @@ test.describe(
       await bypassButton.click({ force: true })
       await comfyPage.nextFrame()
 
-      expect(await ksampler.isBypassed()).toBe(true)
-      expect(await emptyLatent.isBypassed()).toBe(true)
+      await expect.poll(() => ksampler.isBypassed()).toBe(true)
+      await expect.poll(() => emptyLatent.isBypassed()).toBe(true)
 
       // Toggle back
       await bypassButton.click({ force: true })
       await comfyPage.nextFrame()
 
-      expect(await ksampler.isBypassed()).toBe(false)
-      expect(await emptyLatent.isBypassed()).toBe(false)
+      await expect.poll(() => ksampler.isBypassed()).toBe(false)
+      await expect.poll(() => emptyLatent.isBypassed()).toBe(false)
     })
   }
 )
