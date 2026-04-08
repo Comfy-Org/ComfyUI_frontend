@@ -24,6 +24,7 @@ import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 
@@ -473,6 +474,13 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+    // For SubgraphNodes, establish a reactive dependency on the promotion
+    // store so this computed re-evaluates when widgets are promoted/demoted.
+    if (existingWidgetsDescriptor?.get && node.isSubgraphNode()) {
+      const promotionStore = usePromotionStore()
+      promotionStore.getPromotionsRef(node.rootGraph.id, node.id)
+    }
+
     const widgetsSnapshot = node.widgets ?? []
 
     const freshMetadata = buildSlotMetadata(node.inputs, node.graph)

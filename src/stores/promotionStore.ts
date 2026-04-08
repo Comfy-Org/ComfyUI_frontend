@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, triggerRef } from 'vue'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -122,6 +122,7 @@ export const usePromotionStore = defineStore('promotion', () => {
     } else {
       promotions.set(subgraphNodeId, [...entries])
     }
+    triggerRef(graphPromotions)
   }
 
   function makePositionKey(

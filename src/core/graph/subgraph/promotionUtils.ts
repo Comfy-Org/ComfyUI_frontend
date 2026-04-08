@@ -15,6 +15,7 @@ import {
 } from '@/composables/node/canvasImagePreviewTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -124,6 +125,13 @@ export function demoteWidget(
   for (const parent of parents) {
     store.demote(parent.rootGraph.id, parent.id, source)
   }
+
+  // Clear DOM position override so the legacy canvas stops rendering
+  // the interior widget on the subgraph node after demotion.
+  if ('id' in widget && ('element' in widget || 'component' in widget)) {
+    useDomWidgetStore().clearPositionOverride(String(widget.id))
+  }
+
   refreshPromotedWidgetRendering(parents)
   Sentry.addBreadcrumb({
     category: 'subgraph',
