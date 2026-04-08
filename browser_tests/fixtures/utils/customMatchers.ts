@@ -1,7 +1,7 @@
 import type { ExpectMatcherState, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { NodeReference } from './litegraphUtils'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 function makeMatcher<T>(
   getValue: (node: NodeReference) => Promise<T> | T,

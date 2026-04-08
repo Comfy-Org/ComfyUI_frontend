@@ -5,12 +5,12 @@ import type { Position } from '@vueuse/core'
 import {
   comfyPageFixture as test,
   testComfySnapToGridGridSize
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
-import { TestIds } from '../fixtures/selectors'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
-import type { WorkspaceStore } from '../types/globals'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
