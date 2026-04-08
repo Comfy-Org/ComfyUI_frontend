@@ -124,6 +124,7 @@ function makeAsset(
     id,
     name: `${id}.png`,
     tags: [],
+    preview_url: `/view?filename=${id}.png`,
     user_metadata: {
       jobId,
       nodeId: '1',
