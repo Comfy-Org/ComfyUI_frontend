@@ -40,15 +40,19 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     const dialog = comfyPage.settingDialog
     await dialog.open()
 
-    await dialog.searchBox.fill('Validate workflows')
-    const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
-    await expect(settingRow).toBeVisible()
+    try {
+      await dialog.searchBox.fill('Validate workflows')
+      const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
+      await expect(settingRow).toBeVisible()
 
-    await settingRow.locator('.p-toggleswitch').click()
+      await settingRow.locator('.p-toggleswitch').click()
 
-    await expect
-      .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
-      .toBe(!initialValue)
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+    } finally {
+      await comfyPage.settings.setSetting(settingId, initialValue)
+    }
   })
 
   test('Can be closed via close button', async ({ comfyPage }) => {
@@ -111,6 +115,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
 
     // Find a different category to click
     const categoryCount = await dialog.categories.count()
+    let switched = false
     for (let i = 1; i < categoryCount; i++) {
       const cat = dialog.categories.nth(i)
       const catName = await cat.textContent()
@@ -119,9 +124,11 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
         await expect
           .poll(() => dialog.contentArea.textContent())
           .not.toBe(firstContent)
-        return
+        switched = true
+        break
       }
     }
+    expect(switched).toBe(true)
   })
 
   test('Dropdown setting can be changed and persists', async ({
@@ -133,26 +140,27 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     const dialog = comfyPage.settingDialog
     await dialog.open()
 
-    await dialog.searchBox.fill('Use new menu')
-    const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
-    await expect(settingRow).toBeVisible()
+    try {
+      await dialog.searchBox.fill('Use new menu')
+      const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
+      await expect(settingRow).toBeVisible()
 
-    // Click the PrimeVue Select to open the dropdown
-    await settingRow.locator('.p-select').click()
-    const overlay = comfyPage.page.locator('.p-select-overlay')
-    await expect(overlay).toBeVisible()
+      // Click the PrimeVue Select to open the dropdown
+      await settingRow.locator('.p-select').click()
+      const overlay = comfyPage.page.locator('.p-select-overlay')
+      await expect(overlay).toBeVisible()
 
-    // Pick the option that is not the current value
-    const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-    await overlay
-      .locator(`.p-select-option-label:text-is("${targetValue}")`)
-      .click()
+      // Pick the option that is not the current value
+      const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
+      await overlay
+        .locator(`.p-select-option-label:text-is("${targetValue}")`)
+        .click()
 
-    await expect
-      .poll(() => comfyPage.settings.getSetting<string>(settingId))
-      .toBe(targetValue)
-
-    // Restore original value
-    await comfyPage.settings.setSetting(settingId, initialValue)
+      await expect
+        .poll(() => comfyPage.settings.getSetting<string>(settingId))
+        .toBe(targetValue)
+    } finally {
+      await comfyPage.settings.setSetting(settingId, initialValue)
+    }
   })
 })
