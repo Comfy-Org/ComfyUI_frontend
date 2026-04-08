@@ -264,7 +264,7 @@ const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
   name: userDisplayName.value ?? '',
   email: userEmail.value ?? '',
   role: 'owner' as const,
-  joinDate: new Date()
+  joinDate: new Date(0)
 }))
 
 const searchQuery = ref('')
