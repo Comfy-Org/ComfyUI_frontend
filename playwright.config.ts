@@ -1,13 +1,5 @@
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-import { defineCoverageReporterConfig } from '@bgotink/playwright-coverage'
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
-
-import { COLLECT_COVERAGE } from './browser_tests/fixtures/utils/coverageConstants'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
@@ -33,24 +25,7 @@ export default defineConfig({
   testDir: './browser_tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: COLLECT_COVERAGE
-    ? [
-        ['html'],
-        [
-          '@bgotink/playwright-coverage',
-          defineCoverageReporterConfig({
-            sourceRoot: __dirname,
-            exclude: ['**/node_modules/**', '**/browser_tests/**'],
-            resultDir: path.join(__dirname, 'coverage/playwright'),
-            reports: [
-              ['html'],
-              ['lcovonly', { file: 'coverage.lcov' }],
-              ['text-summary', { file: null }]
-            ]
-          })
-        ]
-      ]
-    : 'html',
+  reporter: 'html',
   ...maybeLocalOptions,
 
   globalSetup: './browser_tests/globalSetup.ts',

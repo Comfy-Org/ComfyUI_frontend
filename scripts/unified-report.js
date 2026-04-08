@@ -13,6 +13,8 @@ function getArg(name) {
 
 const sizeStatus = getArg('size-status') ?? 'pending'
 const perfStatus = getArg('perf-status') ?? 'pending'
+// 'skip' (not 'pending') — coverage workflow is opt-in,
+// so absence means "not configured" rather than "still running"
 const coverageStatus = getArg('coverage-status') ?? 'skip'
 
 /** @type {string[]} */
@@ -77,8 +79,13 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
 if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
   try {
     const coverageReport = execFileSync(
-      'node',
-      ['scripts/coverage-report.js', 'temp/coverage/coverage.lcov'],
+      'pnpm',
+      [
+        'exec',
+        'tsx',
+        'scripts/coverage-report.ts',
+        'temp/coverage/coverage.lcov'
+      ],
       { encoding: 'utf-8' }
     ).trimEnd()
     lines.push('')
@@ -96,6 +103,11 @@ if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
   lines.push('## 🔬 E2E Coverage')
   lines.push('')
   lines.push('> ⚠️ Coverage collection failed. Check the CI workflow logs.')
+} else if (coverageStatus === 'pending') {
+  lines.push('')
+  lines.push('## 🔬 E2E Coverage')
+  lines.push('')
+  lines.push('> ⏳ Coverage collection in progress…')
 }
 // coverageStatus === 'skip' (default) — don't show section at all
 

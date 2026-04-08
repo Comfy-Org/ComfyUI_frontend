@@ -171,6 +171,8 @@ jobs:
 
             const run = runs.workflow_runs[0];
             if (!run) {
+              // 'skip' (not 'pending') — coverage workflow is opt-in,
+              // so absence means "not configured" rather than "still running"
               core.setOutput('status', 'skip');
               return;
             }

@@ -408,7 +408,7 @@ overrides:
 
 patchedDependencies:
   '@bgotink/playwright-coverage@0.3.2':
-    hash: 64bb8e9343c74159293ceaf6f3bef88888c6e98149c458b3db33392ab4238565
+    hash: 6b34234824fc0925423712b7f68f0dd750ea06d8ddce54047726e44ff1fe5406
     path: patches/@bgotink__playwright-coverage@0.3.2.patch
 
 importers:
@@ -616,7 +616,7 @@ importers:
     devDependencies:
       '@bgotink/playwright-coverage':
         specifier: 'catalog:'
-        version: 0.3.2(patch_hash=64bb8e9343c74159293ceaf6f3bef88888c6e98149c458b3db33392ab4238565)(@playwright/test@1.58.1)
+        version: 0.3.2(patch_hash=6b34234824fc0925423712b7f68f0dd750ea06d8ddce54047726e44ff1fe5406)(@playwright/test@1.58.1)
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:packages/ingest-types
@@ -10935,7 +10935,7 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@bgotink/playwright-coverage@0.3.2(patch_hash=64bb8e9343c74159293ceaf6f3bef88888c6e98149c458b3db33392ab4238565)(@playwright/test@1.58.1)':
+  '@bgotink/playwright-coverage@0.3.2(patch_hash=6b34234824fc0925423712b7f68f0dd750ea06d8ddce54047726e44ff1fe5406)(@playwright/test@1.58.1)':
     dependencies:
       '@bcoe/v8-coverage': 0.2.3
       '@playwright/test': 1.58.1
