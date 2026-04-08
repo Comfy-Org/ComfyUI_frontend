@@ -194,6 +194,29 @@ test.describe('Assets sidebar - grid view display', () => {
     const count = await tab.assetCards.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })
+  test('Displays svg outputs', async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({
+        id: 'job-alpha',
+        create_time: 1000,
+        execution_start_time: 1000,
+        execution_end_time: 1010,
+        preview_output: {
+          filename: 'logo.svg',
+          subfolder: '',
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
+        },
+        outputs_count: 1
+      })
+    ])
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+  })
 })
 
 // ==========================================================================
@@ -527,20 +550,27 @@ test.describe('Assets sidebar - context menu', () => {
     // Dismiss any toasts that appeared after asset loading
     await tab.dismissToasts()
 
-    // Multi-select: click first, then Ctrl/Cmd+click second
+    // Multi-select: use keyboard.down/up so useKeyModifier('Control') detects
+    // the modifier — click({ modifiers }) only sets the mouse event flag and
+    // does not fire a keydown event that VueUse tracks.
     await cards.first().click()
-    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
+    await comfyPage.page.keyboard.down('Control')
+    await cards.nth(1).click()
+    await comfyPage.page.keyboard.up('Control')
 
     // Verify multi-selection took effect and footer is stable before right-clicking
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
     await expect(tab.selectionFooter).toBeVisible({ timeout: 3000 })
 
-    // Right-click on a selected card (retry to let grid layout settle)
+    // Use dispatchEvent instead of click({ button: 'right' }) to avoid any
+    // overlay intercepting the event, and assert directly without toPass.
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(async () => {
-      await cards.first().click({ button: 'right' })
-      await expect(contextMenu).toBeVisible()
-    }).toPass({ intervals: [300], timeout: 5000 })
+    await cards.first().dispatchEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
+    await expect(contextMenu).toBeVisible()
 
     // Bulk menu should show bulk download action
     await expect(tab.contextMenuItem('Download all')).toBeVisible()
@@ -617,21 +647,30 @@ test.describe('Assets sidebar - pagination', () => {
     await comfyPage.assets.clearMocks()
   })
 
-  test('Initially loads a batch of assets with has_more pagination', async ({
+  test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
-    // Create a large set of jobs to trigger pagination
-    const manyJobs = createMockJobs(30)
+    const manyJobs = createMockJobs(250)
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
+
+    // Capture the first history fetch (terminal statuses only).
+    // Queue polling also hits /jobs but with status=in_progress,pending.
+    const firstRequest = comfyPage.page.waitForRequest((req) => {
+      if (!/\/api\/jobs\?/.test(req.url())) return false
+      const url = new URL(req.url())
+      const status = url.searchParams.get('status') ?? ''
+      return status.includes('completed')
+    })
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
     await tab.waitForAssets()
 
-    // Should load at least the first batch
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    const req = await firstRequest
+    const url = new URL(req.url())
+    expect(url.searchParams.get('offset')).toBe('0')
+    expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
   })
 })
 
@@ -658,5 +697,85 @@ test.describe('Assets sidebar - settings menu', () => {
 
     await expect(tab.listViewOption).toBeVisible()
     await expect(tab.gridViewOption).toBeVisible()
+  })
+})
+
+// ==========================================================================
+// 11. Delete confirmation
+// ==========================================================================
+
+test.describe('Assets sidebar - delete confirmation', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
+    await comfyPage.assets.mockDeleteHistory()
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Right-click delete shows confirmation dialog', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText('Delete this asset?')).toBeVisible()
+    await expect(
+      dialog.getByText('This asset will be permanently removed.')
+    ).toBeVisible()
+  })
+
+  test('Confirming delete removes asset and shows success toast', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.confirmDialog.delete.click()
+
+    await expect(dialog).not.toBeVisible()
+    await expect(tab.assetCards).toHaveCount(initialCount - 1, {
+      timeout: 5000
+    })
+
+    const successToast = comfyPage.page.locator('.p-toast-message-success')
+    await expect(successToast).toBeVisible({ timeout: 5000 })
+  })
+
+  test('Cancelling delete preserves asset', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.confirmDialog.reject.click()
+
+    await expect(dialog).not.toBeVisible()
+    await expect(tab.assetCards).toHaveCount(initialCount)
   })
 })

@@ -44,7 +44,15 @@ export const TestIds = {
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
-    missingModelsGroup: 'error-group-missing-model'
+    missingModelsGroup: 'error-group-missing-model',
+    missingMediaGroup: 'error-group-missing-media',
+    missingMediaRow: 'missing-media-row',
+    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
+    missingMediaLibrarySelect: 'missing-media-library-select',
+    missingMediaStatusCard: 'missing-media-status-card',
+    missingMediaConfirmButton: 'missing-media-confirm-button',
+    missingMediaCancelButton: 'missing-media-cancel-button',
+    missingMediaLocateButton: 'missing-media-locate-button'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -61,14 +69,30 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel'
   },
+  subgraphEditor: {
+    toggle: 'subgraph-editor-toggle',
+    shownSection: 'subgraph-editor-shown-section',
+    hiddenSection: 'subgraph-editor-hidden-section',
+    widgetToggle: 'subgraph-widget-toggle',
+    widgetLabel: 'subgraph-widget-label',
+    iconLink: 'icon-link',
+    iconEye: 'icon-eye',
+    widgetActionsMenuButton: 'widget-actions-menu-button'
+  },
   node: {
-    titleInput: 'node-title-input'
+    titleInput: 'node-title-input',
+    pinIndicator: 'node-pin-indicator',
+    innerWrapper: 'node-inner-wrapper',
+    mainImage: 'main-image'
   },
   selectionToolbox: {
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
     colorRed: 'red'
+  },
+  menu: {
+    moreMenuContent: 'more-menu-content'
   },
   widgets: {
     container: 'node-widgets',
@@ -82,11 +106,17 @@ export const TestIds = {
     footerNav: 'builder-footer-nav',
     saveButton: 'builder-save-button',
     saveAsButton: 'builder-save-as-button',
+    saveGroup: 'builder-save-group',
     saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
     widgetActionsMenu: 'widget-actions-menu',
-    opensAs: 'builder-opens-as'
+    opensAs: 'builder-opens-as',
+    widgetItem: 'builder-widget-item',
+    widgetLabel: 'builder-widget-label'
+  },
+  appMode: {
+    widgetItem: 'app-mode-widget-item'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -124,11 +154,14 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
       (id: string) => string
     >
   | (typeof TestIds.user)[keyof typeof TestIds.user]
+  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
+  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]

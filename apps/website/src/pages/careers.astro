@@ -1,0 +1,203 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import SiteNav from '../components/SiteNav.vue'
+import SiteFooter from '../components/SiteFooter.vue'
+
+const departments = [
+  {
+    name: 'Engineering',
+    roles: [
+      { title: 'Design Engineer', id: 'abc787b9-ad85-421c-8218-debd23bea096' },
+      { title: 'Software Engineer, ComfyUI Desktop', id: 'ad2f76cb-a787-47d8-81c5-7e7f917747c0' },
+      { title: 'Product Manager, ComfyUI (open-source)', id: '12dbc26e-9f6d-49bf-83c6-130f7566d03c' },
+      { title: 'Senior Software Engineer, Frontend Generalist', id: 'c3e0584d-5490-491f-aae4-b5922ef63fd2' },
+      { title: 'Software Engineer, Frontend Generalist', id: '99dc26c7-51ca-43cd-a1ba-7d475a0f4a40' },
+      { title: 'Tech Lead Manager, Frontend', id: 'a0665088-3314-457a-aa7b-12ca5c3eb261' },
+      { title: 'Senior Software Engineer, Comfy Cloud', id: '27cdf4ce-69a4-44da-b0ec-d54875fd14a1' },
+      { title: 'Senior Applied AI/ML Engineer', id: '5cc4d0bc-97b0-463b-8466-3ec1d07f6ac0' },
+      { title: 'Senior Engineer, Backend Generalist', id: '732f8b39-076d-4847-afe3-f54d4451607e' },
+      { title: 'Software Engineer, Core ComfyUI Contributor', id: '7d4062d6-d500-445a-9a5f-014971af259f' },
+    ],
+  },
+  {
+    name: 'Design',
+    roles: [
+      { title: 'Graphic Designer', id: '49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f' },
+      { title: 'Creative Artist', id: '19ba10aa-4961-45e8-8473-66a8a7a8079d' },
+      { title: 'Senior Product Designer', id: 'b2e864c6-4754-4e04-8f46-1022baa103c3' },
+      { title: 'Freelance Motion Designer', id: 'a7ccc2b4-4d9d-4e04-b39c-28a711995b5b' },
+    ],
+  },
+  {
+    name: 'Marketing',
+    roles: [
+      { title: 'Partnership & Events Marketing Manager', id: '89d3ff75-2055-4e92-9c69-81feff55627c' },
+      { title: 'Lifecycle Growth Marketer', id: 'be74d210-3b50-408c-9f61-8fee8833ce64' },
+      { title: 'Social Media Manager', id: '28dea965-662b-4786-b024-c9a1b6bc1f23' },
+    ],
+  },
+  {
+    name: 'BizOps/Growth',
+    roles: [
+      { title: 'Founding Account Executive', id: '061ff83a-fe18-40f7-a5c4-4ce7da7086a6' },
+      { title: 'Senior Technical Recruiter', id: 'd5008532-c45d-46e6-ba2c-20489d364362' },
+    ],
+  },
+]
+
+const whyJoinUs = [
+  'You want to build tools that empower others to create.',
+  "You like working on foundational tech that's already powering real-world videos, images, music, and apps.",
+  'You care about open, free alternatives to closed AI platforms.',
+  'You believe artists, hackers, and solo builders should have real control over their tools.',
+  'You want to work in a small, sharp, no-BS team that moves fast and ships often.',
+]
+
+const notAFit = [
+  "You need everything planned out. We're figuring things out as we go and changing direction fast. If uncertainty stresses you out, you probably won't have fun here.",
+  'You see yourself as just a coder/[insert job title]. Around here, everyone does a bit of everything — talking to users, writing docs, whatever needs to get done. We need people who jump in wherever they can help.',
+  "You need well-defined processes. We're building something revolutionary, which means making up the playbook. If you need clear structures, this might drive you nuts.",
+  "You like having a manager checking in on you. We trust people to own their work end-to-end. When you see something broken, you fix it — no permission needed.",
+  "You prefer waiting until you have all the facts. We often have to make calls with incomplete info and adjust as we learn more. Analysis paralysis doesn't work here.",
+  "You bring a huge ego to the table. We're all about pushing boundaries and solving hard problems, not individual heroics. If you can't take direct feedback or learn from mistakes, this isn't your spot.",
+]
+
+const questions = [
+  'What is the team culture?',
+  'What kind of background do I need to have to apply?',
+  'How do I apply?',
+  'What does the hiring process look like?',
+  'In-person vs remote?',
+  'How can I increase my chances of getting the job?',
+  'What if I need visa sponsorship to work in the US?',
+  'Can I get feedback for my resume and interview?',
+]
+---
+
+<BaseLayout
+  title="Careers — Comfy"
+  description="Join the team building the operating system for generative AI. Open roles in engineering, design, marketing, and more."
+>
+  <SiteNav client:load />
+  <main>
+    <!-- Hero -->
+    <section class="px-6 pb-24 pt-40">
+      <div class="mx-auto max-w-4xl text-center">
+        <h1 class="text-4xl font-bold tracking-tight md:text-6xl">
+          Building an &ldquo;operating system&rdquo;
+          <br />
+          <span class="text-brand-yellow">for Gen AI</span>
+        </h1>
+        <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-smoke-700">
+          We're the world's leading <strong class="text-white">visual AI platform</strong> — an open, modular system
+          where anyone can build, customize, and automate AI workflows with precision and full control. Unlike most AI
+          tools that hide their inner workings behind a simple prompt box, we give professionals the
+          <strong class="text-white">freedom to design their own pipelines</strong> — connecting models, tools, and
+          logic visually like building blocks.
+        </p>
+        <p class="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-smoke-700">
+          ComfyUI is used by <strong class="text-white">artists, filmmakers, video game creators, designers, researchers, VFX houses</strong>,
+          and among others, <strong class="text-white">teams at OpenAI, Netflix, Amazon Studios, Ubisoft, EA, and Tencent</strong>
+          — all who want to go beyond presets and truly shape how AI creates.
+        </p>
+      </div>
+    </section>
+
+    <!-- Job Listings -->
+    <section class="border-t border-white/10 px-6 py-24">
+      <div class="mx-auto max-w-4xl">
+        {departments.map((dept) => (
+          <div class="mb-16 last:mb-0">
+            <h2 class="mb-6 text-sm font-semibold uppercase tracking-widest text-brand-yellow">
+              {dept.name}
+            </h2>
+            <div class="space-y-3">
+              {dept.roles.map((role) => (
+                <a
+                  href={`https://jobs.ashbyhq.com/comfy-org/${role.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center justify-between rounded-lg border border-white/10 px-5 py-4 transition-colors hover:border-brand-yellow"
+                >
+                  <span class="font-medium">{role.title}</span>
+                  <span class="text-sm text-smoke-700">→</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Why Join Us / When It's Not a Fit — 2-column layout -->
+    <section class="border-t border-white/10 bg-charcoal-800 px-6 py-24">
+      <div class="mx-auto grid max-w-5xl gap-16 md:grid-cols-2">
+        <!-- Why Join Us -->
+        <div>
+          <h2 class="mb-8 text-sm font-semibold uppercase tracking-widest text-brand-yellow">
+            Why Join Us?
+          </h2>
+          <ul class="space-y-4">
+            {whyJoinUs.map((item) => (
+              <li class="flex gap-3 text-smoke-700">
+                <span class="mt-1 text-brand-yellow">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- When It's Not a Fit -->
+        <div>
+          <h2 class="mb-4 text-sm font-semibold uppercase tracking-widest text-white">
+            When It&rsquo;s Not a Fit
+          </h2>
+          <p class="mb-8 text-sm text-smoke-700">
+            Working at Comfy Org isn&rsquo;t for everyone, and that&rsquo;s totally fine. You might want to look
+            elsewhere if:
+          </p>
+          <ul class="space-y-4">
+            {notAFit.map((item) => (
+              <li class="flex gap-3 text-sm text-smoke-700">
+                <span class="mt-0.5 text-white/40">—</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Q&A -->
+    <section class="border-t border-white/10 px-6 py-24">
+      <div class="mx-auto max-w-4xl">
+        <h2 class="mb-10 text-sm font-semibold uppercase tracking-widest text-brand-yellow">
+          Q&amp;A
+        </h2>
+        <ul class="space-y-4">
+          {questions.map((q) => (
+            <li class="rounded-lg border border-white/10 px-5 py-4 font-medium">
+              {q}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="border-t border-white/10 px-6 py-24">
+      <div class="mx-auto max-w-4xl text-center">
+        <h2 class="text-3xl font-bold">Questions? Reach out!</h2>
+        <a
+          href="https://support.comfy.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-8 inline-block rounded-full bg-brand-yellow px-8 py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+        >
+          Contact us
+        </a>
+      </div>
+    </section>
+  </main>
+  <SiteFooter />
+</BaseLayout>
