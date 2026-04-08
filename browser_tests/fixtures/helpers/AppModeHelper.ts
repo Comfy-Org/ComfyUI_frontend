@@ -46,6 +46,9 @@ export class AppModeHelper {
       .getByRole('button', { name: 'Workflow actions' })
       .first()
       .click()
+    await expect(
+      this.page.getByRole('menuitem', { name: /Build app|Edit app/ })
+    ).toBeVisible()
     await this.page
       .getByRole('menuitem', { name: /Build app|Edit app/ })
       .click()
