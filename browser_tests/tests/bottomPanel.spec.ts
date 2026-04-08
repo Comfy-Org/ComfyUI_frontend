@@ -14,7 +14,10 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    await expect(
+      bottomPanel.root,
+      'Panel should be open before testing close button'
+    ).toBeVisible()
 
     await bottomPanel.closeButton.click()
     await expect(bottomPanel.root).not.toBeVisible()
@@ -26,7 +29,10 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    await expect(
+      bottomPanel.root,
+      'Panel should be open before checking the resize gutter'
+    ).toBeVisible()
     await expect(bottomPanel.resizeGutter).toBeVisible()
   })
 
@@ -43,31 +49,25 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    await expect(
+      bottomPanel.root,
+      'Panel should be open before resizing'
+    ).toBeVisible()
 
     const initialHeight = await bottomPanel.root.evaluate(
       (el) => el.getBoundingClientRect().height
     )
 
-    const gutterBox = await bottomPanel.resizeGutter.boundingBox()
-    expect(gutterBox, 'Resize gutter should have layout').not.toBeNull()
+    await bottomPanel.resizeByDragging(-100)
 
-    const gutterCenterX = gutterBox!.x + gutterBox!.width / 2
-    const gutterCenterY = gutterBox!.y + gutterBox!.height / 2
-
-    // Drag gutter upward to enlarge the bottom panel
-    await comfyPage.page.mouse.move(gutterCenterX, gutterCenterY)
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(gutterCenterX, gutterCenterY - 100, {
-      steps: 5
-    })
-    await comfyPage.page.mouse.up()
-
-    const newHeight = await bottomPanel.root.evaluate(
-      (el) => el.getBoundingClientRect().height
-    )
-
-    expect(newHeight).toBeGreaterThan(initialHeight)
+    await expect
+      .poll(
+        () => bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height),
+        {
+          message: 'Panel height should increase after dragging the resize gutter'
+        }
+      )
+      .toBeGreaterThan(initialHeight)
   })
 
   test('should not block canvas interactions when panel is closed', async ({
@@ -75,14 +75,15 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
-    // Ensure panel is closed
+    if (await bottomPanel.root.isVisible()) {
+      await bottomPanel.closeButton.click()
+    }
     await expect(bottomPanel.root).not.toBeVisible()
 
-    // Click the canvas without `force` -- Playwright's actionability checks
-    // will fail if an invisible overlay is intercepting pointer events.
     await comfyPage.canvas.click({
       position: { x: 100, y: 100 }
     })
+    await expect(comfyPage.canvas).toHaveFocus()
   })
 
   test('should close panel via close button from shortcuts view', async ({
@@ -91,7 +92,10 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await bottomPanel.keyboardShortcutsButton.click()
-    await expect(bottomPanel.root).toBeVisible()
+    await expect(
+      bottomPanel.root,
+      'Panel should be open before closing it from the shortcuts view'
+    ).toBeVisible()
 
     await bottomPanel.closeButton.click()
     await expect(bottomPanel.root).not.toBeVisible()
