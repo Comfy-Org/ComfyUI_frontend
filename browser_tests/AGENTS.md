@@ -1,6 +1,8 @@
 # E2E Testing Guidelines
 
 See `@docs/guidance/playwright.md` for Playwright best practices (auto-loaded for `*.spec.ts`).
+See `@browser_tests/FLAKE_PREVENTION_RULES.md` when triaging or editing
+flaky browser tests.
 
 ## Directory Structure
 

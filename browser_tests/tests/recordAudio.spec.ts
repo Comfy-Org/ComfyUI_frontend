@@ -16,13 +16,21 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
     await expect(comfyPage.searchBox.input).toHaveCount(1)
 
     // Search for and add the RecordAudio node
-    await comfyPage.searchBox.fillAndSelectFirstNode('RecordAudio')
+    await comfyPage.searchBox.fillAndSelectFirstNode('Record Audio', {
+      exact: true
+    })
     await comfyPage.nextFrame()
 
     // Verify the RecordAudio node was added
-    const recordAudioNodes =
-      await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')
-    expect(recordAudioNodes.length).toBe(1)
+    await expect
+      .poll(
+        async () =>
+          (await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')).length,
+        {
+          timeout: 5000
+        }
+      )
+      .toBe(1)
 
     // Take a screenshot of the canvas with the RecordAudio node
     await expect(comfyPage.canvas).toHaveScreenshot('record_audio_node.png')
