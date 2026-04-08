@@ -28,30 +28,6 @@ export function getWidgetName(w: IBaseWidget): string {
 }
 
 /**
- * Checks whether a widget is promoted by any subgraph node in the given graph.
- * Handles nested subgraph promotions where the stored key may omit the
- * disambiguatingSourceNodeId — checks both key shapes (with and without).
- */
-export function isWidgetPromoted(
-  graphId: string,
-  sourceNodeId: string,
-  sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
-): boolean {
-  const store = usePromotionStore()
-  if (
-    disambiguatingSourceNodeId &&
-    store.isPromotedByAny(graphId, {
-      sourceNodeId,
-      sourceWidgetName,
-      disambiguatingSourceNodeId
-    })
-  )
-    return true
-  return store.isPromotedByAny(graphId, { sourceNodeId, sourceWidgetName })
-}
-
-/**
  * Returns true if the given promotion entry corresponds to a linked promotion
  * on the subgraph node. Linked promotions are driven by subgraph input
  * connections and cannot be independently hidden or shown.

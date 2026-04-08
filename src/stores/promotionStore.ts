@@ -190,11 +190,35 @@ export const usePromotionStore = defineStore('promotion', () => {
     graphRefCounts.value.delete(graphId)
   }
 
+  /**
+   * Checks whether a widget is promoted by any subgraph node in the given
+   * graph. Handles nested subgraph promotions where the stored key may omit
+   * the disambiguatingSourceNodeId — checks both key shapes (#10612).
+   */
+  function isWidgetPromoted(
+    graphId: UUID,
+    sourceNodeId: string,
+    sourceWidgetName: string,
+    disambiguatingSourceNodeId?: string
+  ): boolean {
+    if (
+      disambiguatingSourceNodeId &&
+      isPromotedByAny(graphId, {
+        sourceNodeId,
+        sourceWidgetName,
+        disambiguatingSourceNodeId
+      })
+    )
+      return true
+    return isPromotedByAny(graphId, { sourceNodeId, sourceWidgetName })
+  }
+
   return {
     getPromotionsRef,
     getPromotions,
     isPromoted,
     isPromotedByAny,
+    isWidgetPromoted,
     setPromotions,
     promote,
     demote,

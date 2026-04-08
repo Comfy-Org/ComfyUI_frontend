@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
-const isPromotedByAnyMock = vi.hoisted(() => vi.fn())
+const isWidgetPromotedMock = vi.hoisted(() => vi.fn())
 
 // Mock dependencies
 vi.mock('@/stores/domWidgetStore', () => ({
@@ -14,7 +14,7 @@ vi.mock('@/stores/domWidgetStore', () => ({
 
 vi.mock('@/stores/promotionStore', () => ({
   usePromotionStore: () => ({
-    isPromotedByAny: isPromotedByAnyMock
+    isWidgetPromoted: isWidgetPromotedMock
   })
 }))
 
@@ -120,7 +120,7 @@ describe('DOMWidget draw promotion behavior', () => {
   })
 
   test('draws promoted outline for visible promoted widgets', () => {
-    isPromotedByAnyMock.mockReturnValue(true)
+    isWidgetPromotedMock.mockReturnValue(true)
 
     const node = new LGraphNode('test-node')
     const rootGraph = { id: 'root-graph-id' }
@@ -138,16 +138,17 @@ describe('DOMWidget draw promotion behavior', () => {
 
     widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
 
-    expect(isPromotedByAnyMock).toHaveBeenCalledWith('root-graph-id', {
-      sourceNodeId: '-1',
-      sourceWidgetName: 'seed'
-    })
+    expect(isWidgetPromotedMock).toHaveBeenCalledWith(
+      'root-graph-id',
+      '-1',
+      'seed'
+    )
     expect(ctx.strokeRect).toHaveBeenCalledOnce()
     expect(onDraw).toHaveBeenCalledWith(widget)
   })
 
   test('does not draw promoted outline when widget is not promoted', () => {
-    isPromotedByAnyMock.mockReturnValue(false)
+    isWidgetPromotedMock.mockReturnValue(false)
 
     const node = new LGraphNode('test-node')
     const rootGraph = { id: 'root-graph-id' }
@@ -187,7 +188,7 @@ describe('DOMWidget draw promotion behavior', () => {
 
     widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
 
-    expect(isPromotedByAnyMock).not.toHaveBeenCalled()
+    expect(isWidgetPromotedMock).not.toHaveBeenCalled()
     expect(ctx.strokeRect).not.toHaveBeenCalled()
     expect(onDraw).toHaveBeenCalledWith(widget)
   })

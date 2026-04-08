@@ -125,8 +125,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
-  readonly promotionStore = usePromotionStore()
-
   readonly id: string
 
   constructor(obj: {
@@ -190,10 +188,11 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
       const graphId = this.node.graph?.rootGraph.id
       const isPromoted =
         graphId &&
-        this.promotionStore.isPromotedByAny(graphId, {
-          sourceNodeId: String(this.node.id),
-          sourceWidgetName: this.name
-        })
+        usePromotionStore().isWidgetPromoted(
+          graphId,
+          String(this.node.id),
+          this.name
+        )
       if (!isPromoted) {
         this.options.onDraw?.(this)
         return

@@ -116,7 +116,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { isWidgetPromoted } from '@/core/graph/subgraph/promotionUtils'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type {
@@ -144,6 +144,7 @@ const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
 const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
+const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 
@@ -392,7 +393,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const sourceWidgetName = widget.storeName ?? widget.name
     const isPromoted =
       graphId &&
-      isWidgetPromoted(
+      promotionStore.isWidgetPromoted(
         graphId,
         hostNodeId,
         sourceWidgetName,

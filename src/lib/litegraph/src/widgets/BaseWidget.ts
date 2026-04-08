@@ -211,10 +211,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (
       graphId &&
       !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(graphId, {
-        sourceNodeId: String(this.node.id),
-        sourceWidgetName: this.name
-      })
+      usePromotionStore().isWidgetPromoted(
+        graphId,
+        String(this.node.id),
+        this.name
+      )
     )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced
