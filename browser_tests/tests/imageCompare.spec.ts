@@ -430,23 +430,26 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
     comfyPage
   }) => {
     await setImageCompareValue(comfyPage, {
-      beforeImages: ['http://invalid.local/broken.png'],
-      afterImages: ['http://invalid.local/broken2.png']
+      beforeImages: ['https://example.invalid/broken.png'],
+      afterImages: ['https://example.invalid/broken2.png']
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
     await expect(node.locator('img')).toHaveCount(2)
     await expect(node.getByRole('presentation')).toBeVisible()
 
-    const imgErrorCount = await node.evaluate((el) => {
-      const imgs = el.querySelectorAll('img')
-      let errors = 0
-      imgs.forEach((img) => {
-        if (img.complete && img.naturalWidth === 0 && img.src) errors++
-      })
-      return errors
-    })
-    expect(imgErrorCount).toBe(2)
+    await expect
+      .poll(() =>
+        node.evaluate((el) => {
+          const imgs = el.querySelectorAll('img')
+          let errors = 0
+          imgs.forEach((img) => {
+            if (img.complete && img.naturalWidth === 0 && img.src) errors++
+          })
+          return errors
+        })
+      )
+      .toBe(2)
   })
 
   test('Rapid value updates show latest images and reset batch index', async ({
@@ -458,15 +461,26 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
     const blueUrl = createTestImageDataUrl('Blue', '#00c')
 
     await setImageCompareValue(comfyPage, {
-      beforeImages: [redUrl],
+      beforeImages: [redUrl, green1Url],
       afterImages: [blueUrl]
     })
+
+    const node = comfyPage.vueNodes.getNodeLocator('1')
+    await node
+      .locator('[data-testid="before-batch"]')
+      .locator('[data-testid="batch-next"]')
+      .click()
+    await expect(
+      node
+        .locator('[data-testid="before-batch"]')
+        .locator('[data-testid="batch-counter"]')
+    ).toHaveText('2 / 2')
+
     await setImageCompareValue(comfyPage, {
       beforeImages: [green1Url, green2Url],
       afterImages: [blueUrl]
     })
 
-    const node = comfyPage.vueNodes.getNodeLocator('1')
     await expect(node.locator('img[alt="Before image"]')).toHaveAttribute(
       'src',
       green1Url
