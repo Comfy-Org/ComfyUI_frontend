@@ -147,22 +147,24 @@ describe('Vue Node - Subgraph Functionality', () => {
     expect(screen.getByTestId('subgraph-enter-button')).toBeInTheDocument()
   })
 
-  it('should prevent event propagation on double click', async () => {
+  it('should prevent click event propagation on subgraph button', async () => {
     await setupMocks(true) // isSubgraph = true
 
-    renderComponent({
+    const { container } = renderComponent({
       nodeData: createMockNodeData('test-node-1')
     })
 
     await nextTick()
 
+    const parentListener = vi.fn()
+    // eslint-disable-next-line testing-library/no-container
+    container.addEventListener('click', parentListener)
+
     const subgraphButton = screen.getByTestId('subgraph-enter-button')
 
     // eslint-disable-next-line testing-library/prefer-user-event
-    await fireEvent.dblClick(subgraphButton)
+    await fireEvent.click(subgraphButton)
 
-    // Should prevent propagation (handled by @dblclick.stop directive)
-    // This is tested by ensuring the component doesn't error and renders correctly
-    expect(subgraphButton).toBeInTheDocument()
+    expect(parentListener).not.toHaveBeenCalled()
   })
 })

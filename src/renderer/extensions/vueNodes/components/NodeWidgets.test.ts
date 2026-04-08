@@ -28,6 +28,24 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
+const WidgetStub = {
+  name: 'WidgetStub',
+  props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
+  template:
+    '<div class="widget-stub" :data-node-type="nodeType">{{ nodeType }}</div>'
+}
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  async (importOriginal) => {
+    const original = await importOriginal()
+    return {
+      ...(original as Record<string, unknown>),
+      getComponent: () => WidgetStub
+    }
+  }
+)
+
 describe('NodeWidgets', () => {
   const createMockWidget = (
     overrides: Partial<SafeWidgetData> = {}
@@ -115,24 +133,27 @@ describe('NodeWidgets', () => {
       const nodeData = createMockNodeData('CheckpointLoaderSimple', [widget])
       const { container } = renderComponent(nodeData)
 
-      const widgetElement = container.querySelector('.lg-node-widget')
-      expect(widgetElement).not.toBeNull()
+      const stub = container.querySelector('.widget-stub')
+      expect(stub).not.toBeNull()
+      expect(stub!.getAttribute('data-node-type')).toBe(
+        'CheckpointLoaderSimple'
+      )
     })
 
-    it('passes empty string when nodeData is undefined', () => {
+    it('renders no widgets when nodeData is undefined', () => {
       const { container } = renderComponent(undefined)
 
-      const widgetElements = container.querySelectorAll('.lg-node-widget')
-      expect(widgetElements).toHaveLength(0)
+      expect(container.querySelectorAll('.widget-stub')).toHaveLength(0)
     })
 
-    it('passes empty string when nodeData.type is undefined', () => {
+    it('passes empty string when nodeData.type is empty', () => {
       const widget = createMockWidget()
       const nodeData = createMockNodeData('', [widget])
       const { container } = renderComponent(nodeData)
 
-      const widgetElement = container.querySelector('.lg-node-widget')
-      expect(widgetElement).not.toBeNull()
+      const stub = container.querySelector('.widget-stub')
+      expect(stub).not.toBeNull()
+      expect(stub!.getAttribute('data-node-type')).toBe('')
     })
 
     it.for(['CheckpointLoaderSimple', 'LoraLoader', 'VAELoader', 'KSampler'])(
@@ -142,8 +163,9 @@ describe('NodeWidgets', () => {
         const nodeData = createMockNodeData(nodeType, [widget])
         const { container } = renderComponent(nodeData)
 
-        const widgetElement = container.querySelector('.lg-node-widget')
-        expect(widgetElement).not.toBeNull()
+        const stub = container.querySelector('.widget-stub')
+        expect(stub).not.toBeNull()
+        expect(stub!.getAttribute('data-node-type')).toBe(nodeType)
       }
     )
   })

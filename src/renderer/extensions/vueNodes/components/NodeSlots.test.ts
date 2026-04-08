@@ -95,9 +95,8 @@ const mountSlots = (nodeData: VueNodeData) => {
 }
 
 describe('NodeSlots.vue', () => {
-  it('filters out inputs with widget property and maps indexes correctly', (context) => {
-    context.skip('Filtering not working as expected, needs diagnosis')
-    // Two inputs without widgets (object and string) and one with widget (filtered)
+  it('filters out inputs with widget property and maps indexes correctly', () => {
+    // Two inputs without widgets and one with widget (filtered out)
     const inputObjNoWidget: INodeInputSlot = {
       name: 'objNoWidget',
       type: 'number',
@@ -111,7 +110,17 @@ describe('NodeSlots.vue', () => {
       widget: { name: 'objWithWidget' },
       link: null
     }
-    const inputs: INodeInputSlot[] = [inputObjNoWidget, inputObjWithWidget]
+    const inputStringNoWidget: INodeInputSlot = {
+      name: 'stringInput',
+      type: 'string',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const inputs: INodeInputSlot[] = [
+      inputObjNoWidget,
+      inputObjWithWidget,
+      inputStringNoWidget
+    ]
 
     const { container } = mountSlots(makeNodeData({ inputs }))
 
@@ -138,12 +147,11 @@ describe('NodeSlots.vue', () => {
         type: 'number',
         readonly: false
       },
-      // string input is converted to object with default type 'any'
       {
-        index: 1,
+        index: 2,
         name: 'stringInput',
         nodeId: '123',
-        type: 'any',
+        type: 'string',
         readonly: false
       }
     ])

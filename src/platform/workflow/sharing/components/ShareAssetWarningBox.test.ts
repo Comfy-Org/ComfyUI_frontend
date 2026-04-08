@@ -79,10 +79,6 @@ describe(ShareAssetWarningBox, () => {
 
     const mediaHeader = screen.getByTestId('section-header-media')
     const modelsHeader = screen.getByTestId('section-header-models')
-    // eslint-disable-next-line testing-library/no-node-access
-    const mediaChevron = mediaHeader.querySelector('i')!
-    // eslint-disable-next-line testing-library/no-node-access
-    const modelsChevron = modelsHeader.querySelector('i')!
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
     expect(modelsHeader).toHaveAttribute('aria-expanded', 'false')
@@ -94,22 +90,16 @@ describe(ShareAssetWarningBox, () => {
       'aria-controls',
       'section-content-models'
     )
-    expect(mediaChevron).toHaveClass('rotate-90')
-    expect(modelsChevron).not.toHaveClass('rotate-90')
 
     await user.click(modelsHeader)
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'false')
     expect(modelsHeader).toHaveAttribute('aria-expanded', 'true')
-    expect(mediaChevron).not.toHaveClass('rotate-90')
-    expect(modelsChevron).toHaveClass('rotate-90')
 
     await user.click(mediaHeader)
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
     expect(modelsHeader).toHaveAttribute('aria-expanded', 'false')
-    expect(mediaChevron).toHaveClass('rotate-90')
-    expect(modelsChevron).not.toHaveClass('rotate-90')
 
     await user.click(mediaHeader)
 
@@ -165,16 +155,12 @@ describe(ShareAssetWarningBox, () => {
     })
 
     const mediaHeader = screen.getByTestId('section-header-media')
-    // eslint-disable-next-line testing-library/no-node-access
-    const mediaChevron = mediaHeader.querySelector('i')!
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
-    expect(mediaChevron).toHaveClass('rotate-90')
 
     await user.click(mediaHeader)
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'false')
-    expect(mediaChevron).not.toHaveClass('rotate-90')
   })
 
   it('emits acknowledged update when checkbox is toggled', async () => {

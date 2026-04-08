@@ -64,18 +64,14 @@ describe('CompareSliderThumbnail', () => {
   })
 
   it('renders slider divider', () => {
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    const { container } = renderThumbnail()
-    const divider = container.querySelector('.bg-white\\/30')
-    expect(divider).not.toBeNull()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider).toBeDefined()
   })
 
   it('positions slider based on default value', () => {
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-    const { container } = renderThumbnail()
-    const divider = container.querySelector('.bg-white\\/30') as HTMLElement
+    renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
     expect(divider.style.left).toBe('50%')
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
   })
 })

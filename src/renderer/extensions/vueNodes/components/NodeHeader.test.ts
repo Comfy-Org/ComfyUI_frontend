@@ -5,6 +5,7 @@ import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -93,21 +94,26 @@ const createGlobalConfig = () => {
 
   const { pinia } = setupMockStores()
 
+  const tooltipDirective = {
+    mounted: vi.fn(),
+    updated: vi.fn(),
+    unmounted: vi.fn()
+  }
+
   return {
-    plugins: [PrimeVue, i18n, pinia],
-    components: { InputText },
-    directives: {
-      tooltip: {
-        mounted: vi.fn(),
-        updated: vi.fn(),
-        unmounted: vi.fn()
+    tooltipDirective,
+    global: {
+      plugins: [PrimeVue, i18n, pinia],
+      components: { InputText },
+      directives: {
+        tooltip: tooltipDirective
       }
     }
   }
 }
 
-const renderHeader = (props?: Record<string, unknown>) => {
-  const global = createGlobalConfig()
+const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
+  const { global, tooltipDirective } = createGlobalConfig()
   const onCollapse = vi.fn()
   const onUpdateTitle = vi.fn()
   const user = userEvent.setup()
@@ -123,7 +129,7 @@ const renderHeader = (props?: Record<string, unknown>) => {
     }
   })
 
-  return { ...result, user, onCollapse, onUpdateTitle }
+  return { ...result, user, onCollapse, onUpdateTitle, tooltipDirective }
 }
 
 describe('NodeHeader.vue', () => {
@@ -182,58 +188,63 @@ describe('NodeHeader.vue', () => {
   })
 
   it('renders correct chevron icon based on collapsed prop', async () => {
-    const { container, rerender } = renderHeader({ collapsed: false })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const expandedIcon = container.querySelector('i')!
+    const { rerender } = renderHeader({ collapsed: false })
+    const collapseButton = screen.getByTestId('node-collapse-button')
+    // eslint-disable-next-line testing-library/no-node-access
+    const expandedIcon = collapseButton.querySelector('i')!
     expect(expandedIcon.classList).not.toContain('-rotate-90')
 
     await rerender({
       nodeData: makeNodeData(),
       collapsed: true
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const collapsedIcon = container.querySelector('i')!
+    // eslint-disable-next-line testing-library/no-node-access
+    const collapsedIcon = collapseButton.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
 
   describe('Tooltips', () => {
     it('applies tooltip directive to node title with correct configuration', () => {
-      const { container } = renderHeader({
+      const { tooltipDirective } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
       expect(screen.getByTestId('node-title')).toBeInTheDocument()
-
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const directive = container.querySelector('[data-testid="node-title"]')
-      expect(directive).toBeTruthy()
+      expect(tooltipDirective.mounted).toHaveBeenCalled()
     })
 
     it('disables tooltip when editing is active', async () => {
-      renderHeader({
+      const { tooltipDirective } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
+
+      tooltipDirective.updated.mockClear()
 
       // eslint-disable-next-line testing-library/prefer-user-event
       await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
-      expect(screen.getByTestId('node-title')).toBeInTheDocument()
+      expect(tooltipDirective.updated).toHaveBeenCalled()
     })
 
     it('creates tooltip configuration when component mounts', () => {
-      renderHeader({
+      const { tooltipDirective } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      expect(screen.getByTestId('node-title')).toBeInTheDocument()
+      expect(tooltipDirective.mounted).toHaveBeenCalled()
+      const mountedCall = tooltipDirective.mounted.mock.calls[0]
+      const binding = mountedCall[1]
+      expect(binding.value).toBeDefined()
     })
 
     it('uses tooltip container from provide/inject', () => {
-      renderHeader({
+      const { tooltipDirective } = renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      expect(screen.getByTestId('node-title')).toBeInTheDocument()
+      expect(tooltipDirective.mounted).toHaveBeenCalled()
+      const mountedEl = tooltipDirective.mounted.mock.calls[0][0]
+      expect(mountedEl).toBe(screen.getByTestId('node-title'))
     })
   })
 })

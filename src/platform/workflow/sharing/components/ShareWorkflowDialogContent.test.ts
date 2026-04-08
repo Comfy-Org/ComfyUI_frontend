@@ -298,9 +298,9 @@ describe('ShareWorkflowDialogContent', () => {
     renderComponent()
     await flushPromises()
 
-    const publishButton = screen
-      .getAllByRole('button')
-      .find((button) => button.textContent?.includes('Create link'))
+    const publishButton = screen.getByRole('button', {
+      name: /Create link/i
+    })
 
     expect(publishButton).toBeDisabled()
   })
@@ -313,9 +313,9 @@ describe('ShareWorkflowDialogContent', () => {
     await userEvent.click(checkbox)
     await nextTick()
 
-    const publishButton = screen
-      .getAllByRole('button')
-      .find((button) => button.textContent?.includes('Create link'))
+    const publishButton = screen.getByRole('button', {
+      name: /Create link/i
+    })
 
     expect(publishButton).toBeEnabled()
   })
@@ -361,12 +361,11 @@ describe('ShareWorkflowDialogContent', () => {
     await userEvent.click(checkbox)
     await nextTick()
 
-    const publishButton = screen
-      .getAllByRole('button')
-      .find((button) => button.textContent?.includes('Create link'))
-    expect(publishButton).toBeDefined()
+    const publishButton = screen.getByRole('button', {
+      name: /Create link/i
+    })
 
-    await userEvent.click(publishButton!)
+    await userEvent.click(publishButton)
     await flushPromises()
 
     expect(mockGetShareableAssets).toHaveBeenCalledTimes(1)
@@ -468,11 +467,10 @@ describe('ShareWorkflowDialogContent', () => {
 
       mockPublishWorkflow.mockRejectedValue(new Error('Publish failed'))
 
-      const publishButton = screen
-        .getAllByRole('button')
-        .find((btn) => btn.textContent?.includes('Create link'))
-      expect(publishButton).toBeDefined()
-      await userEvent.click(publishButton!)
+      const publishButton = screen.getByRole('button', {
+        name: /Create link/i
+      })
+      await userEvent.click(publishButton)
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
@@ -501,13 +499,11 @@ describe('ShareWorkflowDialogContent', () => {
 
       mockWorkflowStore.activeWorkflow = null
 
-      const publishButton = screen
-        .getAllByRole('button')
-        .find((btn) => btn.textContent?.includes('Create link'))
-      if (publishButton) {
-        await userEvent.click(publishButton)
-        await flushPromises()
-      }
+      const publishButton = screen.getByRole('button', {
+        name: /Create link/i
+      })
+      await userEvent.click(publishButton)
+      await flushPromises()
 
       expect(mockPublishWorkflow).not.toHaveBeenCalled()
     })

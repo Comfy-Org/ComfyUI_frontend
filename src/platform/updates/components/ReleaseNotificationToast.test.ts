@@ -141,7 +141,8 @@ describe('ReleaseNotificationToast', () => {
 
     const { container } = renderComponent()
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.release-toast-popup')).toBeInTheDocument()
+    const rocketIcon = container.querySelector('i.icon-\\[lucide--rocket\\]')
+    expect(rocketIcon).toBeInTheDocument()
   })
 
   it('displays release version', () => {
