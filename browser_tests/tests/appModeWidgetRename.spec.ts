@@ -1,11 +1,11 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 import {
   saveAndReopenInAppMode,
   setupSubgraphBuilder
-} from '../helpers/builderTestUtils'
+} from '@e2e/helpers/builderTestUtils'
 
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

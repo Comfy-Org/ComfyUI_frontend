@@ -3,9 +3,9 @@ import type { Locator } from '@playwright/test'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 

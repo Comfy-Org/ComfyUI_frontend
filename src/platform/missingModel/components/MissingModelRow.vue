@@ -16,6 +16,7 @@
         </p>
 
         <Button
+          data-testid="missing-model-copy-name"
           variant="textonly"
           size="icon-sm"
           class="size-8 shrink-0 hover:bg-transparent"
@@ -32,6 +33,7 @@
 
       <Button
         v-if="!isCloud && model.representative.url && !isAssetSupported"
+        data-testid="missing-model-copy-url"
         variant="secondary"
         size="sm"
         class="h-8 shrink-0 rounded-lg text-sm"
@@ -62,6 +64,7 @@
 
       <Button
         v-if="model.referencingNodes.length > 0"
+        data-testid="missing-model-expand"
         variant="textonly"
         size="icon-sm"
         :aria-label="
@@ -106,6 +109,7 @@
             {{ getNodeDisplayLabel(ref.nodeId, model.representative.nodeType) }}
           </p>
           <Button
+            data-testid="missing-model-locate"
             variant="textonly"
             size="icon-sm"
             :aria-label="t('rightSidePanel.missingModels.locateNode')"
@@ -148,6 +152,7 @@
           class="flex w-full items-start py-1"
         >
           <Button
+            data-testid="missing-model-download"
             variant="secondary"
             size="md"
             class="flex w-full flex-1"

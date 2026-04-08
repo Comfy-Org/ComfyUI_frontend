@@ -1,7 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 import type { JobsListResponse } from '@comfyorg/ingest-types'
 
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/

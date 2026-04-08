@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
-import { TestIds } from '../selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 class SidebarTab {
   constructor(

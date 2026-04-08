@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { NodeBadgeMode } from '../../src/types/nodeSource'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -229,6 +229,8 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await cloneItem.click()
     await expect(cloneItem).toHaveCount(0)
     await comfyPage.nextFrame()
-    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(nodeCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(nodeCount + 1)
   })
 })

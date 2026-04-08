@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 // Constants
 const UPDATED_SUBGRAPH_TITLE = 'Updated Subgraph Title'
@@ -112,17 +112,17 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       await expect(comfyPage.page.locator(SELECTORS.breadcrumb)).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
 
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
 
     test('Breadcrumb disappears after switching workflows while inside subgraph', async ({
@@ -194,7 +194,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
 
       // Verify we're in a subgraph
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       // Test that Escape no longer exits subgraph
       await comfyPage.page.keyboard.press('Escape')
@@ -206,7 +206,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       // Test that Alt+Q now exits subgraph
       await comfyPage.page.keyboard.press('Alt+q')
       await comfyPage.nextFrame()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
 
     test('Escape prioritizes closing dialogs over exiting subgraph', async ({
@@ -240,12 +240,12 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       ).not.toBeVisible()
 
       // Should still be in subgraph
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       // Press Escape again - now should exit subgraph
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
   })
 
@@ -372,7 +372,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       // Verify we're inside the subgraph
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       // Navigate back to the root graph
       await comfyPage.page.keyboard.press('Escape')
@@ -410,7 +410,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
       await subgraphNode.navigateIntoSubgraph()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()

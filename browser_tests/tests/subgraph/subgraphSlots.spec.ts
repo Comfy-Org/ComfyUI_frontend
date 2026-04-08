@@ -5,12 +5,12 @@ import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { comfyPageFixture as test, comfyExpect } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
+import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
-} from '../../fixtures/utils/slotBoundsUtil'
+} from '@e2e/fixtures/utils/slotBoundsUtil'
 
 // Constants
 const RENAMED_INPUT_NAME = 'renamed_input'
@@ -48,8 +48,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('input')
-      expect(finalCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('input'))
+        .toBe(initialCount + 1)
     })
 
     test('Can add output slots to subgraph', async ({ comfyPage }) => {
@@ -67,8 +68,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('output')
-      expect(finalCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('output'))
+        .toBe(initialCount + 1)
     })
 
     test('Can remove input slots from subgraph', async ({ comfyPage }) => {
@@ -86,8 +88,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('input')
-      expect(finalCount).toBe(initialCount - 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('input'))
+        .toBe(initialCount - 1)
     })
 
     test('Can remove output slots from subgraph', async ({ comfyPage }) => {
@@ -105,8 +108,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('output')
-      expect(finalCount).toBe(initialCount - 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('output'))
+        .toBe(initialCount - 1)
     })
   })
 
@@ -135,10 +139,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
-
-      expect(newInputName).toBe(RENAMED_INPUT_NAME)
-      expect(newInputName).not.toBe(initialInputLabel)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(RENAMED_INPUT_NAME)
     })
 
     test('Can rename input slots via double-click', async ({ comfyPage }) => {
@@ -161,10 +164,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
-
-      expect(newInputName).toBe(RENAMED_INPUT_NAME)
-      expect(newInputName).not.toBe(initialInputLabel)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(RENAMED_INPUT_NAME)
     })
 
     test('Can rename output slots via double-click', async ({ comfyPage }) => {
@@ -188,10 +190,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newOutputName = await comfyPage.subgraph.getSlotLabel('output')
-
-      expect(newOutputName).toBe(renamedOutputName)
-      expect(newOutputName).not.toBe(initialOutputLabel)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('output'))
+        .toBe(renamedOutputName)
     })
 
     test('Right-click context menu still works alongside double-click', async ({
@@ -220,10 +221,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
-
-      expect(newInputName).toBe(rightClickRenamedName)
-      expect(newInputName).not.toBe(initialInputLabel)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(rightClickRenamedName)
     })
 
     test('Can double-click on slot label text to rename', async ({
