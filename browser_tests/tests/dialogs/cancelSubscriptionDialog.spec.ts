@@ -13,7 +13,7 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
       ).dialog.showCancelSubscriptionDialog('2025-12-31T00:00:00Z')
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await expect(
@@ -31,10 +31,26 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
       ).dialog.showCancelSubscriptionDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await dialog.getByRole('button', { name: 'Keep subscription' }).click()
+    await expect(dialog).toBeHidden()
+  })
+
+  test('Escape key closes dialog', async ({ comfyPage }) => {
+    const { page } = comfyPage
+
+    await page.evaluate(() => {
+      void (
+        window.app!.extensionManager as WorkspaceStore
+      ).dialog.showCancelSubscriptionDialog()
+    })
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
   })
 
@@ -43,9 +59,7 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
   }) => {
     const { page } = comfyPage
 
-    let cancelCalled = false
     await page.route('**/billing/subscription/cancel', async (route) => {
-      cancelCalled = true
       await route.fulfill({
         status: 200,
         json: {
@@ -76,17 +90,18 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
       ).dialog.showCancelSubscriptionDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
+    const cancelRequest = page.waitForRequest('**/billing/subscription/cancel')
     await dialog.getByRole('button', { name: 'Cancel subscription' }).click()
+    await cancelRequest
 
     await expect(dialog).toBeHidden()
-    expect(cancelCalled).toBe(true)
 
-    const successToast = page.locator(
-      '.p-toast-message.p-toast-message-success'
-    )
+    const successToast = page.getByRole('alert').filter({
+      hasText: /cancel/i
+    })
     await expect(successToast).toBeVisible()
   })
 
@@ -108,12 +123,14 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
       ).dialog.showCancelSubscriptionDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await dialog.getByRole('button', { name: 'Cancel subscription' }).click()
 
-    const errorToast = page.locator('.p-toast-message.p-toast-message-error')
+    const errorToast = page.getByRole('alert').filter({
+      hasText: /error|fail/i
+    })
     await expect(errorToast).toBeVisible()
 
     await expect(dialog).toBeVisible()

@@ -15,7 +15,7 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
       ).dialog.showTopUpCreditsDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await expect(
@@ -39,7 +39,7 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
       ).dialog.showTopUpCreditsDialog({ isInsufficientCredits: true })
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await expect(
@@ -50,7 +50,7 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
     )
   })
 
-  test('selecting a preset amount updates the selection', async ({
+  test('selecting a preset amount updates the displayed dollar value', async ({
     comfyPage
   }) => {
     const { page } = comfyPage
@@ -61,12 +61,12 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
       ).dialog.showTopUpCreditsDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await dialog.getByRole('button', { name: '$10' }).click()
 
-    await expect(dialog).toContainText('Amount (USD)')
+    await expect(dialog.getByText('10', { exact: true })).toBeVisible()
     await expect(dialog).toContainText('Credits')
   })
 
@@ -79,11 +79,11 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
       ).dialog.showTopUpCreditsDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
-    const closeButton = dialog.locator('button').filter({
-      has: page.locator('.icon-\\[lucide--x\\]')
+    const closeButton = dialog.getByRole('button').filter({
+      has: page.locator('i.icon-\\[lucide--x\\]')
     })
     await closeButton.click()
 
@@ -99,11 +99,65 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
       ).dialog.showTopUpCreditsDialog()
     })
 
-    const dialog = page.locator('.p-dialog')
+    const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await expect(
       dialog.getByRole('link', { name: 'View pricing details' })
     ).toBeVisible()
+  })
+
+  test('purchase button calls API endpoint', async ({ comfyPage }) => {
+    const { page } = comfyPage
+
+    await page.route('**/customers/credit', async (route) => {
+      await route.fulfill({
+        status: 200,
+        json: { checkout_url: 'https://example.com/checkout' }
+      })
+    })
+
+    await page.evaluate(() => {
+      void (
+        window.app!.extensionManager as WorkspaceStore
+      ).dialog.showTopUpCreditsDialog()
+    })
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    await dialog.getByRole('button', { name: '$10' }).click()
+
+    const purchaseRequest = page.waitForRequest('**/customers/credit')
+    await dialog.getByRole('button', { name: /buy credits/i }).click()
+    await purchaseRequest
+  })
+
+  test('purchase failure shows error toast', async ({ comfyPage }) => {
+    const { page } = comfyPage
+
+    await page.route('**/customers/credit', async (route) => {
+      await route.fulfill({
+        status: 500,
+        json: { message: 'Payment failed' }
+      })
+    })
+
+    await page.evaluate(() => {
+      void (
+        window.app!.extensionManager as WorkspaceStore
+      ).dialog.showTopUpCreditsDialog()
+    })
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    await dialog.getByRole('button', { name: '$10' }).click()
+    await dialog.getByRole('button', { name: /buy credits/i }).click()
+
+    const errorToast = page.getByRole('alert').filter({
+      hasText: /error|fail/i
+    })
+    await expect(errorToast).toBeVisible()
   })
 })
