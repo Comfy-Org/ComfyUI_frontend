@@ -169,6 +169,9 @@ test.describe('Output History', { tag: '@ui' }, () => {
 
     await expect(comfyPage.appMode.cancelRunButton).toBeVisible()
 
+    await comfyPage.page.route('**/interrupt', (route) =>
+      route.fulfill({ status: 200 })
+    )
     const interruptRequest = comfyPage.page.waitForRequest('**/interrupt')
     await comfyPage.appMode.cancelRunButton.click()
     await interruptRequest
