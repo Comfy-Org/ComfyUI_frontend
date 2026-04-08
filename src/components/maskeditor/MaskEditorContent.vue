@@ -40,7 +40,10 @@
 
     <LoadingOverlay :loading="!initialized" size="sm" />
 
-    <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">
+    <div
+      class="maskEditor-ui-container flex min-h-0 flex-1 flex-col"
+      data-testid="mask-editor-ui-container"
+    >
       <div class="flex min-h-0 flex-1 overflow-hidden">
         <ToolPanel
           v-if="initialized"

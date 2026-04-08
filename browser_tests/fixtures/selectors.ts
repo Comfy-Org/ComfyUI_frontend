@@ -149,6 +149,10 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  maskEditor: {
+    dialog: 'mask-editor-dialog',
+    uiContainer: 'mask-editor-ui-container'
   }
 } as const
 
@@ -179,3 +183,4 @@ export type TestIdValue =
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.maskEditor)[keyof typeof TestIds.maskEditor]
