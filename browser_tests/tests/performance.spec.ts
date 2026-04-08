@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { assetPath } from '../fixtures/utils/paths'
 import { logMeasurement, recordMeasurement } from '../helpers/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
@@ -345,6 +346,63 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       console.log(
         `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
       )
+    })
+  })
+
+  test.describe('workflow loading', () => {
+    test('large workflow load and settle', async ({ comfyPage }) => {
+      await comfyPage.perf.startMeasuring()
+
+      await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+      // Settling period: 120 frames (~2s) for DOM creation + layout stabilization
+      for (let i = 0; i < 120; i++) {
+        await comfyPage.nextFrame()
+      }
+
+      const m = await comfyPage.perf.stopMeasuring('large-workflow-load')
+      recordMeasurement(m)
+      logMeasurement('Large workflow load', m, [
+        'durationMs',
+        'styleRecalcs',
+        'layouts',
+        'taskDurationMs',
+        'totalBlockingTimeMs',
+        'domNodes',
+        'heapDeltaBytes'
+      ])
+    })
+
+    test('media-heavy workflow load and settle', async ({ comfyPage }) => {
+      // Intercept all media preview requests with a small test image
+      await comfyPage.page.route(/\/api\/view\?/, (route) =>
+        route.fulfill({
+          path: assetPath('image64x64.webp'),
+          contentType: 'image/webp'
+        })
+      )
+
+      await comfyPage.perf.startMeasuring()
+
+      await comfyPage.workflow.loadWorkflow('profiling-workflow-media-heavy')
+
+      // Longer settling: 240 frames (~4s) for 585 nodes + 128 media previews
+      for (let i = 0; i < 240; i++) {
+        await comfyPage.nextFrame()
+      }
+
+      const m = await comfyPage.perf.stopMeasuring('media-heavy-workflow-load')
+      recordMeasurement(m)
+      logMeasurement('Media-heavy workflow load', m, [
+        'durationMs',
+        'styleRecalcs',
+        'layouts',
+        'taskDurationMs',
+        'totalBlockingTimeMs',
+        'frameDurationMs',
+        'domNodes',
+        'heapDeltaBytes'
+      ])
     })
   })
 
