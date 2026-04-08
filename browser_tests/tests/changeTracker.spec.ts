@@ -116,8 +116,9 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
     // Ensure undo reverts both changes
     await comfyPage.keyboard.undo()
-    await expect(node).not.toBeBypassed()
-    await expect(node).not.toBeCollapsed()
+    await expect
+      .poll(async () => [await node.isBypassed(), await node.isCollapsed()])
+      .toEqual([false, false])
   })
 
   test('Can nest multiple change transactions without adding undo steps', async ({
