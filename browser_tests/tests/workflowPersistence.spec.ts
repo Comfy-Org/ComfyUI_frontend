@@ -2,7 +2,44 @@ import { readFileSync } from 'fs'
 
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+
+async function getNodeOutputImageCount(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<number> {
+  return await comfyPage.page.evaluate(
+    (id) => window.app!.nodeOutputs?.[id]?.images?.length ?? 0,
+    nodeId
+  )
+}
+
+async function getWidgetValueSnapshot(
+  comfyPage: ComfyPage
+): Promise<Record<string, Array<{ name: string; value: unknown }>>> {
+  return await comfyPage.page.evaluate(() => {
+    const nodes = window.app!.graph.nodes
+    const results: Record<string, Array<{ name: string; value: unknown }>> = {}
+    for (const node of nodes) {
+      if (node.widgets && node.widgets.length > 0) {
+        results[node.id] = node.widgets.map((w) => ({
+          name: w.name,
+          value: w.value
+        }))
+      }
+    }
+    return results
+  })
+}
+
+async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
+  return await comfyPage.page.evaluate(() => {
+    return window.app!.graph.links
+      ? Object.keys(window.app!.graph.links).length
+      : 0
+  })
+}
 
 test.describe('Workflow Persistence', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -71,7 +108,7 @@ test.describe('Workflow Persistence', () => {
 
     const firstNode = await comfyPage.nodeOps.getFirstNodeRef()
     expect(firstNode).toBeTruthy()
-    const nodeId = firstNode!.id
+    const nodeId = String(firstNode!.id)
 
     // Simulate node outputs as if execution completed
     await comfyPage.page.evaluate((id) => {
@@ -91,24 +128,20 @@ test.describe('Workflow Persistence', () => {
       >
       em.workflow?.activeWorkflow?.changeTracker?.checkState()
     })
-    await comfyPage.nextFrame()
 
-    const outputsBefore = await comfyPage.page.evaluate((id) => {
-      return window.app!.nodeOutputs?.[id]
-    }, String(nodeId))
-    expect(outputsBefore).toBeTruthy()
+    await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.nextFrame()
+    await comfyPage.workflow.waitForWorkflowIdle()
 
     await tab.switchToWorkflow('outputs-test')
-    await comfyPage.nextFrame()
+    await comfyPage.workflow.waitForWorkflowIdle()
 
-    const outputsAfter = await comfyPage.page.evaluate((id) => {
-      return window.app!.nodeOutputs?.[id]
-    }, String(nodeId))
-    expect(outputsAfter).toBeTruthy()
-    expect(outputsAfter?.images).toBeDefined()
+    await expect
+      .poll(() => getNodeOutputImageCount(comfyPage, nodeId), {
+        timeout: 5_000
+      })
+      .toBe(1)
   })
 
   test('Loading a new workflow cleanly replaces the previous graph', async ({
@@ -149,43 +182,21 @@ test.describe('Workflow Persistence', () => {
 
     // Read widget values via page.evaluate — these are internal LiteGraph
     // state not exposed through DOM
-    const widgetValuesBefore = await comfyPage.page.evaluate(() => {
-      const nodes = window.app!.graph.nodes
-      const results: Record<string, unknown[]> = {}
-      for (const node of nodes) {
-        if (node.widgets && node.widgets.length > 0) {
-          results[node.id] = node.widgets.map((w) => ({
-            name: w.name,
-            value: w.value
-          }))
-        }
-      }
-      return results
-    })
+    const widgetValuesBefore = await getWidgetValueSnapshot(comfyPage)
 
     expect(Object.keys(widgetValuesBefore).length).toBeGreaterThan(0)
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.nextFrame()
+    await comfyPage.workflow.waitForWorkflowIdle()
 
     await tab.switchToWorkflow('widget-state-test')
-    await comfyPage.nextFrame()
+    await comfyPage.workflow.waitForWorkflowIdle()
 
-    const widgetValuesAfter = await comfyPage.page.evaluate(() => {
-      const nodes = window.app!.graph.nodes
-      const results: Record<string, unknown[]> = {}
-      for (const node of nodes) {
-        if (node.widgets && node.widgets.length > 0) {
-          results[node.id] = node.widgets.map((w) => ({
-            name: w.name,
-            value: w.value
-          }))
-        }
-      }
-      return results
-    })
-
-    expect(widgetValuesAfter).toEqual(widgetValuesBefore)
+    await expect
+      .poll(() => getWidgetValueSnapshot(comfyPage), {
+        timeout: 5_000
+      })
+      .toEqual(widgetValuesBefore)
   })
 
   test('API format workflow with missing node types partially loads', async ({
@@ -234,10 +245,10 @@ test.describe('Workflow Persistence', () => {
       button: 'middle',
       position: { x: 100, y: 100 }
     })
-    await comfyPage.nextFrame()
 
-    const nodeCountAfter = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCountAfter).toBe(initialNodeCount)
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .toBe(initialNodeCount)
   })
 
   test('Exported workflow does not contain transient blob: URLs', async ({
@@ -300,27 +311,85 @@ test.describe('Workflow Persistence', () => {
     await tab.open()
 
     // Link count requires internal graph state — not exposed via DOM
-    const linkCountBefore = await comfyPage.page.evaluate(() => {
-      return window.app!.graph.links
-        ? Object.keys(window.app!.graph.links).length
-        : 0
-    })
+    const linkCountBefore = await getLinkCount(comfyPage)
     expect(linkCountBefore).toBeGreaterThan(0)
 
     await comfyPage.menu.topbar.saveWorkflow('links-test')
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.nextFrame()
+    await comfyPage.workflow.waitForWorkflowIdle()
 
     await tab.switchToWorkflow('links-test')
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    const linkCountAfter = await comfyPage.page.evaluate(() => {
-      return window.app!.graph.links
-        ? Object.keys(window.app!.graph.links).length
-        : 0
+    await expect
+      .poll(() => getLinkCount(comfyPage), { timeout: 5_000 })
+      .toBe(linkCountBefore)
+  })
+
+  test('Closing an unmodified inactive tab preserves both workflows', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10745 — closing inactive tab could corrupt the persisted file'
     })
-    expect(linkCountAfter).toBe(linkCountBefore)
+
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const suffix = Date.now().toString(36)
+    const nameA = `test-A-${suffix}`
+    const nameB = `test-B-${suffix}`
+
+    // Save the default workflow as A
+    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const nodeCountA = await comfyPage.nodeOps.getNodeCount()
+
+    // Create B: duplicate, add a node, then save (unmodified after save)
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.nextFrame()
+
+    await comfyPage.page.evaluate(() => {
+      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
+    })
+    await comfyPage.nextFrame()
+    await comfyPage.menu.topbar.saveWorkflow(nameB)
+
+    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
+    expect(nodeCountB).toBe(nodeCountA + 1)
+
+    // Switch to A (making B inactive and unmodified)
+    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Close inactive B via middle-click — no save dialog expected
+    await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
+      button: 'middle'
+    })
+    await comfyPage.nextFrame()
+
+    // A should still have its own content
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Reopen B from saved list
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // B should have its original content, not A's
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
+      .toBe(nodeCountB)
   })
 
   test('Closing an inactive tab with save preserves its own content', async ({
