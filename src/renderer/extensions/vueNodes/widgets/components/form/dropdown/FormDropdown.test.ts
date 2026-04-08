@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -181,6 +180,7 @@ describe('FormDropdown', () => {
     )
     await flushPromises()
 
+    // eslint-disable-next-line testing-library/no-node-access
     await user.click(container.querySelector('.mock-dropdown-trigger')!)
     await flushPromises()
 

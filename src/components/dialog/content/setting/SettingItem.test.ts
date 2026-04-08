@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia } from 'pinia'
@@ -51,6 +50,7 @@ describe('SettingItem', () => {
   }
 
   function getFormItemData(container: Element) {
+    // eslint-disable-next-line testing-library/no-node-access
     const el = container.querySelector('[data-testid="form-item-data"]')
     return JSON.parse(el!.textContent!)
   }

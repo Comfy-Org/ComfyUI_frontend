@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -49,6 +48,7 @@ describe('FormSelectButton Core Component', () => {
       const options = ['option1', 'option2']
       const { container } = renderComponent(null, options)
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const div = container.querySelector('div')
       const buttons = screen.getAllByRole('button')
 
@@ -595,6 +595,7 @@ describe('FormSelectButton Core Component', () => {
       })
 
       const clickHandler = vi.fn()
+      // eslint-disable-next-line testing-library/no-node-access
       container.firstElementChild!.addEventListener('click', clickHandler)
 
       await clickButton('option2')

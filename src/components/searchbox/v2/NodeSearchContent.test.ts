@@ -31,7 +31,7 @@ describe('NodeSearchContent', () => {
     vi.restoreAllMocks()
   })
 
-  async function createRender(props = {}) {
+  async function renderComponent(props = {}) {
     const user = userEvent.setup()
     const onAddNode = vi.fn()
     const onHoverNode = vi.fn()
@@ -72,7 +72,7 @@ describe('NodeSearchContent', () => {
   ) {
     useNodeDefStore().updateNodeDefs(nodes.map(createMockNodeDef))
     vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(true)
-    const result = await createRender()
+    const result = await renderComponent()
     await result.user.click(screen.getByTestId('category-favorites'))
     await nextTick()
     return result
@@ -92,7 +92,7 @@ describe('NodeSearchContent', () => {
         useNodeDefStore().nodeDefsByName['FrequentNode']
       ])
 
-      await createRender()
+      await renderComponent()
 
       const items = screen.getAllByTestId('node-item')
       expect(items).toHaveLength(1)
@@ -114,7 +114,7 @@ describe('NodeSearchContent', () => {
         (node: ComfyNodeDefImpl) => node.name === 'BookmarkedNode'
       )
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await user.click(screen.getByTestId('category-favorites'))
       await nextTick()
 
@@ -129,7 +129,7 @@ describe('NodeSearchContent', () => {
       ])
       vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(false)
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await user.click(screen.getByTestId('category-favorites'))
       await nextTick()
 
@@ -158,7 +158,7 @@ describe('NodeSearchContent', () => {
         useNodeDefStore().nodeDefsByName['CustomNode'].nodeSource.type
       ).toBe(NodeSourceType.CustomNodes)
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await user.click(screen.getByTestId('category-extensions'))
       await nextTick()
 
@@ -175,7 +175,7 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      await createRender()
+      await renderComponent()
       expect(
         screen.queryByTestId('category-essentials')
       ).not.toBeInTheDocument()
@@ -195,7 +195,7 @@ describe('NodeSearchContent', () => {
       ])
       await nextTick()
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await user.click(screen.getByTestId('category-essentials'))
       await nextTick()
 
@@ -223,7 +223,7 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await user.click(screen.getByTestId('category-sampling'))
       await nextTick()
 
@@ -249,7 +249,7 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await user.click(screen.getByTestId('category-sampling'))
       await nextTick()
 
@@ -268,7 +268,7 @@ describe('NodeSearchContent', () => {
         createMockNodeDef({ name: 'TestNode', display_name: 'Test Node' })
       ])
 
-      const { user } = await createRender()
+      const { user } = await renderComponent()
 
       const input = screen.getByRole('combobox')
       await user.type(input, 'test query')
@@ -418,7 +418,7 @@ describe('NodeSearchContent', () => {
     })
 
     it('should emit null hoverNode when no results', async () => {
-      const { user, onHoverNode } = await createRender()
+      const { user, onHoverNode } = await renderComponent()
 
       vi.spyOn(useNodeBookmarkStore(), 'isBookmarked').mockReturnValue(false)
       await user.click(screen.getByTestId('category-favorites'))
@@ -439,7 +439,7 @@ describe('NodeSearchContent', () => {
         })
       ])
 
-      await createRender({
+      await renderComponent({
         filters: [
           {
             filterDef: useNodeDefStore().nodeSearchService.inputTypeFilter,
@@ -474,7 +474,7 @@ describe('NodeSearchContent', () => {
 
     it('should emit removeFilter on backspace', async () => {
       const filters = createFilters(1)
-      const { user, onRemoveFilter } = await createRender({ filters })
+      const { user, onRemoveFilter } = await renderComponent({ filters })
 
       await user.click(screen.getByRole('combobox'))
       await user.keyboard('{Backspace}')
@@ -489,7 +489,7 @@ describe('NodeSearchContent', () => {
     })
 
     it('should not interact with chips when no filters exist', async () => {
-      const { user, onRemoveFilter } = await createRender({ filters: [] })
+      const { user, onRemoveFilter } = await renderComponent({ filters: [] })
 
       await user.click(screen.getByRole('combobox'))
       await user.keyboard('{Backspace}')
@@ -500,7 +500,7 @@ describe('NodeSearchContent', () => {
 
     it('should remove chip when clicking its delete button', async () => {
       const filters = createFilters(1)
-      const { user, onRemoveFilter } = await createRender({ filters })
+      const { user, onRemoveFilter } = await renderComponent({ filters })
 
       await user.click(screen.getByTestId('chip-delete'))
       await nextTick()
@@ -553,7 +553,7 @@ describe('NodeSearchContent', () => {
 
     it('should enter filter mode when a filter chip is selected', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
 
       expect(hasSidebar()).toBe(true)
 
@@ -565,7 +565,7 @@ describe('NodeSearchContent', () => {
 
     it('should show available filter options sorted alphabetically', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       const texts = screen.getAllByTestId('filter-option').map(
@@ -584,7 +584,7 @@ describe('NodeSearchContent', () => {
 
     it('should filter options when typing in filter mode', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       await user.type(screen.getByRole('combobox'), 'IMAGE')
@@ -604,7 +604,7 @@ describe('NodeSearchContent', () => {
 
     it('should show no results when filter query has no matches', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       await user.type(screen.getByRole('combobox'), 'NONEXISTENT_TYPE')
@@ -615,7 +615,7 @@ describe('NodeSearchContent', () => {
 
     it('should emit addFilter when a filter option is clicked', async () => {
       setupNodesWithTypes()
-      const { user, onAddFilter } = await createRender()
+      const { user, onAddFilter } = await renderComponent()
       await enterFilterMode(user)
 
       const imageOption = screen
@@ -634,7 +634,7 @@ describe('NodeSearchContent', () => {
 
     it('should exit filter mode after applying a filter', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       await user.click(screen.getAllByTestId('filter-option')[0])
@@ -646,7 +646,7 @@ describe('NodeSearchContent', () => {
 
     it('should emit addFilter when Enter is pressed on selected option', async () => {
       setupNodesWithTypes()
-      const { user, onAddFilter } = await createRender()
+      const { user, onAddFilter } = await renderComponent()
       await enterFilterMode(user)
 
       await user.click(screen.getByRole('combobox'))
@@ -663,7 +663,7 @@ describe('NodeSearchContent', () => {
 
     it('should navigate filter options with ArrowDown/ArrowUp', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       await user.click(screen.getByRole('combobox'))
@@ -690,7 +690,7 @@ describe('NodeSearchContent', () => {
 
     it('should toggle filter mode off when same chip is clicked again', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       await user.click(findFilterBarButton('Input')!)
@@ -702,7 +702,7 @@ describe('NodeSearchContent', () => {
 
     it('should reset filter query when re-entering filter mode', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       const input = screen.getByRole('combobox')
@@ -720,7 +720,7 @@ describe('NodeSearchContent', () => {
 
     it('should exit filter mode when cancel button is clicked', async () => {
       setupNodesWithTypes()
-      const { user } = await createRender()
+      const { user } = await renderComponent()
       await enterFilterMode(user)
 
       expect(hasSidebar()).toBe(false)

@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -82,6 +81,7 @@ describe('JobGroupsList hover behavior', () => {
       { key: 'today', label: 'Today', items: [job] }
     ])
 
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(screen.getByTestId('enter-job-d'))
     vi.advanceTimersByTime(199)
     await nextTick()
@@ -91,6 +91,7 @@ describe('JobGroupsList hover behavior', () => {
     await nextTick()
     expect(getActiveDetailsId(container, 'job-d')).toBe(job.id)
 
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(screen.getByTestId('leave-job-d'))
     vi.advanceTimersByTime(149)
     await nextTick()
@@ -109,15 +110,19 @@ describe('JobGroupsList hover behavior', () => {
       { key: 'today', label: 'Today', items: [firstJob, secondJob] }
     ])
 
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(screen.getByTestId('enter-job-1'))
     vi.advanceTimersByTime(200)
     await nextTick()
     expect(getActiveDetailsId(container, 'job-1')).toBe(firstJob.id)
 
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(screen.getByTestId('leave-job-1'))
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(screen.getByTestId('enter-job-2'))
     vi.advanceTimersByTime(100)
     await nextTick()
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(screen.getByTestId('leave-job-2'))
 
     vi.advanceTimersByTime(50)

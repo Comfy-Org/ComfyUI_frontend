@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -135,7 +134,9 @@ describe('CloudSubscriptionRedirectView', () => {
     )
 
     // Shows loading affordances
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[class*="progress"]')).not.toBeNull()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const skipLink = container.querySelector('a[href="/"]')
     expect(skipLink).not.toBeNull()
     expect(skipLink!.textContent).toContain('Skip to the cloud app')

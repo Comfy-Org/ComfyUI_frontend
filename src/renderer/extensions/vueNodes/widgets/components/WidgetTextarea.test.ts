@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -38,7 +36,6 @@ function createTextareaWidget(
 function renderComponent(
   widget: SimplifiedWidget<string>,
   modelValue: string,
-  _readonly = false,
   placeholder?: string,
   onUpdateModelValue?: (...args: unknown[]) => void
 ) {
@@ -68,6 +65,7 @@ async function setTextareaValueAndTrigger(
   if (trigger === 'blur') {
     await fireEvent.blur(textarea)
   } else {
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.input(textarea)
   }
   return textarea
@@ -78,7 +76,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('emits Vue event when textarea value changes on blur', async () => {
       const widget = createTextareaWidget('hello')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'hello', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'hello', undefined, onUpdateModelValue)
 
       await setTextareaValueAndTrigger('world', 'blur')
 
@@ -88,7 +86,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('emits Vue event when textarea value changes on input', async () => {
       const widget = createTextareaWidget('initial')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'initial', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'initial', undefined, onUpdateModelValue)
 
       await setTextareaValueAndTrigger('new content', 'input')
 
@@ -98,7 +96,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles empty string values', async () => {
       const widget = createTextareaWidget('something')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'something', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'something', undefined, onUpdateModelValue)
 
       await setTextareaValueAndTrigger('')
 
@@ -108,13 +106,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles multiline text correctly', async () => {
       const widget = createTextareaWidget('single line')
       const onUpdateModelValue = vi.fn()
-      renderComponent(
-        widget,
-        'single line',
-        false,
-        undefined,
-        onUpdateModelValue
-      )
+      renderComponent(widget, 'single line', undefined, onUpdateModelValue)
 
       const multilineText = 'Line 1\nLine 2\nLine 3'
       await setTextareaValueAndTrigger(multilineText)
@@ -125,7 +117,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles special characters correctly', async () => {
       const widget = createTextareaWidget('normal')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'normal', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'normal', undefined, onUpdateModelValue)
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
       await setTextareaValueAndTrigger(specialText)
@@ -136,7 +128,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles missing callback gracefully', async () => {
       const widget = createTextareaWidget('test', {}, undefined)
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'test', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'test', undefined, onUpdateModelValue)
 
       await setTextareaValueAndTrigger('new value')
 
@@ -148,7 +140,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('emits update:modelValue on blur', async () => {
       const widget = createTextareaWidget('original')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'original', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'original', undefined, onUpdateModelValue)
 
       await setTextareaValueAndTrigger('updated')
 
@@ -158,7 +150,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('emits update:modelValue on input', async () => {
       const widget = createTextareaWidget('start')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'start', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'start', undefined, onUpdateModelValue)
 
       await setTextareaValueAndTrigger('finish', 'input')
 
@@ -186,13 +178,14 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('test')
       const { container } = renderComponent(widget, 'test')
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textareaLabel = container.querySelector('label')
       expect(textareaLabel?.textContent).toBe('test_textarea')
     })
 
     it('uses provided placeholder when specified', () => {
       const widget = createTextareaWidget('test')
-      renderComponent(widget, 'test', false, 'Custom placeholder')
+      renderComponent(widget, 'test', 'Custom placeholder')
 
       const textarea = screen.getByRole('textbox')
       expect(textarea.getAttribute('placeholder')).toBe('Custom placeholder')
@@ -205,14 +198,14 @@ describe('WidgetTextarea Value Binding', () => {
 
     it('hides copy button when not read-only', async () => {
       const widget = createTextareaWidget('test')
-      renderComponent(widget, 'test', false)
+      renderComponent(widget, 'test')
 
       expect(screen.queryByRole('button')).not.toBeInTheDocument()
     })
 
     it('copy button has invisible class by default when read-only', () => {
       const widget = createTextareaWidget('test', { read_only: true })
-      renderComponent(widget, 'test', true)
+      renderComponent(widget, 'test')
 
       const button = screen.getByRole('button')
       expect(button.classList.contains('invisible')).toBe(true)
@@ -220,7 +213,7 @@ describe('WidgetTextarea Value Binding', () => {
 
     it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
       const widget = createTextareaWidget('test value', { read_only: true })
-      renderComponent(widget, 'test value', true)
+      renderComponent(widget, 'test value')
 
       const button = screen.getByRole('button')
       expect(button.classList.contains('group-hover:visible')).toBe(true)
@@ -235,7 +228,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles very long text', async () => {
       const widget = createTextareaWidget('short')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'short', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'short', undefined, onUpdateModelValue)
 
       const longText = 'a'.repeat(10000)
       await setTextareaValueAndTrigger(longText)
@@ -246,7 +239,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles unicode characters', async () => {
       const widget = createTextareaWidget('ascii')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'ascii', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'ascii', undefined, onUpdateModelValue)
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'
       await setTextareaValueAndTrigger(unicodeText)
@@ -257,7 +250,7 @@ describe('WidgetTextarea Value Binding', () => {
     it('handles text with tabs and spaces', async () => {
       const widget = createTextareaWidget('normal')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'normal', false, undefined, onUpdateModelValue)
+      renderComponent(widget, 'normal', undefined, onUpdateModelValue)
 
       const formattedText = '\tIndented line\n  Spaced line\n\t\tDouble indent'
       await setTextareaValueAndTrigger(formattedText)

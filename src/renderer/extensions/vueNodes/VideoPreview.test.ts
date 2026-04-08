@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -71,10 +70,12 @@ describe('VideoPreview', () => {
       const user = userEvent.setup()
 
       // Simulate initial video load
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video') as HTMLVideoElement
       await fireEvent.loadedData(videoEl)
       await nextTick()
       expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
 
@@ -85,6 +86,7 @@ describe('VideoPreview', () => {
 
       // Should NOT be in loading state since URL didn't change
       expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
     })
@@ -99,10 +101,12 @@ describe('VideoPreview', () => {
       const user = userEvent.setup()
 
       // Simulate initial video load
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video') as HTMLVideoElement
       await fireEvent.loadedData(videoEl)
       await nextTick()
       expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
 
@@ -112,6 +116,7 @@ describe('VideoPreview', () => {
       await nextTick()
 
       // Should be in loading state since URL changed
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     })
   })

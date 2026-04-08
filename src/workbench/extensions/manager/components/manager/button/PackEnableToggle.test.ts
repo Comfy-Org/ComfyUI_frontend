@@ -1,6 +1,4 @@
 /* eslint-disable vue/no-unused-emit-declarations */
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/no-container */
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -218,6 +216,7 @@ describe('PackEnableToggle', () => {
       mockIsPackEnabled.mockReturnValue(true)
       const { container } = renderComponent()
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const warningIcon = container.querySelector(
         '.icon-\\[lucide--triangle-alert\\]'
       )
@@ -231,6 +230,7 @@ describe('PackEnableToggle', () => {
       mockIsPackEnabled.mockReturnValue(true)
       const { container } = renderComponent()
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const warningIcon = container.querySelector(
         '.icon-\\[lucide--triangle-alert\\]'
       )

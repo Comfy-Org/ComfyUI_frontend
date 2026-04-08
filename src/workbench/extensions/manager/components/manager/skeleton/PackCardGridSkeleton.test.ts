@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/no-container */
 import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
@@ -47,6 +45,7 @@ describe('GridSkeleton', () => {
 
   it('renders with default props', () => {
     const { container } = renderComponent()
+    // eslint-disable-next-line testing-library/no-node-access
     expect(container.firstElementChild).toBeTruthy()
   })
 
@@ -62,6 +61,7 @@ describe('GridSkeleton', () => {
       props: { gridStyle: customGridStyle }
     })
 
+    // eslint-disable-next-line testing-library/no-node-access
     const gridElement = container.firstElementChild as HTMLElement
     expect(gridElement.style.display).toBe('grid')
     expect(gridElement.style.gridTemplateColumns).toBe(
@@ -79,6 +79,7 @@ describe('GridSkeleton', () => {
 
     await nextTick()
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const skeletonCards = container.querySelectorAll(
       '[data-testid="pack-card-skeleton"]'
     )

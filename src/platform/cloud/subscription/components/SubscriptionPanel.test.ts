@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -247,6 +246,7 @@ describe('SubscriptionPanel', () => {
     it('shows correct UI for inactive subscription', () => {
       mockIsActiveSubscription.value = false
       const { container } = createComponent()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('subscribe-button-stub')).not.toBeNull()
       expect(container.textContent).not.toContain('Manage Subscription')
       expect(container.textContent).not.toContain('Add Credits')
@@ -291,12 +291,14 @@ describe('SubscriptionPanel', () => {
     it('shows loading skeleton when fetching balance', () => {
       mockCreditsData.isLoadingBalance = true
       const { container } = createComponent()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
     })
 
     it('hides skeleton when balance loaded', () => {
       mockCreditsData.isLoadingBalance = false
       const { container } = createComponent()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
     })
 

@@ -15,7 +15,7 @@ function mockScrollWidth(el: HTMLElement, scrollWidth: number) {
 describe(TextTicker, () => {
   let rafCallbacks: ((time: number) => void)[]
   let user: ReturnType<typeof userEvent.setup>
-  let unmount: () => void
+  let cleanup: (() => void) | undefined
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -29,23 +29,25 @@ describe(TextTicker, () => {
   })
 
   afterEach(() => {
-    unmount?.()
+    cleanup?.()
     vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
   it('renders slot content', () => {
-    ;({ unmount } = render(TextTicker, {
+    const { unmount } = render(TextTicker, {
       slots: { default: 'Hello World' }
-    }))
+    })
+    cleanup = unmount
     expect(screen.getByText('Hello World')).toBeInTheDocument()
   })
 
   it('scrolls on hover after delay', async () => {
-    ;({ unmount } = render(TextTicker, {
+    const { unmount } = render(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
-    }))
+    })
+    cleanup = unmount
 
     const el = screen.getByText('Very long text that overflows')
     mockScrollWidth(el, 300)
@@ -65,10 +67,11 @@ describe(TextTicker, () => {
   })
 
   it('cancels delayed scroll on mouse leave before delay elapses', async () => {
-    ;({ unmount } = render(TextTicker, {
+    const { unmount } = render(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
-    }))
+    })
+    cleanup = unmount
 
     const el = screen.getByText('Very long text that overflows')
     mockScrollWidth(el, 300)
@@ -87,10 +90,11 @@ describe(TextTicker, () => {
   })
 
   it('resets scroll position on mouse leave', async () => {
-    ;({ unmount } = render(TextTicker, {
+    const { unmount } = render(TextTicker, {
       slots: { default: 'Very long text that overflows' },
       props: { speed: 100 }
-    }))
+    })
+    cleanup = unmount
 
     const el = screen.getByText('Very long text that overflows')
     mockScrollWidth(el, 300)
@@ -111,9 +115,10 @@ describe(TextTicker, () => {
   })
 
   it('does not scroll when content fits', async () => {
-    ;({ unmount } = render(TextTicker, {
+    const { unmount } = render(TextTicker, {
       slots: { default: 'Short' }
-    }))
+    })
+    cleanup = unmount
 
     const el = screen.getByText('Short')
 

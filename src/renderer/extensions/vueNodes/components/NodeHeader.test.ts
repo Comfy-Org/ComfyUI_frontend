@@ -1,6 +1,3 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -155,6 +152,7 @@ describe('NodeHeader.vue', () => {
     })
 
     // Enter edit mode
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
     // Edit and confirm
@@ -171,6 +169,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData({ title: 'KeepMe' })
     })
 
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
     const input = screen.getByTestId('node-title-input')
     await user.clear(input)
@@ -184,6 +183,7 @@ describe('NodeHeader.vue', () => {
 
   it('renders correct chevron icon based on collapsed prop', async () => {
     const { container, rerender } = renderHeader({ collapsed: false })
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const expandedIcon = container.querySelector('i')!
     expect(expandedIcon.classList).not.toContain('-rotate-90')
 
@@ -191,6 +191,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData(),
       collapsed: true
     })
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const collapsedIcon = container.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
@@ -203,6 +204,7 @@ describe('NodeHeader.vue', () => {
 
       expect(screen.getByTestId('node-title')).toBeInTheDocument()
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const directive = container.querySelector('[data-testid="node-title"]')
       expect(directive).toBeTruthy()
     })
@@ -212,6 +214,7 @@ describe('NodeHeader.vue', () => {
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
+      // eslint-disable-next-line testing-library/prefer-user-event
       await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
       expect(screen.getByTestId('node-title')).toBeInTheDocument()

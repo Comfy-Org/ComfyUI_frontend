@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/prefer-user-event */
 /**
  * Tests for NodeHeader subgraph functionality
  */
@@ -159,7 +158,7 @@ describe('Vue Node - Subgraph Functionality', () => {
 
     const subgraphButton = screen.getByTestId('subgraph-enter-button')
 
-    // Trigger dblclick event
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(subgraphButton)
 
     // Should prevent propagation (handled by @dblclick.stop directive)

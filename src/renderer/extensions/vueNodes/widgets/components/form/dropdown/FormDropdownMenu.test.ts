@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -50,6 +48,7 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const emptyIcon = container.querySelector('[class*="lucide--circle-off"]')
     expect(emptyIcon).not.toBeNull()
   })
@@ -101,6 +100,7 @@ describe('FormDropdownMenu', () => {
     })
 
     expect(
+      // eslint-disable-next-line testing-library/no-node-access
       container.firstElementChild!.getAttribute('data-capture-wheel')
     ).toBe('true')
   })

@@ -1,5 +1,3 @@
-/* eslint-disable vue/no-unused-emit-declarations */
-/* eslint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -33,14 +31,11 @@ const ToggleSwitchStub = defineComponent({
   name: 'ToggleSwitch',
   props: {
     modelValue: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-    ariaLabel: { type: String, default: '' }
+    disabled: { type: Boolean, default: false }
   },
+  // eslint-disable-next-line vue/no-unused-emit-declarations -- used in template $emit
   emits: ['update:modelValue'],
-  template: `<div data-testid="toggle-switch" :data-model-value="String(modelValue)" :data-disabled="String(disabled)">
-    <button data-testid="toggle-switch-on" @click="$emit('update:modelValue', true)">on</button>
-    <button data-testid="toggle-switch-off" @click="$emit('update:modelValue', false)">off</button>
-  </div>`
+  template: `<input type="checkbox" role="switch" :checked="modelValue" :disabled="disabled" @change="$emit('update:modelValue', $event.target.checked)" />`
 })
 
 describe('WidgetToggleSwitch Value Binding', () => {
@@ -84,7 +79,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const onModelUpdate = vi.fn()
       const { user } = mountComponent(widget, false, onModelUpdate)
 
-      await user.click(screen.getByTestId('toggle-switch-on'))
+      await user.click(screen.getByRole('switch'))
 
       expect(onModelUpdate).toHaveBeenCalledWith(true)
     })
@@ -94,7 +89,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const onModelUpdate = vi.fn()
       const { user } = mountComponent(widget, true, onModelUpdate)
 
-      await user.click(screen.getByTestId('toggle-switch-off'))
+      await user.click(screen.getByRole('switch'))
 
       expect(onModelUpdate).toHaveBeenCalledWith(false)
     })
@@ -104,8 +99,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const onModelUpdate = vi.fn()
       const { user } = mountComponent(widget, false, onModelUpdate)
 
-      await user.click(screen.getByTestId('toggle-switch-on'))
-      await user.click(screen.getByTestId('toggle-switch-off'))
+      const toggle = screen.getByRole('switch')
+      await user.click(toggle)
+      await user.click(toggle)
 
       expect(onModelUpdate).toHaveBeenCalledTimes(2)
       expect(onModelUpdate).toHaveBeenNthCalledWith(1, true)
@@ -118,25 +114,21 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const widget = createToggleWidget(false)
       mountComponent(widget, false)
 
-      expect(screen.getByTestId('toggle-switch')).toBeDefined()
+      expect(screen.getByRole('switch')).toBeDefined()
     })
 
     it('displays correct initial state for false', () => {
       const widget = createToggleWidget(false)
       mountComponent(widget, false)
 
-      expect(
-        screen.getByTestId('toggle-switch').getAttribute('data-model-value')
-      ).toBe('false')
+      expect(screen.getByRole('switch')).not.toBeChecked()
     })
 
     it('displays correct initial state for true', () => {
       const widget = createToggleWidget(true)
       mountComponent(widget, true)
 
-      expect(
-        screen.getByTestId('toggle-switch').getAttribute('data-model-value')
-      ).toBe('true')
+      expect(screen.getByRole('switch')).toBeChecked()
     })
   })
 
@@ -146,9 +138,10 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const onModelUpdate = vi.fn()
       const { user } = mountComponent(widget, false, onModelUpdate)
 
-      await user.click(screen.getByTestId('toggle-switch-on'))
-      await user.click(screen.getByTestId('toggle-switch-off'))
-      await user.click(screen.getByTestId('toggle-switch-on'))
+      const toggle = screen.getByRole('switch')
+      await user.click(toggle)
+      await user.click(toggle)
+      await user.click(toggle)
 
       expect(onModelUpdate).toHaveBeenCalledTimes(3)
       expect(onModelUpdate).toHaveBeenNthCalledWith(1, true)
@@ -161,10 +154,11 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const onModelUpdate = vi.fn()
       const { user } = mountComponent(widget, false, onModelUpdate)
 
-      await user.click(screen.getByTestId('toggle-switch-on'))
-      await user.click(screen.getByTestId('toggle-switch-off'))
-      await user.click(screen.getByTestId('toggle-switch-on'))
-      await user.click(screen.getByTestId('toggle-switch-off'))
+      const toggle = screen.getByRole('switch')
+      await user.click(toggle)
+      await user.click(toggle)
+      await user.click(toggle)
+      await user.click(toggle)
 
       expect(onModelUpdate).toHaveBeenCalledTimes(4)
       expect(onModelUpdate).toHaveBeenNthCalledWith(1, true)
@@ -180,14 +174,14 @@ describe('WidgetToggleSwitch Value Binding', () => {
       mountComponent(widget, false)
 
       expect(screen.getByRole('group')).toBeDefined()
-      expect(screen.queryByTestId('toggle-switch')).toBeNull()
+      expect(screen.queryByRole('switch')).toBeNull()
     })
 
     it('renders ToggleSwitch when no labels are provided', () => {
       const widget = createToggleWidget(false, {})
       mountComponent(widget, false)
 
-      expect(screen.getByTestId('toggle-switch')).toBeDefined()
+      expect(screen.getByRole('switch')).toBeDefined()
       expect(screen.queryByRole('group')).toBeNull()
     })
 
@@ -208,7 +202,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
+      // eslint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'on')
+      // eslint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
@@ -221,7 +217,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
+      // eslint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'on')
+      // eslint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
@@ -269,7 +267,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       mountComponent(widget, false)
 
       expect(screen.getByRole('group')).toBeDefined()
-      expect(screen.queryByTestId('toggle-switch')).toBeNull()
+      expect(screen.queryByRole('switch')).toBeNull()
       expect(screen.queryByText('true')).toBeNull()
     })
 

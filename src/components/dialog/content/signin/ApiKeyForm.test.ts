@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
 import { Form } from '@primevue/forms'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -98,6 +96,7 @@ describe('ApiKeyForm', () => {
     mockLoadingRef.value = true
     const { container } = renderComponent()
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
   })

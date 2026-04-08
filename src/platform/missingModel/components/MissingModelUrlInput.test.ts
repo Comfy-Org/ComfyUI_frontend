@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
@@ -123,6 +122,7 @@ describe('MissingModelUrlInput', () => {
       renderComponent()
       const input = screen.getByRole('textbox') as HTMLInputElement
       input.value = 'https://example.com/model.safetensors'
+      // eslint-disable-next-line testing-library/prefer-user-event
       await fireEvent.input(input)
       expect(mockHandleUrlInput).toHaveBeenCalledWith(
         MODEL_KEY,

@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
@@ -151,6 +150,7 @@ function renderWidgetItem(
 }
 
 function getStubWidget(container: Element) {
+  // eslint-disable-next-line testing-library/no-node-access
   const el = container.querySelector('.stub-widget')
   if (!el) throw new Error('stub-widget not found')
   return {

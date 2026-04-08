@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
@@ -29,7 +27,6 @@ describe('WidgetInputText Value Binding', () => {
   const renderComponent = (
     widget: SimplifiedWidget<string>,
     modelValue: string,
-    _readonly = false,
     extraProps: Record<string, unknown> = {}
   ) => {
     return render(WidgetInputText, {
@@ -54,6 +51,7 @@ describe('WidgetInputText Value Binding', () => {
     if (trigger === 'blur') {
       await fireEvent.blur(input)
     } else {
+      // eslint-disable-next-line testing-library/prefer-user-event
       await fireEvent.keyDown(input, { key: 'Enter' })
     }
     return input
@@ -63,7 +61,7 @@ describe('WidgetInputText Value Binding', () => {
     it('emits Vue event when input value changes on blur', async () => {
       const widget = createInputTextWidget('hello')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'hello', false, {
+      renderComponent(widget, 'hello', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -76,7 +74,7 @@ describe('WidgetInputText Value Binding', () => {
     it('emits Vue event when enter key is pressed', async () => {
       const widget = createInputTextWidget('initial')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'initial', false, {
+      renderComponent(widget, 'initial', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -89,7 +87,7 @@ describe('WidgetInputText Value Binding', () => {
     it('handles empty string values', async () => {
       const widget = createInputTextWidget('something')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'something', false, {
+      renderComponent(widget, 'something', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -102,7 +100,7 @@ describe('WidgetInputText Value Binding', () => {
     it('handles special characters correctly', async () => {
       const widget = createInputTextWidget('normal')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'normal', false, {
+      renderComponent(widget, 'normal', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -116,7 +114,7 @@ describe('WidgetInputText Value Binding', () => {
     it('handles missing callback gracefully', async () => {
       const widget = createInputTextWidget('test', {}, undefined)
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'test', false, {
+      renderComponent(widget, 'test', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -132,7 +130,7 @@ describe('WidgetInputText Value Binding', () => {
     it('emits update:modelValue on blur', async () => {
       const widget = createInputTextWidget('original')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'original', false, {
+      renderComponent(widget, 'original', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -145,7 +143,7 @@ describe('WidgetInputText Value Binding', () => {
     it('emits update:modelValue on enter key', async () => {
       const widget = createInputTextWidget('start')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'start', false, {
+      renderComponent(widget, 'start', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -166,6 +164,7 @@ describe('WidgetInputText Value Binding', () => {
       expect(input).toBeInTheDocument()
 
       // Should not render textarea (that's handled by WidgetTextarea component)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textarea = container.querySelector('textarea')
       expect(textarea).not.toBeInTheDocument()
     })
@@ -175,7 +174,7 @@ describe('WidgetInputText Value Binding', () => {
     it('handles very long strings', async () => {
       const widget = createInputTextWidget('short')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'short', false, {
+      renderComponent(widget, 'short', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
@@ -189,7 +188,7 @@ describe('WidgetInputText Value Binding', () => {
     it('handles unicode characters', async () => {
       const widget = createInputTextWidget('ascii')
       const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'ascii', false, {
+      renderComponent(widget, 'ascii', {
         'onUpdate:modelValue': onUpdateModelValue
       })
 

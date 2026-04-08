@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -111,6 +109,7 @@ describe('DomWidget disabled style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')

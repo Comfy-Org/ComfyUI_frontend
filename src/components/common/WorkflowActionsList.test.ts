@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -38,6 +37,7 @@ describe('WorkflowActionsList', () => {
     const { container } = renderList(items)
 
     screen.getByText('Save')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.pi-save')).not.toBeNull()
   })
 

@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-node-access */
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
@@ -230,9 +229,11 @@ describe('AssetBrowserModal', () => {
 
       expect(screen.getByTestId('asset-asset1')).toBeDefined()
       expect(screen.getByTestId('asset-asset2')).toBeDefined()
+      /* eslint-disable testing-library/no-node-access */
       expect(
         screen.getByTestId('asset-grid').querySelectorAll('.asset-card')
       ).toHaveLength(2)
+      /* eslint-enable testing-library/no-node-access */
     })
 
     it('passes category-filtered assets to AssetFilterBar', async () => {

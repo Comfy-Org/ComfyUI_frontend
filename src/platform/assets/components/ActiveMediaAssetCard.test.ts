@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { ref } from 'vue'
@@ -89,6 +87,7 @@ describe('ActiveJobCard', () => {
     )
 
     expect(container.textContent).toContain('65%')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const progressBar = container.querySelector('.bg-blue-500')
     expect(progressBar).not.toBeNull()
     expect(progressBar).toHaveStyle({ width: '65%' })
@@ -104,12 +103,14 @@ describe('ActiveJobCard', () => {
     )
 
     expect(container.textContent).toContain('In queue...')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.bg-blue-500')).toBeNull()
   })
 
   it('shows spinner for pending state', () => {
     const { container } = renderComponent(createJob({ state: 'pending' }))
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const spinner = container.querySelector('[class*="lucide--loader-circle"]')
     expect(spinner).not.toBeNull()
     expect(spinner).toHaveClass('animate-spin')
@@ -120,6 +121,7 @@ describe('ActiveJobCard', () => {
       createJob({ state: 'failed', title: 'Failed' })
     )
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const errorIcon = container.querySelector('[class*="lucide--circle-alert"]')
     expect(errorIcon).not.toBeNull()
     expect(container.textContent).toContain('Failed')

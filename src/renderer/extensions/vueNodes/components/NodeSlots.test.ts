@@ -1,6 +1,4 @@
 /* eslint-disable vue/one-component-per-file */
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -118,6 +116,7 @@ describe('NodeSlots.vue', () => {
     const { container } = mountSlots(makeNodeData({ inputs }))
 
     const inputEls = Array.from(
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll('.stub-input-slot')
     ) as HTMLElement[]
     // Should filter out the widget-backed input; expect 2 inputs rendered
@@ -150,6 +149,7 @@ describe('NodeSlots.vue', () => {
     ])
 
     // Ensure widget-backed input was indeed filtered out
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-name="objWithWidget"]')).toBeNull()
   })
 
@@ -170,6 +170,7 @@ describe('NodeSlots.vue', () => {
 
     const { container } = mountSlots(makeNodeData({ outputs }))
     const outputEls = Array.from(
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll('.stub-output-slot')
     ) as HTMLElement[]
 
@@ -190,7 +191,9 @@ describe('NodeSlots.vue', () => {
 
   it('renders nothing when there are no inputs/outputs', () => {
     const { container } = mountSlots(makeNodeData({ inputs: [], outputs: [] }))
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelectorAll('.stub-input-slot')).toHaveLength(0)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelectorAll('.stub-output-slot')).toHaveLength(0)
   })
 })

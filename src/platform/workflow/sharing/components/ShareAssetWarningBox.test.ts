@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -80,7 +79,9 @@ describe(ShareAssetWarningBox, () => {
 
     const mediaHeader = screen.getByTestId('section-header-media')
     const modelsHeader = screen.getByTestId('section-header-models')
+    // eslint-disable-next-line testing-library/no-node-access
     const mediaChevron = mediaHeader.querySelector('i')!
+    // eslint-disable-next-line testing-library/no-node-access
     const modelsChevron = modelsHeader.querySelector('i')!
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
@@ -164,6 +165,7 @@ describe(ShareAssetWarningBox, () => {
     })
 
     const mediaHeader = screen.getByTestId('section-header-media')
+    // eslint-disable-next-line testing-library/no-node-access
     const mediaChevron = mediaHeader.querySelector('i')!
 
     expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
@@ -225,6 +227,7 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const fallbackIcons = Array.from(container.querySelectorAll('i')).filter(
       (i) => i.classList.contains('icon-[lucide--image]')
     )

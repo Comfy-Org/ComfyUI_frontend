@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -139,6 +138,7 @@ describe('MissingModelCard', () => {
           })
         ]
       })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.model-row')).toHaveLength(3)
     })
 
@@ -155,11 +155,13 @@ describe('MissingModelCard', () => {
 
     it('renders zero rows when missingModelGroups is empty', () => {
       const { container } = mountCard({ missingModelGroups: [] })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.model-row')).toHaveLength(0)
     })
 
     it('passes props correctly to MissingModelRow children', () => {
       const { container } = mountCard({ showNodeIdBadge: true })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const row = container.querySelector('.model-row')
       expect(row).not.toBeNull()
       expect(row!.getAttribute('data-show-node-id-badge')).toBe('true')

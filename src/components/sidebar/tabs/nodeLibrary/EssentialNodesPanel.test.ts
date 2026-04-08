@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/no-container */
 import { render, waitFor } from '@testing-library/vue'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -126,6 +124,7 @@ describe('EssentialNodesPanel', () => {
   describe('folder rendering', () => {
     it('should render all top-level folders', () => {
       const { container } = renderComponent()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.collapsible-trigger')).toHaveLength(3)
     })
 
@@ -142,6 +141,7 @@ describe('EssentialNodesPanel', () => {
       const { container } = renderComponent(createMockRoot(), [])
 
       await waitFor(() => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
         expect(roots[0].getAttribute('data-state')).toBe('open')
         expect(roots[1].getAttribute('data-state')).toBe('open')
@@ -153,6 +153,7 @@ describe('EssentialNodesPanel', () => {
       const { container } = renderComponent(createMockRoot(), ['folder-audio'])
 
       await waitFor(() => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
         expect(roots[0].getAttribute('data-state')).toBe('closed')
         expect(roots[1].getAttribute('data-state')).toBe('closed')
@@ -168,6 +169,7 @@ describe('EssentialNodesPanel', () => {
       ])
 
       await waitFor(() => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
         expect(roots[0].getAttribute('data-state')).toBe('open')
         expect(roots[1].getAttribute('data-state')).toBe('open')
@@ -195,6 +197,7 @@ describe('EssentialNodesPanel', () => {
       const { container } = renderComponent(root, [])
 
       await waitFor(() => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const roots = container.querySelectorAll('.collapsible-root')
         expect(roots).toHaveLength(1)
         expect(roots[0].getAttribute('data-state')).toBe('open')
@@ -205,6 +208,7 @@ describe('EssentialNodesPanel', () => {
   describe('node cards', () => {
     it('should render node cards for each node in expanded folders', () => {
       const { container } = renderComponent(createMockRoot(), ['folder-images'])
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const cards = container.querySelectorAll(
         '[data-testid="essential-node-card"]'
       )
@@ -221,8 +225,10 @@ describe('EssentialNodesPanel', () => {
       ]
       const { container } = renderComponent(createMockRoot(), [], flatNodes)
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.collapsible-root')).toHaveLength(0)
 
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const cards = container.querySelectorAll(
         '[data-testid="essential-node-card"]'
       )

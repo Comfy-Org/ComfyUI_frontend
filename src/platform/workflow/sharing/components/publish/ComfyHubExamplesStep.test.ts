@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -49,6 +48,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[1], { key: 'ArrowLeft', shiftKey: true })
 
     expect(onUpdateExampleImages).toHaveBeenCalled()
@@ -63,6 +63,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[1], { key: 'ArrowRight', shiftKey: true })
 
     expect(onUpdateExampleImages).toHaveBeenCalled()
@@ -77,6 +78,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[0], { key: 'ArrowLeft', shiftKey: true })
 
     expect(onUpdateExampleImages).not.toHaveBeenCalled()
@@ -89,6 +91,7 @@ describe('ComfyHubExamplesStep', () => {
     })
 
     const tiles = screen.getAllByRole('listitem')
+    // eslint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(tiles[2], { key: 'ArrowRight', shiftKey: true })
 
     expect(onUpdateExampleImages).not.toHaveBeenCalled()

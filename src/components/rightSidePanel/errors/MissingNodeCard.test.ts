@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -178,11 +176,13 @@ describe('MissingNodeCard', () => {
 
     it('renders correct number of MissingPackGroupRow components', () => {
       const { container } = renderCard({ missingPackGroups: makePackGroups(3) })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.pack-row')).toHaveLength(3)
     })
 
     it('renders zero rows when missingPackGroups is empty', () => {
       const { container } = renderCard({ missingPackGroups: [] })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.pack-row')).toHaveLength(0)
     })
 
@@ -191,6 +191,7 @@ describe('MissingNodeCard', () => {
         showInfoButton: true,
         showNodeIdBadge: true
       })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const row = container.querySelector('.pack-row')
       expect(row?.getAttribute('data-show-info-button')).toBe('true')
       expect(row?.getAttribute('data-show-node-id-badge')).toBe('true')
@@ -362,6 +363,7 @@ describe('MissingNodeCard', () => {
       }
       const { container } = renderCard()
       expect(container.textContent).toContain('AlphaNode, ZebraNode')
+      // eslint-disable-next-line testing-library/no-container
       expect(container.textContent?.match(/ZebraNode/g)).toHaveLength(1)
     })
 

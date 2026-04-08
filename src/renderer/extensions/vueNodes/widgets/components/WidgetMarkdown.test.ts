@@ -44,7 +44,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
   function renderComponent(
     widget: SimplifiedWidget<string>,
     modelValue: string,
-    _readonly = false,
     onUpdateModelValue?: (...args: unknown[]) => void
   ) {
     const i18n = createI18n({
@@ -276,7 +275,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const { container } = renderComponent(
         widget,
         '# Original',
-        false,
         onUpdateModelValue
       )
 
@@ -298,7 +296,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const { container, rerender } = renderComponent(
         widget,
         '# Original',
-        false,
         onUpdateModelValue
       )
 
@@ -327,7 +324,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const { container } = renderComponent(
         widget,
         '# Test',
-        false,
         onUpdateModelValue
       )
 
@@ -349,7 +345,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const { container } = renderComponent(
         widget,
         '# Test',
-        false,
         onUpdateModelValue
       )
 
@@ -431,12 +426,7 @@ Another line with more content.`
       const unicode = '# Unicode: 🎨 αβγ 中文 العربية 🚀'
       const widget = createMarkdownWidget(unicode)
       const onUpdateModelValue = vi.fn()
-      const { container } = renderComponent(
-        widget,
-        unicode,
-        false,
-        onUpdateModelValue
-      )
+      const { container } = renderComponent(widget, unicode, onUpdateModelValue)
 
       await dblClickToEdit(container)
       const textarea = screen.getByRole('textbox') as HTMLTextAreaElement

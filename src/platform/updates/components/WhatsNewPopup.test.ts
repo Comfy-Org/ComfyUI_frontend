@@ -1,4 +1,3 @@
-/* eslint-disable testing-library/no-container */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
@@ -99,17 +98,15 @@ describe('WhatsNewPopup', () => {
     } as ReleaseNote
 
     const { container } = renderComponent()
-    /* eslint-disable testing-library/no-node-access */
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).not.toBeNull()
-    /* eslint-enable testing-library/no-node-access */
   })
 
   it('does not render when shouldShow is false', () => {
     mockReleaseStore.shouldShowPopup = false
     const { container } = renderComponent()
-    /* eslint-disable testing-library/no-node-access */
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).toBeNull()
-    /* eslint-enable testing-library/no-node-access */
   })
 
   it('calls handleWhatsNewSeen when close button is clicked', async () => {
@@ -151,9 +148,8 @@ describe('WhatsNewPopup', () => {
 
     const { container } = renderComponent()
 
-    /* eslint-disable testing-library/no-node-access */
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.content-text')).not.toBeNull()
-    /* eslint-enable testing-library/no-node-access */
   })
 
   it('emits whats-new-dismissed event when popup is closed', async () => {
