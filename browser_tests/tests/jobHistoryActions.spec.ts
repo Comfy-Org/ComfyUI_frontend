@@ -3,7 +3,7 @@ import type { Locator } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Job History Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

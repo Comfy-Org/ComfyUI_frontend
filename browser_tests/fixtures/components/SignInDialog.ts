@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { BaseDialog } from './BaseDialog'
+import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
 export class SignInDialog extends BaseDialog {
   readonly emailInput: Locator

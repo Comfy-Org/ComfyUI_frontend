@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test, comfyExpect } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
-import { TestIds } from '../../fixtures/selectors'
+import { comfyPageFixture as test, comfyExpect } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Subgraph Nested Scenarios', { tag: ['@subgraph'] }, () => {
   test.describe('Nested subgraph configure order', () => {
