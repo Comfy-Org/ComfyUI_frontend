@@ -157,6 +157,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
     )
@@ -177,7 +178,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
         window.app!.extensionManager as WorkspaceStore
       ).colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
-    expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
+    await expect.poll(() => comfyPage.toast.getToastErrorCount()).toBe(0)
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await comfyPage.nextFrame()
@@ -211,12 +212,14 @@ test.describe(
 
       // Drag mouse to force canvas to redraw
       await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.nextFrame()
 
       await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
 
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 1.0)
 
       await comfyPage.page.mouse.move(8, 8)
+      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
     })
 

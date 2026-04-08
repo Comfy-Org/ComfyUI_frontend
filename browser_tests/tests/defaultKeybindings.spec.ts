@@ -41,11 +41,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         await expect(selectedButton).not.toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await comfyPage.nextFrame()
         await expect(selectedButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await comfyPage.nextFrame()
         await expect(selectedButton).not.toBeVisible()
       })
     }
@@ -170,12 +168,10 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       // Toggle off with Alt+m
       await comfyPage.page.keyboard.press('Alt+KeyM')
-      await comfyPage.nextFrame()
       await expect(comfyPage.appMode.linearWidgets).not.toBeVisible()
 
       // Toggle on again
       await comfyPage.page.keyboard.press('Alt+KeyM')
-      await comfyPage.nextFrame()
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     })
 
@@ -189,11 +185,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await expect(minimap).toBeVisible()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
-      await comfyPage.nextFrame()
       await expect(minimap).not.toBeVisible()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
-      await comfyPage.nextFrame()
       await expect(minimap).toBeVisible()
     })
 
@@ -203,11 +197,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await expect(comfyPage.bottomPanel.root).not.toBeVisible()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
-      await comfyPage.nextFrame()
       await expect(comfyPage.bottomPanel.root).toBeVisible()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
-      await comfyPage.nextFrame()
       await expect(comfyPage.bottomPanel.root).not.toBeVisible()
     })
   })

@@ -70,11 +70,15 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
       description: 'This is a test description'
     })
     // Verify the description was set on the subgraph's extra
-    const description = await comfyPage.page.evaluate(() => {
-      const subgraph = window['app']!.canvas.subgraph
-      return (subgraph?.extra as Record<string, unknown>)?.BlueprintDescription
-    })
-    expect(description).toBe('This is a test description')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const subgraph = window['app']!.canvas.subgraph
+          return (subgraph?.extra as Record<string, unknown>)
+            ?.BlueprintDescription
+        })
+      )
+      .toBe('This is a test description')
   })
 
   test('Search aliases persist after publish and reload', async ({

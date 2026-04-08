@@ -65,8 +65,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const infoButton = comfyPage.page.getByTestId('info-button')
     await expect(infoButton).toBeVisible()
     await infoButton.click({ force: true })
-    await comfyPage.nextFrame()
-
     await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
   })
 

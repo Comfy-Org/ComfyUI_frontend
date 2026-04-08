@@ -243,6 +243,7 @@ test.describe('Node Interaction', () => {
     }) => {
       await comfyPage.settings.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
       await comfyPage.settings.setSetting('Comfy.Node.SnapHighlightsNode', true)
+      await comfyPage.nextFrame()
 
       await comfyMouse.move(DefaultGraphPositions.clipTextEncodeNode1InputSlot)
       await comfyMouse.drag(DefaultGraphPositions.clipTextEncodeNode2InputSlot)

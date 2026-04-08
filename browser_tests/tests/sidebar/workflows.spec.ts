@@ -297,8 +297,6 @@ test.describe('Workflows sidebar', () => {
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
     await comfyPage.contextMenu.clickMenuItem('Delete')
-    await comfyPage.nextFrame()
-
     await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
       '*Unsaved Workflow'

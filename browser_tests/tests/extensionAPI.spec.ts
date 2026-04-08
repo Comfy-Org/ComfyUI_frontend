@@ -109,7 +109,9 @@ test.describe('Topbar commands', () => {
         })
       })
       // onChange is called when the setting is first added
-      expect(await comfyPage.page.evaluate(() => window.changeCount)).toBe(1)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.changeCount))
+        .toBe(1)
       expect(await comfyPage.settings.getSetting('TestSetting')).toBe(
         'Hello, world!'
       )
@@ -118,7 +120,9 @@ test.describe('Topbar commands', () => {
       expect(await comfyPage.settings.getSetting('TestSetting')).toBe(
         'Hello, universe!'
       )
-      expect(await comfyPage.page.evaluate(() => window.changeCount)).toBe(2)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.changeCount))
+        .toBe(2)
     })
 
     test('Should allow setting boolean settings', async ({ comfyPage }) => {
@@ -143,7 +147,9 @@ test.describe('Topbar commands', () => {
       expect(await comfyPage.settings.getSetting('Comfy.TestSetting')).toBe(
         false
       )
-      expect(await comfyPage.page.evaluate(() => window.changeCount)).toBe(1)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.changeCount))
+        .toBe(1)
 
       await comfyPage.settingDialog.open()
       await comfyPage.settingDialog.toggleBooleanSetting('Comfy.TestSetting')

@@ -21,7 +21,7 @@ async function saveCloseAndReopenAsApp(
   await appMode.steps.goToPreview()
   await builderSaveAs(appMode, workflowName)
   await appMode.saveAs.closeButton.click()
-  await comfyPage.nextFrame()
+  await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
   await appMode.footer.exitBuilder()
   await openWorkflowFromSidebar(comfyPage, workflowName)

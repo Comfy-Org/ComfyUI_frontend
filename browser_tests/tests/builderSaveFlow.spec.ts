@@ -122,7 +122,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await builderSaveAs(comfyPage.appMode, `${Date.now()} direct-save`, 'App')
     await saveAs.closeButton.click()
-    await comfyPage.nextFrame()
+    await expect(saveAs.successDialog).not.toBeVisible()
 
     // Modify the workflow so the save button becomes enabled
     await comfyPage.appMode.steps.goToInputs()
@@ -144,7 +144,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await builderSaveAs(comfyPage.appMode, `${Date.now()} split-btn`, 'App')
     await saveAs.closeButton.click()
-    await comfyPage.nextFrame()
+    await expect(saveAs.successDialog).not.toBeVisible()
 
     await footer.openSaveAsFromChevron()
 
@@ -178,7 +178,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     // Save the workflow to transition to the Save + chevron state
     await builderSaveAs(appMode, `${Date.now()} width-test`, 'App')
     await appMode.saveAs.closeButton.click()
-    await comfyPage.nextFrame()
+    await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
     // State 3: Save + chevron button group (saved workflow)
     const saveButtonGroupBox = await appMode.footer.saveGroup.boundingBox()
@@ -236,7 +236,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await builderSaveAs(comfyPage.appMode, `${Date.now()} app-view`, 'App')
 
     await comfyPage.appMode.saveAs.viewAppButton.click()
-    await comfyPage.nextFrame()
+    await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
 
     expect(await comfyPage.workflow.getActiveWorkflowActiveAppMode()).toBe(
       'app'
@@ -254,7 +254,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     )
 
     await comfyPage.appMode.saveAs.exitBuilderButton.click()
-    await comfyPage.nextFrame()
+    await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
 
     await expect(comfyPage.appMode.steps.toolbar).not.toBeVisible()
   })
@@ -270,7 +270,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     const originalPath = await comfyPage.workflow.getActiveWorkflowPath()
     expect(originalPath).toContain('.app.json')
     await appMode.saveAs.closeButton.click()
-    await comfyPage.nextFrame()
+    await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
     // Re-save as node graph — creates a copy
     await reSaveAs(appMode, `${Date.now()} copy`, 'Node graph')
@@ -282,7 +282,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     // Dismiss success dialog, exit app mode, reopen the original
     await appMode.saveAs.dismissButton.click()
-    await comfyPage.nextFrame()
+    await expect(appMode.saveAs.successDialog).not.toBeVisible()
     await appMode.toggleAppMode()
     await openWorkflowFromSidebar(comfyPage, originalName)
 
@@ -307,6 +307,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(appMode.saveAs.overwriteDialog).toBeVisible({ timeout: 5000 })
     await appMode.saveAs.overwriteButton.click()
+    await expect(appMode.saveAs.overwriteDialog).not.toBeVisible()
 
     await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
 
@@ -325,7 +326,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     const pathAfterFirst = await comfyPage.workflow.getActiveWorkflowPath()
     expect(pathAfterFirst).toContain('.app.json')
     await appMode.saveAs.closeButton.click()
-    await comfyPage.nextFrame()
+    await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
     await reSaveAs(appMode, name, 'Node graph')
     await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
@@ -341,7 +342,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
     await builderSaveAs(comfyPage.appMode, name, 'App')
     await comfyPage.appMode.saveAs.dismissButton.click()
-    await comfyPage.nextFrame()
+    await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
     await comfyPage.appMode.footer.exitBuilder()
 
     await openWorkflowFromSidebar(comfyPage, name)
@@ -357,7 +358,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
     await builderSaveAs(comfyPage.appMode, name, 'Node graph')
     await comfyPage.appMode.saveAs.dismissButton.click()
-    await comfyPage.nextFrame()
+    await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
     await comfyPage.appMode.toggleAppMode()
 
     await openWorkflowFromSidebar(comfyPage, name)

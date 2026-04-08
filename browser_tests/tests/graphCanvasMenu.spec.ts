@@ -92,7 +92,6 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     // Click backdrop to close
     const backdrop = comfyPage.page.locator('.fixed.inset-0').first()
     await backdrop.click()
-    await comfyPage.nextFrame()
 
     // Modal should be hidden
     await expect(zoomModal).not.toBeVisible()

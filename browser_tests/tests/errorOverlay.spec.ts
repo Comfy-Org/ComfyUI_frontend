@@ -151,6 +151,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
+      await expect(overlay).not.toBeVisible()
       await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
     })
 
