@@ -5,7 +5,6 @@
  * IO synchronization, and edge cases.
  */
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -17,6 +16,7 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+import { makePromotionViewKey } from './PromotionEntryResolver'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -929,34 +929,8 @@ describe('Nested SubgraphNode duplicate input prevention', () => {
 
 describe('SubgraphNode promotion view keys', () => {
   it('distinguishes tuples that differ only by colon placement', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const nodeWithKeyBuilder = fromAny<
-      {
-        _makePromotionViewKey: (
-          inputKey: string,
-          interiorNodeId: string,
-          widgetName: string,
-          inputName?: string
-        ) => string
-      },
-      unknown
-    >(subgraphNode)
-
-    const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
-      '65',
-      '18',
-      'a:b',
-      'c'
-    )
-    const secondKey = nodeWithKeyBuilder._makePromotionViewKey(
-      '65',
-      '18',
-      'a',
-      'b:c'
-    )
+    const firstKey = makePromotionViewKey('65', '18', 'a:b', 'c')
+    const secondKey = makePromotionViewKey('65', '18', 'a', 'b:c')
 
     expect(firstKey).not.toBe(secondKey)
   })

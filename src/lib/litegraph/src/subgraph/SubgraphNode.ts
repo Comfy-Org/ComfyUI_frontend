@@ -53,6 +53,13 @@ import {
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import {
+  buildDisplayNameByViewKey,
+  buildLinkedReconcileEntries,
+  makePromotionViewKey,
+  resolvePromotionEntries
+} from './PromotionEntryResolver'
+import type { LinkedPromotionEntry } from './PromotionEntryResolver'
 import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
 import { createBitmapCache } from './svgBitmapCache'
@@ -61,12 +68,6 @@ const workflowSvg = new Image()
 workflowSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='white' stroke-linecap='round' stroke-width='1.3' d='M9.18613 3.09999H6.81377M9.18613 12.9H7.55288c-3.08678 0-5.35171-2.99581-4.60305-6.08843l.3054-1.26158M14.7486 2.1721l-.5931 2.45c-.132.54533-.6065.92789-1.1508.92789h-2.2993c-.77173 0-1.33797-.74895-1.1508-1.5221l.5931-2.45c.132-.54533.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.74896 1.1508 1.52211Zm-8.3033 0-.59309 2.45c-.13201.54533-.60646.92789-1.15076.92789H2.4021c-.7717 0-1.33793-.74895-1.15077-1.5221l.59309-2.45c.13201-.54533.60647-.9279 1.15077-.9279h2.29935c.77169 0 1.33792.74896 1.15076 1.52211Zm8.3033 9.8-.5931 2.45c-.132.5453-.6065.9279-1.1508.9279h-2.2993c-.77173 0-1.33797-.749-1.1508-1.5221l.5931-2.45c.132-.5453.6065-.9279 1.1508-.9279h2.2993c.7717 0 1.3379.7489 1.1508 1.5221Z'/%3E%3C/svg%3E %3C/svg%3E"
 
-type LinkedPromotionEntry = PromotedWidgetSource & {
-  inputName: string
-  inputKey: string
-  /** The subgraph input slot's internal name (stable identity). */
-  slotName: string
-}
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
@@ -217,7 +218,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const seenEntryKeys = new Set<string>()
     const deduplicatedEntries = linkedEntries.filter((entry) => {
-      const entryKey = this._makePromotionViewKey(
+      const entryKey = makePromotionViewKey(
         entry.inputKey,
         entry.sourceNodeId,
         entry.sourceWidgetName,
@@ -271,8 +272,35 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const linkedEntries = this._getLinkedPromotionEntries()
 
-    const { displayNameByViewKey, reconcileEntries } =
-      this._buildPromotionReconcileState(entries, linkedEntries)
+    const resolved = resolvePromotionEntries(
+      entries,
+      linkedEntries,
+      this._getConnectedPromotionEntryKeys(),
+      this.inputs.length,
+      this.subgraph,
+      this
+    )
+    const linkedReconcileEntries = buildLinkedReconcileEntries(linkedEntries)
+    const fallbackReconcileEntries: Array<{
+      sourceNodeId: string
+      sourceWidgetName: string
+      viewKey?: string
+      disambiguatingSourceNodeId?: string
+      slotName?: string
+    }> = resolved.fallbackStoredEntries.map((e) =>
+      e.disambiguatingSourceNodeId
+        ? {
+            sourceNodeId: e.sourceNodeId,
+            sourceWidgetName: e.sourceWidgetName,
+            disambiguatingSourceNodeId: e.disambiguatingSourceNodeId,
+            viewKey: `src:${e.sourceNodeId}:${e.sourceWidgetName}:${e.disambiguatingSourceNodeId}`
+          }
+        : e
+    )
+    const reconcileEntries = resolved.shouldPersistLinkedOnly
+      ? linkedReconcileEntries
+      : [...linkedReconcileEntries, ...fallbackReconcileEntries]
+    const displayNameByViewKey = buildDisplayNameByViewKey(linkedEntries)
 
     const views = this._promotedViewManager.reconcile(
       reconcileEntries,
@@ -307,12 +335,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const store = usePromotionStore()
     const entries = store.getPromotionsRef(this.rootGraph.id, this.id)
     const linkedEntries = this._getLinkedPromotionEntries(false)
-    // Intentionally preserve independent store promotions when linked coverage is partial;
-    // tests assert that mixed linked/independent states must not collapse to linked-only.
-    const { mergedEntries } = this._buildPromotionPersistenceState(
+    const resolved = resolvePromotionEntries(
       entries,
-      linkedEntries
+      linkedEntries,
+      this._getConnectedPromotionEntryKeys(),
+      this.inputs.length,
+      this.subgraph,
+      this
     )
+    const mergedEntries = resolved.shouldPersistLinkedOnly
+      ? resolved.linkedPromotionEntries
+      : [...resolved.linkedPromotionEntries, ...resolved.fallbackStoredEntries]
 
     const hasChanged =
       mergedEntries.length !== entries.length ||
@@ -329,221 +362,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     store.setPromotions(this.rootGraph.id, this.id, mergedEntries)
   }
 
-  private _buildPromotionReconcileState(
-    entries: PromotedWidgetSource[],
-    linkedEntries: LinkedPromotionEntry[]
-  ): {
-    displayNameByViewKey: Map<string, string>
-    reconcileEntries: Array<{
-      sourceNodeId: string
-      sourceWidgetName: string
-      viewKey?: string
-      disambiguatingSourceNodeId?: string
-      slotName?: string
-    }>
-  } {
-    const { fallbackStoredEntries } = this._collectLinkedAndFallbackEntries(
-      entries,
-      linkedEntries
-    )
-    const linkedReconcileEntries =
-      this._buildLinkedReconcileEntries(linkedEntries)
-    const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(
-      linkedEntries,
-      fallbackStoredEntries
-    )
-    const fallbackReconcileEntries = fallbackStoredEntries.map((e) =>
-      e.disambiguatingSourceNodeId
-        ? {
-            sourceNodeId: e.sourceNodeId,
-            sourceWidgetName: e.sourceWidgetName,
-            disambiguatingSourceNodeId: e.disambiguatingSourceNodeId,
-            viewKey: `src:${e.sourceNodeId}:${e.sourceWidgetName}:${e.disambiguatingSourceNodeId}`
-          }
-        : e
-    )
-    const reconcileEntries = shouldPersistLinkedOnly
-      ? linkedReconcileEntries
-      : [...linkedReconcileEntries, ...fallbackReconcileEntries]
-
-    return {
-      displayNameByViewKey: this._buildDisplayNameByViewKey(linkedEntries),
-      reconcileEntries
-    }
-  }
-
-  private _buildPromotionPersistenceState(
-    entries: PromotedWidgetSource[],
-    linkedEntries: LinkedPromotionEntry[]
-  ): {
-    mergedEntries: PromotedWidgetSource[]
-  } {
-    const { linkedPromotionEntries, fallbackStoredEntries } =
-      this._collectLinkedAndFallbackEntries(entries, linkedEntries)
-    const shouldPersistLinkedOnly = this._shouldPersistLinkedOnly(
-      linkedEntries,
-      fallbackStoredEntries
-    )
-
-    return {
-      mergedEntries: shouldPersistLinkedOnly
-        ? linkedPromotionEntries
-        : [...linkedPromotionEntries, ...fallbackStoredEntries]
-    }
-  }
-
-  private _collectLinkedAndFallbackEntries(
-    entries: PromotedWidgetSource[],
-    linkedEntries: LinkedPromotionEntry[]
-  ): {
-    linkedPromotionEntries: PromotedWidgetSource[]
-    fallbackStoredEntries: PromotedWidgetSource[]
-  } {
-    const linkedPromotionEntries = this._toPromotionEntries(linkedEntries)
-    const excludedEntryKeys = new Set(
-      linkedPromotionEntries.map((entry) =>
-        this._makePromotionEntryKey(
-          entry.sourceNodeId,
-          entry.sourceWidgetName,
-          entry.disambiguatingSourceNodeId
-        )
-      )
-    )
-    const connectedEntryKeys = this._getConnectedPromotionEntryKeys()
-    for (const key of connectedEntryKeys) {
-      excludedEntryKeys.add(key)
-    }
-
-    const prePruneFallbackStoredEntries = this._getFallbackStoredEntries(
-      entries,
-      excludedEntryKeys
-    )
-    const fallbackStoredEntries = this._pruneStaleAliasFallbackEntries(
-      prePruneFallbackStoredEntries,
-      linkedPromotionEntries
-    )
-
-    return {
-      linkedPromotionEntries,
-      fallbackStoredEntries
-    }
-  }
-
-  private _shouldPersistLinkedOnly(
-    linkedEntries: LinkedPromotionEntry[],
-    fallbackStoredEntries: PromotedWidgetSource[]
-  ): boolean {
-    if (
-      !(this.inputs.length > 0 && linkedEntries.length === this.inputs.length)
-    )
-      return false
-
-    const linkedEntryKeys = new Set(
-      linkedEntries.map((entry) =>
-        this._makePromotionEntryKey(entry.sourceNodeId, entry.sourceWidgetName)
-      )
-    )
-
-    const linkedWidgetNames = new Set(
-      linkedEntries.map((entry) => entry.sourceWidgetName)
-    )
-
-    const hasFallbackToKeep = fallbackStoredEntries.some((entry) => {
-      const sourceNode = this.subgraph.getNodeById(entry.sourceNodeId)
-      if (!sourceNode) return linkedWidgetNames.has(entry.sourceWidgetName)
-
-      const hasSourceWidget =
-        sourceNode.widgets?.some(
-          (widget) => widget.name === entry.sourceWidgetName
-        ) === true
-      if (hasSourceWidget) return true
-
-      // If the fallback entry overlaps a linked entry, keep it
-      // until aliasing can be positively proven.
-      return linkedEntryKeys.has(
-        this._makePromotionEntryKey(entry.sourceNodeId, entry.sourceWidgetName)
-      )
-    })
-
-    return !hasFallbackToKeep
-  }
-
-  private _toPromotionEntries(
-    linkedEntries: LinkedPromotionEntry[]
-  ): PromotedWidgetSource[] {
-    return linkedEntries.map(
-      ({ sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId }) => ({
-        sourceNodeId,
-        sourceWidgetName,
-        ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
-      })
-    )
-  }
-
-  private _getFallbackStoredEntries(
-    entries: PromotedWidgetSource[],
-    excludedEntryKeys: Set<string>
-  ): PromotedWidgetSource[] {
-    return entries.filter(
-      (entry) =>
-        !excludedEntryKeys.has(
-          this._makePromotionEntryKey(
-            entry.sourceNodeId,
-            entry.sourceWidgetName,
-            entry.disambiguatingSourceNodeId
-          )
-        )
-    )
-  }
-
-  private _pruneStaleAliasFallbackEntries(
-    fallbackStoredEntries: PromotedWidgetSource[],
-    linkedPromotionEntries: PromotedWidgetSource[]
-  ): PromotedWidgetSource[] {
-    if (
-      fallbackStoredEntries.length === 0 ||
-      linkedPromotionEntries.length === 0
-    )
-      return fallbackStoredEntries
-
-    const linkedConcreteKeys = new Set(
-      linkedPromotionEntries
-        .map((entry) => this._resolveConcretePromotionEntryKey(entry))
-        .filter((key): key is string => key !== undefined)
-    )
-    if (linkedConcreteKeys.size === 0) return fallbackStoredEntries
-
-    const prunedEntries: PromotedWidgetSource[] = []
-
-    for (const entry of fallbackStoredEntries) {
-      if (!this.subgraph.getNodeById(entry.sourceNodeId)) continue
-
-      const concreteKey = this._resolveConcretePromotionEntryKey(entry)
-      if (concreteKey && linkedConcreteKeys.has(concreteKey)) continue
-
-      prunedEntries.push(entry)
-    }
-
-    return prunedEntries
-  }
-
-  private _resolveConcretePromotionEntryKey(
-    entry: PromotedWidgetSource
-  ): string | undefined {
-    const result = resolveConcretePromotedWidget(
-      this,
-      entry.sourceNodeId,
-      entry.sourceWidgetName,
-      entry.disambiguatingSourceNodeId
-    )
-    if (result.status !== 'resolved') return undefined
-
-    return this._makePromotionEntryKey(
-      String(result.resolved.node.id),
-      result.resolved.widget.name
-    )
-  }
-
   private _getConnectedPromotionEntryKeys(): Set<string> {
     const connectedEntryKeys = new Set<string>()
 
@@ -557,92 +375,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!hasWidgetNode(widget)) continue
 
         connectedEntryKeys.add(
-          this._makePromotionEntryKey(String(widget.node.id), widget.name)
+          makePromotionEntryKey({
+            sourceNodeId: String(widget.node.id),
+            sourceWidgetName: widget.name
+          })
         )
       }
     }
 
     return connectedEntryKeys
-  }
-
-  private _buildLinkedReconcileEntries(
-    linkedEntries: LinkedPromotionEntry[]
-  ): Array<{
-    sourceNodeId: string
-    sourceWidgetName: string
-    viewKey: string
-    disambiguatingSourceNodeId?: string
-    slotName: string
-  }> {
-    return linkedEntries.map(
-      ({
-        inputKey,
-        inputName,
-        slotName,
-        sourceNodeId,
-        sourceWidgetName,
-        disambiguatingSourceNodeId
-      }) => ({
-        sourceNodeId,
-        sourceWidgetName,
-        slotName,
-        disambiguatingSourceNodeId,
-        viewKey: this._makePromotionViewKey(
-          inputKey,
-          sourceNodeId,
-          sourceWidgetName,
-          inputName,
-          disambiguatingSourceNodeId
-        )
-      })
-    )
-  }
-
-  private _buildDisplayNameByViewKey(
-    linkedEntries: LinkedPromotionEntry[]
-  ): Map<string, string> {
-    return new Map(
-      linkedEntries.map((entry) => [
-        this._makePromotionViewKey(
-          entry.inputKey,
-          entry.sourceNodeId,
-          entry.sourceWidgetName,
-          entry.inputName,
-          entry.disambiguatingSourceNodeId
-        ),
-        entry.inputName
-      ])
-    )
-  }
-
-  private _makePromotionEntryKey(
-    sourceNodeId: string,
-    sourceWidgetName: string,
-    disambiguatingSourceNodeId?: string
-  ): string {
-    return makePromotionEntryKey({
-      sourceNodeId,
-      sourceWidgetName,
-      disambiguatingSourceNodeId
-    })
-  }
-
-  private _makePromotionViewKey(
-    inputKey: string,
-    sourceNodeId: string,
-    sourceWidgetName: string,
-    inputName = '',
-    disambiguatingSourceNodeId?: string
-  ): string {
-    return disambiguatingSourceNodeId
-      ? JSON.stringify([
-          inputKey,
-          sourceNodeId,
-          sourceWidgetName,
-          inputName,
-          disambiguatingSourceNodeId
-        ])
-      : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
   private _serializeEntries(
@@ -1263,7 +1004,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           sourceNodeId,
           subgraphInput.name
         ),
-      this._makePromotionViewKey(
+      makePromotionViewKey(
         String(subgraphInput.id),
         nodeId,
         widgetName,
@@ -1480,7 +1221,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._promotedViewManager.removeByViewKey(
         view.sourceNodeId,
         view.sourceWidgetName,
-        this._makePromotionViewKey(
+        makePromotionViewKey(
           String(input._subgraphSlot.id),
           view.sourceNodeId,
           view.sourceWidgetName,
