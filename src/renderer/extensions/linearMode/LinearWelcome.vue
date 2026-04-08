@@ -70,11 +70,17 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         </i18n-t>
       </p>
       <div class="flex flex-row gap-2">
-        <Button variant="textonly" size="lg" @click="setMode('graph')">
+        <Button
+          data-testid="linear-welcome-back-to-workflow"
+          variant="textonly"
+          size="lg"
+          @click="setMode('graph')"
+        >
           {{ t('linearMode.backToWorkflow') }}
         </Button>
         <Button
           v-if="!hasNodes"
+          data-testid="linear-welcome-load-template"
           variant="secondary"
           size="lg"
           @click="templateSelectorDialog.show('appbuilder')"

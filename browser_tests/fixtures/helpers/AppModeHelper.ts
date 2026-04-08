@@ -126,6 +126,16 @@ export class AppModeHelper {
     return this.page.getByTestId(TestIds.appMode.buildApp)
   }
 
+  /** The "Back to workflow" button on the welcome screen. */
+  get backToWorkflowButton(): Locator {
+    return this.page.getByTestId(TestIds.appMode.backToWorkflow)
+  }
+
+  /** The "Load template" button shown when no nodes exist. */
+  get loadTemplateButton(): Locator {
+    return this.page.getByTestId(TestIds.appMode.loadTemplate)
+  }
+
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").
