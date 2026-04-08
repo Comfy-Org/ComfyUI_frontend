@@ -1,14 +1,28 @@
 import { expect } from '@playwright/test'
 
+import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type { components as RegistryComponents } from '@comfyorg/registry-types'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
 type RegistryNodePack = RegistryComponents['schemas']['Node']
+
+interface AlgoliaSearchResult {
+  hits: Partial<AlgoliaNodePack>[]
+  nbHits: number
+  page: number
+  nbPages: number
+  hitsPerPage: number
+}
+
+interface AlgoliaSearchResponse {
+  results: AlgoliaSearchResult[]
+}
 
 const MOCK_PACK_A: RegistryNodePack = {
   id: 'test-pack-a',
@@ -47,61 +61,63 @@ const MOCK_INSTALLED_PACKS: InstalledPacksResponse = {
   }
 }
 
-const MOCK_ALGOLIA_RESPONSE = {
+const MOCK_HIT_A: Partial<AlgoliaNodePack> = {
+  objectID: 'test-pack-a',
+  id: 'test-pack-a',
+  name: 'Test Pack A',
+  description: 'A test custom node pack',
+  total_install: 5000,
+  status: 'NodeStatusActive',
+  publisher_id: 'test-publisher',
+  latest_version: '1.0.0',
+  latest_version_status: 'NodeVersionStatusActive',
+  repository_url: 'https://github.com/test/pack-a',
+  comfy_nodes: ['TestNodeA1', 'TestNodeA2'],
+  create_time: '2024-01-01T00:00:00Z',
+  update_time: '2024-06-01T00:00:00Z',
+  license: 'MIT',
+  tags: ['image', 'processing']
+}
+
+const MOCK_HIT_B: Partial<AlgoliaNodePack> = {
+  objectID: 'test-pack-b',
+  id: 'test-pack-b',
+  name: 'Test Pack B',
+  description: 'Another test custom node pack for testing search',
+  total_install: 3000,
+  status: 'NodeStatusActive',
+  publisher_id: 'another-publisher',
+  latest_version: '2.1.0',
+  latest_version_status: 'NodeVersionStatusActive',
+  repository_url: 'https://github.com/test/pack-b',
+  comfy_nodes: ['TestNodeB1'],
+  create_time: '2024-02-01T00:00:00Z',
+  update_time: '2024-07-01T00:00:00Z',
+  license: 'Apache-2.0',
+  tags: ['video', 'generation']
+}
+
+const MOCK_HIT_C: Partial<AlgoliaNodePack> = {
+  objectID: 'test-pack-c',
+  id: 'test-pack-c',
+  name: 'Test Pack C',
+  description: 'Third test pack',
+  total_install: 100,
+  status: 'NodeStatusActive',
+  publisher_id: 'test-publisher',
+  latest_version: '0.5.0',
+  latest_version_status: 'NodeVersionStatusActive',
+  repository_url: 'https://github.com/test/pack-c',
+  comfy_nodes: ['TestNodeC1'],
+  create_time: '2024-03-01T00:00:00Z',
+  update_time: '2024-05-01T00:00:00Z',
+  license: 'MIT'
+}
+
+const MOCK_ALGOLIA_RESPONSE: AlgoliaSearchResponse = {
   results: [
     {
-      hits: [
-        {
-          objectID: 'test-pack-a',
-          id: 'test-pack-a',
-          name: 'Test Pack A',
-          description: 'A test custom node pack',
-          total_install: 5000,
-          status: 'active',
-          publisher_id: 'test-publisher',
-          latest_version: '1.0.0',
-          latest_version_status: 'active',
-          repository_url: 'https://github.com/test/pack-a',
-          comfy_nodes: ['TestNodeA1', 'TestNodeA2'],
-          create_time: '2024-01-01T00:00:00Z',
-          update_time: '2024-06-01T00:00:00Z',
-          license: 'MIT',
-          tags: ['image', 'processing']
-        },
-        {
-          objectID: 'test-pack-b',
-          id: 'test-pack-b',
-          name: 'Test Pack B',
-          description: 'Another test custom node pack for testing search',
-          total_install: 3000,
-          status: 'active',
-          publisher_id: 'another-publisher',
-          latest_version: '2.1.0',
-          latest_version_status: 'active',
-          repository_url: 'https://github.com/test/pack-b',
-          comfy_nodes: ['TestNodeB1'],
-          create_time: '2024-02-01T00:00:00Z',
-          update_time: '2024-07-01T00:00:00Z',
-          license: 'Apache-2.0',
-          tags: ['video', 'generation']
-        },
-        {
-          objectID: 'test-pack-c',
-          id: 'test-pack-c',
-          name: 'Test Pack C',
-          description: 'Third test pack',
-          total_install: 100,
-          status: 'active',
-          publisher_id: 'test-publisher',
-          latest_version: '0.5.0',
-          latest_version_status: 'active',
-          repository_url: 'https://github.com/test/pack-c',
-          comfy_nodes: ['TestNodeC1'],
-          create_time: '2024-03-01T00:00:00Z',
-          update_time: '2024-05-01T00:00:00Z',
-          license: 'MIT'
-        }
-      ],
+      hits: [MOCK_HIT_A, MOCK_HIT_B, MOCK_HIT_C],
       nbHits: 3,
       page: 0,
       nbPages: 1,
@@ -110,35 +126,28 @@ const MOCK_ALGOLIA_RESPONSE = {
   ]
 }
 
-function createFilteredAlgoliaResponse(
-  query: string,
-  searchAttributes?: string[]
-) {
-  const allHits = MOCK_ALGOLIA_RESPONSE.results[0].hits
-  if (!query) return MOCK_ALGOLIA_RESPONSE
-
-  const lowerQuery = query.toLowerCase()
-  const isNodeSearch = searchAttributes?.includes('comfy_nodes')
-
-  const filtered = allHits.filter((hit) => {
-    if (isNodeSearch) {
-      return hit.comfy_nodes?.some((n) => n.toLowerCase().includes(lowerQuery))
+const MOCK_ALGOLIA_PACK_B_ONLY: AlgoliaSearchResponse = {
+  results: [
+    {
+      hits: [MOCK_HIT_B],
+      nbHits: 1,
+      page: 0,
+      nbPages: 1,
+      hitsPerPage: 20
     }
-    return (
-      hit.name.toLowerCase().includes(lowerQuery) ||
-      hit.description.toLowerCase().includes(lowerQuery)
-    )
-  })
+  ]
+}
 
-  return {
-    results: [
-      {
-        ...MOCK_ALGOLIA_RESPONSE.results[0],
-        hits: filtered,
-        nbHits: filtered.length
-      }
-    ]
-  }
+const MOCK_ALGOLIA_EMPTY: AlgoliaSearchResponse = {
+  results: [
+    {
+      hits: [],
+      nbHits: 0,
+      page: 0,
+      nbPages: 0,
+      hitsPerPage: 20
+    }
+  ]
 }
 
 test.describe('ManagerDialog', { tag: '@ui' }, () => {
@@ -187,23 +196,11 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     )
 
     await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
-      const postData = route.request().postDataJSON()
-      const query = postData?.requests?.[0]?.query ?? ''
-      const attributes =
-        postData?.requests?.[0]?.restrictSearchableAttributes ?? []
-      await route.fulfill({
-        json: createFilteredAlgoliaResponse(query, attributes)
-      })
+      await route.fulfill({ json: MOCK_ALGOLIA_RESPONSE })
     })
 
     await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
-      const postData = route.request().postDataJSON()
-      const query = postData?.requests?.[0]?.query ?? ''
-      const attributes =
-        postData?.requests?.[0]?.restrictSearchableAttributes ?? []
-      await route.fulfill({
-        json: createFilteredAlgoliaResponse(query, attributes)
-      })
+      await route.fulfill({ json: MOCK_ALGOLIA_RESPONSE })
     })
 
     await comfyPage.page.route(
@@ -223,23 +220,21 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await comfyPage.setup()
   })
 
-  async function openManagerDialog(comfyPage: {
-    command: { executeCommand: (cmd: string) => Promise<void> }
-  }) {
+  async function openManagerDialog(comfyPage: ComfyPage) {
     await comfyPage.command.executeCommand('Comfy.OpenManagerDialog')
   }
 
   test('Opens the manager dialog via command', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
   })
 
   test('Displays pack cards from search results', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await expect(dialog.getByText('Test Pack A')).toBeVisible()
@@ -248,9 +243,16 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   })
 
   test('Search filters displayed packs', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
+      await route.fulfill({ json: MOCK_ALGOLIA_PACK_B_ONLY })
+    })
+    await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
+      await route.fulfill({ json: MOCK_ALGOLIA_PACK_B_ONLY })
+    })
+
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const searchInput = dialog.getByPlaceholder(/search/i)
@@ -267,7 +269,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
 
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await dialog.getByText('Test Pack A').first().click()
@@ -278,7 +280,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   test('Left side panel navigation tabs exist', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const nav = dialog.locator('nav')
@@ -291,7 +293,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   test('Switching tabs changes the content view', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const nav = dialog.locator('nav')
@@ -303,7 +305,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   test('Closes via Escape key', async ({ comfyPage }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
@@ -312,24 +314,12 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
 
   test('Empty search shows no results message', async ({ comfyPage }) => {
     await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
-      await route.fulfill({
-        json: {
-          results: [
-            {
-              hits: [],
-              nbHits: 0,
-              page: 0,
-              nbPages: 0,
-              hitsPerPage: 20
-            }
-          ]
-        }
-      })
+      await route.fulfill({ json: MOCK_ALGOLIA_EMPTY })
     })
 
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const searchInput = dialog.getByPlaceholder(/search/i)
@@ -345,7 +335,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const sortDropdown = dialog.getByText('Downloads')
@@ -357,7 +347,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   }) => {
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const modeSelector = dialog.getByText('Node Pack')
@@ -381,7 +371,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
 
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     const nav = dialog.locator('nav')
@@ -398,10 +388,8 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       const postData = route.request().postDataJSON()
       if (postData?.kind === 'install') {
         installCalled = true
-        await route.fulfill({ status: 200, body: '' })
-      } else {
-        await route.fulfill({ status: 200, body: '' })
       }
+      await route.fulfill({ status: 200, body: '' })
     })
 
     await comfyPage.page.route('**/v2/manager/queue/start**', async (route) => {
@@ -414,15 +402,86 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
 
     await openManagerDialog(comfyPage)
 
-    const dialog = comfyPage.page.locator('.manager-dialog')
+    const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
     await dialog.getByText('Test Pack B').first().click()
 
     const installButton = dialog.getByRole('button', { name: /install/i })
-    if (await installButton.isVisible()) {
-      await installButton.click()
-      await expect.poll(() => installCalled).toBe(true)
-    }
+    await expect(installButton).toBeVisible()
+    await installButton.click()
+    await expect.poll(() => installCalled).toBe(true)
+  })
+
+  test('Uninstall button triggers uninstall API call', async ({
+    comfyPage
+  }) => {
+    let uninstallCalled = false
+    await comfyPage.page.route('**/v2/manager/queue/task', async (route) => {
+      const postData = route.request().postDataJSON()
+      if (postData?.kind === 'uninstall') {
+        uninstallCalled = true
+      }
+      await route.fulfill({ status: 200, body: '' })
+    })
+
+    await comfyPage.page.route('**/v2/manager/queue/start**', async (route) => {
+      await route.fulfill({ status: 200, body: '' })
+    })
+
+    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
+      await route.fulfill({ json: MOCK_PACK_A })
+    })
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    const nav = dialog.locator('nav')
+    await nav.getByText('All Installed').click()
+
+    await dialog.getByText('Test Pack A').first().click()
+
+    const uninstallButton = dialog.getByRole('button', {
+      name: /uninstall/i
+    })
+    await expect(uninstallButton).toBeVisible()
+    await uninstallButton.click()
+    await expect.poll(() => uninstallCalled).toBe(true)
+  })
+
+  test('Enable/disable toggle changes pack state', async ({ comfyPage }) => {
+    let toggleKind: string | null = null
+    await comfyPage.page.route('**/v2/manager/queue/task', async (route) => {
+      const postData = route.request().postDataJSON()
+      if (postData?.kind === 'enable' || postData?.kind === 'disable') {
+        toggleKind = postData.kind
+      }
+      await route.fulfill({ status: 200, body: '' })
+    })
+
+    await comfyPage.page.route('**/v2/manager/queue/start**', async (route) => {
+      await route.fulfill({ status: 200, body: '' })
+    })
+
+    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
+      await route.fulfill({ json: MOCK_PACK_A })
+    })
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    const nav = dialog.locator('nav')
+    await nav.getByText('All Installed').click()
+
+    await dialog.getByText('Test Pack A').first().click()
+
+    const enableToggle = dialog.getByLabel(/enable or disable pack/i)
+    await expect(enableToggle).toBeVisible()
+    await enableToggle.click()
+    await expect.poll(() => toggleKind).toBeTruthy()
   })
 })
