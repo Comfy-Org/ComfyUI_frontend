@@ -51,6 +51,9 @@ test.describe(
       const menu = comfyPage.page.locator('.p-contextmenu')
       await expect(menu).toBeVisible({ timeout: 3000 })
 
+      // Wait for constrainMenuHeight (runs via requestAnimationFrame in onMenuShow)
+      await comfyPage.nextFrame()
+
       return menu
     }
 
@@ -60,14 +63,16 @@ test.describe(
       const menu = await openMoreOptions(comfyPage)
       const rootList = menu.locator(':scope > ul')
 
-      const { clientHeight, scrollHeight } = await rootList.evaluate((el) => ({
-        clientHeight: el.clientHeight,
-        scrollHeight: el.scrollHeight
-      }))
-      expect(
-        scrollHeight,
-        'Menu should overflow vertically so this test exercises the viewport clamp'
-      ).toBeGreaterThan(clientHeight)
+      await expect
+        .poll(
+          () => rootList.evaluate((el) => el.scrollHeight > el.clientHeight),
+          {
+            message:
+              'Menu should overflow vertically so this test exercises the viewport clamp',
+            timeout: 3000
+          }
+        )
+        .toBe(true)
 
       // "Remove" is the last item in the More Options menu.
       // It must become reachable by scrolling the bounded menu list.
