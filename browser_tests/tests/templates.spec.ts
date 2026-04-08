@@ -1,9 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkflowTemplates } from '../../src/platform/workflow/templates/types/template'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 async function checkTemplateFileExists(
   page: Page,

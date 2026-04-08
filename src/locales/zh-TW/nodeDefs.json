@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "影像直方圖",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "亮度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "紅色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "綠色",
+        "tooltip": null
+      },
+      "4": {
+        "name": "藍色",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "反轉影像",
     "inputs": {

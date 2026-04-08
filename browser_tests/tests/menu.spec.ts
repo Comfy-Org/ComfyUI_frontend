@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Menu', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -48,10 +48,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.menu.topbar.saveWorkflow(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
-      await comfyPage.nextFrame()
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow'
-      ])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(['Unsaved Workflow'])
     })
   })
 

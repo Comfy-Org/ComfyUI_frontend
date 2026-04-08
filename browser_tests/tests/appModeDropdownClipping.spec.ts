@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 /**
  * Default workflow widget inputs as [nodeId, widgetName] tuples.
@@ -60,13 +60,7 @@ async function addNode(page: Page, nodeType: string): Promise<string> {
 
 test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.appMode.enableLinearMode()
   })
 
   test('Select dropdown is not clipped in app mode panel', async ({
@@ -145,10 +139,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
 
     // The unstyled PrimeVue Popover renders with role="dialog".
     // Locate the one containing the image grid (filter buttons like "All", "Inputs").
-    const popover = comfyPage.page
-      .getByRole('dialog')
-      .filter({ has: comfyPage.page.getByRole('button', { name: 'All' }) })
-      .first()
+    const popover = comfyPage.appMode.imagePickerPopover
     await expect(popover).toBeVisible({ timeout: 5000 })
 
     const isInViewport = await popover.evaluate((el) => {

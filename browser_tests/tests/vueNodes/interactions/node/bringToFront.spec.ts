@@ -1,9 +1,9 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
-import { fitToViewInstant } from '../../../../helpers/fitToView'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
 test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

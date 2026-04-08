@@ -1,10 +1,10 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '../../src/schemas/apiSchema'
+import type { StatusWsMessage } from '@/schemas/apiSchema'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
