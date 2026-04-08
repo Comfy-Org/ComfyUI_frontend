@@ -51,9 +51,8 @@ export class AppModeHelper {
 
   /** Toggle app mode (linear view) on/off. */
   async toggleAppMode() {
-    await this.page.evaluate(() => {
-      window.app!.extensionManager.command.execute('Comfy.ToggleLinear')
-    })
+    await this.comfyPage.workflow.waitForActiveWorkflow()
+    await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
     await this.comfyPage.nextFrame()
   }
 

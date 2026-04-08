@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import LinearWelcome from './LinearWelcome.vue'
 
@@ -44,6 +44,12 @@ function mountComponent(
 }
 
 describe('LinearWelcome', () => {
+  beforeEach(() => {
+    hasNodes.value = false
+    hasOutputs.value = false
+    vi.clearAllMocks()
+  })
+
   it('shows empty workflow text when there are no nodes', () => {
     const wrapper = mountComponent({ hasNodes: false })
     expect(

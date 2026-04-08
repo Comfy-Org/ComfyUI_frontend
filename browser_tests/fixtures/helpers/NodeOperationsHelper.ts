@@ -35,6 +35,7 @@ export class NodeOperationsHelper {
 
   /** Remove all nodes from the graph and clean. */
   async clearGraph() {
+    await this.comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
     await this.comfyPage.command.executeCommand('Comfy.ClearWorkflow')
   }
 
