@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
-import { PropertiesPanelHelper } from './PropertiesPanelHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

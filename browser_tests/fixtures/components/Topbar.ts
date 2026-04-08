@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 export class Topbar {
   private readonly menuLocator: Locator

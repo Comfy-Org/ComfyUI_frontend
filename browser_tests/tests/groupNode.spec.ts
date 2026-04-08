@@ -2,12 +2,12 @@ import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { NodeLibrarySidebarTab } from '../fixtures/components/SidebarTab'
-import { TestIds } from '../fixtures/selectors'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { NodeLibrarySidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')

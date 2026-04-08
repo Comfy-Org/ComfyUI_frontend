@@ -7,10 +7,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
-import type { NodeReference } from '../utils/litegraphUtils'
-import { SubgraphSlotReference } from '../utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class SubgraphHelper {
   constructor(private readonly comfyPage: ComfyPage) {}

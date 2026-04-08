@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 /**
  * Default workflow widget inputs as [nodeId, widgetName] tuples.

@@ -1,12 +1,12 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   interceptClipboardWrite,
   getClipboardText
-} from '../../helpers/clipboardSpy'
-import { openErrorsTabViaSeeErrors } from './ErrorsTabHelper'
+} from '@e2e/helpers/clipboardSpy'
+import { openErrorsTabViaSeeErrors } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

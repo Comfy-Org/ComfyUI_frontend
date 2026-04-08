@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { Settings } from '../../src/schemas/apiSchema'
-import type { SettingParams } from '../../src/platform/settings/types'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { Settings } from '@/schemas/apiSchema'
+import type { SettingParams } from '@/platform/settings/types'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
  * Type helper for test settings with arbitrary IDs.

@@ -1,14 +1,14 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import type { AppModeHelper } from '../fixtures/helpers/AppModeHelper'
+} from '@e2e/fixtures/ComfyPage'
+import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import {
   builderSaveAs,
   openWorkflowFromSidebar,
   setupBuilder
-} from '../helpers/builderTestUtils'
-import { fitToViewInstant } from '../helpers/fitToView'
+} from '@e2e/helpers/builderTestUtils'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
 /**
  * After a first save, open save-as again from the chevron,

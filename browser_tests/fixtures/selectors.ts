@@ -63,7 +63,8 @@ export const TestIds = {
     missingMediaStatusCard: 'missing-media-status-card',
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
-    missingMediaLocateButton: 'missing-media-locate-button'
+    missingMediaLocateButton: 'missing-media-locate-button',
+    publishTabPanel: 'publish-tab-panel'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -121,13 +122,21 @@ export const TestIds = {
     saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
+    ioItemSubtitle: 'builder-io-item-subtitle',
     widgetActionsMenu: 'widget-actions-menu',
     opensAs: 'builder-opens-as',
     widgetItem: 'builder-widget-item',
-    widgetLabel: 'builder-widget-label'
+    widgetLabel: 'builder-widget-label',
+    outputPlaceholder: 'builder-output-placeholder',
+    connectOutputPopover: 'builder-connect-output-popover'
   },
   appMode: {
-    widgetItem: 'app-mode-widget-item'
+    widgetItem: 'app-mode-widget-item',
+    welcome: 'linear-welcome',
+    emptyWorkflow: 'linear-welcome-empty-workflow',
+    buildApp: 'linear-welcome-build-app',
+    backToWorkflow: 'linear-welcome-back-to-workflow',
+    loadTemplate: 'linear-welcome-load-template'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'

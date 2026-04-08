@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { comfyPageFixture } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = comfyPageFixture
 

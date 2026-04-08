@@ -3,8 +3,8 @@ import { expect } from '@playwright/test'
 import type { components } from '@comfyorg/registry-types'
 
 type ReleaseNote = components['schemas']['ReleaseNote']
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 function createMockRelease(overrides?: Partial<ReleaseNote>): ReleaseNote {
   return {

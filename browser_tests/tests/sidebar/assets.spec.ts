@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   createMockJob,
   createMockJobs
-} from '../../fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+} from '@e2e/fixtures/helpers/AssetsHelper'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 // ---------------------------------------------------------------------------
 // Shared fixtures

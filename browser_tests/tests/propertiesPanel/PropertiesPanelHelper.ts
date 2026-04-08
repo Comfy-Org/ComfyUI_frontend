@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { TestIds } from '../../fixtures/selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class PropertiesPanelHelper {
   readonly root: Locator

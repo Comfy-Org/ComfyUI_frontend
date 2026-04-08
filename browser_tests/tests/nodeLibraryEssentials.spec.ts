@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

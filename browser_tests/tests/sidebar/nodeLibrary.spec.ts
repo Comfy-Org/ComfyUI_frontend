@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const bookmarksSettingId = 'Comfy.NodeLibrary.Bookmarks.V2'
 const bookmarksCustomizationSettingId =

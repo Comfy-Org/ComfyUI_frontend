@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Node Resizing', () => {
   test.beforeEach(async ({ comfyPage }) => {

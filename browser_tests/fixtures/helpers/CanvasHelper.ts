@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
-import type { Position } from '../types'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { Position } from '@e2e/fixtures/types'
 
 export class CanvasHelper {
   constructor(

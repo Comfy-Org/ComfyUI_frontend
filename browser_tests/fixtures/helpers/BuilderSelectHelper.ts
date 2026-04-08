@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
  * Drag an element from one index to another within a list of locators.
@@ -150,6 +150,26 @@ export class BuilderSelectHelper {
       .getByLabel(widgetName, { exact: true })
     await widgetLocator.click({ force: true })
     await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Get the subtitle locator for a builder IoItem by its title text.
+   * Useful for asserting "Widget not visible" on disconnected inputs.
+   */
+  getInputItemSubtitle(title: string): Locator {
+    return this.page
+      .getByTestId(TestIds.builder.ioItem)
+      .filter({
+        has: this.page
+          .getByTestId(TestIds.builder.ioItemTitle)
+          .getByText(title, { exact: true })
+      })
+      .getByTestId(TestIds.builder.ioItemSubtitle)
+  }
+
+  /** All IoItem locators in the current step sidebar. */
+  get inputItems(): Locator {
+    return this.page.getByTestId(TestIds.builder.ioItem)
   }
 
   /** All IoItem title locators in the inputs step sidebar. */

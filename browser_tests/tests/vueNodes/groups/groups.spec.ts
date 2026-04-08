@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 

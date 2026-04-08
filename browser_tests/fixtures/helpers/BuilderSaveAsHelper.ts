@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class BuilderSaveAsHelper {
   constructor(private readonly comfyPage: ComfyPage) {}

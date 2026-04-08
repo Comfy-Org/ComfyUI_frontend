@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const MOCK_FOLDERS: Record<string, string[]> = {
   checkpoints: [

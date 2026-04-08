@@ -1,11 +1,11 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { fitToViewInstant } from '../helpers/fitToView'
-import type { WorkspaceStore } from '../types/globals'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node

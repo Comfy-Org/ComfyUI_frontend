@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { getMiddlePoint } from '../fixtures/utils/litegraphUtils'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

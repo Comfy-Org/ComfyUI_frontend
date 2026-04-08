@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')

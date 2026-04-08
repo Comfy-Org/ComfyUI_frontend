@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 const ERROR_CLASS = /ring-destructive-background/
 

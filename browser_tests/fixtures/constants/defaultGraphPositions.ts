@@ -1,4 +1,4 @@
-import type { Position } from './types'
+import type { Position } from '@e2e/fixtures/constants/types'
 
 /**
  * Hardcoded positions for the default graph loaded in tests.
