@@ -60,7 +60,7 @@ export interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
-export function createWidgetUpdateHandler(
+function createWidgetUpdateHandler(
   widgetState: WidgetState | undefined,
   widget: SafeWidgetData,
   nodeExecId: string,
