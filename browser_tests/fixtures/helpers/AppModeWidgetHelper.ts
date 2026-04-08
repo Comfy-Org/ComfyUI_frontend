@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 /**
  * Helper for interacting with widgets rendered in app mode (linear view).

@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
-import { getPromotedWidgetNames } from '../../helpers/promotedWidgets'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { getPromotedWidgetNames } from '@e2e/helpers/promotedWidgets'
 
 // Constants
 const TEST_WIDGET_CONTENT = 'Test content that should persist'

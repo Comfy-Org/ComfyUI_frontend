@@ -3,7 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
