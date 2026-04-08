@@ -5,12 +5,12 @@ import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { SubgraphHelper } from '../../fixtures/helpers/SubgraphHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
-} from '../../fixtures/utils/slotBoundsUtil'
+} from '@e2e/fixtures/utils/slotBoundsUtil'
 
 const RENAMED_INPUT_NAME = 'renamed_input'
 const RENAMED_SLOT_NAME = 'renamed_slot_name'

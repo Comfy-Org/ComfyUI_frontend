@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
-import { getPseudoPreviewWidgets } from '../../helpers/promotedWidgets'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { getPseudoPreviewWidgets } from '@e2e/helpers/promotedWidgets'
 
 const domPreviewSelector = '.image-preview'
 

@@ -1,9 +1,9 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
-import type { Position } from '../../../../fixtures/types'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position } from '@e2e/fixtures/types'
 
 test.describe('Vue Node Moving', () => {
   test.beforeEach(async ({ comfyPage }) => {

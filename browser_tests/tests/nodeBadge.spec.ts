@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyApp } from '../../src/scripts/app'
-import { NodeBadgeMode } from '../../src/types/nodeSource'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyApp } from '@/scripts/app'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')

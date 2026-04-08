@@ -1,10 +1,10 @@
 import type { Locator } from '@playwright/test'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root

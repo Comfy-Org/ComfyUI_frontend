@@ -9,7 +9,7 @@ import {
   generateModels,
   generateInputFiles,
   generateOutputAssets
-} from '../data/assetFixtures'
+} from '@e2e/fixtures/data/assetFixtures'
 
 export interface MutationRecord {
   endpoint: string
