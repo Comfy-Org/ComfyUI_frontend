@@ -189,16 +189,12 @@ describe('NodePreview', () => {
       }
 
       renderComponent(unsafeNodeDef)
-      const description = screen.queryByTestId('node-description')
+      const description = screen.getByTestId('node-description')
 
-      if (description) {
-        expect(description.innerHTML).not.toContain('<script>')
-        expect(description.innerHTML).not.toContain('alert("xss")')
-        expect(description.innerHTML).toContain('<strong>markdown</strong>')
-        expect(description.innerHTML).toContain('<code>code</code>')
-      } else {
-        expect(description).not.toBeInTheDocument()
-      }
+      expect(description.innerHTML).not.toContain('<script>')
+      expect(description.innerHTML).not.toContain('alert("xss")')
+      expect(description.innerHTML).toContain('<strong>markdown</strong>')
+      expect(description.innerHTML).toContain('<code>code</code>')
     })
 
     it('handles markdown with line breaks', () => {
@@ -256,13 +252,11 @@ describe('NodePreview', () => {
       }
 
       renderComponent(maliciousNodeDef)
-      const description = screen.queryByTestId('node-description')
+      const description = screen.getByTestId('node-description')
 
-      if (description) {
-        expect(description.innerHTML).not.toContain('onerror')
-        expect(description.innerHTML).not.toContain('alert(')
-        expect(description.innerHTML).toContain('<strong>bold</strong>')
-      }
+      expect(description.innerHTML).not.toContain('onerror')
+      expect(description.innerHTML).not.toContain('alert(')
+      expect(description.innerHTML).toContain('<strong>bold</strong>')
     })
   })
 })

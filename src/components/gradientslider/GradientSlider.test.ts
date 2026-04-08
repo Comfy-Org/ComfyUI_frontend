@@ -25,7 +25,7 @@ function renderSlider(props: {
 }
 
 describe('GradientSlider', () => {
-  it('passes min, max, step to SliderRoot', () => {
+  it('passes min and max to SliderRoot', () => {
     renderSlider({
       modelValue: 50,
       min: -100,

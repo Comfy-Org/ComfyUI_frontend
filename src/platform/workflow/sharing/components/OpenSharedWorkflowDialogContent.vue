@@ -12,7 +12,7 @@
     </header>
 
     <template v-if="isLoading">
-      <main class="flex gap-8 px-8 pt-4 pb-6">
+      <main role="status" class="flex gap-8 px-8 pt-4 pb-6">
         <div class="flex min-w-0 flex-1 flex-col gap-12 py-4">
           <Skeleton class="h-8 w-3/5" />
           <Skeleton class="h-4 w-4/5" />

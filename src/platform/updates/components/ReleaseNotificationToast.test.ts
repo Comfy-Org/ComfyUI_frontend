@@ -306,12 +306,9 @@ describe('ReleaseNotificationToast', () => {
       content: ''
     } as ReleaseNote
 
-    const { container } = renderComponent()
+    renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const descriptionElement = container.querySelector('.pl-14')
-    expect(descriptionElement).toBeInTheDocument()
-    expect(descriptionElement).toHaveTextContent('Check out the latest')
+    expect(screen.getByText(/Check out the latest/)).toBeInTheDocument()
   })
 
   it('auto-hides after timeout', async () => {

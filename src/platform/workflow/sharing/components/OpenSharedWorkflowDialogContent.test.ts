@@ -93,11 +93,9 @@ describe('OpenSharedWorkflowDialogContent', () => {
   describe('loading state', () => {
     it('shows skeleton placeholders while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
-      const { container } = renderComponent()
+      renderComponent()
 
-      expect(
-        container.querySelectorAll('.animate-pulse').length
-      ).toBeGreaterThan(0)
+      expect(screen.getByRole('status')).toBeDefined()
     })
 
     it('shows dialog title in header while loading', () => {

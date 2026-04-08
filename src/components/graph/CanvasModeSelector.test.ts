@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
@@ -65,6 +65,10 @@ function renderComponent() {
 }
 
 describe('CanvasModeSelector', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('should render menu with menuitemradio roles and aria-checked', () => {
     renderComponent()
 

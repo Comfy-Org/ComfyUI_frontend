@@ -131,9 +131,12 @@ describe('ZoomControlsModal', () => {
 
     const input = screen.getByRole('spinbutton')
     await user.tripleClick(input)
-    await user.keyboard('1001')
+    await user.keyboard('100')
+    mockSetAppZoom.mockClear()
 
-    expect(mockSetAppZoom).not.toHaveBeenCalledWith(1001)
+    await user.keyboard('1')
+
+    expect(mockSetAppZoom).not.toHaveBeenCalled()
   })
 
   it('should display keyboard shortcuts for commands', () => {

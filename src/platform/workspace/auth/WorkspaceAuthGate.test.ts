@@ -199,21 +199,24 @@ describe('WorkspaceAuthGate', () => {
 
     it('renders slot when remote config refresh times out', async () => {
       vi.useFakeTimers()
-      // Never-resolving promise simulates a hanging request
-      mockRefreshRemoteConfig.mockReturnValue(new Promise(() => {}))
+      try {
+        // Never-resolving promise simulates a hanging request
+        mockRefreshRemoteConfig.mockReturnValue(new Promise(() => {}))
 
-      mountComponent()
-      await vi.advanceTimersByTimeAsync(0)
+        mountComponent()
+        await vi.advanceTimersByTimeAsync(0)
 
-      // Slot not yet rendered before timeout
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+        // Slot not yet rendered before timeout
+        expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
 
-      // Advance past the 10 second timeout
-      await vi.advanceTimersByTimeAsync(10_001)
+        // Advance past the 10 second timeout
+        await vi.advanceTimersByTimeAsync(10_001)
 
-      // Should render slot after timeout (graceful degradation)
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
-      vi.useRealTimers()
+        // Should render slot after timeout (graceful degradation)
+        expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('renders slot when workspace store initialization fails', async () => {
