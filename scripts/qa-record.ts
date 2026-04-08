@@ -1965,54 +1965,115 @@ async function main() {
         )
         console.warn(`Evidence: ${research.evidence.slice(0, 200)}`)
 
-        // ═══ Phase 2: Run passing test with demowright video recording ═══
+        // ═══ Phase 2: Record demo video with demowright ═══
         if (research.verdict === 'REPRODUCED' && research.testCode) {
-          console.warn('Phase 2: Recording test execution with demowright')
+          console.warn('Phase 2: Recording demo video with demowright')
           const projectRoot = process.cwd()
-          const browserTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
+          const videoTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
+          const demowrightConfig = `${projectRoot}/playwright.demowright.config.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
 
-          // Inject demowright annotate() calls for title card and summary
-          const issueTitle = issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
-          const titleAnnotation = `
-    // demowright: title card
-    const { annotate: _annotate } = await import('demowright/helpers')
-    await _annotate(comfyPage.page, ${JSON.stringify(issueTitle)})
+          // Extract issue title for annotate overlay
+          const issueTitle =
+            issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ??
+            'Bug Reproduction'
+
+          // Write a demowright-aware Playwright config that wraps the project config
+          const configCode = `import { defineConfig } from '@playwright/test'
+import { withDemowright } from 'demowright/config'
+
+export default withDemowright(
+  defineConfig({
+    testDir: 'browser_tests/tests',
+    testMatch: 'qa-reproduce.spec.ts',
+    use: {
+      video: 'on',
+      viewport: { width: 1280, height: 720 },
+      baseURL: process.env.COMFYUI_BASE_URL || 'http://127.0.0.1:8188',
+    },
+    timeout: 60000,
+    workers: 1,
+    retries: 0,
+  }),
+  {
+    actionDelay: 300,
+    cursorStyle: 'default',
+    keyFadeMs: 2000,
+  },
+)
 `
+          writeFileSync(demowrightConfig, configCode)
+
+          // Inject annotate() title card at the start of the test body
           let testCode = research.testCode
           const bodyMatch = testCode.match(
             /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
           )
           if (bodyMatch?.index !== undefined) {
             const pos = bodyMatch.index + bodyMatch[0].length
+            const titleInject = `
+    // demowright: show issue title as subtitle overlay
+    try {
+      const { annotate: _ann } = await import('demowright/helpers')
+      await _ann(comfyPage.page, ${JSON.stringify(issueTitle)})
+    } catch {}
+`
             testCode =
-              testCode.slice(0, pos) + titleAnnotation + testCode.slice(pos)
+              testCode.slice(0, pos) + titleInject + testCode.slice(pos)
           }
+          writeFileSync(videoTestFile, testCode)
 
-          writeFileSync(browserTestFile, testCode)
+          // Also save original E2E test for the report
+          writeFileSync(
+            `${opts.outputDir}/reproduce.spec.ts`,
+            research.testCode
+          )
+
           try {
             const output = execSync(
-              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=60000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
+              `cd "${projectRoot}" && npx playwright test --config="${demowrightConfig}" --output="${testResultsDir}" 2>&1`,
               {
                 timeout: 120000,
                 encoding: 'utf-8',
                 env: {
                   ...process.env,
                   COMFYUI_BASE_URL: opts.serverUrl,
-                  PLAYWRIGHT_LOCAL: '1',
-                  NODE_OPTIONS: '--require demowright/register',
-                  QA_HUD_DELAY: '300',
-                  QA_HUD_CURSOR_STYLE: 'default',
-                  QA_HUD_KEY_FADE: '2000'
+                  PLAYWRIGHT_LOCAL: '1'
                 }
               }
             )
-            console.warn(`Phase 2: Test passed\n${output.slice(-300)}`)
+            console.warn(`Phase 2: Demo video recorded\n${output.slice(-300)}`)
           } catch (e) {
             const err = e as { stdout?: string }
             console.warn(
-              `Phase 2: Test failed\n${(err.stdout || '').slice(-300)}`
+              `Phase 2: Demo recording failed, falling back to raw replay\n${(err.stdout || '').slice(-300)}`
             )
+            // Fallback: run original test with register approach
+            writeFileSync(videoTestFile, research.testCode)
+            try {
+              execSync(
+                `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=60000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
+                {
+                  timeout: 120000,
+                  encoding: 'utf-8',
+                  env: {
+                    ...process.env,
+                    COMFYUI_BASE_URL: opts.serverUrl,
+                    PLAYWRIGHT_LOCAL: '1',
+                    NODE_OPTIONS: '--require demowright/register',
+                    QA_HUD_DELAY: '300'
+                  }
+                }
+              )
+            } catch {
+              /* fallback also failed */
+            }
+          }
+          // Cleanup config
+          try {
+            execSync(`rm -f "${demowrightConfig}"`)
+          } catch {
+            /* ignore */
           }
           // Copy recorded video to outputDir so deploy script finds it
           try {
