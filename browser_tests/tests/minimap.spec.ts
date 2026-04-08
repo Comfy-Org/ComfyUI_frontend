@@ -125,7 +125,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapCanvas).toBeVisible()
 
     await expect
-      .poll(() => hasCanvasContent(minimapCanvas), { timeout: 2000 })
+      .poll(() => hasCanvasContent(minimapCanvas))
       .toBe(true)
   })
 
@@ -138,11 +138,11 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.keyboard.selectAll()
     await comfyPage.vueNodes.deleteSelected()
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 2000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(0)
 
     await expect
-      .poll(() => hasCanvasContent(minimapCanvas), { timeout: 2000 })
+      .poll(() => hasCanvasContent(minimapCanvas))
       .toBe(false)
   })
 
@@ -187,9 +187,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     ).not.toStrictEqual(before)
 
     await expect
-      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform), {
-        timeout: 2000
-      })
+      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform))
       .not.toBe(transformBefore)
   })
 
