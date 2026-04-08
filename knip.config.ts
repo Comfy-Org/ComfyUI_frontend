@@ -32,7 +32,7 @@ const config: KnipConfig = {
       entry: ['src/index.ts']
     }
   },
-  ignoreBinaries: ['python3', 'gh', 'generate'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
@@ -40,9 +40,7 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Used by lucideStrokePlugin.js (CSS @plugin)
-    '@iconify/utils'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated API types
