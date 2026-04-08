@@ -91,19 +91,19 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       await expect(backButton).toBeVisible()
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
       await expect(backButton).toHaveCount(0)
 
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
       await expect(backButton).toHaveCount(0)
     })
   })
@@ -152,7 +152,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
       ).toBeVisible()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
@@ -163,7 +163,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.keyboard.press('Alt+q')
       await comfyPage.nextFrame()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
 
     test('Escape prioritizes closing dialogs over exiting subgraph', async ({
@@ -195,11 +195,11 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         comfyPage.page.getByTestId(TestIds.dialogs.settings)
       ).toBeHidden()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
   })
 
@@ -301,7 +301,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
       await subgraphNode.navigateIntoSubgraph()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
@@ -334,7 +334,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
       await subgraphNode.navigateIntoSubgraph()
 
-      expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.nextFrame()

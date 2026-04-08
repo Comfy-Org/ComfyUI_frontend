@@ -194,6 +194,29 @@ test.describe('Assets sidebar - grid view display', () => {
     const count = await tab.assetCards.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })
+  test('Displays svg outputs', async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({
+        id: 'job-alpha',
+        create_time: 1000,
+        execution_start_time: 1000,
+        execution_end_time: 1010,
+        preview_output: {
+          filename: 'logo.svg',
+          subfolder: '',
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
+        },
+        outputs_count: 1
+      })
+    ])
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+  })
 })
 
 // ==========================================================================

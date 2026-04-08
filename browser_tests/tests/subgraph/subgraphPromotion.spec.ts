@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '../../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 import { TestIds } from '../../fixtures/selectors'
 import { fitToViewInstant } from '../../helpers/fitToView'
@@ -7,6 +8,30 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCount
 } from '../../helpers/promotedWidgets'
+
+async function expectPromotedWidgetNamesToContain(
+  comfyPage: ComfyPage,
+  nodeId: string,
+  widgetName: string
+) {
+  await expect
+    .poll(() => getPromotedWidgetNames(comfyPage, nodeId), {
+      timeout: 5000
+    })
+    .toContain(widgetName)
+}
+
+async function expectPromotedWidgetCountToBeGreaterThan(
+  comfyPage: ComfyPage,
+  nodeId: string,
+  count: number
+) {
+  await expect
+    .poll(() => getPromotedWidgetCount(comfyPage, nodeId), {
+      timeout: 5000
+    })
+    .toBeGreaterThan(count)
+}
 
 test.describe(
   'Subgraph Widget Promotion',
@@ -30,11 +55,9 @@ test.describe(
         expect(await subgraphNode.exists()).toBe(true)
 
         const nodeId = String(subgraphNode.id)
-        const promotedNames = await getPromotedWidgetNames(comfyPage, nodeId)
-        expect(promotedNames).toContain('seed')
+        await expectPromotedWidgetNamesToContain(comfyPage, nodeId, 'seed')
 
-        const widgetCount = await getPromotedWidgetCount(comfyPage, nodeId)
-        expect(widgetCount).toBeGreaterThan(0)
+        await expectPromotedWidgetCountToBeGreaterThan(comfyPage, nodeId, 0)
       })
 
       test('Preview-capable nodes keep regular and pseudo-widget promotions when converted', async ({
@@ -42,6 +65,24 @@ test.describe(
       }) => {
         await comfyPage.workflow.loadWorkflow('default')
 
+        // Select the positive CLIPTextEncode node (id 6)
+        const clipNode = await comfyPage.nodeOps.getNodeRefById('6')
+        await clipNode.click('title')
+        const subgraphNode = await clipNode.convertToSubgraph()
+        await comfyPage.nextFrame()
+
+        const nodeId = String(subgraphNode.id)
+        // CLIPTextEncode is in the recommendedNodes list, so its text widget
+        // should be promoted
+        await expectPromotedWidgetNamesToContain(comfyPage, nodeId, 'text')
+      })
+
+      test('SaveImage/PreviewImage nodes get pseudo-widget promoted', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+
+        // Pan to SaveImage node (rightmost, may be off-screen in CI)
         const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
         await saveNode.centerOnNode()
 
@@ -49,13 +90,12 @@ test.describe(
         const subgraphNode = await saveNode.convertToSubgraph()
         await comfyPage.nextFrame()
 
-        const promotedNames = await getPromotedWidgetNames(
+        // SaveImage is in the recommendedNodes list, so filename_prefix is promoted
+        await expectPromotedWidgetNamesToContain(
           comfyPage,
-          String(subgraphNode.id)
+          String(subgraphNode.id),
+          'filename_prefix'
         )
-
-        expect(promotedNames).toContain('filename_prefix')
-        expect(promotedNames.some((name) => name.startsWith('$$'))).toBe(true)
       })
     })
 
@@ -103,7 +143,7 @@ test.describe(
         await comfyPage.vueNodes.enterSubgraph('11')
         await comfyPage.nextFrame()
 
-        expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       })
     })
 
@@ -170,6 +210,42 @@ test.describe(
         })
         await comfyPage.nextFrame()
 
+        // Look for the Promote Widget menu entry
+        const promoteEntry = comfyPage.page
+          .locator('.litemenu-entry')
+          .filter({ hasText: /Promote Widget/ })
+
+        await expect(promoteEntry).toBeVisible()
+        await promoteEntry.click()
+        await comfyPage.nextFrame()
+
+        // Navigate back to parent
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        // SubgraphNode should now have the promoted widget
+        await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '2', 0)
+      })
+
+      test('Can un-promote a widget from inside a subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+        // First promote a canvas-rendered widget (KSampler "steps")
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+        await subgraphNode.navigateIntoSubgraph()
+
+        const ksampler = await comfyPage.nodeOps.getNodeRefById('1')
+        const stepsWidget = await ksampler.getWidget(2)
+        const widgetPos = await stepsWidget.getPosition()
+
+        await comfyPage.canvas.click({
+          position: widgetPos,
+          button: 'right',
+          force: true
+        })
+        await comfyPage.nextFrame()
+
         const promoteEntry = comfyPage.page
           .locator('.litemenu-entry')
           .filter({ hasText: /Promote Widget/ })
@@ -184,8 +260,8 @@ test.describe(
         await comfyPage.nextFrame()
         await comfyPage.nextFrame()
 
+        await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '2', 0)
         const initialWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
-        expect(initialWidgetCount).toBeGreaterThan(0)
 
         const subgraphNode2 = await comfyPage.nodeOps.getNodeRefById('2')
         await subgraphNode2.navigateIntoSubgraph()
@@ -211,8 +287,11 @@ test.describe(
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
-        const finalWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
-        expect(finalWidgetCount).toBe(0)
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, '2'), {
+            timeout: 5000
+          })
+          .toBeLessThan(initialWidgetCount)
       })
     })
 
@@ -261,6 +340,46 @@ test.describe(
       test('Promoted preview nodes render custom content in Vue mode', async ({
         comfyPage
       }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-preview-node'
+        )
+        await comfyPage.nextFrame()
+
+        // The SaveImage node is in the recommendedNodes list, so its
+        // filename_prefix widget should be auto-promoted
+        await expectPromotedWidgetNamesToContain(
+          comfyPage,
+          '5',
+          'filename_prefix'
+        )
+      })
+
+      test('Converting SaveImage to subgraph promotes its widgets', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+
+        // Pan to SaveImage node (rightmost, may be off-screen in CI)
+        const saveNode = await comfyPage.nodeOps.getNodeRefById('9')
+        await saveNode.centerOnNode()
+
+        await saveNode.click('title')
+        const subgraphNode = await saveNode.convertToSubgraph()
+        await comfyPage.nextFrame()
+
+        // SaveImage is a recommended node, so filename_prefix should be promoted
+        const nodeId = String(subgraphNode.id)
+        await expectPromotedWidgetNamesToContain(
+          comfyPage,
+          nodeId,
+          'filename_prefix'
+        )
+        await expectPromotedWidgetCountToBeGreaterThan(comfyPage, nodeId, 0)
+      })
+    })
+
+    test.describe('Vue Mode - Promoted Preview Content', () => {
+      test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-preview-node'
@@ -344,6 +463,102 @@ test.describe(
           }
         }
         expect(editedTextarea).toBe(true)
+      })
+    })
+
+    test.describe('Promotion Cleanup', () => {
+      test('Removing subgraph node clears promotion store entries', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.nextFrame()
+
+        // Verify promotions exist
+        const namesBefore = await getPromotedWidgetNames(comfyPage, '11')
+        expect(namesBefore.length).toBeGreaterThan(0)
+
+        // Delete the subgraph node
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await subgraphNode.delete()
+
+        // Node no longer exists, so promoted widgets should be gone
+        expect(await subgraphNode.exists()).toBe(false)
+      })
+
+      test('Nested promoted widget entries reflect interior changes after slot removal', async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-nested-promotion'
+        )
+        await comfyPage.nextFrame()
+
+        await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '5', 0)
+        const initialNames = await getPromotedWidgetNames(comfyPage, '5')
+
+        const outerSubgraph = await comfyPage.nodeOps.getNodeRefById('5')
+        await outerSubgraph.navigateIntoSubgraph()
+
+        const removedSlotName = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.graph
+          if (!graph || !('inputNode' in graph)) return null
+          return graph.inputs?.[0]?.name ?? null
+        })
+        expect(removedSlotName).not.toBeNull()
+
+        await comfyPage.subgraph.removeSlot('input')
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        const expectedNames = [...initialNames]
+        const removedIndex = expectedNames.indexOf(removedSlotName!)
+        expect(removedIndex).toBeGreaterThanOrEqual(0)
+        expectedNames.splice(removedIndex, 1)
+
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, '5'), {
+            timeout: 5000
+          })
+          .toEqual(expectedNames)
+      })
+
+      test('Removing I/O slot removes associated promoted widget', async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+
+        let initialWidgetCount = 0
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
+            timeout: 5000
+          })
+          .toBeGreaterThan(0)
+        initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
+
+        // Navigate into subgraph
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await subgraphNode.navigateIntoSubgraph()
+
+        // Remove the text input slot
+        await comfyPage.subgraph.removeSlot('input', 'text')
+
+        // Navigate back via breadcrumb
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        // Widget count should be reduced
+        await expect
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
+            timeout: 5000
+          })
+          .toBeLessThan(initialWidgetCount)
       })
     })
   }

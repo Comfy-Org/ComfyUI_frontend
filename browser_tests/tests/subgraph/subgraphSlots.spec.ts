@@ -46,8 +46,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('input')
-      expect(finalCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('input'))
+        .toBe(initialCount + 1)
     })
 
     test('Can add output slots to subgraph', async ({ comfyPage }) => {
@@ -65,8 +66,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('output')
-      expect(finalCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('output'))
+        .toBe(initialCount + 1)
     })
 
     test('Can remove input slots from subgraph', async ({ comfyPage }) => {
@@ -82,8 +84,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('input')
-      expect(finalCount).toBe(initialCount - 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('input'))
+        .toBe(initialCount - 1)
     })
 
     test('Can remove output slots from subgraph', async ({ comfyPage }) => {
@@ -99,8 +102,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const finalCount = await comfyPage.subgraph.getSlotCount('output')
-      expect(finalCount).toBe(initialCount - 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotCount('output'))
+        .toBe(initialCount - 1)
     })
 
     test('Can rename an input slot from the context menu', async ({
@@ -124,12 +128,63 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
-      expect(newInputName).toBe(RENAMED_INPUT_NAME)
-      expect(newInputName).not.toBe(initialInputLabel)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(RENAMED_INPUT_NAME)
     })
 
-    test('Can rename a slot by double-clicking its label text', async ({
+    test('Can rename input slots via double-click', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
+
+      await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel!)
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(RENAMED_INPUT_NAME)
+    })
+
+    test('Can rename output slots via double-click', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialOutputLabel = await comfyPage.subgraph.getSlotLabel('output')
+
+      await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel!)
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const renamedOutputName = 'renamed_output'
+      await comfyPage.page.fill(SELECTORS.promptDialog, renamedOutputName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('output'))
+        .toBe(renamedOutputName)
+    })
+
+    test('Right-click context menu still works alongside double-click', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
@@ -139,6 +194,38 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
+      // Test that right-click still works for renaming
+      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+      await comfyPage.nextFrame()
+
+      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+        state: 'visible'
+      })
+      const rightClickRenamedName = 'right_click_renamed'
+      await comfyPage.page.fill(SELECTORS.promptDialog, rightClickRenamedName)
+      await comfyPage.page.keyboard.press('Enter')
+
+      // Force re-render
+      await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(rightClickRenamedName)
+    })
+
+    test('Can double-click on slot label text to rename', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
+
+      // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
         const app = window.app!
         const graph = app.canvas.graph

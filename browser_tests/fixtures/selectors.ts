@@ -41,10 +41,21 @@ export const TestIds = {
     missingNodeCard: 'missing-node-card',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
+    errorDialog: 'error-dialog',
+    errorDialogShowReport: 'error-dialog-show-report',
+    errorDialogContactSupport: 'error-dialog-contact-support',
+    errorDialogCopyReport: 'error-dialog-copy-report',
+    errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
+    missingModelExpand: 'missing-model-expand',
+    missingModelLocate: 'missing-model-locate',
+    missingModelCopyName: 'missing-model-copy-name',
+    missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelDownload: 'missing-model-download',
+    missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
     missingMediaRow: 'missing-media-row',
     missingMediaUploadDropzone: 'missing-media-upload-dropzone',
@@ -110,10 +121,16 @@ export const TestIds = {
     saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
+    ioItemSubtitle: 'builder-io-item-subtitle',
     widgetActionsMenu: 'widget-actions-menu',
     opensAs: 'builder-opens-as',
     widgetItem: 'builder-widget-item',
-    widgetLabel: 'builder-widget-label'
+    widgetLabel: 'builder-widget-label',
+    outputPlaceholder: 'builder-output-placeholder',
+    connectOutputPopover: 'builder-connect-output-popover'
+  },
+  appMode: {
+    widgetItem: 'app-mode-widget-item'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -151,6 +168,7 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
