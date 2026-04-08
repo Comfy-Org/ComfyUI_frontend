@@ -121,7 +121,7 @@ describe('GtmTelemetryProvider', () => {
         event: 'execution_error',
         node_type: 'KSampler'
       })
-      expect((entry?.error as string).length).toBe(100)
+      expect((entry!.error as string).length).toBe(100)
     })
 
     it('pushes select_content for template events', () => {

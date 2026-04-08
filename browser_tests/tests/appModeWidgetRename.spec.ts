@@ -58,38 +58,21 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     await expect(appMode.linearWidgets.getByText('Dblclick Seed')).toBeVisible()
   })
 
-  test('Rename from builder preview sidebar', async ({ comfyPage }) => {
+  test('Rename persists in app mode after save/reload', async ({
+    comfyPage
+  }) => {
     const { appMode } = comfyPage
     await setupSubgraphBuilder(comfyPage)
 
-    await appMode.steps.goToPreview()
+    // Rename via builder inputs step (app mode view has no inline rename)
+    await appMode.steps.goToInputs()
+    await appMode.select.renameInputViaMenu('seed', 'App Mode Seed')
 
-    const menu = appMode.select.getPreviewWidgetMenu('seed — New Subgraph')
-    await expect(menu).toBeVisible({ timeout: 5000 })
-    await appMode.select.renameWidget(menu, 'Preview Seed')
-
-    // Verify in app mode after save/reload
-    await appMode.footer.exitBuilder()
-    const workflowName = `${new Date().getTime()} builder-preview`
-    await saveAndReopenInAppMode(comfyPage, workflowName)
-
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
-    await expect(appMode.linearWidgets.getByText('Preview Seed')).toBeVisible()
-  })
-
-  test('Rename from app mode', async ({ comfyPage }) => {
-    const { appMode } = comfyPage
-    await setupSubgraphBuilder(comfyPage)
-
-    // Enter app mode from builder
+    // Exit builder and enter app mode
     await appMode.footer.exitBuilder()
     await appMode.toggleAppMode()
 
     await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
-
-    const menu = appMode.getAppModeWidgetMenu('seed')
-    await appMode.select.renameWidget(menu, 'App Mode Seed')
-
     await expect(appMode.linearWidgets.getByText('App Mode Seed')).toBeVisible()
 
     // Verify persistence after save/reload

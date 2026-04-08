@@ -128,6 +128,7 @@
     "save": "Save",
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
+    "yes": "Yes",
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
@@ -1193,6 +1194,7 @@
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
+    "editMask": "Edit Mask",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -3282,6 +3284,7 @@
     "giveFeedback": "Give feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
+    "dragAndDropVideo": "Click to browse or drag a video",
     "mobileControls": "Edit & Run",
     "runCount": "Number of runs",
     "rerun": "Rerun",
@@ -3321,7 +3324,62 @@
       "outputExamples": "Examples: 'Save Image' or 'Save Video'",
       "switchToOutputsButton": "Switch to Outputs",
       "outputs": "Outputs",
-      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app"
+      "resultsLabel": "Results generated from the selected output node(s) will be shown here after running this app",
+      "layout": "Layout",
+      "dropHere": "Drop inputs here",
+      "outputZone": "Output",
+      "shiftClickPriority": "Shift+click to prioritize",
+      "queueFailed": "Failed to queue prompt"
+    },
+    "groups": {
+      "createGroup": "Create group",
+      "untitled": "Unnamed Group",
+      "confirmUngroup": "Ungroup these inputs?",
+      "ungroupDescription": "These inputs will no longer be grouped together.",
+      "confirmRemove": "Remove this input?",
+      "removeDescription": "This will remove the input from the app. You will need to re-add it in the inputs step."
+    },
+    "presets": {
+      "label": "Presets",
+      "empty": "No saved presets yet.",
+      "save": "Save current as preset",
+      "saveTitle": "Save preset",
+      "saveMessage": "Enter a name for this preset.",
+      "namePlaceholder": "Preset name",
+      "builtinMin": "Min",
+      "builtinMid": "Mid",
+      "builtinMax": "Max",
+      "builtinMinTip": "Set all inputs to minimum values",
+      "builtinMidTip": "Set all inputs to midpoint values",
+      "builtinMaxTip": "Set all inputs to maximum values",
+      "builtinSection": "Quick presets",
+      "savedSection": "Saved",
+      "displayAs": "Display as",
+      "displayTabs": "Tabs",
+      "displayButtons": "Buttons",
+      "displayMenu": "Menu",
+      "overwrite": "Save current values to this preset",
+      "presetCount": "{count} saved preset | {count} saved presets"
+    },
+    "layout": {
+      "templates": {
+        "single": "Single",
+        "singleDesc": "Single column sidebar",
+        "dual": "Dual",
+        "dualDesc": "Two-column sidebar with resize"
+      },
+      "zones": {
+        "main": "Main",
+        "left": "Left",
+        "right": "Right"
+      },
+      "group": "Group selected",
+      "ungroup": "Ungroup",
+      "moveToGroup": "Move to group",
+      "removeFromGroup": "Remove from group",
+      "newGroup": "New group...",
+      "groupName": "Group name",
+      "ungrouped": "Ungrouped"
     },
     "builder": {
       "title": "App builder mode",

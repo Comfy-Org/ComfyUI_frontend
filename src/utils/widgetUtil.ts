@@ -5,7 +5,6 @@ import type { ISubgraphInput } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDialogService } from '@/services/dialogService'
 
@@ -104,23 +103,4 @@ export async function promptWidgetLabel(
     defaultValue: widget.label,
     placeholder: widget.name
   })
-}
-
-export async function promptRenameWidget(
-  widget: IBaseWidget,
-  node: LGraphNode,
-  t: (key: string) => string,
-  parents?: SubgraphNode[]
-): Promise<string | null> {
-  const rawLabel = await promptWidgetLabel(widget, t)
-  if (rawLabel === null) return null
-
-  const normalizedLabel = rawLabel.trim()
-  if (!normalizedLabel) return null
-
-  if (!renameWidget(widget, node, normalizedLabel, parents)) return null
-
-  widget.callback?.(widget.value)
-  useCanvasStore().canvas?.setDirty(true)
-  return normalizedLabel
 }

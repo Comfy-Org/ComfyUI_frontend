@@ -1,6 +1,12 @@
 import { t } from '@/i18n'
 
-import type { ResultItemImpl } from '@/stores/queueStore'
+export interface MediaOutputItem {
+  url: string
+  content?: string
+  isVideo: boolean
+  isImage: boolean
+  mediaType: string
+}
 
 type StatItem = { content?: string; iconClass?: string }
 export const mediaTypes: Record<string, StatItem> = {
@@ -26,7 +32,7 @@ export const mediaTypes: Record<string, StatItem> = {
   }
 }
 
-export function getMediaType(output?: ResultItemImpl) {
+export function getMediaType(output?: MediaOutputItem) {
   if (!output) return ''
   if (output.isVideo) return 'video'
   if (output.isImage) return 'images'

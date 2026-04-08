@@ -102,7 +102,8 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'vite.electron.config.mts',
-            'vite.types.config.mts'
+            'vite.types.config.mts',
+            'apps/website/astro.config.ts'
           ]
         }
       }

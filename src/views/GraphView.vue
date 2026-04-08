@@ -13,6 +13,11 @@
       <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
+    <LayoutTemplateSelector
+      v-if="isBuilderMode"
+      :model-value="appModeStore.layoutTemplateId"
+      @update:model-value="appModeStore.switchTemplate"
+    />
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
@@ -95,6 +100,8 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
+import LayoutTemplateSelector from '@/components/builder/LayoutTemplateSelector.vue'
+import { useAppModeStore } from '@/stores/appModeStore'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
@@ -112,6 +119,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const appModeStore = useAppModeStore()
 const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
@@ -144,18 +152,11 @@ watch(
   { immediate: true }
 )
 
-/**
- * Reports task completion telemetry to Electron analytics when tasks
- * transition from running to history.
- *
- * No `deep: true` needed — `queueStore.tasks` is a computed that spreads
- * three `shallowRef` arrays into a new array on every change, and
- * `TaskItemImpl` instances are immutable (replaced, never mutated).
- */
 if (isDesktop) {
   watch(
     () => queueStore.tasks,
     (newTasks, oldTasks) => {
+      // Report tasks that previously running but are now completed (i.e. in history)
       const oldRunningTaskIds = new Set(
         oldTasks.filter((task) => task.isRunning).map((task) => task.jobId)
       )
@@ -170,7 +171,8 @@ if (isDesktop) {
             status: task.displayStatus.toLowerCase()
           })
         })
-    }
+    },
+    { deep: true }
   )
 }
 

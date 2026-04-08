@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref, useTemplateRef } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
@@ -34,7 +34,7 @@ const { toastTo, mobile } = defineProps<{
   mobile?: boolean
 }>()
 defineEmits<{ navigateOutputs: [] }>()
-defineExpose({ runButtonClick, handleDragDrop })
+defineExpose({ runButtonClick })
 
 //NOTE: due to batching, will never be greater than 2
 const pendingJobQueues = ref(0)
@@ -42,8 +42,6 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   8000,
   { controls: true, immediate: false }
 )
-const widgetListRef = useTemplateRef('widgetListRef')
-
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
 async function runButtonClick(e: Event) {
@@ -71,9 +69,6 @@ async function runButtonClick(e: Event) {
     pendingJobQueues.value -= 1
   }
 }
-function handleDragDrop(e: DragEvent) {
-  return widgetListRef.value?.handleDragDrop(e)
-}
 </script>
 <template>
   <div
@@ -100,7 +95,7 @@ function handleDragDrop(e: DragEvent) {
         data-testid="linear-widgets"
         class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
-        <AppModeWidgetList ref="widgetListRef" :mobile />
+        <AppModeWidgetList :mobile />
       </section>
       <Teleport
         v-if="!jobToastTimeout || pendingJobQueues > 0"

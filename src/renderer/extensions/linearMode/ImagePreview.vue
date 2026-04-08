@@ -2,29 +2,18 @@
 import { ref, useTemplateRef } from 'vue'
 
 import ZoomPane from '@/components/ui/ZoomPane.vue'
-import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
 import { cn } from '@/utils/tailwindUtil'
-
-const { executionStatusMessage } = useExecutionStatus()
 
 defineOptions({ inheritAttrs: false })
 
-const { src, showSize = true } = defineProps<{
+const { src } = defineProps<{
   src: string
   mobile?: boolean
-  label?: string
-  showSize?: boolean
 }>()
 
 const imageRef = useTemplateRef('imageRef')
-const width = ref<number | null>(null)
-const height = ref<number | null>(null)
-
-function onImageLoad() {
-  if (!imageRef.value || !showSize) return
-  width.value = imageRef.value.naturalWidth
-  height.value = imageRef.value.naturalHeight
-}
+const width = ref('')
+const height = ref('')
 </script>
 <template>
   <ZoomPane
@@ -37,24 +26,31 @@ function onImageLoad() {
       :src
       v-bind="slotProps"
       class="size-full object-contain"
-      @load="onImageLoad"
+      @load="
+        () => {
+          if (!imageRef) return
+          width = `${imageRef.naturalWidth}`
+          height = `${imageRef.naturalHeight}`
+        }
+      "
     />
   </ZoomPane>
   <img
     v-else
     ref="imageRef"
-    class="grow object-contain contain-size"
+    class="min-h-0 flex-1 object-contain"
     :src
-    @load="onImageLoad"
+    @load="
+      () => {
+        if (!imageRef) return
+        width = `${imageRef.naturalWidth}`
+        height = `${imageRef.naturalHeight}`
+      }
+    "
   />
   <span
-    v-if="executionStatusMessage"
-    class="animate-pulse self-center text-muted md:z-10"
-  >
-    {{ executionStatusMessage }}
-  </span>
-  <span v-else-if="width && height" class="self-center md:z-10">
-    {{ `${width} x ${height}` }}
-    <template v-if="label"> | {{ label }}</template>
-  </span>
+    v-if="!mobile"
+    class="self-end pr-2 md:z-10"
+    v-text="`${width} x ${height}`"
+  />
 </template>

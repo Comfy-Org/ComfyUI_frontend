@@ -40,6 +40,7 @@ const workflowStore = useWorkflowStore()
 
 const emit = defineEmits<{
   updateSelection: [selection: OutputSelection]
+  openLightbox: [url: string]
 }>()
 
 const queueCount = computed(
@@ -361,6 +362,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             v-bind="itemAttrs(`history:${asset.id}:${key}`)"
             :class="itemClass"
             @click="store.select(`history:${asset.id}:${key}`)"
+            @dblclick="output.url && $emit('openLightbox', output.url)"
           >
             <OutputHistoryItem :output="output" />
           </div>

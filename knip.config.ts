@@ -40,7 +40,7 @@ const config: KnipConfig = {
       ignoreDependencies: ['@comfyorg/design-system', '@vercel/analytics']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',

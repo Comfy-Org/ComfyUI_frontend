@@ -34,6 +34,7 @@ const {
   node,
   isDraggable = false,
   hiddenFavoriteIndicator = false,
+  hiddenLabel = false,
   hiddenWidgetActions = false,
   showNodeName = false,
   parents = [],
@@ -43,6 +44,7 @@ const {
   node: LGraphNode
   isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
+  hiddenLabel?: boolean
   hiddenWidgetActions?: boolean
   showNodeName?: boolean
   parents?: SubgraphNode[]
@@ -148,6 +150,7 @@ const displayLabel = customRef((track, trigger) => {
   >
     <!-- widget header -->
     <div
+      v-if="!hiddenLabel"
       :class="
         cn(
           'mb-1.5 flex min-h-8 min-w-0 items-center justify-between gap-1',

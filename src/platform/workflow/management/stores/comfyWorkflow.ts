@@ -5,19 +5,98 @@ import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { AppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
+
+/** Display type override for a widget in app mode. */
+type WidgetDisplayType = 'tabs' | 'menu' | 'number' | 'slider'
+
+/** Per-widget overrides set by the workflow author in the builder. */
+export interface WidgetOverride {
+  min?: number
+  max?: number
+  displayType?: WidgetDisplayType
+}
+
+/** An item within an input group. */
+export interface InputGroupItem {
+  key: string
+  pairId?: string
+}
+
+/** A named group of inputs that renders as a collapsible accordion. */
+export interface InputGroup {
+  id: string
+  name: string | null
+  items: InputGroupItem[]
+  /** Optional color name from LGraphCanvas.node_colors (e.g. 'red', 'blue'). */
+  color?: string | null
+}
+
+/** Scope determines which widgets a preset targets. */
+type PresetScope = 'app' | 'graph'
+
+/** How the preset switcher renders in app view. */
+export type PresetDisplayMode = 'tabs' | 'buttons' | 'menu'
+
+/** A named preset that captures widget values for selected inputs. */
+export interface AppModePreset {
+  id: string
+  name: string
+  /** Map of `nodeId:widgetName` → serialised widget value. */
+  values: Record<string, unknown>
+  /** Defaults to 'app'. 'graph' presets target all graph widgets (future). */
+  scope?: PresetScope
+}
 
 export interface LinearData {
   inputs: [NodeId, string][]
   outputs: NodeId[]
+  layoutTemplateId?: string
+  /** @deprecated Use zoneAssignmentsPerTemplate instead */
+  zoneAssignments?: Record<string, string>
+  /** @deprecated Use gridOverridesPerTemplate instead */
+  gridOverrides?: {
+    zoneOrder?: string[]
+    columnFractions?: number[]
+    rowFractions?: number[]
+  }
+  /** @deprecated Use runControlsZoneIdPerTemplate instead */
+  runControlsZoneId?: string
+  zoneAssignmentsPerTemplate?: Record<string, Record<string, string>>
+  gridOverridesPerTemplate?: Record<
+    string,
+    {
+      zoneOrder?: string[]
+      columnFractions?: number[]
+      rowFractions?: number[]
+    }
+  >
+  runControlsZoneIdPerTemplate?: Record<string, string>
+  zoneItemOrderPerTemplate?: Record<string, Record<string, string[]>>
+  presetStripZoneIdPerTemplate?: Record<string, string>
+  /** Per-widget overrides (min/max constraints, display type). Keyed by `nodeId:widgetName`. */
+  widgetOverrides?: Record<string, WidgetOverride>
+  /** Saved presets for quick input value switching. */
+  presets?: AppModePreset[]
+  /** How the preset switcher renders in app view. Defaults to 'tabs'. */
+  presetDisplayMode?: PresetDisplayMode
+  /** Whether the preset strip is visible. Defaults to true. */
+  presetsEnabled?: boolean
+  /** Collapsible input groups per layout template. */
+  inputGroupsPerTemplate?: Record<string, InputGroup[]>
 }
 
 export interface PendingWarnings {
   missingNodeTypes?: MissingNodeType[]
-  // TODO: Currently unused — missing models are surfaced directly on every
-  // graph load. Reserved for future per-workflow missing model state management.
+  missingModels?: {
+    missingModels: ModelFile[]
+    paths: Record<string, string[]>
+  }
   missingModelCandidates?: MissingModelCandidate[]
 }
 

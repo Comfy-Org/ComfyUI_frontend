@@ -79,11 +79,13 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
       timeout: 5000
     })
 
-    // Scroll to bottom so the codec widget is at the clipping edge
+    // Scroll to bottom so the codec widget is at the clipping edge.
+    // In the zone layout, overflow-y-auto is on the inner zone div.
     const widgetList = comfyPage.appMode.linearWidgets
-    await widgetList.evaluate((el) =>
-      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' })
-    )
+    await widgetList.evaluate((el) => {
+      const scrollable = el.querySelector('[class*="overflow-y"]') ?? el
+      scrollable.scrollTo({ top: scrollable.scrollHeight, behavior: 'instant' })
+    })
 
     // Click the codec select (combobox role with aria-label from WidgetSelectDefault)
     const codecSelect = widgetList.getByRole('combobox', { name: 'codec' })
@@ -123,11 +125,13 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
       timeout: 5000
     })
 
-    // Scroll to bottom so the image widget is at the clipping edge
+    // Scroll to bottom so the image widget is at the clipping edge.
+    // In the zone layout, overflow-y-auto is on the inner zone div.
     const widgetList = comfyPage.appMode.linearWidgets
-    await widgetList.evaluate((el) =>
-      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' })
-    )
+    await widgetList.evaluate((el) => {
+      const scrollable = el.querySelector('[class*="overflow-y"]') ?? el
+      scrollable.scrollTo({ top: scrollable.scrollHeight, behavior: 'instant' })
+    })
 
     // Click the FormDropdown trigger button for the image widget.
     // The button emits 'select-click' which toggles the Popover.

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-const { src } = defineProps<{
+const { src, mobile = false } = defineProps<{
   src: string
+  mobile?: boolean
   label?: string
 }>()
 
@@ -24,7 +25,7 @@ const height = ref('')
       }
     "
   />
-  <span class="z-10 self-center">
+  <span v-if="!mobile" class="z-10 self-end pr-2">
     {{ `${width} x ${height}` }}
     <template v-if="label"> | {{ label }}</template>
   </span>

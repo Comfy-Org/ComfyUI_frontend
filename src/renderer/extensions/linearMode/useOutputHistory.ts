@@ -53,13 +53,6 @@ export function useOutputHistory(): {
     return hasActiveWorkflowJobs()
   })
 
-  // True when the active workflow has running/pending jobs or in-progress items.
-  const isWorkflowActive = computed(
-    () =>
-      linearStore.activeWorkflowInProgressItems.length > 0 ||
-      hasActiveWorkflowJobs()
-  )
-
   function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
     const nodeIds = appModeStore.selectedOutputs
     if (!nodeIds.length) return []
@@ -67,6 +60,13 @@ export function useOutputHistory(): {
       nodeIds.some((id) => String(id) === String(r.nodeId))
     )
   }
+
+  // True when the active workflow has running/pending jobs or in-progress items.
+  const isWorkflowActive = computed(
+    () =>
+      linearStore.activeWorkflowInProgressItems.length > 0 ||
+      hasActiveWorkflowJobs()
+  )
 
   const sessionMedia = computed(() => {
     const path = workflowStore.activeWorkflow?.path
@@ -147,16 +147,26 @@ export function useOutputHistory(): {
       []
     ).state
     asyncRefs.set(item.id, outputRef)
-    return filterByOutputNodes(outputRef.value)
+    return outputRef.value
   }
 
   function selectFirstHistory() {
     const first = outputs.media.value[0]
-    if (first) {
-      linearStore.selectAsLatest(`history:${first.id}:0`)
-    } else {
+    if (!first) {
       linearStore.selectAsLatest(null)
+      return
     }
+    // Prefer the first output that matches a user-selected output node
+    const selectedNodeIds = useAppModeStore().selectedOutputs
+    const outs = allOutputs(first)
+    const preferredIdx = selectedNodeIds.length
+      ? outs.findIndex((o) =>
+          selectedNodeIds.some((id) => String(id) === String(o.nodeId))
+        )
+      : -1
+    linearStore.selectAsLatest(
+      `history:${first.id}:${preferredIdx >= 0 ? preferredIdx : 0}`
+    )
   }
 
   // Resolve in-progress items when history outputs are loaded.
