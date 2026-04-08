@@ -2650,6 +2650,7 @@
       "true": "true",
       "false": "false"
     },
+    "editExpression": "Edit Expression",
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
