@@ -1,4 +1,6 @@
-import { flushPromises, mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-node-access */
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
@@ -32,7 +34,8 @@ const MockFormDropdownMenu = {
     'showBaseModelFilter',
     'baseModelOptions'
   ],
-  template: '<div class="mock-menu" />'
+  template:
+    '<div class="mock-menu" data-testid="dropdown-menu" :data-items="JSON.stringify(items)" />'
 }
 
 const MockFormDropdownInput = {
@@ -55,11 +58,16 @@ interface MountDropdownOptions {
   searchQuery?: string
 }
 
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 function mountDropdown(
   items: FormDropdownItem[],
   options: MountDropdownOptions = {}
 ) {
-  return mount(FormDropdown, {
+  const user = userEvent.setup()
+  const result = render(FormDropdown, {
     props: { items, ...options },
     global: {
       plugins: [PrimeVue, i18n],
@@ -70,28 +78,26 @@ function mountDropdown(
       }
     }
   })
+  return { ...result, user }
 }
 
-function getMenuItems(
-  wrapper: ReturnType<typeof mountDropdown>
-): FormDropdownItem[] {
-  return wrapper
-    .findComponent({ name: 'FormDropdownMenu' })
-    .props('items') as FormDropdownItem[]
+function getMenuItems(): FormDropdownItem[] {
+  const menuEl = screen.getByTestId('dropdown-menu')
+  return JSON.parse(menuEl.getAttribute('data-items') ?? '[]')
 }
 
 describe('FormDropdown', () => {
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const wrapper = mountDropdown([
+      const { rerender } = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
       await flushPromises()
 
-      expect(getMenuItems(wrapper)).toHaveLength(2)
+      expect(getMenuItems()).toHaveLength(2)
 
-      await wrapper.setProps({
+      await rerender({
         items: [
           createItem('output-0', 'rendered1.mp4'),
           createItem('output-1', 'rendered2.mp4')
@@ -99,37 +105,37 @@ describe('FormDropdown', () => {
       })
       await flushPromises()
 
-      const menuItems = getMenuItems(wrapper)
+      const menuItems = getMenuItems()
       expect(menuItems).toHaveLength(2)
       expect(menuItems[0].name).toBe('rendered1.mp4')
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const wrapper = mountDropdown([createItem('1', 'alpha')])
+      const { rerender } = mountDropdown([createItem('1', 'alpha')])
       await flushPromises()
 
-      await wrapper.setProps({ items: [createItem('1', 'beta')] })
+      await rerender({ items: [createItem('1', 'beta')] })
       await flushPromises()
 
-      expect(getMenuItems(wrapper)[0].name).toBe('beta')
+      expect(getMenuItems()[0].name).toBe('beta')
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const wrapper = mountDropdown([])
+      const { rerender } = mountDropdown([])
       await flushPromises()
 
-      expect(getMenuItems(wrapper)).toHaveLength(0)
+      expect(getMenuItems()).toHaveLength(0)
 
-      await wrapper.setProps({ items: [createItem('1', 'video.mp4')] })
+      await rerender({ items: [createItem('1', 'video.mp4')] })
       await flushPromises()
 
-      expect(getMenuItems(wrapper)).toHaveLength(1)
-      expect(getMenuItems(wrapper)[0].name).toBe('video.mp4')
+      expect(getMenuItems()).toHaveLength(1)
+      expect(getMenuItems()[0].name).toBe('video.mp4')
 
-      await wrapper.setProps({ items: [] })
+      await rerender({ items: [] })
       await flushPromises()
 
-      expect(getMenuItems(wrapper)).toHaveLength(0)
+      expect(getMenuItems()).toHaveLength(0)
     })
   })
 
@@ -139,7 +145,7 @@ describe('FormDropdown', () => {
         sourceItems.filter((item) => item.name.includes('video'))
     )
 
-    const wrapper = mountDropdown(
+    const { rerender } = mountDropdown(
       [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
       { searcher }
     )
@@ -147,14 +153,20 @@ describe('FormDropdown', () => {
 
     expect(searcher).not.toHaveBeenCalled()
 
-    await wrapper.setProps({ searchQuery: 'video-a' })
-    await wrapper.setProps({
-      items: [createItem('3', 'video-c.mp4'), createItem('4', 'video-d.mp4')]
+    await rerender({
+      items: [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
+      searcher,
+      searchQuery: 'video-a'
+    })
+    await rerender({
+      items: [createItem('3', 'video-c.mp4'), createItem('4', 'video-d.mp4')],
+      searcher,
+      searchQuery: 'video-a'
     })
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems(wrapper).map((item) => item.id)).toEqual(['3', '4'])
+    expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
   })
 
   it('runs filtering when dropdown opens', async () => {
@@ -163,16 +175,16 @@ describe('FormDropdown', () => {
         sourceItems.filter((item) => item.id === 'keep')
     )
 
-    const wrapper = mountDropdown(
+    const { container, user } = mountDropdown(
       [createItem('keep', 'alpha'), createItem('drop', 'beta')],
       { searcher }
     )
     await flushPromises()
 
-    await wrapper.find('.mock-dropdown-trigger').trigger('click')
+    await user.click(container.querySelector('.mock-dropdown-trigger')!)
     await flushPromises()
 
     expect(searcher).toHaveBeenCalled()
-    expect(getMenuItems(wrapper).map((item) => item.id)).toEqual(['keep'])
+    expect(getMenuItems().map((item) => item.id)).toEqual(['keep'])
   })
 })

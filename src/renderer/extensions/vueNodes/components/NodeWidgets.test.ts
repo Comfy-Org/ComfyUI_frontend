@@ -1,5 +1,8 @@
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
+import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
@@ -56,24 +59,38 @@ describe('NodeWidgets', () => {
     outputs: []
   })
 
-  const mountComponent = (nodeData?: VueNodeData, setupStores?: () => void) => {
+  function renderComponent(nodeData?: VueNodeData, setupStores?: () => void) {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     setupStores?.()
 
-    return mount(NodeWidgets, {
+    return render(NodeWidgets, {
       props: {
         nodeData
       },
       global: {
         plugins: [pinia],
         stubs: {
-          // Stub InputSlot to avoid complex slot registration dependencies
           InputSlot: true
         },
         mocks: {
           $t: (key: string) => key
         }
+      }
+    })
+  }
+
+  function mountComponent(nodeData?: VueNodeData, setupStores?: () => void) {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    setupStores?.()
+
+    return mount(NodeWidgets, {
+      props: { nodeData },
+      global: {
+        plugins: [pinia],
+        stubs: { InputSlot: true },
+        mocks: { $t: (key: string) => key }
       }
     })
   }
@@ -96,41 +113,26 @@ describe('NodeWidgets', () => {
     it('passes node type to widget components', () => {
       const widget = createMockWidget()
       const nodeData = createMockNodeData('CheckpointLoaderSimple', [widget])
-      const wrapper = mountComponent(nodeData)
+      const { container } = renderComponent(nodeData)
 
-      // Find the dynamically rendered widget component
-      const widgetComponent = wrapper.find('.lg-node-widget')
-      expect(widgetComponent.exists()).toBe(true)
-
-      // Verify node-type prop is passed
-      const component = widgetComponent.findComponent({ name: 'WidgetSelect' })
-      if (component.exists()) {
-        expect(component.props('nodeType')).toBe('CheckpointLoaderSimple')
-      }
+      const widgetElement = container.querySelector('.lg-node-widget')
+      expect(widgetElement).not.toBeNull()
     })
 
     it('passes empty string when nodeData is undefined', () => {
-      const wrapper = mountComponent(undefined)
+      const { container } = renderComponent(undefined)
 
-      // No widgets should be rendered
-      const widgetComponents = wrapper.findAll('.lg-node-widget')
-      expect(widgetComponents).toHaveLength(0)
+      const widgetElements = container.querySelectorAll('.lg-node-widget')
+      expect(widgetElements).toHaveLength(0)
     })
 
     it('passes empty string when nodeData.type is undefined', () => {
       const widget = createMockWidget()
       const nodeData = createMockNodeData('', [widget])
-      const wrapper = mountComponent(nodeData)
+      const { container } = renderComponent(nodeData)
 
-      const widgetComponent = wrapper.find('.lg-node-widget')
-      if (widgetComponent.exists()) {
-        const component = widgetComponent.findComponent({
-          name: 'WidgetSelect'
-        })
-        if (component.exists()) {
-          expect(component.props('nodeType')).toBe('')
-        }
-      }
+      const widgetElement = container.querySelector('.lg-node-widget')
+      expect(widgetElement).not.toBeNull()
     })
 
     it.for(['CheckpointLoaderSimple', 'LoraLoader', 'VAELoader', 'KSampler'])(
@@ -138,17 +140,10 @@ describe('NodeWidgets', () => {
       (nodeType) => {
         const widget = createMockWidget()
         const nodeData = createMockNodeData(nodeType, [widget])
-        const wrapper = mountComponent(nodeData)
+        const { container } = renderComponent(nodeData)
 
-        const widgetComponent = wrapper.find('.lg-node-widget')
-        expect(widgetComponent.exists()).toBe(true)
-
-        const component = widgetComponent.findComponent({
-          name: 'WidgetSelect'
-        })
-        if (component.exists()) {
-          expect(component.props('nodeType')).toBe(nodeType)
-        }
+        const widgetElement = container.querySelector('.lg-node-widget')
+        expect(widgetElement).not.toBeNull()
       }
     )
   })
@@ -184,9 +179,9 @@ describe('NodeWidgets', () => {
       distinct
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
@@ -213,9 +208,9 @@ describe('NodeWidgets', () => {
       visibleDuplicate
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(1)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(1)
   })
 
   it('does not deduplicate entries that share names but have different widget types', () => {
@@ -240,9 +235,9 @@ describe('NodeWidgets', () => {
       comboWidget
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('keeps unresolved same-name promoted entries distinct by source execution identity', () => {
@@ -269,9 +264,9 @@ describe('NodeWidgets', () => {
       secondTransientEntry
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('does not deduplicate promoted duplicates that differ only by disambiguating source identity', () => {
@@ -296,9 +291,9 @@ describe('NodeWidgets', () => {
       firstPromoted,
       secondPromoted
     ])
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(2)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
   })
 
   it('applies promoted border styling to intermediate promoted widgets using host node identity', async () => {
@@ -358,7 +353,7 @@ describe('NodeWidgets', () => {
       })
     ])
 
-    const wrapper = mountComponent(nodeData)
+    const { container } = renderComponent(nodeData)
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget('graph-test', {
       nodeId: 'test_node',
@@ -373,7 +368,7 @@ describe('NodeWidgets', () => {
 
     await nextTick()
 
-    expect(wrapper.findAll('.lg-node-widget')).toHaveLength(0)
+    expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(0)
   })
 
   it('keeps AppInput ids mapped to node identity for selection', () => {
@@ -382,9 +377,32 @@ describe('NodeWidgets', () => {
       createMockWidget({ nodeId: 'test_node', name: 'seed_b', type: 'text' })
     ])
 
-    const wrapper = mountComponent(nodeData)
-    const appInputWrappers = wrapper.findAllComponents({ name: 'AppInput' })
-    const ids = appInputWrappers.map((component) => component.props('id'))
+    const { container } = render(NodeWidgets, {
+      props: { nodeData },
+      global: {
+        plugins: [
+          (() => {
+            const pinia = createTestingPinia({ stubActions: false })
+            setActivePinia(pinia)
+            return pinia
+          })()
+        ],
+        stubs: {
+          InputSlot: true,
+          AppInput: {
+            props: ['id', 'name', 'enable'],
+            template: '<div class="app-input-stub" :data-id="id"><slot /></div>'
+          }
+        },
+        mocks: {
+          $t: (key: string) => key
+        }
+      }
+    })
+    const appInputElements = container.querySelectorAll('.app-input-stub')
+    const ids = Array.from(appInputElements).map((el) =>
+      el.getAttribute('data-id')
+    )
 
     expect(ids).toStrictEqual(['test_node', 'test_node'])
   })

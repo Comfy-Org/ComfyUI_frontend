@@ -1,7 +1,8 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-node-access */
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import Button from '@/components/ui/button/Button.vue'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -19,26 +20,36 @@ const BUTTON_DEFAULTS = {
   name: 'test_button'
 } as const
 
+const ButtonStub = {
+  name: 'Button',
+  props: ['size', 'variant', 'disabled'],
+  template:
+    '<button :data-size="size" :data-variant="variant" :disabled="disabled"><slot /></button>'
+}
+
 describe('WidgetButton Interactions', () => {
   const createButtonWidget = (
     overrides: Partial<SimplifiedWidget<void, ButtonWidgetOptions>> = {}
   ) => createMockWidget<void>({ ...BUTTON_DEFAULTS, ...overrides })
 
-  const mountComponent = (widget: SimplifiedWidget<void>, readonly = false) => {
-    return mount(WidgetButton, {
+  const mountComponent = (widget: SimplifiedWidget<void>) => {
+    const user = userEvent.setup()
+    const result = render(WidgetButton, {
       global: {
-        components: { Button }
+        stubs: {
+          Button: ButtonStub
+        }
       },
       props: {
-        widget,
-        readonly
+        widget
       }
     })
+    return { ...result, user }
   }
 
-  const clickButton = async (wrapper: ReturnType<typeof mount>) => {
-    const button = wrapper.findComponent({ name: 'Button' })
-    await button.trigger('click')
+  const clickButton = async (user: ReturnType<typeof userEvent.setup>) => {
+    const button = screen.getByRole('button')
+    await user.click(button)
     return button
   }
 
@@ -46,30 +57,29 @@ describe('WidgetButton Interactions', () => {
     it('calls callback when button is clicked', async () => {
       const mockCallback = vi.fn()
       const widget = createButtonWidget({ callback: mockCallback })
-      const wrapper = mountComponent(widget)
+      const { user } = mountComponent(widget)
 
-      await clickButton(wrapper)
+      await clickButton(user)
 
       expect(mockCallback).toHaveBeenCalledTimes(1)
     })
 
     it('handles missing callback gracefully', async () => {
       const widget = createButtonWidget()
-      const wrapper = mountComponent(widget)
+      const { user } = mountComponent(widget)
 
-      // Should not throw error when clicking without callback
-      await expect(clickButton(wrapper)).resolves.toBeDefined()
+      await expect(clickButton(user)).resolves.toBeDefined()
     })
 
     it('calls callback multiple times when clicked multiple times', async () => {
       const mockCallback = vi.fn()
       const widget = createButtonWidget({ callback: mockCallback })
-      const wrapper = mountComponent(widget)
+      const { user } = mountComponent(widget)
 
       const numClicks = 8
 
       for (let i = 0; i < numClicks; i++) {
-        await clickButton(wrapper)
+        await clickButton(user)
       }
 
       expect(mockCallback).toHaveBeenCalledTimes(numClicks)
@@ -79,35 +89,34 @@ describe('WidgetButton Interactions', () => {
   describe('Component Rendering', () => {
     it('renders button component', () => {
       const widget = createButtonWidget()
-      const wrapper = mountComponent(widget)
+      mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.exists()).toBe(true)
+      expect(screen.getByRole('button')).toBeDefined()
     })
 
     it('renders widget text when name is provided', () => {
       const widget = createButtonWidget()
-      const wrapper = mountComponent(widget)
+      mountComponent(widget)
 
-      expect(wrapper.text()).toBe('test_button')
+      expect(screen.getByRole('button')).toHaveTextContent('test_button')
     })
 
     it('sets button size to sm', () => {
       const widget = createButtonWidget()
-      const wrapper = mountComponent(widget)
+      mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('size')).toBe('sm')
+      expect(screen.getByRole('button').getAttribute('data-size')).toBe('sm')
     })
 
     it('passes widget options to button component', () => {
       const widget = createButtonWidget({
         options: { variant: 'secondary' }
       })
-      const wrapper = mountComponent(widget)
+      mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.props('variant')).toBe('secondary')
+      expect(screen.getByRole('button').getAttribute('data-variant')).toBe(
+        'secondary'
+      )
     })
   })
 
@@ -118,19 +127,18 @@ describe('WidgetButton Interactions', () => {
         label: 'Click Me',
         options: { label: 'Click Me' }
       })
-      const wrapper = mountComponent(widget)
+      mountComponent(widget)
 
-      expect(wrapper.text()).toBe('Click Me')
+      expect(screen.getByRole('button')).toHaveTextContent('Click Me')
     })
 
     it('handles button with iconClass', () => {
       const widget = createButtonWidget({
         options: { iconClass: 'pi pi-star' }
       })
-      const wrapper = mountComponent(widget)
+      const { container } = mountComponent(widget)
 
-      const icon = wrapper.find('i.pi.pi-star')
-      expect(icon.exists()).toBe(true)
+      expect(container.querySelector('i.pi.pi-star')).not.toBeNull()
     })
 
     it('handles button with both label and iconClass', () => {
@@ -138,20 +146,20 @@ describe('WidgetButton Interactions', () => {
         label: 'Save',
         options: { iconClass: 'pi pi-save' }
       })
-      const wrapper = mountComponent(widget)
+      const { container } = mountComponent(widget)
 
-      expect(wrapper.text()).toBe('Save')
-      const icon = wrapper.find('i.pi.pi-save')
-      expect(icon.exists()).toBe(true)
+      expect(screen.getByRole('button')).toHaveTextContent('Save')
+      expect(container.querySelector('i.pi.pi-save')).not.toBeNull()
     })
 
     it.for(['secondary', 'primary', 'inverted', 'textonly'] as const)(
       'handles button variant: %s',
       (variant) => {
         const widget = createButtonWidget({ options: { variant } })
-        const wrapper = mountComponent(widget)
-        const button = wrapper.findComponent({ name: 'Button' })
-        expect(button.props('variant')).toBe(variant)
+        mountComponent(widget)
+        expect(screen.getByRole('button').getAttribute('data-variant')).toBe(
+          variant
+        )
       }
     )
   })
@@ -159,10 +167,9 @@ describe('WidgetButton Interactions', () => {
   describe('Edge Cases', () => {
     it('handles widget with no options', () => {
       const widget = createButtonWidget()
-      const wrapper = mountComponent(widget)
+      mountComponent(widget)
 
-      const button = wrapper.findComponent({ name: 'Button' })
-      expect(button.exists()).toBe(true)
+      expect(screen.getByRole('button')).toBeDefined()
     })
 
     it('handles callback that throws error', async () => {
@@ -170,23 +177,20 @@ describe('WidgetButton Interactions', () => {
         throw new Error('Callback error')
       })
       const widget = createButtonWidget({ callback: mockCallback })
-      const wrapper = mountComponent(widget)
+      const { user } = mountComponent(widget)
 
-      // Should not break the component when callback throws
-      await expect(clickButton(wrapper)).rejects.toThrow('Callback error')
+      await expect(clickButton(user)).rejects.toThrow('Callback error')
       expect(mockCallback).toHaveBeenCalledTimes(1)
     })
 
     it('handles rapid consecutive clicks', async () => {
       const mockCallback = vi.fn()
       const widget = createButtonWidget({ callback: mockCallback })
-      const wrapper = mountComponent(widget)
+      const { user } = mountComponent(widget)
 
-      // Simulate rapid clicks
-      const clickPromises = Array.from({ length: 16 }, () =>
-        clickButton(wrapper)
-      )
-      await Promise.all(clickPromises)
+      for (let i = 0; i < 16; i++) {
+        await clickButton(user)
+      }
 
       expect(mockCallback).toHaveBeenCalledTimes(16)
     })

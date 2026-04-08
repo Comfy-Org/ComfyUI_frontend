@@ -1,6 +1,8 @@
 /* eslint-disable vue/one-component-per-file */
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 import type { PropType } from 'vue'
@@ -76,13 +78,13 @@ const OutputSlotStub = defineComponent({
   `
 })
 
-const mountSlots = (nodeData: VueNodeData, readonly = false) => {
+const mountSlots = (nodeData: VueNodeData) => {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
     messages: { en: enMessages }
   })
-  return mount(NodeSlots, {
+  return render(NodeSlots, {
     global: {
       plugins: [i18n, createTestingPinia({ stubActions: false })],
       stubs: {
@@ -90,7 +92,7 @@ const mountSlots = (nodeData: VueNodeData, readonly = false) => {
         OutputSlot: OutputSlotStub
       }
     },
-    props: { nodeData, readonly }
+    props: { nodeData }
   })
 }
 
@@ -113,13 +115,13 @@ describe('NodeSlots.vue', () => {
     }
     const inputs: INodeInputSlot[] = [inputObjNoWidget, inputObjWithWidget]
 
-    const wrapper = mountSlots(makeNodeData({ inputs }))
+    const { container } = mountSlots(makeNodeData({ inputs }))
 
-    const inputEls = wrapper
-      .findAll('.stub-input-slot')
-      .map((w) => w.element as HTMLElement)
+    const inputEls = Array.from(
+      container.querySelectorAll('.stub-input-slot')
+    ) as HTMLElement[]
     // Should filter out the widget-backed input; expect 2 inputs rendered
-    expect(inputEls.length).toBe(2)
+    expect(inputEls).toHaveLength(2)
 
     // Verify expected tuple of {index, name, nodeId}
     const info = inputEls.map((el) => ({
@@ -148,7 +150,7 @@ describe('NodeSlots.vue', () => {
     ])
 
     // Ensure widget-backed input was indeed filtered out
-    expect(wrapper.find('[data-name="objWithWidget"]').exists()).toBe(false)
+    expect(container.querySelector('[data-name="objWithWidget"]')).toBeNull()
   })
 
   it('maps outputs and passes correct indexes', () => {
@@ -166,12 +168,12 @@ describe('NodeSlots.vue', () => {
     }
     const outputs: INodeOutputSlot[] = [outputObj, outputObjB]
 
-    const wrapper = mountSlots(makeNodeData({ outputs }))
-    const outputEls = wrapper
-      .findAll('.stub-output-slot')
-      .map((w) => w.element as HTMLElement)
+    const { container } = mountSlots(makeNodeData({ outputs }))
+    const outputEls = Array.from(
+      container.querySelectorAll('.stub-output-slot')
+    ) as HTMLElement[]
 
-    expect(outputEls.length).toBe(2)
+    expect(outputEls).toHaveLength(2)
     const outInfo = outputEls.map((el) => ({
       index: Number(el.dataset.index),
       name: el.dataset.name ?? '',
@@ -187,8 +189,8 @@ describe('NodeSlots.vue', () => {
   })
 
   it('renders nothing when there are no inputs/outputs', () => {
-    const wrapper = mountSlots(makeNodeData({ inputs: [], outputs: [] }))
-    expect(wrapper.findAll('.stub-input-slot').length).toBe(0)
-    expect(wrapper.findAll('.stub-output-slot').length).toBe(0)
+    const { container } = mountSlots(makeNodeData({ inputs: [], outputs: [] }))
+    expect(container.querySelectorAll('.stub-input-slot')).toHaveLength(0)
+    expect(container.querySelectorAll('.stub-output-slot')).toHaveLength(0)
   })
 })
