@@ -6,6 +6,7 @@ import {
 test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setup()
+    await expect(comfyPage.queuePanel.overlayToggle).toBeVisible()
     await comfyPage.queuePanel.overlayToggle.click()
   })
 
@@ -59,6 +60,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       return route.continue()
     })
 
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).not.toBeVisible()
     expect(clearCalled).toBe(false)
@@ -82,6 +84,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       return route.continue()
     })
 
+    await expect(dialog.getByLabel('Close')).toBeVisible()
     await dialog.getByLabel('Close').click()
     await expect(dialog).not.toBeVisible()
     expect(clearCalled).toBe(false)
@@ -101,6 +104,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       (req) => req.url().includes('/api/history') && req.method() === 'POST'
     )
 
+    await expect(dialog.getByRole('button', { name: 'Clear' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Clear' }).click()
 
     const request = await clearPromise
@@ -113,6 +117,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
     await comfyPage.queuePanel.openClearHistoryDialog()
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).not.toBeVisible()
 

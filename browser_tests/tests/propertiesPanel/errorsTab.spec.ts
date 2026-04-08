@@ -16,6 +16,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
   test.describe('Tab visibility', () => {
     test('Should show Errors tab when errors exist', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+      await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.nextFrame()
 
@@ -31,6 +32,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
         'Comfy.RightSidePanel.ShowErrorsTab',
         false
       )
+      await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.nextFrame()
 

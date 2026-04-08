@@ -91,6 +91,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     const categoryCount = await dialog.categories.count()
 
     if (categoryCount > 1) {
+      await expect(dialog.categories.nth(1)).toBeVisible()
       await dialog.categories.nth(1).click()
 
       await expect(dialog.categories.nth(1)).toHaveClass(

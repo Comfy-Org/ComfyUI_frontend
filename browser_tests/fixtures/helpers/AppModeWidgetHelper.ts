@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
 
@@ -52,6 +53,7 @@ export class AppModeWidgetHelper {
   /** Select an option from a combo/select widget. */
   async selectOption(key: string, optionName: string) {
     const widget = this.getWidgetItem(key)
+    await expect(widget.getByRole('combobox')).toBeVisible()
     await widget.getByRole('combobox').click()
     await this.page
       .getByRole('option', { name: optionName, exact: true })
@@ -84,6 +86,7 @@ export class AppModeWidgetHelper {
     )
 
     const responsePromise = this.page.waitForResponse('**/api/prompt')
+    await expect(this.comfyPage.appMode.runButton).toBeVisible()
     await this.comfyPage.appMode.runButton.click()
     await responsePromise
 

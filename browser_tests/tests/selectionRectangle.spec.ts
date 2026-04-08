@@ -45,6 +45,7 @@ test.describe('@canvas Selection Rectangle', () => {
   })
 
   test('Single click selects one node', async ({ comfyPage }) => {
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()
 
@@ -52,10 +53,12 @@ test.describe('@canvas Selection Rectangle', () => {
   })
 
   test('Ctrl+click adds to selection', async ({ comfyPage }) => {
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()
     await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
 
+    await expect(comfyPage.page.getByText('Empty Latent Image')).toBeVisible()
     await comfyPage.page.getByText('Empty Latent Image').click({
       modifiers: ['Control']
     })
@@ -66,6 +69,7 @@ test.describe('@canvas Selection Rectangle', () => {
   test('Selected nodes have visual indicator', async ({ comfyPage }) => {
     const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
 
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()
 

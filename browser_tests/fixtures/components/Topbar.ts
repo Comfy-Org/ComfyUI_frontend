@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '../../types/globals'
 
@@ -128,6 +129,7 @@ export class Topbar {
       await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
     }
 
+    await expect(this.menuTrigger).toBeVisible()
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
     return this.menuLocator
@@ -171,6 +173,7 @@ export class Topbar {
     const { darkTheme, lightTheme } = await this.getThemeMenuItems()
     const themeItem = theme === 'dark' ? darkTheme : lightTheme
     const themeLabel = themeItem.locator('.p-menubar-item-label')
+    await expect(themeLabel).toBeVisible()
     await themeLabel.click()
   }
 
@@ -189,6 +192,7 @@ export class Topbar {
 
     // Handle top-level commands (like "New")
     if (path.length === 1) {
+      await expect(topLevelMenuItem).toBeVisible()
       await topLevelMenuItem.click()
       return
     }
@@ -203,6 +207,7 @@ export class Topbar {
       // Click outside to reset, then reopen menu
       await this.page.locator('body').click({ position: { x: 500, y: 300 } })
       await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
+      await expect(this.menuTrigger).toBeVisible()
       await this.menuTrigger.click()
       await this.menuLocator.waitFor({ state: 'visible' })
       // Re-hover on top-level menu to trigger submenu
@@ -228,6 +233,7 @@ export class Topbar {
       await menuItem.hover()
       currentMenu = menuItem
     }
+    await expect(currentMenu).toBeVisible()
     await currentMenu.click()
   }
 }

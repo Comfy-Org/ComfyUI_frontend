@@ -103,6 +103,9 @@ test.describe(
       ).toBeVisible({
         timeout: 5000
       })
+      await expect(
+        comfyPage.page.getByText('Box', { exact: true })
+      ).toBeVisible()
       await comfyPage.page.getByText('Box', { exact: true }).click()
       await comfyPage.nextFrame()
 
@@ -122,9 +125,13 @@ test.describe(
       )
 
       await openMoreOptions(comfyPage)
+      await expect(
+        comfyPage.page.getByText('Color', { exact: true })
+      ).toBeVisible()
       await comfyPage.page.getByText('Color', { exact: true }).click()
       const blueSwatch = comfyPage.page.locator('[title="Blue"]')
       await expect(blueSwatch.first()).toBeVisible({ timeout: 5000 })
+      await expect(blueSwatch.first()).toBeVisible()
       await blueSwatch.first().click()
       await comfyPage.nextFrame()
 

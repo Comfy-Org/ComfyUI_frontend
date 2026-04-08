@@ -363,6 +363,7 @@ test.describe('Workflow Persistence', () => {
     expect(nodeCountB).toBe(nodeCountA + 1)
 
     // Switch to A (making B inactive and unmodified)
+    await expect(comfyPage.menu.topbar.getWorkflowTab(nameA)).toBeVisible()
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect
@@ -370,6 +371,7 @@ test.describe('Workflow Persistence', () => {
       .toBe(nodeCountA)
 
     // Close inactive B via middle-click — no save dialog expected
+    await expect(comfyPage.menu.topbar.getWorkflowTab(nameB)).toBeVisible()
     await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
       button: 'middle'
     })
@@ -438,6 +440,7 @@ test.describe('Workflow Persistence', () => {
     })
 
     // Switch to A via topbar tab (making B inactive)
+    await expect(comfyPage.menu.topbar.getWorkflowTab(nameA)).toBeVisible()
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect
@@ -445,6 +448,7 @@ test.describe('Workflow Persistence', () => {
       .toBe(nodeCountA)
 
     // Close inactive B tab via middle-click — triggers "Save before closing?"
+    await expect(comfyPage.menu.topbar.getWorkflowTab(nameB)).toBeVisible()
     await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
       button: 'middle'
     })
@@ -518,6 +522,7 @@ test.describe('Workflow Persistence', () => {
     expect(nodeCountA).not.toBe(nodeCountB)
 
     // Switch to A via topbar tab (making unsaved B inactive)
+    await expect(comfyPage.menu.topbar.getWorkflowTab(nameA)).toBeVisible()
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect

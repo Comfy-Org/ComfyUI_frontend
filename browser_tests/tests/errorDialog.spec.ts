@@ -76,6 +76,9 @@ test.describe('Error dialog', () => {
     await expect(errorDialog).toBeVisible()
     await expect(errorDialog.locator('pre')).not.toBeVisible()
 
+    await expect(
+      errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport)
+    ).toBeVisible()
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
 
     const reportPre = errorDialog.locator('pre')
@@ -92,11 +95,17 @@ test.describe('Error dialog', () => {
     const errorDialog = await triggerConfigureError(comfyPage)
     await expect(errorDialog).toBeVisible()
 
+    await expect(
+      errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport)
+    ).toBeVisible()
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
     await expect(errorDialog.locator('pre')).toBeVisible()
 
     await interceptClipboardWrite(comfyPage.page)
 
+    await expect(
+      errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport)
+    ).toBeVisible()
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport).click()
 
     const reportText = await errorDialog.locator('pre').textContent()

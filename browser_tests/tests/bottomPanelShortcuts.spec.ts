@@ -11,6 +11,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
     await expect(bottomPanel.root).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
@@ -20,6 +21,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should display essentials shortcuts tab', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
 
     await expect(bottomPanel.shortcuts.essentialsTab).toBeVisible()
@@ -45,7 +47,9 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should display view controls shortcuts tab', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
+    await expect(bottomPanel.shortcuts.viewControlsTab).toBeVisible()
     await bottomPanel.shortcuts.viewControlsTab.click()
 
     await expect(bottomPanel.shortcuts.viewControlsTab).toHaveAttribute(
@@ -66,6 +70,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should switch between shortcuts tabs', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
 
     await expect(bottomPanel.shortcuts.essentialsTab).toHaveAttribute(
@@ -73,6 +78,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
       'true'
     )
 
+    await expect(bottomPanel.shortcuts.viewControlsTab).toBeVisible()
     await bottomPanel.shortcuts.viewControlsTab.click()
 
     await expect(bottomPanel.shortcuts.viewControlsTab).toHaveAttribute(
@@ -84,6 +90,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
       'true'
     )
 
+    await expect(bottomPanel.shortcuts.essentialsTab).toBeVisible()
     await bottomPanel.shortcuts.essentialsTab.click()
 
     await expect(bottomPanel.shortcuts.essentialsTab).toHaveAttribute(
@@ -99,6 +106,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should display formatted keyboard shortcuts', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
 
     const keyBadges = bottomPanel.shortcuts.keyBadges
@@ -119,6 +127,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     // Open shortcuts panel first
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
     await expect(bottomPanel.root).toBeVisible()
     await expect(
@@ -127,6 +136,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     // Try to open terminal panel - may show terminal OR close shortcuts
     // depending on whether terminal tabs have loaded (async loading)
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
 
     // Check if terminal tabs loaded (Logs tab visible) or fell back to shortcuts toggle
@@ -138,6 +148,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
       await expect(bottomPanel.root).toBeVisible()
 
       // Switch back to shortcuts
+      await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
       await bottomPanel.keyboardShortcutsButton.click()
 
       // Should show shortcuts content again
@@ -146,6 +157,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
       ).toBeVisible()
     } else {
       // Terminal tabs not loaded - button toggled shortcuts off, reopen for verification
+      await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
       await bottomPanel.keyboardShortcutsButton.click()
       await expect(bottomPanel.root).toBeVisible()
       await expect(
@@ -157,6 +169,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should handle keyboard navigation', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
     await bottomPanel.shortcuts.essentialsTab.focus()
 
@@ -177,6 +190,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
     await expect(bottomPanel.root).toBeVisible()
 
@@ -189,6 +203,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
 
     await expect(
@@ -221,6 +236,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
 
     await expect(bottomPanel.shortcuts.manageButton).toBeVisible()

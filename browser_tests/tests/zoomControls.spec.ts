@@ -30,6 +30,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton
     )
+    await expect(zoomButton).toBeVisible()
     await zoomButton.click()
     await comfyPage.nextFrame()
 
@@ -50,10 +51,12 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton
     )
+    await expect(zoomButton).toBeVisible()
     await zoomButton.click()
     await comfyPage.nextFrame()
 
     const zoomOut = comfyPage.page.getByTestId(TestIds.canvas.zoomOutAction)
+    await expect(zoomOut).toBeVisible()
     await zoomOut.click()
     await comfyPage.nextFrame()
 
@@ -65,11 +68,13 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton
     )
+    await expect(zoomButton).toBeVisible()
     await zoomButton.click()
     await comfyPage.nextFrame()
 
     const zoomOut = comfyPage.page.getByTestId(TestIds.canvas.zoomOutAction)
     for (let i = 0; i < 30; i++) {
+      await expect(zoomOut).toBeVisible()
       await zoomOut.click()
     }
     await comfyPage.nextFrame()
@@ -87,6 +92,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton
     )
+    await expect(zoomButton).toBeVisible()
     await zoomButton.click()
     await comfyPage.nextFrame()
 
@@ -102,6 +108,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
       .toBeCloseTo(1.0, 1)
 
     const zoomIn = comfyPage.page.getByTestId(TestIds.canvas.zoomInAction)
+    await expect(zoomIn).toBeVisible()
     await zoomIn.click()
     await comfyPage.nextFrame()
 
@@ -109,6 +116,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     expect(scaleAfterZoomIn).toBeGreaterThan(1.0)
 
     const zoomOut = comfyPage.page.getByTestId(TestIds.canvas.zoomOutAction)
+    await expect(zoomOut).toBeVisible()
     await zoomOut.click()
     await comfyPage.nextFrame()
 
@@ -122,6 +130,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton
     )
+    await expect(zoomButton).toBeVisible()
     await zoomButton.click()
     await comfyPage.nextFrame()
 

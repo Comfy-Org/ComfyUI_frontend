@@ -11,6 +11,7 @@ exist to make flaky-test triage faster and more repeatable.
 Before merging a flaky-test fix, confirm all of these are true:
 
 - the latest CI artifact was inspected directly
+- every `.click()` is preceded by `await expect(locator).toBeVisible()`
 - the root cause is stated as a race or readiness mismatch
 - the fix waits on the real readiness boundary
 - the assertion primitive matches the job
@@ -26,7 +27,25 @@ Before merging a flaky-test fix, confirm all of these are true:
 - Pull the newest run after each push instead of assuming the flaky set is
   unchanged.
 
-## 2. Wait For The Real Readiness Boundary
+## 2. Assert Visibility Before Every Click
+
+- Every `await locator.click()` must be preceded by
+  `await expect(locator).toBeVisible()`.
+- This gives an immediate, descriptive failure ("expected element to be visible")
+  instead of a generic actionability timeout.
+- Exceptions (do NOT add the assertion):
+  - `click({ force: true })` — intentionally bypasses actionability checks.
+  - Canvas / mouse coordinate clicks (`comfyPage.canvas.click(...)`,
+    `page.mouse.click(x, y)`).
+  - Custom click methods with string args (`node.click('title')`,
+    `confirmDialog.click('save')`).
+  - Clicks inside `.catch()` chains (fire-and-forget cleanup).
+  - Clicks inside `expect(async () => { ... }).toPass()` retry blocks.
+  - `NodeWidgetReference.click()` (canvas coordinate-based).
+- If a visibility check already exists within the preceding 3 lines
+  (`toBeVisible()`, `waitFor({ state: 'visible' })`), do not duplicate it.
+
+## 3. Wait For The Real Readiness Boundary
 
 - Visible is not always ready.
 - If the behavior depends on internal state, wait on that state.
@@ -42,7 +61,7 @@ Common readiness boundaries:
 - locale-triggered workflow reload finished before selecting nodes
 - real builder UI ready, not transient helper metadata
 
-## 3. Choose The Smallest Correct Assertion
+## 4. Choose The Smallest Correct Assertion
 
 - Use built-in retrying locator assertions when locator state is the behavior.
 - Use `expect.poll()` for a single async value.
@@ -58,7 +77,7 @@ await expect
   .toEqual([])
 ```
 
-## 4. Prefer Behavioral Assertions
+## 5. Prefer Behavioral Assertions
 
 - Use screenshots only when appearance is the behavior under test.
 - If a screenshot only indirectly proves behavior, replace it with a direct
@@ -66,7 +85,7 @@ await expect
 - Prefer assertions on link counts, positions, visible menu items, persisted
   settings, and node state.
 
-## 5. Keep Helper Changes Narrow
+## 6. Keep Helper Changes Narrow
 
 - Shared helpers should drive setup to a stable boundary.
 - Do not encode one-spec timing assumptions into generic helpers.
@@ -74,7 +93,7 @@ await expect
 - If a helper fails before the real test begins, remove or relax the brittle
   precondition and let downstream UI interaction prove readiness.
 
-## 6. Verify Narrowly
+## 7. Verify Narrowly
 
 - Prefer targeted reruns through `pnpm test:browser:local`.
 - On Windows, prefer `file:line` or whole-spec arguments over `--grep` when the

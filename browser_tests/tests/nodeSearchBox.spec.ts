@@ -127,6 +127,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
+      await expect(comfyPage.page.locator('.p-chip-remove-icon')).toBeVisible()
       await comfyPage.page.locator('.p-chip-remove-icon').click()
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
         exact: true
@@ -197,6 +198,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     test('Outer click dismisses filter panel but keeps search box visible', async ({
       comfyPage
     }) => {
+      await expect(comfyPage.searchBox.filterButton).toBeVisible()
       await comfyPage.searchBox.filterButton.click()
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })

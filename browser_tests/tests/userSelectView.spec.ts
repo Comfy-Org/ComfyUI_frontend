@@ -28,6 +28,7 @@ test.describe('User Select View', { tag: '@settings' }, () => {
     await page.goto(userSelectPage.url)
     await expect(page).toHaveURL(userSelectPage.selectionUrl)
     await userSelectPage.newUserInput.fill(randomUser)
+    await expect(userSelectPage.nextButton).toBeVisible()
     await userSelectPage.nextButton.click()
     await expect(page).toHaveURL(userSelectPage.url)
   })
@@ -35,8 +36,13 @@ test.describe('User Select View', { tag: '@settings' }, () => {
   test('Can choose existing user', async ({ userSelectPage, page }) => {
     await page.goto(userSelectPage.url)
     await expect(page).toHaveURL(userSelectPage.selectionUrl)
+    await expect(userSelectPage.existingUserSelect).toBeVisible()
     await userSelectPage.existingUserSelect.click()
+    await expect(
+      page.locator('.p-select-list .p-select-option').first()
+    ).toBeVisible()
     await page.locator('.p-select-list .p-select-option').first().click()
+    await expect(userSelectPage.nextButton).toBeVisible()
     await userSelectPage.nextButton.click()
     await expect(page).toHaveURL(userSelectPage.url)
   })

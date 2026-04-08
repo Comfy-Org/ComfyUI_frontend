@@ -27,9 +27,13 @@ const TEST_PRESET = {
 
 async function importPreset(page: Page, preset: typeof TEST_PRESET) {
   const menuButton = page.getByTestId('keybinding-preset-menu')
+  await expect(menuButton).toBeVisible()
   await menuButton.click()
 
   const fileChooserPromise = page.waitForEvent('filechooser')
+  await expect(
+    page.getByRole('menuitem', { name: /Import preset/i })
+  ).toBeVisible()
   await page.getByRole('menuitem', { name: /Import preset/i }).click()
   const fileChooser = await fileChooserPromise
 
@@ -68,6 +72,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
     await comfyPage.settingDialog.category('Keybinding').click()
 
     await importPreset(page, TEST_PRESET)
@@ -96,9 +101,14 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
 
     // Switch back to default preset
     await comfyPage.settingDialog.open()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
     await comfyPage.settingDialog.category('Keybinding').click()
 
+    await expect(presetTrigger).toBeVisible()
     await presetTrigger.click()
+    await expect(
+      page.getByRole('option', { name: /Default Preset/i })
+    ).toBeVisible()
     await page.getByRole('option', { name: /Default Preset/i }).click()
 
     // Handle unsaved changes dialog if the preset was marked as modified
@@ -106,6 +116,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
       name: /Discard and Switch/i
     })
     if (await discardButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await expect(discardButton).toBeVisible()
       await discardButton.click()
     }
 
@@ -122,6 +133,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
     await comfyPage.settingDialog.category('Keybinding').click()
 
     await importPreset(page, TEST_PRESET)
@@ -138,8 +150,12 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     })
 
     // Export via ellipsis menu
+    await expect(menuButton).toBeVisible()
     await menuButton.click()
     const downloadPromise = page.waitForEvent('download')
+    await expect(
+      page.getByRole('menuitem', { name: /Export preset/i })
+    ).toBeVisible()
     await page.getByRole('menuitem', { name: /Export preset/i }).click()
     const download = await downloadPromise
 
@@ -172,6 +188,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
     await comfyPage.settingDialog.category('Keybinding').click()
 
     await importPreset(page, TEST_PRESET)
@@ -188,13 +205,20 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     })
 
     // Delete via ellipsis menu
+    await expect(menuButton).toBeVisible()
     await menuButton.click()
+    await expect(
+      page.getByRole('menuitem', { name: /Delete preset/i })
+    ).toBeVisible()
     await page.getByRole('menuitem', { name: /Delete preset/i }).click()
 
     // Confirm deletion in the dialog
     const confirmDialog = page.getByRole('dialog', {
       name: /Delete the current preset/i
     })
+    await expect(
+      confirmDialog.getByRole('button', { name: /Delete/i })
+    ).toBeVisible()
     await confirmDialog.getByRole('button', { name: /Delete/i }).click()
 
     // Verify preset trigger now shows Default Preset
@@ -212,6 +236,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
 
     // Open keybinding settings panel
     await comfyPage.settingDialog.open()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
     await comfyPage.settingDialog.category('Keybinding').click()
 
     await importPreset(page, TEST_PRESET)
@@ -228,7 +253,11 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     })
 
     // Save as new preset via ellipsis menu
+    await expect(menuButton).toBeVisible()
     await menuButton.click()
+    await expect(
+      page.getByRole('menuitem', { name: /Save as new preset/i })
+    ).toBeVisible()
     await page.getByRole('menuitem', { name: /Save as new preset/i }).click()
 
     // Fill in the preset name in the prompt dialog

@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
@@ -51,22 +52,29 @@ export class BuilderFooterHelper {
   }
 
   async next() {
+    await expect(this.nextButton).toBeVisible()
     await this.nextButton.click()
     await this.comfyPage.nextFrame()
   }
 
   async back() {
+    await expect(this.backButton).toBeVisible()
     await this.backButton.click()
     await this.comfyPage.nextFrame()
   }
 
   async exitBuilder() {
+    await expect(this.exitButton).toBeVisible()
     await this.exitButton.click()
     await this.comfyPage.nextFrame()
   }
 
   async openSaveAsFromChevron() {
+    await expect(this.saveAsChevron).toBeVisible()
     await this.saveAsChevron.click()
+    await expect(
+      this.page.getByRole('menuitem', { name: 'Save as' })
+    ).toBeVisible()
     await this.page.getByRole('menuitem', { name: 'Save as' }).click()
     await this.comfyPage.nextFrame()
   }

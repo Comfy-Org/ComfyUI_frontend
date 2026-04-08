@@ -149,6 +149,9 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
 
+      await expect(
+        overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+      ).toBeVisible()
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
       await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
@@ -160,6 +163,9 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
 
+      await expect(
+        overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
+      ).toBeVisible()
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
       await expect(overlay).not.toBeVisible()
@@ -173,6 +179,9 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
 
+      await expect(
+        overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss)
+      ).toBeVisible()
       await overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
 
       await expect(overlay).not.toBeVisible()
@@ -187,6 +196,9 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       const overlay = getOverlay(comfyPage.page)
       await expect(overlay).toBeVisible()
 
+      await expect(
+        overlay.getByRole('button', { name: /close/i })
+      ).toBeVisible()
       await overlay.getByRole('button', { name: /close/i }).click()
 
       await expect(overlay).not.toBeVisible()

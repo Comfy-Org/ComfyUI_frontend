@@ -65,12 +65,14 @@ test.describe('Settings', () => {
     const newBlankWorkflowRow = comfyPage.page.locator('tr', {
       has: comfyPage.page.getByRole('cell', { name: 'New Blank Workflow' })
     })
+    await expect(newBlankWorkflowRow).toBeVisible()
     await newBlankWorkflowRow.click()
 
     // Click add keybinding button (New Blank Workflow has no default keybinding)
     const addKeybindingButton = newBlankWorkflowRow.locator(
       '.icon-\\[lucide--plus\\]'
     )
+    await expect(addKeybindingButton).toBeVisible()
     await addKeybindingButton.click()
 
     // Set new keybinding
@@ -88,6 +90,7 @@ test.describe('Settings', () => {
     const saveButton = comfyPage.page
       .getByLabel('Modify keybinding')
       .getByText('Save')
+    await expect(saveButton).toBeVisible()
     await saveButton.click()
 
     const request = await requestPromise
@@ -142,6 +145,7 @@ test.describe('Signin dialog', () => {
     await comfyPage.clipboard.copy()
 
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.fill('test_password')
     await textBox.press('Control+a')

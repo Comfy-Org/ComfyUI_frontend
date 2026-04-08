@@ -8,6 +8,7 @@ test.describe('Properties panel - Title editing', () => {
 
   test.beforeEach(async ({ comfyPage }) => {
     panel = new PropertiesPanelHelper(comfyPage.page)
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
   })

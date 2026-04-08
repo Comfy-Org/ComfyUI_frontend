@@ -15,10 +15,13 @@ test.describe(
     test('Can add node', async ({ comfyPage }) => {
       await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
+      await expect(comfyPage.page.getByText('Add Node')).toBeVisible()
       await comfyPage.page.getByText('Add Node').click()
       await comfyPage.nextFrame()
+      await expect(comfyPage.page.getByText('loaders')).toBeVisible()
       await comfyPage.page.getByText('loaders').click()
       await comfyPage.nextFrame()
+      await expect(comfyPage.page.getByText('Load VAE')).toBeVisible()
       await comfyPage.page.getByText('Load VAE').click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png')
@@ -27,6 +30,9 @@ test.describe(
     test('Can add group', async ({ comfyPage }) => {
       await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
+      await expect(
+        comfyPage.page.getByText('Add Group', { exact: true })
+      ).toBeVisible()
       await comfyPage.page.getByText('Add Group', { exact: true }).click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -62,6 +68,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
+    await expect(comfyPage.page.getByText('Properties Panel')).toBeVisible()
     await comfyPage.page.getByText('Properties Panel').click()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -77,6 +84,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
+    await expect(comfyPage.page.getByText('Collapse')).toBeVisible()
     await comfyPage.page.getByText('Collapse').click()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -100,6 +108,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
+    await expect(comfyPage.page.getByText('Collapse')).toBeVisible()
     await comfyPage.page.getByText('Collapse').click()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -115,6 +124,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
+    await expect(comfyPage.page.getByText('Bypass')).toBeVisible()
     await comfyPage.page.getByText('Bypass').click()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -226,6 +236,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     const cloneItem = comfyPage.page.locator(
       '.litemenu-entry:has-text("Clone")'
     )
+    await expect(cloneItem).toBeVisible()
     await cloneItem.click()
     await expect(cloneItem).toHaveCount(0)
     await comfyPage.nextFrame()

@@ -174,6 +174,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       const helpButton = ksamplerNode.getByRole('button', {
         name: /learn more/i
       })
+      await expect(helpButton).toBeVisible()
       await helpButton.click()
 
       // Verify help page is shown
@@ -182,6 +183,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
       // Click the back button - use a more specific selector
       const backButton = helpPage.getByRole('button', { name: /back/i })
+      await expect(backButton).toBeVisible()
       await backButton.click()
 
       // Verify that we're back to the node library view

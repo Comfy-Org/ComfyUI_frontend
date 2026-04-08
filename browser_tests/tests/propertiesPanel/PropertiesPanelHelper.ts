@@ -68,6 +68,7 @@ export class PropertiesPanelHelper {
 
   async open(actionbar: Locator): Promise<void> {
     if (!(await this.root.isVisible())) {
+      await expect(actionbar).toBeVisible()
       await actionbar.click()
       await expect(this.root).toBeVisible()
     }
@@ -75,16 +76,19 @@ export class PropertiesPanelHelper {
 
   async close(): Promise<void> {
     if (await this.root.isVisible()) {
+      await expect(this.closeButton).toBeVisible()
       await this.closeButton.click()
       await expect(this.root).not.toBeVisible()
     }
   }
 
   async switchToTab(label: string): Promise<void> {
+    await expect(this.getTab(label)).toBeVisible()
     await this.getTab(label).click()
   }
 
   async editTitle(newTitle: string): Promise<void> {
+    await expect(this.titleEditIcon).toBeVisible()
     await this.titleEditIcon.click()
     await this.titleInput.fill(newTitle)
     await this.titleInput.press('Enter')

@@ -337,6 +337,7 @@ export class SubgraphHelper {
     const breadcrumb = this.page.getByTestId(TestIds.breadcrumb.subgraph)
     const parentLink = breadcrumb.getByRole('link').first()
     if (await parentLink.isVisible()) {
+      await expect(parentLink).toBeVisible()
       await parentLink.click()
     } else {
       await this.page.evaluate(() => {

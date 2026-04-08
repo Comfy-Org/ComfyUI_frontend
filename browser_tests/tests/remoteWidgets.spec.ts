@@ -13,9 +13,11 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
   ) => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.open()
+    await expect(tab.getFolder('DevTools')).toBeVisible()
     await tab.getFolder('DevTools').click()
     const nodeEntry = tab.getNode(nodeName).first()
     for (let i = 0; i < count; i++) {
+      await expect(nodeEntry).toBeVisible()
       await nodeEntry.click()
       await comfyPage.nextFrame()
     }

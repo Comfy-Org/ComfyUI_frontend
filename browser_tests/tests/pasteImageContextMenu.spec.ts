@@ -19,6 +19,7 @@ test.describe('Paste Image context menu option', { tag: ['@node'] }, () => {
     const nodeEl = comfyPage.page.locator(
       `[data-node-id="${loadImageNode.id}"]`
     )
+    await expect(nodeEl).toBeVisible()
     await nodeEl.click({ button: 'right' })
     const menu = comfyPage.page.locator('.p-contextmenu')
     await menu.waitFor({ state: 'visible' })
@@ -41,6 +42,7 @@ test.describe('Paste Image context menu option', { tag: ['@node'] }, () => {
     const nodeEl = comfyPage.page.locator(
       `[data-node-id="${saveImageNode.id}"]`
     )
+    await expect(nodeEl).toBeVisible()
     await nodeEl.click({ button: 'right' })
     const menu = comfyPage.page.locator('.p-contextmenu')
     await menu.waitFor({ state: 'visible' })

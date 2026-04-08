@@ -32,6 +32,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
 
   test('Can copy and paste text', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     const originalString = await textBox.inputValue()
     await textBox.selectText()
@@ -78,6 +79,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.nextFrame()
     await comfyPage.clipboard.copy(null)
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.inputValue()
     await textBox.selectText()
@@ -91,6 +93,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
 
   test('Copy text area does not copy node', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.inputValue()
     await textBox.selectText()

@@ -108,6 +108,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     })
     await warningToast.waitFor({ state: 'visible' })
     const dismissButton = warningToast.getByRole('button', { name: 'Close' })
+    await expect(dismissButton).toBeVisible()
     await dismissButton.click()
 
     // Wait for the dismissed state to be persisted

@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
@@ -45,6 +46,9 @@ export class AppModeHelper {
       .getByRole('button', { name: 'Workflow actions' })
       .first()
       .click()
+    await expect(
+      this.page.getByRole('menuitem', { name: 'Build app' })
+    ).toBeVisible()
     await this.page.getByRole('menuitem', { name: 'Build app' }).click()
     await this.comfyPage.nextFrame()
   }

@@ -87,6 +87,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
 
     // Click the codec select (combobox role with aria-label from WidgetSelectDefault)
     const codecSelect = widgetList.getByRole('combobox', { name: 'codec' })
+    await expect(codecSelect).toBeVisible()
     await codecSelect.click()
 
     const overlay = comfyPage.page.locator('.p-select-overlay').first()
@@ -135,6 +136,7 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
       'div:has(> div > span:text-is("image"))'
     )
     const dropdownButton = imageRow.locator('button:has(> span)').first()
+    await expect(dropdownButton).toBeVisible()
     await dropdownButton.click()
 
     // The unstyled PrimeVue Popover renders with role="dialog".

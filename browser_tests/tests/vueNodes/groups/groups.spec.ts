@@ -120,7 +120,9 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
   })
 
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
+    await expect(comfyPage.page.getByText('KSampler')).toBeVisible()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
     await comfyPage.nextFrame()

@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
@@ -66,7 +67,9 @@ export class BuilderSelectHelper {
   /** Delete a builder input via its actions menu. */
   async deleteInput(title: string) {
     const menu = this.getInputItemMenu(title)
+    await expect(menu).toBeVisible()
     await menu.click()
+    await expect(this.page.getByText('Delete', { exact: true })).toBeVisible()
     await this.page.getByText('Delete', { exact: true }).click()
     await this.comfyPage.nextFrame()
   }
@@ -78,7 +81,9 @@ export class BuilderSelectHelper {
    */
   async renameInputViaMenu(title: string, newName: string) {
     const menu = this.getInputItemMenu(title)
+    await expect(menu).toBeVisible()
     await menu.click()
+    await expect(this.page.getByText('Rename', { exact: true })).toBeVisible()
     await this.page.getByText('Rename', { exact: true }).click()
 
     const input = this.page
@@ -114,7 +119,9 @@ export class BuilderSelectHelper {
    * @param newName The new name to assign.
    */
   async renameWidget(popoverTrigger: Locator, newName: string) {
+    await expect(popoverTrigger).toBeVisible()
     await popoverTrigger.click()
+    await expect(this.page.getByText('Rename', { exact: true })).toBeVisible()
     await this.page.getByText('Rename', { exact: true }).click()
 
     const dialogInput = this.page.locator(

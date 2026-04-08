@@ -40,9 +40,11 @@ test.describe('Vue Integer Widget', () => {
     await comfyPage.vueNodes.deleteSelected()
 
     // Test widget works when unlinked
+    await expect(controls.incrementButton).toBeVisible()
     await controls.incrementButton.click()
     await expect(controls.input).toHaveValue((initialValue + 1).toString())
 
+    await expect(controls.decrementButton).toBeVisible()
     await controls.decrementButton.click()
     await expect(controls.input).toHaveValue(initialValue.toString())
   })

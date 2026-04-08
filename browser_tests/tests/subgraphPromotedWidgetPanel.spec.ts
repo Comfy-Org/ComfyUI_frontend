@@ -9,6 +9,7 @@ import { TestIds } from '../fixtures/selectors'
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root
   if (!(await panel.isVisible())) {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
   }
   await expect(panel).toBeVisible()
@@ -134,6 +135,7 @@ test.describe(
         const moreButtons = panel.getByTestId(
           TestIds.subgraphEditor.widgetActionsMenuButton
         )
+        await expect(moreButtons.first()).toBeVisible()
         await expect(moreButtons.first()).toBeVisible()
         await moreButtons.first().click()
 

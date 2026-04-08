@@ -22,6 +22,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   })
 
   test('Should toggle from sign-in to sign-up form', async () => {
+    await expect(dialog.signUpLink).toBeVisible()
     await dialog.signUpLink.click()
 
     await expect(
@@ -34,11 +35,13 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   })
 
   test('Should toggle back from sign-up to sign-in form', async () => {
+    await expect(dialog.signUpLink).toBeVisible()
     await dialog.signUpLink.click()
     await expect(
       dialog.root.getByRole('heading', { name: 'Create an account' })
     ).toBeVisible()
 
+    await expect(dialog.signInLink).toBeVisible()
     await dialog.signInLink.click()
     await expect(
       dialog.root.getByRole('heading', { name: 'Log in to your account' })
@@ -48,11 +51,13 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   })
 
   test('Should navigate to the API Key form and back', async () => {
+    await expect(dialog.apiKeyButton).toBeVisible()
     await dialog.apiKeyButton.click()
 
     await expect(dialog.apiKeyHeading).toBeVisible()
     await expect(dialog.apiKeyInput).toBeVisible()
 
+    await expect(dialog.backButton).toBeVisible()
     await dialog.backButton.click()
     await expect(
       dialog.root.getByRole('heading', { name: 'Log in to your account' })
@@ -83,6 +88,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   })
 
   test('Should close dialog via close button', async () => {
+    await expect(dialog.closeButton).toBeVisible()
     await dialog.closeButton.click()
     await expect(dialog.root).toBeHidden()
   })

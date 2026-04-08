@@ -18,6 +18,7 @@ test.describe('Vue Node Resizing', () => {
     if (!initialBox) throw new Error('Node bounding box not found')
 
     // Select the node first (this was causing the bug)
+    await expect(node.header).toBeVisible()
     await node.header.click()
 
     // Get position after selection

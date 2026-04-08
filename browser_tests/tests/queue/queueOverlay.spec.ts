@@ -47,6 +47,7 @@ test.describe('Queue overlay', () => {
 
   test('Toggle button opens expanded queue overlay', async ({ comfyPage }) => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+    await expect(toggle).toBeVisible()
     await toggle.click()
 
     // Expanded overlay should show job items
@@ -55,6 +56,7 @@ test.describe('Queue overlay', () => {
 
   test('Overlay shows filter tabs (All, Completed)', async ({ comfyPage }) => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+    await expect(toggle).toBeVisible()
     await toggle.click()
 
     await expect(
@@ -69,6 +71,7 @@ test.describe('Queue overlay', () => {
     comfyPage
   }) => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+    await expect(toggle).toBeVisible()
     await toggle.click()
 
     await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
@@ -80,6 +83,7 @@ test.describe('Queue overlay', () => {
 
   test('Completed filter shows only completed jobs', async ({ comfyPage }) => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+    await expect(toggle).toBeVisible()
     await toggle.click()
 
     await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()
@@ -98,6 +102,7 @@ test.describe('Queue overlay', () => {
 
   test('Toggling overlay again closes it', async ({ comfyPage }) => {
     const toggle = comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+    await expect(toggle).toBeVisible()
     await toggle.click()
 
     await expect(comfyPage.page.locator('[data-job-id]').first()).toBeVisible()

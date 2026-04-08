@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 
 import type { AppMode } from '../../../src/composables/useAppMode'
@@ -90,9 +91,11 @@ export class WorkflowHelper {
     }
 
     // Delete workflow
+    await expect(workflowsTab.getPersistedItem(workflowName)).toBeVisible()
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
     await this.comfyPage.contextMenu.clickMenuItem('Delete')
     await this.comfyPage.nextFrame()
+    await expect(this.comfyPage.confirmDialog.delete).toBeVisible()
     await this.comfyPage.confirmDialog.delete.click()
 
     // Clear toast & close tab

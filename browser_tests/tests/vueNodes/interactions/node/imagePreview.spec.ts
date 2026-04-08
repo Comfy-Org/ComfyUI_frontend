@@ -44,6 +44,7 @@ test.describe('Vue Nodes Image Preview', () => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 
     await imagePreview.getByRole('region').hover()
+    await expect(comfyPage.page.getByLabel('Edit or mask image')).toBeVisible()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
@@ -56,6 +57,7 @@ test.describe('Vue Nodes Image Preview', () => {
     const nodeHeader = comfyPage.vueNodes
       .getNodeLocator(nodeId)
       .locator('.lg-node-header')
+    await expect(nodeHeader).toBeVisible()
     await nodeHeader.click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')

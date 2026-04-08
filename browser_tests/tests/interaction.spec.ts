@@ -43,6 +43,7 @@ test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
 test.describe('Node Interaction', () => {
   test('Can enter prompt', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.fill('Hello World')
     await expect(textBox).toHaveValue('Hello World')
@@ -684,6 +685,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
 test.describe('Widget Interaction', () => {
   test('Undo text input', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.fill('')
     await expect(textBox).toHaveValue('')
@@ -696,6 +698,7 @@ test.describe('Widget Interaction', () => {
   test('Undo attention edit', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.EditAttention.Delta', 0.05)
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.fill('1girl')
     await expect(textBox).toHaveValue('1girl')
@@ -964,6 +967,7 @@ test.describe('Viewport settings', () => {
     comfyMouse
   }) => {
     const changeTab = async (tab: Locator) => {
+      await expect(tab).toBeVisible()
       await tab.click()
       await comfyPage.nextFrame()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
@@ -980,6 +984,7 @@ test.describe('Viewport settings', () => {
     const toggleButton = comfyPage.page.getByTestId(
       TestIds.canvas.toggleMinimapButton
     )
+    await expect(toggleButton).toBeVisible()
     await toggleButton.click()
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
 

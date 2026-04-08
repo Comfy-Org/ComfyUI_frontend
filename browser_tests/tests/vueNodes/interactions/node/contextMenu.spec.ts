@@ -31,6 +31,7 @@ async function openMultiNodeContextMenu(
 
   for (const title of titles) {
     const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
+    await expect(fixture.header).toBeVisible()
     await fixture.header.click({ modifiers: ['ControlOrMeta'] })
   }
   await comfyPage.nextFrame()
@@ -356,6 +357,7 @@ test.describe('Vue Node Context Menu', () => {
       await comfyPage.nodeOps.fillPromptDialog('TestBlueprint')
 
       // Open node library sidebar and search for the blueprint
+      await expect(comfyPage.menu.nodeLibraryTab.tabButton).toBeVisible()
       await comfyPage.menu.nodeLibraryTab.tabButton.click()
       const searchBox = comfyPage.page.getByRole('combobox', {
         name: 'Search'

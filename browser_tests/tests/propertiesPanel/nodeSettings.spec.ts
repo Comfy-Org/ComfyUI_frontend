@@ -10,6 +10,7 @@ test.describe('Properties panel - Node settings', () => {
     panel = new PropertiesPanelHelper(comfyPage.page)
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await panel.switchToTab('Settings')
@@ -23,6 +24,7 @@ test.describe('Properties panel - Node settings', () => {
     })
 
     test('should set node to Bypass mode', async ({ comfyPage }) => {
+      await expect(panel.getNodeStateButton('Bypass')).toBeVisible()
       await panel.getNodeStateButton('Bypass').click()
 
       const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
@@ -30,6 +32,7 @@ test.describe('Properties panel - Node settings', () => {
     })
 
     test('should set node to Mute mode', async ({ comfyPage }) => {
+      await expect(panel.getNodeStateButton('Mute')).toBeVisible()
       await panel.getNodeStateButton('Mute').click()
 
       const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
@@ -37,10 +40,12 @@ test.describe('Properties panel - Node settings', () => {
     })
 
     test('should restore node to Normal mode', async ({ comfyPage }) => {
+      await expect(panel.getNodeStateButton('Bypass')).toBeVisible()
       await panel.getNodeStateButton('Bypass').click()
       const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
       await expect(nodeLocator.getByText('Bypassed')).toBeVisible()
 
+      await expect(panel.getNodeStateButton('Normal')).toBeVisible()
       await panel.getNodeStateButton('Normal').click()
       await expect(nodeLocator.getByText('Bypassed')).not.toBeVisible()
       await expect(nodeLocator.getByText('Muted')).not.toBeVisible()
@@ -55,6 +60,7 @@ test.describe('Properties panel - Node settings', () => {
     })
 
     test('should apply color to node', async ({ comfyPage }) => {
+      await expect(panel.getColorSwatch('red')).toBeVisible()
       await panel.getColorSwatch('red').click()
 
       await expect
@@ -69,6 +75,7 @@ test.describe('Properties panel - Node settings', () => {
     })
 
     test('should remove color with noColor swatch', async ({ comfyPage }) => {
+      await expect(panel.getColorSwatch('red')).toBeVisible()
       await panel.getColorSwatch('red').click()
 
       await expect
@@ -81,6 +88,7 @@ test.describe('Properties panel - Node settings', () => {
         )
         .toBe(true)
 
+      await expect(panel.getColorSwatch('noColor')).toBeVisible()
       await panel.getColorSwatch('noColor').click()
 
       await expect
@@ -110,6 +118,7 @@ test.describe('Properties panel - Node settings', () => {
     test('should unpin previously pinned node', async ({ comfyPage }) => {
       const nodeLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
 
+      await expect(panel.pinnedSwitch).toBeVisible()
       await panel.pinnedSwitch.click()
       await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeVisible()
 

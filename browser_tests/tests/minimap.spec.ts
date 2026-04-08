@@ -52,6 +52,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 
     await expect(minimapContainer).toBeVisible()
 
+    await expect(toggleButton).toBeVisible()
     await toggleButton.click()
     await comfyPage.nextFrame()
 
@@ -83,6 +84,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const minimap = comfyPage.page.locator('.litegraph-minimap')
     await expect(minimap).toBeVisible()
 
+    await expect(
+      comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton)
+    ).toBeVisible()
     await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
     await expect(minimap).not.toBeVisible()
 

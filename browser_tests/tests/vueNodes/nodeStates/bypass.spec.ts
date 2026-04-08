@@ -19,6 +19,7 @@ test.describe('Vue Node Bypass', () => {
     'should allow toggling bypass on a selected node with hotkey',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
       await comfyPage.page.getByText('Load Checkpoint').click()
       await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
 
@@ -40,7 +41,9 @@ test.describe('Vue Node Bypass', () => {
   test('should allow toggling bypass on multiple selected nodes with hotkey', async ({
     comfyPage
   }) => {
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
+    await expect(comfyPage.page.getByText('KSampler')).toBeVisible()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
 
     const checkpointNode = comfyPage.page

@@ -12,6 +12,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
     await expect(bottomPanel.root).toBeVisible()
   })
@@ -21,6 +22,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
     await expect(bottomPanel.root).toBeVisible()
 
@@ -31,6 +33,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   test('should close bottom panel via toggle button', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
     await expect(bottomPanel.root).toBeVisible()
 
@@ -43,12 +46,14 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.keyboardShortcutsButton).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
     await expect(bottomPanel.root).toBeVisible()
     await expect(
       comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
     ).toBeVisible()
 
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
 
     const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
@@ -63,6 +68,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
     await expect(bottomPanel.root).toBeVisible()
 
@@ -84,6 +90,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
+    await expect(bottomPanel.toggleButton).toBeVisible()
     await bottomPanel.toggleButton.click()
     await expect(bottomPanel.root).toBeVisible()
 

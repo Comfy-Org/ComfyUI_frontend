@@ -63,6 +63,7 @@ test.describe('Advanced Widget Visibility', () => {
     await expect(widgets).toHaveCount(2)
 
     // Click the toggle button to show advanced widgets
+    await expect(node.getByText('Show advanced inputs')).toBeVisible()
     await node.getByText('Show advanced inputs').click()
 
     await expect(widgets).toHaveCount(4)
@@ -73,6 +74,7 @@ test.describe('Advanced Widget Visibility', () => {
     await expect(node.getByText('Hide advanced inputs')).toBeVisible()
 
     // Click again to hide
+    await expect(node.getByText('Hide advanced inputs')).toBeVisible()
     await node.getByText('Hide advanced inputs').click()
     await expect(widgets).toHaveCount(2)
   })

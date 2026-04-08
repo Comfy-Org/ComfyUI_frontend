@@ -16,10 +16,12 @@ test.describe('Node library sidebar V2', () => {
 
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
 
+    await expect(tab.blueprintsTab).toBeVisible()
     await tab.blueprintsTab.click()
     await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'true')
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'false')
 
+    await expect(tab.allTab).toBeVisible()
     await tab.allTab.click()
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
     await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'false')
@@ -114,6 +116,7 @@ test.describe('Node library sidebar V2', () => {
   test('Sort dropdown shows sorting options', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
+    await expect(tab.sortButton).toBeVisible()
     await tab.sortButton.click()
 
     // Reka UI DropdownMenuRadioItem renders with role="menuitemradio"

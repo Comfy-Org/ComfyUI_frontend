@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
 import type { Position } from '../types'
@@ -18,6 +19,7 @@ export class CanvasHelper {
 
   async resetView(): Promise<void> {
     if (await this.resetViewButton.isVisible()) {
+      await expect(this.resetViewButton).toBeVisible()
       await this.resetViewButton.click()
     }
     await this.page.mouse.move(10, 10)

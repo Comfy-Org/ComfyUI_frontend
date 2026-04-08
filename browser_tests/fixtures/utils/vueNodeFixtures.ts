@@ -1,4 +1,5 @@
 import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { TestIds } from '../selectors'
 
@@ -58,6 +59,7 @@ export class VueNodeFixture {
   }
 
   async toggleCollapse(): Promise<void> {
+    await expect(this.collapseButton).toBeVisible()
     await this.collapseButton.click()
   }
 

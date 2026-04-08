@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
 import { TestIds } from '../selectors'
@@ -33,6 +34,7 @@ export class SettingDialog extends BaseDialog {
    */
   async toggleBooleanSetting(id: string) {
     const settingInputDiv = this.root.locator(`div[id="${id}"]`)
+    await expect(settingInputDiv.locator('input')).toBeVisible()
     await settingInputDiv.locator('input').click()
   }
 
@@ -56,6 +58,7 @@ export class SettingDialog extends BaseDialog {
     const aboutButton = this.root.locator('nav').getByRole('button', {
       name: 'About'
     })
+    await expect(aboutButton).toBeVisible()
     await aboutButton.click()
     await this.page.waitForSelector('.about-container')
   }

@@ -15,6 +15,7 @@ test.describe('Vue Node Pin', () => {
   test('should allow toggling pin on a selected node with hotkey', async ({
     comfyPage
   }) => {
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
 
@@ -30,7 +31,9 @@ test.describe('Vue Node Pin', () => {
   test('should allow toggling pin on multiple selected nodes with hotkey', async ({
     comfyPage
   }) => {
+    await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
     await comfyPage.page.getByText('Load Checkpoint').click()
+    await expect(comfyPage.page.getByText('KSampler')).toBeVisible()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
 
     const checkpointNode = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
@@ -49,6 +52,7 @@ test.describe('Vue Node Pin', () => {
 
   test('should not allow dragging pinned nodes', async ({ comfyPage }) => {
     const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
+    await expect(checkpointNodeHeader).toBeVisible()
     await checkpointNodeHeader.click()
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
 
@@ -67,6 +71,7 @@ test.describe('Vue Node Pin', () => {
     expect(headerPosAfterDrag).toEqual(headerPos)
 
     // Unpin the node with the hotkey
+    await expect(checkpointNodeHeader).toBeVisible()
     await checkpointNodeHeader.click()
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
 

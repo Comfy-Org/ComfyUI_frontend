@@ -12,6 +12,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   test('Properties panel opens with workflow overview', async ({
     comfyPage
   }) => {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -22,6 +23,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   test('Properties panel shows node details on selection', async ({
     comfyPage
   }) => {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -31,6 +33,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   })
 
   test('Node title input is editable', async ({ comfyPage }) => {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -38,6 +41,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
     await expect(propertiesPanel.panelTitle).toContainText('KSampler')
 
     // Click on the title to enter edit mode
+    await expect(propertiesPanel.panelTitle).toBeVisible()
     await propertiesPanel.panelTitle.click()
     const titleInput = propertiesPanel.root.getByTestId(TestIds.node.titleInput)
     await expect(titleInput).toBeVisible()
@@ -49,6 +53,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   })
 
   test('Search box filters properties', async ({ comfyPage }) => {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -77,6 +82,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   })
 
   test('Expand all / Collapse all toggles sections', async ({ comfyPage }) => {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -105,6 +111,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
   })
 
   test('Properties panel can be closed', async ({ comfyPage }) => {
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
     const { propertiesPanel } = comfyPage.menu
 
@@ -113,6 +120,7 @@ test.describe('Right Side Panel Tabs', { tag: '@ui' }, () => {
     // The actionbar toggle button hides when the panel is open,
     // so use the close button inside the panel itself
     const closeButton = comfyPage.page.getByLabel('Toggle properties panel')
+    await expect(closeButton).toBeVisible()
     await closeButton.click()
     await expect(propertiesPanel.root).toBeHidden()
   })

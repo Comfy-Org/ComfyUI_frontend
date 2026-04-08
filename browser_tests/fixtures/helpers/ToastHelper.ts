@@ -30,6 +30,7 @@ export class ToastHelper {
       .locator('.p-toast-close-button')
       .all()
     for (const button of toastCloseButtons) {
+      await expect(button).toBeVisible()
       await button.click()
     }
 

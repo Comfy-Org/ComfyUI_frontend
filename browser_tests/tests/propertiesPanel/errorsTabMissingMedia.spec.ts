@@ -21,6 +21,7 @@ async function confirmPendingSelection(comfyPage: ComfyPage) {
     TestIds.dialogs.missingMediaConfirmButton
   )
   await expect(confirmButton).toBeEnabled()
+  await expect(confirmButton).toBeVisible()
   await confirmButton.click()
 }
 
@@ -100,6 +101,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
       const librarySelect = comfyPage.page.getByTestId(
         TestIds.dialogs.missingMediaLibrarySelect
       )
+      await expect(librarySelect.getByRole('combobox')).toBeVisible()
       await librarySelect.getByRole('combobox').click()
 
       const optionCount = await comfyPage.page.getByRole('option').count()
@@ -108,6 +110,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
         return
       }
 
+      await expect(comfyPage.page.getByRole('option').first()).toBeVisible()
       await comfyPage.page.getByRole('option').first().click()
 
       await expect(getStatusCard(comfyPage)).toBeVisible()

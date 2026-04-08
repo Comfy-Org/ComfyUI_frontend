@@ -23,13 +23,16 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     // Insert the workflow
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
+    await expect(workflowsTab.getPersistedItem(workflowName)).toBeVisible()
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
     const insertButton = comfyPage.page.locator('.p-contextmenu-item-link', {
       hasText: 'Insert'
     })
+    await expect(insertButton).toBeVisible()
     await insertButton.click()
 
     // Close the sidebar tab
+    await expect(workflowsTab.tabButton).toBeVisible()
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
     await comfyPage.setFocusMode(true)

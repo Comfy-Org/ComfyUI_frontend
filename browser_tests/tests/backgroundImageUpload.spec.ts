@@ -25,6 +25,7 @@ test.describe('Background Image Upload', () => {
 
     // Navigate to Appearance category
     const appearanceOption = comfyPage.page.locator('text=Appearance')
+    await expect(appearanceOption).toBeVisible()
     await appearanceOption.click()
 
     // Find the background image setting
@@ -58,6 +59,7 @@ test.describe('Background Image Upload', () => {
 
     // Navigate to Appearance category
     const appearanceOption = comfyPage.page.locator('text=Appearance')
+    await expect(appearanceOption).toBeVisible()
     await appearanceOption.click()
 
     // Find the background image setting
@@ -71,6 +73,7 @@ test.describe('Background Image Upload', () => {
 
     // Set up file upload handler
     const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
+    await expect(uploadButton).toBeVisible()
     await uploadButton.click()
     const fileChooser = await fileChooserPromise
 
@@ -104,6 +107,7 @@ test.describe('Background Image Upload', () => {
 
     // Navigate to Appearance category
     const appearanceOption = comfyPage.page.locator('text=Appearance')
+    await expect(appearanceOption).toBeVisible()
     await appearanceOption.click()
 
     // Find the background image setting
@@ -146,6 +150,7 @@ test.describe('Background Image Upload', () => {
 
     // Navigate to Appearance category
     const appearanceOption = comfyPage.page.locator('text=Appearance')
+    await expect(appearanceOption).toBeVisible()
     await appearanceOption.click()
 
     // Find the background image setting
@@ -163,6 +168,7 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeEnabled()
 
     // Click the clear button
+    await expect(clearButton).toBeVisible()
     await clearButton.click()
 
     // Verify the input is now empty
@@ -186,6 +192,7 @@ test.describe('Background Image Upload', () => {
 
     // Navigate to Appearance category
     const appearanceOption = comfyPage.page.locator('text=Appearance')
+    await expect(appearanceOption).toBeVisible()
     await appearanceOption.click()
 
     // Find the background image setting
@@ -227,6 +234,7 @@ test.describe('Background Image Upload', () => {
 
     // Navigate to Appearance category
     const appearanceOption = comfyPage.page.locator('text=Appearance')
+    await expect(appearanceOption).toBeVisible()
     await appearanceOption.click()
 
     // Find the background image setting
@@ -254,6 +262,7 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeEnabled()
 
     // Use clear button - should clear input and disable itself
+    await expect(clearButton).toBeVisible()
     await clearButton.click()
     await expect(urlInput).toHaveValue('')
     await expect(clearButton).toBeDisabled()

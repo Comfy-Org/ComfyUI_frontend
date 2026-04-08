@@ -89,6 +89,7 @@ test.describe('Workflows sidebar', () => {
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toEqual(originalNodeCount + 1)
 
+    await expect(tab.getPersistedItem('workflow1')).toBeVisible()
     await tab.getPersistedItem('workflow1').click()
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toEqual(1)
   })
@@ -105,8 +106,10 @@ test.describe('Workflows sidebar', () => {
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
     // Switch to the parent folder
+    await expect(tab.getPersistedItem('foo')).toBeVisible()
     await tab.getPersistedItem('foo').click()
     // Switch to the nested workflow
+    await expect(tab.getPersistedItem('bar')).toBeVisible()
     await tab.getPersistedItem('bar').click()
 
     const openedWorkflow = tab.getOpenedItem('foo/bar')
@@ -247,6 +250,9 @@ test.describe('Workflows sidebar', () => {
     await expect(errorOverlay).toBeVisible()
 
     // Dismiss the error overlay
+    await expect(
+      errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss)
+    ).toBeVisible()
     await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
     await expect(errorOverlay).not.toBeVisible()
 
@@ -270,6 +276,7 @@ test.describe('Workflows sidebar', () => {
     const closeButton = comfyPage.page.locator(
       '.comfyui-workflows-open .close-workflow-button'
     )
+    await expect(closeButton).toBeVisible()
     await closeButton.click()
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames(), {
@@ -294,6 +301,7 @@ test.describe('Workflows sidebar', () => {
     await topbar.saveWorkflow(filename)
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
 
+    await expect(workflowsTab.getOpenedItem(filename)).toBeVisible()
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
     await comfyPage.contextMenu.clickMenuItem('Delete')
@@ -312,6 +320,7 @@ test.describe('Workflows sidebar', () => {
     await topbar.saveWorkflow(filename)
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
 
+    await expect(workflowsTab.getOpenedItem(filename)).toBeVisible()
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.contextMenu.clickMenuItem('Delete')
     await comfyPage.nextFrame()
@@ -332,6 +341,7 @@ test.describe('Workflows sidebar', () => {
     const { workflowsTab } = comfyPage.menu
     await workflowsTab.open()
 
+    await expect(workflowsTab.getPersistedItem('workflow1')).toBeVisible()
     await workflowsTab.getPersistedItem('workflow1').click({ button: 'right' })
     await comfyPage.contextMenu.clickMenuItem('Duplicate')
     await expect

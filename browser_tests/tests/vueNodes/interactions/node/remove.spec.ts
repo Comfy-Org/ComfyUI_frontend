@@ -91,6 +91,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
       .first()
 
     // Click on text widget to focus it
+    await expect(textWidget).toBeVisible()
     await textWidget.click()
     await textWidget.fill('test text')
 

@@ -15,6 +15,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     })
 
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.fill('k')
     await expect(textBox).toHaveValue('k')
@@ -31,6 +32,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     })
 
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.fill('q')
     await textBox.press('Control+k')
@@ -46,6 +48,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     })
 
     const textBox = comfyPage.widgetTextBox
+    await expect(textBox).toBeVisible()
     await textBox.click()
     await textBox.press('Control+v')
     await expect(textBox).toBeFocused()

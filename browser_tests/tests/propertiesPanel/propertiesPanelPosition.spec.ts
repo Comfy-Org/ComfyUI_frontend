@@ -8,6 +8,7 @@ test.describe('Properties panel position', () => {
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
     // Open a sidebar tab to ensure sidebar is visible
     await comfyPage.menu.nodeLibraryTab.open()
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
   })
 

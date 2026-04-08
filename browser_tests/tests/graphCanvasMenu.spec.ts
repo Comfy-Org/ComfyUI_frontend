@@ -23,6 +23,7 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const button = comfyPage.page.getByTestId(
         TestIds.canvas.toggleLinkVisibilityButton
       )
+      await expect(button).toBeVisible()
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -35,6 +36,7 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         hiddenLinkRenderMode
       )
 
+      await expect(button).toBeVisible()
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -91,6 +93,7 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
 
     // Click backdrop to close
     const backdrop = comfyPage.page.locator('.fixed.inset-0').first()
+    await expect(backdrop).toBeVisible()
     await backdrop.click()
     await comfyPage.nextFrame()
 

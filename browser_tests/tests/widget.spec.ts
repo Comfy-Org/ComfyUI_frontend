@@ -241,6 +241,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
         resp.request().method() === 'GET' &&
         resp.status() === 200
     )
+    await expect(comboEntry).toBeVisible()
     await comboEntry.click()
 
     // Wait for the image to load from the server

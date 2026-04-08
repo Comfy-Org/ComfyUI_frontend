@@ -60,6 +60,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       TestIds.dialogs.missingModelExpand
     )
     await expect(expandButton.first()).toBeVisible()
+    await expect(expandButton.first()).toBeVisible()
     await expandButton.first().click()
 
     await expect(locateButton.first()).toBeVisible()
@@ -72,6 +73,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     const copyButton = comfyPage.page.getByTestId(
       TestIds.dialogs.missingModelCopyName
     )
+    await expect(copyButton.first()).toBeVisible()
     await expect(copyButton.first()).toBeVisible()
     await copyButton.first().click()
 

@@ -23,14 +23,17 @@ test.describe('Vue Node Selection', () => {
     test(`should allow selecting multiple nodes with ${name}+click`, async ({
       comfyPage
     }) => {
+      await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
       await comfyPage.page.getByText('Load Checkpoint').click()
       await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
 
+      await expect(comfyPage.page.getByText('Empty Latent Image')).toBeVisible()
       await comfyPage.page.getByText('Empty Latent Image').click({
         modifiers: [modifier]
       })
       await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(2)
 
+      await expect(comfyPage.page.getByText('KSampler')).toBeVisible()
       await comfyPage.page.getByText('KSampler').click({
         modifiers: [modifier]
       })
@@ -40,9 +43,11 @@ test.describe('Vue Node Selection', () => {
     test(`should allow de-selecting nodes with ${name}+click`, async ({
       comfyPage
     }) => {
+      await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
       await comfyPage.page.getByText('Load Checkpoint').click()
       await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
 
+      await expect(comfyPage.page.getByText('Load Checkpoint')).toBeVisible()
       await comfyPage.page.getByText('Load Checkpoint').click({
         modifiers: [modifier]
       })
@@ -68,6 +73,7 @@ test.describe('Vue Node Selection', () => {
     const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
     const checkpointNodeHeader = comfyPage.page.getByText('Load Checkpoint')
+    await expect(checkpointNodeHeader).toBeVisible()
     await checkpointNodeHeader.click()
 
     await comfyPage.page.keyboard.press(PIN_HOTKEY)

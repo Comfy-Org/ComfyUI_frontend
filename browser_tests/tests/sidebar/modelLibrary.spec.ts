@@ -73,6 +73,7 @@ test.describe('Model library sidebar - folders', () => {
     await tab.open()
 
     // Click the folder to expand it
+    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
     await tab.getFolderByLabel('checkpoints').click()
 
     // Models should appear as leaf nodes
@@ -89,6 +90,7 @@ test.describe('Model library sidebar - folders', () => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
+    await expect(tab.getFolderByLabel('loras')).toBeVisible()
     await tab.getFolderByLabel('loras').click()
 
     await expect(tab.getLeafByLabel('detail_tweaker_xl')).toBeVisible({
@@ -191,6 +193,7 @@ test.describe('Model library sidebar - refresh', () => {
       (req) => req.url().endsWith('/experiment/models'),
       { timeout: 5000 }
     )
+    await expect(tab.refreshButton).toBeVisible()
     await tab.refreshButton.click()
     await refreshRequest
 
@@ -214,6 +217,7 @@ test.describe('Model library sidebar - refresh', () => {
       { timeout: 5000 }
     )
 
+    await expect(tab.loadAllFoldersButton).toBeVisible()
     await tab.loadAllFoldersButton.click()
     await folderRequest
   })

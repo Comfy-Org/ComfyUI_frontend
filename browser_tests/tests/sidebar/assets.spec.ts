@@ -241,6 +241,7 @@ test.describe('Assets sidebar - view mode toggle', () => {
 
     // Open settings menu and select list view
     await tab.openSettingsMenu()
+    await expect(tab.listViewOption).toBeVisible()
     await tab.listViewOption.click()
 
     // List view items should now be visible
@@ -254,10 +255,12 @@ test.describe('Assets sidebar - view mode toggle', () => {
 
     // Switch to list view
     await tab.openSettingsMenu()
+    await expect(tab.listViewOption).toBeVisible()
     await tab.listViewOption.click()
     await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
 
     // Switch back to grid view (settings popover is still open)
+    await expect(tab.gridViewOption).toBeVisible()
     await tab.gridViewOption.click()
     await tab.waitForAssets()
 
@@ -355,6 +358,7 @@ test.describe('Assets sidebar - selection', () => {
     await tab.waitForAssets()
 
     // Click first asset card
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click()
 
     // Should have data-selected="true"
@@ -371,10 +375,12 @@ test.describe('Assets sidebar - selection', () => {
     expect(cardCount).toBeGreaterThanOrEqual(2)
 
     // Click first card
+    await expect(cards.first()).toBeVisible()
     await cards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
     // Ctrl+click second card
+    await expect(cards.nth(1)).toBeVisible()
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
     await expect(tab.selectedCards).toHaveCount(2)
   })
@@ -387,6 +393,7 @@ test.describe('Assets sidebar - selection', () => {
     await tab.waitForAssets()
 
     // Select an asset
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click()
 
     // Footer should show selection count
@@ -399,6 +406,7 @@ test.describe('Assets sidebar - selection', () => {
     await tab.waitForAssets()
 
     // Select an asset
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
@@ -417,6 +425,7 @@ test.describe('Assets sidebar - selection', () => {
     await tab.waitForAssets()
 
     // Select an asset
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
@@ -451,6 +460,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     // Right-click first asset
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
 
     // Context menu should appear with standard items
@@ -465,6 +475,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
       .locator('.p-contextmenu')
@@ -480,6 +491,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
       .locator('.p-contextmenu')
@@ -495,6 +507,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
       .locator('.p-contextmenu')
@@ -510,6 +523,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
       .locator('.p-contextmenu')
@@ -525,6 +539,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
@@ -553,8 +568,10 @@ test.describe('Assets sidebar - context menu', () => {
     // Multi-select: use keyboard.down/up so useKeyModifier('Control') detects
     // the modifier — click({ modifiers }) only sets the mouse event flag and
     // does not fire a keydown event that VueUse tracks.
+    await expect(cards.first()).toBeVisible()
     await cards.first().click()
     await comfyPage.page.keyboard.down('Control')
+    await expect(cards.nth(1)).toBeVisible()
     await cards.nth(1).click()
     await comfyPage.page.keyboard.up('Control')
 
@@ -599,6 +616,7 @@ test.describe('Assets sidebar - bulk actions', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click()
 
     // Download button in footer should be visible
@@ -612,6 +630,7 @@ test.describe('Assets sidebar - bulk actions', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click()
 
     // Delete button in footer should be visible
@@ -628,7 +647,9 @@ test.describe('Assets sidebar - bulk actions', () => {
     const cardCount = await cards.count()
     expect(cardCount).toBeGreaterThanOrEqual(2)
 
+    await expect(cards.first()).toBeVisible()
     await cards.first().click()
+    await expect(cards.nth(1)).toBeVisible()
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
 
     // Selection count should show the count
@@ -723,7 +744,9 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await tab.open()
     await tab.waitForAssets()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
+    await expect(tab.contextMenuItem('Delete')).toBeVisible()
     await tab.contextMenuItem('Delete').click()
 
     const dialog = comfyPage.confirmDialog.root
@@ -743,12 +766,15 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     const initialCount = await tab.assetCards.count()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
+    await expect(tab.contextMenuItem('Delete')).toBeVisible()
     await tab.contextMenuItem('Delete').click()
 
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
 
+    await expect(comfyPage.confirmDialog.delete).toBeVisible()
     await comfyPage.confirmDialog.delete.click()
 
     await expect(dialog).not.toBeVisible()
@@ -767,12 +793,15 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     const initialCount = await tab.assetCards.count()
 
+    await expect(tab.assetCards.first()).toBeVisible()
     await tab.assetCards.first().click({ button: 'right' })
+    await expect(tab.contextMenuItem('Delete')).toBeVisible()
     await tab.contextMenuItem('Delete').click()
 
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
 
+    await expect(comfyPage.confirmDialog.reject).toBeVisible()
     await comfyPage.confirmDialog.reject.click()
 
     await expect(dialog).not.toBeVisible()

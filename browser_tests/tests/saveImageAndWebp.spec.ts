@@ -19,6 +19,7 @@ test.describe(
       )
       await comfyPage.vueNodes.waitForNodes()
 
+      await expect(comfyPage.runButton).toBeVisible()
       await comfyPage.runButton.click()
 
       const saveImageNode = comfyPage.vueNodes.getNodeByTitle('Save Image')

@@ -1,5 +1,5 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { test as base } from '@playwright/test'
+import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { NodeBadgeMode } from '../../src/types/nodeSource'
@@ -115,6 +115,7 @@ class ComfyMenu {
 
   async toggleTheme() {
     const currentTheme = await this.getThemeId()
+    await expect(this.modeToggleButton).toBeVisible()
     await this.modeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {

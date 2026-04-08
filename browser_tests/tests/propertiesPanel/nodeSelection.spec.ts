@@ -8,6 +8,7 @@ test.describe('Properties panel - Node selection', () => {
 
   test.beforeEach(async ({ comfyPage }) => {
     panel = new PropertiesPanelHelper(comfyPage.page)
+    await expect(comfyPage.actionbar.propertiesButton).toBeVisible()
     await comfyPage.actionbar.propertiesButton.click()
   })
 

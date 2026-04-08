@@ -30,6 +30,7 @@ test.describe('Vue Node Error', () => {
   }) => {
     await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+    await expect(comfyPage.runButton).toBeVisible()
     await comfyPage.runButton.click()
 
     const raiseErrorNode = comfyPage.page

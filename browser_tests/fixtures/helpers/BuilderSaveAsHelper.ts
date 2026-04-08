@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
 
@@ -72,7 +73,9 @@ export class BuilderSaveAsHelper {
 
   async fillAndSave(workflowName: string, viewType: 'App' | 'Node graph') {
     await this.nameInput.fill(workflowName)
+    await expect(this.viewTypeRadio(viewType)).toBeVisible()
     await this.viewTypeRadio(viewType).click()
+    await expect(this.saveButton).toBeVisible()
     await this.saveButton.click()
   }
 }

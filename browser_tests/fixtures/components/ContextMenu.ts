@@ -17,14 +17,21 @@ export class ContextMenu {
   }
 
   async clickMenuItem(name: string): Promise<void> {
+    await expect(this.page.getByRole('menuitem', { name })).toBeVisible()
     await this.page.getByRole('menuitem', { name }).click()
   }
 
   async clickMenuItemExact(name: string): Promise<void> {
+    await expect(
+      this.page.getByRole('menuitem', { name, exact: true })
+    ).toBeVisible()
     await this.page.getByRole('menuitem', { name, exact: true }).click()
   }
 
   async clickLitegraphMenuItem(name: string): Promise<void> {
+    await expect(
+      this.page.locator(`.litemenu-entry:has-text("${name}")`)
+    ).toBeVisible()
     await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
   }
 
@@ -47,6 +54,7 @@ export class ContextMenu {
   }
 
   async openFor(locator: Locator): Promise<this> {
+    await expect(locator).toBeVisible()
     await locator.click({ button: 'right' })
     await expect.poll(() => this.isVisible()).toBe(true)
     return this
@@ -58,6 +66,7 @@ export class ContextMenu {
    * right-click so the correct per-node menu items appear.
    */
   async openForVueNode(header: Locator): Promise<this> {
+    await expect(header).toBeVisible()
     await header.click()
     await header.click({ button: 'right' })
     await this.primeVueMenu.waitFor({ state: 'visible' })

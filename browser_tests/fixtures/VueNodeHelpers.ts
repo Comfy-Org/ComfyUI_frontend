@@ -2,6 +2,7 @@
  * Vue Node Test Helpers
  */
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { TestIds } from './selectors'
 import { VueNodeFixture } from './utils/vueNodeFixtures'
@@ -187,6 +188,7 @@ export class VueNodeHelpers {
         'subgraph-enter-button has no bounding box: element may be hidden or not in DOM'
       )
     }
+    await expect(editButton).toBeVisible()
     await editButton.click({
       position: { x: box.width / 2, y: box.height * 0.75 }
     })

@@ -69,10 +69,12 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
+      await expect(searchBoxV2.categoryButton('sampling')).toBeVisible()
       await searchBoxV2.categoryButton('sampling').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       const samplingResults = await searchBoxV2.results.allTextContents()
 
+      await expect(searchBoxV2.categoryButton('loaders')).toBeVisible()
       await searchBoxV2.categoryButton('loaders').click()
       await expect(searchBoxV2.results.first()).toBeVisible()
       const loaderResults = await searchBoxV2.results.allTextContents()
@@ -93,6 +95,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const unfilteredResults = await searchBoxV2.results.allTextContents()
 
       // Apply Input filter with MODEL type
+      await expect(searchBoxV2.filterBarButton('Input')).toBeVisible()
       await searchBoxV2.filterBarButton('Input').click()
       await expect(searchBoxV2.filterOptions.first()).toBeVisible()
       await searchBoxV2.input.fill('MODEL')
@@ -111,6 +114,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       expect(filteredResults).not.toEqual(unfilteredResults)
 
       // Remove filter by clicking the chip delete button
+      await expect(filterChip.getByTestId('chip-delete')).toBeVisible()
       await filterChip.getByTestId('chip-delete').click()
 
       // Filter chip should be removed

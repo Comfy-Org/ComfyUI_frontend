@@ -40,6 +40,9 @@ test.describe('Mask Editor', () => {
 
       // Hover over the image panel to reveal action buttons
       await imagePreview.getByRole('region').hover()
+      await expect(
+        comfyPage.page.getByLabel('Edit or mask image')
+      ).toBeVisible()
       await comfyPage.page.getByLabel('Edit or mask image').click()
 
       const dialog = comfyPage.page.locator('.mask-editor-dialog')
@@ -70,12 +73,14 @@ test.describe('Mask Editor', () => {
       const nodeHeader = comfyPage.vueNodes
         .getNodeLocator(nodeId)
         .locator('.lg-node-header')
+      await expect(nodeHeader).toBeVisible()
       await nodeHeader.click()
       await nodeHeader.click({ button: 'right' })
 
       const contextMenu = comfyPage.page.locator('.p-contextmenu')
       await expect(contextMenu).toBeVisible()
 
+      await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
       await contextMenu.getByText('Open in Mask Editor').click()
 
       const dialog = comfyPage.page.locator('.mask-editor-dialog')

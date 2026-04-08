@@ -54,6 +54,7 @@ test.describe('Node library sidebar', () => {
 
   test('Node preview and drag to canvas', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('sampling')).toBeVisible()
     await tab.getFolder('sampling').click()
 
     // Hover over a node to display the preview
@@ -91,9 +92,13 @@ test.describe('Node library sidebar', () => {
 
   test('Bookmark node', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('sampling')).toBeVisible()
     await tab.getFolder('sampling').click()
 
     // Bookmark the node
+    await expect(
+      tab.getNode('KSampler (Advanced)').locator('.bookmark-button')
+    ).toBeVisible()
     await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
 
     // Verify the bookmark is added to the bookmarks tab
@@ -124,6 +129,7 @@ test.describe('Node library sidebar', () => {
 
   test('Can add new bookmark folder', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.newFolderButton).toBeVisible()
     await tab.newFolderButton.click()
     const textInput = comfyPage.page.locator('.editable-text input')
     await textInput.waitFor({ state: 'visible' })
@@ -138,7 +144,11 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
 
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
+    await expect(
+      comfyPage.page.getByRole('menuitem', { name: 'New Folder' })
+    ).toBeVisible()
     await comfyPage.page.getByRole('menuitem', { name: 'New Folder' }).click()
     const textInput = comfyPage.page.locator('.editable-text input')
     await textInput.waitFor({ state: 'visible' })
@@ -154,7 +164,9 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
 
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
+    await expect(comfyPage.page.getByLabel('Delete')).toBeVisible()
     await comfyPage.page.getByLabel('Delete').click()
 
     await expectBookmarks(comfyPage, [])
@@ -165,6 +177,7 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
 
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
       .locator('.p-contextmenu-item-label:has-text("Rename")')
@@ -180,6 +193,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
+    await expect(tab.getFolder('sampling')).toBeVisible()
     await tab.getFolder('sampling').click()
     await comfyPage.page.dragAndDrop(
       tab.nodeSelector('KSampler (Advanced)'),
@@ -192,7 +206,11 @@ test.describe('Node library sidebar', () => {
     comfyPage
   }) => {
     const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('sampling')).toBeVisible()
     await tab.getFolder('sampling').click()
+    await expect(
+      tab.getNode('KSampler (Advanced)').locator('.bookmark-button')
+    ).toBeVisible()
     await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
     await expectBookmarks(comfyPage, ['KSamplerAdvanced'])
   })
@@ -203,6 +221,9 @@ test.describe('Node library sidebar', () => {
     ])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(1)
+    await expect(
+      tab.getNode('KSampler (Advanced)').locator('.bookmark-button')
+    ).toBeVisible()
     await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
     await expectBookmarks(comfyPage, [])
   })
@@ -212,6 +233,7 @@ test.describe('Node library sidebar', () => {
       'KSamplerAdvanced'
     ])
     const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('sampling')).toBeVisible()
     await tab.getFolder('sampling').click()
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
     await tab
@@ -224,20 +246,25 @@ test.describe('Node library sidebar', () => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
+    await expect(comfyPage.page.getByLabel('Customize')).toBeVisible()
     await comfyPage.page.getByLabel('Customize').click()
     const dialog = comfyPage.page.getByRole('dialog', {
       name: 'Customize Folder'
     })
     // Select Folder icon (2nd button in Icon group)
     const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
+    await expect(iconGroup.getByRole('button').nth(1)).toBeVisible()
     await iconGroup.getByRole('button').nth(1).click()
     // Select Blue color (2nd button in Color group)
     const colorGroup = dialog
       .getByText('Color')
       .locator('..')
       .getByRole('group')
+    await expect(colorGroup.getByRole('button').nth(1)).toBeVisible()
     await colorGroup.getByRole('button').nth(1).click()
+    await expect(dialog.getByRole('button', { name: 'Confirm' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     await expectBookmarkCustomization(comfyPage, {
@@ -252,14 +279,18 @@ test.describe('Node library sidebar', () => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
+    await expect(comfyPage.page.getByLabel('Customize')).toBeVisible()
     await comfyPage.page.getByLabel('Customize').click()
     const dialog = comfyPage.page.getByRole('dialog', {
       name: 'Customize Folder'
     })
     // Select Folder icon (2nd button in Icon group)
     const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
+    await expect(iconGroup.getByRole('button').nth(1)).toBeVisible()
     await iconGroup.getByRole('button').nth(1).click()
+    await expect(dialog.getByRole('button', { name: 'Confirm' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     await expectBookmarkCustomization(comfyPage, {
@@ -276,13 +307,16 @@ test.describe('Node library sidebar', () => {
     await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
+    await expect(comfyPage.page.getByLabel('Customize')).toBeVisible()
     await comfyPage.page.getByLabel('Customize').click()
 
     // Click a color option multiple times
     const customColorOption = comfyPage.page.locator(
       '.p-togglebutton-content > .pi-palette'
     )
+    await expect(customColorOption).toBeVisible()
     await customColorOption.click()
     await customColorOption.click()
 
@@ -291,6 +325,9 @@ test.describe('Node library sidebar', () => {
       .getByLabel('Customize Folder')
       .getByRole('textbox')
       .click()
+    await expect(
+      comfyPage.page.locator('.p-colorpicker-color-background')
+    ).toBeVisible()
     await comfyPage.page.locator('.p-colorpicker-color-background').click()
 
     // Finalize the customization
@@ -299,7 +336,9 @@ test.describe('Node library sidebar', () => {
     })
     // Select Folder icon (2nd button in Icon group)
     const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
+    await expect(iconGroup.getByRole('button').nth(1)).toBeVisible()
     await iconGroup.getByRole('button').nth(1).click()
+    await expect(dialog.getByRole('button', { name: 'Confirm' })).toBeVisible()
     await dialog.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
 
@@ -326,6 +365,7 @@ test.describe('Node library sidebar', () => {
       }
     })
     const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('foo')).toBeVisible()
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
@@ -365,7 +405,9 @@ test.describe('Node library sidebar', () => {
     })
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getFolder('foo')).toBeVisible()
+    await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
+    await expect(comfyPage.page.getByLabel('Delete')).toBeVisible()
     await comfyPage.page.getByLabel('Delete').click()
     await comfyPage.nextFrame()
     await expectBookmarks(comfyPage, [])

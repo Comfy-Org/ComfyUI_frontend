@@ -24,12 +24,14 @@ class SidebarTab {
     if (await this.selectedTabButton.isVisible()) {
       return
     }
+    await expect(this.tabButton).toBeVisible()
     await this.tabButton.click()
   }
   async close() {
     if (!this.tabButton.isVisible()) {
       return
     }
+    await expect(this.tabButton).toBeVisible()
     await this.tabButton.click()
   }
 }
@@ -69,6 +71,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
       return
     }
 
+    await expect(this.tabButton).toBeVisible()
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
@@ -143,6 +146,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     const folder = this.getFolder(folderName)
     const isExpanded = await folder.getAttribute('aria-expanded')
     if (isExpanded !== 'true') {
+      await expect(folder).toBeVisible()
       await folder.click()
     }
   }
@@ -182,6 +186,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
 
   async switchToWorkflow(workflowName: string) {
     const workflowLocator = this.getOpenedItem(workflowName)
+    await expect(workflowLocator).toBeVisible()
     await workflowLocator.click()
   }
 
@@ -198,6 +203,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 
   async renameWorkflow(locator: Locator, newName: string) {
+    await expect(locator).toBeVisible()
     await locator.click({ button: 'right' })
     await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
@@ -216,6 +222,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 
   async insertWorkflow(locator: Locator) {
+    await expect(locator).toBeVisible()
     await locator.click({ button: 'right' })
     await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
@@ -429,6 +436,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async switchToImported() {
     await this.dismissToasts()
+    await expect(this.importedTab).toBeVisible()
     await this.importedTab.click()
     await expect(this.importedTab).toHaveAttribute('aria-selected', 'true', {
       timeout: 3000
@@ -437,6 +445,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async switchToGenerated() {
     await this.dismissToasts()
+    await expect(this.generatedTab).toBeVisible()
     await this.generatedTab.click()
     await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true', {
       timeout: 3000
@@ -445,6 +454,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async openSettingsMenu() {
     await this.dismissToasts()
+    await expect(this.settingsButton).toBeVisible()
     await this.settingsButton.click()
     // Wait for popover content to render
     await this.listViewOption
@@ -455,6 +465,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async rightClickAsset(name: string) {
     const card = this.getAssetCardByName(name)
+    await expect(card).toBeVisible()
     await card.click({ button: 'right' })
     await this.page
       .locator('.p-contextmenu')

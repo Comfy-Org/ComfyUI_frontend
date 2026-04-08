@@ -41,7 +41,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       // Add group node from node library sidebar
+      await expect(libraryTab.getFolder(groupNodeCategory)).toBeVisible()
       await libraryTab.getFolder(groupNodeCategory).click()
+      await expect(libraryTab.getNode(groupNodeName)).toBeVisible()
       await libraryTab.getNode(groupNodeName).click()
 
       // Verify the node is added to the canvas
@@ -51,6 +53,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     })
 
     test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
+      await expect(libraryTab.getFolder(groupNodeCategory)).toBeVisible()
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab
         .getNode(groupNodeName)
@@ -78,6 +81,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     })
 
     test('Displays preview on bookmark hover', async ({ comfyPage }) => {
+      await expect(libraryTab.getFolder(groupNodeCategory)).toBeVisible()
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab
         .getNode(groupNodeName)

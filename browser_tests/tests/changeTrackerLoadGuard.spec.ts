@@ -47,17 +47,20 @@ test.describe(
 
       // Switch back to tab 0 (workflow-a).
       const tab0 = comfyPage.menu.topbar.getWorkflowTab('workflow-a')
+      await expect(tab0).toBeVisible()
       await tab0.click()
       await comfyPage.nextFrame()
       expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
 
       // switch to blank tab and back to verify no corruption
       const tab1 = comfyPage.menu.topbar.getWorkflowTab('Unsaved Workflow')
+      await expect(tab1).toBeVisible()
       await tab1.click()
       await comfyPage.nextFrame()
       expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
       // switch again and verify no corruption
+      await expect(tab0).toBeVisible()
       await tab0.click()
       await comfyPage.nextFrame()
       expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(7)

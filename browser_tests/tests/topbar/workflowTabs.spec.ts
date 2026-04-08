@@ -23,6 +23,7 @@ test.describe('Workflow tabs', () => {
 
     expect(await topbar.getTabNames()).toHaveLength(1)
 
+    await expect(topbar.newWorkflowButton).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
@@ -33,12 +34,14 @@ test.describe('Workflow tabs', () => {
   test('Switching tabs changes active workflow', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
+    await expect(topbar.newWorkflowButton).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
     const activeNameBefore = await topbar.getActiveTabName()
     expect(activeNameBefore).toContain('Unsaved Workflow (2)')
 
+    await expect(topbar.getTab(0)).toBeVisible()
     await topbar.getTab(0).click()
     await expect
       .poll(() => topbar.getActiveTabName())
@@ -51,6 +54,7 @@ test.describe('Workflow tabs', () => {
   test('Closing a tab removes it', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
+    await expect(topbar.newWorkflowButton).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
@@ -64,6 +68,7 @@ test.describe('Workflow tabs', () => {
   test('Right-clicking a tab shows context menu', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
+    await expect(topbar.getTab(0)).toBeVisible()
     await topbar.getTab(0).click({ button: 'right' })
 
     // Reka UI ContextMenuContent gets data-state="open" when active
@@ -85,9 +90,11 @@ test.describe('Workflow tabs', () => {
   }) => {
     const topbar = comfyPage.menu.topbar
 
+    await expect(topbar.newWorkflowButton).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
+    await expect(topbar.getTab(1)).toBeVisible()
     await topbar.getTab(1).click({ button: 'right' })
     const contextMenu = comfyPage.page.locator(
       '[role="menu"][data-state="open"]'
@@ -136,12 +143,14 @@ test.describe('Workflow tabs', () => {
     const topbar = comfyPage.menu.topbar
 
     // Create 2 additional tabs (3 total)
+    await expect(topbar.newWorkflowButton).toBeVisible()
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
 
     // Switch to first tab
+    await expect(topbar.getTab(0)).toBeVisible()
     await topbar.getTab(0).click()
     await expect
       .poll(() => topbar.getActiveTabName())

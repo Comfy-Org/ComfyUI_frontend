@@ -13,6 +13,7 @@ export class QueuePanel {
   }
 
   async openClearHistoryDialog() {
+    await expect(this.moreOptionsButton).toBeVisible()
     await this.moreOptionsButton.click()
 
     const clearHistoryAction = this.page.getByTestId(

@@ -20,6 +20,7 @@ async function saveCloseAndReopenAsApp(
 ) {
   await appMode.steps.goToPreview()
   await builderSaveAs(appMode, workflowName)
+  await expect(appMode.saveAs.closeButton).toBeVisible()
   await appMode.saveAs.closeButton.click()
   await comfyPage.nextFrame()
 

@@ -334,6 +334,7 @@ test.describe('Release Notifications', () => {
     )
 
     // Reopen help center
+    await expect(helpCenterButton).toBeVisible()
     await helpCenterButton.click()
 
     // Verify "What's New?" section is now hidden

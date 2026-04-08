@@ -18,11 +18,13 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
     const loadCheckpointNode = comfyPage.page.locator('[data-node-id]').filter({
       hasText: 'Load Checkpoint'
     })
+    await expect(loadCheckpointNode.getByText('Load Checkpoint')).toBeVisible()
     await loadCheckpointNode.getByText('Load Checkpoint').click()
 
     const colorPickerButton = comfyPage.page.getByTestId(
       TestIds.selectionToolbox.colorPickerButton
     )
+    await expect(colorPickerButton).toBeVisible()
     await colorPickerButton.click()
 
     const colorPickerGroup = comfyPage.page.getByRole('group').filter({

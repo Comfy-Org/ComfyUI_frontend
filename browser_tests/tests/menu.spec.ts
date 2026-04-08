@@ -119,6 +119,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(checkmark).not.toHaveClass(/invisible/)
 
       // Click Bottom Panel again to toggle it off
+      await expect(bottomPanelItem).toBeVisible()
       await bottomPanelItem.click()
 
       // Verify menu is still visible after second click

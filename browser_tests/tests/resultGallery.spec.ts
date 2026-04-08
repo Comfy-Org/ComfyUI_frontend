@@ -15,6 +15,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
       'widgets/save_image_and_animated_webp'
     )
     await comfyPage.vueNodes.waitForNodes()
+    await expect(comfyPage.runButton).toBeVisible()
     await comfyPage.runButton.click()
 
     // Wait for SaveImage node to produce output
@@ -24,6 +25,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
     })
 
     // Open Assets sidebar tab and wait for it to load
+    await expect(comfyPage.page.locator('.assets-tab-button')).toBeVisible()
     await comfyPage.page.locator('.assets-tab-button').click()
     await comfyPage.page
       .locator('.sidebar-content-container')
@@ -39,6 +41,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
 
     // Hover to reveal zoom button, then click it
     await assetCard.hover()
+    await expect(assetCard.getByLabel('Zoom in')).toBeVisible()
     await assetCard.getByLabel('Zoom in').click()
 
     const { root } = comfyPage.mediaLightbox
@@ -62,6 +65,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
   test('closes gallery when clicking close button', async ({ comfyPage }) => {
     await runAndOpenGallery(comfyPage)
 
+    await expect(comfyPage.mediaLightbox.closeButton).toBeVisible()
     await comfyPage.mediaLightbox.closeButton.click()
     await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
   })

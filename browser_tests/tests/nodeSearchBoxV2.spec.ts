@@ -64,6 +64,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
+      await expect(searchBoxV2.categoryButton('favorites')).toBeVisible()
       await searchBoxV2.categoryButton('favorites').click()
 
       await expect(searchBoxV2.results).toHaveCount(1)
@@ -78,6 +79,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.canvasOps.doubleClick()
       await expect(searchBoxV2.input).toBeVisible()
 
+      await expect(searchBoxV2.categoryButton('sampling')).toBeVisible()
       await searchBoxV2.categoryButton('sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
@@ -94,6 +96,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await expect(searchBoxV2.input).toBeVisible()
 
       // Click "Input" filter chip in the filter bar
+      await expect(searchBoxV2.filterBarButton('Input')).toBeVisible()
       await searchBoxV2.filterBarButton('Input').click()
 
       // Filter options should appear

@@ -98,10 +98,13 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     )
 
     await comfyPage.canvasOps.rightClick(200, 200)
+    await expect(comfyPage.page.getByText('Add Node')).toBeVisible()
     await comfyPage.page.getByText('Add Node').click()
     await comfyPage.nextFrame()
+    await expect(comfyPage.page.getByText(category)).toBeVisible()
     await comfyPage.page.getByText(category).click()
     await comfyPage.nextFrame()
+    await expect(comfyPage.page.getByText(node)).toBeVisible()
     await comfyPage.page.getByText(node).click()
     await comfyPage.nextFrame()
   }
@@ -125,6 +128,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     await comfyPage.nextFrame()
 
     // Switch to tab 0 so we can get tab 1's thumbnail
+    await expect(await getTab(comfyPage, 0)).toBeVisible()
     await (await getTab(comfyPage, 0)).click()
     await comfyPage.nextFrame()
 
@@ -137,8 +141,10 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     const tab1ThumbnailBefore = await getNodeThumbnailBase64(comfyPage, 1)
 
     // Switch to tab 1 and back to tab 0 without making changes
+    await expect(await getTab(comfyPage, 1)).toBeVisible()
     await (await getTab(comfyPage, 1)).click()
     await comfyPage.nextFrame()
+    await expect(await getTab(comfyPage, 0)).toBeVisible()
     await (await getTab(comfyPage, 0)).click()
     await comfyPage.nextFrame()
 
@@ -151,6 +157,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     await comfyPage.nextFrame()
 
     // Switch to tab 1 and back to update tab 0's thumbnail
+    await expect(await getTab(comfyPage, 1)).toBeVisible()
     await (await getTab(comfyPage, 1)).click()
 
     const tab0ThumbnailAfterNewNode = await getNodeThumbnailBase64(comfyPage, 0)

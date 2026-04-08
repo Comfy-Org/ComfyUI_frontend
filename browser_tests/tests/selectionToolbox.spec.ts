@@ -159,6 +159,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const blueColorOption = colorPickerGroup.getByTestId(
         TestIds.selectionToolbox.colorBlue
       )
+      await expect(blueColorOption).toBeVisible()
       await blueColorOption.click()
 
       // Dropdown should close after selection
@@ -188,10 +189,12 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await expect(colorPickerButton).not.toHaveAttribute('color')
 
       // Click color picker and select a color
+      await expect(colorPickerButton).toBeVisible()
       await colorPickerButton.click()
       const redColorOption = getColorPickerGroup(comfyPage).getByTestId(
         TestIds.selectionToolbox.colorRed
       )
+      await expect(redColorOption).toBeVisible()
       await redColorOption.click()
 
       // Button should now show the selected color
@@ -203,6 +206,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     }) => {
       // Select first node and color it
       await comfyPage.nodeOps.selectNodes(['KSampler'])
+      await expect(getColorPickerButton(comfyPage)).toBeVisible()
       await getColorPickerButton(comfyPage).click()
       await getColorPickerGroup(comfyPage)
         .getByTestId(TestIds.selectionToolbox.colorBlue)
@@ -211,6 +215,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
       // Select second node and color it differently
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
+      await expect(getColorPickerButton(comfyPage)).toBeVisible()
       await getColorPickerButton(comfyPage).click()
       await getColorPickerGroup(comfyPage)
         .getByTestId(TestIds.selectionToolbox.colorRed)
@@ -232,6 +237,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     }) => {
       // First color a node
       await comfyPage.nodeOps.selectNodes(['KSampler'])
+      await expect(getColorPickerButton(comfyPage)).toBeVisible()
       await getColorPickerButton(comfyPage).click()
       await getColorPickerGroup(comfyPage)
         .getByTestId(TestIds.selectionToolbox.colorBlue)
@@ -253,6 +259,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     }) => {
       // Select a node and color it
       await comfyPage.nodeOps.selectNodes(['KSampler'])
+      await expect(getColorPickerButton(comfyPage)).toBeVisible()
       await getColorPickerButton(comfyPage).click()
       await getColorPickerGroup(comfyPage)
         .getByTestId(TestIds.selectionToolbox.colorBlue)

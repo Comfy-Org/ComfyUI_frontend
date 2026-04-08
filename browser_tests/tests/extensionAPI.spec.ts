@@ -361,6 +361,7 @@ test.describe('Topbar commands', () => {
       const toolboxButton = comfyPage.page.locator(
         '.selection-toolbox button:has(.pi-star)'
       )
+      await expect(toolboxButton).toBeVisible()
       await toolboxButton.click()
 
       expect(

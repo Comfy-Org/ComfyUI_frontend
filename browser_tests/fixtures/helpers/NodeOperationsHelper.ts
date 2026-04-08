@@ -1,4 +1,5 @@
 import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type {
   LGraph,
@@ -179,6 +180,7 @@ export class NodeOperationsHelper {
       position: DefaultGraphPositions.emptyLatentWidgetClick
     })
     const dialogInput = this.page.locator('.graphdialog input[type="text"]')
+    await expect(dialogInput).toBeVisible()
     await dialogInput.click()
     await dialogInput.fill('128')
     await dialogInput.press('Enter')

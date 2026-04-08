@@ -41,7 +41,9 @@ test.describe('Vue Multiline String Widget', () => {
     // Click another node
     const loadCheckpointNode =
       comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    await expect(loadCheckpointNode).toBeVisible()
     await loadCheckpointNode.click()
+    await expect(getFirstClipNode(comfyPage)).toBeVisible()
     await getFirstClipNode(comfyPage).click()
 
     await expect(textarea).toHaveValue('Keep me around')
@@ -51,6 +53,7 @@ test.describe('Vue Multiline String Widget', () => {
     const vueContextMenu = comfyPage.page.locator('.p-contextmenu')
 
     await textarea.focus()
+    await expect(textarea).toBeVisible()
     await textarea.click({ button: 'right' })
     await expect(vueContextMenu).not.toBeVisible()
     await textarea.blur()

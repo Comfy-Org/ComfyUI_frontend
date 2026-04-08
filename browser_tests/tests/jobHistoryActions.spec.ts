@@ -11,6 +11,9 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     await comfyPage.setup()
 
     // Expand the queue overlay so the JobHistoryActionsMenu is visible
+    await expect(
+      comfyPage.page.getByTestId('queue-overlay-toggle')
+    ).toBeVisible()
     await comfyPage.page.getByTestId('queue-overlay-toggle').click()
   })
 
@@ -18,6 +21,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     page: { getByLabel(label: string | RegExp): Locator }
   }) {
     const moreButton = comfyPage.page.getByLabel(/More options/i).first()
+    await expect(moreButton).toBeVisible()
     await moreButton.click()
   }
 
@@ -81,6 +85,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     const action = comfyPage.page.locator(
       '[data-testid="show-run-progress-bar-action"]'
     )
+    await expect(action).toBeVisible()
     await action.click()
 
     const settingAfter = await comfyPage.settings.getSetting<boolean>(

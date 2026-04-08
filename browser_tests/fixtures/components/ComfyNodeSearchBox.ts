@@ -23,6 +23,9 @@ export class ComfyNodeSearchFilterSelectionPanel {
   }
 
   async selectFilterValue(filterValue: string) {
+    await expect(
+      this.page.locator('.filter-value-select .p-select-dropdown')
+    ).toBeVisible()
     await this.page.locator('.filter-value-select .p-select-dropdown').click()
     await this.page
       .locator(
@@ -34,6 +37,9 @@ export class ComfyNodeSearchFilterSelectionPanel {
   async addFilter(filterValue: string, filterType: string) {
     await this.selectFilterType(filterType)
     await this.selectFilterValue(filterValue)
+    await expect(
+      this.page.getByRole('button', { name: 'Add', exact: true })
+    ).toBeVisible()
     await this.page.getByRole('button', { name: 'Add', exact: true }).click()
   }
 }
@@ -74,6 +80,7 @@ export class ComfyNodeSearchBox {
   }
 
   async addFilter(filterValue: string, filterType: string) {
+    await expect(this.filterButton).toBeVisible()
     await this.filterButton.click()
     await this.filterSelectionPanel.addFilter(filterValue, filterType)
   }
@@ -85,6 +92,9 @@ export class ComfyNodeSearchBox {
   }
 
   async removeFilter(index: number) {
+    await expect(
+      this.filterChips.nth(index).locator('.p-chip-remove-icon')
+    ).toBeVisible()
     await this.filterChips.nth(index).locator('.p-chip-remove-icon').click()
   }
 
