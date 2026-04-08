@@ -97,9 +97,9 @@ test.describe('Vue Node Context Menu', () => {
       })
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
 
     test('should duplicate node via context menu', async ({ comfyPage }) => {
@@ -108,9 +108,9 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, 'Load Checkpoint')
       await clickExactMenuItem(comfyPage, 'Duplicate')
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
 
     test('should pin and unpin node via context menu', async ({
@@ -125,7 +125,7 @@ test.describe('Vue Node Context Menu', () => {
 
       const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
       await expect(fixture.pinIndicator).toBeVisible()
-      expect(await nodeRef.isPinned()).toBe(true)
+      await expect.poll(() => nodeRef.isPinned()).toBe(true)
 
       // Verify drag blocked
       const header = fixture.header
@@ -143,7 +143,7 @@ test.describe('Vue Node Context Menu', () => {
       await clickExactMenuItem(comfyPage, 'Unpin')
 
       await expect(fixture.pinIndicator).not.toBeVisible()
-      expect(await nodeRef.isPinned()).toBe(false)
+      await expect.poll(() => nodeRef.isPinned()).toBe(false)
     })
 
     test('should bypass node and remove bypass via context menu', async ({
@@ -155,7 +155,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Bypass')
 
-      expect(await nodeRef.isBypassed()).toBe(true)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
       await expect(getNodeWrapper(comfyPage, nodeTitle)).toHaveClass(
         BYPASS_CLASS
       )
@@ -163,7 +163,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Remove Bypass')
 
-      expect(await nodeRef.isBypassed()).toBe(false)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
       await expect(getNodeWrapper(comfyPage, nodeTitle)).not.toHaveClass(
         BYPASS_CLASS
       )
@@ -397,9 +397,9 @@ test.describe('Vue Node Context Menu', () => {
       })
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + nodeTitles.length
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + nodeTitles.length)
     })
 
     test('should duplicate selected nodes via context menu', async ({
@@ -410,9 +410,9 @@ test.describe('Vue Node Context Menu', () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Duplicate')
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + nodeTitles.length
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + nodeTitles.length)
     })
 
     test('should pin and unpin selected nodes via context menu', async ({
@@ -443,7 +443,7 @@ test.describe('Vue Node Context Menu', () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        expect(await nodeRef.isBypassed()).toBe(true)
+        await expect.poll(() => nodeRef.isBypassed()).toBe(true)
         await expect(getNodeWrapper(comfyPage, title)).toHaveClass(BYPASS_CLASS)
       }
 
@@ -452,7 +452,7 @@ test.describe('Vue Node Context Menu', () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        expect(await nodeRef.isBypassed()).toBe(false)
+        await expect.poll(() => nodeRef.isBypassed()).toBe(false)
         await expect(getNodeWrapper(comfyPage, title)).not.toHaveClass(
           BYPASS_CLASS
         )
@@ -524,9 +524,9 @@ test.describe('Vue Node Context Menu', () => {
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount - nodeTitles.length + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount - nodeTitles.length + 1)
     })
   })
 })

@@ -105,10 +105,9 @@ export async function openWorkflowFromSidebar(
   await workflowsTab.getPersistedItem(name).dblclick()
   await comfyPage.nextFrame()
 
-  await comfyExpect(async () => {
-    const path = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(path).toContain(name)
-  }).toPass({ timeout: 5000 })
+  await expect
+    .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+    .toContain(name)
 }
 
 /** Save the workflow, reopen it, and enter app mode. */
