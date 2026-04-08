@@ -20,7 +20,7 @@
       <Column field="event_type" :header="$t('credits.eventType')">
         <template #body="{ data }">
           <Badge
-            :value="customerEventService.formatEventType(data.event_type)"
+            :label="customerEventService.formatEventType(data.event_type)"
             :severity="customerEventService.getEventSeverity(data.event_type)"
           />
         </template>
@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
+import Badge from '@/components/common/Badge.vue'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'

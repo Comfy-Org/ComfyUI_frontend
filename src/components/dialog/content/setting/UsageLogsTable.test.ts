@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import Badge from 'primevue/badge'
+import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Column from 'primevue/column'
 import PrimeVue from 'primevue/config'
@@ -125,13 +125,13 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.getEventSeverity.mockImplementation((type) => {
       switch (type) {
         case EventType.CREDIT_ADDED:
-          return 'success'
+          return 'default'
         case EventType.ACCOUNT_CREATED:
-          return 'info'
+          return 'secondary'
         case EventType.API_USAGE_COMPLETED:
-          return 'warning'
+          return 'warn'
         default:
-          return 'info'
+          return 'secondary'
       }
     })
     mockCustomerEventsService.formatAmount.mockImplementation((amount) => {
