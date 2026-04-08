@@ -42,13 +42,15 @@ export class AppModeHelper {
     await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   }
 
-  /** Enter builder mode via the "Workflow actions" dropdown → "Build app". */
+  /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
     await this.page
       .getByRole('button', { name: 'Workflow actions' })
       .first()
       .click()
-    await this.page.getByRole('menuitem', { name: 'Build app' }).click()
+    await this.page
+      .getByRole('menuitem', { name: /Build app|Edit app/ })
+      .click()
     await this.comfyPage.nextFrame()
   }
 
@@ -97,6 +99,16 @@ export class AppModeHelper {
 
   get cancelRunButton(): Locator {
     return this.page.getByTestId(TestIds.outputHistory.cancelRun)
+  }
+
+  /** The "Connect an output" popover shown when saving without outputs. */
+  get connectOutputPopover(): Locator {
+    return this.page.getByTestId(TestIds.builder.connectOutputPopover)
+  }
+
+  /** The empty-state placeholder shown when no outputs are selected. */
+  get outputPlaceholder(): Locator {
+    return this.page.getByTestId(TestIds.builder.outputPlaceholder)
   }
 
   /** The linear-mode widget list container (visible in app mode). */
