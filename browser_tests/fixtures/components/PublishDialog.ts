@@ -22,10 +22,7 @@ export class PublishDialog extends BaseDialog {
    */
   async open(): Promise<void> {
     await this.page.evaluate(async () => {
-      const store = window.app!.extensionManager as {
-        dialog: { showPublishDialog: () => Promise<void> }
-      }
-      await store.dialog.showPublishDialog()
+      await window.app!.extensionManager.dialog.showPublishDialog()
     })
     await this.waitForVisible()
   }

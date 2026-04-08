@@ -113,6 +113,7 @@ export class PublishApiHelper {
   async mockPublishWorkflow(
     response: WorkflowPublishInfo = DEFAULT_PUBLISH_RESPONSE
   ): Promise<void> {
+    await this.removeRoutes('**/hub/workflows')
     await this.addRoute('**/hub/workflows', async (route) => {
       if (route.request().method() !== 'POST') {
         await route.continue()
@@ -130,6 +131,7 @@ export class PublishApiHelper {
     statusCode = 500,
     message = 'Failed to publish workflow'
   ): Promise<void> {
+    await this.removeRoutes('**/hub/workflows')
     await this.addRoute('**/hub/workflows', async (route) => {
       if (route.request().method() !== 'POST') {
         await route.continue()
@@ -196,5 +198,17 @@ export class PublishApiHelper {
   ): Promise<void> {
     this.routeHandlers.push({ pattern, handler })
     await this.page.route(pattern, handler)
+  }
+
+  private async removeRoutes(pattern: string): Promise<void> {
+    const handlers = this.routeHandlers.filter(
+      (route) => route.pattern === pattern
+    )
+    for (const { handler } of handlers) {
+      await this.page.unroute(pattern, handler)
+    }
+    this.routeHandlers = this.routeHandlers.filter(
+      (route) => route.pattern !== pattern
+    )
   }
 }

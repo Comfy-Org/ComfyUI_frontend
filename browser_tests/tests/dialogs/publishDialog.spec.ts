@@ -1,34 +1,60 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
 import { PublishApiHelper } from '@e2e/fixtures/helpers/PublishApiHelper'
+
+const PUBLISH_FEATURE_FLAGS = {
+  comfyhub_upload_enabled: true,
+  comfyhub_profile_gate_enabled: true
+} as const
+
+async function setupPublishTest(
+  comfyPage: ComfyPage
+): Promise<{
+  dialog: PublishDialog
+  publishApi: PublishApiHelper
+}> {
+  const dialog = new PublishDialog(comfyPage.page)
+  const publishApi = new PublishApiHelper(comfyPage.page)
+
+  await comfyPage.featureFlags.setFlags(PUBLISH_FEATURE_FLAGS)
+
+  return { dialog, publishApi }
+}
+
+async function saveAndOpenPublishDialog(
+  comfyPage: ComfyPage,
+  dialog: PublishDialog,
+  workflowName: string
+): Promise<void> {
+  await comfyPage.menu.topbar.saveWorkflow(workflowName)
+  const overwriteDialog = comfyPage.page.locator(
+    '.p-dialog:has-text("Overwrite")'
+  )
+  if (await overwriteDialog.isVisible()) {
+    await comfyPage.confirmDialog.click('overwrite')
+  }
+
+  await dialog.open()
+}
 
 test.describe('Publish dialog - wizard navigation', () => {
   let dialog: PublishDialog
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-publish-wf')
+  })
 
-    await comfyPage.menu.topbar.saveWorkflow('test-publish-wf')
-    // Handle overwrite confirmation if the file already exists
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('opens on the Describe step by default', async () => {
@@ -82,24 +108,15 @@ test.describe('Publish dialog - Describe step', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks()
-    await comfyPage.menu.topbar.saveWorkflow('test-describe-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-describe-wf')
+  })
 
-    await dialog.open()
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('allows editing the workflow name', async () => {
@@ -135,25 +152,16 @@ test.describe('Publish dialog - Examples step', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks()
-    await comfyPage.menu.topbar.saveWorkflow('test-examples-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-examples-wf')
     await dialog.goNext() // Navigate to Examples step
+  })
+
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('shows thumbnail type toggle options', async () => {
@@ -176,25 +184,16 @@ test.describe('Publish dialog - Finish step with profile', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks({ hasProfile: true })
-    await comfyPage.menu.topbar.saveWorkflow('test-finish-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-finish-wf')
     await dialog.goToStep('Finish publishing')
+  })
+
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('shows profile card with username', async () => {
@@ -213,28 +212,19 @@ test.describe('Publish dialog - Finish step with private assets', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks({
       hasProfile: true,
       hasPrivateAssets: true
     })
-    await comfyPage.menu.topbar.saveWorkflow('test-assets-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-assets-wf')
     await dialog.goToStep('Finish publishing')
+  })
+
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('publish button is disabled until assets acknowledged', async () => {
@@ -254,25 +244,16 @@ test.describe('Publish dialog - no profile', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks({ hasProfile: false })
-    await comfyPage.menu.topbar.saveWorkflow('test-noprofile-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-noprofile-wf')
     await dialog.goToStep('Finish publishing')
+  })
+
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('shows profile creation prompt when user has no profile', async () => {
@@ -293,16 +274,15 @@ test.describe('Publish dialog - unsaved workflow', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
-
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
-
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
     await publishApi.setupDefaultMocks()
     // Don't save workflow — open dialog on the default temporary workflow
+  })
+
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('shows save prompt for temporary workflow', async ({ comfyPage }) => {
@@ -324,26 +304,18 @@ test.describe('Publish dialog - submission', () => {
   let publishApi: PublishApiHelper
 
   test.beforeEach(async ({ comfyPage }) => {
-    dialog = new PublishDialog(comfyPage.page)
-    publishApi = new PublishApiHelper(comfyPage.page)
+    const setup = await setupPublishTest(comfyPage)
+    dialog = setup.dialog
+    publishApi = setup.publishApi
+  })
 
-    await comfyPage.featureFlags.setFlags({
-      comfyhub_upload_enabled: true,
-      comfyhub_profile_gate_enabled: true
-    })
+  test.afterEach(async () => {
+    await publishApi.cleanup()
   })
 
   test('successful publish closes dialog', async ({ comfyPage }) => {
     await publishApi.setupDefaultMocks({ hasProfile: true })
-    await comfyPage.menu.topbar.saveWorkflow('test-submit-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-submit-wf')
     await dialog.goToStep('Finish publishing')
     await expect(dialog.finishStep).toBeVisible()
 
@@ -356,15 +328,7 @@ test.describe('Publish dialog - submission', () => {
     // Override publish mock with error response
     await publishApi.mockPublishWorkflowError(500, 'Internal error')
 
-    await comfyPage.menu.topbar.saveWorkflow('test-submit-fail-wf')
-    const overwriteDialog = comfyPage.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
-    if (await overwriteDialog.isVisible()) {
-      await comfyPage.confirmDialog.click('overwrite')
-    }
-
-    await dialog.open()
+    await saveAndOpenPublishDialog(comfyPage, dialog, 'test-submit-fail-wf')
     await dialog.goToStep('Finish publishing')
     await expect(dialog.finishStep).toBeVisible()
 
