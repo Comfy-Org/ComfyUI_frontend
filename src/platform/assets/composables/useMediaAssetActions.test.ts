@@ -504,6 +504,17 @@ describe('useMediaAssetActions', () => {
       const detail = await getExportToastDetail()
       expect(detail).toBe('mediaAsset.selection.exportStarted:3')
     })
+
+    it('does not overcount when an asset-level selection comes before a job-level selection for the same jobId', async () => {
+      const j1Asset = createOutputAsset('a1', 'img1.png', 'job1')
+      const j1Job = createOutputAsset('a2', 'img2.png', 'job1', 3)
+
+      const actions = useMediaAssetActions()
+      actions.downloadMultipleAssets([j1Asset, j1Job])
+
+      const detail = await getExportToastDetail()
+      expect(detail).toBe('mediaAsset.selection.exportStarted:3')
+    })
   })
 
   describe('deleteAssets - model cache invalidation', () => {

@@ -147,8 +147,7 @@ export function useMediaAssetActions() {
       const jobIds: string[] = []
       const assetIds: string[] = []
       const jobAssetNameFilters: Record<string, string[]> = {}
-      const countedJobLevelIds = new Set<string>()
-      let fileCount = 0
+      const jobLevelCounts = new Map<string, number>()
 
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
@@ -165,10 +164,11 @@ export function useMediaAssetActions() {
           // from the gallery and the user wants all outputs for that job.
           if (typeof outputCount === 'number') {
             delete jobAssetNameFilters[jobId]
+            jobLevelCounts.set(jobId, outputCount)
           } else if (
             metadata?.jobId &&
             asset.name &&
-            !countedJobLevelIds.has(jobId)
+            !jobLevelCounts.has(jobId)
           ) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
@@ -177,26 +177,21 @@ export function useMediaAssetActions() {
               jobAssetNameFilters[metadata.jobId].push(asset.name)
             }
           }
-          // Count outputCount once per job: selecting multiple assets from the
-          // same job-level entry (same jobId with outputCount set) still
-          // represents a single job-wide export of outputCount files. Once a
-          // job has been counted at the job level, skip any further assets
-          // from the same jobId so mixed selections don't double-count.
-          if (typeof outputCount === 'number') {
-            if (!countedJobLevelIds.has(jobId)) {
-              countedJobLevelIds.add(jobId)
-              fileCount += outputCount
-            }
-          } else if (countedJobLevelIds.has(jobId)) {
-            // already counted at the job level, ignore this asset
-          } else {
-            fileCount += 1
-          }
         } else {
           assetIds.push(asset.id)
-          fileCount += 1
         }
       }
+
+      const fileCount =
+        assetIds.length +
+        jobIds.reduce((total, jobId) => {
+          const jobLevelCount = jobLevelCounts.get(jobId)
+          if (typeof jobLevelCount === 'number') {
+            return total + jobLevelCount
+          }
+
+          return total + (jobAssetNameFilters[jobId]?.length ?? 1)
+        }, 0)
 
       const result = await assetService.createAssetExport({
         ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
