@@ -358,13 +358,13 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
+    // The dialog registers its click-outside handler via setTimeout(10ms)
+    // with a 256ms debounce (see LGraphCanvas.prompt). dispatchEvent
+    // bypasses the canvas z-999 overlay that blocks normal clicks.
     await expect(async () => {
-      await comfyPage.canvas.click({
-        position: { x: 10, y: 10 },
-        force: true
-      })
+      await comfyPage.canvas.dispatchEvent('click', { bubbles: true })
       await expect(legacyPrompt).toBeHidden()
-    }).toPass({ timeout: 5_000 })
+    }).toPass({ intervals: [300, 500, 1000], timeout: 5_000 })
   })
 
   test('Can close prompt dialog with canvas click (text widget)', async ({
@@ -381,12 +381,9 @@ test.describe('Node Interaction', () => {
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
     await expect(async () => {
-      await comfyPage.canvas.click({
-        position: { x: 10, y: 10 },
-        force: true
-      })
+      await comfyPage.canvas.dispatchEvent('click', { bubbles: true })
       await expect(legacyPrompt).toBeHidden()
-    }).toPass({ timeout: 5_000 })
+    }).toPass({ intervals: [300, 500, 1000], timeout: 5_000 })
   })
 
   test(
