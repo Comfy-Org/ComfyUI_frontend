@@ -208,6 +208,7 @@ jobs:
           pnpm add -D @google/generative-ai@^0.24.1 @anthropic-ai/claude-agent-sdk@^0.2.85
           git clone --depth 1 https://github.com/snomiao/demowright.git /tmp/demowright
           cd /tmp/demowright && npm install && npm install typescript && npm run build
+          sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
           cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
 
       - name: Cache main branch dist
@@ -388,6 +389,7 @@ jobs:
           pnpm add -D @google/generative-ai@^0.24.1
           git clone --depth 1 https://github.com/snomiao/demowright.git /tmp/demowright
           cd /tmp/demowright && npm install && npm install typescript && npm run build
+          sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
           cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
 
       - name: Setup ComfyUI server (no launch)
