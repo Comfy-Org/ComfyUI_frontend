@@ -124,9 +124,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const minimapCanvas = comfyPage.page.locator('.minimap-canvas')
     await expect(minimapCanvas).toBeVisible()
 
-    await expect
-      .poll(() => hasCanvasContent(minimapCanvas))
-      .toBe(true)
+    await expect.poll(() => hasCanvasContent(minimapCanvas)).toBe(true)
   })
 
   test('Minimap canvas is empty after all nodes are deleted', async ({
@@ -137,13 +135,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 
     await comfyPage.keyboard.selectAll()
     await comfyPage.vueNodes.deleteSelected()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(0)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
-    await expect
-      .poll(() => hasCanvasContent(minimapCanvas))
-      .toBe(false)
+    await expect.poll(() => hasCanvasContent(minimapCanvas)).toBe(false)
   })
 
   test('Clicking minimap corner pans the main canvas', async ({
