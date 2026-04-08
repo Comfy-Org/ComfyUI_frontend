@@ -62,9 +62,11 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
 
     await expect
       .poll(
-        () => bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height),
+        () =>
+          bottomPanel.root.evaluate((el) => el.getBoundingClientRect().height),
         {
-          message: 'Panel height should increase after dragging the resize gutter'
+          message:
+            'Panel height should increase after dragging the resize gutter'
         }
       )
       .toBeGreaterThan(initialHeight)
