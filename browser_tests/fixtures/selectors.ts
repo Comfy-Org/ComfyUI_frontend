@@ -138,7 +138,11 @@ export const TestIds = {
     latentPreview: 'linear-latent-preview',
     imageOutput: 'linear-image-output',
     videoOutput: 'linear-video-output',
-    cancelRun: 'linear-cancel-run'
+    cancelRun: 'linear-cancel-run',
+    headerProgressBar: 'linear-header-progress-bar',
+    itemProgressBar: 'linear-item-progress-bar',
+    progressOverall: 'linear-progress-overall',
+    progressNode: 'linear-progress-node'
   },
   appMode: {
     widgetItem: 'app-mode-widget-item'

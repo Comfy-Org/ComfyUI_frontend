@@ -1,6 +1,7 @@
+import type { WebSocketRoute } from '@playwright/test'
+
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '../ComfyPage'
-import type { MockWebSocket } from '../ws'
 import { createMockJob } from './AssetsHelper'
 
 /**
@@ -15,15 +16,11 @@ export class ExecutionHelper {
 
   constructor(
     comfyPage: ComfyPage,
-    private readonly mock: MockWebSocket
+    private readonly ws: WebSocketRoute
   ) {
     this.page = comfyPage.page
     this.command = comfyPage.command
     this.assets = comfyPage.assets
-  }
-
-  private get ws() {
-    return this.mock.ws
   }
 
   /**
@@ -59,9 +56,6 @@ export class ExecutionHelper {
 
     await this.command.executeCommand('Comfy.QueuePrompt')
     await prompted
-
-    // Prevent real server events from interfering with test-controlled execution
-    this.mock.stopServerForwarding()
 
     return jobId
   }
@@ -104,6 +98,16 @@ export class ExecutionHelper {
       JSON.stringify({
         type: 'execution_start',
         data: { prompt_id: jobId, timestamp: Date.now() }
+      })
+    )
+  }
+
+  /** Send `executing` WS event to signal which node is currently running. */
+  executing(jobId: string, nodeId: string | null): void {
+    this.ws.send(
+      JSON.stringify({
+        type: 'executing',
+        data: { prompt_id: jobId, node: nodeId }
       })
     )
   }

@@ -1,24 +1,26 @@
+import type { WebSocketRoute } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { comfyPageFixture, comfyExpect as expect } from '../fixtures/ComfyPage'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { webSocketFixture } from '../fixtures/ws'
-import type { MockWebSocket } from '../fixtures/ws'
 import { ExecutionHelper } from '../fixtures/helpers/ExecutionHelper'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
+// Node IDs from the default workflow (browser_tests/assets/default.json, 7 nodes)
 const SAVE_IMAGE_NODE = '9'
 const KSAMPLER_NODE = '3'
+const ALL_NODE_IDS = ['4', '6', '7', '5', KSAMPLER_NODE, '8', SAVE_IMAGE_NODE]
 
 /** Queue a prompt, intercept it, and send execution_start. */
 async function startExecution(
   comfyPage: ComfyPage,
-  mock: MockWebSocket,
+  ws: WebSocketRoute,
   exec?: ExecutionHelper
 ) {
-  exec ??= new ExecutionHelper(comfyPage, mock)
+  exec ??= new ExecutionHelper(comfyPage, ws)
   const jobId = await exec.run()
   // Allow storeJob() to complete before sending WS events
   await comfyPage.nextFrame()
@@ -48,8 +50,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.skeletons.first()
@@ -60,8 +62,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.skeletons.first()
@@ -79,8 +81,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -98,8 +100,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -118,8 +120,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -138,8 +140,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     const job: RawJobListItem = {
       id: jobId,
@@ -176,8 +178,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     // Skeleton appears
     await expect(
@@ -210,8 +212,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     // Skeleton is auto-selected
     await expect(
@@ -226,7 +228,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
       )
     ).toHaveAttribute('src', /first\.png/)
 
-    // Second image arrives — selection auto-follows without user click
+    // Second image arrives - selection auto-follows without user click
     exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('second.png'))
     await expect(
       comfyPage.appMode.outputHistory.selectedInProgressItem.getByTestId(
@@ -239,8 +241,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     // Send first image
     exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('first.png'))
@@ -268,8 +270,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -293,10 +295,10 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
+    const ws = await getWebSocket()
 
     // Complete one execution with 100 image outputs
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const { exec, jobId } = await startExecution(comfyPage, ws)
     exec.executed(
       jobId,
       SAVE_IMAGE_NODE,
@@ -324,7 +326,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(firstItem).not.toBeInViewport()
 
     // Start a new execution to get an in-progress item
-    await startExecution(comfyPage, mock, exec)
+    await startExecution(comfyPage, ws, exec)
 
     // In-progress item is visible despite scrolling
     await expect(
@@ -336,8 +338,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const mock = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, mock)
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
 
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
@@ -346,5 +348,63 @@ test.describe('Output History', { tag: '@ui' }, () => {
     exec.executionError(jobId, KSAMPLER_NODE, 'Test error')
 
     await expect(comfyPage.appMode.outputHistory.inProgressItems).toHaveCount(0)
+  })
+
+  test('Progress bars update for both node and overall progress', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
+
+    const {
+      inProgressItems,
+      headerOverallProgress,
+      headerNodeProgress,
+      itemOverallProgress,
+      itemNodeProgress
+    } = comfyPage.appMode.outputHistory
+
+    await expect(inProgressItems.first()).toBeVisible()
+
+    // Initially both bars are at 0%
+    await expect(headerOverallProgress).toHaveAttribute('style', /width:\s*0%/)
+    await expect(headerNodeProgress).toHaveAttribute('style', /width:\s*0%/)
+
+    // KSampler starts executing - node progress at 50%
+    exec.executing(jobId, KSAMPLER_NODE)
+    exec.progress(jobId, KSAMPLER_NODE, 5, 10)
+
+    await expect(headerNodeProgress).toHaveAttribute('style', /width:\s*50%/)
+    await expect(itemNodeProgress).toHaveAttribute('style', /width:\s*50%/)
+    // Overall still 0% - no nodes completed yet
+    await expect(headerOverallProgress).toHaveAttribute('style', /width:\s*0%/)
+
+    // KSampler finishes - overall advances (1 of 7 nodes)
+    exec.executed(jobId, KSAMPLER_NODE, {})
+
+    const oneNodePercent = Math.round((1 / ALL_NODE_IDS.length) * 100)
+    const pct = new RegExp(`width:\\s*${oneNodePercent}%`)
+    await expect(headerOverallProgress).toHaveAttribute('style', pct)
+    await expect(itemOverallProgress).toHaveAttribute('style', pct)
+
+    // Node progress reaches 100%
+    exec.progress(jobId, KSAMPLER_NODE, 10, 10)
+
+    await expect(headerNodeProgress).toHaveAttribute('style', /width:\s*100%/)
+    await expect(itemNodeProgress).toHaveAttribute('style', /width:\s*100%/)
+
+    // Complete remaining nodes - overall reaches 100%
+    const remainingNodes = ALL_NODE_IDS.filter((id) => id !== KSAMPLER_NODE)
+    for (const nodeId of remainingNodes) {
+      exec.executing(jobId, nodeId)
+      exec.executed(jobId, nodeId, {})
+    }
+
+    await expect(headerOverallProgress).toHaveAttribute(
+      'style',
+      /width:\s*100%/
+    )
+    await expect(itemOverallProgress).toHaveAttribute('style', /width:\s*100%/)
   })
 })

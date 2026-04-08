@@ -18,6 +18,10 @@ const { latentPreview } = defineProps<{
       data-testid="linear-skeleton"
       class="skeleton-shimmer size-10 rounded-sm"
     />
-    <LinearProgressBar class="mt-1 h-1 w-10" rounded />
+    <LinearProgressBar
+      data-testid="linear-item-progress-bar"
+      class="mt-1 h-1 w-10"
+      rounded
+    />
   </div>
 </template>

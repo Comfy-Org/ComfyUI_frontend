@@ -19,7 +19,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    const { ws } = await getWebSocket()
+    const ws = await getWebSocket()
 
     // Enable change auto-queue mode
     const queueOpts = await comfyPage.actionbar.queueButton.toggleOptions()
