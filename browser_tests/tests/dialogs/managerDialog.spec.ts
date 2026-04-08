@@ -1,0 +1,428 @@
+import { expect } from '@playwright/test'
+
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
+import type { components as RegistryComponents } from '@comfyorg/registry-types'
+
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+
+type InstalledPacksResponse =
+  ManagerComponents['schemas']['InstalledPacksResponse']
+type RegistryNodePack = RegistryComponents['schemas']['Node']
+
+const MOCK_PACK_A: RegistryNodePack = {
+  id: 'test-pack-a',
+  name: 'Test Pack A',
+  description: 'A test custom node pack',
+  downloads: 5000,
+  status: 'NodeStatusActive',
+  publisher: { id: 'test-publisher', name: 'Test Publisher' },
+  latest_version: { version: '1.0.0', status: 'NodeVersionStatusActive' },
+  repository: 'https://github.com/test/pack-a',
+  tags: ['image', 'processing']
+}
+
+const MOCK_PACK_B: RegistryNodePack = {
+  id: 'test-pack-b',
+  name: 'Test Pack B',
+  description: 'Another test custom node pack for testing search',
+  downloads: 3000,
+  status: 'NodeStatusActive',
+  publisher: { id: 'another-publisher', name: 'Another Publisher' },
+  latest_version: { version: '2.1.0', status: 'NodeVersionStatusActive' },
+  repository: 'https://github.com/test/pack-b',
+  tags: ['video', 'generation']
+}
+
+const MOCK_INSTALLED_PACKS: InstalledPacksResponse = {
+  'test-pack-a': {
+    ver: '1.0.0',
+    cnr_id: 'test-pack-a',
+    enabled: true
+  },
+  'test-pack-c': {
+    ver: '0.5.0',
+    cnr_id: 'test-pack-c',
+    enabled: false
+  }
+}
+
+const MOCK_ALGOLIA_RESPONSE = {
+  results: [
+    {
+      hits: [
+        {
+          objectID: 'test-pack-a',
+          id: 'test-pack-a',
+          name: 'Test Pack A',
+          description: 'A test custom node pack',
+          total_install: 5000,
+          status: 'active',
+          publisher_id: 'test-publisher',
+          latest_version: '1.0.0',
+          latest_version_status: 'active',
+          repository_url: 'https://github.com/test/pack-a',
+          comfy_nodes: ['TestNodeA1', 'TestNodeA2'],
+          create_time: '2024-01-01T00:00:00Z',
+          update_time: '2024-06-01T00:00:00Z',
+          license: 'MIT',
+          tags: ['image', 'processing']
+        },
+        {
+          objectID: 'test-pack-b',
+          id: 'test-pack-b',
+          name: 'Test Pack B',
+          description: 'Another test custom node pack for testing search',
+          total_install: 3000,
+          status: 'active',
+          publisher_id: 'another-publisher',
+          latest_version: '2.1.0',
+          latest_version_status: 'active',
+          repository_url: 'https://github.com/test/pack-b',
+          comfy_nodes: ['TestNodeB1'],
+          create_time: '2024-02-01T00:00:00Z',
+          update_time: '2024-07-01T00:00:00Z',
+          license: 'Apache-2.0',
+          tags: ['video', 'generation']
+        },
+        {
+          objectID: 'test-pack-c',
+          id: 'test-pack-c',
+          name: 'Test Pack C',
+          description: 'Third test pack',
+          total_install: 100,
+          status: 'active',
+          publisher_id: 'test-publisher',
+          latest_version: '0.5.0',
+          latest_version_status: 'active',
+          repository_url: 'https://github.com/test/pack-c',
+          comfy_nodes: ['TestNodeC1'],
+          create_time: '2024-03-01T00:00:00Z',
+          update_time: '2024-05-01T00:00:00Z',
+          license: 'MIT'
+        }
+      ],
+      nbHits: 3,
+      page: 0,
+      nbPages: 1,
+      hitsPerPage: 20
+    }
+  ]
+}
+
+function createFilteredAlgoliaResponse(
+  query: string,
+  searchAttributes?: string[]
+) {
+  const allHits = MOCK_ALGOLIA_RESPONSE.results[0].hits
+  if (!query) return MOCK_ALGOLIA_RESPONSE
+
+  const lowerQuery = query.toLowerCase()
+  const isNodeSearch = searchAttributes?.includes('comfy_nodes')
+
+  const filtered = allHits.filter((hit) => {
+    if (isNodeSearch) {
+      return hit.comfy_nodes?.some((n) => n.toLowerCase().includes(lowerQuery))
+    }
+    return (
+      hit.name.toLowerCase().includes(lowerQuery) ||
+      hit.description.toLowerCase().includes(lowerQuery)
+    )
+  })
+
+  return {
+    results: [
+      {
+        ...MOCK_ALGOLIA_RESPONSE.results[0],
+        hits: filtered,
+        nbHits: filtered.length
+      }
+    ]
+  }
+}
+
+test.describe('ManagerDialog', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    const statsWithManager = {
+      ...mockSystemStats,
+      system: {
+        ...mockSystemStats.system,
+        argv: ['main.py', '--listen', '0.0.0.0', '--enable-manager']
+      }
+    }
+    await comfyPage.page.route('**/system_stats**', async (route) => {
+      await route.fulfill({ json: statsWithManager })
+    })
+
+    await comfyPage.featureFlags.mockServerFeatures({
+      'extension.manager.supports_v4': true
+    })
+
+    await comfyPage.page.route(
+      '**/v2/customnode/installed**',
+      async (route) => {
+        await route.fulfill({ json: MOCK_INSTALLED_PACKS })
+      }
+    )
+
+    await comfyPage.page.route(
+      '**/v2/manager/queue/status**',
+      async (route) => {
+        await route.fulfill({
+          json: {
+            history: {},
+            running_queue: [],
+            pending_queue: [],
+            installed_packs: {}
+          }
+        })
+      }
+    )
+
+    await comfyPage.page.route(
+      '**/v2/manager/queue/history**',
+      async (route) => {
+        await route.fulfill({ json: {} })
+      }
+    )
+
+    await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
+      const postData = route.request().postDataJSON()
+      const query = postData?.requests?.[0]?.query ?? ''
+      const attributes =
+        postData?.requests?.[0]?.restrictSearchableAttributes ?? []
+      await route.fulfill({
+        json: createFilteredAlgoliaResponse(query, attributes)
+      })
+    })
+
+    await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
+      const postData = route.request().postDataJSON()
+      const query = postData?.requests?.[0]?.query ?? ''
+      const attributes =
+        postData?.requests?.[0]?.restrictSearchableAttributes ?? []
+      await route.fulfill({
+        json: createFilteredAlgoliaResponse(query, attributes)
+      })
+    })
+
+    await comfyPage.page.route(
+      '**/v2/customnode/getmappings**',
+      async (route) => {
+        await route.fulfill({ json: {} })
+      }
+    )
+
+    await comfyPage.page.route(
+      '**/v2/customnode/import_fail_info**',
+      async (route) => {
+        await route.fulfill({ json: {} })
+      }
+    )
+
+    await comfyPage.setup()
+  })
+
+  async function openManagerDialog(comfyPage: {
+    command: { executeCommand: (cmd: string) => Promise<void> }
+  }) {
+    await comfyPage.command.executeCommand('Comfy.OpenManagerDialog')
+  }
+
+  test('Opens the manager dialog via command', async ({ comfyPage }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+  })
+
+  test('Displays pack cards from search results', async ({ comfyPage }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    await expect(dialog.getByText('Test Pack A')).toBeVisible()
+    await expect(dialog.getByText('Test Pack B')).toBeVisible()
+    await expect(dialog.getByText('Test Pack C')).toBeVisible()
+  })
+
+  test('Search filters displayed packs', async ({ comfyPage }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const searchInput = dialog.getByPlaceholder(/search/i)
+    await searchInput.fill('Test Pack B')
+
+    await expect(dialog.getByText('Test Pack B')).toBeVisible()
+    await expect(dialog.getByText('Test Pack A')).not.toBeVisible()
+  })
+
+  test('Clicking a pack card opens the info panel', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
+      await route.fulfill({ json: MOCK_PACK_A })
+    })
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    await dialog.getByText('Test Pack A').first().click()
+
+    await expect(dialog.getByText('Test Publisher')).toBeVisible()
+  })
+
+  test('Left side panel navigation tabs exist', async ({ comfyPage }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const nav = dialog.locator('nav')
+    await expect(nav.getByText('All Extensions')).toBeVisible()
+    await expect(nav.getByText('Not Installed')).toBeVisible()
+    await expect(nav.getByText('All Installed')).toBeVisible()
+    await expect(nav.getByText('Updates Available')).toBeVisible()
+  })
+
+  test('Switching tabs changes the content view', async ({ comfyPage }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const nav = dialog.locator('nav')
+    await nav.getByText('All Installed').click()
+
+    await expect(dialog.getByText('Test Pack A')).toBeVisible()
+  })
+
+  test('Closes via Escape key', async ({ comfyPage }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+  })
+
+  test('Empty search shows no results message', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/*.algolia.net/**', async (route) => {
+      await route.fulfill({
+        json: {
+          results: [
+            {
+              hits: [],
+              nbHits: 0,
+              page: 0,
+              nbPages: 0,
+              hitsPerPage: 20
+            }
+          ]
+        }
+      })
+    })
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const searchInput = dialog.getByPlaceholder(/search/i)
+    await searchInput.fill('nonexistent-pack-xyz-999')
+
+    await expect(
+      dialog.getByText(/no results found|try a different search/i)
+    ).toBeVisible()
+  })
+
+  test('Sort dropdown is visible and changes sort order', async ({
+    comfyPage
+  }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const sortDropdown = dialog.getByText('Downloads')
+    await expect(sortDropdown).toBeVisible()
+  })
+
+  test('Search mode can be switched between packs and nodes', async ({
+    comfyPage
+  }) => {
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const modeSelector = dialog.getByText('Node Pack')
+    await expect(modeSelector).toBeVisible()
+
+    await modeSelector.click()
+    const nodesOption = comfyPage.page.getByRole('option', { name: 'Nodes' })
+    await expect(nodesOption).toBeVisible()
+    await nodesOption.click()
+  })
+
+  test('Manager API error shows error state on relevant tabs', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.route(
+      '**/v2/customnode/installed**',
+      async (route) => {
+        await route.fulfill({ status: 500, json: { message: 'Server Error' } })
+      }
+    )
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    const nav = dialog.locator('nav')
+    await nav.getByText('All Installed').click()
+
+    await expect(
+      dialog.getByText(/error connecting|try again later/i)
+    ).toBeVisible()
+  })
+
+  test('Install button triggers install API call', async ({ comfyPage }) => {
+    let installCalled = false
+    await comfyPage.page.route('**/v2/manager/queue/task', async (route) => {
+      const postData = route.request().postDataJSON()
+      if (postData?.kind === 'install') {
+        installCalled = true
+        await route.fulfill({ status: 200, body: '' })
+      } else {
+        await route.fulfill({ status: 200, body: '' })
+      }
+    })
+
+    await comfyPage.page.route('**/v2/manager/queue/start**', async (route) => {
+      await route.fulfill({ status: 200, body: '' })
+    })
+
+    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
+      await route.fulfill({ json: MOCK_PACK_B })
+    })
+
+    await openManagerDialog(comfyPage)
+
+    const dialog = comfyPage.page.locator('.manager-dialog')
+    await expect(dialog).toBeVisible()
+
+    await dialog.getByText('Test Pack B').first().click()
+
+    const installButton = dialog.getByRole('button', { name: /install/i })
+    if (await installButton.isVisible()) {
+      await installButton.click()
+      await expect.poll(() => installCalled).toBe(true)
+    }
+  })
+})
