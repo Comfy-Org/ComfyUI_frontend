@@ -5,8 +5,9 @@ import { defineCoverageReporterConfig } from '@bgotink/playwright-coverage'
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
+import { COLLECT_COVERAGE } from './browser_tests/fixtures/utils/coverageConstants'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {

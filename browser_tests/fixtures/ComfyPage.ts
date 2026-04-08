@@ -9,6 +9,7 @@ import { ComfyTemplates } from '@e2e/helpers/templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import { COLLECT_COVERAGE } from '@e2e/fixtures/utils/coverageConstants'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { sleep } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -408,7 +409,7 @@ export class ComfyPage {
 
 export const testComfySnapToGridGridSize = 50
 
-const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
+// Must match attachmentName exported by @bgotink/playwright-coverage
 const COVERAGE_ATTACHMENT = '@bgotink/playwright-coverage'
 
 export const comfyPageFixture = base.extend<{
@@ -423,6 +424,8 @@ export const comfyPageFixture = base.extend<{
       return use(page)
     }
 
+    // Accumulate coverage across navigations within a single test to capture
+    // all code paths exercised, including after in-test reloads.
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
     const entries = await page.coverage.stopJSCoverage()
@@ -432,8 +435,7 @@ export const comfyPageFixture = base.extend<{
       if (typeof entry.source !== 'string' && entry.url.startsWith('http')) {
         try {
           const resp = await fetch(entry.url)
-          if (resp.ok)
-            (entry as Record<string, unknown>).source = await resp.text()
+          if (resp.ok) Object.assign(entry, { source: await resp.text() })
         } catch {
           // skip unreachable scripts
         }
