@@ -1,5 +1,8 @@
-import { flushPromises, mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 
@@ -13,15 +16,21 @@ vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
 
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 
-function mountStep(
-  props: Partial<InstanceType<typeof ComfyHubDescribeStep>['$props']> = {}
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
+
+function renderStep(
+  props: Partial<InstanceType<typeof ComfyHubDescribeStep>['$props']> = {},
+  callbacks: Record<string, ReturnType<typeof vi.fn>> = {}
 ) {
-  return mount(ComfyHubDescribeStep, {
+  return render(ComfyHubDescribeStep, {
     props: {
       name: 'Workflow Name',
       description: 'Workflow description',
       tags: [],
-      ...props
+      ...props,
+      ...callbacks
     },
     global: {
       mocks: {
@@ -75,43 +84,54 @@ function mountStep(
 describe('ComfyHubDescribeStep', () => {
   it('emits name and description updates', async () => {
     mockFetchTagLabels.mockRejectedValue(new Error('offline'))
-    const wrapper = mountStep()
+    const onUpdateName = vi.fn()
+    const onUpdateDescription = vi.fn()
+    renderStep(
+      {},
+      {
+        'onUpdate:name': onUpdateName,
+        'onUpdate:description': onUpdateDescription
+      }
+    )
     await flushPromises()
 
-    await wrapper.find('[data-testid="name-input"]').setValue('New workflow')
-    await wrapper
-      .find('[data-testid="description-input"]')
-      .setValue('New description')
+    const nameInput = screen.getByTestId('name-input')
+    const descInput = screen.getByTestId('description-input')
 
-    expect(wrapper.emitted('update:name')).toEqual([['New workflow']])
-    expect(wrapper.emitted('update:description')).toEqual([['New description']])
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'New workflow')
+    await userEvent.clear(descInput)
+    await userEvent.type(descInput, 'New description')
+
+    expect(onUpdateName).toHaveBeenLastCalledWith('New workflow')
+    expect(onUpdateDescription).toHaveBeenLastCalledWith('New description')
   })
 
   it('uses fetched tags from API', async () => {
     const apiTags = ['Alpha', 'Beta', 'Gamma']
     mockFetchTagLabels.mockResolvedValue(apiTags)
-    const wrapper = mountStep()
+    const { container } = renderStep()
     await flushPromises()
 
-    const suggestionValues = wrapper
-      .findAll(
+    const suggestionValues = Array.from(
+      container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
-      .map((button) => button.attributes('data-value'))
+    ).map((el) => el.getAttribute('data-value'))
 
     expect(suggestionValues).toEqual(apiTags)
   })
 
   it('falls back to hardcoded tags when API fails', async () => {
     mockFetchTagLabels.mockRejectedValue(new Error('network error'))
-    const wrapper = mountStep()
+    const { container } = renderStep()
     await flushPromises()
 
-    const suggestionValues = wrapper
-      .findAll(
+    const suggestionValues = Array.from(
+      container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
-      .map((button) => button.attributes('data-value'))
+    ).map((el) => el.getAttribute('data-value'))
 
     expect(suggestionValues).toHaveLength(10)
     expect(suggestionValues[0]).toBe(COMFY_HUB_TAG_OPTIONS[0])
@@ -120,30 +140,30 @@ describe('ComfyHubDescribeStep', () => {
   it('adds a suggested tag when clicked', async () => {
     const apiTags = ['Alpha', 'Beta']
     mockFetchTagLabels.mockResolvedValue(apiTags)
-    const wrapper = mountStep()
+    const onUpdateTags = vi.fn()
+    const { container } = renderStep({}, { 'onUpdate:tags': onUpdateTags })
     await flushPromises()
 
-    const suggestionButtons = wrapper.findAll(
+    const suggestionButtons = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
 
-    await suggestionButtons[0].trigger('click')
+    await userEvent.click(suggestionButtons[0] as HTMLElement)
 
-    const tagUpdates = wrapper.emitted('update:tags')
-    expect(tagUpdates?.at(-1)).toEqual([['Alpha']])
+    expect(onUpdateTags).toHaveBeenLastCalledWith(['Alpha'])
   })
 
   it('hides already-selected tags from suggestions', async () => {
     const apiTags = ['Alpha', 'Beta', 'Gamma']
     mockFetchTagLabels.mockResolvedValue(apiTags)
-    const wrapper = mountStep({ tags: ['Alpha'] })
+    const { container } = renderStep({ tags: ['Alpha'] })
     await flushPromises()
 
-    const suggestionValues = wrapper
-      .findAll(
+    const suggestionValues = Array.from(
+      container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
-      .map((button) => button.attributes('data-value'))
+    ).map((el) => el.getAttribute('data-value'))
 
     expect(suggestionValues).not.toContain('Alpha')
     expect(suggestionValues).toEqual(['Beta', 'Gamma'])
@@ -151,22 +171,22 @@ describe('ComfyHubDescribeStep', () => {
 
   it('toggles between default and full suggestion lists', async () => {
     mockFetchTagLabels.mockRejectedValue(new Error('offline'))
-    const wrapper = mountStep()
+    const { container } = renderStep()
     await flushPromises()
 
-    const defaultSuggestions = wrapper.findAll(
+    const defaultSuggestions = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
     expect(defaultSuggestions).toHaveLength(10)
-    expect(wrapper.text()).toContain('comfyHubPublish.showMoreTags')
+    expect(container.textContent).toContain('comfyHubPublish.showMoreTags')
 
-    await wrapper.find('[data-testid="toggle-suggestions"]').trigger('click')
-    await wrapper.vm.$nextTick()
+    await userEvent.click(screen.getByTestId('toggle-suggestions'))
+    await nextTick()
 
-    const allSuggestions = wrapper.findAll(
+    const allSuggestions = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
     expect(allSuggestions).toHaveLength(COMFY_HUB_TAG_OPTIONS.length)
-    expect(wrapper.text()).toContain('comfyHubPublish.showLessTags')
+    expect(container.textContent).toContain('comfyHubPublish.showLessTags')
   })
 })

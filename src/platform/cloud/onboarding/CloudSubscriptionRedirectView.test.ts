@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -86,7 +87,7 @@ const createI18nInstance = () =>
 const mountView = async (query: Record<string, unknown>) => {
   mockQuery = query
 
-  const wrapper = mount(CloudSubscriptionRedirectView, {
+  const { container } = render(CloudSubscriptionRedirectView, {
     global: {
       plugins: [createI18nInstance()]
     }
@@ -94,7 +95,7 @@ const mountView = async (query: Record<string, unknown>) => {
 
   await flushPromises()
 
-  return { wrapper }
+  return { container }
 }
 
 describe('CloudSubscriptionRedirectView', () => {
@@ -118,13 +119,13 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('shows subscription copy when subscriptionType is valid', async () => {
-    const { wrapper } = await mountView({ tier: 'creator' })
+    const { container } = await mountView({ tier: 'creator' })
 
     // Should not redirect to home
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
 
     // Shows copy under logo
-    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(container.textContent).toContain('Subscribe to Creator')
 
     // Triggers checkout flow
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
@@ -134,11 +135,10 @@ describe('CloudSubscriptionRedirectView', () => {
     )
 
     // Shows loading affordances
-    expect(wrapper.findComponent({ name: 'ProgressSpinner' }).exists()).toBe(
-      true
-    )
-    const skipLink = wrapper.get('a[href="/"]')
-    expect(skipLink.text()).toContain('Skip to the cloud app')
+    expect(container.querySelector('[class*="progress"]')).not.toBeNull()
+    const skipLink = container.querySelector('a[href="/"]')
+    expect(skipLink).not.toBeNull()
+    expect(skipLink!.textContent).toContain('Skip to the cloud app')
   })
 
   test('opens billing portal when subscription is already active', async () => {
@@ -152,12 +152,12 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('uses first value when subscriptionType is an array', async () => {
-    const { wrapper } = await mountView({
+    const { container } = await mountView({
       tier: ['creator', 'pro']
     })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
-    expect(wrapper.text()).toContain('Subscribe to Creator')
+    expect(container.textContent).toContain('Subscribe to Creator')
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',

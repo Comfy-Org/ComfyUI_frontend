@@ -1,9 +1,11 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* eslint-disable testing-library/prefer-user-event */
+import { fireEvent, render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -24,12 +26,13 @@ describe('WidgetInputText Value Binding', () => {
       callback
     })
 
-  const mountComponent = (
+  const renderComponent = (
     widget: SimplifiedWidget<string>,
     modelValue: string,
-    readonly = false
+    _readonly = false,
+    extraProps: Record<string, unknown> = {}
   ) => {
-    return mount(WidgetInputText, {
+    return render(WidgetInputText, {
       global: {
         plugins: [PrimeVue],
         components: { InputText, Textarea }
@@ -37,146 +40,164 @@ describe('WidgetInputText Value Binding', () => {
       props: {
         widget,
         modelValue,
-        readonly
+        ...extraProps
       }
     })
   }
 
   const setInputValueAndTrigger = async (
-    wrapper: ReturnType<typeof mount>,
+    input: HTMLElement,
     value: string,
-    trigger: 'blur' | 'keydown.enter' = 'blur'
+    trigger: 'blur' | 'enter' = 'blur'
   ) => {
-    const input = wrapper.find('input[type="text"]')
-    if (!(input.element instanceof HTMLInputElement)) {
-      throw new Error('Input element not found or is not an HTMLInputElement')
+    await fireEvent.update(input, value)
+    if (trigger === 'blur') {
+      await fireEvent.blur(input)
+    } else {
+      await fireEvent.keyDown(input, { key: 'Enter' })
     }
-    await input.setValue(value)
-    await input.trigger(trigger)
     return input
   }
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when input value changes on blur', async () => {
       const widget = createInputTextWidget('hello')
-      const wrapper = mountComponent(widget, 'hello')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'hello', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      await setInputValueAndTrigger(wrapper, 'world', 'blur')
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, 'world', 'blur')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('world')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('world')
     })
 
     it('emits Vue event when enter key is pressed', async () => {
       const widget = createInputTextWidget('initial')
-      const wrapper = mountComponent(widget, 'initial')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'initial', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      await setInputValueAndTrigger(wrapper, 'new value', 'keydown.enter')
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, 'new value', 'enter')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('new value')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('new value')
     })
 
     it('handles empty string values', async () => {
       const widget = createInputTextWidget('something')
-      const wrapper = mountComponent(widget, 'something')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'something', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      await setInputValueAndTrigger(wrapper, '')
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, '')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('')
     })
 
     it('handles special characters correctly', async () => {
       const widget = createInputTextWidget('normal')
-      const wrapper = mountComponent(widget, 'normal')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'normal', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
       const specialText = 'special @#$%^&*()[]{}|\\:";\'<>?,./'
-      await setInputValueAndTrigger(wrapper, specialText)
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, specialText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(specialText)
+      expect(onUpdateModelValue).toHaveBeenCalledWith(specialText)
     })
 
     it('handles missing callback gracefully', async () => {
       const widget = createInputTextWidget('test', {}, undefined)
-      const wrapper = mountComponent(widget, 'test')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'test', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      await setInputValueAndTrigger(wrapper, 'new value')
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, 'new value')
 
       // Should still emit Vue event
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('new value')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('new value')
     })
   })
 
   describe('User Interactions', () => {
     it('emits update:modelValue on blur', async () => {
       const widget = createInputTextWidget('original')
-      const wrapper = mountComponent(widget, 'original')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'original', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      await setInputValueAndTrigger(wrapper, 'updated')
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, 'updated')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('updated')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('updated')
     })
 
     it('emits update:modelValue on enter key', async () => {
       const widget = createInputTextWidget('start')
-      const wrapper = mountComponent(widget, 'start')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'start', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      await setInputValueAndTrigger(wrapper, 'finish', 'keydown.enter')
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, 'finish', 'enter')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('finish')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('finish')
     })
   })
 
   describe('Component Rendering', () => {
     it('always renders InputText component', () => {
       const widget = createInputTextWidget('test value')
-      const wrapper = mountComponent(widget, 'test value')
+      const { container } = renderComponent(widget, 'test value')
 
       // WidgetInputText always uses InputText, not Textarea
-      const input = wrapper.find('input[type="text"]')
-      expect(input.exists()).toBe(true)
+      const input = screen.getByRole('textbox')
+      expect(input).toBeInTheDocument()
 
       // Should not render textarea (that's handled by WidgetTextarea component)
-      const textarea = wrapper.find('textarea')
-      expect(textarea.exists()).toBe(false)
+      const textarea = container.querySelector('textarea')
+      expect(textarea).not.toBeInTheDocument()
     })
   })
 
   describe('Edge Cases', () => {
     it('handles very long strings', async () => {
       const widget = createInputTextWidget('short')
-      const wrapper = mountComponent(widget, 'short')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'short', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
       const longString = 'a'.repeat(10000)
-      await setInputValueAndTrigger(wrapper, longString)
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, longString)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(longString)
+      expect(onUpdateModelValue).toHaveBeenCalledWith(longString)
     })
 
     it('handles unicode characters', async () => {
       const widget = createInputTextWidget('ascii')
-      const wrapper = mountComponent(widget, 'ascii')
+      const onUpdateModelValue = vi.fn()
+      renderComponent(widget, 'ascii', false, {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
       const unicodeText = '🎨 Unicode: αβγ 中文 العربية 🚀'
-      await setInputValueAndTrigger(wrapper, unicodeText)
+      const input = screen.getByRole('textbox')
+      await setInputValueAndTrigger(input, unicodeText)
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain(unicodeText)
+      expect(onUpdateModelValue).toHaveBeenCalledWith(unicodeText)
     })
   })
 })

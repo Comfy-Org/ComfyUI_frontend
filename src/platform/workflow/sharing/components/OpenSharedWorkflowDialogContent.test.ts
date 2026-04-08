@@ -1,5 +1,7 @@
+/* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { fromPartial } from '@total-typescript/shoehorn'
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -60,8 +62,12 @@ function makePayload(
   }
 }
 
-function mountComponent(props: Record<string, unknown> = {}) {
-  return mount(OpenSharedWorkflowDialogContent, {
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
+
+function renderComponent(props: Record<string, unknown> = {}) {
+  return render(OpenSharedWorkflowDialogContent, {
     global: {
       plugins: [i18n],
       stubs: {
@@ -87,52 +93,52 @@ describe('OpenSharedWorkflowDialogContent', () => {
   describe('loading state', () => {
     it('shows skeleton placeholders while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
 
       expect(
-        wrapper.findAllComponents({ name: 'Skeleton' }).length
+        container.querySelectorAll('.animate-pulse').length
       ).toBeGreaterThan(0)
     })
 
     it('shows dialog title in header while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
-      const wrapper = mountComponent()
-      const header = wrapper.find('header h2')
-      expect(header.text()).toBe('Open shared workflow')
+      const { container } = renderComponent()
+      const header = container.querySelector('header h2') as HTMLElement
+      expect(header.textContent).toBe('Open shared workflow')
     })
   })
 
   describe('error state', () => {
     it('shows error message when fetch fails', async () => {
       mockGetSharedWorkflow.mockRejectedValue(new Error('Network error'))
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).toContain(
+      expect(container.textContent).toContain(
         'Could not load this shared workflow. Please try again later.'
       )
     })
 
     it('shows close button in error state', async () => {
       mockGetSharedWorkflow.mockRejectedValue(new Error('Network error'))
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      const footerButtons = wrapper.findAll('footer button')
+      const footerButtons = container.querySelectorAll('footer button')
       expect(footerButtons).toHaveLength(1)
-      expect(footerButtons[0].text()).toBe('Close')
+      expect(footerButtons[0].textContent).toBe('Close')
     })
 
     it('calls onCancel when close is clicked in error state', async () => {
       mockGetSharedWorkflow.mockRejectedValue(new Error('Network error'))
       const onCancel = vi.fn()
-      const wrapper = mountComponent({ onCancel })
+      const { container } = renderComponent({ onCancel })
       await flushPromises()
 
-      const closeButton = wrapper
-        .findAll('footer button')
-        .find((b) => b.text() === 'Close')
-      await closeButton!.trigger('click')
+      const closeButton = Array.from(
+        container.querySelectorAll('footer button')
+      ).find((b) => b.textContent === 'Close') as HTMLElement
+      await userEvent.click(closeButton)
       expect(onCancel).toHaveBeenCalled()
     })
   })
@@ -142,60 +148,62 @@ describe('OpenSharedWorkflowDialogContent', () => {
       mockGetSharedWorkflow.mockResolvedValue(
         makePayload({ name: 'My Workflow' })
       )
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.find('main h2').text()).toBe('My Workflow')
+      expect(
+        (container.querySelector('main h2') as HTMLElement).textContent
+      ).toBe('My Workflow')
     })
 
     it('shows "Open workflow" as primary CTA', async () => {
       mockGetSharedWorkflow.mockResolvedValue(makePayload())
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      const buttons = wrapper.findAll('footer button')
+      const buttons = container.querySelectorAll('footer button')
       const primaryButton = buttons[buttons.length - 1]
-      expect(primaryButton.text()).toBe('Open workflow')
+      expect(primaryButton.textContent).toBe('Open workflow')
     })
 
     it('does not show "Open without importing" button', async () => {
       mockGetSharedWorkflow.mockResolvedValue(makePayload())
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).not.toContain('Open without importing')
+      expect(container.textContent).not.toContain('Open without importing')
     })
 
     it('does not show warning or asset sections', async () => {
       mockGetSharedWorkflow.mockResolvedValue(makePayload())
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).not.toContain('non-public assets')
+      expect(container.textContent).not.toContain('non-public assets')
     })
 
     it('calls onConfirm with payload when primary button is clicked', async () => {
       const payload = makePayload()
       mockGetSharedWorkflow.mockResolvedValue(payload)
       const onConfirm = vi.fn()
-      const wrapper = mountComponent({ onConfirm })
+      const { container } = renderComponent({ onConfirm })
       await flushPromises()
 
-      const buttons = wrapper.findAll('footer button')
-      await buttons[buttons.length - 1].trigger('click')
+      const buttons = container.querySelectorAll('footer button')
+      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
       expect(onConfirm).toHaveBeenCalledWith(payload)
     })
 
     it('calls onCancel when cancel button is clicked', async () => {
       mockGetSharedWorkflow.mockResolvedValue(makePayload())
       const onCancel = vi.fn()
-      const wrapper = mountComponent({ onCancel })
+      const { container } = renderComponent({ onCancel })
       await flushPromises()
 
-      const cancelButton = wrapper
-        .findAll('footer button')
-        .find((b) => b.text() === 'Cancel')
-      await cancelButton!.trigger('click')
+      const cancelButton = Array.from(
+        container.querySelectorAll('footer button')
+      ).find((b) => b.textContent === 'Cancel') as HTMLElement
+      await userEvent.click(cancelButton)
       expect(onCancel).toHaveBeenCalled()
     })
   })
@@ -235,54 +243,54 @@ describe('OpenSharedWorkflowDialogContent', () => {
 
     it('shows "Copy assets & open workflow" as primary CTA', async () => {
       mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      const buttons = wrapper.findAll('footer button')
+      const buttons = container.querySelectorAll('footer button')
       const primaryButton = buttons[buttons.length - 1]
-      expect(primaryButton.text()).toBe('Copy assets & open workflow')
+      expect(primaryButton.textContent).toBe('Copy assets & open workflow')
     })
 
     it('shows non-public assets warning', async () => {
       mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).toContain('non-public assets')
+      expect(container.textContent).toContain('non-public assets')
     })
 
     it('shows "Open without importing" button', async () => {
       mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
-      const wrapper = mountComponent()
+      renderComponent()
       await flushPromises()
 
-      const openWithoutImporting = wrapper
-        .findAll('button')
-        .find((b) => b.text() === 'Open without importing')
+      const openWithoutImporting = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent === 'Open without importing')
       expect(openWithoutImporting).toBeDefined()
     })
 
     it('calls onOpenWithoutImporting with payload', async () => {
       mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
       const onOpenWithoutImporting = vi.fn()
-      const wrapper = mountComponent({ onOpenWithoutImporting })
+      renderComponent({ onOpenWithoutImporting })
       await flushPromises()
 
-      const button = wrapper
-        .findAll('button')
-        .find((b) => b.text() === 'Open without importing')
-      await button!.trigger('click')
+      const button = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent === 'Open without importing')
+      await userEvent.click(button!)
       expect(onOpenWithoutImporting).toHaveBeenCalledWith(assetsPayload)
     })
 
     it('calls onConfirm with payload when primary button is clicked', async () => {
       mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
       const onConfirm = vi.fn()
-      const wrapper = mountComponent({ onConfirm })
+      const { container } = renderComponent({ onConfirm })
       await flushPromises()
 
-      const buttons = wrapper.findAll('footer button')
-      await buttons[buttons.length - 1].trigger('click')
+      const buttons = container.querySelectorAll('footer button')
+      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
       expect(onConfirm).toHaveBeenCalledWith(assetsPayload)
     })
 
@@ -310,18 +318,17 @@ describe('OpenSharedWorkflowDialogContent', () => {
         ]
       })
       mockGetSharedWorkflow.mockResolvedValue(mixedPayload)
-      const wrapper = mountComponent()
+      const { container } = renderComponent()
       await flushPromises()
 
-      // Should still show assets panel (has 1 non-owned)
-      expect(wrapper.text()).toContain('non-public assets')
+      expect(container.textContent).toContain('non-public assets')
     })
   })
 
   describe('fetches with correct shareId', () => {
     it('passes shareId to getSharedWorkflow', async () => {
       mockGetSharedWorkflow.mockResolvedValue(makePayload())
-      mountComponent({ shareId: 'my-share-123' })
+      renderComponent({ shareId: 'my-share-123' })
       await flushPromises()
 
       expect(mockGetSharedWorkflow).toHaveBeenCalledWith('my-share-123')

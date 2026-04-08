@@ -1,6 +1,8 @@
+/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { mount } from '@vue/test-utils'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -66,11 +68,11 @@ function createGalleriaWidget(
   })
 }
 
-function mountComponent(
+function renderComponent(
   widget: SimplifiedWidget<GalleryValue>,
   modelValue: GalleryValue
 ) {
-  return mount(DisplayCarousel, {
+  return render(DisplayCarousel, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n]
     },
@@ -93,395 +95,424 @@ function createGalleriaWrapper(
   options: Record<string, unknown> = {}
 ) {
   const widget = createGalleriaWidget(images, options)
-  return mountComponent(widget, images)
+  return renderComponent(widget, images)
 }
 
-function findThumbnails(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('div').filter((div) => {
-    return div.find('img').exists() && div.classes().includes('border-2')
+function findThumbnails(container: Element) {
+  return Array.from(container.querySelectorAll('div')).filter((div) => {
+    return div.querySelector('img') && div.classList.contains('border-2')
   })
 }
 
-function findImageContainer(wrapper: ReturnType<typeof mount>) {
-  return wrapper.find('[tabindex="0"]')
+function findImageContainer(container: Element) {
+  return container.querySelector('[tabindex="0"]') as HTMLElement
+}
+
+function findGridButtons(container: Element) {
+  return Array.from(container.querySelectorAll('button')).filter((btn) =>
+    btn.querySelector('img')
+  )
 }
 
 describe('DisplayCarousel Single Mode', () => {
   describe('Component Rendering', () => {
     it('renders main image', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const img = wrapper.find('img')
-      expect(img.exists()).toBe(true)
-      expect(img.attributes('src')).toBe(TEST_IMAGES_SMALL[0])
+      const img = screen.getAllByRole('img')[0]
+      expect(img).toHaveAttribute('src', TEST_IMAGES_SMALL[0])
     })
 
     it('displays empty gallery when no images provided', () => {
-      const wrapper = createGalleriaWrapper([])
+      createGalleriaWrapper([])
 
-      expect(wrapper.find('img').exists()).toBe(false)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
     })
 
     it('handles null value gracefully', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(
-        widget,
-        fromAny<GalleryValue, unknown>(null)
-      )
+      renderComponent(widget, fromAny<GalleryValue, unknown>(null))
 
-      expect(wrapper.find('img').exists()).toBe(false)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
     })
 
     it('handles undefined value gracefully', () => {
       const widget = createGalleriaWidget([])
-      const wrapper = mountComponent(
-        widget,
-        fromAny<GalleryValue, unknown>(undefined)
-      )
+      renderComponent(widget, fromAny<GalleryValue, unknown>(undefined))
 
-      expect(wrapper.find('img').exists()).toBe(false)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
     })
   })
 
   describe('String Array Input', () => {
     it('converts string array to image objects and displays first', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const img = wrapper.find('img')
-      expect(img.attributes('src')).toBe('https://example.com/image0.jpg')
+      const img = screen.getAllByRole('img')[0]
+      expect(img).toHaveAttribute('src', 'https://example.com/image0.jpg')
     })
 
     it('handles single string image', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+      createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-      const img = wrapper.find('img')
-      expect(img.attributes('src')).toBe('https://example.com/single.jpg')
+      const img = screen.getByRole('img')
+      expect(img).toHaveAttribute('src', 'https://example.com/single.jpg')
     })
   })
 
   describe('Object Array Input', () => {
     it('preserves image objects and displays first', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGE_OBJECTS])
+      createGalleriaWrapper([...TEST_IMAGE_OBJECTS])
 
-      const img = wrapper.find('img')
-      expect(img.attributes('src')).toBe('https://example.com/image0.jpg')
-      expect(img.attributes('alt')).toBe('Test image 0')
+      const img = screen.getAllByRole('img')[0]
+      expect(img).toHaveAttribute('src', 'https://example.com/image0.jpg')
+      expect(img).toHaveAttribute('alt', 'Test image 0')
     })
 
     it('handles mixed object properties with src fallback', () => {
       const images: GalleryImage[] = [
         { src: 'https://example.com/image1.jpg', alt: 'First' }
       ]
-      const wrapper = createGalleriaWrapper(images)
+      createGalleriaWrapper(images)
 
-      const img = wrapper.find('img')
-      expect(img.attributes('src')).toBe('https://example.com/image1.jpg')
+      const img = screen.getByRole('img')
+      expect(img).toHaveAttribute('src', 'https://example.com/image1.jpg')
     })
   })
 
   describe('Thumbnail Display', () => {
     it('shows thumbnails when multiple images present', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const thumbnailButtons = findThumbnails(wrapper)
+      const thumbnailButtons = findThumbnails(container)
       expect(thumbnailButtons).toHaveLength(3)
     })
 
     it('hides thumbnails for single image', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+      const { container } = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-      const thumbnailButtons = findThumbnails(wrapper)
+      const thumbnailButtons = findThumbnails(container)
       expect(thumbnailButtons).toHaveLength(0)
     })
 
     it('thumbnails are not interactive', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      const thumbnails = findThumbnails(wrapper)
-      expect(thumbnails[0].element.tagName).not.toBe('BUTTON')
+      const thumbnails = findThumbnails(container)
+      expect(thumbnails[0].tagName).not.toBe('BUTTON')
     })
   })
 
   describe('Navigation Buttons', () => {
     it('shows navigation buttons when multiple images present', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-      expect(wrapper.find('[aria-label="Previous image"]').exists()).toBe(true)
-      expect(wrapper.find('[aria-label="Next image"]').exists()).toBe(true)
+      expect(
+        screen.getByRole('button', { name: 'Previous image' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Next image' })
+      ).toBeInTheDocument()
     })
 
     it('hides navigation buttons for single image', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+      createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-      expect(wrapper.find('[aria-label="Previous image"]').exists()).toBe(false)
-      expect(wrapper.find('[aria-label="Next image"]').exists()).toBe(false)
+      expect(
+        screen.queryByRole('button', { name: 'Previous image' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Next image' })
+      ).not.toBeInTheDocument()
     })
 
     it('respects widget option to hide navigation buttons', () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL], {
+      createGalleriaWrapper([...TEST_IMAGES_SMALL], {
         showItemNavigators: false
       })
 
-      expect(wrapper.find('[aria-label="Previous image"]').exists()).toBe(false)
+      expect(
+        screen.queryByRole('button', { name: 'Previous image' })
+      ).not.toBeInTheDocument()
     })
 
     it('navigates to next image on next click', async () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      const user = userEvent.setup()
 
-      await wrapper.find('[aria-label="Next image"]').trigger('click')
+      await user.click(screen.getByRole('button', { name: 'Next image' }))
       await nextTick()
 
-      const mainImg = wrapper.findAll('img')[0]
-      expect(mainImg.attributes('src')).toBe('https://example.com/image1.jpg')
+      const mainImg = screen.getAllByRole('img')[0]
+      expect(mainImg).toHaveAttribute('src', 'https://example.com/image1.jpg')
     })
 
     it('navigates to previous image on prev click', async () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      const user = userEvent.setup()
 
       // Go to second image first
-      await wrapper.find('[aria-label="Next image"]').trigger('click')
+      await user.click(screen.getByRole('button', { name: 'Next image' }))
       await nextTick()
 
       // Go back
-      await wrapper.find('[aria-label="Previous image"]').trigger('click')
+      await user.click(screen.getByRole('button', { name: 'Previous image' }))
       await nextTick()
 
-      const mainImg = wrapper.findAll('img')[0]
-      expect(mainImg.attributes('src')).toBe('https://example.com/image0.jpg')
+      const mainImg = screen.getAllByRole('img')[0]
+      expect(mainImg).toHaveAttribute('src', 'https://example.com/image0.jpg')
     })
 
     it('wraps from first to last image on previous click', async () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      const user = userEvent.setup()
 
-      await wrapper.find('[aria-label="Previous image"]').trigger('click')
+      await user.click(screen.getByRole('button', { name: 'Previous image' }))
       await nextTick()
 
-      const mainImg = wrapper.findAll('img')[0]
-      expect(mainImg.attributes('src')).toBe('https://example.com/image2.jpg')
+      const mainImg = screen.getAllByRole('img')[0]
+      expect(mainImg).toHaveAttribute('src', 'https://example.com/image2.jpg')
     })
 
     it('wraps from last to first image on next click', async () => {
-      const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      createGalleriaWrapper([...TEST_IMAGES_SMALL])
+      const user = userEvent.setup()
 
       // Navigate to last image
-      await wrapper.find('[aria-label="Next image"]').trigger('click')
-      await wrapper.find('[aria-label="Next image"]').trigger('click')
+      await user.click(screen.getByRole('button', { name: 'Next image' }))
+      await user.click(screen.getByRole('button', { name: 'Next image' }))
       await nextTick()
 
       // Next from last should wrap to first
-      await wrapper.find('[aria-label="Next image"]').trigger('click')
+      await user.click(screen.getByRole('button', { name: 'Next image' }))
       await nextTick()
 
-      const mainImg = wrapper.findAll('img')[0]
-      expect(mainImg.attributes('src')).toBe('https://example.com/image0.jpg')
+      const mainImg = screen.getAllByRole('img')[0]
+      expect(mainImg).toHaveAttribute('src', 'https://example.com/image0.jpg')
     })
   })
 })
 
 describe('DisplayCarousel Accessibility', () => {
   it('shows controls on focusin for keyboard users', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
-    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      true
-    )
-    expect(wrapper.find('[aria-label="Edit or mask image"]').exists()).toBe(
-      true
-    )
+    expect(
+      screen.getByRole('button', { name: 'Switch to grid view' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Edit or mask image' })
+    ).toBeInTheDocument()
   })
 
   it('hides controls on focusout when focus leaves component', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
 
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     // Focus leaves the image container entirely
-    await findImageContainer(wrapper).trigger('focusout', {
+    fireEvent.focusOut(findImageContainer(container), {
       relatedTarget: null
     })
     await nextTick()
 
-    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      false
-    )
+    expect(
+      screen.queryByRole('button', { name: 'Switch to grid view' })
+    ).not.toBeInTheDocument()
   })
 })
 
 describe('DisplayCarousel Grid Mode', () => {
   it('switches to grid mode via toggle button on hover', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const user = userEvent.setup()
 
     // Trigger focus on image container to reveal toggle button
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
-    const toggleBtn = wrapper.find('[aria-label="Switch to grid view"]')
-    expect(toggleBtn.exists()).toBe(true)
+    const toggleBtn = screen.getByRole('button', {
+      name: 'Switch to grid view'
+    })
+    expect(toggleBtn).toBeInTheDocument()
 
-    await toggleBtn.trigger('click')
+    await user.click(toggleBtn)
     await nextTick()
 
     // Grid mode should show all images as grid items
-    const gridImages = wrapper.findAll('img')
+    const gridImages = screen.getAllByRole('img')
     expect(gridImages).toHaveLength(TEST_IMAGES_SMALL.length)
   })
 
   it('does not show grid toggle for single image', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SINGLE])
 
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
-    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      false
-    )
+    expect(
+      screen.queryByRole('button', { name: 'Switch to grid view' })
+    ).not.toBeInTheDocument()
   })
 
   it('grid mode has no overlay icons', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const user = userEvent.setup()
 
     // Switch to grid via focus on image container
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
-    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await user.click(
+      screen.getByRole('button', { name: 'Switch to grid view' })
+    )
     await nextTick()
 
     // Grid mode should have no toggle/back button
-    expect(wrapper.find('[aria-label="Switch to single view"]').exists()).toBe(
-      false
-    )
-    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      false
-    )
+    expect(
+      screen.queryByRole('button', { name: 'Switch to single view' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Switch to grid view' })
+    ).not.toBeInTheDocument()
   })
 
   it('always uses undo-2 icon for grid toggle button', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const user = userEvent.setup()
 
     // Show controls
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
-    const toggleBtn = wrapper.find('[aria-label="Switch to grid view"]')
-    expect(toggleBtn.find('i').classes()).toContain('icon-[lucide--undo-2]')
+    const toggleBtn = screen.getByRole('button', {
+      name: 'Switch to grid view'
+    })
+    const icon = toggleBtn.querySelector('i')
+    expect(icon!.classList.contains('icon-[lucide--undo-2]')).toBe(true)
 
     // Switch to grid and back
-    await toggleBtn.trigger('click')
+    await user.click(toggleBtn)
     await nextTick()
 
-    const gridButtons = wrapper
-      .findAll('button')
-      .filter((btn) => btn.find('img').exists())
-    await gridButtons[0].trigger('click')
+    const gridButtons = findGridButtons(container)
+    await user.click(gridButtons[0])
     await nextTick()
 
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     // Icon should still be undo-2
-    const toggleBtnAfter = wrapper.find('[aria-label="Switch to grid view"]')
-    expect(toggleBtnAfter.find('i').classes()).toContain(
-      'icon-[lucide--undo-2]'
-    )
+    const toggleBtnAfter = screen.getByRole('button', {
+      name: 'Switch to grid view'
+    })
+    const iconAfter = toggleBtnAfter.querySelector('i')
+    expect(iconAfter!.classList.contains('icon-[lucide--undo-2]')).toBe(true)
   })
 
   it('shows grid button in single mode after selecting from grid', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const user = userEvent.setup()
 
     // Switch to grid
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
-    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await user.click(
+      screen.getByRole('button', { name: 'Switch to grid view' })
+    )
     await nextTick()
 
     // Click first grid image to go back to single mode
-    const gridButtons = wrapper
-      .findAll('button')
-      .filter((btn) => btn.find('img').exists())
-    await gridButtons[0].trigger('click')
+    const gridButtons = findGridButtons(container)
+    await user.click(gridButtons[0])
     await nextTick()
 
     // Hover to reveal controls
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
 
     // Should still show grid view button (same icon always)
-    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      true
-    )
+    expect(
+      screen.getByRole('button', { name: 'Switch to grid view' })
+    ).toBeInTheDocument()
   })
 
   it('clicking grid image switches to single mode focused on that image', async () => {
-    const wrapper = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const { container } = createGalleriaWrapper([...TEST_IMAGES_SMALL])
+    const user = userEvent.setup()
 
     // Switch to grid via focus on image container
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
-    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    await user.click(
+      screen.getByRole('button', { name: 'Switch to grid view' })
+    )
     await nextTick()
 
     // Click second grid image
-    const gridButtons = wrapper
-      .findAll('button')
-      .filter((btn) => btn.find('img').exists())
-    await gridButtons[1].trigger('click')
+    const gridButtons = findGridButtons(container)
+    await user.click(gridButtons[1])
     await nextTick()
 
     // Should be in single mode showing the second image
-    const mainImg = wrapper.findAll('img')[0]
-    expect(mainImg.attributes('src')).toBe('https://example.com/image1.jpg')
+    const mainImg = screen.getAllByRole('img')[0]
+    expect(mainImg).toHaveAttribute('src', 'https://example.com/image1.jpg')
   })
 
   it('reverts to single mode when images reduce to one', async () => {
     const images = ref<GalleryValue>([...TEST_IMAGES_SMALL])
     const widget = createGalleriaWidget([...TEST_IMAGES_SMALL])
-    const wrapper = mount(DisplayCarousel, {
-      global: { plugins: [createTestingPinia({ createSpy: vi.fn }), i18n] },
+    const { container, rerender } = render(DisplayCarousel, {
+      global: {
+        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n]
+      },
       props: { widget, modelValue: images.value }
     })
 
     // Switch to grid via focus on image container
-    await findImageContainer(wrapper).trigger('focusin')
+    fireEvent.focusIn(findImageContainer(container))
     await nextTick()
-    await wrapper.find('[aria-label="Switch to grid view"]').trigger('click')
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole('button', { name: 'Switch to grid view' })
+    )
     await nextTick()
 
     // Reduce to single image
-    await wrapper.setProps({ modelValue: [TEST_IMAGES_SMALL[0]] })
+    await rerender({ widget, modelValue: [TEST_IMAGES_SMALL[0]] })
     await nextTick()
 
     // Should revert to single mode (single image, no grid button)
-    expect(wrapper.find('[aria-label="Switch to grid view"]').exists()).toBe(
-      false
-    )
+    expect(
+      screen.queryByRole('button', { name: 'Switch to grid view' })
+    ).not.toBeInTheDocument()
   })
 })
 
 describe('DisplayCarousel Edge Cases', () => {
   it('handles empty array gracefully', () => {
-    const wrapper = createGalleriaWrapper([])
+    const { container } = createGalleriaWrapper([])
 
-    expect(wrapper.find('img').exists()).toBe(false)
-    expect(findThumbnails(wrapper)).toHaveLength(0)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(findThumbnails(container)).toHaveLength(0)
   })
 
   it('filters out malformed image objects without valid src', () => {
     const malformedImages = [{}, { randomProp: 'value' }, null, undefined]
-    const wrapper = createGalleriaWrapper(malformedImages as string[])
+    createGalleriaWrapper(malformedImages as string[])
 
     // All filtered out: null/undefined removed, then objects without src filtered
-    expect(wrapper.find('img').exists()).toBe(false)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('handles very large image arrays', () => {
     const largeImageArray = createImageStrings(100)
-    const wrapper = createGalleriaWrapper(largeImageArray)
+    const { container } = createGalleriaWrapper(largeImageArray)
 
-    const thumbnailButtons = findThumbnails(wrapper)
+    const thumbnailButtons = findThumbnails(container)
     expect(thumbnailButtons).toHaveLength(100)
   })
 
@@ -496,13 +527,13 @@ describe('DisplayCarousel Edge Cases', () => {
 
   it('handles invalid URL strings without crashing', () => {
     const invalidUrls = ['not-a-url', 'http://', 'ftp://invalid']
-    const wrapper = createGalleriaWrapper(invalidUrls)
+    createGalleriaWrapper(invalidUrls)
 
-    expect(wrapper.find('img').exists()).toBe(true)
+    expect(screen.getAllByRole('img').length).toBeGreaterThan(0)
   })
 
   it('filters out empty string URLs', () => {
-    const wrapper = createGalleriaWrapper([''])
-    expect(wrapper.find('img').exists()).toBe(false)
+    createGalleriaWrapper([''])
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 })

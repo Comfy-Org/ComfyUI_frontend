@@ -1,4 +1,6 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable testing-library/prefer-user-event */
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
@@ -18,9 +20,12 @@ function createImages(count: number): ExampleImage[] {
   }))
 }
 
-function mountStep(images: ExampleImage[]) {
-  return mount(ComfyHubExamplesStep, {
-    props: { exampleImages: images },
+function renderStep(
+  images: ExampleImage[],
+  callbacks: Record<string, ReturnType<typeof vi.fn>> = {}
+) {
+  return render(ComfyHubExamplesStep, {
+    props: { exampleImages: images, ...callbacks },
     global: {
       mocks: { $t: (key: string) => key }
     }
@@ -33,63 +38,74 @@ describe('ComfyHubExamplesStep', () => {
   })
 
   it('renders all example images', () => {
-    const wrapper = mountStep(createImages(3))
-    expect(wrapper.findAll('[role="listitem"]')).toHaveLength(3)
+    renderStep(createImages(3))
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
   })
 
   it('emits reordered array when moving image left via keyboard', async () => {
-    const wrapper = mountStep(createImages(3))
+    const onUpdateExampleImages = vi.fn()
+    renderStep(createImages(3), {
+      'onUpdate:exampleImages': onUpdateExampleImages
+    })
 
-    const tiles = wrapper.findAll('[role="listitem"]')
-    await tiles[1].trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
+    const tiles = screen.getAllByRole('listitem')
+    fireEvent.keyDown(tiles[1], { key: 'ArrowLeft', shiftKey: true })
 
-    const emitted = wrapper.emitted('update:exampleImages')
-    expect(emitted).toBeTruthy()
-    const reordered = emitted![0][0] as ExampleImage[]
+    expect(onUpdateExampleImages).toHaveBeenCalled()
+    const reordered = onUpdateExampleImages.mock.calls[0][0] as ExampleImage[]
     expect(reordered.map((img) => img.id)).toEqual(['img-1', 'img-0', 'img-2'])
   })
 
   it('emits reordered array when moving image right via keyboard', async () => {
-    const wrapper = mountStep(createImages(3))
+    const onUpdateExampleImages = vi.fn()
+    renderStep(createImages(3), {
+      'onUpdate:exampleImages': onUpdateExampleImages
+    })
 
-    const tiles = wrapper.findAll('[role="listitem"]')
-    await tiles[1].trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    const tiles = screen.getAllByRole('listitem')
+    fireEvent.keyDown(tiles[1], { key: 'ArrowRight', shiftKey: true })
 
-    const emitted = wrapper.emitted('update:exampleImages')
-    expect(emitted).toBeTruthy()
-    const reordered = emitted![0][0] as ExampleImage[]
+    expect(onUpdateExampleImages).toHaveBeenCalled()
+    const reordered = onUpdateExampleImages.mock.calls[0][0] as ExampleImage[]
     expect(reordered.map((img) => img.id)).toEqual(['img-0', 'img-2', 'img-1'])
   })
 
   it('does not emit when moving first image left (boundary)', async () => {
-    const wrapper = mountStep(createImages(3))
+    const onUpdateExampleImages = vi.fn()
+    renderStep(createImages(3), {
+      'onUpdate:exampleImages': onUpdateExampleImages
+    })
 
-    const tiles = wrapper.findAll('[role="listitem"]')
-    await tiles[0].trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
+    const tiles = screen.getAllByRole('listitem')
+    fireEvent.keyDown(tiles[0], { key: 'ArrowLeft', shiftKey: true })
 
-    expect(wrapper.emitted('update:exampleImages')).toBeFalsy()
+    expect(onUpdateExampleImages).not.toHaveBeenCalled()
   })
 
   it('does not emit when moving last image right (boundary)', async () => {
-    const wrapper = mountStep(createImages(3))
+    const onUpdateExampleImages = vi.fn()
+    renderStep(createImages(3), {
+      'onUpdate:exampleImages': onUpdateExampleImages
+    })
 
-    const tiles = wrapper.findAll('[role="listitem"]')
-    await tiles[2].trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    const tiles = screen.getAllByRole('listitem')
+    fireEvent.keyDown(tiles[2], { key: 'ArrowRight', shiftKey: true })
 
-    expect(wrapper.emitted('update:exampleImages')).toBeFalsy()
+    expect(onUpdateExampleImages).not.toHaveBeenCalled()
   })
 
   it('emits filtered array when removing an image', async () => {
-    const wrapper = mountStep(createImages(2))
+    const onUpdateExampleImages = vi.fn()
+    renderStep(createImages(2), {
+      'onUpdate:exampleImages': onUpdateExampleImages
+    })
 
-    const removeBtn = wrapper.find(
-      'button[aria-label="comfyHubPublish.removeExampleImage"]'
-    )
-    expect(removeBtn.exists()).toBe(true)
-    await removeBtn.trigger('click')
+    const removeBtn = screen.getAllByRole('button', {
+      name: 'comfyHubPublish.removeExampleImage'
+    })[0]
+    await userEvent.click(removeBtn)
 
-    const emitted = wrapper.emitted('update:exampleImages')
-    expect(emitted).toBeTruthy()
-    expect(emitted![0][0]).toHaveLength(1)
+    expect(onUpdateExampleImages).toHaveBeenCalled()
+    expect(onUpdateExampleImages.mock.calls[0][0]).toHaveLength(1)
   })
 })
