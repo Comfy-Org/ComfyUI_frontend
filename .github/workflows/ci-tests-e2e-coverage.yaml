@@ -4,9 +4,7 @@ on:
   push:
     branches: [main, core/*]
     paths-ignore: ['**/*.md']
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
+  workflow_dispatch:
 
 concurrency:
   group: e2e-coverage-${{ github.ref }}
@@ -45,14 +43,11 @@ jobs:
 
       - name: Run Playwright tests with coverage
         id: tests
-        continue-on-error: true
         run: >
           COLLECT_COVERAGE=true
           pnpm exec playwright test
           --project=chromium
-          --workers=2
-        env:
-          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          --workers=50%
 
       - name: Upload coverage data
         if: always()
@@ -60,5 +55,5 @@ jobs:
         with:
           name: e2e-coverage
           path: coverage/playwright/
-          retention-days: 30
+          retention-days: 7
           if-no-files-found: warn
