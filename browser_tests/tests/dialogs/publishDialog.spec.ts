@@ -11,9 +11,7 @@ const PUBLISH_FEATURE_FLAGS = {
   comfyhub_profile_gate_enabled: true
 } as const
 
-async function setupPublishTest(
-  comfyPage: ComfyPage
-): Promise<{
+async function setupPublishTest(comfyPage: ComfyPage): Promise<{
   dialog: PublishDialog
   publishApi: PublishApiHelper
 }> {
