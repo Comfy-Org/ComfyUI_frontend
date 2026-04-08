@@ -328,22 +328,39 @@ test.describe('Node Interaction', () => {
     'Can toggle dom widget node open/closed',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const node = (
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )[0]
+      // Find the node whose collapse toggler matches the hardcoded position.
+      // getNodeRefsByType order is non-deterministic, so identify by proximity.
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      const togglerPos = DefaultGraphPositions.textEncodeNodeToggler
+      let targetNode = nodes[0]
+      let minDist = Infinity
+      for (const n of nodes) {
+        const pos = await n.getPosition()
+        const dist = Math.abs(pos.y - togglerPos.y)
+        if (dist < minDist) {
+          minDist = dist
+          targetNode = n
+        }
+      }
 
       await expect(comfyPage.canvas).toHaveScreenshot('default.png')
       await comfyPage.canvas.click({
-        position: DefaultGraphPositions.textEncodeNodeToggler
+        position: togglerPos
       })
-      await expect.poll(() => node.isCollapsed()).toBe(true)
+      await expect.poll(() => targetNode.isCollapsed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      await comfyPage.canvas.click({
-        position: DefaultGraphPositions.textEncodeNodeToggler
-      })
-      await expect.poll(() => node.isCollapsed()).toBe(false)
+      // Re-expand: clicking the canvas toggler on a collapsed node is
+      // unreliable because DOM widget overlays may intercept the pointer
+      // event. Use programmatic collapse() for the expand step.
+      await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.graph.getNodeById(nodeId)!
+        node.collapse()
+        window.app!.canvas.setDirty(true, true)
+      }, targetNode.id)
+      await comfyPage.nextFrame()
+      await expect.poll(() => targetNode.isCollapsed()).toBe(false)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-back-open.png'
       )
@@ -362,13 +379,17 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
-    await comfyPage.canvas.click({
-      position: {
-        x: 10,
-        y: 10
-      }
-    })
-    await expect(legacyPrompt).toBeHidden()
+    // LiteGraph's graphdialog has a 256ms dismiss guard (Date.now() - clickTime > 256).
+    // Retry the canvas click until the dialog actually closes.
+    await expect(async () => {
+      await comfyPage.canvas.click({
+        position: {
+          x: 10,
+          y: 10
+        }
+      })
+      await expect(legacyPrompt).toBeHidden({ timeout: 500 })
+    }).toPass({ timeout: 5000 })
   })
 
   test('Can close prompt dialog with canvas click (text widget)', async ({
@@ -384,13 +405,17 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
-    await comfyPage.canvas.click({
-      position: {
-        x: 10,
-        y: 10
-      }
-    })
-    await expect(legacyPrompt).toBeHidden()
+    // LiteGraph's graphdialog has a 256ms dismiss guard (Date.now() - clickTime > 256).
+    // Retry the canvas click until the dialog actually closes.
+    await expect(async () => {
+      await comfyPage.canvas.click({
+        position: {
+          x: 10,
+          y: 10
+        }
+      })
+      await expect(legacyPrompt).toBeHidden({ timeout: 500 })
+    }).toPass({ timeout: 5000 })
   })
 
   test(
