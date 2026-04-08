@@ -63,7 +63,8 @@ export const TestIds = {
     missingMediaStatusCard: 'missing-media-status-card',
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
-    missingMediaLocateButton: 'missing-media-locate-button'
+    missingMediaLocateButton: 'missing-media-locate-button',
+    publishTabPanel: 'publish-tab-panel'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
