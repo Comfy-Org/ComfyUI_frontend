@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import ApiNodesList from '@/components/common/ApiNodesList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 
