@@ -245,6 +245,24 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     // Wait for the image to load from the server
     await imageLoaded
+
+    // Wait for the image to decode and appear on the node
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.graph!.getNodeById(nodeId)
+            const img = node?.imgs?.[0]
+            return (
+              !!img &&
+              img.complete &&
+              img.naturalWidth > 0 &&
+              img.src.includes('image32x32.webp')
+            )
+          }, loadImageNode.id),
+        { timeout: 10_000 }
+      )
+      .toBe(true)
     await comfyPage.nextFrame()
 
     // Expect the image preview to change automatically
