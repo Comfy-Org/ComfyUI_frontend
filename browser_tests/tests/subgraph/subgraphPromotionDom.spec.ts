@@ -190,11 +190,13 @@ test.describe(
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
         const subgraphNodeId = String(subgraphNode.id)
-        const promotedNames = await getPromotedWidgetNames(
-          comfyPage,
-          subgraphNodeId
-        )
-        expect(promotedNames).toContain('seed')
+        await expect(async () => {
+          const promotedNames = await getPromotedWidgetNames(
+            comfyPage,
+            subgraphNodeId
+          )
+          expect(promotedNames).toContain('seed')
+        }).toPass({ timeout: 5000 })
 
         // Wait for Vue nodes to render
         await comfyPage.vueNodes.waitForNodes()

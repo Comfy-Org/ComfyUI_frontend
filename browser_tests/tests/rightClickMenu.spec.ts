@@ -229,6 +229,8 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await cloneItem.click()
     await expect(cloneItem).toHaveCount(0)
     await comfyPage.nextFrame()
-    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(nodeCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(nodeCount + 1)
   })
 })
