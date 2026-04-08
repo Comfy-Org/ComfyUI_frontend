@@ -119,6 +119,7 @@ function createWrapper({
     global: {
       plugins: [pinia, i18n],
       stubs: {
+        BaseTooltip: { template: '<slot />' },
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
         QueueInlineProgressSummary: true,
@@ -131,9 +132,6 @@ function createWrapper({
           template: '<div />'
         },
         ...stubs
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   })

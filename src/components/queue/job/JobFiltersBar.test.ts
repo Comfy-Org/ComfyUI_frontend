@@ -54,6 +54,10 @@ const i18n = createI18n({
   }
 })
 
+const BaseTooltipStub = {
+  template: '<slot />'
+}
+
 describe('JobFiltersBar', () => {
   it('emits showAssets when the assets icon button is clicked', async () => {
     const wrapper = mount(JobFiltersBar, {
@@ -65,7 +69,9 @@ describe('JobFiltersBar', () => {
       },
       global: {
         plugins: [i18n],
-        directives: { tooltip: () => undefined }
+        stubs: {
+          BaseTooltip: BaseTooltipStub
+        }
       }
     })
 
@@ -88,7 +94,9 @@ describe('JobFiltersBar', () => {
       },
       global: {
         plugins: [i18n],
-        directives: { tooltip: () => undefined }
+        stubs: {
+          BaseTooltip: BaseTooltipStub
+        }
       }
     })
 

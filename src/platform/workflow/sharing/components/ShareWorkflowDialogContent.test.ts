@@ -187,6 +187,7 @@ describe('ShareWorkflowDialogContent', () => {
       global: {
         plugins: [i18n],
         stubs: {
+          BaseTooltip: { template: '<slot />' },
           ComfyHubPublishIntroPanel: {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',

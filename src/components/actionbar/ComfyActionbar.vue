@@ -32,47 +32,49 @@
         <Suspense @resolve="comfyRunButtonResolved">
           <ComfyRunButton />
         </Suspense>
-        <Button
-          v-tooltip.bottom="cancelJobTooltipConfig"
-          variant="destructive"
-          size="icon"
-          :disabled="isExecutionIdle"
-          :aria-label="t('menu.interrupt')"
-          @click="cancelCurrentJob"
-        >
-          <i class="icon-[lucide--x] size-4" />
-        </Button>
-        <Button
-          v-tooltip.bottom="queueHistoryTooltipConfig"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="relative px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <StatusBadge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">
-            {{
+        <BaseTooltip :text="t('menu.interrupt')" side="bottom">
+          <Button
+            variant="destructive"
+            size="icon"
+            :disabled="isExecutionIdle"
+            :aria-label="t('menu.interrupt')"
+            @click="cancelCurrentJob"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+        </BaseTooltip>
+        <BaseTooltip :text="queueHistoryTooltipText" side="bottom">
+          <Button
+            variant="secondary"
+            size="md"
+            :aria-pressed="
               isQueuePanelV2Enabled
-                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            }}
-          </span>
-        </Button>
+                ? activeSidebarTabId === 'job-history'
+                : queueOverlayExpanded
+            "
+            class="relative px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop.prevent="showQueueContextMenu"
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <StatusBadge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">
+              {{
+                isQueuePanelV2Enabled
+                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+              }}
+            </span>
+          </Button>
+        </BaseTooltip>
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
     </Panel>
@@ -108,7 +110,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
@@ -363,16 +365,11 @@ watch(isDragging, (dragging) => {
   }
 })
 
-const cancelJobTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.interrupt'))
-)
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(
-    t(
-      isQueuePanelV2Enabled.value
-        ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
-        : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
-    )
+const queueHistoryTooltipText = computed(() =>
+  t(
+    isQueuePanelV2Enabled.value
+      ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
+      : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
   )
 )
 const activeJobsLabel = computed(() => {

@@ -1,91 +1,94 @@
 <template>
-  <div class="flex items-center gap-1">
-    <Popover :show-arrow="false">
-      <template #button>
-        <Button
-          v-tooltip.top="moreTooltipConfig"
-          variant="textonly"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
-        >
-          <i
-            class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
-          />
-        </Button>
-      </template>
-      <template #default="{ close }">
-        <div class="flex min-w-56 flex-col items-stretch font-inter">
+  <BaseTooltip :text="t('g.more')" side="top">
+    <div class="flex items-center gap-1">
+      <Popover :show-arrow="false">
+        <template #button>
           <Button
-            data-testid="docked-job-history-action"
-            class="w-full justify-between text-sm font-light"
             variant="textonly"
-            size="md"
-            @click="onToggleDockedJobHistory(close)"
+            size="icon"
+            :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
           >
-            <span class="flex items-center gap-2">
-              <i
-                class="icon-[lucide--panel-left-close] size-4 text-text-secondary"
-              />
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.dockedJobHistory')
-              }}</span>
-            </span>
             <i
-              v-if="isQueuePanelV2Enabled"
-              class="icon-[lucide--check] size-4"
+              class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
             />
           </Button>
-          <Button
-            data-testid="show-run-progress-bar-action"
-            class="w-full justify-between text-sm font-light"
-            variant="textonly"
-            size="md"
-            @click="onToggleRunProgressBar"
-          >
-            <span class="flex items-center gap-2">
-              <i class="icon-[lucide--hourglass] size-4 text-text-secondary" />
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.showRunProgressBar')
-              }}</span>
-            </span>
-            <i
-              v-if="isRunProgressBarEnabled"
-              class="icon-[lucide--check] size-4"
-            />
-          </Button>
-          <!-- TODO: Bug in assets sidebar panel derives assets from history, so despite this not deleting the assets, it still effectively shows to the user as deleted -->
-          <template v-if="showClearHistoryAction">
-            <div class="my-1 border-t border-interface-stroke" />
+        </template>
+        <template #default="{ close }">
+          <div class="flex min-w-56 flex-col items-stretch font-inter">
             <Button
-              data-testid="clear-history-action"
-              class="h-auto min-h-8 w-full items-start justify-start whitespace-normal"
+              data-testid="docked-job-history-action"
+              class="w-full justify-between text-sm font-light"
               variant="textonly"
               size="md"
-              @click="onClearHistoryFromMenu(close)"
+              @click="onToggleDockedJobHistory(close)"
             >
-              <i
-                class="icon-[lucide--trash-2] size-4 shrink-0 self-center text-destructive-background"
-              />
-              <span
-                class="flex flex-col items-start text-left leading-tight wrap-break-word"
-              >
-                <span class="text-sm font-light">
-                  {{ t('sideToolbar.queueProgressOverlay.clearHistory') }}
-                </span>
-                <span class="text-xs font-light text-text-secondary">
-                  {{
-                    t(
-                      'sideToolbar.queueProgressOverlay.clearHistoryMenuAssetsNote'
-                    )
-                  }}
-                </span>
+              <span class="flex items-center gap-2">
+                <i
+                  class="icon-[lucide--panel-left-close] size-4 text-text-secondary"
+                />
+                <span>{{
+                  t('sideToolbar.queueProgressOverlay.dockedJobHistory')
+                }}</span>
               </span>
+              <i
+                v-if="isQueuePanelV2Enabled"
+                class="icon-[lucide--check] size-4"
+              />
             </Button>
-          </template>
-        </div>
-      </template>
-    </Popover>
-  </div>
+            <Button
+              data-testid="show-run-progress-bar-action"
+              class="w-full justify-between text-sm font-light"
+              variant="textonly"
+              size="md"
+              @click="onToggleRunProgressBar"
+            >
+              <span class="flex items-center gap-2">
+                <i
+                  class="icon-[lucide--hourglass] size-4 text-text-secondary"
+                />
+                <span>{{
+                  t('sideToolbar.queueProgressOverlay.showRunProgressBar')
+                }}</span>
+              </span>
+              <i
+                v-if="isRunProgressBarEnabled"
+                class="icon-[lucide--check] size-4"
+              />
+            </Button>
+            <!-- TODO: Bug in assets sidebar panel derives assets from history, so despite this not deleting the assets, it still effectively shows to the user as deleted -->
+            <template v-if="showClearHistoryAction">
+              <div class="my-1 border-t border-interface-stroke" />
+              <Button
+                data-testid="clear-history-action"
+                class="h-auto min-h-8 w-full items-start justify-start whitespace-normal"
+                variant="textonly"
+                size="md"
+                @click="onClearHistoryFromMenu(close)"
+              >
+                <i
+                  class="icon-[lucide--trash-2] size-4 shrink-0 self-center text-destructive-background"
+                />
+                <span
+                  class="flex flex-col items-start text-left leading-tight wrap-break-word"
+                >
+                  <span class="text-sm font-light">
+                    {{ t('sideToolbar.queueProgressOverlay.clearHistory') }}
+                  </span>
+                  <span class="text-xs font-light text-text-secondary">
+                    {{
+                      t(
+                        'sideToolbar.queueProgressOverlay.clearHistoryMenuAssetsNote'
+                      )
+                    }}
+                  </span>
+                </span>
+              </Button>
+            </template>
+          </div>
+        </template>
+      </Popover>
+    </div>
+  </BaseTooltip>
 </template>
 
 <script setup lang="ts">
@@ -95,7 +98,7 @@ import { useI18n } from 'vue-i18n'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -108,7 +111,6 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 
-const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const showClearHistoryAction = computed(() => !isCloud)

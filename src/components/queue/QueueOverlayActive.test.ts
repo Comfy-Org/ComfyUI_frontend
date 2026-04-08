@@ -1,9 +1,8 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import QueueOverlayActive from './QueueOverlayActive.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
 const i18n = createI18n({
   legacy: false,
@@ -27,11 +26,6 @@ const i18n = createI18n({
   }
 })
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
-}
-
 const SELECTORS = {
   interruptAllButton: 'button[aria-label="Interrupt all running jobs"]',
   clearQueuedButton: 'button[aria-label="Clear queued"]',
@@ -41,6 +35,10 @@ const SELECTORS = {
 
 const COPY = {
   viewAllJobs: 'View all jobs'
+}
+
+const BaseTooltipStub = {
+  template: '<slot />'
 }
 
 const mountComponent = (props: Record<string, unknown> = {}) =>
@@ -58,8 +56,8 @@ const mountComponent = (props: Record<string, unknown> = {}) =>
     },
     global: {
       plugins: [i18n],
-      directives: {
-        tooltip: tooltipDirectiveStub
+      stubs: {
+        BaseTooltip: BaseTooltipStub
       }
     }
   })
@@ -112,14 +110,5 @@ describe('QueueOverlayActive', () => {
 
     expect(wrapper.find(SELECTORS.interruptAllButton).exists()).toBe(false)
     expect(wrapper.find(SELECTORS.clearQueuedButton).exists()).toBe(false)
-  })
-
-  it('builds tooltip configs with translated strings', () => {
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
-
-    mountComponent()
-
-    expect(spy).toHaveBeenCalledWith('Cancel job')
-    expect(spy).toHaveBeenCalledWith('Clear queue')
   })
 })
