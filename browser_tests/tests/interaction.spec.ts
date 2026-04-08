@@ -328,19 +328,22 @@ test.describe('Node Interaction', () => {
     'Can toggle dom widget node open/closed',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const node = (
+        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      )[0]
+
       await expect(comfyPage.canvas).toHaveScreenshot('default.png')
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNodeToggler
       })
-      await comfyPage.nextFrame()
+      await expect.poll(() => node.isCollapsed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      await comfyPage.delay(1000)
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNodeToggler
       })
-      await comfyPage.nextFrame()
+      await expect.poll(() => node.isCollapsed()).toBe(false)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-back-open.png'
       )
@@ -359,7 +362,6 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
-    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
@@ -382,7 +384,6 @@ test.describe('Node Interaction', () => {
     })
     const legacyPrompt = comfyPage.page.locator('.graphdialog')
     await expect(legacyPrompt).toBeVisible()
-    await comfyPage.delay(300)
     await comfyPage.canvas.click({
       position: {
         x: 10,
@@ -451,10 +452,24 @@ test.describe('Node Interaction', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('groups/oversized_group')
+      const initialGroupSize = await comfyPage.page.evaluate(() => {
+        const group = window.app!.graph.groups[0]
+        return group ? [group.size[0], group.size[1]] : null
+      })
+
+      expect(initialGroupSize).not.toBeNull()
+
       await comfyPage.keyboard.selectAll()
       await comfyPage.nextFrame()
       await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
-      await comfyPage.nextFrame()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const group = window.app!.graph.groups[0]
+            return group ? [group.size[0], group.size[1]] : null
+          })
+        )
+        .not.toEqual(initialGroupSize)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-fit-to-contents.png'
       )
@@ -463,15 +478,19 @@ test.describe('Node Interaction', () => {
 
   test('Can pin/unpin nodes', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
+    const nodeRef = (
+      await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+    )[0]
+
     await comfyPage.command.executeCommand(
       'Comfy.Canvas.ToggleSelectedNodes.Pin'
     )
-    await comfyPage.nextFrame()
+    await expect.poll(() => nodeRef.isPinned()).toBe(true)
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
     await comfyPage.command.executeCommand(
       'Comfy.Canvas.ToggleSelectedNodes.Pin'
     )
-    await comfyPage.nextFrame()
+    await expect.poll(() => nodeRef.isPinned()).toBe(false)
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
 
@@ -480,11 +499,15 @@ test.describe('Node Interaction', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+      )[0]
+
       await comfyPage.canvas.press('Control+b')
-      await comfyPage.nextFrame()
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot('nodes-bypassed.png')
       await comfyPage.canvas.press('Control+b')
-      await comfyPage.nextFrame()
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
       await expect(comfyPage.canvas).toHaveScreenshot('nodes-unbypassed.png')
     }
   )

@@ -40,7 +40,9 @@ test.describe('Topbar commands', () => {
     })
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
-    expect(await comfyPage.page.evaluate(() => window.foo)).toBe(true)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.foo))
+      .toBe(true)
   })
 
   test('Should not allow register command defined in other extension', async ({
@@ -86,7 +88,9 @@ test.describe('Topbar commands', () => {
     })
 
     await comfyPage.page.keyboard.press('k')
-    expect(await comfyPage.page.evaluate(() => window.TestCommand)).toBe(true)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
+      .toBe(true)
   })
 
   test.describe('Settings', () => {
@@ -156,7 +160,9 @@ test.describe('Topbar commands', () => {
       expect(await comfyPage.settings.getSetting('Comfy.TestSetting')).toBe(
         true
       )
-      expect(await comfyPage.page.evaluate(() => window.changeCount)).toBe(2)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.changeCount))
+        .toBe(2)
     })
 
     test.describe('Passing through attrs to setting components', () => {

@@ -100,6 +100,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
+      await comfyPage.nextFrame()
       await expect(minimap).toHaveScreenshot('minimap-after-pan.png')
     }
   )

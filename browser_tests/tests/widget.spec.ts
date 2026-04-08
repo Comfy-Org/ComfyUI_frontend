@@ -175,11 +175,17 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+      const initialSize = await node.getSize()
 
       await comfyPage.page.evaluate(() => {
         window.app!.graph!.nodes[0].addWidget('number', 'new_widget', 10, null)
         window.app!.graph!.setDirtyCanvas(true, true)
       })
+
+      await expect
+        .poll(async () => (await node.getSize()).height)
+        .toBeGreaterThan(initialSize.height)
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'ksampler_widget_added.png'
@@ -396,9 +402,7 @@ test.describe(
 test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_audio_widget')
-    // Wait for the audio widget to be rendered in the DOM
-    await comfyPage.page.waitForSelector('.comfy-audio', { state: 'attached' })
-    await comfyPage.nextFrame()
+    await expect(comfyPage.page.locator('.comfy-audio')).toBeVisible()
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })

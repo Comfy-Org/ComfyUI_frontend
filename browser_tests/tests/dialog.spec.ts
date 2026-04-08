@@ -48,18 +48,18 @@ test.describe('Settings', () => {
   test('Should persist keybinding setting', async ({ comfyPage }) => {
     // Open the settings dialog
     await comfyPage.page.keyboard.press('Control+,')
-    await comfyPage.page.waitForSelector('[data-testid="settings-dialog"]')
 
     // Open the keybinding tab
     const settingsDialog = comfyPage.page.locator(
       '[data-testid="settings-dialog"]'
     )
+    await expect(settingsDialog).toBeVisible()
     await settingsDialog
       .locator('nav [role="button"]', { hasText: 'Keybinding' })
       .click()
-    await comfyPage.page.waitForSelector(
-      '[placeholder="Search Keybindings..."]'
-    )
+    await expect(
+      comfyPage.page.getByPlaceholder('Search Keybindings...')
+    ).toBeVisible()
 
     // Focus the 'New Blank Workflow' row
     const newBlankWorkflowRow = comfyPage.page.locator('tr', {

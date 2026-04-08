@@ -27,7 +27,9 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     })
 
     await comfyPage.command.executeCommand('TestCommand')
-    expect(await comfyPage.page.evaluate(() => window.foo)).toBe(true)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.foo))
+      .toBe(true)
   })
 
   test('Should handle command errors', async ({ comfyPage }) => {
