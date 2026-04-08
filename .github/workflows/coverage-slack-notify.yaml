@@ -1,0 +1,136 @@
+name: 'Coverage: Slack Notification'
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md']
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  notify:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run unit tests with coverage
+        id: unit-tests
+        run: pnpm test:coverage
+
+      - name: Download previous unit coverage baseline
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          branch: main
+          workflow: coverage-slack-notify.yaml
+          name: unit-coverage-baseline
+          path: temp/coverage-baseline
+          if_no_artifact_found: warn
+
+      - name: Download latest E2E coverage
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          branch: main
+          workflow: ci-tests-e2e-coverage.yaml
+          name: e2e-coverage
+          path: temp/e2e-coverage
+          if_no_artifact_found: warn
+
+      - name: Download previous E2E coverage baseline
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          branch: main
+          workflow: coverage-slack-notify.yaml
+          name: e2e-coverage-baseline
+          path: temp/e2e-coverage-baseline
+          if_no_artifact_found: warn
+
+      - name: Resolve merged PR metadata
+        id: pr-meta
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const message = context.payload.head_commit?.message ?? '';
+            const firstLine = message.split('\n')[0];
+            const match = firstLine.match(/\(#(\d+)\)\s*$/);
+            if (!match) {
+              core.setOutput('skip', 'true');
+              core.info('No PR number found in commit message — skipping.');
+              return;
+            }
+            const prNumber = match[1];
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number(prNumber),
+            });
+            core.setOutput('skip', 'false');
+            core.setOutput('number', prNumber);
+            core.setOutput('url', pr.html_url);
+            core.setOutput('author', pr.user.login);
+
+      - name: Generate Slack notification
+        if: steps.pr-meta.outputs.skip != 'true'
+        id: slack-payload
+        env:
+          PR_URL: ${{ steps.pr-meta.outputs.url }}
+          PR_NUMBER: ${{ steps.pr-meta.outputs.number }}
+          PR_AUTHOR: ${{ steps.pr-meta.outputs.author }}
+        run: |
+          PAYLOAD=$(pnpm exec tsx scripts/coverage-slack-notify.ts \
+            --pr-url="$PR_URL" \
+            --pr-number="$PR_NUMBER" \
+            --author="$PR_AUTHOR")
+          if [ -n "$PAYLOAD" ]; then
+            echo "has_payload=true" >> "$GITHUB_OUTPUT"
+            DELIM="SLACK_PAYLOAD_$(date +%s)"
+            echo "payload<<$DELIM" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$PAYLOAD" >> "$GITHUB_OUTPUT"
+            echo "$DELIM" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_payload=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post to Slack
+        if: steps.slack-payload.outputs.has_payload == 'true'
+        continue-on-error: true
+        env:
+          SLACK_PAYLOAD: ${{ steps.slack-payload.outputs.payload }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        run: |
+          # Channel: #p-frontend-automated-testing
+          BODY=$(echo "$SLACK_PAYLOAD" | jq --arg ch "C0AP09LKRDZ" '. + {channel: $ch}')
+          curl -sf -X POST \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            -o /dev/null \
+            https://slack.com/api/chat.postMessage
+
+      - name: Save unit coverage baseline
+        if: always() && steps.unit-tests.outcome == 'success'
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-coverage-baseline
+          path: coverage/lcov.info
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Save E2E coverage baseline
+        if: always() && hashFiles('temp/e2e-coverage/coverage.lcov') != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage-baseline
+          path: temp/e2e-coverage/coverage.lcov
+          retention-days: 90
+          if-no-files-found: warn
