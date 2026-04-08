@@ -84,24 +84,25 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
     comfyPage
   }) => {
+    const getComboValues = async () =>
+      comfyPage.page.evaluate(() => {
+        return window
+          .app!.graph!.nodes.find(
+            (node) => node.title === 'Node With V2 Combo Input'
+          )!
+          .widgets!.find((widget) => widget.name === 'combo_input')!.options
+          .values
+      })
+
     await comfyPage.workflow.loadWorkflow('inputs/node_with_v2_combo_input')
     // click canvas to focus
     await comfyPage.page.mouse.click(400, 300)
     // press R to trigger refresh
     await comfyPage.page.keyboard.press('r')
-    // wait for nodes' widgets to be updated
-    await comfyPage.page.mouse.click(400, 300)
-    await comfyPage.nextFrame()
-    // get the combo widget's values
-    const comboValues = await comfyPage.page.evaluate(() => {
-      return window
-        .app!.graph!.nodes.find(
-          (node) => node.title === 'Node With V2 Combo Input'
-        )!
-        .widgets!.find((widget) => widget.name === 'combo_input')!.options
-        .values
-    })
-    expect(comboValues).toEqual(['A', 'B'])
+
+    await expect
+      .poll(() => getComboValues(), { timeout: 5_000 })
+      .toEqual(['A', 'B'])
   })
 })
 
@@ -125,6 +126,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
     const widget = await node.getWidget(0)
 
     await comfyPage.page.evaluate(() => {
+      window.widgetValue = undefined
       const widget = window.app!.graph!.nodes[0].widgets![0]
       widget.callback = (value: number) => {
         window.widgetValue = value
@@ -133,9 +135,11 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
-    expect(
-      await comfyPage.page.evaluate(() => window.widgetValue)
-    ).toBeDefined()
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
+        timeout: 2_000
+      })
+      .toBeDefined()
   })
 })
 
@@ -146,6 +150,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
     await comfyPage.page.evaluate(() => {
+      window.widgetValue = undefined
       const widget = window.app!.graph!.nodes[0].widgets![0]
       widget.callback = (value: number) => {
         window.widgetValue = value
@@ -154,9 +159,11 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     await widget.dragHorizontal(50)
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
-    expect(
-      await comfyPage.page.evaluate(() => window.widgetValue)
-    ).toBeDefined()
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
+        timeout: 2_000
+      })
+      .toBeDefined()
   })
 })
 
@@ -209,8 +216,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     // Expect the filename combo value to be updated
     const fileComboWidget = await loadImageNode.getWidget(0)
-    const filename = await fileComboWidget.getValue()
-    expect(filename).toBe('image32x32.webp')
+    await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
 
   test('Can change image by changing the filename combo value', async ({
@@ -248,8 +254,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     )
 
     // Expect the filename combo value to be updated
-    const filename = await fileComboWidget.getValue()
-    expect(filename).toBe('image32x32.webp')
+    await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
   test('Displays buttons when viewing single image of batch', async ({
     comfyPage
@@ -301,8 +306,9 @@ test.describe(
 
       // Expect the filename combo value to be updated
       const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
-      const filename = await fileComboWidget.getValue()
-      expect(filename).toContain('animated_webp.webp')
+      await expect
+        .poll(() => fileComboWidget.getValue())
+        .toContain('animated_webp.webp')
     })
 
     test('Can preview saved animated webp image', async ({ comfyPage }) => {

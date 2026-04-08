@@ -38,8 +38,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.clipboard.copy(null)
     await comfyPage.clipboard.paste(null)
     await comfyPage.clipboard.paste(null)
-    const resultString = await textBox.inputValue()
-    expect(resultString).toBe(originalString + originalString)
+    await expect
+      .poll(() => textBox.inputValue())
+      .toBe(originalString + originalString)
   })
 
   test('Can copy and paste widget value', async ({ comfyPage }) => {
@@ -122,12 +123,14 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.clipboard.copy()
     await comfyPage.clipboard.paste()
 
-    const pasteCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(pasteCount).toBe(initialCount * 2)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount * 2)
 
     await comfyPage.keyboard.undo()
-    const undoCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(undoCount).toBe(initialCount)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount)
   })
 
   test(
