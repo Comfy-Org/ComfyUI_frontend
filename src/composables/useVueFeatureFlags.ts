@@ -27,8 +27,7 @@ function useVueFeatureFlagsIndividual() {
     () => {
       LiteGraph.vueNodesMode = shouldRenderVueNodes.value
       LiteGraph.getCollapsedSize = shouldRenderVueNodes.value
-        ? (nodeId) =>
-            layoutStore.getNodeCollapsedSize(String(nodeId)) ?? undefined
+        ? (nodeId) => layoutStore.getNodeCollapsedSize(String(nodeId))
         : undefined
     },
     { immediate: true }

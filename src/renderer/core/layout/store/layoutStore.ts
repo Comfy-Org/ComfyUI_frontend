@@ -1550,7 +1550,9 @@ class LayoutStoreImpl implements LayoutStore {
   updateNodeCollapsedSize(nodeId: NodeId, size: Size): void {
     const ynode = this.ynodes.get(nodeId)
     if (!ynode) return
-    ynode.set('collapsedSize', size)
+    this.ydoc.transact(() => {
+      ynode.set('collapsedSize', size)
+    }, this.currentActor)
     this.nodeTriggers.get(nodeId)?.()
   }
 
@@ -1561,7 +1563,9 @@ class LayoutStoreImpl implements LayoutStore {
   clearNodeCollapsedSize(nodeId: NodeId): void {
     const ynode = this.ynodes.get(nodeId)
     if (ynode?.has('collapsedSize')) {
-      ynode.delete('collapsedSize')
+      this.ydoc.transact(() => {
+        ynode.delete('collapsedSize')
+      }, this.currentActor)
       this.nodeTriggers.get(nodeId)?.()
     }
   }

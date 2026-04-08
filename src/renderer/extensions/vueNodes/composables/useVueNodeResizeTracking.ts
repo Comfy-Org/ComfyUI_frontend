@@ -143,9 +143,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     if (elementType === 'node' && element.dataset.collapsed != null) {
       if (nodeId) {
         markElementForFreshMeasurement(element)
-        const body = element.querySelector(
-          '[data-testid^="node-inner-wrapper"]'
-        )
+        const body = element.querySelector('[data-node-body]')
         const collapsedWidth =
           body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
         const collapsedHeight = element.offsetHeight
