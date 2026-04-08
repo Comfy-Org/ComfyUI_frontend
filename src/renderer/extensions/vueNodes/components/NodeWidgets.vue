@@ -116,7 +116,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { isWidgetPromoted } from '@/core/graph/subgraph/promotionUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type {
@@ -144,7 +144,6 @@ const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
 const { isSelectInputsMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const { bringNodeToFront } = useNodeZIndex()
-const promotionStore = usePromotionStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 
@@ -391,21 +390,14 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       : mergedOptions
 
     const sourceWidgetName = widget.storeName ?? widget.name
-    // Promotions stored for non-SubgraphNode inner nodes omit the
-    // disambiguatingSourceNodeId, but the widget's storeNodeId causes
-    // one to be computed here. Check both key shapes to handle nested
-    // subgraph promotions correctly (#10612).
     const isPromoted =
       graphId &&
-      (promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: hostNodeId,
+      isWidgetPromoted(
+        graphId,
+        hostNodeId,
         sourceWidgetName,
-        disambiguatingSourceNodeId: promotionSourceNodeId
-      }) ||
-        promotionStore.isPromotedByAny(graphId, {
-          sourceNodeId: hostNodeId,
-          sourceWidgetName
-        }))
+        promotionSourceNodeId
+      )
     const borderStyle = isPromoted
       ? 'ring ring-component-node-widget-promoted'
       : mergedOptions.advanced

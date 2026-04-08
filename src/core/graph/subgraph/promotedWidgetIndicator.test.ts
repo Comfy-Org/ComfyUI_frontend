@@ -1,8 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { defineComponent, h } from 'vue'
 import { describe, expect, test, vi } from 'vitest'
 
 import type {
@@ -23,6 +22,28 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     }
   })
 }))
+
+const PROMOTED_CLASS = 'ring-component-node-widget-promoted'
+
+const WidgetStub = defineComponent({
+  props: { widget: { type: Object, default: undefined } },
+  setup(props) {
+    return () =>
+      h('div', {
+        'data-testid': 'widget-stub',
+        class: props.widget?.borderStyle
+      })
+  }
+})
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  () => ({
+    getComponent: () => WidgetStub,
+    shouldExpand: () => false,
+    shouldRenderAsVue: () => true
+  })
+)
 
 function createMockWidget(
   overrides: Partial<SafeWidgetData> = {}
@@ -58,12 +79,12 @@ function createMockNodeData(
   }
 }
 
-function mountComponent(nodeData: VueNodeData, setupStores?: () => void) {
+function renderComponent(nodeData: VueNodeData, setupStores?: () => void) {
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
   setupStores?.()
 
-  return mount(NodeWidgets, {
+  return render(NodeWidgets, {
     props: { nodeData },
     global: {
       plugins: [pinia],
@@ -71,15 +92,6 @@ function mountComponent(nodeData: VueNodeData, setupStores?: () => void) {
       mocks: { $t: (key: string) => key }
     }
   })
-}
-
-function getBorderStyles(wrapper: ReturnType<typeof mount>) {
-  return fromAny<{ processedWidgets: unknown[] }, unknown>(
-    wrapper.vm
-  ).processedWidgets.map(
-    (entry) =>
-      (entry as { simplified: { borderStyle?: string } }).simplified.borderStyle
-  )
 }
 
 describe('promoted widget indicator on nested subgraphs', () => {
@@ -102,7 +114,7 @@ describe('promoted widget indicator on nested subgraphs', () => {
       slotName: 'text'
     })
     const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '3')
-    const wrapper = mountComponent(nodeData, () => {
+    renderComponent(nodeData, () => {
       // Store promotion WITHOUT disambiguatingSourceNodeId, as would
       // happen for a first-level nested promotion where the inner node
       // is not itself a SubgraphNode.
@@ -111,9 +123,11 @@ describe('promoted widget indicator on nested subgraphs', () => {
         sourceWidgetName: 'text'
       })
     })
-    await nextTick()
-    const borderStyles = getBorderStyles(wrapper)
 
-    expect(borderStyles.some((style) => style?.includes('promoted'))).toBe(true)
+    const widgets = screen.getAllByTestId('widget-stub')
+    const hasPromotedRing = widgets.some((el) =>
+      el.classList.contains(PROMOTED_CLASS)
+    )
+    expect(hasPromotedRing).toBe(true)
   })
 })

@@ -496,33 +496,25 @@ test.describe('Subgraph Nested Scenarios', { tag: ['@subgraph'] }, () => {
         const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
         await comfyExpect(outerRings).toHaveCount(0)
 
-        // Navigate into Sub 0 programmatically to avoid click interception
-        // from canvas overlay elements (z-999 layer).
-        await comfyPage.page.evaluate(() => {
-          const graph = window.app!.graph!
-          const node = graph.getNodeById('5')
-          if (node?.isSubgraphNode()) {
-            window.app!.canvas.setGraph(node.subgraph)
-          }
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.enterSubgraph('5')
         await comfyPage.vueNodes.waitForNodes()
 
-        // Node 6 (Sub 1) has widgets promoted up to Sub 0 (node 5).
-        // At least one widget should carry the promoted ring.
+        // Node 6 (Sub 1) has 4 proxyWidgets (string_a, value, value,
+        // string_a) promoted up to Sub 0 (node 5). Each should carry the
+        // promoted ring.
         const intermediateNode = comfyPage.vueNodes.getNodeLocator('6')
         await comfyExpect(intermediateNode).toBeVisible()
 
         const intermediateRings = intermediateNode.locator(
           `.${PROMOTED_BORDER_CLASS}`
         )
-        await comfyExpect(async () => {
-          const count = await intermediateRings.count()
-          expect(
-            count,
-            'Node 6 (Sub 1) should have at least one promoted ring'
-          ).toBeGreaterThan(0)
-        }).toPass({ timeout: 5000 })
+        await expect
+          .poll(() => intermediateRings.count(), {
+            timeout: 5000,
+            message:
+              'Node 6 (Sub 1) should show promoted rings for all 4 proxyWidgets'
+          })
+          .toBe(4)
       })
     }
   )
