@@ -4,6 +4,10 @@ import { expect } from '@playwright/test'
 import type { WorkspaceStore } from '../../types/globals'
 import { TestIds } from '../selectors'
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 class SidebarTab {
   constructor(
     public readonly page: Page,
@@ -372,7 +376,11 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   getAssetCardByName(name: string) {
-    return this.assetCards.filter({ hasText: name }).first()
+    return this.root
+      .getByRole('button', {
+        name: new RegExp(`^${escapeRegExp(name)}\\s+-\\s+`)
+      })
+      .first()
   }
 
   get selectedCards() {
@@ -469,7 +477,11 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   async openContextMenuForAsset(name: string) {
-    await this.asset(name).click({ button: 'right' })
+    await this.asset(name).dispatchEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
     await this.page
       .locator('.p-contextmenu')
       .waitFor({ state: 'visible', timeout: 3000 })
@@ -570,7 +582,11 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async rightClickAsset(name: string) {
     const card = this.getAssetCardByName(name)
-    await card.click({ button: 'right' })
+    await card.dispatchEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
     await this.page
       .locator('.p-contextmenu')
       .waitFor({ state: 'visible', timeout: 3000 })
