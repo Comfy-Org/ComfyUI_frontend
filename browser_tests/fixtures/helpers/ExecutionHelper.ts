@@ -10,6 +10,7 @@ export class ExecutionHelper {
   private jobCounter = 0
   private readonly completedJobs: RawJobListItem[] = []
   private readonly page: ComfyPage['page']
+  private readonly command: ComfyPage['command']
   private readonly assets: ComfyPage['assets']
 
   constructor(
@@ -17,6 +18,7 @@ export class ExecutionHelper {
     private readonly mock: MockWebSocket
   ) {
     this.page = comfyPage.page
+    this.command = comfyPage.command
     this.assets = comfyPage.assets
   }
 
@@ -55,9 +57,7 @@ export class ExecutionHelper {
       { times: 1 }
     )
 
-    await this.page.evaluate(() => {
-      window.app!.extensionManager.command.execute('Comfy.QueuePrompt')
-    })
+    await this.command.executeCommand('Comfy.QueuePrompt')
     await prompted
 
     // Prevent real server events from interfering with test-controlled execution
