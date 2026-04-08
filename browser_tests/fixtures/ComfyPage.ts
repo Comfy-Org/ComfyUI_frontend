@@ -14,9 +14,12 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
+import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
+import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
 import {
   AssetsSidebarTab,
   ModelLibrarySidebarTab,
@@ -26,6 +29,8 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
@@ -131,48 +136,6 @@ class ComfyMenu {
   }
 }
 
-type KeysOfType<T, Match> = {
-  [K in keyof T]: T[K] extends Match ? K : never
-}[keyof T]
-
-class ConfirmDialog {
-  public readonly root: Locator
-  public readonly delete: Locator
-  public readonly overwrite: Locator
-  public readonly reject: Locator
-  public readonly confirm: Locator
-
-  constructor(public readonly page: Page) {
-    this.root = page.getByRole('dialog')
-    this.delete = this.root.getByRole('button', { name: 'Delete' })
-    this.overwrite = this.root.getByRole('button', { name: 'Overwrite' })
-    this.reject = this.root.getByRole('button', { name: 'Cancel' })
-    this.confirm = this.root.getByRole('button', { name: 'Confirm' })
-  }
-
-  async click(locator: KeysOfType<ConfirmDialog, Locator>) {
-    const loc = this[locator]
-    await loc.waitFor({ state: 'visible' })
-    await loc.click()
-
-    // Wait for the dialog mask to disappear after confirming
-    const mask = this.page.locator('.p-dialog-mask')
-    const count = await mask.count()
-    if (count > 0) {
-      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
-    }
-
-    // Wait for workflow service to finish if it's busy
-    await this.page.waitForFunction(
-      () =>
-        (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy === false,
-      undefined,
-      { timeout: 3000 }
-    )
-  }
-}
-
 export class ComfyPage {
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -196,6 +159,8 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly templatesDialog: TemplatesDialog
+  public readonly mediaLightbox: MediaLightbox
   public readonly vueNodes: VueNodeHelpers
   public readonly appMode: AppModeHelper
   public readonly subgraph: SubgraphHelper
@@ -214,6 +179,7 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
+  public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
 
   /** Worker index to test user ID */
@@ -244,6 +210,8 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.templatesDialog = new TemplatesDialog(page)
+    this.mediaLightbox = new MediaLightbox(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
@@ -262,6 +230,7 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
+    this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
   }
 
@@ -483,6 +452,7 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
+    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {

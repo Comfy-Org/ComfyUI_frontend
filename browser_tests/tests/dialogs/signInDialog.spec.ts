@@ -83,7 +83,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   })
 
   test('Should close dialog via close button', async () => {
-    await dialog.close()
+    await dialog.closeButton.click()
     await expect(dialog.root).toBeHidden()
   })
 

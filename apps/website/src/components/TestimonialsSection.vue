@@ -50,6 +50,8 @@ const filteredTestimonials = computed(() => {
         <button
           v-for="industry in industries"
           :key="industry"
+          type="button"
+          :aria-pressed="activeFilter === industry"
           class="cursor-pointer rounded-full px-4 py-1.5 text-sm transition-colors"
           :class="
             activeFilter === industry
