@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test'
 
-import type { RawJobListItem } from '../../src/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { comfyPageFixture, comfyExpect as expect } from '../fixtures/ComfyPage'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { webSocketFixture } from '../fixtures/ws'

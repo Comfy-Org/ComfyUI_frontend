@@ -1,4 +1,4 @@
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '../ComfyPage'
 import type { MockWebSocket } from '../ws'
 import { createMockJob } from './AssetsHelper'
