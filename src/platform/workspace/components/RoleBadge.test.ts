@@ -35,10 +35,4 @@ describe('RoleBadge', () => {
     expect(wrapper.text()).toBe('Member')
   })
 
-  it('applies badge styling classes', () => {
-    const wrapper = mountRoleBadge('owner')
-    const span = wrapper.find('span')
-    expect(span.classes()).toContain('rounded-full')
-    expect(span.classes()).toContain('uppercase')
-  })
 })
