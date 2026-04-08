@@ -31,12 +31,12 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^0.1.10
-  '@tanstack/vue-virtual': ^3.13.12
   '@storybook/addon-docs': ^10.2.10
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
   '@tailwindcss/vite': ^4.2.0
+  '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
   '@testing-library/vue': ^8.1.0
@@ -58,7 +58,6 @@ catalog:
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
-  '@vue/test-utils': ^2.4.6
   '@vueuse/core': ^14.2.0
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66

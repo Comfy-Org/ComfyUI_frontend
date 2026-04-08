@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -33,12 +34,12 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false })
 
-function mountComponent(
+function renderComponent(
   opts: { hasNodes?: boolean; hasOutputs?: boolean } = {}
 ) {
   hasNodes.value = opts.hasNodes ?? false
   hasOutputs.value = opts.hasOutputs ?? false
-  return mount(LinearWelcome, {
+  return render(LinearWelcome, {
     global: { plugins: [i18n] }
   })
 }
@@ -51,30 +52,27 @@ describe('LinearWelcome', () => {
   })
 
   it('shows empty workflow text when there are no nodes', () => {
-    const wrapper = mountComponent({ hasNodes: false })
+    renderComponent({ hasNodes: false })
     expect(
-      wrapper.find('[data-testid="linear-welcome-empty-workflow"]').exists()
-    ).toBe(true)
+      screen.getByTestId('linear-welcome-empty-workflow')
+    ).toBeInTheDocument()
     expect(
-      wrapper.find('[data-testid="linear-welcome-build-app"]').exists()
-    ).toBe(false)
+      screen.queryByTestId('linear-welcome-build-app')
+    ).not.toBeInTheDocument()
   })
 
   it('shows build app button when there are nodes but no outputs', () => {
-    const wrapper = mountComponent({ hasNodes: true, hasOutputs: false })
+    renderComponent({ hasNodes: true, hasOutputs: false })
     expect(
-      wrapper.find('[data-testid="linear-welcome-empty-workflow"]').exists()
-    ).toBe(false)
-    expect(
-      wrapper.find('[data-testid="linear-welcome-build-app"]').exists()
-    ).toBe(true)
+      screen.queryByTestId('linear-welcome-empty-workflow')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('linear-welcome-build-app')).toBeInTheDocument()
   })
 
   it('clicking build app button calls enterBuilder', async () => {
-    const wrapper = mountComponent({ hasNodes: true, hasOutputs: false })
-    await wrapper
-      .find('[data-testid="linear-welcome-build-app"]')
-      .trigger('click')
+    const user = userEvent.setup()
+    renderComponent({ hasNodes: true, hasOutputs: false })
+    await user.click(screen.getByTestId('linear-welcome-build-app'))
     expect(enterBuilder).toHaveBeenCalled()
   })
 })

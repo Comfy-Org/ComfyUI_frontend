@@ -171,9 +171,6 @@ catalogs:
     '@vitest/ui':
       specifier: ^4.0.16
       version: 4.0.16
-    '@vue/test-utils':
-      specifier: ^2.4.6
-      version: 2.4.6
     '@vueuse/core':
       specifier: ^14.2.0
       version: 14.2.0
@@ -690,9 +687,6 @@ importers:
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.0.16(vitest@4.0.16)
-      '@vue/test-utils':
-        specifier: 'catalog:'
-        version: 2.4.6
       '@webgpu/types':
         specifier: 'catalog:'
         version: 0.1.66

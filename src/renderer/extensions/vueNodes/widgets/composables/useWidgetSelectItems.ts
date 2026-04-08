@@ -55,7 +55,7 @@ function getMediaUrl(
   return `/api/view?${params}`
 }
 
-export interface UseWidgetSelectItemsOptions {
+interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
   getOptionLabel: MaybeRefOrGetter<
     ((value?: string | null) => string) | undefined

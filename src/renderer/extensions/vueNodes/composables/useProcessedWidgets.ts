@@ -42,7 +42,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { app } from '@/scripts/app'
 
-export interface ProcessedWidget {
+interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
   hasLayoutSize: boolean

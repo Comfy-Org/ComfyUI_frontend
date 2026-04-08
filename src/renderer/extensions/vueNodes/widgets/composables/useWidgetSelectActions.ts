@@ -8,7 +8,7 @@ import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-export interface UseWidgetSelectActionsOptions {
+interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: ComputedRef<FormDropdownItem[]>
   widget: () => SimplifiedWidget<string | undefined>
