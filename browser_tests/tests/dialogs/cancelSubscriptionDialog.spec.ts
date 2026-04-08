@@ -10,7 +10,7 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
     await page.evaluate(() => {
       void (
         window.app!.extensionManager as WorkspaceStore
-      ).dialog.showCancelSubscriptionDialog('2025-12-31T00:00:00Z')
+      ).dialog.showCancelSubscriptionDialog('2025-12-31T12:00:00Z')
     })
 
     const dialog = page.getByRole('dialog')
