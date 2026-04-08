@@ -323,6 +323,71 @@ test.describe('Workflow Persistence', () => {
     expect(linkCountAfter).toBe(linkCountBefore)
   })
 
+  test('Closing an unmodified inactive tab preserves both workflows', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10745 — closing inactive tab could corrupt the persisted file'
+    })
+
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const suffix = Date.now().toString(36)
+    const nameA = `test-A-${suffix}`
+    const nameB = `test-B-${suffix}`
+
+    // Save the default workflow as A
+    await comfyPage.menu.topbar.saveWorkflow(nameA)
+    const nodeCountA = await comfyPage.nodeOps.getNodeCount()
+
+    // Create B: duplicate, add a node, then save (unmodified after save)
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.nextFrame()
+
+    await comfyPage.page.evaluate(() => {
+      window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
+    })
+    await comfyPage.nextFrame()
+    await comfyPage.menu.topbar.saveWorkflow(nameB)
+
+    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
+    expect(nodeCountB).toBe(nodeCountA + 1)
+
+    // Switch to A (making B inactive and unmodified)
+    await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Close inactive B via middle-click — no save dialog expected
+    await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
+      button: 'middle'
+    })
+    await comfyPage.nextFrame()
+
+    // A should still have its own content
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .toBe(nodeCountA)
+
+    // Reopen B from saved list
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await workflowsTab.getPersistedItem(nameB).dblclick()
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    // B should have its original content, not A's
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
+      .toBe(nodeCountB)
+  })
+
   test('Closing an inactive tab with save preserves its own content', async ({
     comfyPage
   }) => {
