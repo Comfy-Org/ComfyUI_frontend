@@ -363,7 +363,7 @@ test.describe('Node Interaction', () => {
     // bypasses the canvas z-999 overlay that blocks normal clicks.
     await expect(async () => {
       await comfyPage.canvas.dispatchEvent('click', { bubbles: true })
-      await expect(legacyPrompt).toBeHidden()
+      await expect(legacyPrompt).toBeHidden({ timeout: 200 })
     }).toPass({ intervals: [300, 500, 1000], timeout: 5_000 })
   })
 
@@ -382,7 +382,7 @@ test.describe('Node Interaction', () => {
     await expect(legacyPrompt).toBeVisible()
     await expect(async () => {
       await comfyPage.canvas.dispatchEvent('click', { bubbles: true })
-      await expect(legacyPrompt).toBeHidden()
+      await expect(legacyPrompt).toBeHidden({ timeout: 200 })
     }).toPass({ intervals: [300, 500, 1000], timeout: 5_000 })
   })
 
