@@ -37,7 +37,7 @@ export function useAppModeWidgetResizing(
       if (!el.style.height) continue
       const info = resizablesByEl.get(el)
       if (!info) continue
-      persistHeight(info.nodeId, info.widgetName, el.offsetHeight)
+      void persistHeight(info.nodeId, info.widgetName, el.offsetHeight)
     }
   })
 
