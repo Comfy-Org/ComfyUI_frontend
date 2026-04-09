@@ -150,16 +150,19 @@ test.describe('Workflow Persistence', () => {
         'Commit 44bb6f13 — canvas graph not reset before workflow load'
     })
 
-    const defaultNodeCount = await comfyPage.nodeOps.getNodeCount()
-    expect(defaultNodeCount).toBeGreaterThan(1)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBeGreaterThan(1)
 
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await comfyPage.nextFrame()
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
-    const nodes = await comfyPage.nodeOps.getNodes()
-    expect(nodes[0].type).toBe('KSampler')
+    await expect
+      .poll(async () => {
+        const nodes = await comfyPage.nodeOps.getNodes()
+        return nodes[0]?.type
+      })
+      .toBe('KSampler')
   })
 
   test('Widget values on nodes are preserved across workflow tab switches', async ({
@@ -555,12 +558,20 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.setup({ clearStorage: false })
     await comfyPage.nextFrame()
 
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
+          return raw ? JSON.parse(raw) : null
+        })
+      )
+      .toBeTruthy()
+
     const storedSizes = await comfyPage.page.evaluate(() => {
       const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
       return raw ? JSON.parse(raw) : null
     })
 
-    expect(storedSizes).toBeTruthy()
     expect(Array.isArray(storedSizes)).toBe(true)
     for (const size of storedSizes as number[]) {
       expect(typeof size).toBe('number')

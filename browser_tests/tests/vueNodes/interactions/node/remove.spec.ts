@@ -20,8 +20,10 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.waitForNodes()
 
     // Get initial Vue node count
+    await expect
+      .poll(() => comfyPage.vueNodes.getNodeCount())
+      .toBeGreaterThan(0)
     const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
-    expect(initialNodeCount).toBeGreaterThan(0)
 
     // Select all Vue nodes
     await comfyPage.keyboard.selectAll()
@@ -42,8 +44,10 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.waitForNodes()
 
     // Get initial Vue node count
+    await expect
+      .poll(() => comfyPage.vueNodes.getNodeCount())
+      .toBeGreaterThan(0)
     const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
-    expect(initialNodeCount).toBeGreaterThan(0)
 
     // Get first Vue node ID and select it
     const nodeIds = await comfyPage.vueNodes.getNodeIds()
@@ -117,8 +121,9 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.page.keyboard.press('Delete')
 
     // Vue node count should remain the same
-    const nodeCount = await comfyPage.vueNodes.getNodeCount()
-    expect(nodeCount).toBeGreaterThan(0)
+    await expect
+      .poll(() => comfyPage.vueNodes.getNodeCount())
+      .toBeGreaterThan(0)
   })
 
   test('Can multi-select with Ctrl+click and delete multiple Vue nodes', async ({

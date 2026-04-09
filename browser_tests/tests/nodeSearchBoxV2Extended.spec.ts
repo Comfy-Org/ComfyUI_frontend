@@ -41,8 +41,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     await comfyPage.page.keyboard.press('Escape')
     await expect(searchBoxV2.input).not.toBeVisible()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount)
   })
 
   test('Search clears when reopening', async ({ comfyPage }) => {

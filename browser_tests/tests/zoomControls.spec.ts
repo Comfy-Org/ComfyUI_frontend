@@ -31,8 +31,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     )
     await expect(zoomButton).toContainText('100%')
 
-    const scale = await comfyPage.canvasOps.getScale()
-    expect(scale).toBeCloseTo(1.0, 1)
+    await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(1.0, 1)
   })
 
   test('Zoom to fit reduces percentage', async ({ comfyPage }) => {
@@ -64,8 +63,9 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await zoomOut.click()
     await comfyPage.nextFrame()
 
-    const newScale = await comfyPage.canvasOps.getScale()
-    expect(newScale).toBeLessThan(initialScale)
+    await expect
+      .poll(() => comfyPage.canvasOps.getScale())
+      .toBeLessThan(initialScale)
   })
 
   test('Zoom out clamps at 10% minimum', async ({ comfyPage }) => {
@@ -108,15 +108,16 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await zoomIn.click()
     await comfyPage.nextFrame()
 
+    await expect.poll(() => comfyPage.canvasOps.getScale()).toBeGreaterThan(1.0)
     const scaleAfterZoomIn = await comfyPage.canvasOps.getScale()
-    expect(scaleAfterZoomIn).toBeGreaterThan(1.0)
 
     const zoomOut = comfyPage.page.getByTestId(TestIds.canvas.zoomOutAction)
     await zoomOut.click()
     await comfyPage.nextFrame()
 
-    const scaleAfterZoomOut = await comfyPage.canvasOps.getScale()
-    expect(scaleAfterZoomOut).toBeLessThan(scaleAfterZoomIn)
+    await expect
+      .poll(() => comfyPage.canvasOps.getScale())
+      .toBeLessThan(scaleAfterZoomIn)
   })
 
   test('Clicking zoom button toggles zoom controls visibility', async ({

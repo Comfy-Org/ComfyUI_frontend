@@ -13,6 +13,14 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     // Load a workflow with some nodes to render
     await comfyPage.workflow.loadWorkflow('default')
 
+    // Should start at normal zoom (not low quality)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.low_quality))
+      .toBe(false)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))
+      .toBeCloseTo(1, 1)
+
     // Get initial LOD state and settings
     const initialState = await comfyPage.page.evaluate(() => {
       const canvas = window.app!.canvas
@@ -22,10 +30,6 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
         minFontSize: canvas.min_font_size_for_lod
       }
     })
-
-    // Should start at normal zoom (not low quality)
-    expect(initialState.lowQuality).toBe(false)
-    expect(initialState.scale).toBeCloseTo(1, 1)
 
     // Calculate expected threshold (8px / 14px ≈ 0.571)
     const expectedThreshold = initialState.minFontSize / 14

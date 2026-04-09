@@ -109,8 +109,9 @@ test.describe(
         { timeout: 10000 }
       )
 
-      const newNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(newNodeCount).not.toBe(initialNodeCount)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .not.toBe(initialNodeCount)
     })
   }
 )

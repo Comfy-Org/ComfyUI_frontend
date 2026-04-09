@@ -904,11 +904,14 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
       // Move mouse elsewhere and verify snap position is unchanged
       await comfyMouse.move({ x: dropPos.x + 160, y: dropPos.y + 100 })
-      const after = await comfyPage.page.evaluate(() => {
-        const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
-        return Array.isArray(snap) ? [snap[0], snap[1]] : null
-      })
-      expect(after).toEqual(before)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
+            return Array.isArray(snap) ? [snap[0], snap[1]] : null
+          })
+        )
+        .toEqual(before)
     })
 
     test('Context menu -> Search pre-filters by link type and connects after selection', async ({

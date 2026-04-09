@@ -206,11 +206,13 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
     await builderSaveAs(comfyPage.appMode, `${Date.now()} app-ext`, 'App')
 
-    const path = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(path).toContain('.app.json')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
 
-    const linearMode = await comfyPage.workflow.getLinearModeFromGraph()
-    expect(linearMode).toBe(true)
+    await expect
+      .poll(() => comfyPage.workflow.getLinearModeFromGraph())
+      .toBe(true)
   })
 
   test('save as node graph produces correct extension and linearMode', async ({
@@ -223,12 +225,16 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
       'Node graph'
     )
 
-    const path = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(path).toMatch(/\.json$/)
-    expect(path).not.toContain('.app.json')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toMatch(/\.json$/)
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toContain('.app.json')
 
-    const linearMode = await comfyPage.workflow.getLinearModeFromGraph()
-    expect(linearMode).toBe(false)
+    await expect
+      .poll(() => comfyPage.workflow.getLinearModeFromGraph())
+      .toBe(false)
   })
 
   test('save as app View App button enters app mode', async ({ comfyPage }) => {
@@ -267,8 +273,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     const originalName = `${Date.now()} original`
     await builderSaveAs(appMode, originalName, 'App')
-    const originalPath = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(originalPath).toContain('.app.json')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
     await appMode.saveAs.closeButton.click()
     await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
@@ -276,9 +283,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await reSaveAs(appMode, `${Date.now()} copy`, 'Node graph')
     await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
 
-    const newPath = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(newPath).not.toBe(originalPath)
-    expect(newPath).not.toContain('.app.json')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toContain('.app.json')
 
     // Dismiss success dialog, exit app mode, reopen the original
     await appMode.saveAs.dismissButton.click()
@@ -286,8 +293,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await appMode.toggleAppMode()
     await openWorkflowFromSidebar(comfyPage, originalName)
 
-    const linearMode = await comfyPage.workflow.getLinearModeFromGraph()
-    expect(linearMode).toBe(true)
+    await expect
+      .poll(() => comfyPage.workflow.getLinearModeFromGraph())
+      .toBe(true)
   })
 
   test('save as with same name and same mode overwrites in place', async ({
@@ -301,6 +309,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await appMode.saveAs.closeButton.click()
     await comfyPage.nextFrame()
 
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
     const pathAfterFirst = await comfyPage.workflow.getActiveWorkflowPath()
 
     await reSaveAs(appMode, name, 'App')
@@ -311,8 +322,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
 
-    const pathAfterSecond = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(pathAfterSecond).toBe(pathAfterFirst)
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toBe(pathAfterFirst)
   })
 
   test('save as with same name but different mode creates a new file', async ({
@@ -323,18 +335,25 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
 
     await builderSaveAs(appMode, name, 'App')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toContain('.app.json')
     const pathAfterFirst = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(pathAfterFirst).toContain('.app.json')
     await appMode.saveAs.closeButton.click()
     await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
     await reSaveAs(appMode, name, 'Node graph')
     await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
 
-    const pathAfterSecond = await comfyPage.workflow.getActiveWorkflowPath()
-    expect(pathAfterSecond).not.toBe(pathAfterFirst)
-    expect(pathAfterSecond).toMatch(/\.json$/)
-    expect(pathAfterSecond).not.toContain('.app.json')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toBe(pathAfterFirst)
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .toMatch(/\.json$/)
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+      .not.toContain('.app.json')
   })
 
   test('save as app workflow reloads in app mode', async ({ comfyPage }) => {
@@ -347,8 +366,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await openWorkflowFromSidebar(comfyPage, name)
 
-    const mode = await comfyPage.workflow.getActiveWorkflowInitialMode()
-    expect(mode).toBe('app')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowInitialMode())
+      .toBe('app')
   })
 
   test('save as node graph workflow reloads in node graph mode', async ({
@@ -363,7 +383,8 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await openWorkflowFromSidebar(comfyPage, name)
 
-    const mode = await comfyPage.workflow.getActiveWorkflowInitialMode()
-    expect(mode).toBe('graph')
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowInitialMode())
+      .toBe('graph')
   })
 })

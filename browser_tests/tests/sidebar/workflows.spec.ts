@@ -133,10 +133,12 @@ test.describe('Workflows sidebar', () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
+    await expect
+      .poll(() => comfyPage.workflow.getExportedWorkflow({ api: false }))
+      .toBeDefined()
     const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow({
       api: false
     })
-    expect(exportedWorkflow).toBeDefined()
     for (const node of exportedWorkflow.nodes) {
       for (const slot of node.inputs ?? []) {
         expect(slot.localized_name).toBeUndefined()

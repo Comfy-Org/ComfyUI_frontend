@@ -12,8 +12,10 @@ test.describe('@canvas Selection Rectangle', () => {
   })
 
   test('Ctrl+A selects all nodes', async ({ comfyPage }) => {
+    await expect
+      .poll(() => comfyPage.vueNodes.getNodeCount())
+      .toBeGreaterThan(0)
     const totalCount = await comfyPage.vueNodes.getNodeCount()
-    expect(totalCount).toBeGreaterThan(0)
 
     // Use canvas press for keyboard shortcuts (doesn't need click target)
     await comfyPage.canvas.press('Control+a')
@@ -82,10 +84,12 @@ test.describe('@canvas Selection Rectangle', () => {
     await comfyPage.canvas.press('Control+a')
     await comfyPage.nextFrame()
 
+    await expect
+      .poll(() => comfyPage.vueNodes.getNodeCount())
+      .toBeGreaterThan(1)
     const totalCount = await comfyPage.vueNodes.getNodeCount()
     await expect
       .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
       .toBe(totalCount)
-    expect(totalCount).toBeGreaterThan(1)
   })
 })

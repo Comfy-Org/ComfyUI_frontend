@@ -179,16 +179,18 @@ test.describe('Group Node', { tag: '@node' }, () => {
       return nodes.reduce((acc, node) => acc + (node.inputs?.length ?? 0), 0)
     }, groupNodeName)
 
-    const visibleInputCount = await comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph!.getNodeById(id)
-      return node!.inputs.length
-    }, groupNodeId)
-
     // Verify there are 4 total inputs (2 VAE decode nodes with 2 inputs each)
     expect(totalInputCount).toBe(4)
 
     // Verify there are 2 visible inputs (2 have been hidden in config)
-    expect(visibleInputCount).toBe(2)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate((id) => {
+          const node = window.app!.graph!.getNodeById(id)
+          return node!.inputs.length
+        }, groupNodeId)
+      )
+      .toBe(2)
   })
 
   test('Reconnects inputs after configuration changed via manage dialog save', async ({

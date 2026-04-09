@@ -91,10 +91,16 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       const nodeName = 'Remote Widget Node'
       await comfyPage.workflow.loadWorkflow('inputs/remote_widget')
 
-      const node = await comfyPage.page.evaluate((name) => {
-        return window.app!.graph!.nodes.find((node) => node.title === name)
-      }, nodeName)
-      expect(node).toBeDefined()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate((name) => {
+            return (
+              window.app!.graph!.nodes.find((node) => node.title === name) !=
+              null
+            )
+          }, nodeName)
+        )
+        .toBe(true)
 
       await expect
         .poll(() => getWidgetOptions(comfyPage, nodeName))
