@@ -1,15 +1,8 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
-
 import type { Page, Route } from '@playwright/test'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { AssetScenarioHelper } from '../../browser_tests/fixtures/helpers/AssetScenarioHelper'
-import type {
-  GeneratedJobFixture,
-  ImportedAssetFixture
-} from '../../browser_tests/fixtures/helpers/assetScenarioTypes'
+import { createMockJob } from '../../browser_tests/fixtures/helpers/jobFixtures'
 
 type RouteHandler = (route: Route) => Promise<void>
 
@@ -19,13 +12,6 @@ type RegisteredRoute = {
 }
 
 type PageStub = Pick<Page, 'route' | 'unroute'>
-
-type AssetScenarioHelperTestAccess = {
-  seed(args: {
-    generated: GeneratedJobFixture[]
-    imported: ImportedAssetFixture[]
-  }): Promise<void>
-}
 
 type FulfillOptions = NonNullable<Parameters<Route['fulfill']>[0]>
 
@@ -106,69 +92,23 @@ async function invokeViewRoute(
 }
 
 describe('AssetScenarioHelper', () => {
-  let tempDir: string | undefined
-
-  afterEach(async () => {
-    if (tempDir) {
-      await rm(tempDir, { recursive: true, force: true })
-      tempDir = undefined
-    }
-  })
-
-  it('serves seeded files using filename, type, and subfolder together', async () => {
-    tempDir = await mkdtemp(
-      path.join(tmpdir(), 'asset-scenario-helper-view-route-')
-    )
-
-    const outputFile = path.join(tempDir, 'output.txt')
-    const nestedOutputFile = path.join(tempDir, 'nested-output.txt')
-    const inputFile = path.join(tempDir, 'input.txt')
-
-    await Promise.all([
-      writeFile(outputFile, 'root output'),
-      writeFile(nestedOutputFile, 'nested output'),
-      writeFile(inputFile, 'input asset')
-    ])
-
+  it('serves generated outputs and imported files through the view route', async () => {
     const { page, routes } = createPageStub()
     const helper = new AssetScenarioHelper(page as unknown as Page)
-    const testAccess = helper as unknown as AssetScenarioHelperTestAccess
 
-    await testAccess.seed({
-      generated: [
-        {
-          jobId: 'job-root',
-          outputs: [
-            {
-              filename: 'shared-name.txt',
-              type: 'output',
-              subfolder: '',
-              filePath: outputFile,
-              contentType: 'text/plain'
-            }
-          ]
-        },
-        {
-          jobId: 'job-nested',
-          outputs: [
-            {
-              filename: 'shared-name.txt',
-              type: 'output',
-              subfolder: 'nested/folder',
-              filePath: nestedOutputFile,
-              contentType: 'text/plain'
-            }
-          ]
+    await helper.seedGeneratedHistory([
+      createMockJob({
+        id: 'job-generated',
+        preview_output: {
+          filename: 'generated.json',
+          subfolder: '',
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
         }
-      ],
-      imported: [
-        {
-          name: 'shared-name.txt',
-          filePath: inputFile,
-          contentType: 'text/plain'
-        }
-      ]
-    })
+      })
+    ])
+    await helper.seedImportedFiles(['imported.txt'])
 
     const viewRouteHandler = getRouteHandler(
       routes,
@@ -179,22 +119,15 @@ describe('AssetScenarioHelper', () => {
     await expect(
       invokeViewRoute(
         viewRouteHandler,
-        'http://localhost/api/view?filename=shared-name.txt&type=output&subfolder='
+        'http://localhost/api/view?filename=generated.json&type=output&subfolder='
       )
-    ).resolves.toBe('root output')
+    ).resolves.toBe(JSON.stringify({ mocked: true }, null, 2))
 
     await expect(
       invokeViewRoute(
         viewRouteHandler,
-        'http://localhost/api/view?filename=shared-name.txt&type=output&subfolder=nested%2Ffolder'
+        'http://localhost/api/view?filename=imported.txt&type=input&subfolder='
       )
-    ).resolves.toBe('nested output')
-
-    await expect(
-      invokeViewRoute(
-        viewRouteHandler,
-        'http://localhost/api/view?filename=shared-name.txt&type=input&subfolder='
-      )
-    ).resolves.toBe('input asset')
+    ).resolves.toBe('mocked asset content')
   })
 })

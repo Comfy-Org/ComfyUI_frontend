@@ -1,6 +1,4 @@
 import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
-import path from 'node:path'
 
 import type { Page, Route } from '@playwright/test'
 import type { JobDetailResponse, JobEntry } from '@comfyorg/ingest-types'
@@ -13,16 +11,15 @@ import type {
 } from './assetScenarioTypes'
 import { InMemoryJobsBackend } from './InMemoryJobsBackend'
 import { getMimeType } from './mimeTypeUtil'
+import {
+  buildSeededFileKey,
+  buildSeededFiles,
+  defaultFileFor
+} from './seededAssetFiles'
+import type { SeededAssetFile } from './seededAssetFiles'
 
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const viewRoutePattern = /\/api\/view(?:\?.*)?$/
-const helperDir = path.dirname(fileURLToPath(import.meta.url))
-
-type SeededAssetFile = {
-  filePath?: string
-  contentType?: string
-  textContent?: string
-}
 
 type MockPreviewOutput = NonNullable<JobEntry['preview_output']> & {
   filename?: string
@@ -31,79 +28,6 @@ type MockPreviewOutput = NonNullable<JobEntry['preview_output']> & {
   nodeId: string
   mediaType?: string
   display_name?: string
-}
-
-type SeededFileLocation = {
-  filename: string
-  type: string
-  subfolder: string
-}
-
-function getFixturePath(relativePath: string): string {
-  return path.resolve(helperDir, '../../assets', relativePath)
-}
-
-function buildSeededFileKey({
-  filename,
-  type,
-  subfolder
-}: SeededFileLocation): string {
-  return new URLSearchParams({
-    filename,
-    type,
-    subfolder
-  }).toString()
-}
-
-function defaultFileFor(filename: string): SeededAssetFile {
-  const normalized = filename.toLowerCase()
-
-  if (normalized.endsWith('.png')) {
-    return {
-      filePath: getFixturePath('workflowInMedia/workflow_itxt.png'),
-      contentType: 'image/png'
-    }
-  }
-
-  if (normalized.endsWith('.webp')) {
-    return {
-      filePath: getFixturePath('example.webp'),
-      contentType: 'image/webp'
-    }
-  }
-
-  if (normalized.endsWith('.webm')) {
-    return {
-      filePath: getFixturePath('workflowInMedia/workflow.webm'),
-      contentType: 'video/webm'
-    }
-  }
-
-  if (normalized.endsWith('.mp4')) {
-    return {
-      filePath: getFixturePath('workflowInMedia/workflow.mp4'),
-      contentType: 'video/mp4'
-    }
-  }
-
-  if (normalized.endsWith('.glb')) {
-    return {
-      filePath: getFixturePath('workflowInMedia/workflow.glb'),
-      contentType: 'model/gltf-binary'
-    }
-  }
-
-  if (normalized.endsWith('.json')) {
-    return {
-      textContent: JSON.stringify({ mocked: true }, null, 2),
-      contentType: 'application/json'
-    }
-  }
-
-  return {
-    textContent: 'mocked asset content',
-    contentType: getMimeType(filename)
-  }
 }
 
 function normalizeOutputFixture(
@@ -210,24 +134,6 @@ function buildSeededJob(job: GeneratedJobFixture) {
   return { listItem, detail }
 }
 
-function outputLocation(output: GeneratedOutputFixture): SeededFileLocation {
-  return {
-    filename: output.filename,
-    type: output.type ?? 'output',
-    subfolder: output.subfolder ?? ''
-  }
-}
-
-function importedAssetLocation(
-  asset: ImportedAssetFixture
-): SeededFileLocation {
-  return {
-    filename: asset.name,
-    type: 'input',
-    subfolder: ''
-  }
-}
-
 export class AssetScenarioHelper {
   private readonly jobsBackend: InMemoryJobsBackend
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
@@ -289,27 +195,10 @@ export class AssetScenarioHelper {
   }): Promise<void> {
     this.generatedJobs = [...generated]
     this.importedFiles = [...imported]
-    this.seededFiles = new Map()
-
-    for (const job of this.generatedJobs) {
-      for (const output of job.outputs) {
-        const fallback = defaultFileFor(output.filename)
-        this.seededFiles.set(buildSeededFileKey(outputLocation(output)), {
-          filePath: output.filePath ?? fallback.filePath,
-          contentType: output.contentType ?? fallback.contentType,
-          textContent: fallback.textContent
-        })
-      }
-    }
-
-    for (const asset of this.importedFiles) {
-      const fallback = defaultFileFor(asset.name)
-      this.seededFiles.set(buildSeededFileKey(importedAssetLocation(asset)), {
-        filePath: asset.filePath ?? fallback.filePath,
-        contentType: asset.contentType ?? fallback.contentType,
-        textContent: fallback.textContent
-      })
-    }
+    this.seededFiles = buildSeededFiles({
+      generated: this.generatedJobs,
+      imported: this.importedFiles
+    })
 
     await this.jobsBackend.seed(this.generatedJobs.map(buildSeededJob))
     await this.ensureInputFilesRoute()
