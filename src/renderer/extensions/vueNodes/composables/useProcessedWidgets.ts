@@ -344,7 +344,9 @@ export function computeProcessedWidgets(
   return result
 }
 
-export function useProcessedWidgets(nodeData: VueNodeData | undefined) {
+export function useProcessedWidgets(
+  nodeDataGetter: () => VueNodeData | undefined
+) {
   const canvasStore = useCanvasStore()
   const promotionStore = usePromotionStore()
   const executionErrorStore = useExecutionErrorStore()
@@ -354,29 +356,31 @@ export function useProcessedWidgets(nodeData: VueNodeData | undefined) {
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
 
-  const nodeType = computed(() => nodeData?.type || '')
+  const nodeType = computed(() => nodeDataGetter()?.type || '')
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
     nodeType.value
   )
 
   const showAdvanced = computed(
     () =>
-      nodeData?.showAdvanced ||
+      nodeDataGetter()?.showAdvanced ||
       settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
   )
 
-  const canSelectInputs = computed(
-    () =>
+  const canSelectInputs = computed(() => {
+    const nodeData = nodeDataGetter()
+    return (
       isSelectInputsMode.value &&
       nodeData?.mode === LGraphEventMode.ALWAYS &&
       nodeTypeValidForApp(nodeData.type) &&
       !nodeData.hasErrors
-  )
+    )
+  })
 
   const processedWidgets = computed((): ProcessedWidget[] => {
     const graphId = canvasStore.canvas?.graph?.rootGraph.id
     return computeProcessedWidgets(
-      nodeData,
+      nodeDataGetter(),
       graphId,
       showAdvanced.value,
       promotionStore,

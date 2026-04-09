@@ -132,5 +132,5 @@ const {
   nodeType,
   processedWidgets,
   showAdvanced
-} = useProcessedWidgets(nodeData)
+} = useProcessedWidgets(() => nodeData)
 </script>
