@@ -145,10 +145,16 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Open the dropdown via its combobox role and verify it expanded
+      // Open the dropdown via its combobox role and verify it expanded.
+      // Retry because the PrimeVue Select may re-render during search
+      // filtering, causing the first click to land on a stale element.
       const select = settingRow.getByRole('combobox')
-      await select.click()
-      await expect(select).toHaveAttribute('aria-expanded', 'true')
+      await expect(async () => {
+        await select.click()
+        await expect(select).toHaveAttribute('aria-expanded', 'true', {
+          timeout: 1000
+        })
+      }).toPass()
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
