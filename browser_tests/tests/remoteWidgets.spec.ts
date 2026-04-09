@@ -253,14 +253,16 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
 
-      // Wait for exponential backoff retries to accumulate timestamps
+      // Wait for enough retries to show backoff growth
       await expect
-        .poll(() => timestamps.length, { timeout: 10000 })
-        .toBeGreaterThanOrEqual(3)
+        .poll(() => timestamps.length, { timeout: 15000 })
+        .toBeGreaterThanOrEqual(4)
 
-      // Verify exponential backoff between retries
+      // Verify total elapsed time grows (backoff), not just adjacent pairs
+      // which can be noisy on CI. Compare first gap to last gap.
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
-      expect(intervals[1]).toBeGreaterThan(intervals[0])
+      const lastInterval = intervals[intervals.length - 1]
+      expect(lastInterval).toBeGreaterThan(intervals[0])
     })
 
     test('clicking refresh button forces a refresh', async ({ comfyPage }) => {
