@@ -386,6 +386,13 @@ test.describe(
               ([loadId, saveId]) => {
                 const graph = window.app!.graph
 
+                // Re-dirty the canvas so onDrawBackground fires again on the
+                // next frame. Without this, the single setDirty(true) above
+                // only triggers one paint; if the async image load inside
+                // showPreview() hasn't completed by then, node.imgs stays
+                // empty and no further paints re-check it.
+                window.app!.canvas.setDirty(true, true)
+
                 return [loadId, saveId].map(
                   (nodeId) => (graph.getNodeById(nodeId)?.imgs?.length ?? 0) > 0
                 )
