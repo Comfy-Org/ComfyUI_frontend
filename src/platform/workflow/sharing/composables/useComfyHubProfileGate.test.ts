@@ -193,5 +193,65 @@ describe('useComfyHubProfileGate', () => {
       expect(requestCallOrder[0]).toBeLessThan(uploadCallOrder[0])
       expect(uploadCallOrder[0]).toBeLessThan(createCallOrder[0])
     })
+
+    it('throws when workspace context is missing from sessionStorage', async () => {
+      sessionStorage.removeItem('Comfy.Workspace.Current')
+
+      await expect(
+        gate.createProfile({ username: 'testuser' })
+      ).rejects.toThrow('Unable to determine current workspace')
+
+      expect(mockCreateProfile).not.toHaveBeenCalled()
+    })
+
+    it('throws when workspace JSON is malformed', async () => {
+      sessionStorage.setItem('Comfy.Workspace.Current', '{invalid')
+
+      await expect(
+        gate.createProfile({ username: 'testuser' })
+      ).rejects.toThrow('Unable to determine current workspace')
+
+      expect(mockCreateProfile).not.toHaveBeenCalled()
+    })
+
+    it('throws when workspace object has no id', async () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'personal', name: 'My Workspace' })
+      )
+
+      await expect(
+        gate.createProfile({ username: 'testuser' })
+      ).rejects.toThrow('Unable to determine current workspace')
+
+      expect(mockCreateProfile).not.toHaveBeenCalled()
+    })
+
+    it('creates profile without avatar when no picture provided', async () => {
+      await gate.createProfile({
+        username: 'testuser',
+        name: 'Test User'
+      })
+
+      expect(mockRequestAssetUploadUrl).not.toHaveBeenCalled()
+      expect(mockUploadFileToPresignedUrl).not.toHaveBeenCalled()
+      expect(mockCreateProfile).toHaveBeenCalledWith({
+        workspaceId: 'workspace-1',
+        username: 'testuser',
+        displayName: 'Test User',
+        description: undefined,
+        avatarToken: undefined
+      })
+    })
+
+    it('updates cached state after successful creation', async () => {
+      expect(gate.hasProfile.value).toBe(null)
+      expect(gate.profile.value).toBe(null)
+
+      await gate.createProfile({ username: 'testuser' })
+
+      expect(gate.hasProfile.value).toBe(true)
+      expect(gate.profile.value).toEqual(mockProfile)
+    })
   })
 })

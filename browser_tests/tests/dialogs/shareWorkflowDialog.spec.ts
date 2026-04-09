@@ -1,9 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { AssetInfo } from '../../../src/schemas/apiSchema'
-import { comfyPageFixture } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
+import type { AssetInfo } from '@/schemas/apiSchema'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 interface PublishRecord {
   workflow_id: string
@@ -328,6 +328,32 @@ test.describe('Share Workflow Dialog', { tag: '@cloud' }, () => {
 
     await dialog.getByRole('tab', { name: /share/i }).click()
     await expect(publishPanel).toBeHidden()
+  })
+
+  test('should show publish intro panel when switching to publish tab', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+    const workflowName = 'share-test-publish-intro'
+
+    await saveAndWait(comfyPage, workflowName)
+
+    await page.evaluate(() => {
+      const api = window.app!.api
+      api.serverFeatureFlags.value = {
+        ...api.serverFeatureFlags.value,
+        comfyhub_upload_enabled: true
+      }
+    })
+
+    await mockPublishStatus(page, null)
+    await mockShareableAssets(page)
+    await openShareDialog(page)
+
+    const dialog = getShareDialog(page)
+    await dialog.getByRole('tab', { name: /publish/i }).click()
+
+    await expect(dialog.getByTestId('publish-intro')).toBeVisible()
   })
 
   test('should require acknowledgment before publishing private assets', async ({
