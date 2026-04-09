@@ -83,8 +83,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await searchBoxV2.categoryButton('sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const count = await searchBoxV2.results.count()
-      expect(count).toBeGreaterThan(0)
+      await expect.poll(() => searchBoxV2.results.count()).toBeGreaterThan(0)
     })
   })
 

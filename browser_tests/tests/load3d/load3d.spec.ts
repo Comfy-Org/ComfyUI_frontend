@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { Load3DHelper } from './Load3DHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
 
 test.describe('Load3D', () => {
   let load3d: Load3DHelper
@@ -23,9 +23,18 @@ test.describe('Load3D', () => {
 
       await expect(load3d.canvas).toBeVisible()
 
-      const canvasBox = await load3d.canvas.boundingBox()
-      expect(canvasBox!.width).toBeGreaterThan(0)
-      expect(canvasBox!.height).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await load3d.canvas.boundingBox()
+          return b?.width ?? 0
+        })
+        .toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await load3d.canvas.boundingBox()
+          return b?.height ?? 0
+        })
+        .toBeGreaterThan(0)
 
       await expect(load3d.getUploadButton('upload 3d model')).toBeVisible()
       await expect(

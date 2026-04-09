@@ -480,12 +480,19 @@ test.describe('Node Interaction', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('groups/oversized_group')
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const group = window.app!.graph.groups[0]
+            return group ? [group.size[0], group.size[1]] : null
+          })
+        )
+        .not.toBeNull()
+
       const initialGroupSize = await comfyPage.page.evaluate(() => {
         const group = window.app!.graph.groups[0]
         return group ? [group.size[0], group.size[1]] : null
       })
-
-      expect(initialGroupSize).not.toBeNull()
 
       await comfyPage.keyboard.selectAll()
       await comfyPage.nextFrame()
@@ -778,11 +785,14 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
     await comfyPage.setup()
 
-    const openCount = await comfyPage.page.evaluate(() => {
-      return (window.app!.extensionManager as WorkspaceStore).workflow
-        .openWorkflows.length
-    })
-    expect(openCount).toBeGreaterThanOrEqual(1)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          return (window.app!.extensionManager as WorkspaceStore).workflow
+            .openWorkflows.length
+        })
+      )
+      .toBeGreaterThanOrEqual(1)
   })
 
   test('Restore workflow on reload (switch workflow)', async ({

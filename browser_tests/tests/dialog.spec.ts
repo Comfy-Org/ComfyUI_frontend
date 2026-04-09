@@ -17,10 +17,9 @@ test.describe('Settings', () => {
     await expect(settingsDialog).toBeVisible()
     const contentArea = settingsDialog.locator('main')
     await expect(contentArea).toBeVisible()
-    const isUsableHeight = await contentArea.evaluate(
-      (el) => el.clientHeight > 30
-    )
-    expect(isUsableHeight).toBeTruthy()
+    await expect
+      .poll(() => contentArea.evaluate((el) => el.clientHeight))
+      .toBeGreaterThan(30)
   })
 
   test('Can open settings with hotkey', async ({ comfyPage }) => {

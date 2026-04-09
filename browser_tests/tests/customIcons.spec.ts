@@ -4,12 +4,17 @@ import type { Locator } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 async function verifyCustomIconSvg(iconElement: Locator) {
-  const svgVariable = await iconElement.evaluate((element) => {
-    const styles = getComputedStyle(element)
-    return styles.getPropertyValue('--svg')
-  })
+  await expect
+    .poll(() =>
+      iconElement.evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('--svg')
+      )
+    )
+    .toBeTruthy()
 
-  expect(svgVariable).toBeTruthy()
+  const svgVariable = await iconElement.evaluate((element) =>
+    getComputedStyle(element).getPropertyValue('--svg')
+  )
   const dataUrlMatch = svgVariable.match(
     /url\("data:image\/svg\+xml,([^"]+)"\)/
   )

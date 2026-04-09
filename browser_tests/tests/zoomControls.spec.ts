@@ -11,11 +11,20 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
   })
 
   test('Default zoom is 100% and node has a size', async ({ comfyPage }) => {
-    const nodeSize = await comfyPage.page.evaluate(
-      () => window.app!.graph.nodes[0].size
-    )
-    expect(nodeSize[0]).toBeGreaterThan(0)
-    expect(nodeSize[1]).toBeGreaterThan(0)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          () => window.app!.graph.nodes[0]?.size?.[0] ?? 0
+        )
+      )
+      .toBeGreaterThan(0)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          () => window.app!.graph.nodes[0]?.size?.[1] ?? 0
+        )
+      )
+      .toBeGreaterThan(0)
 
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton

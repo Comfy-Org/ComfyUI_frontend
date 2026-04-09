@@ -115,13 +115,24 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const viewport = minimap.locator('.minimap-viewport')
       await expect(viewport).toBeVisible()
 
+      await expect
+        .poll(async () => {
+          const b = await viewport.boundingBox()
+          return b?.width ?? 0
+        })
+        .toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await viewport.boundingBox()
+          return b?.height ?? 0
+        })
+        .toBeGreaterThan(0)
+
       const minimapBox = await minimap.boundingBox()
       const viewportBox = await viewport.boundingBox()
 
       expect(minimapBox).toBeTruthy()
       expect(viewportBox).toBeTruthy()
-      expect(viewportBox!.width).toBeGreaterThan(0)
-      expect(viewportBox!.height).toBeGreaterThan(0)
 
       expect(viewportBox!.x + viewportBox!.width).toBeGreaterThan(minimapBox!.x)
       expect(viewportBox!.y + viewportBox!.height).toBeGreaterThan(

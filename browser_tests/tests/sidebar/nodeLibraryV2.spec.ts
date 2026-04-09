@@ -59,13 +59,17 @@ test.describe('Node library sidebar V2', () => {
 
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    const canvasBoundingBox = await comfyPage.page
+    await expect
+      .poll(
+        async () => await comfyPage.page.locator('#graph-canvas').boundingBox()
+      )
+      .toBeTruthy()
+    const canvasBoundingBox = (await comfyPage.page
       .locator('#graph-canvas')
-      .boundingBox()
-    expect(canvasBoundingBox).not.toBeNull()
+      .boundingBox())!
     const targetPosition = {
-      x: canvasBoundingBox!.x + canvasBoundingBox!.width / 2,
-      y: canvasBoundingBox!.y + canvasBoundingBox!.height / 2
+      x: canvasBoundingBox.x + canvasBoundingBox.width / 2,
+      y: canvasBoundingBox.y + canvasBoundingBox.height / 2
     }
 
     const nodeLocator = tab.getNode('KSampler (Advanced)')

@@ -888,11 +888,19 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       await expect(contextMenu).toBeVisible()
 
       // Pinned endpoint should not change with mouse movement while menu is open
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
+            return Array.isArray(snap) ? [snap[0], snap[1]] : null
+          })
+        )
+        .not.toBeNull()
+
       const before = await comfyPage.page.evaluate(() => {
         const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
         return Array.isArray(snap) ? [snap[0], snap[1]] : null
       })
-      expect(before).not.toBeNull()
 
       // Move mouse elsewhere and verify snap position is unchanged
       await comfyMouse.move({ x: dropPos.x + 160, y: dropPos.y + 100 })

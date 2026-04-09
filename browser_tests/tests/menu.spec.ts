@@ -61,10 +61,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
       const topLevelMenuItem = comfyPage.page
         .locator('a.p-menubar-item-link')
         .first()
-      const isTextCutoff = await topLevelMenuItem.evaluate((el) => {
-        return el.scrollWidth > el.clientWidth
-      })
-      expect(isTextCutoff).toBe(false)
+      await expect
+        .poll(() =>
+          topLevelMenuItem.evaluate((el) => el.scrollWidth > el.clientWidth)
+        )
+        .toBe(false)
     })
 
     test('Clicking on active state items does not close menu', async ({

@@ -103,8 +103,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     const keyBadges = bottomPanel.shortcuts.keyBadges
     await keyBadges.first().waitFor({ state: 'visible' })
-    const count = await keyBadges.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    await expect.poll(() => keyBadges.count()).toBeGreaterThanOrEqual(1)
 
     await expect
       .poll(() => keyBadges.allTextContents())
@@ -198,8 +197,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     ).toBeVisible()
 
     const subcategoryTitles = bottomPanel.shortcuts.subcategoryTitles
-    const titleCount = await subcategoryTitles.count()
-    expect(titleCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => subcategoryTitles.count()).toBeGreaterThanOrEqual(2)
   })
 
   test('should open shortcuts panel with Ctrl+Shift+K', async ({

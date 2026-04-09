@@ -580,12 +580,21 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.locator('[data-slot-key]').first().waitFor()
 
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () =>
+              window.app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
+                .length
+          )
+        )
+        .toBeGreaterThan(0)
+
       const nodeIds = await comfyPage.page.evaluate(() =>
         window
           .app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
           .map((n) => String(n.id))
       )
-      expect(nodeIds.length).toBeGreaterThan(0)
 
       for (const nodeId of nodeIds) {
         const data = await measureNodeSlotOffsets(comfyPage.page, nodeId)

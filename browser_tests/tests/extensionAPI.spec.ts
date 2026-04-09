@@ -240,12 +240,15 @@ test.describe('Topbar commands', () => {
             .getByText('TestSetting Test')
             .locator(selector)
 
-          const isDisabled = await component.evaluate((el) =>
-            el.tagName === 'INPUT'
-              ? (el as HTMLInputElement).disabled
-              : el.classList.contains('p-disabled')
-          )
-          expect(isDisabled).toBe(true)
+          await expect
+            .poll(() =>
+              component.evaluate((el) =>
+                el.tagName === 'INPUT'
+                  ? (el as HTMLInputElement).disabled
+                  : el.classList.contains('p-disabled')
+              )
+            )
+            .toBe(true)
         })
       }
     })
