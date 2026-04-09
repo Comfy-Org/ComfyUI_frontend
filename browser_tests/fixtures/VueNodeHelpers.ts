@@ -3,8 +3,8 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from './selectors'
-import { VueNodeFixture } from './utils/vueNodeFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
   constructor(private page: Page) {}
@@ -110,6 +110,14 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Select a node by ID and delete it.
+   */
+  async deleteNode(nodeId: string): Promise<void> {
+    await this.selectNode(nodeId)
+    await this.deleteSelected()
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
@@ -156,6 +164,21 @@ export class VueNodeHelpers {
     return this.getNodeByTitle(nodeTitle).getByLabel(widgetName, {
       exact: true
     })
+  }
+
+  /**
+   * Select an option from a combo widget on a node.
+   */
+  async selectComboOption(
+    nodeTitle: string,
+    widgetName: string,
+    optionName: string
+  ): Promise<void> {
+    const node = this.getNodeByTitle(nodeTitle)
+    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
+    await this.page
+      .getByRole('option', { name: optionName, exact: true })
+      .click()
   }
 
   /**

@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Confirm dialog text wrapping', { tag: ['@mobile'] }, () => {
   test('@mobile confirm dialog buttons are visible with long unbreakable text', async ({

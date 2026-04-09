@@ -3,7 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   ModelFile,
   ModelFolderInfo
-} from '../../../src/platform/assets/schemas/assetSchema'
+} from '@/platform/assets/schemas/assetSchema'
 
 const modelFoldersRoutePattern = /\/api\/experiment\/models$/
 const modelFilesRoutePattern = /\/api\/experiment\/models\/([^?]+)/
