@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 
 import { clamp } from 'es-toolkit'
 
-import { denormalize, normalize } from '@/components/range/rangeUtils'
+import { denormalize, normalize } from '@/utils/mathUtil'
 import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
 
 type HandleType = 'min' | 'max' | 'midpoint'
@@ -13,13 +13,15 @@ interface UseRangeEditorOptions {
   modelValue: Ref<RangeValue>
   valueMin: Ref<number>
   valueMax: Ref<number>
+  showMidpoint: Ref<boolean>
 }
 
 export function useRangeEditor({
   trackRef,
   modelValue,
   valueMin,
-  valueMax
+  valueMax,
+  showMidpoint
 }: UseRangeEditorOptions) {
   const activeHandle = ref<HandleType | null>(null)
   let cleanupDrag: (() => void) | null = null
@@ -28,10 +30,7 @@ export function useRangeEditor({
     const el = trackRef.value
     if (!el) return valueMin.value
     const rect = el.getBoundingClientRect()
-    const normalized = Math.max(
-      0,
-      Math.min(1, (e.clientX - rect.left) / rect.width)
-    )
+    const normalized = clamp((e.clientX - rect.left) / rect.width, 0, 1)
     return denormalize(normalized, valueMin.value, valueMax.value)
   }
 
@@ -41,7 +40,7 @@ export function useRangeEditor({
     const dMax = Math.abs(value - max)
     let best: HandleType = dMin <= dMax ? 'min' : 'max'
     const bestDist = Math.min(dMin, dMax)
-    if (midpoint !== undefined) {
+    if (midpoint !== undefined && showMidpoint.value) {
       const midAbs = min + midpoint * (max - min)
       if (Math.abs(value - midAbs) < bestDist) {
         best = 'midpoint'

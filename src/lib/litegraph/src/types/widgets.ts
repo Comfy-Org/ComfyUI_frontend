@@ -355,7 +355,6 @@ export interface IWidgetRangeOptions extends IWidgetOptions {
   midpoint_scale?: 'linear' | 'gamma'
   value_min?: number
   value_max?: number
-  histogram?: Uint32Array | null
 }
 
 export interface IRangeWidget extends IBaseWidget<

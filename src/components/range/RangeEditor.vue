@@ -178,12 +178,11 @@ import { useRangeEditor } from '@/composables/useRangeEditor'
 import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
 
-import {
-  clamp,
-  gammaToPosition,
-  normalize,
-  positionToGamma
-} from './rangeUtils'
+import { normalize } from '@/utils/mathUtil'
+
+import { clamp } from 'es-toolkit'
+
+import { gammaToPosition, positionToGamma } from './rangeUtils'
 
 const {
   display = 'plain',
@@ -214,7 +213,8 @@ const { handleTrackPointerDown, startDrag } = useRangeEditor({
   trackRef,
   modelValue,
   valueMin: toRef(() => valueMin),
-  valueMax: toRef(() => valueMax)
+  valueMax: toRef(() => valueMax),
+  showMidpoint: toRef(() => showMidpoint)
 })
 
 function onTrackPointerDown(e: PointerEvent) {

@@ -1,6 +1,6 @@
 <template>
   <RangeEditor
-    :model-value="effectiveValue.value"
+    :model-value="effectiveValue"
     :display="widget?.options?.display"
     :gradient-stops="widget?.options?.gradient_stops"
     :show-midpoint="widget?.options?.show_midpoint"
@@ -64,8 +64,8 @@ watch(upstreamValue, (upstream) => {
 
 const effectiveValue = computed(() =>
   isDisabled.value && upstreamValue.value
-    ? { value: upstreamValue.value }
-    : { value: modelValue.value }
+    ? upstreamValue.value
+    : modelValue.value
 )
 
 function onValueChange(value: RangeValue) {
