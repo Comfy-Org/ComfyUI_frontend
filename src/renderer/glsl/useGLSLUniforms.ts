@@ -17,12 +17,12 @@ interface AutogrowGroup {
   prefix?: string
 }
 
-export interface UniformSource {
+interface UniformSource {
   nodeId: NodeId
   widgetName: string
 }
 
-export interface UniformSources {
+interface UniformSources {
   floats: UniformSource[]
   ints: UniformSource[]
   bools: UniformSource[]
