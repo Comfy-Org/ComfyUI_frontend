@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -14,6 +14,23 @@ function hasCanvasContent(canvas: Locator): Promise<boolean> {
     }
     return false
   })
+}
+
+async function clickMinimapAt(
+  overlay: Locator,
+  page: Page,
+  relX: number,
+  relY: number
+) {
+  const box = await overlay.boundingBox()
+  expect(box, 'Minimap interaction overlay not found').toBeTruthy()
+
+  // Click area — avoiding the settings button (top-left, 32×32px)
+  // and close button (top-right, 32×32px)
+  await page.mouse.click(
+    box!.x + box!.width * relX,
+    box!.y + box!.height * relY
+  )
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
@@ -177,15 +194,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       (el: HTMLElement) => el.style.transform
     )
 
-    const box = await overlay.boundingBox()
-    expect(box, 'Minimap interaction overlay not found').toBeTruthy()
-
-    // Click bottom-left area — clear of the settings button (top-left, 32×32px)
-    // and close button (top-right, 32×32px)
-    await comfyPage.page.mouse.click(
-      box!.x + box!.width * 0.15,
-      box!.y + box!.height * 0.85
-    )
+    await clickMinimapAt(overlay, comfyPage.page, 0.15, 0.85)
 
     await expect
       .poll(() =>
@@ -237,13 +246,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       y: window.app!.canvas.ds.offset[1]
     }))
 
-    const box = await overlay.boundingBox()
-    expect(box, 'Minimap interaction overlay not found').toBeTruthy()
-
-    await comfyPage.page.mouse.click(
-      box!.x + box!.width / 2,
-      box!.y + box!.height / 2
-    )
+    await clickMinimapAt(overlay, comfyPage.page, 0.5, 0.5)
     await comfyPage.nextFrame()
 
     const after = await comfyPage.page.evaluate(() => ({
