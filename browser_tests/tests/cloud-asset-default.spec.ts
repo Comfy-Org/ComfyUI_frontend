@@ -73,6 +73,6 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
       return String(widget?.value ?? '')
     })
 
-    expect(widgetValue).toBe(STABLE_CHECKPOINT.name)
+    expect(widgetValue).toBe(CLOUD_ASSETS[0].name)
   })
 })
