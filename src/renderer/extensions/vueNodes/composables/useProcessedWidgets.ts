@@ -306,7 +306,7 @@ export function computeProcessedWidgets(
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      handleNodeRightClick(e, nodeId)
+      if (nodeId !== undefined) handleNodeRightClick(e, nodeId)
       showNodeOptions(
         e,
         widget.name,
@@ -357,9 +357,7 @@ export function useProcessedWidgets(
   const { handleNodeRightClick } = useNodeEventHandlers()
 
   const nodeType = computed(() => nodeDataGetter()?.type || '')
-  const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
-    nodeType.value
-  )
+  const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
 
   const showAdvanced = computed(
     () =>

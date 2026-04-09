@@ -21,19 +21,13 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const toastStore = useToastStore()
 
   function updateSelectedItems(selectedItems: Set<string>) {
-    let id: string | undefined = undefined
-    if (selectedItems.size > 0) {
-      id = selectedItems.values().next().value!
-    }
-    if (id == null) {
-      modelValue.value = undefined
-      return
-    }
-    const name = dropdownItems.value.find((item) => item.id === id)?.name
-    if (!name) {
-      modelValue.value = undefined
-      return
-    }
+    const id =
+      selectedItems.size > 0 ? selectedItems.values().next().value : undefined
+    const name =
+      id == null
+        ? undefined
+        : dropdownItems.value.find((item) => item.id === id)?.name
+
     modelValue.value = name
     useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
   }
