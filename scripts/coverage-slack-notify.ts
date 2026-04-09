@@ -45,7 +45,8 @@ function parseLcov(filePath: string): CoverageData | null {
 }
 
 function progressBar(percentage: number): string {
-  const filled = Math.round((percentage / 100) * BAR_WIDTH)
+  const clamped = Math.max(0, Math.min(100, percentage))
+  const filled = Math.round((clamped / 100) * BAR_WIDTH)
   const empty = BAR_WIDTH - filled
   return '█'.repeat(filled) + '░'.repeat(empty)
 }
@@ -69,10 +70,7 @@ function crossedMilestone(prev: number, curr: number): number | null {
   return null
 }
 
-function buildMilestoneBlock(
-  label: string,
-  milestone: number
-): SlackBlock | null {
+function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
   if (milestone >= TARGET) {
     return {
       type: 'section',
@@ -194,8 +192,7 @@ function main() {
       unitCurrent.percentage
     )
     if (milestone !== null) {
-      const block = buildMilestoneBlock('Unit test', milestone)
-      if (block) blocks.push(block)
+      blocks.push(buildMilestoneBlock('Unit test', milestone))
     }
   }
 
@@ -205,8 +202,7 @@ function main() {
       e2eCurrent.percentage
     )
     if (milestone !== null) {
-      const block = buildMilestoneBlock('E2E test', milestone)
-      if (block) blocks.push(block)
+      blocks.push(buildMilestoneBlock('E2E test', milestone))
     }
   }
 
