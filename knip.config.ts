@@ -48,7 +48,9 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    // Used in playwright.config.ts for coverage collection
+    '@bgotink/playwright-coverage'
   ],
   ignore: [
     // Auto generated API types
