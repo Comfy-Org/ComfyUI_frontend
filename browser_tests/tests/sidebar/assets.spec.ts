@@ -616,12 +616,15 @@ test.describe('Assets sidebar - bulk actions', () => {
     await tab.open()
     await tab.waitForAssets()
 
-    // Select two assets
+    // Select the two single-output assets (job-alpha, job-beta).
+    // The count reflects total outputs, not cards — job-gamma has
+    // outputs_count: 2 which would inflate the total.
     const cards = tab.assetCards
-    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3)
 
-    await cards.first().click()
-    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
+    // Cards are sorted newest-first: gamma (idx 0), beta (1), alpha (2)
+    await cards.nth(1).click()
+    await cards.nth(2).click({ modifiers: ['ControlOrMeta'] })
 
     // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
