@@ -237,7 +237,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
         await comfyPage.nextFrame()
       }
 
-      expect(requestCount).toBe(1) // Should only make initial request
+      await expect.poll(() => requestCount, { timeout: 1000 }).toBe(1) // Should only make initial request
     })
 
     test('retries failed requests with backoff', async ({ comfyPage }) => {
@@ -360,7 +360,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
         .poll(() => getWidgetOptions(comfyPage, nodeName))
         .toEqual(mockOptions)
 
-      expect(requestCount).toBe(1) // Should reuse cached data
+      await expect.poll(() => requestCount, { timeout: 1000 }).toBe(1) // Should reuse cached data
     })
   })
 })

@@ -66,11 +66,14 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
     await comfyPage.canvas.click({ position: outerPos })
     await comfyPage.nextFrame()
 
-    const counts = await getSelectionCounts(comfyPage)
     // Outer Group + Inner Group + 1 node = 3 items
-    expect(counts.selectedItemCount).toBe(3)
-    expect(counts.selectedGroupCount).toBe(2)
-    expect(counts.selectedNodeCount).toBe(1)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({
+        selectedItemCount: 3,
+        selectedGroupCount: 2,
+        selectedNodeCount: 1
+      })
   })
 
   test('Setting disabled: clicking outer group selects only the group', async ({
@@ -87,10 +90,13 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
     await comfyPage.canvas.click({ position: outerPos })
     await comfyPage.nextFrame()
 
-    const counts = await getSelectionCounts(comfyPage)
-    expect(counts.selectedItemCount).toBe(1)
-    expect(counts.selectedGroupCount).toBe(1)
-    expect(counts.selectedNodeCount).toBe(0)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({
+        selectedItemCount: 1,
+        selectedGroupCount: 1,
+        selectedNodeCount: 0
+      })
   })
 
   test('Deselecting outer group deselects all children', async ({
@@ -108,8 +114,9 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
     await comfyPage.canvas.click({ position: outerPos })
     await comfyPage.nextFrame()
 
-    let counts = await getSelectionCounts(comfyPage)
-    expect(counts.selectedItemCount).toBe(3)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({ selectedItemCount: 3 })
 
     // Deselect all via page.evaluate to avoid UI overlay interception
     await comfyPage.page.evaluate(() => {
@@ -117,7 +124,8 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
     })
     await comfyPage.nextFrame()
 
-    counts = await getSelectionCounts(comfyPage)
-    expect(counts.selectedItemCount).toBe(0)
+    await expect
+      .poll(() => getSelectionCounts(comfyPage))
+      .toMatchObject({ selectedItemCount: 0 })
   })
 })

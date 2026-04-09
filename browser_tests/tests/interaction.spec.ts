@@ -62,9 +62,9 @@ test.describe('Node Interaction', () => {
         for (const node of clipNodes) {
           await node.click('title', { modifiers: [modifier] })
         }
-        const selectedNodeCount =
-          await comfyPage.nodeOps.getSelectedGraphNodesCount()
-        expect(selectedNodeCount).toBe(clipNodes.length)
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+          .toBe(clipNodes.length)
       })
     })
 
@@ -902,14 +902,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         'Sidebar'
       )
       await comfyPage.menu.workflowsTab.open()
-      const openWorkflows =
-        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      expect(openWorkflows).toEqual(
-        expect.arrayContaining([workflowA, workflowB])
-      )
-      expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
-        openWorkflows.indexOf(workflowB)
-      )
+      await expect
+        .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+        .toEqual(expect.arrayContaining([workflowA, workflowB]))
+      await expect
+        .poll(async () => {
+          const ws = await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+          return ws.indexOf(workflowA) < ws.indexOf(workflowB)
+        })
+        .toBe(true)
       await expect(comfyPage.menu.workflowsTab.activeWorkflowLabel).toHaveText(
         workflowB
       )
@@ -986,14 +987,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         'Sidebar'
       )
       await comfyPage.menu.workflowsTab.open()
-      const openWorkflows =
-        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      expect(openWorkflows).toEqual(
-        expect.arrayContaining([workflowA, workflowB])
-      )
-      expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
-        openWorkflows.indexOf(workflowB)
-      )
+      await expect
+        .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+        .toEqual(expect.arrayContaining([workflowA, workflowB]))
+      await expect
+        .poll(async () => {
+          const ws = await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+          return ws.indexOf(workflowA) < ws.indexOf(workflowB)
+        })
+        .toBe(true)
       await expect(comfyPage.menu.workflowsTab.activeWorkflowLabel).toHaveText(
         workflowB
       )
@@ -1153,8 +1155,9 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
         position: DefaultGraphPositions.textEncodeNode1
       })
       await comfyPage.nextFrame()
-      const selectedCount = await comfyPage.nodeOps.getSelectedGraphNodesCount()
-      expect(selectedCount).toBe(1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(1)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'legacy-click-node-select.png'
       )
@@ -1189,8 +1192,9 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
         }
       )
 
-      const selectedCount = await comfyPage.nodeOps.getSelectedGraphNodesCount()
-      expect(selectedCount).toBe(clipNodes.length)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(clipNodes.length)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'standard-left-drag-select.png'
       )
@@ -1233,8 +1237,9 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
         position: DefaultGraphPositions.textEncodeNode1
       })
       await comfyPage.nextFrame()
-      const selectedCount = await comfyPage.nodeOps.getSelectedGraphNodesCount()
-      expect(selectedCount).toBe(1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(1)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'standard-click-node-select.png'
       )
@@ -1275,14 +1280,14 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
         }
       )
 
-      const selectedCountAfterDrag =
-        await comfyPage.nodeOps.getSelectedGraphNodesCount()
-      expect(selectedCountAfterDrag).toBeGreaterThan(0)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBeGreaterThan(0)
 
       await comfyPage.canvasOps.clickEmptySpace()
-      const selectedCountAfterClear =
-        await comfyPage.nodeOps.getSelectedGraphNodesCount()
-      expect(selectedCountAfterClear).toBe(0)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(0)
 
       await comfyPage.page.keyboard.down('Space')
       await comfyPage.canvasOps.dragAndDrop(
@@ -1297,9 +1302,9 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       )
       await comfyPage.page.keyboard.up('Space')
 
-      const selectedCountAfterSpaceDrag =
-        await comfyPage.nodeOps.getSelectedGraphNodesCount()
-      expect(selectedCountAfterSpaceDrag).toBe(0)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(0)
     })
   })
 

@@ -69,9 +69,10 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await comfyPage.menu.topbar.saveWorkflow('rapid-B')
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .not.toBe(nodeCountA)
     const nodeCountB = await comfyPage.nodeOps.getNodeCount()
-
-    expect(nodeCountA).not.toBe(nodeCountB)
 
     for (let i = 0; i < 3; i++) {
       await tab.switchToWorkflow('rapid-A')
@@ -351,8 +352,10 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.nextFrame()
     await comfyPage.menu.topbar.saveWorkflow(nameB)
 
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .toBe(nodeCountA + 1)
     const nodeCountB = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCountB).toBe(nodeCountA + 1)
 
     // Switch to A (making B inactive and unmodified)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
@@ -411,8 +414,10 @@ test.describe('Workflow Persistence', () => {
     })
     await comfyPage.nextFrame()
 
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .toBe(nodeCountA + 1)
     const nodeCountB = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCountB).toBe(nodeCountA + 1)
 
     // Trigger checkState so isModified is set
     await comfyPage.page.evaluate(() => {
@@ -493,8 +498,8 @@ test.describe('Workflow Persistence', () => {
       em.workflow?.activeWorkflow?.changeTracker?.checkState()
     })
 
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
     const nodeCountB = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCountB).toBe(1)
     expect(nodeCountA).not.toBe(nodeCountB)
 
     // Switch to A via topbar tab (making unsaved B inactive)

@@ -52,7 +52,8 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     await comfyPage.page.mouse.up()
     await comfyPage.page.keyboard.up('Alt')
 
-    const finalCount = await comfyPage.getDOMWidgetCount()
-    expect(finalCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.getDOMWidgetCount())
+      .toBe(initialCount + 1)
   })
 })

@@ -99,8 +99,9 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await textWidget.press('Delete')
 
     // Node count should remain the same
-    const finalNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(finalNodeCount).toBe(initialNodeCount)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
+      .toBe(initialNodeCount)
   })
 
   test('Delete key does not delete node when nothing is selected', async ({
