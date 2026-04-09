@@ -325,7 +325,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
 
     await dialog.getByText('Test Pack A').first().click()
 
-    await expect(dialog.getByText('Test Publisher')).toBeVisible()
+    await expect(dialog.getByText('Test Publisher').first()).toBeVisible()
   })
 
   test('Left side panel navigation tabs exist', async ({ comfyPage }) => {
@@ -394,7 +394,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await searchInput.fill('nonexistent-pack-xyz-999')
 
     await expect(
-      dialog.getByText(/no results found|try a different search/i)
+      dialog.getByText(/no results found|try a different search/i).first()
     ).toBeVisible()
   })
 
