@@ -6,8 +6,8 @@ import type {
 } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
-import { InMemoryJobsBackend } from '../../browser_tests/fixtures/helpers/InMemoryJobsBackend';
-import type { SeededJob } from '../../browser_tests/fixtures/helpers/InMemoryJobsBackend';
+import { InMemoryJobsBackend } from '../../browser_tests/fixtures/helpers/InMemoryJobsBackend'
+import type { SeededJob } from '../../browser_tests/fixtures/helpers/InMemoryJobsBackend'
 
 type RouteHandler = (route: Route) => Promise<void>
 
