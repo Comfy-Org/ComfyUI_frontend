@@ -434,8 +434,8 @@ export const comfyPageFixture = base.extend<{
     for (const entry of entries) {
       if (typeof entry.source !== 'string' && entry.url.startsWith('http')) {
         try {
-          const resp = await fetch(entry.url)
-          if (resp.ok) Object.assign(entry, { source: await resp.text() })
+          const resp = await page.request.get(entry.url)
+          if (resp.ok()) Object.assign(entry, { source: await resp.text() })
         } catch {
           // skip unreachable scripts
         }
