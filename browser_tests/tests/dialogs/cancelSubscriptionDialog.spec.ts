@@ -59,7 +59,9 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
   }) => {
     const { page } = comfyPage
 
+    let cancelApiCalled = false
     await page.route('**/billing/subscription/cancel', async (route) => {
+      cancelApiCalled = true
       await route.fulfill({
         status: 200,
         json: {
@@ -93,16 +95,16 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
-    const cancelRequest = page.waitForRequest('**/billing/subscription/cancel')
     await dialog.getByRole('button', { name: 'Cancel subscription' }).click()
-    await cancelRequest
+
+    await expect.poll(() => cancelApiCalled, { timeout: 5000 }).toBe(true)
 
     await expect(dialog).toBeHidden()
 
     const successToast = page.getByRole('alert').filter({
       hasText: /cancel/i
     })
-    await expect(successToast).toBeVisible()
+    await expect(successToast.first()).toBeVisible()
   })
 
   test('"Cancel subscription" shows error toast on API failure', async ({
@@ -131,7 +133,7 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
     const errorToast = page.getByRole('alert').filter({
       hasText: /error|fail/i
     })
-    await expect(errorToast).toBeVisible()
+    await expect(errorToast.first()).toBeVisible()
 
     await expect(dialog).toBeVisible()
   })
