@@ -1,11 +1,6 @@
 // @ts-check
 import { existsSync, readFileSync } from 'node:fs'
 
-/**
- * Generates a markdown coverage report from lcov data.
- * Output format matches the unified PR report style (size + perf sections).
- */
-
 const lcovPath = process.argv[2] || 'coverage/playwright/coverage.lcov'
 
 if (!existsSync(lcovPath)) {
@@ -17,7 +12,6 @@ if (!existsSync(lcovPath)) {
 
 const lcov = readFileSync(lcovPath, 'utf-8')
 
-// Parse lcov summary
 let totalLines = 0
 let coveredLines = 0
 let totalFunctions = 0
@@ -76,16 +70,15 @@ lines.push('')
 lines.push('| Metric | Covered | Total | Pct | |')
 lines.push('|---|--:|--:|--:|---|')
 lines.push(
-  `| Lines | ${coveredLines.toLocaleString()} | ${totalLines.toLocaleString()} | ${pct(coveredLines, totalLines)} | ${bar(coveredLines, totalLines)} |`
+  `| Lines | ${coveredLines} | ${totalLines} | ${pct(coveredLines, totalLines)} | ${bar(coveredLines, totalLines)} |`
 )
 lines.push(
-  `| Functions | ${coveredFunctions.toLocaleString()} | ${totalFunctions.toLocaleString()} | ${pct(coveredFunctions, totalFunctions)} | ${bar(coveredFunctions, totalFunctions)} |`
+  `| Functions | ${coveredFunctions} | ${totalFunctions} | ${pct(coveredFunctions, totalFunctions)} | ${bar(coveredFunctions, totalFunctions)} |`
 )
 lines.push(
-  `| Branches | ${coveredBranches.toLocaleString()} | ${totalBranches.toLocaleString()} | ${pct(coveredBranches, totalBranches)} | ${bar(coveredBranches, totalBranches)} |`
+  `| Branches | ${coveredBranches} | ${totalBranches} | ${pct(coveredBranches, totalBranches)} | ${bar(coveredBranches, totalBranches)} |`
 )
 
-// Top uncovered files
 const uncovered = [...fileStats.entries()]
   .filter(([, s]) => s.lines > 0)
   .map(([file, s]) => ({

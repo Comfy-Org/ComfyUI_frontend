@@ -67,73 +67,23 @@ jobs:
             core.setOutput('base', livePr.base.ref);
             core.setOutput('head-sha', livePr.head.sha);
 
-      - name: Find size workflow run for this commit
+      - name: Find size workflow run
         if: steps.pr-meta.outputs.skip != 'true'
         id: find-size
-        uses: actions/github-script@v8
+        uses: ./.github/actions/find-workflow-run
         with:
-          script: |
-            const headSha = '${{ steps.pr-meta.outputs.head-sha }}';
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-size-data.yaml',
-              head_sha: headSha,
-              per_page: 1,
-            });
+          workflow-id: ci-size-data.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-            const run = runs.workflow_runs[0];
-            if (!run) {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.status !== 'completed') {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.conclusion !== 'success') {
-              core.setOutput('status', 'failed');
-              return;
-            }
-
-            core.setOutput('status', 'ready');
-            core.setOutput('run-id', String(run.id));
-
-      - name: Find perf workflow run for this commit
+      - name: Find perf workflow run
         if: steps.pr-meta.outputs.skip != 'true'
         id: find-perf
-        uses: actions/github-script@v8
+        uses: ./.github/actions/find-workflow-run
         with:
-          script: |
-            const headSha = '${{ steps.pr-meta.outputs.head-sha }}';
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-perf-report.yaml',
-              head_sha: headSha,
-              per_page: 1,
-            });
-
-            const run = runs.workflow_runs[0];
-            if (!run) {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.status !== 'completed') {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.conclusion !== 'success') {
-              core.setOutput('status', 'failed');
-              return;
-            }
-
-            core.setOutput('status', 'ready');
-            core.setOutput('run-id', String(run.id));
+          workflow-id: ci-perf-report.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download size data (current)
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-size.outputs.status == 'ready'
@@ -154,39 +104,15 @@ jobs:
           path: temp/size-prev
           if_no_artifact_found: warn
 
-      - name: Find coverage workflow run for this commit
+      - name: Find coverage workflow run
         if: steps.pr-meta.outputs.skip != 'true'
         id: find-coverage
-        uses: actions/github-script@v8
+        uses: ./.github/actions/find-workflow-run
         with:
-          script: |
-            const headSha = '${{ steps.pr-meta.outputs.head-sha }}';
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-tests-e2e-coverage.yaml',
-              head_sha: headSha,
-              per_page: 1,
-            });
-
-            const run = runs.workflow_runs[0];
-            if (!run) {
-              core.setOutput('status', 'skip');
-              return;
-            }
-
-            if (run.status !== 'completed') {
-              core.setOutput('status', 'pending');
-              return;
-            }
-
-            if (run.conclusion !== 'success') {
-              core.setOutput('status', 'failed');
-              return;
-            }
-
-            core.setOutput('status', 'ready');
-            core.setOutput('run-id', String(run.id));
+          workflow-id: ci-tests-e2e-coverage.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          not-found-status: skip
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download coverage data
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-coverage.outputs.status == 'ready'

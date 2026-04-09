@@ -18,7 +18,6 @@ const coverageStatus = getArg('coverage-status') ?? 'skip'
 /** @type {string[]} */
 const lines = []
 
-// --- Size section ---
 if (sizeStatus === 'ready') {
   try {
     const sizeReport = execFileSync('node', ['scripts/size-report.js'], {
@@ -44,7 +43,6 @@ if (sizeStatus === 'ready') {
 
 lines.push('')
 
-// --- Perf section ---
 if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   try {
     const perfReport = execFileSync(
@@ -73,7 +71,6 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   lines.push('> ⏳ Performance tests in progress…')
 }
 
-// --- Coverage section ---
 if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
   try {
     const coverageReport = execFileSync(
@@ -97,6 +94,5 @@ if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
   lines.push('')
   lines.push('> ⚠️ Coverage collection failed. Check the CI workflow logs.')
 }
-// coverageStatus === 'skip' (default) — don't show section at all
 
 process.stdout.write(lines.join('\n') + '\n')
