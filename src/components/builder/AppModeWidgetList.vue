@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import {
-  useDebounceFn,
-  useEventListener,
-  useResizeObserver
-} from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { computed, provide, shallowRef } from 'vue'
+
+import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -51,58 +49,10 @@ const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const maskEditor = useMaskEditor()
 
-interface ResizableEntry {
-  el: HTMLElement
-  nodeId: NodeId
-  widgetName: string
-}
-const resizablesByKey = new Map<string, ResizableEntry>()
-const resizablesByEl = new WeakMap<HTMLElement, ResizableEntry>()
-const observedElements = shallowRef<HTMLElement[]>([])
-
-const persistHeight = useDebounceFn(
-  (nodeId: NodeId, widgetName: string, height: number) => {
-    appModeStore.updateInputConfig(nodeId, widgetName, { height })
-  },
-  100
+const { trackResizable } = useAppModeWidgetResizing(
+  (nodeId, widgetName, config) =>
+    appModeStore.updateInputConfig(nodeId, widgetName, config)
 )
-
-useResizeObserver(observedElements, (entries) => {
-  for (const entry of entries) {
-    const el = entry.target as HTMLElement
-    // Only persist user-initiated resizes (browser sets inline style.height on drag)
-    if (!el.style.height) continue
-    const info = resizablesByEl.get(el)
-    if (!info) continue
-    persistHeight(info.nodeId, info.widgetName, el.offsetHeight)
-  }
-})
-
-function trackResizable(
-  el: unknown,
-  key: string,
-  nodeId: NodeId,
-  widgetName: string
-) {
-  const prev = resizablesByKey.get(key)
-  if (prev) resizablesByEl.delete(prev.el)
-  resizablesByKey.delete(key)
-
-  if (el instanceof HTMLElement) {
-    // Queries match elements owned by DropZone (data-slot="drop-zone-indicator")
-    // and NodeWidgets (textarea).
-    const resizable =
-      el.querySelector<HTMLElement>('textarea') ??
-      el.querySelector<HTMLElement>('[data-slot="drop-zone-indicator"]')
-    if (resizable) {
-      const entry = { el: resizable, nodeId, widgetName }
-      resizablesByKey.set(key, entry)
-      resizablesByEl.set(resizable, entry)
-    }
-  }
-
-  observedElements.value = [...resizablesByKey.values()].map((r) => r.el)
-}
 
 provide(HideLayoutFieldKey, true)
 provide(OverlayAppendToKey, 'body')
