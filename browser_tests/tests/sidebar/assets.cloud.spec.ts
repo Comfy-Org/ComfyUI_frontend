@@ -2,10 +2,10 @@ import type {
   CreateAssetExportData,
   CreateAssetExportResponse
 } from '@comfyorg/ingest-types'
-import { expect, test as base } from '@playwright/test'
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage, comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -23,7 +23,7 @@ type CloudAssetsFixtures = {
   comfyPage: ComfyPage
 }
 
-const test = base.extend<CloudAssetsFixtures>({
+const test = comfyPageFixture.extend<CloudAssetsFixtures>({
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
 
@@ -53,20 +53,6 @@ const assetExportResponse: CreateAssetExportResponse = {
 }
 
 const SAMPLE_JOBS = [
-  createMockJob({
-    id: 'job-alpha',
-    create_time: 1000,
-    execution_start_time: 1000,
-    execution_end_time: 1010,
-    preview_output: {
-      filename: 'landscape.png',
-      subfolder: '',
-      type: 'output',
-      nodeId: '1',
-      mediaType: 'images'
-    },
-    outputs_count: 1
-  }),
   createMockJob({
     id: 'job-gamma',
     create_time: 3000,
@@ -156,7 +142,7 @@ test.describe(
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
-      await tab.waitForAssets()
+      await tab.waitForAssets(1)
 
       const exportRequestPromise = page.waitForRequest((request) => {
         const url = new URL(request.url())
@@ -166,13 +152,11 @@ test.describe(
         )
       })
 
-      await tab
-        .getAssetCardByName('abstract_art.png')
-        .dispatchEvent('contextmenu', {
-          bubbles: true,
-          cancelable: true,
-          button: 2
-        })
+      await tab.assetCards.first().dispatchEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        button: 2
+      })
 
       await expect(page.locator('.p-contextmenu')).toBeVisible()
       await tab.contextMenuItem('Download').click()
