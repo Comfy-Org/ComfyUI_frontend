@@ -19,15 +19,30 @@ interface SlackBlock {
 }
 
 function parseLcovContent(content: string): CoverageData | null {
-  let totalLines = 0
-  let coveredLines = 0
+  const perFile = new Map<string, { lf: number; lh: number }>()
+  let currentFile = ''
 
   for (const line of content.split('\n')) {
-    if (line.startsWith('LF:')) {
-      totalLines += parseInt(line.slice(3), 10) || 0
+    if (line.startsWith('SF:')) {
+      currentFile = line.slice(3)
+    } else if (line.startsWith('LF:')) {
+      const n = parseInt(line.slice(3), 10) || 0
+      const entry = perFile.get(currentFile) ?? { lf: 0, lh: 0 }
+      entry.lf = Math.max(entry.lf, n)
+      perFile.set(currentFile, entry)
     } else if (line.startsWith('LH:')) {
-      coveredLines += parseInt(line.slice(3), 10) || 0
+      const n = parseInt(line.slice(3), 10) || 0
+      const entry = perFile.get(currentFile) ?? { lf: 0, lh: 0 }
+      entry.lh = Math.max(entry.lh, n)
+      perFile.set(currentFile, entry)
     }
+  }
+
+  let totalLines = 0
+  let coveredLines = 0
+  for (const { lf, lh } of perFile.values()) {
+    totalLines += lf
+    coveredLines += lh
   }
 
   if (totalLines === 0) return null

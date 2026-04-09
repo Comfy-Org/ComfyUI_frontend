@@ -22,14 +22,16 @@ if (!existsSync(lcovPath)) {
 
 const lcov = readFileSync(lcovPath, 'utf-8')
 
-let totalLines = 0
-let coveredLines = 0
-let totalFunctions = 0
-let coveredFunctions = 0
-let totalBranches = 0
-let coveredBranches = 0
+interface RecordAccum {
+  lf: number
+  lh: number
+  fnf: number
+  fnh: number
+  brf: number
+  brh: number
+}
 
-const fileStats = new Map<string, FileStats>()
+const fileRecords = new Map<string, RecordAccum>()
 let currentFile = ''
 
 for (const line of lcov.split('\n')) {
@@ -37,25 +39,63 @@ for (const line of lcov.split('\n')) {
     currentFile = line.slice(3)
   } else if (line.startsWith('LF:')) {
     const n = parseInt(line.slice(3), 10) || 0
-    totalLines += n
-    const entry = fileStats.get(currentFile) ?? { lines: 0, covered: 0 }
-    entry.lines = n
-    fileStats.set(currentFile, entry)
+    const rec = fileRecords.get(currentFile) ?? {
+      lf: 0,
+      lh: 0,
+      fnf: 0,
+      fnh: 0,
+      brf: 0,
+      brh: 0
+    }
+    rec.lf = Math.max(rec.lf, n)
+    fileRecords.set(currentFile, rec)
   } else if (line.startsWith('LH:')) {
     const n = parseInt(line.slice(3), 10) || 0
-    coveredLines += n
-    const entry = fileStats.get(currentFile) ?? { lines: 0, covered: 0 }
-    entry.covered = n
-    fileStats.set(currentFile, entry)
+    const rec = fileRecords.get(currentFile) ?? {
+      lf: 0,
+      lh: 0,
+      fnf: 0,
+      fnh: 0,
+      brf: 0,
+      brh: 0
+    }
+    rec.lh = Math.max(rec.lh, n)
+    fileRecords.set(currentFile, rec)
   } else if (line.startsWith('FNF:')) {
-    totalFunctions += parseInt(line.slice(4), 10) || 0
+    const n = parseInt(line.slice(4), 10) || 0
+    const rec = fileRecords.get(currentFile)
+    if (rec) rec.fnf = Math.max(rec.fnf, n)
   } else if (line.startsWith('FNH:')) {
-    coveredFunctions += parseInt(line.slice(4), 10) || 0
+    const n = parseInt(line.slice(4), 10) || 0
+    const rec = fileRecords.get(currentFile)
+    if (rec) rec.fnh = Math.max(rec.fnh, n)
   } else if (line.startsWith('BRF:')) {
-    totalBranches += parseInt(line.slice(4), 10) || 0
+    const n = parseInt(line.slice(4), 10) || 0
+    const rec = fileRecords.get(currentFile)
+    if (rec) rec.brf = Math.max(rec.brf, n)
   } else if (line.startsWith('BRH:')) {
-    coveredBranches += parseInt(line.slice(4), 10) || 0
+    const n = parseInt(line.slice(4), 10) || 0
+    const rec = fileRecords.get(currentFile)
+    if (rec) rec.brh = Math.max(rec.brh, n)
   }
+}
+
+let totalLines = 0
+let coveredLines = 0
+let totalFunctions = 0
+let coveredFunctions = 0
+let totalBranches = 0
+let coveredBranches = 0
+const fileStats = new Map<string, FileStats>()
+
+for (const [file, rec] of fileRecords) {
+  totalLines += rec.lf
+  coveredLines += rec.lh
+  totalFunctions += rec.fnf
+  coveredFunctions += rec.fnh
+  totalBranches += rec.brf
+  coveredBranches += rec.brh
+  fileStats.set(file, { lines: rec.lf, covered: rec.lh })
 }
 
 function pct(covered: number, total: number): string {

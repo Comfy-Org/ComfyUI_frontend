@@ -40,9 +40,7 @@ jobs:
       - name: Merge shard coverage into single LCOV
         run: |
           mkdir -p coverage/playwright
-          # Concatenate all per-shard LCOV files into one
-          find temp/coverage-shards -name 'coverage.lcov' -exec cat {} + > coverage/playwright/coverage.lcov
-          echo "Merged coverage from $(find temp/coverage-shards -name 'coverage.lcov' | wc -l) shards"
+          pnpm exec tsx scripts/merge-lcov.ts temp/coverage-shards coverage/playwright/coverage.lcov
           wc -l coverage/playwright/coverage.lcov
 
       - name: Upload merged coverage data
