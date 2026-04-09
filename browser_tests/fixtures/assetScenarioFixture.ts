@@ -1,6 +1,6 @@
 import { test as base } from '@playwright/test'
 
-import { AssetScenarioHelper } from './helpers/AssetScenarioHelper'
+import { AssetScenarioHelper } from '@e2e/fixtures/helpers/AssetScenarioHelper'
 
 export const assetScenarioFixture = base.extend<{
   assetScenario: AssetScenarioHelper

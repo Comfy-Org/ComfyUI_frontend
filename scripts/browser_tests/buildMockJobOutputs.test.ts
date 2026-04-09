@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildMockJobOutputs } from '../../browser_tests/fixtures/helpers/buildMockJobOutputs'
+import { buildMockJobOutputs } from '@e2e/fixtures/helpers/buildMockJobOutputs'
 import type {
   GeneratedJobFixture,
   GeneratedOutputFixture
-} from '../../browser_tests/fixtures/helpers/assetScenarioTypes'
+} from '@e2e/fixtures/helpers/assetScenarioTypes'
 
 describe('buildMockJobOutputs', () => {
   it('defaults nodeId, mediaType, subfolder, and type for a single output', () => {

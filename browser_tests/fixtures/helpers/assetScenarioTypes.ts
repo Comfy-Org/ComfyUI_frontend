@@ -1,6 +1,6 @@
 import type { JobDetailResponse, JobEntry } from '@comfyorg/ingest-types'
 
-import type { ResultItemType } from '../../../src/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/apiSchema'
 
 export type ImportedAssetFixture = {
   name: string

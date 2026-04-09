@@ -1,8 +1,8 @@
 import type { Page, Route } from '@playwright/test'
 import { describe, expect, it, vi } from 'vitest'
 
-import { AssetScenarioHelper } from '../../browser_tests/fixtures/helpers/AssetScenarioHelper'
-import { createMockJob } from '../../browser_tests/fixtures/helpers/jobFixtures'
+import { AssetScenarioHelper } from '@e2e/fixtures/helpers/AssetScenarioHelper'
+import { createMockJob } from '@e2e/fixtures/helpers/jobFixtures'
 
 type RouteHandler = (route: Route) => Promise<void>
 

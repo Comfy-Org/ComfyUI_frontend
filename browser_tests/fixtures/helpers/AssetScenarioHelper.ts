@@ -3,20 +3,20 @@ import { readFile } from 'node:fs/promises'
 import type { Page, Route } from '@playwright/test'
 import type { JobDetailResponse, JobEntry } from '@comfyorg/ingest-types'
 
-import { buildMockJobOutputs } from './buildMockJobOutputs'
+import { buildMockJobOutputs } from '@e2e/fixtures/helpers/buildMockJobOutputs'
 import type {
   GeneratedJobFixture,
   GeneratedOutputFixture,
   ImportedAssetFixture
-} from './assetScenarioTypes'
-import { InMemoryJobsBackend } from './InMemoryJobsBackend'
-import { getMimeType } from './mimeTypeUtil'
+} from '@e2e/fixtures/helpers/assetScenarioTypes'
+import { InMemoryJobsBackend } from '@e2e/fixtures/helpers/InMemoryJobsBackend'
+import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
 import {
   buildSeededFileKey,
   buildSeededFiles,
   defaultFileFor
-} from './seededAssetFiles'
-import type { SeededAssetFile } from './seededAssetFiles'
+} from '@e2e/fixtures/helpers/seededAssetFiles'
+import type { SeededAssetFile } from '@e2e/fixtures/helpers/seededAssetFiles'
 
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const viewRoutePattern = /\/api\/view(?:\?.*)?$/

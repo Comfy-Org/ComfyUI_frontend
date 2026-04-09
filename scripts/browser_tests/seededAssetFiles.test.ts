@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildSeededFileKey,
   buildSeededFiles
-} from '../../browser_tests/fixtures/helpers/seededAssetFiles'
+} from '@e2e/fixtures/helpers/seededAssetFiles'
 
 describe('buildSeededFiles', () => {
   it('keys seeded files by filename, type, and subfolder', () => {

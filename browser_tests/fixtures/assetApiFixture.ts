@@ -1,7 +1,7 @@
 import { test as base } from '@playwright/test'
 
-import type { AssetHelper } from './helpers/AssetHelper'
-import { createAssetHelper } from './helpers/AssetHelper'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 
 export const assetApiFixture = base.extend<{
   assetApi: AssetHelper

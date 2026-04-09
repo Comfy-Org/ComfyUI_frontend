@@ -1,11 +1,11 @@
 import type { JobDetailResponse } from '@comfyorg/ingest-types'
 
-import type { TaskOutput } from '../../../src/schemas/apiSchema'
+import type { TaskOutput } from '@/schemas/apiSchema'
 
 import type {
   GeneratedJobFixture,
   GeneratedOutputFixture
-} from './assetScenarioTypes'
+} from '@e2e/fixtures/helpers/assetScenarioTypes'
 
 export function buildMockJobOutputs(
   job: GeneratedJobFixture,
