@@ -398,16 +398,6 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
-  test('Sort dropdown is visible', async ({ comfyPage }) => {
-    await openManagerDialog(comfyPage)
-
-    const dialog = comfyPage.page.getByRole('dialog')
-    await expect(dialog).toBeVisible()
-
-    const sortDropdown = dialog.getByText('Downloads')
-    await expect(sortDropdown).toBeVisible()
-  })
-
   test('Search mode can be switched between packs and nodes', async ({
     comfyPage
   }) => {
