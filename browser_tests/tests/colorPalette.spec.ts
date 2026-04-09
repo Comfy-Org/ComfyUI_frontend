@@ -228,8 +228,8 @@ test.describe(
     }) => {
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.2)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'arc')
-      await comfyPage.nextFrame()
       await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-opacity-0.2-arc-theme.png'
       )

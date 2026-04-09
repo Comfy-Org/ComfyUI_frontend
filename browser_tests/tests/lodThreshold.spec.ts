@@ -29,56 +29,65 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
 
     // Calculate expected threshold (8px / 14px ≈ 0.571)
     const expectedThreshold = initialState.minFontSize / 14
-    // Can't access private _lowQualityZoomThreshold directly
 
     // Zoom out just above threshold (should still be high quality)
     await comfyPage.canvasOps.zoom(120, 5) // Zoom out 5 steps
     await comfyPage.nextFrame()
 
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          return { lowQuality: canvas.low_quality, scale: canvas.ds.scale }
+        })
+      )
+      .toMatchObject({ lowQuality: false })
+
     const aboveThresholdState = await comfyPage.page.evaluate(() => {
       const canvas = window.app!.canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale
-      }
+      return { scale: canvas.ds.scale }
     })
 
-    // If still above threshold, should be high quality
-    if (aboveThresholdState.scale > expectedThreshold) {
-      expect(aboveThresholdState.lowQuality).toBe(false)
+    // If we zoomed past the threshold already, skip the high-quality assertion
+    if (aboveThresholdState.scale <= expectedThreshold) {
+      // Already past threshold — will be verified below
     }
 
     // Zoom out more to trigger LOD (below threshold)
     await comfyPage.canvasOps.zoom(120, 5) // Zoom out 5 more steps
     await comfyPage.nextFrame()
 
-    // Check that LOD is now active
-    const zoomedOutState = await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale
-      }
-    })
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          return { lowQuality: canvas.low_quality, scale: canvas.ds.scale }
+        })
+      )
+      .toMatchObject({ lowQuality: true })
 
-    expect(zoomedOutState.scale).toBeLessThan(expectedThreshold)
-    expect(zoomedOutState.lowQuality).toBe(true)
+    const zoomedOutScale = await comfyPage.page.evaluate(
+      () => window.app!.canvas.ds.scale
+    )
+    expect(zoomedOutScale).toBeLessThan(expectedThreshold)
 
     // Zoom back in to disable LOD (above threshold)
     await comfyPage.canvasOps.zoom(-120, 15) // Zoom in 15 steps
     await comfyPage.nextFrame()
 
-    // Check that LOD is now inactive
-    const zoomedInState = await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale
-      }
-    })
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const canvas = window.app!.canvas
+          return { lowQuality: canvas.low_quality, scale: canvas.ds.scale }
+        })
+      )
+      .toMatchObject({ lowQuality: false })
 
-    expect(zoomedInState.scale).toBeGreaterThan(expectedThreshold)
-    expect(zoomedInState.lowQuality).toBe(false)
+    const zoomedInScale = await comfyPage.page.evaluate(
+      () => window.app!.canvas.ds.scale
+    )
+    expect(zoomedInScale).toBeGreaterThan(expectedThreshold)
   })
 
   test('Should update threshold when font size setting changes', async ({
@@ -93,36 +102,29 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     )
 
     // Check that font size updated
-    const newState = await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      return {
-        minFontSize: canvas.min_font_size_for_lod
-      }
-    })
-
-    expect(newState.minFontSize).toBe(14)
-    // Expected threshold would be 14px / 14px = 1.0
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.canvas.min_font_size_for_lod)
+      )
+      .toBe(14)
 
     // At default zoom, LOD should still be inactive (scale is exactly 1.0, not less than)
-    const lodState = await comfyPage.page.evaluate(() => {
-      return window.app!.canvas.low_quality
-    })
-    expect(lodState).toBe(false)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.low_quality))
+      .toBe(false)
 
     // Zoom out slightly to trigger LOD
     await comfyPage.canvasOps.zoom(120, 1) // Zoom out 1 step
     await comfyPage.nextFrame()
 
-    const afterZoom = await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale
-      }
-    })
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.low_quality))
+      .toBe(true)
 
-    expect(afterZoom.scale).toBeLessThan(1.0)
-    expect(afterZoom.lowQuality).toBe(true)
+    const afterZoomScale = await comfyPage.page.evaluate(
+      () => window.app!.canvas.ds.scale
+    )
+    expect(afterZoomScale).toBeLessThan(1.0)
   })
 
   test('Should disable LOD when font size is set to 0', async ({
@@ -138,18 +140,20 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     await comfyPage.nextFrame()
 
     // LOD should remain disabled even at very low zoom
-    const state = await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale,
-        minFontSize: canvas.min_font_size_for_lod
-      }
-    })
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.canvas.min_font_size_for_lod)
+      )
+      .toBe(0)
 
-    expect(state.minFontSize).toBe(0) // LOD disabled
-    expect(state.lowQuality).toBe(false)
-    expect(state.scale).toBeLessThan(0.2) // Very zoomed out
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.low_quality))
+      .toBe(false)
+
+    const scale = await comfyPage.page.evaluate(
+      () => window.app!.canvas.ds.scale
+    )
+    expect(scale).toBeLessThan(0.2) // Very zoomed out
   })
 
   test(
@@ -169,41 +173,40 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
       }, targetZoom)
       await comfyPage.nextFrame()
 
+      // Wait for LOD to activate before taking screenshot
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.low_quality)
+        )
+        .toBe(true)
+
       // Take snapshot with LOD active (default 8px setting)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'lod-comparison-low-quality.png'
       )
-
-      const lowQualityState = await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        return {
-          lowQuality: canvas.low_quality,
-          scale: canvas.ds.scale
-        }
-      })
-      expect(lowQualityState.lowQuality).toBe(true)
 
       // Disable LOD to see high quality at same zoom
       await comfyPage.settings.setSetting(
         'LiteGraph.Canvas.MinFontSizeForLOD',
         0
       )
-      await comfyPage.nextFrame()
+
+      // Wait for LOD to deactivate after setting change
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.low_quality)
+        )
+        .toBe(false)
 
       // Take snapshot with LOD disabled (full quality at same zoom)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'lod-comparison-high-quality.png'
       )
 
-      const highQualityState = await comfyPage.page.evaluate(() => {
-        const canvas = window.app!.canvas
-        return {
-          lowQuality: canvas.low_quality,
-          scale: canvas.ds.scale
-        }
-      })
-      expect(highQualityState.lowQuality).toBe(false)
-      expect(highQualityState.scale).toBeCloseTo(targetZoom, 2)
+      const finalScale = await comfyPage.page.evaluate(
+        () => window.app!.canvas.ds.scale
+      )
+      expect(finalScale).toBeCloseTo(targetZoom, 2)
     }
   )
 })

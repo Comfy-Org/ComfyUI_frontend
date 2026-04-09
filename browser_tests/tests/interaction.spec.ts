@@ -361,6 +361,9 @@ test.describe('Node Interaction', () => {
       }, targetNode.id)
       await comfyPage.nextFrame()
       await expect.poll(() => targetNode.isCollapsed()).toBe(false)
+      // Move mouse away to avoid hover highlight differences.
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-back-open.png'
       )

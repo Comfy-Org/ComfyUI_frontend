@@ -22,10 +22,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
         }
       })
     })
-    await comfyPage.nextFrame()
-
-    const newChildrenCount = await comfyPage.menu.buttons.count()
-    expect(newChildrenCount).toBe(initialChildrenCount + 1)
+    await expect(comfyPage.menu.buttons).toHaveCount(initialChildrenCount + 1)
   })
 
   test.describe('Workflows topbar tabs', () => {
@@ -38,15 +35,17 @@ test.describe('Menu', { tag: '@ui' }, () => {
     })
 
     test('Can show opened workflows', async ({ comfyPage }) => {
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow'
-      ])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(['Unsaved Workflow'])
     })
 
     test('Can close saved-workflow tabs', async ({ comfyPage }) => {
       const workflowName = `tempWorkflow-${test.info().title}`
       await comfyPage.menu.topbar.saveWorkflow(workflowName)
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
@@ -148,7 +147,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       const exportTag = comfyPage.page.locator('.keybinding-tag', {
         hasText: 'Ctrl + s'
       })
-      expect(await exportTag.count()).toBe(1)
+      await expect(exportTag).toHaveCount(1)
     })
 
     test('Can catch error when executing command', async ({ comfyPage }) => {
@@ -256,9 +255,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
-      expect(await comfyPage.settings.getSetting('Comfy.UseNewMenu')).toBe(
-        'Top'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))
+        .toBe('Top')
     })
 
     test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
@@ -266,9 +265,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
     }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
       await comfyPage.setup()
-      expect(await comfyPage.settings.getSetting('Comfy.UseNewMenu')).toBe(
-        'Top'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))
+        .toBe('Top')
     })
   })
 })

@@ -80,7 +80,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await parentTextarea.fill(TEST_WIDGET_CONTENT)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect
+        .poll(() => subgraphNode.exists(), 'Subgraph node 11 should exist')
+        .toBe(true)
 
       await openSubgraphById(comfyPage, '11')
 
@@ -126,7 +128,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await expect(comfyPage.page.locator(DOM_WIDGET_SELECTOR)).toHaveCount(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect
+        .poll(() => subgraphNode.exists(), 'Subgraph node 11 should exist')
+        .toBe(true)
 
       await openSubgraphById(comfyPage, '11')
 
@@ -146,25 +150,22 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
         'subgraphs/subgraph-with-multiple-promoted-widgets'
       )
 
-      const parentCount = await comfyPage.page
-        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
-        .count()
-      expect(parentCount).toBeGreaterThan(1)
+      const visibleWidgets = comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      await expect(visibleWidgets).toHaveCount(2, { timeout: 5_000 })
+      const parentCount = await visibleWidgets.count()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect
+        .poll(() => subgraphNode.exists(), 'Subgraph node 11 should exist')
+        .toBe(true)
 
       await openSubgraphById(comfyPage, '11')
 
-      await expect(
-        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
-      ).toHaveCount(parentCount)
+      await expect(visibleWidgets).toHaveCount(parentCount)
 
       await comfyPage.subgraph.exitViaBreadcrumb()
 
-      await expect(
-        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
-      ).toHaveCount(parentCount)
+      await expect(visibleWidgets).toHaveCount(parentCount)
     })
   })
 })

@@ -288,11 +288,13 @@ test.describe('Topbar commands', () => {
       })
 
       await comfyPage.nodeOps.fillPromptDialog('Hello, world!')
-      expect(
-        await comfyPage.page.evaluate(
-          () => (window as unknown as Record<string, unknown>)['value']
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => (window as unknown as Record<string, unknown>)['value']
+          )
         )
-      ).toBe('Hello, world!')
+        .toBe('Hello, world!')
     })
 
     test('Should allow showing a confirmation dialog', async ({
@@ -310,11 +312,13 @@ test.describe('Topbar commands', () => {
       })
 
       await comfyPage.confirmDialog.click('confirm')
-      expect(
-        await comfyPage.page.evaluate(
-          () => (window as unknown as Record<string, unknown>)['value']
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => (window as unknown as Record<string, unknown>)['value']
+          )
         )
-      ).toBe(true)
+        .toBe(true)
     })
 
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {
@@ -331,11 +335,13 @@ test.describe('Topbar commands', () => {
       })
 
       await comfyPage.confirmDialog.click('reject')
-      expect(
-        await comfyPage.page.evaluate(
-          () => (window as unknown as Record<string, unknown>)['value']
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => (window as unknown as Record<string, unknown>)['value']
+          )
         )
-      ).toBeNull()
+        .toBeNull()
     })
   })
 
@@ -375,14 +381,16 @@ test.describe('Topbar commands', () => {
       )
       await toolboxButton.click()
 
-      expect(
-        await comfyPage.page.evaluate(
-          () =>
-            (window as unknown as Record<string, unknown>)[
-              'selectionCommandExecuted'
-            ]
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () =>
+              (window as unknown as Record<string, unknown>)[
+                'selectionCommandExecuted'
+              ]
+          )
         )
-      ).toBe(true)
+        .toBe(true)
     })
   })
 })

@@ -83,6 +83,19 @@ await expect
   a different reproduction pattern.
 - Verify with the smallest command that exercises the flaky path.
 
+## 7. Common Flake Patterns
+
+| Pattern                               | Bad                                               | Fix                                               |
+| ------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
+| **Immediate graph state after drop**  | `expect(await getLinkCount()).toBe(1)`            | `await expect.poll(() => getLinkCount()).toBe(1)` |
+| **Fake readiness helper**             | Helper that clicks but doesn't assert state       | Remove; poll the actual value                     |
+| **nextFrame after menu click**        | `clickMenuItem(x); nextFrame()`                   | `clickMenuItem(x); contextMenu.waitForHidden()`   |
+| **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`              | ≥2000ms; prefer default (5000ms)                  |
+| **Immediate count()**                 | `const n = await loc.count(); expect(n).toBe(3)`  | `await expect(loc).toHaveCount(3)`                |
+| **Immediate evaluate after mutation** | `setSetting(); expect(await evaluate()).toBe(x)`  | `await expect.poll(() => evaluate()).toBe(x)`     |
+| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()` | `waitForNodes()` or poll state first              |
+| **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match         | `getNodeRefById(id)` or guard `toHaveLength(1)`   |
+
 ## Current Local Noise
 
 These are local distractions, not automatic CI root causes:

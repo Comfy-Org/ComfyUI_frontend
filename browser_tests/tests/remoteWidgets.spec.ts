@@ -46,11 +46,6 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     }, nodeName)
   }
 
-  const waitForWidgetUpdate = async (comfyPage: ComfyPage) => {
-    // Force re-render to trigger first access of widget's options
-    await comfyPage.page.mouse.click(400, 300)
-  }
-
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
@@ -85,9 +80,9 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     }) => {
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
-      const widgetOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(widgetOptions).toEqual(mockOptions)
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual(mockOptions)
     })
 
     test('lazy loads options when widget is added via workflow load', async ({
@@ -101,18 +96,17 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       }, nodeName)
       expect(node).toBeDefined()
 
-      await waitForWidgetUpdate(comfyPage)
-      const widgetOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(widgetOptions).toEqual(mockOptions)
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual(mockOptions)
     })
 
     test('applies query parameters from input spec', async ({ comfyPage }) => {
       const nodeName = 'Remote Widget Node With Sort Query Param'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
-      const widgetOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(widgetOptions).not.toEqual(mockOptions)
-      expect(widgetOptions).toEqual([...mockOptions].sort())
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual([...mockOptions].sort())
     })
 
     test('handles empty list of options', async ({ comfyPage }) => {
@@ -125,9 +119,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
-      const widgetOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(widgetOptions).toEqual([])
+      await expect.poll(() => getWidgetOptions(comfyPage, nodeName)).toEqual([])
     })
 
     test('falls back to default value when non-200 response', async ({
@@ -142,11 +134,9 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
-      const widgetOptions = await getWidgetOptions(comfyPage, nodeName)
-
-      const defaultValue = 'Loading...'
-      expect(widgetOptions).toEqual(defaultValue)
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual('Loading...')
     })
   })
 
@@ -185,7 +175,6 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
 
       // Select remote widget node
       await comfyPage.page.keyboard.press('Control+A')
@@ -211,18 +200,18 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       const nodeName = 'Remote Widget Node With 300ms Refresh'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
+      // Wait for initial options to load before capturing baseline
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toBeTruthy()
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
 
       // Click on the canvas to trigger widget refresh
       await comfyPage.page.mouse.click(400, 300)
 
-      await expect(async () => {
-        const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
-        expect(refreshedOptions).not.toEqual(initialOptions)
-      }).toPass({
-        timeout: 2_000
-      })
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName), { timeout: 2_000 })
+        .not.toEqual(initialOptions)
     })
 
     test('does not refresh when TTL is not set', async ({ comfyPage }) => {
@@ -237,7 +226,10 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
+      // Wait for initial fetch to complete
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual(['test'])
 
       // Force multiple re-renders
       for (let i = 0; i < 3; i++) {
@@ -260,13 +252,11 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
 
       // Wait for exponential backoff retries to accumulate timestamps
-      await expect(async () => {
-        await waitForWidgetUpdate(comfyPage)
-        expect(timestamps.length).toBeGreaterThanOrEqual(3)
-      }).toPass({ timeout: 10000, intervals: [500, 1000, 1500] })
+      await expect
+        .poll(() => timestamps.length, { timeout: 10000 })
+        .toBeGreaterThanOrEqual(3)
 
       // Verify exponential backoff between retries
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
@@ -288,15 +278,19 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       // Trigger initial fetch when adding node to the graph
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
+      // Wait for initial options to load before capturing baseline
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toBeTruthy()
       const initialOptions = await getWidgetOptions(comfyPage, nodeName)
 
       // Click refresh button
       await clickRefreshButton(comfyPage, nodeName)
 
       // Verify refresh occurred
-      const refreshedOptions = await getWidgetOptions(comfyPage, nodeName)
-      expect(refreshedOptions).not.toEqual(initialOptions)
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .not.toEqual(initialOptions)
     })
 
     test('control_after_refresh is applied after refresh', async ({
@@ -322,18 +316,18 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       // Trigger initial fetch when adding node to the graph
       await addRemoteWidgetNode(comfyPage, nodeName)
-      await waitForWidgetUpdate(comfyPage)
+      // Wait for initial options to load
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toBeTruthy()
 
       // Click refresh button
       await clickRefreshButton(comfyPage, nodeName)
 
       // Verify the selected value of the widget is the first option in the refreshed list
-      await expect(async () => {
-        const refreshedValue = await getWidgetValue(comfyPage, nodeName)
-        expect(refreshedValue).toEqual('new first option')
-      }).toPass({
-        timeout: 2_000
-      })
+      await expect
+        .poll(() => getWidgetValue(comfyPage, nodeName), { timeout: 2_000 })
+        .toEqual('new first option')
     })
   })
 
@@ -356,7 +350,10 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       // Add two widgets with same config
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName, 2)
-      await waitForWidgetUpdate(comfyPage)
+      // Wait for options to be populated before checking request count
+      await expect
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
+        .toEqual(mockOptions)
 
       expect(requestCount).toBe(1) // Should reuse cached data
     })
