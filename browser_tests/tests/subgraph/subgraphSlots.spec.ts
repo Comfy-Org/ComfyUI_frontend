@@ -413,9 +413,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('19')
       await subgraphNodeRef.navigateIntoSubgraph()
 
+      let seedSlotName: string | null = null
       await expect
         .poll(async () => {
-          return await comfyPage.page.evaluate(() => {
+          seedSlotName = await comfyPage.page.evaluate(() => {
             const graph = window.app!.canvas.graph
             if (!graph) return null
             const inputs = (graph as { inputs?: Array<{ name: string }> })
@@ -424,16 +425,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
               inputs?.find((input) => input.name.includes('seed'))?.name ?? null
             )
           })
+          return seedSlotName
         })
         .not.toBeNull()
-      const seedSlotName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        if (!graph) return null
-        const inputs = (graph as { inputs?: Array<{ name: string }> }).inputs
-        return (
-          inputs?.find((input) => input.name.includes('seed'))?.name ?? null
-        )
-      })
 
       await comfyPage.subgraph.rightClickInputSlot(seedSlotName!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
@@ -609,12 +603,13 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       )
 
       for (const nodeId of nodeIds) {
+        let data: Awaited<ReturnType<typeof measureNodeSlotOffsets>> = null
         await expect
-          .poll(
-            async () => await measureNodeSlotOffsets(comfyPage.page, nodeId)
-          )
+          .poll(async () => {
+            data = await measureNodeSlotOffsets(comfyPage.page, nodeId)
+            return data
+          })
           .not.toBeNull()
-        const data = await measureNodeSlotOffsets(comfyPage.page, nodeId)
         expectSlotsWithinBounds(data!, SLOT_BOUNDS_MARGIN, `Node ${nodeId}`)
       }
     })

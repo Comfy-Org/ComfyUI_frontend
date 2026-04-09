@@ -336,7 +336,7 @@ test.describe('Node Interaction', () => {
       let minDist = Infinity
       for (const n of nodes) {
         const pos = await n.getPosition()
-        const dist = Math.abs(pos.y - togglerPos.y)
+        const dist = Math.hypot(pos.x - togglerPos.x, pos.y - togglerPos.y)
         if (dist < minDist) {
           minDist = dist
           targetNode = n

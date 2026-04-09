@@ -176,7 +176,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const selectedNode = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      await expect.poll(() => selectedNode.getProperty('color')).not.toBeNull()
+      await expect.poll(() => selectedNode.getProperty('color')).toBeDefined()
     })
 
     test('color picker shows current color of selected nodes', async ({

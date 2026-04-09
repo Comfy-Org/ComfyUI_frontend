@@ -625,7 +625,7 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
-    await expect(tab.selectionCountButton).toHaveText(/Assets Selected: \d+/)
+    await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
   })
 })
 

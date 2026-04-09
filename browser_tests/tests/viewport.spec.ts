@@ -19,12 +19,16 @@ test.describe('Viewport', { tag: ['@screenshot', '@smoke', '@canvas'] }, () => {
             const canvas = app.canvas
             canvas.ds.computeVisibleArea(canvas.viewport)
             const [vx, vy, vw, vh] = canvas.ds.visible_area
-            return app.graph.nodes.every(
-              (n: { pos: number[]; size: number[] }) =>
-                n.pos[0] + n.size[0] > vx &&
-                n.pos[0] < vx + vw &&
-                n.pos[1] + n.size[1] > vy &&
-                n.pos[1] < vy + vh
+            const nodes = app.graph.nodes
+            return (
+              nodes.length > 0 &&
+              nodes.every(
+                (n: { pos: number[]; size: number[] }) =>
+                  n.pos[0] + n.size[0] > vx &&
+                  n.pos[0] < vx + vw &&
+                  n.pos[1] + n.size[1] > vy &&
+                  n.pos[1] < vy + vh
+              )
             )
           }),
         { message: 'All nodes should be within the visible viewport' }

@@ -51,7 +51,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
       await expect(breadcrumb).toBeVisible({ timeout: 20_000 })
-      const initialBreadcrumbText = await breadcrumb.textContent()
+      const initialBreadcrumbText = (await breadcrumb.textContent()) ?? ''
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
@@ -75,7 +75,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await expect(breadcrumb).toBeVisible()
 
       await expect(breadcrumb).toContainText(UPDATED_SUBGRAPH_TITLE)
-      await expect(breadcrumb).not.toHaveText(initialBreadcrumbText!)
+      await expect(breadcrumb).not.toHaveText(initialBreadcrumbText)
     })
 
     test('Switching workflows while inside subgraph returns to root graph context and hides the breadcrumb', async ({

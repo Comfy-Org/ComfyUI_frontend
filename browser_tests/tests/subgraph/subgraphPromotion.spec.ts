@@ -469,7 +469,7 @@ test.describe(
             break
           }
         }
-        await expect.poll(() => editedTextarea).toBe(true)
+        expect(editedTextarea).toBe(true)
       })
     })
 
@@ -532,7 +532,7 @@ test.describe(
 
         const expectedNames = [...initialNames]
         const removedIndex = expectedNames.indexOf(removedSlotName!)
-        await expect.poll(() => removedIndex).toBeGreaterThanOrEqual(0)
+        expect(removedIndex).toBeGreaterThanOrEqual(0)
         expectedNames.splice(removedIndex, 1)
 
         await expect

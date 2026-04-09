@@ -150,6 +150,10 @@ test.describe('Model library sidebar - search', () => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
+    // Expand a folder and verify models are present before searching
+    await tab.getFolderByLabel('checkpoints').click()
+    await expect(tab.leafNodes).not.toHaveCount(0, { timeout: 5000 })
+
     await tab.searchInput.fill('nonexistent_model_xyz')
 
     // Wait for debounce, then verify no leaf nodes

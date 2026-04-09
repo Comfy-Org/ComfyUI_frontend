@@ -24,7 +24,7 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     const node = comfyPage.vueNodes.getNodeByTitle(title)
     const style = await node.getAttribute('style')
     const match = style?.match(/z-index:\s*(\d+)/)
-    return match ? parseInt(match[1], 10) : -1
+    return match ? parseInt(match[1], 10) : Number.NaN
   }
 
   /**
