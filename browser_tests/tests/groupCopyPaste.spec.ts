@@ -28,26 +28,28 @@ test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
     await comfyPage.clipboard.paste()
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() =>
-          window.app!.graph.groups.map((g: { pos: number[] }) => ({
-            x: g.pos[0],
-            y: g.pos[1]
-          }))
-        )
+    const getGroupPositions = () =>
+      comfyPage.page.evaluate(() =>
+        window.app!.graph.groups.map((g: { pos: number[] }) => ({
+          x: g.pos[0],
+          y: g.pos[1]
+        }))
       )
-      .toHaveLength(2)
 
-    const positions = await comfyPage.page.evaluate(() =>
-      window.app!.graph.groups.map((g: { pos: number[] }) => ({
-        x: g.pos[0],
-        y: g.pos[1]
-      }))
-    )
-    const dx = Math.abs(positions[0].x - positions[1].x)
-    const dy = Math.abs(positions[0].y - positions[1].y)
-    expect(dx).toBeCloseTo(50, 0)
-    expect(dy).toBeCloseTo(15, 0)
+    await expect.poll(getGroupPositions).toHaveLength(2)
+
+    await expect
+      .poll(async () => {
+        const positions = await getGroupPositions()
+        return Math.abs(positions[0].x - positions[1].x)
+      })
+      .toBeCloseTo(50, 0)
+
+    await expect
+      .poll(async () => {
+        const positions = await getGroupPositions()
+        return Math.abs(positions[0].y - positions[1].y)
+      })
+      .toBeCloseTo(15, 0)
   })
 })

@@ -284,11 +284,14 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+Shift+e' converts selection to subgraph", async ({
       comfyPage
     }) => {
+      await expect
+        .poll(
+          () => comfyPage.nodeOps.getGraphNodesCount(),
+          'Default workflow should have multiple nodes'
+        )
+        .toBeGreaterThan(1)
+
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(
-        initialCount,
-        'Default workflow should have multiple nodes'
-      ).toBeGreaterThan(1)
 
       // Select all nodes
       await comfyPage.canvas.press('Control+a')

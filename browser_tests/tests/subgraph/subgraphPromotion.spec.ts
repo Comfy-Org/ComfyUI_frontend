@@ -469,7 +469,7 @@ test.describe(
             break
           }
         }
-        expect(editedTextarea).toBe(true)
+        await expect.poll(() => editedTextarea).toBe(true)
       })
     })
 
@@ -511,12 +511,20 @@ test.describe(
         const outerSubgraph = await comfyPage.nodeOps.getNodeRefById('5')
         await outerSubgraph.navigateIntoSubgraph()
 
+        await expect
+          .poll(async () => {
+            return await comfyPage.page.evaluate(() => {
+              const graph = window.app!.canvas.graph
+              if (!graph || !('inputNode' in graph)) return null
+              return graph.inputs?.[0]?.name ?? null
+            })
+          })
+          .not.toBeNull()
         const removedSlotName = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph
           if (!graph || !('inputNode' in graph)) return null
           return graph.inputs?.[0]?.name ?? null
         })
-        expect(removedSlotName).not.toBeNull()
 
         await comfyPage.subgraph.removeSlot('input')
 
@@ -524,7 +532,7 @@ test.describe(
 
         const expectedNames = [...initialNames]
         const removedIndex = expectedNames.indexOf(removedSlotName!)
-        expect(removedIndex).toBeGreaterThanOrEqual(0)
+        await expect.poll(() => removedIndex).toBeGreaterThanOrEqual(0)
         expectedNames.splice(removedIndex, 1)
 
         await expect

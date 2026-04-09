@@ -134,21 +134,27 @@ test.describe('Workflows sidebar', () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
     await expect
-      .poll(() => comfyPage.workflow.getExportedWorkflow({ api: false }))
-      .toBeDefined()
-    const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow({
-      api: false
-    })
-    for (const node of exportedWorkflow.nodes) {
-      for (const slot of node.inputs ?? []) {
-        expect(slot.localized_name).toBeUndefined()
-        expect(slot.label).toBeUndefined()
-      }
-      for (const slot of node.outputs ?? []) {
-        expect(slot.localized_name).toBeUndefined()
-        expect(slot.label).toBeUndefined()
-      }
-    }
+      .poll(async () => {
+        const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow({
+          api: false
+        })
+        for (const node of exportedWorkflow.nodes) {
+          for (const slot of node.inputs ?? []) {
+            if (slot.localized_name !== undefined)
+              return `input localized_name found: ${slot.localized_name}`
+            if (slot.label !== undefined)
+              return `input label found: ${slot.label}`
+          }
+          for (const slot of node.outputs ?? []) {
+            if (slot.localized_name !== undefined)
+              return `output localized_name found: ${slot.localized_name}`
+            if (slot.label !== undefined)
+              return `output label found: ${slot.label}`
+          }
+        }
+        return 'ok'
+      })
+      .toBe('ok')
   })
 
   test('Can export same workflow with different locales', async ({
@@ -165,6 +171,9 @@ test.describe('Workflows sidebar', () => {
     expect(download.suggestedFilename()).toBe('exported_default.json')
 
     // Get the exported workflow content
+    await expect
+      .poll(() => comfyPage.workflow.getExportedWorkflow({ api: false }))
+      .toBeDefined()
     const downloadedContent = await comfyPage.workflow.getExportedWorkflow({
       api: false
     })
@@ -172,15 +181,16 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
     await comfyPage.setup()
 
-    const downloadedContentZh = await comfyPage.workflow.getExportedWorkflow({
-      api: false
-    })
-
     // Compare the exported workflow with the original
     delete downloadedContent.id
-    delete downloadedContentZh.id
-    expect(downloadedContent).toBeDefined()
-    expect(downloadedContent).toEqual(downloadedContentZh)
+    await expect
+      .poll(async () => {
+        const downloadedContentZh =
+          await comfyPage.workflow.getExportedWorkflow({ api: false })
+        delete downloadedContentZh.id
+        return downloadedContentZh
+      })
+      .toEqual(downloadedContent)
   })
 
   test('Can save workflow as with same name', async ({ comfyPage }) => {

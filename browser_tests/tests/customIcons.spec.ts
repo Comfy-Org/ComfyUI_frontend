@@ -5,26 +5,18 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 async function verifyCustomIconSvg(iconElement: Locator) {
   await expect
-    .poll(() =>
-      iconElement.evaluate((element) =>
+    .poll(async () => {
+      const svgVariable = await iconElement.evaluate((element) =>
         getComputedStyle(element).getPropertyValue('--svg')
       )
-    )
-    .toBeTruthy()
-
-  const svgVariable = await iconElement.evaluate((element) =>
-    getComputedStyle(element).getPropertyValue('--svg')
-  )
-  const dataUrlMatch = svgVariable.match(
-    /url\("data:image\/svg\+xml,([^"]+)"\)/
-  )
-  expect(dataUrlMatch).toBeTruthy()
-
-  const encodedSvg = dataUrlMatch![1]
-  const decodedSvg = decodeURIComponent(encodedSvg)
-
-  // Check for SVG header to confirm it's a valid SVG
-  expect(decodedSvg).toContain("<svg xmlns='http://www.w3.org/2000/svg'")
+      if (!svgVariable) return null
+      const dataUrlMatch = svgVariable.match(
+        /url\("data:image\/svg\+xml,([^"]+)"\)/
+      )
+      if (!dataUrlMatch) return null
+      return decodeURIComponent(dataUrlMatch[1])
+    })
+    .toContain("<svg xmlns='http://www.w3.org/2000/svg'")
 }
 
 test.describe('Custom Icons', { tag: '@settings' }, () => {

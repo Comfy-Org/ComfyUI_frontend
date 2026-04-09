@@ -86,9 +86,9 @@ test.describe('Vue Node Selection', () => {
       { x: initialPos.x + 100, y: initialPos.y + 100 }
     )
 
-    const finalPos = await checkpointNodeHeader.boundingBox()
-    if (!finalPos) throw new Error('Failed to get header position after drag')
-    expect(finalPos).toEqual(initialPos)
+    await expect
+      .poll(async () => await checkpointNodeHeader.boundingBox())
+      .toEqual(initialPos)
 
     await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
   })

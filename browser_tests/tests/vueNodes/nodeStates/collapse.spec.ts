@@ -31,10 +31,9 @@ test.describe('Vue Node Collapse', () => {
 
     // Verify node content is hidden
     await expect(body).not.toBeVisible()
-    const collapsedBoundingBox = await vueNode.boundingBox()
-    if (!collapsedBoundingBox)
-      throw new Error('Failed to get node bounding box after collapse')
-    expect(collapsedBoundingBox.height).toBeLessThan(expandedBoundingBox.height)
+    await expect
+      .poll(async () => (await vueNode.boundingBox())?.height)
+      .toBeLessThan(expandedBoundingBox.height)
 
     // Expand again
     await vueNode.toggleCollapse()
@@ -42,12 +41,9 @@ test.describe('Vue Node Collapse', () => {
     await expect(body).toBeVisible()
 
     // Size should be restored
-    const expandedBoundingBoxAfter = await vueNode.boundingBox()
-    if (!expandedBoundingBoxAfter)
-      throw new Error('Failed to get node bounding box after expand')
-    expect(expandedBoundingBoxAfter.height).toBeGreaterThanOrEqual(
-      collapsedBoundingBox.height
-    )
+    await expect
+      .poll(async () => (await vueNode.boundingBox())?.height)
+      .toBeGreaterThanOrEqual(expandedBoundingBox.height)
   })
 
   test('should show collapse/expand icon state', async ({ comfyPage }) => {

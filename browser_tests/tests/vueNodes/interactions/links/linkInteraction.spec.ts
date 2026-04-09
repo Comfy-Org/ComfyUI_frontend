@@ -373,13 +373,19 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
     // To prevent needing a screenshot expectation for whether the link's off
     const vaeInputLocator = slotLocator(comfyPage.page, vaeNode.id, 0, true)
-    const inputBox = await vaeInputLocator.boundingBox()
-    if (!inputBox) throw new Error('Input slot bounding box not available')
-    const isOutsideX =
-      dragTarget.x < inputBox.x || dragTarget.x > inputBox.x + inputBox.width
-    const isOutsideY =
-      dragTarget.y < inputBox.y || dragTarget.y > inputBox.y + inputBox.height
-    expect(isOutsideX || isOutsideY).toBe(true)
+    await expect
+      .poll(async () => {
+        const inputBox = await vaeInputLocator.boundingBox()
+        if (!inputBox) return false
+        const isOutsideX =
+          dragTarget.x < inputBox.x ||
+          dragTarget.x > inputBox.x + inputBox.width
+        const isOutsideY =
+          dragTarget.y < inputBox.y ||
+          dragTarget.y > inputBox.y + inputBox.height
+        return isOutsideX || isOutsideY
+      })
+      .toBe(true)
 
     await comfyMouse.move(vaeInputCenter)
     await comfyMouse.drag(dragTarget)

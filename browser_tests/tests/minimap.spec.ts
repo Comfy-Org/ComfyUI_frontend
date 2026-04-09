@@ -128,18 +128,37 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         })
         .toBeGreaterThan(0)
 
-      const minimapBox = await minimap.boundingBox()
-      const viewportBox = await viewport.boundingBox()
+      await expect.poll(async () => await minimap.boundingBox()).toBeTruthy()
+      await expect.poll(async () => await viewport.boundingBox()).toBeTruthy()
 
-      expect(minimapBox).toBeTruthy()
-      expect(viewportBox).toBeTruthy()
-
-      expect(viewportBox!.x + viewportBox!.width).toBeGreaterThan(minimapBox!.x)
-      expect(viewportBox!.y + viewportBox!.height).toBeGreaterThan(
-        minimapBox!.y
-      )
-      expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
-      expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
+      await expect
+        .poll(async () => {
+          const vb = await viewport.boundingBox()
+          const mb = await minimap.boundingBox()
+          return vb && mb ? vb.x + vb.width > mb.x : false
+        })
+        .toBe(true)
+      await expect
+        .poll(async () => {
+          const vb = await viewport.boundingBox()
+          const mb = await minimap.boundingBox()
+          return vb && mb ? vb.y + vb.height > mb.y : false
+        })
+        .toBe(true)
+      await expect
+        .poll(async () => {
+          const vb = await viewport.boundingBox()
+          const mb = await minimap.boundingBox()
+          return vb && mb ? vb.x < mb.x + mb.width : false
+        })
+        .toBe(true)
+      await expect
+        .poll(async () => {
+          const vb = await viewport.boundingBox()
+          const mb = await minimap.boundingBox()
+          return vb && mb ? vb.y < mb.y + mb.height : false
+        })
+        .toBe(true)
 
       await expect(minimap).toHaveScreenshot('minimap-with-viewport.png')
     }

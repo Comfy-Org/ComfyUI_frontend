@@ -413,6 +413,19 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('19')
       await subgraphNodeRef.navigateIntoSubgraph()
 
+      await expect
+        .poll(async () => {
+          return await comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph
+            if (!graph) return null
+            const inputs = (graph as { inputs?: Array<{ name: string }> })
+              .inputs
+            return (
+              inputs?.find((input) => input.name.includes('seed'))?.name ?? null
+            )
+          })
+        })
+        .not.toBeNull()
       const seedSlotName = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph
         if (!graph) return null
@@ -421,7 +434,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
           inputs?.find((input) => input.name.includes('seed'))?.name ?? null
         )
       })
-      expect(seedSlotName).not.toBeNull()
 
       await comfyPage.subgraph.rightClickInputSlot(seedSlotName!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
@@ -597,8 +609,12 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       )
 
       for (const nodeId of nodeIds) {
+        await expect
+          .poll(
+            async () => await measureNodeSlotOffsets(comfyPage.page, nodeId)
+          )
+          .not.toBeNull()
         const data = await measureNodeSlotOffsets(comfyPage.page, nodeId)
-        expect(data, `Node ${nodeId} not found in DOM`).not.toBeNull()
         expectSlotsWithinBounds(data!, SLOT_BOUNDS_MARGIN, `Node ${nodeId}`)
       }
     })

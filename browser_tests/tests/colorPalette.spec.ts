@@ -254,18 +254,25 @@ test.describe(
         )
         .toBeDefined()
 
-      const nodes = await comfyPage.page.evaluate(() => {
-        return (
-          window.app!.graph!.serialize() as {
-            nodes: Array<{ bgcolor?: string; color?: string }>
+      await expect
+        .poll(async () => {
+          const nodes = await comfyPage.page.evaluate(() => {
+            return (
+              window.app!.graph!.serialize() as {
+                nodes: Array<{ bgcolor?: string; color?: string }>
+              }
+            ).nodes
+          })
+          if (!Array.isArray(nodes)) return 'not an array'
+          for (const node of nodes) {
+            if (node.bgcolor && /hsla/.test(node.bgcolor))
+              return `bgcolor contains hsla: ${node.bgcolor}`
+            if (node.color && /hsla/.test(node.color))
+              return `color contains hsla: ${node.color}`
           }
-        ).nodes
-      })
-      expect(Array.isArray(nodes)).toBe(true)
-      for (const node of nodes) {
-        if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
-        if (node.color) expect(node.color).not.toMatch(/hsla/)
-      }
+          return 'ok'
+        })
+        .toBe('ok')
     })
 
     test('should lighten node colors when switching to light theme', async ({

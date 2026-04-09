@@ -135,8 +135,9 @@ test.describe('Vue Node Context Menu', () => {
         { x: posBeforeDrag.x + 10, y: posBeforeDrag.y + 10 },
         { x: posBeforeDrag.x + 256, y: posBeforeDrag.y + 256 }
       )
-      const posAfterDrag = await header.boundingBox()
-      expect(posAfterDrag).toEqual(posBeforeDrag)
+      await expect
+        .poll(async () => await header.boundingBox())
+        .toEqual(posBeforeDrag)
 
       // Unpin via context menu
       await openContextMenu(comfyPage, nodeTitle)

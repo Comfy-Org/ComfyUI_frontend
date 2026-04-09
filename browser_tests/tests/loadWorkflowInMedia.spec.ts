@@ -90,12 +90,12 @@ test.describe(
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
-      const box = await node.boundingBox()
-      expect(box).not.toBeNull()
+      await expect.poll(() => node.boundingBox()).toBeTruthy()
+      const box = (await node.boundingBox())!
 
       const dropPosition = {
-        x: box!.x + box!.width / 2,
-        y: box!.y + box!.height / 2
+        x: box.x + box.width / 2,
+        y: box.y + box.height / 2
       }
 
       await comfyPage.dragDrop.dragAndDropURL(fakeUrl, {

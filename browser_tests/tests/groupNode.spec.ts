@@ -171,16 +171,21 @@ test.describe('Group Node', { tag: '@node' }, () => {
     const groupNodeId = 19
     const groupNodeName = 'two_VAE_decode'
 
-    const totalInputCount = await comfyPage.page.evaluate((nodeName) => {
-      const {
-        extra: { groupNodes }
-      } = window.app!.graph!
-      const { nodes } = groupNodes![nodeName]
-      return nodes.reduce((acc, node) => acc + (node.inputs?.length ?? 0), 0)
-    }, groupNodeName)
-
     // Verify there are 4 total inputs (2 VAE decode nodes with 2 inputs each)
-    expect(totalInputCount).toBe(4)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate((nodeName) => {
+          const {
+            extra: { groupNodes }
+          } = window.app!.graph!
+          const { nodes } = groupNodes![nodeName]
+          return nodes.reduce(
+            (acc, node) => acc + (node.inputs?.length ?? 0),
+            0
+          )
+        }, groupNodeName)
+      )
+      .toBe(4)
 
     // Verify there are 2 visible inputs (2 have been hidden in config)
     await expect

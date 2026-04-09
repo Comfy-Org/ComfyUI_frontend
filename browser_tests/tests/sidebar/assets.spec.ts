@@ -299,10 +299,9 @@ test.describe('Assets sidebar - search', () => {
     await tab.searchInput.fill('landscape')
 
     // Wait for filter to reduce the count
-    await expect(async () => {
-      const filteredCount = await tab.assetCards.count()
-      expect(filteredCount).toBeLessThan(initialCount)
-    }).toPass({ timeout: 5000 })
+    await expect
+      .poll(async () => await tab.assetCards.count(), { timeout: 5000 })
+      .toBeLessThan(initialCount)
   })
 
   test('Clearing search restores all assets', async ({ comfyPage }) => {

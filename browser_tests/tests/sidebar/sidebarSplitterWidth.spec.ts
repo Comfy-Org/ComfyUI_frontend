@@ -116,24 +116,33 @@ test.describe('Sidebar splitter width independence', () => {
     await dragGutter(comfyPage, 80)
 
     // Check that saved sizes sum to ~100%
+    const getSidebarSizes = () =>
+      comfyPage.page.evaluate(() => {
+        const raw = localStorage.getItem('unified-sidebar')
+        return raw ? (JSON.parse(raw) as number[]) : null
+      })
+
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const raw = localStorage.getItem('unified-sidebar')
-          return raw ? JSON.parse(raw) : null
-        })
-      )
-      .not.toBeNull()
+      .poll(async () => {
+        const sizes = await getSidebarSizes()
+        return Array.isArray(sizes)
+      })
+      .toBe(true)
 
-    const sizes = await comfyPage.page.evaluate(() => {
-      const raw = localStorage.getItem('unified-sidebar')
-      return raw ? JSON.parse(raw) : null
-    })
+    await expect
+      .poll(async () => {
+        const sizes = await getSidebarSizes()
+        if (!sizes) return 0
+        return sizes.reduce((a, b) => a + b, 0)
+      })
+      .toBeGreaterThan(99)
 
-    expect(Array.isArray(sizes)).toBe(true)
-
-    const sum = (sizes as number[]).reduce((a, b) => a + b, 0)
-    expect(sum).toBeGreaterThan(99)
-    expect(sum).toBeLessThanOrEqual(101)
+    await expect
+      .poll(async () => {
+        const sizes = await getSidebarSizes()
+        if (!sizes) return Infinity
+        return sizes.reduce((a, b) => a + b, 0)
+      })
+      .toBeLessThanOrEqual(101)
   })
 })

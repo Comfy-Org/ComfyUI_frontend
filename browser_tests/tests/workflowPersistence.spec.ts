@@ -220,12 +220,15 @@ test.describe('Workflow Persistence', () => {
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBeGreaterThanOrEqual(2)
 
-    const nodeTypes = await comfyPage.page.evaluate(() => {
-      return window.app!.graph.nodes.map((n: { type: string }) => n.type)
-    })
-    expect(nodeTypes).toContain('KSampler')
-    expect(nodeTypes).toContain('EmptyLatentImage')
-    expect(nodeTypes).not.toContain('NonExistentCustomNode_XYZ_12345')
+    const getNodeTypes = () =>
+      comfyPage.page.evaluate(() =>
+        window.app!.graph.nodes.map((n: { type: string }) => n.type)
+      )
+    await expect.poll(getNodeTypes).toContain('KSampler')
+    await expect.poll(getNodeTypes).toContain('EmptyLatentImage')
+    await expect
+      .poll(getNodeTypes)
+      .not.toContain('NonExistentCustomNode_XYZ_12345')
   })
 
   test('Canvas has auxclick handler to prevent middle-click paste', async ({
@@ -258,18 +261,23 @@ test.describe('Workflow Persistence', () => {
         'PR #8715 — transient image URLs leaked into workflow serialization'
     })
 
-    const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow()
-
-    for (const node of exportedWorkflow.nodes) {
-      if (node.widgets_values && Array.isArray(node.widgets_values)) {
-        for (const value of node.widgets_values) {
-          if (typeof value === 'string') {
-            expect(value).not.toMatch(/^blob:/)
-            expect(value).not.toMatch(/^https?:\/\/.*\/api\/view/)
+    await expect
+      .poll(async () => {
+        const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow()
+        for (const node of exportedWorkflow.nodes) {
+          if (node.widgets_values && Array.isArray(node.widgets_values)) {
+            for (const value of node.widgets_values) {
+              if (typeof value === 'string') {
+                if (value.startsWith('blob:')) return `blob URL found: ${value}`
+                if (/^https?:\/\/.*\/api\/view/.test(value))
+                  return `api/view URL found: ${value}`
+              }
+            }
           }
         }
-      }
-    }
+        return 'ok'
+      })
+      .toBe('ok')
   })
 
   test('Changing locale does not break workflow operations', async ({
@@ -502,8 +510,9 @@ test.describe('Workflow Persistence', () => {
     })
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
-    const nodeCountB = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCountA).not.toBe(nodeCountB)
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .not.toBe(nodeCountA)
 
     // Switch to A via topbar tab (making unsaved B inactive)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
@@ -536,7 +545,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
 
     // B should have 1 node (the Note), not A's node count
-    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
   })
 
   test('Splitter panel sizes persist correctly in localStorage', async ({
@@ -558,31 +567,39 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.setup({ clearStorage: false })
     await comfyPage.nextFrame()
 
+    const getSplitterSizes = () =>
+      comfyPage.page.evaluate(() => {
+        const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
+        return raw ? (JSON.parse(raw) as number[]) : null
+      })
+
     await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
-          return raw ? JSON.parse(raw) : null
-        })
-      )
-      .toBeTruthy()
+      .poll(async () => {
+        const sizes = await getSplitterSizes()
+        if (!Array.isArray(sizes)) return 'not an array'
+        for (const size of sizes) {
+          if (typeof size !== 'number') return `non-number entry: ${size}`
+          if (size < 0) return `negative size: ${size}`
+          if (Number.isNaN(size)) return `NaN entry`
+        }
+        return 'ok'
+      })
+      .toBe('ok')
 
-    const storedSizes = await comfyPage.page.evaluate(() => {
-      const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
-      return raw ? JSON.parse(raw) : null
-    })
+    await expect
+      .poll(async () => {
+        const sizes = await getSplitterSizes()
+        if (!sizes) return 0
+        return sizes.reduce((a, b) => a + b, 0)
+      })
+      .toBeGreaterThan(90)
 
-    expect(Array.isArray(storedSizes)).toBe(true)
-    for (const size of storedSizes as number[]) {
-      expect(typeof size).toBe('number')
-      expect(size).toBeGreaterThanOrEqual(0)
-      expect(size).not.toBeNaN()
-    }
-    const total = (storedSizes as number[]).reduce(
-      (a: number, b: number) => a + b,
-      0
-    )
-    expect(total).toBeGreaterThan(90)
-    expect(total).toBeLessThanOrEqual(101)
+    await expect
+      .poll(async () => {
+        const sizes = await getSplitterSizes()
+        if (!sizes) return Infinity
+        return sizes.reduce((a, b) => a + b, 0)
+      })
+      .toBeLessThanOrEqual(101)
   })
 })
