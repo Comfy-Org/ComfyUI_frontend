@@ -388,7 +388,9 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Selection footer ---
 
   get selectionFooter() {
-    return this.root.locator('..').locator('[class*="h-18"]')
+    return this.root.locator('..').getByRole('toolbar', {
+      name: 'Selected asset actions'
+    })
   }
 
   get selectionCountButton() {

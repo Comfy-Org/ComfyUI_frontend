@@ -3073,6 +3073,7 @@
     "selection": {
       "selectedCount": "Assets Selected: {count}",
       "multipleSelectedAssets": "Multiple assets selected",
+      "actions": "Selected asset actions",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
       "downloadSelectedAll": "Download all",

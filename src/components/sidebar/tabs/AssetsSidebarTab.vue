@@ -119,6 +119,8 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
+        role="toolbar"
+        :aria-label="$t('mediaAsset.selection.actions')"
         class="flex h-18 w-full items-center justify-between gap-1"
       >
         <div class="flex-1 pl-4">
