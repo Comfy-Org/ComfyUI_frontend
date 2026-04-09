@@ -4,9 +4,6 @@ on:
   push:
     branches: [main, core/*]
     paths-ignore: ['**/*.md']
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
 
 concurrency:
   group: e2e-coverage-${{ github.ref }}
@@ -62,3 +59,12 @@ jobs:
           path: coverage/playwright/
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Upload E2E coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        with:
+          files: coverage/playwright/coverage.lcov
+          flags: e2e
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
