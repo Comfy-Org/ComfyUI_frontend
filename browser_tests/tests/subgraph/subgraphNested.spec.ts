@@ -507,9 +507,8 @@ test.describe('Subgraph Nested Scenarios', { tag: ['@subgraph'] }, () => {
         await comfyPage.nextFrame()
         await comfyPage.vueNodes.waitForNodes()
 
-        // Node 6 (Sub 1) has 4 proxyWidgets (string_a, value, value,
-        // string_a) promoted up to Sub 0 (node 5). Each should carry the
-        // promoted ring.
+        // Node 6 (Sub 1) has 4 proxyWidgets promoted up to Sub 0
+        // (node 5). Each should carry the promoted ring.
         const intermediateNode = comfyPage.vueNodes.getNodeLocator('6')
         await comfyExpect(intermediateNode).toBeVisible()
 

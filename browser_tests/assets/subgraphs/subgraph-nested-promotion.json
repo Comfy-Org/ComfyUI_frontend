@@ -55,7 +55,8 @@
           ["3", "string_a"],
           ["4", "value"],
           ["6", "value"],
-          ["6", "value_1"]
+          ["6", "value_1"],
+          ["6", "string_a"]
         ]
       },
       "widgets_values": []
@@ -272,7 +273,7 @@
             ],
             "properties": {
               "proxyWidgets": [
-                ["5", "string_a"],
+                ["9", "string_a"],
                 ["11", "value"],
                 ["9", "value"],
                 ["10", "string_a"]
