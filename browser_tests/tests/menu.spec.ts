@@ -204,7 +204,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(async () => {
         await expect(menu).toBeVisible()
         await expect(themeSubmenu).toBeVisible()
-        expect(await topbar.isMenuItemActive(lightThemeItem)).toBe(true)
+        await expect(lightThemeItem.locator('.pi-check')).not.toHaveClass(
+          /invisible/
+        )
       }).toPass({ timeout: 5000 })
 
       // Screenshot with light theme active
@@ -229,9 +231,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(async () => {
         await expect(menu).toBeVisible()
         await expect(themeItems2.submenu).toBeVisible()
-        expect(await topbar.isMenuItemActive(themeItems2.darkTheme)).toBe(true)
-        expect(await topbar.isMenuItemActive(themeItems2.lightTheme)).toBe(
-          false
+        await expect(
+          themeItems2.darkTheme.locator('.pi-check')
+        ).not.toHaveClass(/invisible/)
+        await expect(themeItems2.lightTheme.locator('.pi-check')).toHaveClass(
+          /invisible/
         )
       }).toPass({ timeout: 5000 })
 

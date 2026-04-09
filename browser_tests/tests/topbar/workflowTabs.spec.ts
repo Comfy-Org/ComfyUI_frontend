@@ -36,16 +36,11 @@ test.describe('Workflow tabs', () => {
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
-    const activeNameBefore = await topbar.getActiveTabName()
-    expect(activeNameBefore).toContain('Unsaved Workflow (2)')
+    await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow (2)')
 
     await topbar.getTab(0).click()
-    await expect
-      .poll(() => topbar.getActiveTabName())
-      .toContain('Unsaved Workflow')
-
-    const activeAfter = await topbar.getActiveTabName()
-    expect(activeAfter).not.toContain('(2)')
+    await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
+    await expect(topbar.getActiveTab()).not.toContainText('(2)')
   })
 
   test('Closing a tab removes it', async ({ comfyPage }) => {

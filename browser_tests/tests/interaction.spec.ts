@@ -450,7 +450,7 @@ test.describe('Node Interaction', () => {
       },
       delay: 5
     })
-    expect(await comfyPage.page.locator('.node-title-editor').count()).toBe(0)
+    await expect(comfyPage.page.locator('.node-title-editor')).toHaveCount(0)
   })
 
   test(
@@ -874,8 +874,9 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       const tabs = await comfyPage.menu.topbar.getTabNames()
       expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
 
-      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
-      expect(activeWorkflowName).toEqual(workflowB)
+      await expect(comfyPage.menu.topbar.getActiveTab()).toContainText(
+        workflowB
+      )
     })
 
     test('Restores sidebar workflows after reload', async ({ comfyPage }) => {
@@ -886,15 +887,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.menu.workflowsTab.open()
       const openWorkflows =
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      const activeWorkflowName =
-        await comfyPage.menu.workflowsTab.getActiveWorkflowName()
       expect(openWorkflows).toEqual(
         expect.arrayContaining([workflowA, workflowB])
       )
       expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
         openWorkflows.indexOf(workflowB)
       )
-      expect(activeWorkflowName).toEqual(workflowB)
+      await expect(comfyPage.menu.workflowsTab.activeWorkflowLabel).toHaveText(
+        workflowB
+      )
     })
   })
 
@@ -945,11 +946,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       ).toBeVisible()
 
       const tabs = await comfyPage.menu.topbar.getTabNames()
-      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
 
       expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
       expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
-      expect(activeWorkflowName).toEqual(workflowB)
+      await expect(comfyPage.menu.topbar.getActiveTab()).toContainText(
+        workflowB
+      )
     })
 
     test('Restores sidebar workflows after browser restart', async ({
@@ -962,15 +964,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.menu.workflowsTab.open()
       const openWorkflows =
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      const activeWorkflowName =
-        await comfyPage.menu.workflowsTab.getActiveWorkflowName()
       expect(openWorkflows).toEqual(
         expect.arrayContaining([workflowA, workflowB])
       )
       expect(openWorkflows.indexOf(workflowA)).toBeLessThan(
         openWorkflows.indexOf(workflowB)
       )
-      expect(activeWorkflowName).toEqual(workflowB)
+      await expect(comfyPage.menu.workflowsTab.activeWorkflowLabel).toHaveText(
+        workflowB
+      )
     })
   })
 

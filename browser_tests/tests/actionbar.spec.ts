@@ -124,6 +124,8 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    expect(await comfyPage.actionbar.isDocked()).toBe(true)
+    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
+      /static/
+    )
   })
 })

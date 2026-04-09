@@ -62,7 +62,7 @@ test.describe('Topbar commands', () => {
     })
 
     const menuItem = comfyPage.menu.topbar.getMenuItem('ext')
-    expect(await menuItem.count()).toBe(0)
+    await expect(menuItem).toHaveCount(0)
   })
 
   test('Should allow registering keybindings', async ({ comfyPage }) => {
@@ -270,7 +270,7 @@ test.describe('Topbar commands', () => {
       await comfyPage.settingDialog.goToAboutPanel()
       const badge = comfyPage.page.locator('.about-badge').last()
       expect(badge).toBeDefined()
-      expect(await badge.textContent()).toContain('Test Badge')
+      await expect(badge).toContainText('Test Badge')
     })
   })
 

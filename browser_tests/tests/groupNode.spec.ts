@@ -1,9 +1,10 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
 import type { NodeLibrarySidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -32,7 +33,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test('Is added to node library sidebar', async ({
       comfyPage: _comfyPage
     }) => {
-      expect(await libraryTab.getFolder(groupNodeCategory).count()).toBe(1)
+      await expect(libraryTab.getFolder(groupNodeCategory)).toHaveCount(1)
     })
 
     test('Can be added to canvas using node library sidebar', async ({
@@ -62,7 +63,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
         await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toEqual([groupNodeBookmarkName])
       // Verify the bookmark node with the same name is added to the tree
-      expect(await libraryTab.getNode(groupNodeName).count()).not.toBe(0)
+      await expect(libraryTab.getNode(groupNodeName)).not.toHaveCount(0)
 
       // Unbookmark the node
       await libraryTab
@@ -84,9 +85,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .locator('.bookmark-button')
         .click()
       await comfyPage.page.hover('.p-tree-node-label.tree-explorer-node-label')
-      expect(await comfyPage.page.isVisible('.node-lib-node-preview')).toBe(
-        true
-      )
+      await expect(
+        comfyPage.page.locator('.node-lib-node-preview')
+      ).toBeVisible()
       await libraryTab
         .getNode(groupNodeName)
         .locator('.bookmark-button')
@@ -147,12 +148,12 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
     const manage1 = await group1.manageGroupNode()
     await comfyPage.nextFrame()
-    expect(await manage1.getSelectedNodeType()).toBe('g1')
+    await expect(manage1.selectedNodeTypeSelect).toHaveValue('g1')
     await manage1.close()
     await expect(manage1.root).not.toBeVisible()
 
     const manage2 = await group2.manageGroupNode()
-    expect(await manage2.getSelectedNodeType()).toBe('g2')
+    await expect(manage2.selectedNodeTypeSelect).toHaveValue('g2')
   })
 
   test('Preserves hidden input configuration when containing duplicate node types', async ({
