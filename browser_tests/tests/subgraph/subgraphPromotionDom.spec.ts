@@ -4,6 +4,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { getPromotedWidgetNames } from '@e2e/helpers/promotedWidgets'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const DOM_WIDGET_SELECTOR = '.comfy-multiline-input'
 const VISIBLE_DOM_WIDGET_SELECTOR = `${DOM_WIDGET_SELECTOR}:visible`
@@ -165,6 +166,44 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await expect(
         comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
       ).toHaveCount(parentCount)
+    })
+
+    test('Promoted DOM widget is visible after graph → app → graph round-trip', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+      await comfyPage.nextFrame()
+
+      const domWidgets = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
+      await expect(domWidgets).toBeVisible()
+      await expect(domWidgets).toHaveCount(1)
+
+      // Switch to app mode (linear mode)
+      await comfyPage.page.evaluate(() => {
+        const store = window.app!.extensionManager as WorkspaceStore
+        store.workflow.activeWorkflow!.activeMode = 'app'
+      })
+      await comfyPage.nextFrame()
+
+      const graphContainer = comfyPage.page.locator('#graph-canvas-container')
+      await expect(graphContainer).toBeHidden()
+
+      // Switch back to graph mode
+      await comfyPage.page.evaluate(() => {
+        const store = window.app!.extensionManager as WorkspaceStore
+        store.workflow.activeWorkflow!.activeMode = 'graph'
+      })
+      await comfyPage.nextFrame()
+      await comfyPage.nextFrame()
+
+      await expect(graphContainer).toBeVisible()
+
+      // Without the fix, widgetState.visible stays stale (false) because
+      // updateWidgets() never ran while the canvas was hidden via v-show.
+      await expect(domWidgets).toBeVisible({ timeout: 3000 })
+      await expect(domWidgets).toHaveCount(1)
     })
   })
 })

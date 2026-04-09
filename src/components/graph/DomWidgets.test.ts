@@ -2,12 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -56,6 +61,71 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 function drawFrame(canvas: LGraphCanvas) {
   canvas.onDrawForeground?.({} as CanvasRenderingContext2D, new Rectangle())
 }
+
+describe('DomWidgets app mode round-trip', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('restores promoted widget visibility after graph → app → graph', async () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+    const { setMode } = useAppMode()
+
+    // Set up an active workflow so linearMode is driven by activeMode
+    const workflowStore = useWorkflowStore()
+    const workflow = new ComfyWorkflow({
+      path: 'workflows/test.json',
+      modified: Date.now(),
+      size: 1
+    })
+    workflow.activeMode = 'graph'
+    workflowStore.activeWorkflow = workflow as unknown as LoadedComfyWorkflow
+
+    const rootGraph = new LGraph()
+    const subgraphGraph = new LGraph()
+    const interiorNode = createNode(subgraphGraph, 1, 'interior', [50, 50])
+    const subgraphNode = createNode(rootGraph, 2, 'subgraph', [300, 300])
+
+    const widget = createWidget('promoted-widget', interiorNode, 10)
+    const overrideWidget = createWidget('override-src', subgraphNode, 20)
+
+    domWidgetStore.registerWidget(widget)
+    domWidgetStore.setPositionOverride(widget.id, {
+      node: subgraphNode,
+      widget: overrideWidget
+    })
+    // Interior widget is inactive (its node lives in the subgraph, not root)
+    domWidgetStore.deactivateWidget(widget.id)
+
+    const canvas = createCanvas(rootGraph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    // Initial draw — promoted widget should be visible via positionOverride
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)!
+    expect(widgetState.visible).toBe(true)
+
+    // Enter app mode — canvas is hidden, no more draw calls
+    setMode('app')
+    await nextTick()
+
+    // Simulate stale visibility from lack of draw calls during app mode
+    // (in production, v-show hides the canvas so updateWidgets doesn't run)
+    widgetState.visible = false
+
+    // Return to graph mode
+    setMode('graph')
+    await nextTick()
+
+    // The widget should be visible again without needing a manual drawFrame
+    expect(widgetState.visible).toBe(true)
+  })
+})
 
 describe('DomWidgets transition grace characterization', () => {
   beforeEach(() => {
