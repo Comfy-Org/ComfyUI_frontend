@@ -145,15 +145,15 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Click the PrimeVue Select to open the dropdown
-      await settingRow.locator('.p-select').click()
-      const overlay = comfyPage.page.locator('.p-select-overlay')
-      await expect(overlay).toBeVisible()
+      // Open the dropdown via its combobox role and verify it expanded
+      const select = settingRow.getByRole('combobox')
+      await select.click()
+      await expect(select).toHaveAttribute('aria-expanded', 'true')
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-      await overlay
-        .locator(`.p-select-option-label:text-is("${targetValue}")`)
+      await comfyPage.page
+        .getByRole('option', { name: targetValue, exact: true })
         .click()
 
       await expect
