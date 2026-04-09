@@ -533,6 +533,75 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 })
 
+test.describe('Assets sidebar - delete confirmation', () => {
+  test.beforeEach(async ({ comfyPage, assetScenario }) => {
+    await assetScenario.seedGeneratedHistory(SAMPLE_JOBS)
+    await assetScenario.seedImportedFiles([])
+    await comfyPage.setup()
+  })
+
+  test('Right-click delete shows confirmation dialog', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText('Delete this asset?')).toBeVisible()
+    await expect(
+      dialog.getByText('This asset will be permanently removed.')
+    ).toBeVisible()
+  })
+
+  test('Confirming delete removes asset and shows success toast', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.confirmDialog.click('delete')
+
+    await expect(tab.assetCards).toHaveCount(initialCount - 1, {
+      timeout: 5000
+    })
+
+    const successToast = comfyPage.page.locator('.p-toast-message-success')
+    await expect(successToast).toBeVisible({ timeout: 5000 })
+  })
+
+  test('Cancelling delete preserves asset', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+
+    await comfyPage.confirmDialog.click('reject')
+
+    await expect(tab.assetCards).toHaveCount(initialCount)
+  })
+})
+
 test.describe('Assets sidebar - pagination', () => {
   test('initial load fetches first batch with offset 0', async ({
     comfyPage,
