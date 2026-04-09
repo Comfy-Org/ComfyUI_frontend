@@ -237,11 +237,15 @@ jobs:
         with:
           launch_server: 'false'
 
-      - name: Install Playwright browser
+      - name: Install Playwright browser and ffmpeg
         shell: bash
         run: |
           npx playwright install chromium
           mkdir -p "$QA_ARTIFACTS"
+          if ! command -v ffmpeg &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
 
       - name: Get PR diff
         if: needs.resolve-matrix.outputs.target_type == 'pr'
@@ -397,11 +401,15 @@ jobs:
         with:
           launch_server: 'false'
 
-      - name: Install Playwright browser
+      - name: Install Playwright browser and ffmpeg
         shell: bash
         run: |
           npx playwright install chromium
           mkdir -p "$QA_ARTIFACTS"
+          if ! command -v ffmpeg &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
 
       - name: Get PR diff
         shell: bash
@@ -724,11 +732,11 @@ jobs:
             HAS_FILES=false
 
             # Check for before files (flat or in subdirectory)
-            if [ -d "qa-artifacts/before" ] && find qa-artifacts/before -name '*.webm' -o -name '*.png' 2>/dev/null | grep -q .; then
+            if [ -d "qa-artifacts/before" ] && find qa-artifacts/before -name '*.webm' -o -name '*.mp4' -o -name '*.png' 2>/dev/null | grep -q .; then
               HAS_FILES=true
             fi
             # Check for after files
-            if [ -d "qa-artifacts/after" ] && find qa-artifacts/after -name '*.webm' -o -name '*.png' 2>/dev/null | grep -q .; then
+            if [ -d "qa-artifacts/after" ] && find qa-artifacts/after -name '*.webm' -o -name '*.mp4' -o -name '*.png' 2>/dev/null | grep -q .; then
               HAS_FILES=true
             fi
 
@@ -774,6 +782,11 @@ jobs:
             [ -d "$dir" ] || continue
             # Convert known video names (single + multi-pass + before)
             for name in qa-session qa-session-1 qa-session-2 qa-session-3 qa-before-session; do
+              # Skip if demowright already produced an MP4 with audio
+              if [ -f "$dir/${name}.mp4" ] && [ -s "$dir/${name}.mp4" ]; then
+                echo "Using existing MP4 (with audio): $dir/${name}.mp4 ($(du -h "$dir/${name}.mp4" | cut -f1))"
+                continue
+              fi
               if [ -f "$dir/${name}.webm" ] && [ -s "$dir/${name}.webm" ]; then
                 convert_video "$dir/${name}.webm" "$dir/${name}.mp4"
               fi

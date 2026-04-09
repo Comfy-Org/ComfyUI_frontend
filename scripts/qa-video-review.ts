@@ -438,12 +438,13 @@ function buildSingleVideoPrompt(
 
   if (prContext) {
     lines.push(
-      '## Phase 1: Blind Observation (describe what you SEE)',
+      '## Phase 1: Blind Observation (describe what you SEE and HEAR)',
       'First, describe every UI interaction chronologically WITHOUT knowing the expected outcome:',
       '- What elements does the user click/hover/type?',
       '- What dialogs/menus open and close?',
       '- What keyboard indicators appear? (look for subtitle overlays)',
       '- What is the BEFORE state and AFTER state of each action?',
+      '- **Audio**: Does the video have a TTS narration audio track? If yes, transcribe what the voice says. This narration describes the bug being reproduced.',
       '',
       '## Phase 2: Compare against expected behavior',
       'Now compare your observations against the context below.',
@@ -513,12 +514,17 @@ function buildSingleVideoPrompt(
     '## Possible Issues (Needs Human Verification)',
     '## Overall Risk',
     '',
+    '## Narration',
+    'If the video contains a TTS audio narration track, transcribe it here.',
+    'If there is no audio or the video is silent, write "No narration detected."',
+    '',
     '## Verdict',
     'End your report with this EXACT JSON block (no markdown fence):',
-    '{"verdict": "REPRODUCED" | "NOT_REPRODUCIBLE" | "INCONCLUSIVE", "risk": "low" | "medium" | "high" | null, "confidence": "high" | "medium" | "low"}',
+    '{"verdict": "REPRODUCED" | "NOT_REPRODUCIBLE" | "INCONCLUSIVE", "risk": "low" | "medium" | "high" | null, "confidence": "high" | "medium" | "low", "narrationDetected": true | false}',
     '- REPRODUCED: the bug/behavior is clearly visible in the video',
     '- NOT_REPRODUCIBLE: the steps were performed correctly but the bug was not observed',
-    '- INCONCLUSIVE: the reproduction steps were not performed or the video is insufficient'
+    '- INCONCLUSIVE: the reproduction steps were not performed or the video is insufficient',
+    '- narrationDetected: true if you heard TTS voice narration in the video, false if silent'
   )
 
   return lines.filter(Boolean).join('\n')

@@ -1972,9 +1972,30 @@ async function main() {
           const videoTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
 
-          // Write the E2E test as-is — demowright register patches Browser.newContext
-          // to inject cursor overlay, keystroke badges, and action delays
-          writeFileSync(videoTestFile, research.testCode)
+          // Inject demowright narrate() call for TTS voice narration
+          const issueTitle =
+            issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ??
+            'Bug Reproduction'
+          let testCode = research.testCode
+          const bodyMatch = testCode.match(
+            /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
+          )
+          if (bodyMatch?.index !== undefined) {
+            const pos = bodyMatch.index + bodyMatch[0].length
+            const narrationInject = `
+    // demowright: narrate issue title (TTS + subtitle)
+    try {
+      const { narrate: _narrate } = await import('demowright/helpers')
+      await _narrate(comfyPage.page, ${JSON.stringify('Reproducing: ' + issueTitle)})
+      console.log('[qa] narrate() completed successfully')
+    } catch (e) {
+      console.log('[qa] narrate() failed:', e instanceof Error ? e.message : e)
+    }
+`
+            testCode =
+              testCode.slice(0, pos) + narrationInject + testCode.slice(pos)
+          }
+          writeFileSync(videoTestFile, testCode)
 
           // Also save original test for the report
           writeFileSync(
@@ -1982,11 +2003,12 @@ async function main() {
             research.testCode
           )
 
+          const demowrightDir = `${projectRoot}/.demowright`
           try {
             const output = execSync(
-              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=60000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
+              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=120000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
               {
-                timeout: 120000,
+                timeout: 180000,
                 encoding: 'utf-8',
                 env: {
                   ...process.env,
@@ -1995,18 +2017,50 @@ async function main() {
                   NODE_OPTIONS: '--require demowright/register',
                   QA_HUD_DELAY: '300',
                   QA_HUD_CURSOR_STYLE: 'default',
-                  QA_HUD_KEY_FADE: '2000'
+                  QA_HUD_KEY_FADE: '2000',
+                  QA_HUD_AUDIO: '1',
+                  QA_HUD_OUTPUT_DIR: '.demowright'
                 }
               }
             )
-            console.warn(`Phase 2: Demo video recorded\n${output.slice(-300)}`)
+            console.warn(`Phase 2: Demo video recorded\n${output.slice(-500)}`)
           } catch (e) {
             const err = e as { stdout?: string }
             console.warn(
-              `Phase 2: Demo recording failed\n${(err.stdout || '').slice(-300)}`
+              `Phase 2: Demo recording failed\n${(err.stdout || '').slice(-500)}`
             )
           }
-          // Copy recorded video to outputDir so deploy script finds it
+
+          // Check for demowright-rendered MP4 (has TTS audio muxed in)
+          let demowrightMp4 = ''
+          try {
+            const mp4s = execSync(
+              `find "${demowrightDir}" -name '*.mp4' -type f 2>/dev/null`,
+              { encoding: 'utf-8' }
+            )
+              .trim()
+              .split('\n')
+              .filter(Boolean)
+            if (mp4s.length > 0) {
+              demowrightMp4 = mp4s[0]
+              console.warn(
+                `Phase 2: demowright MP4 with audio → ${demowrightMp4}`
+              )
+            }
+          } catch {
+            /* no demowright output */
+          }
+
+          if (demowrightMp4) {
+            execSync(
+              `cp "${demowrightMp4}" "${opts.outputDir}/qa-session.mp4"`
+            )
+            console.warn(
+              `Phase 2: Narrated video → ${opts.outputDir}/qa-session.mp4`
+            )
+          }
+
+          // Also copy raw webm as fallback
           try {
             const videos = execSync(
               `find "${testResultsDir}" -name '*.webm' -type f 2>/dev/null`,
@@ -2017,7 +2071,7 @@ async function main() {
               .filter(Boolean)
             if (videos.length > 0) {
               execSync(`cp "${videos[0]}" "${opts.outputDir}/qa-session.webm"`)
-              console.warn(`Phase 2: Video → ${opts.outputDir}/qa-session.webm`)
+              console.warn(`Phase 2: Raw video → ${opts.outputDir}/qa-session.webm`)
             }
           } catch {
             console.warn('Phase 2: No test video found')
