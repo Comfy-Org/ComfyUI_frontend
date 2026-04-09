@@ -7,7 +7,6 @@ catalog:
   '@astrojs/check': ^0.9.8
   '@astrojs/sitemap': ^3.7.1
   '@astrojs/vue': ^5.0.0
-  '@bgotink/playwright-coverage': ^0.3.2
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
   '@formkit/auto-animate': ^0.9.0
@@ -97,6 +96,7 @@ catalog:
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
+  monocart-coverage-reports: ^2.12.9
   nx: 22.6.1
   oxfmt: ^0.44.0
   oxlint: ^1.59.0

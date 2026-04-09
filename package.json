@@ -124,7 +124,6 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
-    "@bgotink/playwright-coverage": "catalog:",
     "@comfyorg/ingest-types": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
@@ -177,6 +176,7 @@
     "lint-staged": "catalog:",
     "markdown-table": "catalog:",
     "mixpanel-browser": "catalog:",
+    "monocart-coverage-reports": "catalog:",
     "nx": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
@@ -222,9 +222,6 @@
       "sharp",
       "unrs-resolver",
       "vue-demi"
-    ],
-    "patchedDependencies": {
-      "@bgotink/playwright-coverage@0.3.2": "patches/@bgotink__playwright-coverage@0.3.2.patch"
-    }
+    ]
   }
 }

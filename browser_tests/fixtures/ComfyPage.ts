@@ -1,7 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
-import { promises as fs } from 'fs'
+import MCR from 'monocart-coverage-reports'
 
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
@@ -404,44 +404,25 @@ export class ComfyPage {
 export const testComfySnapToGridGridSize = 50
 
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
-const COVERAGE_ATTACHMENT = '@bgotink/playwright-coverage'
 
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
-  collectCoverage: boolean
 }>({
-  collectCoverage: [COLLECT_COVERAGE, { option: true }],
-
-  page: async ({ page, collectCoverage, browserName }, use, testInfo) => {
-    if (browserName !== 'chromium' || !collectCoverage) {
+  page: async ({ page, browserName }, use) => {
+    if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
       return use(page)
     }
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
-    const entries = await page.coverage.stopJSCoverage()
+    const coverage = await page.coverage.stopJSCoverage()
 
-    // Fetch source text for network-loaded scripts that V8 didn't capture
-    for (const entry of entries) {
-      if (typeof entry.source !== 'string' && entry.url.startsWith('http')) {
-        try {
-          const resp = await fetch(entry.url)
-          if (resp.ok)
-            (entry as Record<string, unknown>).source = await resp.text()
-        } catch {
-          // skip unreachable scripts
-        }
-      }
-    }
-
-    const resultFile = testInfo.outputPath('v8-coverage.json')
-    await fs.writeFile(resultFile, JSON.stringify({ result: entries }))
-    testInfo.attachments.push({
-      name: COVERAGE_ATTACHMENT,
-      contentType: 'application/json',
-      path: resultFile
+    const mcr = MCR({
+      outputDir: './coverage/playwright',
+      reports: []
     })
+    await mcr.add(coverage)
   },
 
   comfyPage: async ({ page, request }, use, testInfo) => {
