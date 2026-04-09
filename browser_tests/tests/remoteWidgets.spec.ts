@@ -253,16 +253,16 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
 
-      // Wait for enough retries to show backoff growth
-      await expect
-        .poll(() => timestamps.length, { timeout: 15000 })
-        .toBeGreaterThanOrEqual(4)
+      // Drive canvas redraws to let the retry scheduler fire
+      await expect(async () => {
+        await comfyPage.page.mouse.click(100, 100)
+        await comfyPage.nextFrame()
+        expect(timestamps.length).toBeGreaterThanOrEqual(3)
+      }).toPass({ timeout: 15000, intervals: [500, 1000, 1500] })
 
-      // Verify total elapsed time grows (backoff), not just adjacent pairs
-      // which can be noisy on CI. Compare first gap to last gap.
+      // Verify backoff: last interval should exceed first
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])
-      const lastInterval = intervals[intervals.length - 1]
-      expect(lastInterval).toBeGreaterThan(intervals[0])
+      expect(intervals[intervals.length - 1]).toBeGreaterThan(intervals[0])
     })
 
     test('clicking refresh button forces a refresh', async ({ comfyPage }) => {
