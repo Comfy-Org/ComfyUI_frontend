@@ -19,6 +19,7 @@ const mediaType = computed(() => getMediaType(output))
 <template>
   <div
     v-if="mediaType === 'image_compare' && output.compareImages"
+    data-testid="linear-compare-output"
     class="relative block size-10 overflow-hidden rounded-sm bg-secondary-background"
   >
     <img

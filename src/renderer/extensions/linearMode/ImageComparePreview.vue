@@ -71,6 +71,7 @@ const hasCompareImages = computed(() =>
     >
       <div
         ref="containerRef"
+        data-testid="image-compare-preview"
         class="relative h-full max-w-full cursor-col-resize"
         :style="imageAspect ? { aspectRatio: imageAspect } : undefined"
       >
@@ -103,6 +104,7 @@ const hasCompareImages = computed(() =>
         />
         <div
           v-if="hasCompareImages"
+          data-testid="image-compare-slider"
           class="pointer-events-none absolute top-1/2 z-10 size-6 -translate-1/2 rounded-full border-2 border-white bg-white/30 shadow-lg backdrop-blur-sm"
           :style="{ left: `${sliderPosition}%` }"
           role="presentation"

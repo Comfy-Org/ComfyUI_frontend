@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from '../selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const ids = TestIds.outputHistory
 
@@ -49,6 +49,36 @@ export class OutputHistoryComponent {
 
   get videoOutputs(): Locator {
     return this.page.getByTestId(ids.videoOutput)
+  }
+
+  get compareOutputs(): Locator {
+    return this.page.getByTestId(ids.compareOutput)
+  }
+
+  get comparePreview(): Locator {
+    return this.page.getByTestId(ids.comparePreview)
+  }
+
+  get compareSlider(): Locator {
+    return this.page.getByTestId(ids.compareSlider)
+  }
+
+  get batchNav(): Locator {
+    return this.page.getByTestId(ids.batchNav)
+  }
+
+  /** Timeline items that are non-asset outputs (e.g. image compare). */
+  get nonAssetItems(): Locator {
+    return this.page.locator(
+      `[data-testid="${ids.historyItem}"][data-item-kind="nonAsset"]`
+    )
+  }
+
+  /** The currently selected non-asset timeline item. */
+  get selectedNonAssetItem(): Locator {
+    return this.page.locator(
+      `[data-testid="${ids.historyItem}"][data-item-kind="nonAsset"][data-state="checked"]`
+    )
   }
 
   /** The currently selected (checked) in-progress item. */

@@ -375,6 +375,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             :ref="selectedRef(item.id)"
             v-bind="itemAttrs(item.id)"
             data-testid="linear-history-item"
+            :data-item-kind="item.selectionValue.kind"
             :class="itemClass"
             @click="store.select(item.id)"
           >
