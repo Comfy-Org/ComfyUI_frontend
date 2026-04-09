@@ -406,7 +406,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     const dialog = comfyPage.page.getByRole('dialog')
     await expect(dialog).toBeVisible()
 
-    const modeSelector = dialog.getByText('Node Pack')
+    const modeSelector = dialog.getByText('Node Pack').first()
     await expect(modeSelector).toBeVisible()
 
     await modeSelector.click()
