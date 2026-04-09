@@ -20,6 +20,7 @@ import type { SeededAssetFile } from './seededAssetFiles'
 
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const viewRoutePattern = /\/api\/view(?:\?.*)?$/
+const DEFAULT_FIXTURE_CREATE_TIME = Date.UTC(2024, 0, 1, 0, 0, 0)
 
 type MockPreviewOutput = NonNullable<JobEntry['preview_output']> & {
   filename?: string
@@ -102,7 +103,9 @@ function buildSeededJob(job: GeneratedJobFixture) {
   const preview = outputs[0]
   const createTime =
     job.createTime ??
-    new Date(job.createdAt ?? '2026-03-27T12:00:00.000Z').getTime()
+    (job.createdAt
+      ? new Date(job.createdAt).getTime()
+      : DEFAULT_FIXTURE_CREATE_TIME)
   const executionStartTime = job.executionStartTime ?? createTime
   const executionEndTime = job.executionEndTime ?? createTime + 2_000
 
