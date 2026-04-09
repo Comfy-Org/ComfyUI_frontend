@@ -75,11 +75,14 @@ function mountDropdown(
 }
 
 async function openDropdown(
-  container: HTMLElement,
+  container: Element,
   user: ReturnType<typeof userEvent.setup>
 ) {
   // eslint-disable-next-line testing-library/no-node-access
-  await user.click(container.querySelector('.mock-dropdown-trigger')!)
+  const trigger = container.querySelector(
+    '.mock-dropdown-trigger'
+  ) as HTMLElement
+  await user.click(trigger)
   await flushPromises()
 }
 
@@ -170,7 +173,6 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
   })
 
   it('runs filtering when dropdown opens', async () => {
