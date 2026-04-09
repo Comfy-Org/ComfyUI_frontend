@@ -33,25 +33,25 @@ for (const line of lcov.split('\n')) {
   if (line.startsWith('SF:')) {
     currentFile = line.slice(3)
   } else if (line.startsWith('LF:')) {
-    const n = parseInt(line.slice(3), 10)
+    const n = parseInt(line.slice(3), 10) || 0
     totalLines += n
     const entry = fileStats.get(currentFile) ?? { lines: 0, covered: 0 }
     entry.lines = n
     fileStats.set(currentFile, entry)
   } else if (line.startsWith('LH:')) {
-    const n = parseInt(line.slice(3), 10)
+    const n = parseInt(line.slice(3), 10) || 0
     coveredLines += n
     const entry = fileStats.get(currentFile) ?? { lines: 0, covered: 0 }
     entry.covered = n
     fileStats.set(currentFile, entry)
   } else if (line.startsWith('FNF:')) {
-    totalFunctions += parseInt(line.slice(4), 10)
+    totalFunctions += parseInt(line.slice(4), 10) || 0
   } else if (line.startsWith('FNH:')) {
-    coveredFunctions += parseInt(line.slice(4), 10)
+    coveredFunctions += parseInt(line.slice(4), 10) || 0
   } else if (line.startsWith('BRF:')) {
-    totalBranches += parseInt(line.slice(4), 10)
+    totalBranches += parseInt(line.slice(4), 10) || 0
   } else if (line.startsWith('BRH:')) {
-    coveredBranches += parseInt(line.slice(4), 10)
+    coveredBranches += parseInt(line.slice(4), 10) || 0
   }
 }
 
