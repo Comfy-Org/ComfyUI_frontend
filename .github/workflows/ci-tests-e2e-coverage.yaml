@@ -1,60 +1,51 @@
 name: 'CI: E2E Coverage'
 
 on:
-  push:
-    branches: [main, core/*]
-    paths-ignore: ['**/*.md']
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-    paths-ignore: ['**/*.md']
+  workflow_run:
+    workflows: ['CI: Tests E2E']
+    types:
+      - completed
 
 concurrency:
-  group: e2e-coverage-${{ github.ref }}
+  group: e2e-coverage-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  collect:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+  merge:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.16
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: read
-      packages: read
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          persist-credentials: false
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+
+      - name: Download all shard coverage data
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          include_build_step: true
+          run_id: ${{ github.event.workflow_run.id }}
+          name: e2e-coverage-shard-.*
+          name_is_regexp: true
+          path: temp/coverage-shards
+          if_no_artifact_found: warn
 
-      - name: Start ComfyUI server
-        uses: ./.github/actions/start-comfyui-server
+      - name: Merge shard coverage into single LCOV
+        run: |
+          mkdir -p coverage/playwright
+          # Concatenate all per-shard LCOV files into one
+          find temp/coverage-shards -name 'coverage.lcov' -exec cat {} + > coverage/playwright/coverage.lcov
+          echo "Merged coverage from $(find temp/coverage-shards -name 'coverage.lcov' | wc -l) shards"
+          wc -l coverage/playwright/coverage.lcov
 
-      - name: Run Playwright tests with coverage
-        id: tests
-        continue-on-error: true
-        run: >
-          COLLECT_COVERAGE=true
-          pnpm exec playwright test
-          --project=chromium
-          --workers=2
-        env:
-          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
-
-      - name: Upload coverage data
+      - name: Upload merged coverage data
         if: always()
         uses: actions/upload-artifact@v6
         with:
