@@ -113,12 +113,15 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
     // End transaction
     await afterChange(comfyPage)
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+    await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
     // Ensure undo reverts both changes
     await comfyPage.keyboard.undo()
-    await expect
-      .poll(async () => [await node.isBypassed(), await node.isCollapsed()])
-      .toEqual([false, false])
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(1)
+    await expect(node).not.toBeBypassed({ timeout: 5000 })
+    await expect(node).not.toBeCollapsed({ timeout: 5000 })
   })
 
   test('Can nest multiple change transactions without adding undo steps', async ({
