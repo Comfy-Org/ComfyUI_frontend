@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,11 +58,11 @@ describe('useWidgetSelectActions', () => {
         modelValue,
         dropdownItems: computed(() => items),
         widget: () =>
-          ({
+          fromPartial<SimplifiedWidget<string | undefined>>({
             name: 'test',
             type: 'combo',
             value: 'img_001.png'
-          }) as SimplifiedWidget<string | undefined>,
+          }),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -79,11 +80,11 @@ describe('useWidgetSelectActions', () => {
         modelValue,
         dropdownItems: computed(() => items),
         widget: () =>
-          ({
+          fromPartial<SimplifiedWidget<string | undefined>>({
             name: 'test',
             type: 'combo',
             value: 'img_001.png'
-          }) as SimplifiedWidget<string | undefined>,
+          }),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -97,10 +98,12 @@ describe('useWidgetSelectActions', () => {
   describe('handleFilesUpdate', () => {
     it('uploads file and updates modelValue', async () => {
       const { api } = await import('@/scripts/api')
-      vi.mocked(api.fetchApi).mockResolvedValue({
-        status: 200,
-        json: () => Promise.resolve({ name: 'uploaded.png', subfolder: '' })
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'uploaded.png', subfolder: '' })
+        })
+      )
 
       const modelValue = ref<string | undefined>('img_001.png')
       const items = createItems('img_001.png')
@@ -109,12 +112,12 @@ describe('useWidgetSelectActions', () => {
         modelValue,
         dropdownItems: computed(() => items),
         widget: () =>
-          ({
+          fromPartial<SimplifiedWidget<string | undefined>>({
             name: 'test',
             type: 'combo',
             value: 'img_001.png',
             options: { values: widgetValues }
-          }) as SimplifiedWidget<string | undefined>,
+          }),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })

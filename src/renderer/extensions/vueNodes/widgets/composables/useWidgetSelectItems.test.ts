@@ -20,23 +20,22 @@ vi.mock(
   })
 )
 
-const { mockMediaAssets, mockResolveOutputAssetItems } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
+const mockResolveOutputAssetItems = vi.fn()
+
+function createMockMediaAssets() {
   return {
-    mockMediaAssets: {
-      media: ref([]),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn().mockResolvedValue([]),
-      refresh: vi.fn().mockResolvedValue([]),
-      loadMore: vi.fn(),
-      hasMore: ref(false),
-      isLoadingMore: ref(false)
-    },
-    mockResolveOutputAssetItems: vi.fn()
+    media: ref<AssetItem[]>([]),
+    loading: ref(false),
+    error: ref(null),
+    fetchMediaList: vi.fn().mockResolvedValue([]),
+    refresh: vi.fn().mockResolvedValue([]),
+    loadMore: vi.fn(),
+    hasMore: ref(false),
+    isLoadingMore: ref(false)
   }
-})
+}
+
+let mockMediaAssets = createMockMediaAssets()
 
 vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
   useMediaAssets: () => mockMediaAssets
@@ -134,7 +133,7 @@ describe('display label behavior', () => {
 describe('useWidgetSelectItems', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    mockMediaAssets.media.value = []
+    mockMediaAssets = createMockMediaAssets()
     mockResolveOutputAssetItems.mockReset()
     mockAssetsData.items = []
   })
