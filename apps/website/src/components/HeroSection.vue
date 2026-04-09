@@ -1,16 +1,23 @@
 <script setup lang="ts">
-const ctaButtons = [
+import { computed } from 'vue'
+
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const ctaButtons = computed(() => [
   {
-    label: 'GET STARTED',
+    label: t('hero.cta.getStarted', locale),
     href: 'https://app.comfy.org',
     variant: 'solid' as const
   },
   {
-    label: 'LEARN MORE',
+    label: t('hero.cta.learnMore', locale),
     href: '/about',
     variant: 'outline' as const
   }
-]
+])
 </script>
 
 <template>
@@ -39,12 +46,11 @@ const ctaButtons = [
         <h1
           class="text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl"
         >
-          Professional Control of Visual AI
+          {{ t('hero.headline', locale) }}
         </h1>
 
         <p class="mt-6 max-w-lg text-lg text-smoke-700">
-          Comfy is the AI creation engine for visual professionals who demand
-          control over every model, every parameter, and every output.
+          {{ t('hero.subheadline', locale) }}
         </p>
 
         <div class="mt-8 flex flex-wrap gap-4">
