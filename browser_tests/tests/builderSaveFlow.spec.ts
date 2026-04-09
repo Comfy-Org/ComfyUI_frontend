@@ -233,12 +233,11 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
       'Node graph'
     )
 
-    await expect
-      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
-      .toMatch(/\.json$/)
-    await expect
-      .poll(() => comfyPage.workflow.getActiveWorkflowPath())
-      .not.toContain('.app.json')
+    await expect(async () => {
+      const path = await comfyPage.workflow.getActiveWorkflowPath()
+      expect(path).toMatch(/\.json$/)
+      expect(path).not.toContain('.app.json')
+    }).toPass({ timeout: 5000 })
 
     await expect
       .poll(() => comfyPage.workflow.getLinearModeFromGraph())

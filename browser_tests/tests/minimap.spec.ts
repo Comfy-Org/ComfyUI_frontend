@@ -115,50 +115,18 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const viewport = minimap.locator('.minimap-viewport')
       await expect(viewport).toBeVisible()
 
-      await expect
-        .poll(async () => {
-          const b = await viewport.boundingBox()
-          return b?.width ?? 0
-        })
-        .toBeGreaterThan(0)
-      await expect
-        .poll(async () => {
-          const b = await viewport.boundingBox()
-          return b?.height ?? 0
-        })
-        .toBeGreaterThan(0)
-
-      await expect.poll(async () => await minimap.boundingBox()).toBeTruthy()
-      await expect.poll(async () => await viewport.boundingBox()).toBeTruthy()
-
-      await expect
-        .poll(async () => {
-          const vb = await viewport.boundingBox()
-          const mb = await minimap.boundingBox()
-          return vb && mb ? vb.x + vb.width > mb.x : false
-        })
-        .toBe(true)
-      await expect
-        .poll(async () => {
-          const vb = await viewport.boundingBox()
-          const mb = await minimap.boundingBox()
-          return vb && mb ? vb.y + vb.height > mb.y : false
-        })
-        .toBe(true)
-      await expect
-        .poll(async () => {
-          const vb = await viewport.boundingBox()
-          const mb = await minimap.boundingBox()
-          return vb && mb ? vb.x < mb.x + mb.width : false
-        })
-        .toBe(true)
-      await expect
-        .poll(async () => {
-          const vb = await viewport.boundingBox()
-          const mb = await minimap.boundingBox()
-          return vb && mb ? vb.y < mb.y + mb.height : false
-        })
-        .toBe(true)
+      await expect(async () => {
+        const vb = await viewport.boundingBox()
+        const mb = await minimap.boundingBox()
+        expect(vb).toBeTruthy()
+        expect(mb).toBeTruthy()
+        expect(vb!.width).toBeGreaterThan(0)
+        expect(vb!.height).toBeGreaterThan(0)
+        expect(vb!.x).toBeGreaterThanOrEqual(mb!.x)
+        expect(vb!.y).toBeGreaterThanOrEqual(mb!.y)
+        expect(vb!.x + vb!.width).toBeLessThanOrEqual(mb!.x + mb!.width)
+        expect(vb!.y + vb!.height).toBeLessThanOrEqual(mb!.y + mb!.height)
+      }).toPass({ timeout: 5000 })
 
       await expect(minimap).toHaveScreenshot('minimap-with-viewport.png')
     }

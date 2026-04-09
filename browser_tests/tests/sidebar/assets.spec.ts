@@ -300,7 +300,7 @@ test.describe('Assets sidebar - search', () => {
 
     // Wait for filter to reduce the count
     await expect
-      .poll(async () => await tab.assetCards.count(), { timeout: 5000 })
+      .poll(() => tab.assetCards.count(), { timeout: 5000 })
       .toBeLessThan(initialCount)
   })
 

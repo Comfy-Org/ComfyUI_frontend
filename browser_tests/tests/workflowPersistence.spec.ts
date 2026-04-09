@@ -269,7 +269,7 @@ test.describe('Workflow Persistence', () => {
             for (const value of node.widgets_values) {
               if (typeof value === 'string') {
                 if (value.startsWith('blob:')) return `blob URL found: ${value}`
-                if (/^https?:\/\/.*\/api\/view/.test(value))
+                if (value.includes('/api/view'))
                   return `api/view URL found: ${value}`
               }
             }
