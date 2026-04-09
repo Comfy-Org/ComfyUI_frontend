@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
 const logos = [
   'Harman',
   'Tencent',
@@ -14,11 +20,11 @@ const logos = [
   'EA'
 ]
 
-const metrics = [
-  { value: '60K+', label: 'Custom Nodes' },
-  { value: '106K+', label: 'GitHub Stars' },
-  { value: '500K+', label: 'Community Members' }
-]
+const metrics = computed(() => [
+  { value: '60K+', label: t('social.customNodes', locale) },
+  { value: '106K+', label: t('social.githubStars', locale) },
+  { value: '500K+', label: t('social.communityMembers', locale) }
+])
 </script>
 
 <template>
@@ -28,7 +34,7 @@ const metrics = [
       <p
         class="text-center text-xs font-medium uppercase tracking-widest text-smoke-700"
       >
-        Trusted by Industry Leaders
+        {{ t('social.heading', locale) }}
       </p>
 
       <!-- Logo row -->

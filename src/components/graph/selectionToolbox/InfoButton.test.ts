@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
@@ -15,6 +16,12 @@ const { openPanelMock } = vi.hoisted(() => ({
 vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
   useRightSidePanelStore: () => ({
     openPanel: openPanelMock
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackUiButtonClicked: vi.fn()
   })
 }))
 
@@ -36,8 +43,8 @@ describe('InfoButton', () => {
     vi.clearAllMocks()
   })
 
-  const mountComponent = () => {
-    return mount(InfoButton, {
+  const renderComponent = () => {
+    return render(InfoButton, {
       global: {
         plugins: [i18n, PrimeVue],
         directives: { tooltip: Tooltip },
@@ -47,9 +54,11 @@ describe('InfoButton', () => {
   }
 
   it('should open the info panel on click', async () => {
-    const wrapper = mountComponent()
-    const button = wrapper.find('[data-testid="info-button"]')
-    await button.trigger('click')
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Node Info' }))
+
     expect(openPanelMock).toHaveBeenCalledWith('info')
   })
 })
