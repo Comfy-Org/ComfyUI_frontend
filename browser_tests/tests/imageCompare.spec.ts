@@ -72,6 +72,15 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
       .toBe(true)
   }
 
+  async function getClipPathInsetRightPercent(imgLocator: Locator) {
+    return imgLocator.evaluate((el) => {
+      // Accessing raw style avoids cross-browser getComputedStyle normalization issues
+      // Format is uniformly "inset(0 60% 0 0)" per Vue runtime inline style bindings
+      const parts = (el as HTMLElement).style.clipPath.split(' ')
+      return parts.length > 1 ? parseFloat(parts[1]) : -1
+    })
+  }
+
   // ---------------------------------------------------------------------------
   // Rendering
   // ---------------------------------------------------------------------------
@@ -114,9 +123,12 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
       await expect(handle).toBeVisible()
 
       expect(
-        await handle.evaluate((el) => (el as HTMLElement).style.left)
+        await handle.evaluate((el) => (el as HTMLElement).style.left),
+        'Slider should default to 50% before screenshot'
       ).toBe('50%')
-      await expect(beforeImg).toHaveCSS('clip-path', /50%/)
+      await expect
+        .poll(() => getClipPathInsetRightPercent(beforeImg))
+        .toBeCloseTo(50, 0)
 
       await waitForImagesLoaded(node)
       await comfyPage.page.mouse.move(0, 0)
@@ -147,7 +159,9 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
 
       // Left edge: sliderPosition ≈ 5 → clip-path inset right ≈ 95%
       await moveToPercentage(comfyPage.page, afterImg, 5)
-      await expect(beforeImg).toHaveCSS('clip-path', /9\d[\d.]*%/)
+      await expect
+        .poll(() => getClipPathInsetRightPercent(beforeImg))
+        .toBeGreaterThan(90)
       await expect
         .poll(() =>
           handle.evaluate((el) => parseFloat((el as HTMLElement).style.left))
@@ -156,10 +170,9 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
 
       // Right edge: sliderPosition ≈ 95 → clip-path inset right ≈ 5%
       await moveToPercentage(comfyPage.page, afterImg, 95)
-      await expect(beforeImg).toHaveCSS(
-        'clip-path',
-        /inset\(0\S* [0-9]+[\d.]*%/
-      )
+      await expect
+        .poll(() => getClipPathInsetRightPercent(beforeImg))
+        .toBeLessThan(10)
       await expect
         .poll(() =>
           handle.evaluate((el) => parseFloat((el as HTMLElement).style.left))
@@ -395,9 +408,9 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
   // Visual regression screenshots
   // ---------------------------------------------------------------------------
 
-  for (const { pct, clipPattern } of [
-    { pct: 25, clipPattern: /7\d[\d.]*%/ },
-    { pct: 75, clipPattern: /2\d[\d.]*%/ }
+  for (const { pct, expectedClipMin, expectedClipMax } of [
+    { pct: 25, expectedClipMin: 70, expectedClipMax: 80 },
+    { pct: 75, expectedClipMin: 20, expectedClipMax: 30 }
   ]) {
     test(
       `Screenshot at ${pct}% slider position`,
@@ -415,7 +428,12 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
         const afterImg = node.locator('img[alt="After image"]')
         await waitForImagesLoaded(node)
         await moveToPercentage(comfyPage.page, afterImg, pct)
-        await expect(beforeImg).toHaveCSS('clip-path', clipPattern)
+        await expect
+          .poll(() => getClipPathInsetRightPercent(beforeImg))
+          .toBeGreaterThan(expectedClipMin)
+        await expect
+          .poll(() => getClipPathInsetRightPercent(beforeImg))
+          .toBeLessThan(expectedClipMax)
 
         await expect(node).toHaveScreenshot(`image-compare-slider-${pct}.png`)
       }
