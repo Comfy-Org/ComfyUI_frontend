@@ -5,6 +5,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 
@@ -38,8 +39,13 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   async function startStoreBootstrap() {
     if (isCloud) {
       const { isInitialized, isAuthenticated } = storeToRefs(useAuthStore())
+      const { isAuthenticated: isApiKeyAuthenticated } =
+        storeToRefs(useApiKeyAuthStore())
+
       await until(isInitialized).toBe(true)
-      await until(isAuthenticated).toBe(true)
+      await until(
+        () => isAuthenticated.value || isApiKeyAuthenticated.value
+      ).toBe(true)
     }
 
     const userStore = useUserStore()

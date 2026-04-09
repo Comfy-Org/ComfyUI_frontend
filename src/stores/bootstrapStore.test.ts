@@ -59,6 +59,13 @@ vi.mock('@/stores/authStore', () => ({
   }))
 }))
 
+const mockIsApiKeyAuthenticated = ref(false)
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: vi.fn(() => ({
+    isAuthenticated: mockIsApiKeyAuthenticated
+  }))
+}))
+
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
 }))
@@ -69,6 +76,7 @@ describe('bootstrapStore', () => {
     mockIsSettingsReady.value = false
     mockIsAuthInitialized.value = false
     mockIsAuthAuthenticated.value = false
+    mockIsApiKeyAuthenticated.value = false
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -115,6 +123,29 @@ describe('bootstrapStore', () => {
 
       // User authenticates (e.g. signs in on login page)
       mockIsAuthAuthenticated.value = true
+      await bootstrapPromise
+
+      await vi.waitFor(() => {
+        expect(store.isI18nReady).toBe(true)
+        expect(settingStore.isReady).toBe(true)
+      })
+    })
+
+    it('allows API key auth to satisfy cloud bootstrap', async () => {
+      const store = useBootstrapStore()
+      const settingStore = useSettingStore()
+      const bootstrapPromise = store.startStoreBootstrap()
+
+      expect(store.isI18nReady).toBe(false)
+      expect(settingStore.isReady).toBe(false)
+
+      mockIsAuthInitialized.value = true
+      await nextTick()
+
+      expect(store.isI18nReady).toBe(false)
+      expect(settingStore.isReady).toBe(false)
+
+      mockIsApiKeyAuthenticated.value = true
       await bootstrapPromise
 
       await vi.waitFor(() => {

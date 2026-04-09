@@ -213,8 +213,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  // Download (route through downloadMultipleAssets so multi-output jobs
-  // get exported as a ZIP rather than a single-file download)
+  // Download
   items.push({
     label: t('mediaAsset.actions.download'),
     icon: 'icon-[lucide--download]',

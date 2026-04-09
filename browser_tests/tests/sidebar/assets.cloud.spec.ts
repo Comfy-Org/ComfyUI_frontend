@@ -1,14 +1,37 @@
-import { expect, test } from '@playwright/test'
+import type {
+  CreateAssetExportData,
+  CreateAssetExportResponse
+} from '@comfyorg/ingest-types'
+import { expect, test as base } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { ComfyPage } from '../../fixtures/ComfyPage'
-import { createMockJob } from '../../fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { operations } from '@/types/comfyRegistryTypes'
 
 const TEST_API_KEY = 'playwright-cloud-api-key'
 const TEST_USERNAME = 'playwright-cloud-assets'
 const PLAYWRIGHT_TEST_URL =
   process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+const ASSET_EXPORT_ENDPOINT = '/api/assets/export'
+
+type CreateCustomerResponse =
+  operations['createCustomer']['responses']['201']['content']['application/json']
+
+type CloudAssetsFixtures = {
+  comfyPage: ComfyPage
+}
+
+const test = base.extend<CloudAssetsFixtures>({
+  comfyPage: async ({ page, request }, use) => {
+    const comfyPage = new ComfyPage(page, request)
+
+    await use(comfyPage)
+
+    await comfyPage.assetApi.clearMocks()
+  }
+})
 
 type SeedCloudSessionArgs = {
   apiKey: string
@@ -16,7 +39,20 @@ type SeedCloudSessionArgs = {
   username: string
 }
 
-const SAMPLE_JOBS: RawJobListItem[] = [
+const featuresResponse: RemoteConfig = {
+  comfy_api_base_url: `${PLAYWRIGHT_TEST_URL}/api`
+}
+
+const customerResponse: CreateCustomerResponse = {
+  id: 'customer-1'
+}
+
+const assetExportResponse: CreateAssetExportResponse = {
+  task_id: 'asset-export-task-1',
+  status: 'created'
+}
+
+const SAMPLE_JOBS = [
   createMockJob({
     id: 'job-alpha',
     create_time: 1000,
@@ -72,9 +108,8 @@ test.describe(
   () => {
     test('context menu Download creates a ZIP export for a multi-output job', async ({
       page,
-      request
+      comfyPage
     }) => {
-      const comfyPage = new ComfyPage(page, request)
       const userId = await comfyPage.setupUser(TEST_USERNAME)
 
       await seedCloudSession(userId, page)
@@ -95,30 +130,23 @@ test.describe(
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({
-            comfy_api_base_url: `${PLAYWRIGHT_TEST_URL}/api`
-          })
+          body: JSON.stringify(featuresResponse)
         })
       })
 
       await page.route('**/customers', async (route) => {
         await route.fulfill({
-          status: 200,
+          status: 201,
           contentType: 'application/json',
-          body: JSON.stringify({
-            id: 'customer-1'
-          })
+          body: JSON.stringify(customerResponse)
         })
       })
 
-      await page.route('**/api/assets/exports', async (route) => {
+      await page.route(`**${ASSET_EXPORT_ENDPOINT}`, async (route) => {
         await route.fulfill({
-          status: 200,
+          status: 202,
           contentType: 'application/json',
-          body: JSON.stringify({
-            task_id: 'asset-export-task-1',
-            status: 'queued'
-          })
+          body: JSON.stringify(assetExportResponse)
         })
       })
 
@@ -134,7 +162,7 @@ test.describe(
         const url = new URL(request.url())
         return (
           request.method() === 'POST' &&
-          url.pathname.endsWith('/api/assets/exports')
+          url.pathname.endsWith(ASSET_EXPORT_ENDPOINT)
         )
       })
 
@@ -150,15 +178,12 @@ test.describe(
       await tab.contextMenuItem('Download').click()
 
       const exportRequest = await exportRequestPromise
-      const payload = exportRequest.postDataJSON() as {
-        job_ids?: string[]
-        naming_strategy?: string
-        job_asset_name_filters?: Record<string, string[]>
-      }
+      const payload =
+        exportRequest.postDataJSON() as CreateAssetExportData['body']
 
       expect(payload.job_ids).toEqual(['job-gamma'])
       expect(payload.naming_strategy).toBe('preserve')
-      expect(payload.job_asset_name_filters).toBeUndefined()
+      expect(payload).not.toHaveProperty('job_asset_name_filters')
     })
   }
 )
