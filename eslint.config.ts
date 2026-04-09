@@ -427,7 +427,14 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction]
+          paths: [
+            useVirtualListRestriction,
+            {
+              name: '@vue/test-utils',
+              message:
+                'Use @testing-library/vue with @testing-library/user-event instead.'
+            }
+          ]
         }
       ]
     }
