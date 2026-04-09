@@ -514,10 +514,9 @@ export class AssetsSidebarTab extends SidebarTab {
 
     await this.asset(names[0]).click()
 
-    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
     for (const name of names.slice(1)) {
       await this.asset(name).click({
-        modifiers: [modifier]
+        modifiers: ['ControlOrMeta']
       })
     }
   }
