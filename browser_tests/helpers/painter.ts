@@ -36,12 +36,31 @@ export async function hasCanvasContent(canvas: Locator): Promise<boolean> {
 
 export async function triggerSerialization(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    const graph = window.graph! as TestGraphAccess
-    const node = graph._nodes_by_id['1']
-    const widget = node.widgets?.find((w) => w.name === 'mask')
-    if (!widget?.serializeValue) {
-      throw new Error('mask widget with serializeValue not found on node 1')
+    const graph = window.graph as TestGraphAccess | undefined
+    if (!graph) {
+      throw new Error(
+        'Global window.graph is absent. Ensure workflow fixture is loaded.'
+      )
     }
+
+    const node = graph._nodes_by_id?.['1']
+    if (!node) {
+      throw new Error(
+        'Target node with ID "1" not found in graph._nodes_by_id.'
+      )
+    }
+
+    const widget = node.widgets?.find((w) => w.name === 'mask')
+    if (!widget) {
+      throw new Error('Widget "mask" not found on target node 1.')
+    }
+
+    if (typeof widget.serializeValue !== 'function') {
+      throw new Error(
+        'mask widget on node 1 does not have a serializeValue function.'
+      )
+    }
+
     await widget.serializeValue(node, 0)
   })
 }

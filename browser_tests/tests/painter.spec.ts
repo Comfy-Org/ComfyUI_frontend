@@ -298,7 +298,7 @@ test.describe('Painter', { tag: '@widget' }, () => {
           .toBe(true)
 
         const clearButton = painterWidget.getByTestId('painter-clear-button')
-        await clearButton.click({ force: true })
+        await clearButton.dispatchEvent('click')
 
         await expect
           .poll(() => hasCanvasContent(canvas), {
