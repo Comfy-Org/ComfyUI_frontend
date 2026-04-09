@@ -253,9 +253,12 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)
 
+      // Initial canvas click to trigger widget render
+      await comfyPage.page.mouse.click(400, 300)
+
       // Drive canvas redraws to let the retry scheduler fire
       await expect(async () => {
-        await comfyPage.page.mouse.click(100, 100)
+        await comfyPage.page.mouse.click(400, 300)
         await comfyPage.nextFrame()
         expect(timestamps.length).toBeGreaterThanOrEqual(3)
       }).toPass({ timeout: 15000, intervals: [500, 1000, 1500] })
