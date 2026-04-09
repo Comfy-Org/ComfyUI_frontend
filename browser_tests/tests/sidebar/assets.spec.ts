@@ -465,9 +465,9 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.dismissToasts()
 
     await cards.first().click()
-    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.keyboard.down('ControlOrMeta')
     await cards.nth(1).click()
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.page.keyboard.up('ControlOrMeta')
 
     await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
     await expect(tab.selectionFooter).toBeVisible({ timeout: 3000 })
