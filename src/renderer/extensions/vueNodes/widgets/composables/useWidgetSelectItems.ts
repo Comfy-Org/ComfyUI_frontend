@@ -26,7 +26,7 @@ import type { useMediaAssets } from '@/platform/assets/composables/media/useMedi
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-export function getDisplayLabel(
+function getDisplayLabel(
   value: string,
   getOptionLabel?: ((value?: string | null) => string) | undefined
 ): string {
@@ -316,10 +316,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   )
 
   return {
-    inputItems,
-    outputItems,
-    missingValueItem,
-    allItems,
     dropdownItems,
     displayItems,
     filterSelected,

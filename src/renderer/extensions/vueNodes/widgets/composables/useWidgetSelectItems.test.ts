@@ -4,10 +4,7 @@ import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  getDisplayLabel,
-  useWidgetSelectItems
-} from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
@@ -72,31 +69,65 @@ function createDefaultOptions(overrides: Record<string, unknown> = {}) {
   }
 }
 
-describe('getDisplayLabel', () => {
-  it('returns value when no label function', () => {
-    expect(getDisplayLabel('test.png')).toBe('test.png')
+describe('display label behavior', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('applies label function', () => {
-    const labelFn = (v?: string | null) => `Custom: ${v}`
-    expect(getDisplayLabel('test.png', labelFn)).toBe('Custom: test.png')
+  it('uses values as labels when no label function provided', () => {
+    const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+    expect(dropdownItems.value[0]).toMatchObject({
+      name: 'img_001.png',
+      label: 'img_001.png'
+    })
   })
 
-  it('falls back to value on error', () => {
+  it('applies custom label function', () => {
+    const getOptionLabel = (v?: string | null) => `Custom: ${v}`
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({ getOptionLabel: () => getOptionLabel })
+    )
+    expect(dropdownItems.value[0].label).toBe('Custom: img_001.png')
+  })
+
+  it('falls back to value on label function error', () => {
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {})
-    const labelFn = () => {
-      throw new Error('fail')
+    const getOptionLabel = (v?: string | null) => {
+      if (v === 'photo_abc.jpg') throw new Error('fail')
+      return `Labeled: ${v}`
     }
-    expect(getDisplayLabel('test.png', labelFn)).toBe('test.png')
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({ getOptionLabel: () => getOptionLabel })
+    )
+    expect(dropdownItems.value[0].label).toBe('Labeled: img_001.png')
+    expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
+    expect(dropdownItems.value[2].label).toBe('Labeled: hash789.png')
     expect(consoleErrorSpy).toHaveBeenCalled()
     consoleErrorSpy.mockRestore()
   })
 
   it('falls back to value when label function returns empty string', () => {
-    const labelFn = () => ''
-    expect(getDisplayLabel('test.png', labelFn)).toBe('test.png')
+    const getOptionLabel = (v?: string | null) => {
+      if (v === 'photo_abc.jpg') return ''
+      return `Labeled: ${v}`
+    }
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({ getOptionLabel: () => getOptionLabel })
+    )
+    expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
+  })
+
+  it('falls back to value when label function returns undefined', () => {
+    const getOptionLabel = (v?: string | null) => {
+      if (v === 'hash789.png') return undefined as unknown as string
+      return `Labeled: ${v}`
+    }
+    const { dropdownItems } = useWidgetSelectItems(
+      createDefaultOptions({ getOptionLabel: () => getOptionLabel })
+    )
+    expect(dropdownItems.value[2].label).toBe('hash789.png')
   })
 })
 
@@ -108,91 +139,24 @@ describe('useWidgetSelectItems', () => {
     mockAssetsData.items = []
   })
 
-  describe('inputItems', () => {
-    it('maps values to FormDropdownItems with names as labels', () => {
-      const { inputItems } = useWidgetSelectItems(createDefaultOptions())
-      expect(inputItems.value).toHaveLength(3)
-      expect(inputItems.value[0]).toMatchObject({
+  describe('dropdownItems', () => {
+    it('maps values to items with names as labels', () => {
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+      expect(dropdownItems.value).toHaveLength(3)
+      expect(dropdownItems.value[0]).toMatchObject({
         name: 'img_001.png',
         label: 'img_001.png'
       })
     })
 
-    it('applies custom label mapping', () => {
-      const getOptionLabel = vi.fn((v?: string | null) => `Custom: ${v}`)
-      const { inputItems } = useWidgetSelectItems(
+    it('returns empty when values is undefined and no modelValue', () => {
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          getOptionLabel: () => getOptionLabel
+          values: () => undefined,
+          modelValue: ref(undefined)
         })
       )
-      expect(inputItems.value[0].label).toBe('Custom: img_001.png')
-      expect(inputItems.value[1].label).toBe('Custom: photo_abc.jpg')
-    })
-
-    it('falls back when label mapping fails for one value', () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const getOptionLabel = vi.fn((v?: string | null) => {
-        if (v === 'photo_abc.jpg') throw new Error('fail')
-        return `Labeled: ${v}`
-      })
-      const { inputItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          getOptionLabel: () => getOptionLabel
-        })
-      )
-      expect(inputItems.value[0].label).toBe('Labeled: img_001.png')
-      expect(inputItems.value[1].label).toBe('photo_abc.jpg')
-      expect(inputItems.value[2].label).toBe('Labeled: hash789.png')
-      expect(consoleErrorSpy).toHaveBeenCalled()
-      consoleErrorSpy.mockRestore()
-    })
-
-    it('falls back when label mapping returns empty string', () => {
-      const getOptionLabel = vi.fn((v?: string | null) => {
-        if (v === 'photo_abc.jpg') return ''
-        return `Labeled: ${v}`
-      })
-      const { inputItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          getOptionLabel: () => getOptionLabel
-        })
-      )
-      expect(inputItems.value[1].label).toBe('photo_abc.jpg')
-    })
-
-    it('falls back when label mapping returns undefined', () => {
-      const getOptionLabel = vi.fn((v?: string | null) => {
-        if (v === 'hash789.png') return undefined as unknown as string
-        return `Labeled: ${v}`
-      })
-      const { inputItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          getOptionLabel: () => getOptionLabel
-        })
-      )
-      expect(inputItems.value[2].label).toBe('hash789.png')
-    })
-
-    it('returns empty array for non-array values', () => {
-      const { inputItems } = useWidgetSelectItems(
-        createDefaultOptions({ values: () => undefined })
-      )
-      expect(inputItems.value).toHaveLength(0)
-    })
-  })
-
-  describe('outputItems with custom labels', () => {
-    it('applies custom label mapping to output items', () => {
-      const getOptionLabel = vi.fn((v?: string | null) => `Output: ${v}`)
-      const { outputItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          getOptionLabel: () => getOptionLabel
-        })
-      )
-      expect(outputItems.value).toBeDefined()
-      expect(Array.isArray(outputItems.value)).toBe(true)
+      expect(dropdownItems.value).toHaveLength(0)
     })
   })
 
@@ -229,17 +193,15 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('does not include fallback when filter is outputs', async () => {
-      const { dropdownItems, filterSelected, outputItems } =
-        useWidgetSelectItems(
-          createDefaultOptions({
-            values: () => ['img_001.png', 'photo_abc.jpg'],
-            modelValue: ref('template_image.png')
-          })
-        )
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['img_001.png', 'photo_abc.jpg'],
+          modelValue: ref('template_image.png')
+        })
+      )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(outputItems.value.length)
       expect(
         dropdownItems.value.every(
           (item) => !String(item.id).startsWith('missing-')
@@ -470,38 +432,41 @@ describe('useWidgetSelectItems', () => {
         }
       ])
 
-      const { outputItems } = useWidgetSelectItems(
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref('output_001.png')
         })
       )
+      filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(outputItems.value).toHaveLength(3)
+        expect(dropdownItems.value).toHaveLength(3)
       })
 
-      expect(outputItems.value.map((i) => i.name)).toEqual([
+      expect(dropdownItems.value.map((i) => i.name)).toEqual([
         'output_001.png [output]',
         'output_002.png [output]',
         'output_003.png [output]'
       ])
     })
 
-    it('shows preview when job has only one output', () => {
+    it('shows preview when job has only one output', async () => {
       mockMediaAssets.media.value = [
         makeMultiOutputAsset('job-2', 'single.png', '3', 1)
       ]
 
-      const { outputItems } = useWidgetSelectItems(
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref('single.png')
         })
       )
+      filterSelected.value = 'outputs'
+      await nextTick()
 
-      expect(outputItems.value).toHaveLength(1)
-      expect(outputItems.value[0].name).toBe('single.png [output]')
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('single.png [output]')
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
     })
 
@@ -546,18 +511,19 @@ describe('useWidgetSelectItems', () => {
         }
       )
 
-      const { outputItems } = useWidgetSelectItems(
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
         })
       )
+      filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(outputItems.value).toHaveLength(4)
+        expect(dropdownItems.value).toHaveLength(4)
       })
 
-      const names = outputItems.value.map((i) => i.name)
+      const names = dropdownItems.value.map((i) => i.name)
       expect(names).toContain('a1.png [output]')
       expect(names).toContain('a2.png [output]')
       expect(names).toContain('b1.png [output]')
@@ -611,22 +577,23 @@ describe('useWidgetSelectItems', () => {
         }
       ])
 
-      const { outputItems } = useWidgetSelectItems(
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
         })
       )
+      filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(outputItems.value).toHaveLength(2)
+        expect(dropdownItems.value).toHaveLength(2)
       })
 
       expect(mockResolveOutputAssetItems).toHaveBeenCalledWith(
         expect.objectContaining({ jobId: 'job-complete' }),
         expect.any(Object)
       )
-      const names = outputItems.value.map((i) => i.name)
+      const names = dropdownItems.value.map((i) => i.name)
       expect(names).toEqual(['out1.png [output]', 'out2.png [output]'])
     })
 
@@ -640,12 +607,13 @@ describe('useWidgetSelectItems', () => {
       ]
       mockResolveOutputAssetItems.mockRejectedValue(new Error('network error'))
 
-      const { outputItems } = useWidgetSelectItems(
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
         })
       )
+      filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
         expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -655,8 +623,8 @@ describe('useWidgetSelectItems', () => {
         )
       })
 
-      expect(outputItems.value).toHaveLength(1)
-      expect(outputItems.value[0].name).toBe('preview.png [output]')
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('preview.png [output]')
       consoleWarnSpy.mockRestore()
     })
   })
