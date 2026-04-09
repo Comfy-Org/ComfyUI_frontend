@@ -61,7 +61,7 @@ export function useRangeEditor({
       const range = current.max - current.min
       const midNorm =
         range > 0 ? normalize(clamped, current.min, current.max) : 0
-      const midpoint = Math.max(0, Math.min(1, midNorm))
+      const midpoint = clamp(midNorm, 0, 1)
       modelValue.value = { ...current, midpoint }
     }
   }
@@ -107,7 +107,6 @@ export function useRangeEditor({
   })
 
   return {
-    activeHandle,
     handleTrackPointerDown,
     startDrag
   }
