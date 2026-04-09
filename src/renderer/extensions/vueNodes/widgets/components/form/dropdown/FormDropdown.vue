@@ -180,7 +180,7 @@ function toggleDropdown() {
     if (shouldTeleport) {
       const left = Math.max(
         0,
-        Math.min(rect.left, window.innerWidth - MENU_WIDTH)
+        Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH)
       )
       fixedPosition.value = {
         top: openUpward.value
