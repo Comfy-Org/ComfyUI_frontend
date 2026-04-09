@@ -24,6 +24,7 @@
     <div
       ref="containerRef"
       class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
+      data-testid="minimap-container"
       :style="containerStyles"
     >
       <Button
@@ -58,9 +59,14 @@
         :width="width"
         :height="height"
         class="minimap-canvas"
+        data-testid="minimap-canvas"
       />
 
-      <div class="minimap-viewport" :style="viewportStyles" />
+      <div
+        class="minimap-viewport"
+        :style="viewportStyles"
+        data-testid="minimap-viewport"
+      />
 
       <div
         class="absolute inset-0 touch-none"
