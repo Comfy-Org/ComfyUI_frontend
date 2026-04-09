@@ -1331,6 +1331,7 @@
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
+    "uploadTimedOut": "انتهت مهلة التحميل. يرجى المحاولة مرة أخرى.",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
