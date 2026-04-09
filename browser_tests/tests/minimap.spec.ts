@@ -231,7 +231,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       (el: HTMLElement) => el.style.transform
     )
 
-    await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+    await comfyPage.page.evaluate(() => {
+      window.app!.canvas.fitViewToSelectionAnimated({ duration: 1 })
+    })
 
     await expect
       .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform), {
