@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
 // TODO: Migrate to a Pinia store for proper singleton state management
@@ -14,34 +14,6 @@ const isFetchingProfile = ref(false)
 const profile = ref<ComfyHubProfile | null>(null)
 const cachedUserId = ref<string | null>(null)
 let inflightFetch: Promise<ComfyHubProfile | null> | null = null
-
-function getCurrentWorkspaceId(): string {
-  const workspaceJson = sessionStorage.getItem(
-    WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
-  )
-  if (!workspaceJson) {
-    throw new Error('Unable to determine current workspace')
-  }
-
-  let workspace: unknown
-  try {
-    workspace = JSON.parse(workspaceJson)
-  } catch {
-    throw new Error('Unable to determine current workspace')
-  }
-
-  if (
-    !workspace ||
-    typeof workspace !== 'object' ||
-    !('id' in workspace) ||
-    typeof workspace.id !== 'string' ||
-    workspace.id.length === 0
-  ) {
-    throw new Error('Unable to determine current workspace')
-  }
-
-  return workspace.id
-}
 
 export function useComfyHubProfileGate() {
   const { resolvedUserInfo } = useCurrentUser()
@@ -122,6 +94,12 @@ export function useComfyHubProfileGate() {
   }): Promise<ComfyHubProfile> {
     syncCachedProfileWithCurrentUser()
 
+    const workspaceAuthStore = useWorkspaceAuthStore()
+    const workspaceId = workspaceAuthStore.currentWorkspace?.id
+    if (!workspaceId) {
+      throw new Error('Unable to determine current workspace')
+    }
+
     let avatarToken: string | undefined
     if (data.profilePicture) {
       const contentType = data.profilePicture.type || 'application/octet-stream'
@@ -140,7 +118,7 @@ export function useComfyHubProfileGate() {
     }
 
     const createdProfile = await createComfyHubProfile({
-      workspaceId: getCurrentWorkspaceId(),
+      workspaceId,
       username: data.username,
       displayName: data.name,
       description: data.description,

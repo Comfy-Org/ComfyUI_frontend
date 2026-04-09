@@ -10,6 +10,14 @@ const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockResolvedUserInfo = vi.hoisted(() => ({
   value: { id: 'user-a' }
 }))
+const mockCurrentWorkspace = vi.hoisted(() => ({
+  value: {
+    id: 'workspace-1',
+    type: 'team',
+    name: 'Test Workspace',
+    role: 'owner'
+  } as { id: string; type: string; name: string; role: string } | null
+}))
 
 vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
   useComfyHubService: () => ({
@@ -32,6 +40,14 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
+  useWorkspaceAuthStore: () => ({
+    get currentWorkspace() {
+      return mockCurrentWorkspace.value
+    }
+  })
+}))
+
 // Must import after vi.mock declarations
 const { useComfyHubProfileGate } = await import('./useComfyHubProfileGate')
 
@@ -41,25 +57,18 @@ const mockProfile: ComfyHubProfile = {
   description: 'A test profile'
 }
 
-function setCurrentWorkspace(workspaceId: string) {
-  sessionStorage.setItem(
-    'Comfy.Workspace.Current',
-    JSON.stringify({
-      id: workspaceId,
-      type: 'team',
-      name: 'Test Workspace',
-      role: 'owner'
-    })
-  )
-}
-
 describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockResolvedUserInfo.value = { id: 'user-a' }
-    setCurrentWorkspace('workspace-1')
+    mockCurrentWorkspace.value = {
+      id: 'workspace-1',
+      type: 'team',
+      name: 'Test Workspace',
+      role: 'owner'
+    }
     mockGetMyProfile.mockResolvedValue(mockProfile)
     mockRequestAssetUploadUrl.mockResolvedValue({
       uploadUrl: 'https://upload.example.com/avatar.png',
