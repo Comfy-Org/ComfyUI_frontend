@@ -1,9 +1,11 @@
 name: 'Coverage: Slack Notification'
 
 on:
-  push:
+  workflow_run:
+    workflows: ['CI: Tests Unit']
     branches: [main]
-    paths-ignore: ['**/*.md']
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -12,18 +14,23 @@ permissions:
 
 jobs:
   notify:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Run unit tests with coverage
-        id: unit-tests
-        run: pnpm test:coverage
+      - name: Download current unit coverage
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: unit-coverage
+          path: coverage
 
       - name: Download previous unit coverage baseline
         continue-on-error: true
@@ -60,7 +67,13 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const message = context.payload.head_commit?.message ?? '';
+            const sha = context.payload.workflow_run.head_sha;
+            const { data: commit } = await github.rest.repos.getCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: sha,
+            });
+            const message = commit.commit.message ?? '';
             const firstLine = message.split('\n')[0];
             const match = firstLine.match(/\(#(\d+)\)\s*$/);
             if (!match) {
@@ -118,7 +131,7 @@ jobs:
             https://slack.com/api/chat.postMessage
 
       - name: Save unit coverage baseline
-        if: always() && steps.unit-tests.outcome == 'success'
+        if: always() && hashFiles('coverage/lcov.info') != ''
         uses: actions/upload-artifact@v6
         with:
           name: unit-coverage-baseline

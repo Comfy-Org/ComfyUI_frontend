@@ -1,5 +1,15 @@
-// @ts-check
 import { existsSync, readFileSync } from 'node:fs'
+
+interface FileStats {
+  lines: number
+  covered: number
+}
+
+interface UncoveredFile {
+  file: string
+  pct: number
+  missed: number
+}
 
 const lcovPath = process.argv[2] || 'coverage/playwright/coverage.lcov'
 
@@ -19,8 +29,7 @@ let coveredFunctions = 0
 let totalBranches = 0
 let coveredBranches = 0
 
-/** @type {Map<string, { lines: number, covered: number }>} */
-const fileStats = new Map()
+const fileStats = new Map<string, FileStats>()
 let currentFile = ''
 
 for (const line of lcov.split('\n')) {
@@ -49,14 +58,12 @@ for (const line of lcov.split('\n')) {
   }
 }
 
-/** @param {number} covered @param {number} total */
-function pct(covered, total) {
+function pct(covered: number, total: number): string {
   if (total === 0) return '—'
   return ((covered / total) * 100).toFixed(1) + '%'
 }
 
-/** @param {number} covered @param {number} total */
-function bar(covered, total) {
+function bar(covered: number, total: number): string {
   if (total === 0) return '—'
   const p = (covered / total) * 100
   if (p >= 80) return '🟢'
@@ -64,7 +71,7 @@ function bar(covered, total) {
   return '🔴'
 }
 
-const lines = []
+const lines: string[] = []
 lines.push('## 🔬 E2E Coverage')
 lines.push('')
 lines.push('| Metric | Covered | Total | Pct | |')
@@ -79,7 +86,7 @@ lines.push(
   `| Branches | ${coveredBranches} | ${totalBranches} | ${pct(coveredBranches, totalBranches)} | ${bar(coveredBranches, totalBranches)} |`
 )
 
-const uncovered = [...fileStats.entries()]
+const uncovered: UncoveredFile[] = [...fileStats.entries()]
   .filter(([, s]) => s.lines > 0)
   .map(([file, s]) => ({
     file: file.replace(/^.*\/src\//, 'src/'),

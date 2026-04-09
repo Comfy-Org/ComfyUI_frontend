@@ -4,7 +4,7 @@ const TARGET = 80
 const MILESTONE_STEP = 5
 const BAR_WIDTH = 20
 
-interface CoverageData {
+export interface CoverageData {
   percentage: number
   totalLines: number
   coveredLines: number
@@ -18,7 +18,7 @@ interface SlackBlock {
   }
 }
 
-function parseLcovContent(content: string): CoverageData | null {
+export function parseLcovContent(content: string): CoverageData | null {
   let totalLines = 0
   let coveredLines = 0
 
@@ -44,23 +44,23 @@ function parseLcov(filePath: string): CoverageData | null {
   return parseLcovContent(readFileSync(filePath, 'utf-8'))
 }
 
-function progressBar(percentage: number): string {
+export function progressBar(percentage: number): string {
   const clamped = Math.max(0, Math.min(100, percentage))
   const filled = Math.round((clamped / 100) * BAR_WIDTH)
   const empty = BAR_WIDTH - filled
   return '█'.repeat(filled) + '░'.repeat(empty)
 }
 
-function formatPct(value: number): string {
+export function formatPct(value: number): string {
   return value.toFixed(1) + '%'
 }
 
-function formatDelta(delta: number): string {
+export function formatDelta(delta: number): string {
   const sign = delta >= 0 ? '+' : ''
   return sign + delta.toFixed(1) + '%'
 }
 
-function crossedMilestone(prev: number, curr: number): number | null {
+export function crossedMilestone(prev: number, curr: number): number | null {
   const prevBucket = Math.floor(prev / MILESTONE_STEP)
   const currBucket = Math.floor(curr / MILESTONE_STEP)
 
@@ -70,7 +70,10 @@ function crossedMilestone(prev: number, curr: number): number | null {
   return null
 }
 
-function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
+export function buildMilestoneBlock(
+  label: string,
+  milestone: number
+): SlackBlock {
   if (milestone >= TARGET) {
     return {
       type: 'section',
@@ -99,7 +102,7 @@ function buildMilestoneBlock(label: string, milestone: number): SlackBlock {
   }
 }
 
-function parseArgs(argv: string[]): {
+export function parseArgs(argv: string[]): {
   prUrl: string
   prNumber: string
   author: string
@@ -118,7 +121,7 @@ function parseArgs(argv: string[]): {
   return { prUrl, prNumber, author }
 }
 
-function formatCoverageRow(
+export function formatCoverageRow(
   label: string,
   current: CoverageData,
   baseline: CoverageData
@@ -210,4 +213,6 @@ function main() {
   process.stdout.write(JSON.stringify(payload))
 }
 
-main()
+if (process.argv[1] === import.meta.filename) {
+  main()
+}
