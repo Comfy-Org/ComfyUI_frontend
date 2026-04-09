@@ -128,7 +128,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
         break
       }
     }
-    await expect.poll(() => switched).toBe(true)
+    expect(switched).toBe(true)
   })
 
   test('Dropdown setting can be changed and persists', async ({

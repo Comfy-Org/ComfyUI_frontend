@@ -60,99 +60,29 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     )
 
     // Verify client sent feature flags
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () => window.__capturedMessages?.clientFeatureFlags != null
-        )
+    await expect(async () => {
+      const flags = await newPage.evaluate(
+        () => window.__capturedMessages?.clientFeatureFlags
       )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () => window.__capturedMessages?.clientFeatureFlags?.type
-        )
-      )
-      .toBe('feature_flags')
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () => window.__capturedMessages?.clientFeatureFlags?.data != null
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            'supports_preview_metadata' in
-            (window.__capturedMessages?.clientFeatureFlags?.data ?? {})
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            typeof window.__capturedMessages?.clientFeatureFlags?.data
-              .supports_preview_metadata
-        )
-      )
-      .toBe('boolean')
+      expect(flags).not.toBeNull()
+      expect(flags?.type).toBe('feature_flags')
+      expect(flags?.data).not.toBeNull()
+      expect(flags?.data).toHaveProperty('supports_preview_metadata')
+      expect(typeof flags?.data?.supports_preview_metadata).toBe('boolean')
+    }).toPass()
 
     // Verify server sent feature flags back
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () => window.__capturedMessages?.serverFeatureFlags != null
-        )
+    await expect(async () => {
+      const flags = await newPage.evaluate(
+        () => window.__capturedMessages?.serverFeatureFlags
       )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            'supports_preview_metadata' in
-            (window.__capturedMessages?.serverFeatureFlags ?? {})
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            typeof window.__capturedMessages?.serverFeatureFlags
-              ?.supports_preview_metadata
-        )
-      )
-      .toBe('boolean')
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            'max_upload_size' in
-            (window.__capturedMessages?.serverFeatureFlags ?? {})
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            typeof window.__capturedMessages?.serverFeatureFlags
-              ?.max_upload_size
-        )
-      )
-      .toBe('number')
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            Object.keys(window.__capturedMessages?.serverFeatureFlags ?? {})
-              .length
-        )
-      )
-      .toBeGreaterThan(0)
+      expect(flags).not.toBeNull()
+      expect(flags).toHaveProperty('supports_preview_metadata')
+      expect(typeof flags?.supports_preview_metadata).toBe('boolean')
+      expect(flags).toHaveProperty('max_upload_size')
+      expect(typeof flags?.max_upload_size).toBe('number')
+      expect(Object.keys(flags ?? {}).length).toBeGreaterThan(0)
+    }).toPass()
 
     await newPage.close()
   })
@@ -161,54 +91,18 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     comfyPage
   }) => {
     // Verify we received real feature flags from the backend
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => window.app!.api.serverFeatureFlags.value != null
-        )
+    await expect(async () => {
+      const flags = await comfyPage.page.evaluate(
+        () => window.app!.api.serverFeatureFlags.value
       )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => Object.keys(window.app!.api.serverFeatureFlags.value).length
-        )
-      )
-      .toBeGreaterThan(0)
-
-    // The backend should send feature flags
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () =>
-            'supports_preview_metadata' in
-            window.app!.api.serverFeatureFlags.value
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () =>
-            typeof window.app!.api.serverFeatureFlags.value
-              .supports_preview_metadata
-        )
-      )
-      .toBe('boolean')
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => 'max_upload_size' in window.app!.api.serverFeatureFlags.value
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => typeof window.app!.api.serverFeatureFlags.value.max_upload_size
-        )
-      )
-      .toBe('number')
+      expect(flags).not.toBeNull()
+      expect(Object.keys(flags).length).toBeGreaterThan(0)
+      // The backend should send feature flags
+      expect(flags).toHaveProperty('supports_preview_metadata')
+      expect(typeof flags.supports_preview_metadata).toBe('boolean')
+      expect(flags).toHaveProperty('max_upload_size')
+      expect(typeof flags.max_upload_size).toBe('number')
+    }).toPass()
   })
 
   test('serverSupportsFeature method works with real backend flags', async ({
@@ -282,23 +176,13 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       .toBe('boolean')
 
     // Test getting max_upload_size
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => typeof window.app!.api.getServerFeature('max_upload_size')
-        )
+    await expect(async () => {
+      const maxUpload = await comfyPage.page.evaluate(() =>
+        window.app!.api.getServerFeature('max_upload_size')
       )
-      .toBe('number')
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () =>
-            window.app!.api.getServerFeature('max_upload_size') as
-              | number
-              | undefined
-        )
-      )
-      .toBeGreaterThan(0)
+      expect(typeof maxUpload).toBe('number')
+      expect(maxUpload as number).toBeGreaterThan(0)
+    }).toPass()
 
     // Test getServerFeature with default value for non-existent feature
     await expect
@@ -317,43 +201,16 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     comfyPage
   }) => {
     // Test getServerFeatures returns all flags
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => window.app!.api.getServerFeatures() != null
-        )
+    await expect(async () => {
+      const features = await comfyPage.page.evaluate(() =>
+        window.app!.api.getServerFeatures()
       )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () =>
-            'supports_preview_metadata' in window.app!.api.getServerFeatures()
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () =>
-            typeof window.app!.api.getServerFeatures().supports_preview_metadata
-        )
-      )
-      .toBe('boolean')
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => 'max_upload_size' in window.app!.api.getServerFeatures()
-        )
-      )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(
-          () => Object.keys(window.app!.api.getServerFeatures()).length
-        )
-      )
-      .toBeGreaterThan(0)
+      expect(features).not.toBeNull()
+      expect(features).toHaveProperty('supports_preview_metadata')
+      expect(typeof features.supports_preview_metadata).toBe('boolean')
+      expect(features).toHaveProperty('max_upload_size')
+      expect(Object.keys(features).length).toBeGreaterThan(0)
+    }).toPass()
   })
 
   test('Client feature flags are immutable', async ({ comfyPage }) => {
@@ -484,45 +341,21 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
     )
 
     // Verify feature flags are available
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            'supports_preview_metadata' in
-            (window.app!.api.serverFeatureFlags.value ?? {})
-        )
+    await expect(async () => {
+      const flags = await newPage.evaluate(
+        () => window.app!.api.serverFeatureFlags.value
       )
-      .toBe(true)
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            typeof window.app!.api.serverFeatureFlags.value
-              .supports_preview_metadata
-        )
-      )
-      .toBe('boolean')
-    await expect
-      .poll(() =>
-        newPage.evaluate(
-          () =>
-            'max_upload_size' in
-            (window.app!.api.serverFeatureFlags.value ?? {})
-        )
-      )
-      .toBe(true)
+      expect(flags).toHaveProperty('supports_preview_metadata')
+      expect(typeof flags?.supports_preview_metadata).toBe('boolean')
+      expect(flags).toHaveProperty('max_upload_size')
+    }).toPass()
 
-    // Verify feature flags were received (we detected them via polling)
-    await expect
-      .poll(() =>
-        newPage.evaluate(() => window.__appReadiness?.featureFlagsReceived)
-      )
-      .toBe(true)
-
-    // Verify API was initialized (feature flags require API)
-    await expect
-      .poll(() => newPage.evaluate(() => window.__appReadiness?.apiInitialized))
-      .toBe(true)
+    // Verify feature flags were received and API was initialized
+    await expect(async () => {
+      const readiness = await newPage.evaluate(() => window.__appReadiness)
+      expect(readiness?.featureFlagsReceived).toBe(true)
+      expect(readiness?.apiInitialized).toBe(true)
+    }).toPass()
 
     await newPage.close()
   })

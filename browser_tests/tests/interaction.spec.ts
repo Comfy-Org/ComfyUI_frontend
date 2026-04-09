@@ -354,6 +354,7 @@ test.describe('Node Interaction', () => {
       // Re-expand: clicking the canvas toggler on a collapsed node is
       // unreliable because DOM widget overlays may intercept the pointer
       // event. Use programmatic collapse() for the expand step.
+      // TODO: Restore click-to-expand once DOM widget overlay pointer interception is fixed
       await comfyPage.page.evaluate((nodeId) => {
         const node = window.app!.graph.getNodeById(nodeId)!
         node.collapse()

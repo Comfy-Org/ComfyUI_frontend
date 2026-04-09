@@ -510,9 +510,6 @@ test.describe('Workflow Persistence', () => {
     })
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .not.toBe(nodeCountA)
 
     // Switch to A via topbar tab (making unsaved B inactive)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()

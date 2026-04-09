@@ -47,16 +47,6 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
       )
       .toMatchObject({ lowQuality: false })
 
-    const aboveThresholdState = await comfyPage.page.evaluate(() => {
-      const canvas = window.app!.canvas
-      return { scale: canvas.ds.scale }
-    })
-
-    // If we zoomed past the threshold already, skip the high-quality assertion
-    if (aboveThresholdState.scale <= expectedThreshold) {
-      // Already past threshold — will be verified below
-    }
-
     // Zoom out more to trigger LOD (below threshold)
     await comfyPage.canvasOps.zoom(120, 5) // Zoom out 5 more steps
     await comfyPage.nextFrame()

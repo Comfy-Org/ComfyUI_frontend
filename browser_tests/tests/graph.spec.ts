@@ -92,38 +92,23 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
       })
     }
 
-    // Both KSamplerAdvanced nodes must have their cfg input connected
-    await expect
-      .poll(() => evaluateGraph().then((r) => r.cfg85Linked))
-      .toBe(true)
-    await expect
-      .poll(() => evaluateGraph().then((r) => r.cfg86Linked))
-      .toBe(true)
-    // Links must exist in the subgraph link map
-    await expect
-      .poll(() => evaluateGraph().then((r) => r.cfg85LinkValid))
-      .toBe(true)
-    await expect
-      .poll(() => evaluateGraph().then((r) => r.cfg86LinkValid))
-      .toBe(true)
-    // Switch(CFG) output has exactly 2 links (one per KSamplerAdvanced)
-    await expect
-      .poll(() => evaluateGraph().then((r) => r.switchOutputLinkCount))
-      .toBe(2)
-    // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
-    await expect
-      .poll(() => evaluateGraph().then((r) => r.cfgLinkToNode85Count))
-      .toBe(1)
-    // Output link IDs must match the input link IDs (source/target integrity)
-    await expect
-      .poll(async () => {
-        const r = await evaluateGraph()
-        return (
-          'switchOutputLinkIds' in r &&
-          r.switchOutputLinkIds?.includes(r.cfg85LinkId!) &&
-          r.switchOutputLinkIds?.includes(r.cfg86LinkId!)
-        )
-      })
-      .toBe(true)
+    // Poll graph state once, then assert all properties
+    await expect(async () => {
+      const r = await evaluateGraph()
+      // Both KSamplerAdvanced nodes must have their cfg input connected
+      expect(r.cfg85Linked).toBe(true)
+      expect(r.cfg86Linked).toBe(true)
+      // Links must exist in the subgraph link map
+      expect(r.cfg85LinkValid).toBe(true)
+      expect(r.cfg86LinkValid).toBe(true)
+      // Switch(CFG) output has exactly 2 links (one per KSamplerAdvanced)
+      expect(r.switchOutputLinkCount).toBe(2)
+      // Only 1 link from Switch(CFG) to node 85 (duplicate removed)
+      expect(r.cfgLinkToNode85Count).toBe(1)
+      // Output link IDs must match the input link IDs (source/target integrity)
+      expect(r.switchOutputLinkIds).toEqual(
+        expect.arrayContaining([r.cfg85LinkId, r.cfg86LinkId])
+      )
+    }).toPass()
   })
 })

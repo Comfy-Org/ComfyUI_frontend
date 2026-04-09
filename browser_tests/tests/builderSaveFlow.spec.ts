@@ -169,11 +169,6 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await appMode.enterBuilder()
 
     // State 1: Disabled "Save as" (no outputs selected)
-    await expect
-      .poll(
-        async () => (await appMode.footer.saveAsButton.boundingBox())?.width
-      )
-      .toBeTruthy()
     const disabledBox = await appMode.footer.saveAsButton.boundingBox()
 
     // Select I/O to enable the button
@@ -187,11 +182,6 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
       .poll(
         async () => (await appMode.footer.saveAsButton.boundingBox())?.width
       )
-      .toBeTruthy()
-    await expect
-      .poll(
-        async () => (await appMode.footer.saveAsButton.boundingBox())?.width
-      )
       .toBe(disabledBox!.width)
 
     // Save the workflow to transition to the Save + chevron state
@@ -199,9 +189,6 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await dismissSuccessDialog(appMode.saveAs)
 
     // State 3: Save + chevron button group (saved workflow)
-    await expect
-      .poll(async () => (await appMode.footer.saveGroup.boundingBox())?.width)
-      .toBeTruthy()
     await expect
       .poll(async () => (await appMode.footer.saveGroup.boundingBox())?.width)
       .toBe(disabledBox!.width)
