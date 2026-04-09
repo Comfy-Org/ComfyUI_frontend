@@ -1,25 +1,13 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { Load3DHelper } from './Load3DHelper'
+import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
 test.describe('Load3D', () => {
-  let load3d: Load3DHelper
-
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.workflow.loadWorkflow('3d/load3d_node')
-    await comfyPage.vueNodes.waitForNodes()
-
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    load3d = new Load3DHelper(node)
-  })
-
   test(
     'Renders canvas with upload buttons and controls menu',
     { tag: ['@smoke', '@screenshot'] },
-    async () => {
+    async ({ load3d }) => {
       await expect(load3d.node).toBeVisible()
 
       await expect(load3d.canvas).toBeVisible()
@@ -45,7 +33,7 @@ test.describe('Load3D', () => {
   test(
     'Controls menu opens and shows all categories',
     { tag: ['@smoke', '@screenshot'] },
-    async () => {
+    async ({ load3d }) => {
       await load3d.openMenu()
 
       await expect(load3d.getMenuCategory('Scene')).toBeVisible()
@@ -64,7 +52,7 @@ test.describe('Load3D', () => {
   test(
     'Changing background color updates the scene',
     { tag: ['@smoke', '@screenshot'] },
-    async ({ comfyPage }) => {
+    async ({ comfyPage, load3d }) => {
       await load3d.setBackgroundColor('#cc3333')
       await comfyPage.nextFrame()
 
@@ -91,7 +79,7 @@ test.describe('Load3D', () => {
   test(
     'Recording controls are visible for Load3D',
     { tag: '@smoke' },
-    async () => {
+    async ({ load3d }) => {
       await expect(load3d.recordingButton).toBeVisible()
     }
   )
@@ -99,7 +87,7 @@ test.describe('Load3D', () => {
   test(
     'Uploads a 3D model via button and renders it',
     { tag: ['@screenshot'] },
-    async ({ comfyPage }) => {
+    async ({ comfyPage, load3d }) => {
       const uploadResponsePromise = comfyPage.page.waitForResponse(
         (resp) => resp.url().includes('/upload/') && resp.status() === 200,
         { timeout: 15000 }
@@ -112,7 +100,11 @@ test.describe('Load3D', () => {
 
       await uploadResponsePromise
 
-      await load3d.waitForWidgetValue(1, 'model_file', 'cube.obj')
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const modelFileWidget = await node.getWidget(0)
+      await expect
+        .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
+        .toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
       await comfyPage.nextFrame()
@@ -127,7 +119,7 @@ test.describe('Load3D', () => {
   test(
     'Drag-and-drops a 3D model onto the canvas',
     { tag: ['@screenshot'] },
-    async ({ comfyPage }) => {
+    async ({ comfyPage, load3d }) => {
       const canvasBox = await load3d.canvas.boundingBox()
       expect(canvasBox, 'Canvas bounding box should exist').not.toBeNull()
       const dropPosition = {
@@ -140,7 +132,11 @@ test.describe('Load3D', () => {
         waitForUpload: true
       })
 
-      await load3d.waitForWidgetValue(1, 'model_file', 'cube.obj')
+      const node = await comfyPage.nodeOps.getNodeRefById(1)
+      const modelFileWidget = await node.getWidget(0)
+      await expect
+        .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
+        .toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
       await comfyPage.nextFrame()
