@@ -77,6 +77,15 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   readonly serialize = false
 
+  /**
+   * Whether the resolved source widget is workflow-persistent.
+   * Used by SubgraphNode.serialize to skip preview/audio/video widgets
+   * whose source sets serialize = false.
+   */
+  get sourceSerialize(): boolean {
+    return this.resolveDeepest()?.widget.serialize !== false
+  }
+
   last_y?: number
   computedHeight?: number
 

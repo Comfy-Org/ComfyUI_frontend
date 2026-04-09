@@ -132,4 +132,35 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     expect(restoredWidget?.value).toBe(33)
     expect(restoredWidget?.serializeValue?.(restoredInstance, 0)).toBe(33)
   })
+
+  it('skips non-serializable source widgets during serialize', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node, widget } = createNodeWithWidget('TestNode', 10)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    // Mark the source widget as non-persistent (e.g. preview widget)
+    widget.serialize = false
+
+    const instance = createTestSubgraphNode(subgraph, { id: 501 })
+    instance.configure({
+      id: 501,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: []
+    })
+
+    const serialized = instance.serialize()
+    expect(serialized.widgets_values).toBeUndefined()
+  })
 })

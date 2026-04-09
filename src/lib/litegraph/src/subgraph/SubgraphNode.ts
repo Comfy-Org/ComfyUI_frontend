@@ -1138,15 +1138,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.promote(this.rootGraph.id, this.id, source)
     }
 
-    // Restore per-instance promoted widget values from serialized widgets_values.
-    // LGraphNode.configure skips promoted widgets (serialize === false), so they
-    // must be applied here after the promoted views are created.
+    // Hydrate per-instance promoted widget values from serialized data.
+    // LGraphNode.configure skips promoted widgets (serialize === false on
+    // the view), so they must be applied here after promoted views exist.
+    // Only iterate serializable views to match what serialize() wrote.
     if (this._pendingWidgetsValues) {
       const views = this._getPromotedViews()
       let i = 0
       for (const view of views) {
+        if (!view.sourceSerialize) continue
         if (i >= this._pendingWidgetsValues.length) break
-        // Use the setter which stores in instance Map AND syncs to inner node
         view.value = this._pendingWidgetsValues[i++] as typeof view.value
       }
       this._pendingWidgetsValues = undefined
@@ -1611,8 +1612,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const serialized = super.serialize()
     const views = this._getPromotedViews()
 
-    if (views.length > 0) {
-      serialized.widgets_values = views.map((view) => {
+    const serializableViews = views.filter((view) => view.sourceSerialize)
+    if (serializableViews.length > 0) {
+      serialized.widgets_values = serializableViews.map((view) => {
         const value = view.serializeValue
           ? view.serializeValue(this, -1)
           : view.value
