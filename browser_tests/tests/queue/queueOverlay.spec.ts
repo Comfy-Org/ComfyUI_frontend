@@ -4,7 +4,7 @@ import type { JobEntry } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { assetScenarioFixture } from '@e2e/fixtures/assetScenarioFixture'
 import { createMockJob } from '@e2e/fixtures/helpers/jobFixtures'
-import { TestIds } from '../../fixtures/selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = mergeTests(comfyPageFixture, assetScenarioFixture)
 
