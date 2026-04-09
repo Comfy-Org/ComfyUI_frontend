@@ -210,7 +210,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       await comfyPage.page.mouse.click(400, 300)
 
       await expect
-        .poll(() => getWidgetOptions(comfyPage, nodeName), { timeout: 2_000 })
+        .poll(() => getWidgetOptions(comfyPage, nodeName))
         .not.toEqual(initialOptions)
     })
 
@@ -331,7 +331,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
       // Verify the selected value of the widget is the first option in the refreshed list
       await expect
-        .poll(() => getWidgetValue(comfyPage, nodeName), { timeout: 2_000 })
+        .poll(() => getWidgetValue(comfyPage, nodeName))
         .toEqual('new first option')
     })
   })

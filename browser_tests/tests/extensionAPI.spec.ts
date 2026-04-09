@@ -116,14 +116,14 @@ test.describe('Topbar commands', () => {
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.changeCount))
         .toBe(1)
-      expect(await comfyPage.settings.getSetting('TestSetting')).toBe(
-        'Hello, world!'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('TestSetting'))
+        .toBe('Hello, world!')
 
       await comfyPage.settings.setSetting('TestSetting', 'Hello, universe!')
-      expect(await comfyPage.settings.getSetting('TestSetting')).toBe(
-        'Hello, universe!'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('TestSetting'))
+        .toBe('Hello, universe!')
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.changeCount))
         .toBe(2)
@@ -148,18 +148,18 @@ test.describe('Topbar commands', () => {
         })
       })
 
-      expect(await comfyPage.settings.getSetting('Comfy.TestSetting')).toBe(
-        false
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.TestSetting'))
+        .toBe(false)
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.changeCount))
         .toBe(1)
 
       await comfyPage.settingDialog.open()
       await comfyPage.settingDialog.toggleBooleanSetting('Comfy.TestSetting')
-      expect(await comfyPage.settings.getSetting('Comfy.TestSetting')).toBe(
-        true
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.TestSetting'))
+        .toBe(true)
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.changeCount))
         .toBe(2)

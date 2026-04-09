@@ -153,9 +153,7 @@ test.describe('Model library sidebar - search', () => {
     await tab.searchInput.fill('nonexistent_model_xyz')
 
     // Wait for debounce, then verify no leaf nodes
-    await expect
-      .poll(async () => await tab.leafNodes.count(), { timeout: 5000 })
-      .toBe(0)
+    await expect.poll(() => tab.leafNodes.count()).toBe(0)
   })
 })
 
@@ -238,7 +236,7 @@ test.describe('Model library sidebar - empty state', () => {
     await tab.open()
 
     await expect(tab.modelTree).toBeVisible()
-    expect(await tab.folderNodes.count()).toBe(0)
-    expect(await tab.leafNodes.count()).toBe(0)
+    await expect(tab.folderNodes).toHaveCount(0)
+    await expect(tab.leafNodes).toHaveCount(0)
   })
 })

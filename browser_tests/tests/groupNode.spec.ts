@@ -46,9 +46,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await libraryTab.getNode(groupNodeName).click()
 
       // Verify the node is added to the canvas
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialNodeCount + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialNodeCount + 1)
     })
 
     test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
@@ -59,9 +59,11 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
 
       // Verify the node is added to the bookmarks tab
-      expect(
-        await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-      ).toEqual([groupNodeBookmarkName])
+      await expect
+        .poll(() =>
+          comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+        )
+        .toEqual([groupNodeBookmarkName])
       // Verify the bookmark node with the same name is added to the tree
       await expect(libraryTab.getNode(groupNodeName)).not.toHaveCount(0)
 
@@ -73,9 +75,11 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
 
       // Verify the node is removed from the bookmarks tab
-      expect(
-        await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-      ).toHaveLength(0)
+      await expect
+        .poll(() =>
+          comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+        )
+        .toHaveLength(0)
     })
 
     test('Displays preview on bookmark hover', async ({ comfyPage }) => {
@@ -211,7 +215,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     // Connect node to group
     const ckpt = await expectSingleNode('CheckpointLoaderSimple')
     const input = await ckpt.connectOutput(0, groupNode, 0)
-    expect(await input.getLinkCount()).toBe(1)
+    await expect.poll(() => input.getLinkCount()).toBe(1)
     // Modify the group node via manage dialog
     const manage = await groupNode.manageGroupNode()
     await manage.selectNode('KSampler')
@@ -220,14 +224,14 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await manage.save()
     await manage.close()
     // Ensure the link is still present
-    expect(await input.getLinkCount()).toBe(1)
+    await expect.poll(() => input.getLinkCount()).toBe(1)
   })
 
   test('Loads from a workflow using the legacy path separator ("/")', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
-    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).not.toBeVisible()
@@ -262,8 +266,8 @@ test.describe('Group Node', { tag: '@node' }, () => {
       expect(
         await comfyPage.nodeOps.getNodeRefsByType(GROUP_NODE_TYPE)
       ).toHaveLength(expectedCount)
-      expect(await isRegisteredLitegraph(comfyPage)).toBe(true)
-      expect(await isRegisteredNodeDefStore(comfyPage)).toBe(true)
+      await expect.poll(() => isRegisteredLitegraph(comfyPage)).toBe(true)
+      await expect.poll(() => isRegisteredNodeDefStore(comfyPage)).toBe(true)
     }
 
     test.beforeEach(async ({ comfyPage }) => {

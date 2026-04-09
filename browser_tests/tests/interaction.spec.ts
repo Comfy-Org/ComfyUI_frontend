@@ -111,9 +111,9 @@ test.describe('Node Interaction', () => {
       const clipNodes =
         await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       await dragSelectNodes(comfyPage, clipNodes)
-      expect(await comfyPage.nodeOps.getSelectedGraphNodesCount()).toBe(
-        clipNodes.length
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(clipNodes.length)
     })
 
     test('Can move selected nodes using the Comfy.Canvas.MoveSelectedNodes.{Up|Down|Left|Right} commands', async ({
@@ -868,7 +868,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       )
 
       await expect
-        .poll(() => comfyPage.menu.topbar.getTabNames(), { timeout: 5000 })
+        .poll(() => comfyPage.menu.topbar.getTabNames())
         .toEqual(expect.arrayContaining([workflowA, workflowB]))
 
       const tabs = await comfyPage.menu.topbar.getTabNames()
@@ -998,7 +998,7 @@ test.describe('Load duplicate workflow', () => {
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
   })
 })
 

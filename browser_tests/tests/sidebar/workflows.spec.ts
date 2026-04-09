@@ -370,7 +370,7 @@ test.describe('Workflows sidebar', () => {
 
     // Wait for nodes to be inserted after drag-drop with retryable assertion
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 3000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(nodeCount * 2)
   })
 })

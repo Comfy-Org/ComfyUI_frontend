@@ -76,9 +76,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
     await comfyPage.page.keyboard.press('r')
 
     // Wait for nodes' widgets to be updated
-    await expect
-      .poll(() => getComboValues(), { timeout: 5000 })
-      .not.toEqual(initialComboValues)
+    await expect.poll(() => getComboValues()).not.toEqual(initialComboValues)
   })
 
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
@@ -100,9 +98,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
     // press R to trigger refresh
     await comfyPage.page.keyboard.press('r')
 
-    await expect
-      .poll(() => getComboValues(), { timeout: 5_000 })
-      .toEqual(['A', 'B'])
+    await expect.poll(() => getComboValues()).toEqual(['A', 'B'])
   })
 })
 

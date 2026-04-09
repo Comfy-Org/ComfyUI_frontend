@@ -316,9 +316,7 @@ test.describe('Assets sidebar - search', () => {
 
     // Filter then clear
     await tab.searchInput.fill('landscape')
-    await expect(async () => {
-      expect(await tab.assetCards.count()).toBeLessThan(initialCount)
-    }).toPass({ timeout: 5000 })
+    await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
 
     await tab.searchInput.fill('')
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })

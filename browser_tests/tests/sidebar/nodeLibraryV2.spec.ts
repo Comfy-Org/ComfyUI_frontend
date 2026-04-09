@@ -74,7 +74,7 @@ test.describe('Node library sidebar V2', () => {
     })
 
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 5000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialCount + 1)
   })
 
@@ -119,8 +119,6 @@ test.describe('Node library sidebar V2', () => {
     // Reka UI DropdownMenuRadioItem renders with role="menuitemradio"
     const options = comfyPage.page.getByRole('menuitemradio')
     await expect(options.first()).toBeVisible({ timeout: 3000 })
-    await expect
-      .poll(() => options.count(), { timeout: 3000 })
-      .toBeGreaterThanOrEqual(2)
+    await expect.poll(() => options.count()).toBeGreaterThanOrEqual(2)
   })
 })

@@ -31,18 +31,18 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
       })
-      expect(await comfyPage.settings.getSetting('Comfy.LinkRenderMode')).toBe(
-        hiddenLinkRenderMode
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .toBe(hiddenLinkRenderMode)
 
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'canvas-with-visible-links.png'
       )
-      expect(
-        await comfyPage.settings.getSetting('Comfy.LinkRenderMode')
-      ).not.toBe(hiddenLinkRenderMode)
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .not.toBe(hiddenLinkRenderMode)
     }
   )
 

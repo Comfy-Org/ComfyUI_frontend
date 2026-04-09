@@ -39,9 +39,9 @@ test.describe('Settings', () => {
     const maxSpeed = 2.5
     await comfyPage.settings.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
     await test.step('Setting should persist', async () => {
-      expect(await comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
-        maxSpeed
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed'))
+        .toBe(maxSpeed)
     })
   })
 
@@ -156,6 +156,6 @@ test.describe('Signin dialog', () => {
     await input.press('Control+v')
     await expect(input).toHaveValue('test_password')
 
-    expect(await comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
   })
 })

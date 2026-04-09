@@ -37,9 +37,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await expect(zoomToFit).toBeVisible()
     await zoomToFit.click()
 
-    await expect
-      .poll(() => comfyPage.canvasOps.getScale(), { timeout: 2000 })
-      .toBeLessThan(1.0)
+    await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(1.0)
 
     await expect(zoomButton).not.toContainText('100%')
   })
@@ -74,9 +72,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     }
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() => comfyPage.canvasOps.getScale(), { timeout: 2000 })
-      .toBeCloseTo(0.1, 1)
+    await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(0.1, 1)
 
     await expect(zoomButton).toContainText('10%')
   })
@@ -97,9 +93,7 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await input.press('Enter')
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() => comfyPage.canvasOps.getScale(), { timeout: 5000 })
-      .toBeCloseTo(1.0, 1)
+    await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(1.0, 1)
 
     const zoomIn = comfyPage.page.getByTestId(TestIds.canvas.zoomInAction)
     await zoomIn.click()

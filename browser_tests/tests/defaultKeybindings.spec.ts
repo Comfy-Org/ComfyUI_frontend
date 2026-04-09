@@ -270,7 +270,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.page.keyboard.press('Control+o')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.page.evaluate(() => window.TestCommand)).toBe(true)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
+        .toBe(true)
     })
   })
 

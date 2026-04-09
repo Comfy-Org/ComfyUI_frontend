@@ -81,15 +81,11 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
-      .toBe(nodeCountB)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
 
     await tab.switchToWorkflow('rapid-A')
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
   })
 
   test('Node outputs are preserved when switching workflow tabs', async ({
@@ -159,9 +155,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(1)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
     const nodes = await comfyPage.nodeOps.getNodes()
     expect(nodes[0].type).toBe('KSampler')
@@ -219,7 +213,7 @@ test.describe('Workflow Persistence', () => {
 
     // Known nodes (KSampler, EmptyLatentImage) should load; unknown node skipped
     await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
+      .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBeGreaterThanOrEqual(2)
 
     const nodeTypes = await comfyPage.page.evaluate(() => {
@@ -322,9 +316,7 @@ test.describe('Workflow Persistence', () => {
     await tab.switchToWorkflow('links-test')
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    await expect
-      .poll(() => getLinkCount(comfyPage), { timeout: 5_000 })
-      .toBe(linkCountBefore)
+    await expect.poll(() => getLinkCount(comfyPage)).toBe(linkCountBefore)
   })
 
   test('Closing an unmodified inactive tab preserves both workflows', async ({
@@ -365,9 +357,7 @@ test.describe('Workflow Persistence', () => {
     // Switch to A (making B inactive and unmodified)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
     // Close inactive B via middle-click — no save dialog expected
     await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
@@ -376,9 +366,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.nextFrame()
 
     // A should still have its own content
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
     // Reopen B from saved list
     const workflowsTab = comfyPage.menu.workflowsTab
@@ -387,9 +375,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
 
     // B should have its original content, not A's
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
-      .toBe(nodeCountB)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
   })
 
   test('Closing an inactive tab with save preserves its own content', async ({
@@ -440,9 +426,7 @@ test.describe('Workflow Persistence', () => {
     // Switch to A via topbar tab (making B inactive)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
     // Close inactive B tab via middle-click — triggers "Save before closing?"
     await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
@@ -457,9 +441,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.nextFrame()
 
     // Verify we're still on A with A's content
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
     // Re-open B from sidebar saved list
     const workflowsTab = comfyPage.menu.workflowsTab
@@ -468,9 +450,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
 
     // B should have the extra Note node we added, not A's node count
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
-      .toBe(nodeCountB)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
   })
 
   test('Closing an inactive unsaved tab with save preserves its own content', async ({
@@ -520,9 +500,7 @@ test.describe('Workflow Persistence', () => {
     // Switch to A via topbar tab (making unsaved B inactive)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
     // Close inactive unsaved B tab — triggers "Save before closing?"
     await comfyPage.menu.topbar
@@ -541,9 +519,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.nextFrame()
 
     // Verify we're still on A with A's content
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 3000 })
-      .toBe(nodeCountA)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
     // Re-open B from sidebar saved list
     const workflowsTab = comfyPage.menu.workflowsTab
@@ -552,9 +528,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
 
     // B should have 1 node (the Note), not A's node count
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount(), { timeout: 5000 })
-      .toBe(nodeCountB)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
   })
 
   test('Splitter panel sizes persist correctly in localStorage', async ({
