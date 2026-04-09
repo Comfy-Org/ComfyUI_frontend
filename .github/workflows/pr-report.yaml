@@ -2,7 +2,7 @@ name: 'PR: Unified Report'
 
 on:
   workflow_run:
-    workflows: ['CI: Size Data', 'CI: Performance Report']
+    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: E2E Coverage']
     types:
       - completed
 
@@ -104,6 +104,25 @@ jobs:
           path: temp/size-prev
           if_no_artifact_found: warn
 
+      - name: Find coverage workflow run
+        if: steps.pr-meta.outputs.skip != 'true'
+        id: find-coverage
+        uses: ./.github/actions/find-workflow-run
+        with:
+          workflow-id: ci-tests-e2e-coverage.yaml
+          head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          not-found-status: skip
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download coverage data
+        if: steps.pr-meta.outputs.skip != 'true' && steps.find-coverage.outputs.status == 'ready'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: e2e-coverage
+          run_id: ${{ steps.find-coverage.outputs.run-id }}
+          path: temp/coverage
+          if_no_artifact_found: warn
+
       - name: Download perf metrics (current)
         if: steps.pr-meta.outputs.skip != 'true' && steps.find-perf.outputs.status == 'ready'
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
@@ -142,6 +161,7 @@ jobs:
           pnpm exec tsx scripts/unified-report.ts
           --size-status=${{ steps.find-size.outputs.status }}
           --perf-status=${{ steps.find-perf.outputs.status }}
+          --coverage-status=${{ steps.find-coverage.outputs.status }}
           > pr-report.md
 
       - name: Remove legacy separate comments
