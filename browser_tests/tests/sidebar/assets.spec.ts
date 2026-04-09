@@ -176,8 +176,7 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.open()
 
     await tab.waitForAssets()
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
 
   test('Displays imported files when switching to Imported tab', async ({
@@ -191,8 +190,7 @@ test.describe('Assets sidebar - grid view display', () => {
     await expect(tab.assetCards.first()).toBeVisible({ timeout: 5000 })
 
     // Imported tab should show the mocked files
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
   test('Displays svg outputs', async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory([
@@ -365,8 +363,7 @@ test.describe('Assets sidebar - selection', () => {
     await tab.waitForAssets()
 
     const cards = tab.assetCards
-    const cardCount = await cards.count()
-    expect(cardCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
     // Click first card
     await cards.first().click()
@@ -542,8 +539,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     const cards = tab.assetCards
-    const cardCount = await cards.count()
-    expect(cardCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
     // Dismiss any toasts that appeared after asset loading
     await tab.dismissToasts()
@@ -623,16 +619,14 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     // Select two assets
     const cards = tab.assetCards
-    const cardCount = await cards.count()
-    expect(cardCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
     await cards.first().click()
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
 
     // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
-    const text = await tab.selectionCountButton.textContent()
-    expect(text).toMatch(/Assets Selected: \d+/)
+    await expect(tab.selectionCountButton).toHaveText(/Assets Selected: \d+/)
   })
 })
 

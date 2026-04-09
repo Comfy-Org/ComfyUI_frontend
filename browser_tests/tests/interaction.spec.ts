@@ -634,23 +634,23 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     }
 
     await comfyPage.page.mouse.move(10, 10)
-    expect(await getCursorStyle()).toBe('default')
+    await expect.poll(() => getCursorStyle()).toBe('default')
     await comfyPage.page.mouse.down()
-    expect(await getCursorStyle()).toBe('grabbing')
+    await expect.poll(() => getCursorStyle()).toBe('grabbing')
     // Move mouse should not alter cursor style.
     await comfyPage.page.mouse.move(10, 20)
-    expect(await getCursorStyle()).toBe('grabbing')
+    await expect.poll(() => getCursorStyle()).toBe('grabbing')
     await comfyPage.page.mouse.up()
-    expect(await getCursorStyle()).toBe('default')
+    await expect.poll(() => getCursorStyle()).toBe('default')
 
     await comfyPage.page.keyboard.down('Space')
-    expect(await getCursorStyle()).toBe('grab')
+    await expect.poll(() => getCursorStyle()).toBe('grab')
     await comfyPage.page.mouse.down()
-    expect(await getCursorStyle()).toBe('grabbing')
+    await expect.poll(() => getCursorStyle()).toBe('grabbing')
     await comfyPage.page.mouse.up()
-    expect(await getCursorStyle()).toBe('grab')
+    await expect.poll(() => getCursorStyle()).toBe('grab')
     await comfyPage.page.keyboard.up('Space')
-    expect(await getCursorStyle()).toBe('default')
+    await expect.poll(() => getCursorStyle()).toBe('default')
   })
 
   // https://github.com/Comfy-Org/litegraph.js/pull/424
@@ -667,27 +667,27 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
 
     // Initial state check
     await comfyPage.page.mouse.move(10, 10)
-    expect(await getCursorStyle()).toBe('default')
+    await expect.poll(() => getCursorStyle()).toBe('default')
 
     // Click and hold
     await comfyPage.page.mouse.down()
-    expect(await getCursorStyle()).toBe('grabbing')
+    await expect.poll(() => getCursorStyle()).toBe('grabbing')
 
     // Press space while holding click
     await comfyPage.page.keyboard.down('Space')
-    expect(await getCursorStyle()).toBe('grabbing')
+    await expect.poll(() => getCursorStyle()).toBe('grabbing')
 
     // Release click while space is still down
     await comfyPage.page.mouse.up()
-    expect(await getCursorStyle()).toBe('grab')
+    await expect.poll(() => getCursorStyle()).toBe('grab')
 
     // Release space
     await comfyPage.page.keyboard.up('Space')
-    expect(await getCursorStyle()).toBe('default')
+    await expect.poll(() => getCursorStyle()).toBe('default')
 
     // Move mouse - cursor should remain default
     await comfyPage.page.mouse.move(20, 20)
-    expect(await getCursorStyle()).toBe('default')
+    await expect.poll(() => getCursorStyle()).toBe('default')
   })
 
   test('Can pan when dragging a link', async ({ comfyPage, comfyMouse }) => {
@@ -871,8 +871,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         .poll(() => comfyPage.menu.topbar.getTabNames())
         .toEqual(expect.arrayContaining([workflowA, workflowB]))
 
-      const tabs = await comfyPage.menu.topbar.getTabNames()
-      expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+      await expect
+        .poll(async () => {
+          const tabs = await comfyPage.menu.topbar.getTabNames()
+          return (
+            tabs.indexOf(workflowA) < tabs.indexOf(workflowB) &&
+            tabs.indexOf(workflowA) >= 0
+          )
+        })
+        .toBe(true)
 
       await expect(comfyPage.menu.topbar.getActiveTab()).toContainText(
         workflowB
@@ -945,10 +952,17 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         })
       ).toBeVisible()
 
-      const tabs = await comfyPage.menu.topbar.getTabNames()
+      await expect
+        .poll(async () => {
+          const tabs = await comfyPage.menu.topbar.getTabNames()
+          return (
+            tabs.includes(workflowA) &&
+            tabs.includes(workflowB) &&
+            tabs.indexOf(workflowA) < tabs.indexOf(workflowB)
+          )
+        })
+        .toBe(true)
 
-      expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
-      expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
       await expect(comfyPage.menu.topbar.getActiveTab()).toContainText(
         workflowB
       )
@@ -1359,7 +1373,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       )
       await comfyPage.page.mouse.move(50, 50)
       await comfyPage.page.mouse.down()
-      expect(await getCursorStyle()).toBe('grabbing')
+      await expect.poll(() => getCursorStyle()).toBe('grabbing')
       await comfyPage.page.mouse.up()
     })
   })

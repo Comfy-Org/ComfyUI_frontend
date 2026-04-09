@@ -83,7 +83,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
         .toBeGreaterThan(0)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect.poll(() => subgraphNode.exists()).toBe(true)
 
       await subgraphNode.delete()
 

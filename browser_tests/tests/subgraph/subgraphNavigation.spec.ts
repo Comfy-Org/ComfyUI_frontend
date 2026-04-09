@@ -295,10 +295,14 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         node.progress = 0.5
       }, subgraphNodeId)
 
-      const progressBefore = await comfyPage.page.evaluate((nodeId) => {
-        return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-      }, subgraphNodeId)
-      expect(progressBefore).toBe(0.5)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            (nodeId) => window.app!.canvas.graph!.getNodeById(nodeId)!.progress,
+            subgraphNodeId
+          )
+        )
+        .toBe(0.5)
 
       const subgraphNode =
         await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)

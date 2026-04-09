@@ -483,8 +483,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       .toMatchObject({
         originId: samplerNode.id
       })
-    const rerouteLink = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
-    expect(rerouteLink?.parentId).not.toBeNull()
+    await expect
+      .poll(async () => {
+        const link = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
+        return link?.parentId
+      })
+      .not.toBeNull()
   })
 
   test('rerouted output shift-drag preview remains anchored to reroute', async ({
@@ -575,12 +579,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       .toMatchObject({
         originId: samplerNode.id
       })
-    const shiftDragLink = await getInputLinkDetails(
-      comfyPage.page,
-      vaeNode.id,
-      0
-    )
-    expect(shiftDragLink?.parentId).not.toBeNull()
+    await expect
+      .poll(async () => {
+        const link = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
+        return link?.parentId
+      })
+      .not.toBeNull()
   })
 
   test('dragging input to input drags existing link', async ({

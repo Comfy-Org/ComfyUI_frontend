@@ -169,7 +169,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const selectedNode = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      expect(await selectedNode.getProperty('color')).not.toBeNull()
+      await expect.poll(() => selectedNode.getProperty('color')).not.toBeNull()
     })
 
     test('color picker shows current color of selected nodes', async ({
@@ -266,7 +266,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       const selectedNode = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      expect(await selectedNode.getProperty('color')).toBeUndefined()
+      await expect.poll(() => selectedNode.getProperty('color')).toBeUndefined()
     })
   })
 })

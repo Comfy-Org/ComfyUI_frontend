@@ -48,11 +48,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
     const subgraphNodeId = String(subgraphNode.id)
-    const promotedNames = await getPromotedWidgetNames(
-      comfyPage,
-      subgraphNodeId
-    )
-    expect(promotedNames).toContain('seed')
+    await expect
+      .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+      .toContain('seed')
 
     await comfyPage.vueNodes.waitForNodes()
 

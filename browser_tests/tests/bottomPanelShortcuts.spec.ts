@@ -106,11 +106,13 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     const count = await keyBadges.count()
     expect(count).toBeGreaterThanOrEqual(1)
 
-    const badgeText = await keyBadges.allTextContents()
-    const hasModifiers = badgeText.some((text) =>
-      ['Ctrl', 'Cmd', 'Shift', 'Alt'].includes(text)
-    )
-    expect(hasModifiers).toBeTruthy()
+    await expect
+      .poll(() => keyBadges.allTextContents())
+      .toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/^(Ctrl|Cmd|Shift|Alt)$/)
+        ])
+      )
   })
 
   test('should maintain panel state when switching between panels', async ({

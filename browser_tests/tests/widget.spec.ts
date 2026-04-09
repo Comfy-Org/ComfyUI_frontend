@@ -422,6 +422,8 @@ test.describe('Unserialized widgets', { tag: '@widget' }, () => {
     await comfyPage.page.mouse.click(10, 10)
 
     // Expect the graph to not be modified
-    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+    await expect
+      .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+      .toBe(false)
   })
 })

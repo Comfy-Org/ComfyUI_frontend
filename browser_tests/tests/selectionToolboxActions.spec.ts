@@ -52,10 +52,11 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
 
-    const newCount = await comfyPage.page.evaluate(
-      () => window.app!.graph!._nodes.length
-    )
-    expect(newCount).toBe(initialCount - 1)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.graph!._nodes.length)
+      )
+      .toBe(initialCount - 1)
   })
 
   test('info button opens properties panel', async ({ comfyPage }) => {
@@ -100,10 +101,11 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await deleteButton.click({ force: true })
     await comfyPage.nextFrame()
 
-    const newCount = await comfyPage.page.evaluate(
-      () => window.app!.graph!._nodes.length
-    )
-    expect(newCount).toBe(initialCount - 2)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.graph!._nodes.length)
+      )
+      .toBe(initialCount - 2)
   })
 
   test('bypass button toggles bypass on single node', async ({ comfyPage }) => {
@@ -114,14 +116,14 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
 
-    expect(await nodeRef.isBypassed()).toBe(false)
+    await expect.poll(() => nodeRef.isBypassed()).toBe(false)
 
     const bypassButton = comfyPage.page.getByTestId('bypass-button')
     await expect(bypassButton).toBeVisible()
     await bypassButton.click({ force: true })
     await comfyPage.nextFrame()
 
-    expect(await nodeRef.isBypassed()).toBe(true)
+    await expect.poll(() => nodeRef.isBypassed()).toBe(true)
     await expect(getNodeWrapper(comfyPage, 'KSampler')).toHaveClass(
       BYPASS_CLASS
     )
@@ -129,7 +131,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await bypassButton.click({ force: true })
     await comfyPage.nextFrame()
 
-    expect(await nodeRef.isBypassed()).toBe(false)
+    await expect.poll(() => nodeRef.isBypassed()).toBe(false)
     await expect(getNodeWrapper(comfyPage, 'KSampler')).not.toHaveClass(
       BYPASS_CLASS
     )

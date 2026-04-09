@@ -22,10 +22,10 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
   }) => {
     // Enable change auto-queue mode
     const queueOpts = await comfyPage.actionbar.queueButton.toggleOptions()
-    expect(await queueOpts.getMode()).toBe('disabled')
+    await expect.poll(() => queueOpts.getMode()).toBe('disabled')
     await queueOpts.setMode('change')
     await comfyPage.nextFrame()
-    expect(await queueOpts.getMode()).toBe('change')
+    await expect.poll(() => queueOpts.getMode()).toBe('change')
     await comfyPage.actionbar.queueButton.toggleOptions()
 
     // Intercept the prompt queue endpoint

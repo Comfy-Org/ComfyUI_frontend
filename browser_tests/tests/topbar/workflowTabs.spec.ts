@@ -13,21 +13,24 @@ test.describe('Workflow tabs', () => {
   })
 
   test('Default workflow tab is visible on load', async ({ comfyPage }) => {
-    const tabNames = await comfyPage.menu.topbar.getTabNames()
-    expect(tabNames.length).toBe(1)
-    expect(tabNames[0]).toContain('Unsaved Workflow')
+    await expect
+      .poll(() => comfyPage.menu.topbar.getTabNames())
+      .toEqual([expect.stringContaining('Unsaved Workflow')])
   })
 
   test('Creating a new workflow adds a tab', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
-    expect(await topbar.getTabNames()).toHaveLength(1)
+    await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
 
     await topbar.newWorkflowButton.click()
-    await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
-
-    const tabNames = await topbar.getTabNames()
-    expect(tabNames[1]).toContain('Unsaved Workflow (2)')
+    await expect
+      .poll(() => topbar.getTabNames())
+      .toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('Unsaved Workflow (2)')
+        ])
+      )
   })
 
   test('Switching tabs changes active workflow', async ({ comfyPage }) => {
@@ -50,10 +53,9 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
     await topbar.closeWorkflowTab('Unsaved Workflow (2)')
-    await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
-
-    const remaining = await topbar.getTabNames()
-    expect(remaining[0]).toContain('Unsaved Workflow')
+    await expect
+      .poll(() => topbar.getTabNames())
+      .toEqual([expect.stringContaining('Unsaved Workflow')])
   })
 
   test('Right-clicking a tab shows context menu', async ({ comfyPage }) => {
@@ -104,10 +106,9 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
 
     await topbar.closeWorkflowTab('Unsaved Workflow')
-    await expect.poll(() => topbar.getTabNames()).toHaveLength(1)
-
-    const tabNames = await topbar.getTabNames()
-    expect(tabNames[0]).toContain('Unsaved Workflow')
+    await expect
+      .poll(() => topbar.getTabNames())
+      .toEqual([expect.stringContaining('Unsaved Workflow')])
   })
 
   test('Modified workflow shows unsaved indicator', async ({ comfyPage }) => {

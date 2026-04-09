@@ -88,24 +88,24 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     })
 
     test("'h' locks canvas", async ({ comfyPage }) => {
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(false)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
 
       await comfyPage.canvas.press('KeyH')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
     })
 
     test("'v' unlocks canvas", async ({ comfyPage }) => {
       // Lock first
       await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
       await comfyPage.nextFrame()
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
 
       await comfyPage.canvas.press('KeyV')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(false)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
     })
   })
 
@@ -120,15 +120,15 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await node.click('title')
       await comfyPage.nextFrame()
 
-      expect(await node.isCollapsed()).toBe(false)
+      await expect.poll(() => node.isCollapsed()).toBe(false)
 
       await comfyPage.canvas.press('Alt+KeyC')
       await comfyPage.nextFrame()
-      expect(await node.isCollapsed()).toBe(true)
+      await expect.poll(() => node.isCollapsed()).toBe(true)
 
       await comfyPage.canvas.press('Alt+KeyC')
       await comfyPage.nextFrame()
-      expect(await node.isCollapsed()).toBe(false)
+      await expect.poll(() => node.isCollapsed()).toBe(false)
     })
 
     test("'Ctrl+m' mutes and unmutes selected nodes", async ({ comfyPage }) => {
@@ -145,16 +145,16 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
           return window.app!.canvas.graph!.getNodeById(nodeId)!.mode
         }, node.id)
 
-      expect(await getMode()).toBe(0)
+      await expect.poll(() => getMode()).toBe(0)
 
       await comfyPage.canvas.press('Control+KeyM')
       await comfyPage.nextFrame()
       // NEVER (2) = muted
-      expect(await getMode()).toBe(2)
+      await expect.poll(() => getMode()).toBe(2)
 
       await comfyPage.canvas.press('Control+KeyM')
       await comfyPage.nextFrame()
-      expect(await getMode()).toBe(0)
+      await expect.poll(() => getMode()).toBe(0)
     })
   })
 

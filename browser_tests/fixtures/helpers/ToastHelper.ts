@@ -8,6 +8,10 @@ export class ToastHelper {
     return this.page.locator('.p-toast-message:visible')
   }
 
+  get toastErrors(): Locator {
+    return this.page.locator('.p-toast-message.p-toast-message-error')
+  }
+
   async getToastErrorCount(): Promise<number> {
     return await this.page
       .locator('.p-toast-message.p-toast-message-error')

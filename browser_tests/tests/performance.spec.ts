@@ -358,9 +358,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     // Wait for the output widget to populate (execution_success)
     const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
-    await expect(async () => {
-      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
-    }).toPass({ timeout: 10000 })
+    await expect
+      .poll(async () => (await outputNode.getWidget(0)).getValue(), {
+        timeout: 10000
+      })
+      .toBe('foo')
 
     const m = await comfyPage.perf.stopMeasuring('workflow-execution')
     recordMeasurement(m)

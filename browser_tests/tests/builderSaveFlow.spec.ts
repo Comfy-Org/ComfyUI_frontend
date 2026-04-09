@@ -238,9 +238,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await comfyPage.appMode.saveAs.viewAppButton.click()
     await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
 
-    expect(await comfyPage.workflow.getActiveWorkflowActiveAppMode()).toBe(
-      'app'
-    )
+    await expect
+      .poll(() => comfyPage.workflow.getActiveWorkflowActiveAppMode())
+      .toBe('app')
   })
 
   test('save as node graph Exit builder exits builder mode', async ({

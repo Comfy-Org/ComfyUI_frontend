@@ -66,10 +66,9 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
       )
       .toMatchObject({ lowQuality: true })
 
-    const zoomedOutScale = await comfyPage.page.evaluate(
-      () => window.app!.canvas.ds.scale
-    )
-    expect(zoomedOutScale).toBeLessThan(expectedThreshold)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))
+      .toBeLessThan(expectedThreshold)
 
     // Zoom back in to disable LOD (above threshold)
     await comfyPage.canvasOps.zoom(-120, 15) // Zoom in 15 steps
@@ -84,10 +83,9 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
       )
       .toMatchObject({ lowQuality: false })
 
-    const zoomedInScale = await comfyPage.page.evaluate(
-      () => window.app!.canvas.ds.scale
-    )
-    expect(zoomedInScale).toBeGreaterThan(expectedThreshold)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))
+      .toBeGreaterThan(expectedThreshold)
   })
 
   test('Should update threshold when font size setting changes', async ({
@@ -121,10 +119,9 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
       .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.low_quality))
       .toBe(true)
 
-    const afterZoomScale = await comfyPage.page.evaluate(
-      () => window.app!.canvas.ds.scale
-    )
-    expect(afterZoomScale).toBeLessThan(1.0)
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))
+      .toBeLessThan(1.0)
   })
 
   test('Should disable LOD when font size is set to 0', async ({
@@ -150,10 +147,9 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
       .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.low_quality))
       .toBe(false)
 
-    const scale = await comfyPage.page.evaluate(
-      () => window.app!.canvas.ds.scale
-    )
-    expect(scale).toBeLessThan(0.2) // Very zoomed out
+    await expect
+      .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))
+      .toBeLessThan(0.2) // Very zoomed out
   })
 
   test(
@@ -203,10 +199,9 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
         'lod-comparison-high-quality.png'
       )
 
-      const finalScale = await comfyPage.page.evaluate(
-        () => window.app!.canvas.ds.scale
-      )
-      expect(finalScale).toBeCloseTo(targetZoom, 2)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))
+        .toBeCloseTo(targetZoom, 2)
     }
   )
 })
