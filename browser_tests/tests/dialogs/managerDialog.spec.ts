@@ -48,6 +48,17 @@ const MOCK_PACK_B: RegistryNodePack = {
   tags: ['video', 'generation']
 }
 
+const MOCK_PACK_C: RegistryNodePack = {
+  id: 'test-pack-c',
+  name: 'Test Pack C',
+  description: 'Third test pack',
+  downloads: 100,
+  status: 'NodeStatusActive',
+  publisher: { id: 'test-publisher', name: 'Test Publisher' },
+  latest_version: { version: '0.5.0', status: 'NodeVersionStatusActive' },
+  repository: 'https://github.com/test/pack-c'
+}
+
 const MOCK_INSTALLED_PACKS: InstalledPacksResponse = {
   'test-pack-a': {
     ver: '1.0.0',
@@ -203,6 +214,29 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       await route.fulfill({ json: MOCK_ALGOLIA_RESPONSE })
     })
 
+    // Mock Comfy Registry API (fallback when Algolia credentials are unavailable)
+    const registryListResponse = {
+      total: 3,
+      nodes: [MOCK_PACK_A, MOCK_PACK_B, MOCK_PACK_C],
+      page: 1,
+      limit: 64,
+      totalPages: 1
+    }
+
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/search**',
+      async (route) => {
+        await route.fulfill({ json: registryListResponse })
+      }
+    )
+
+    await comfyPage.page.route(
+      (url) => url.hostname === 'api.comfy.org' && url.pathname === '/nodes',
+      async (route) => {
+        await route.fulfill({ json: registryListResponse })
+      }
+    )
+
     await comfyPage.page.route(
       '**/v2/customnode/getmappings**',
       async (route) => {
@@ -249,6 +283,20 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
       await route.fulfill({ json: MOCK_ALGOLIA_PACK_B_ONLY })
     })
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/search**',
+      async (route) => {
+        await route.fulfill({
+          json: {
+            total: 1,
+            nodes: [MOCK_PACK_B],
+            page: 1,
+            limit: 64,
+            totalPages: 1
+          }
+        })
+      }
+    )
 
     await openManagerDialog(comfyPage)
 
@@ -263,9 +311,12 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
   })
 
   test('Clicking a pack card opens the info panel', async ({ comfyPage }) => {
-    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
-      await route.fulfill({ json: MOCK_PACK_A })
-    })
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/test-pack-a',
+      async (route) => {
+        await route.fulfill({ json: MOCK_PACK_A })
+      }
+    )
 
     await openManagerDialog(comfyPage)
 
@@ -319,6 +370,20 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/*.algolianet.com/**', async (route) => {
       await route.fulfill({ json: MOCK_ALGOLIA_EMPTY })
     })
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/search**',
+      async (route) => {
+        await route.fulfill({
+          json: {
+            total: 0,
+            nodes: [],
+            page: 1,
+            limit: 64,
+            totalPages: 0
+          }
+        })
+      }
+    )
 
     await openManagerDialog(comfyPage)
 
@@ -397,9 +462,12 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       await route.fulfill({ status: 200, body: '' })
     })
 
-    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
-      await route.fulfill({ json: MOCK_PACK_B })
-    })
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/test-pack-b',
+      async (route) => {
+        await route.fulfill({ json: MOCK_PACK_B })
+      }
+    )
 
     await openManagerDialog(comfyPage)
 
@@ -430,9 +498,12 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       await route.fulfill({ status: 200, body: '' })
     })
 
-    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
-      await route.fulfill({ json: MOCK_PACK_A })
-    })
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/test-pack-a',
+      async (route) => {
+        await route.fulfill({ json: MOCK_PACK_A })
+      }
+    )
 
     await openManagerDialog(comfyPage)
 
@@ -466,9 +537,12 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       await route.fulfill({ status: 200, body: '' })
     })
 
-    await comfyPage.page.route('**/api/registry/nodes/*', async (route) => {
-      await route.fulfill({ json: MOCK_PACK_A })
-    })
+    await comfyPage.page.route(
+      '**/api.comfy.org/nodes/test-pack-a',
+      async (route) => {
+        await route.fulfill({ json: MOCK_PACK_A })
+      }
+    )
 
     await openManagerDialog(comfyPage)
 
