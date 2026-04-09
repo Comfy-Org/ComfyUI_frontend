@@ -12,17 +12,23 @@ export function buildMockJobOutputs(
   outputs: GeneratedOutputFixture[]
 ): NonNullable<JobDetailResponse['outputs']> {
   const nodeId = job.nodeId ?? '5'
+  const nodeOutputs: Pick<TaskOutput[string], 'audio' | 'images' | 'video'> = {}
 
-  const taskOutput = {
-    [nodeId]: {
-      [outputs[0].mediaType ?? 'images']: outputs.map((output) => ({
+  for (const output of outputs) {
+    const mediaType = output.mediaType ?? 'images'
+
+    nodeOutputs[mediaType] = [
+      ...(nodeOutputs[mediaType] ?? []),
+      {
         filename: output.filename,
         subfolder: output.subfolder ?? '',
         type: output.type ?? 'output',
         display_name: output.displayName
-      }))
-    }
-  } satisfies TaskOutput
+      }
+    ]
+  }
+
+  const taskOutput = { [nodeId]: nodeOutputs } satisfies TaskOutput
 
   return taskOutput
 }
