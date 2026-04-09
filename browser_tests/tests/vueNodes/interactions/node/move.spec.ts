@@ -11,22 +11,30 @@ test.describe('Vue Node Moving', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  const getLoadCheckpointHeaderPos = async (comfyPage: ComfyPage) => {
-    const loadCheckpointHeaderPos = await comfyPage.page
-      .getByText('Load Checkpoint')
-      .boundingBox()
-
-    if (!loadCheckpointHeaderPos)
-      throw new Error('Load Checkpoint header not found')
-
-    return loadCheckpointHeaderPos
+  const getHeaderPos = async (comfyPage: ComfyPage, title: string) => {
+    const box = await comfyPage.page.getByText(title).boundingBox()
+    if (!box) throw new Error(`${title} header not found`)
+    return box
   }
+
+  const getLoadCheckpointHeaderPos = async (comfyPage: ComfyPage) =>
+    getHeaderPos(comfyPage, 'Load Checkpoint')
 
   const expectPosChanged = async (pos1: Position, pos2: Position) => {
     const diffX = Math.abs(pos2.x - pos1.x)
     const diffY = Math.abs(pos2.y - pos1.y)
     expect(diffX).toBeGreaterThan(0)
     expect(diffY).toBeGreaterThan(0)
+  }
+
+  const deltaBetween = (before: Position, after: Position) => ({
+    x: after.x - before.x,
+    y: after.y - before.y
+  })
+
+  const expectSameDelta = (a: Position, b: Position, tol = 2) => {
+    expect(Math.abs(a.x - b.x)).toBeLessThanOrEqual(tol)
+    expect(Math.abs(a.y - b.y)).toBeLessThanOrEqual(tol)
   }
 
   test('should allow moving nodes by dragging', async ({ comfyPage }) => {
@@ -78,6 +86,69 @@ test.describe('Vue Node Moving', () => {
 
     const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
     await expectPosChanged(headerPos, afterPos)
+  })
+
+  test('should move all selected nodes together when dragging one with Meta held', async ({
+    comfyPage
+  }) => {
+    const checkpointBefore = await getHeaderPos(comfyPage, 'Load Checkpoint')
+    const ksamplerBefore = await getHeaderPos(comfyPage, 'KSampler')
+    const latentBefore = await getHeaderPos(comfyPage, 'Empty Latent Image')
+
+    const dx = 120
+    const dy = 80
+
+    await comfyPage.page.keyboard.down('Meta')
+    try {
+      await comfyPage.page
+        .getByText('Load Checkpoint')
+        .click({ modifiers: ['Meta'] })
+      await comfyPage.page.getByText('KSampler').click({ modifiers: ['Meta'] })
+      await comfyPage.page
+        .getByText('Empty Latent Image')
+        .click({ modifiers: ['Meta'] })
+      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(3)
+
+      // Re-fetch drag source after clicks in case the header reflowed.
+      const dragSrc = await getHeaderPos(comfyPage, 'Load Checkpoint')
+      const centerX = dragSrc.x + dragSrc.width / 2
+      const centerY = dragSrc.y + dragSrc.height / 2
+
+      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.down()
+      await comfyPage.nextFrame()
+      await comfyPage.page.mouse.move(centerX + dx, centerY + dy, {
+        steps: 20
+      })
+      await comfyPage.page.mouse.up()
+      await comfyPage.nextFrame()
+    } finally {
+      await comfyPage.page.keyboard.up('Meta')
+      await comfyPage.nextFrame()
+    }
+
+    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(3)
+
+    const checkpointAfter = await getHeaderPos(comfyPage, 'Load Checkpoint')
+    const ksamplerAfter = await getHeaderPos(comfyPage, 'KSampler')
+    const latentAfter = await getHeaderPos(comfyPage, 'Empty Latent Image')
+
+    // All three nodes should have moved together by the same delta.
+    // We don't assert the exact screen delta equals the dragged pixel delta,
+    // because canvas scaling and snap-to-grid can introduce offsets.
+    const checkpointDelta = deltaBetween(checkpointBefore, checkpointAfter)
+    const ksamplerDelta = deltaBetween(ksamplerBefore, ksamplerAfter)
+    const latentDelta = deltaBetween(latentBefore, latentAfter)
+
+    // Confirm an actual drag happened (not zero movement).
+    expect(Math.abs(checkpointDelta.x)).toBeGreaterThan(10)
+    expect(Math.abs(checkpointDelta.y)).toBeGreaterThan(10)
+
+    // Confirm all selected nodes moved by the same delta.
+    expectSameDelta(checkpointDelta, ksamplerDelta)
+    expectSameDelta(checkpointDelta, latentDelta)
+
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
   })
 
   test(

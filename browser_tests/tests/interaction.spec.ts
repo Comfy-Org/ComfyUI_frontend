@@ -180,6 +180,38 @@ test.describe('Node Interaction', () => {
     })
   })
 
+  test.describe('Node Duplication', () => {
+    test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
+      const before = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      expect(before.length).toBe(2)
+
+      const target = before[0]
+      const pos = await target.getPosition()
+      const src = { x: pos.x + 16, y: pos.y + 16 }
+
+      await comfyPage.page.mouse.move(src.x, src.y)
+      await comfyPage.page.keyboard.down('Alt')
+      try {
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+        await comfyPage.page.mouse.move(src.x + 120, src.y + 80, { steps: 20 })
+        await comfyPage.page.mouse.up()
+        await comfyPage.nextFrame()
+      } finally {
+        await comfyPage.page.keyboard.up('Alt')
+      }
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+
+      await expect
+        .poll(
+          async () =>
+            (await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')).length
+        )
+        .toBe(3)
+      expect(await target.exists()).toBe(true)
+    })
+  })
+
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
