@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -117,22 +117,8 @@ describe('WidgetSelectDropdown', () => {
         values: ['img_001.png', 'photo_abc.jpg']
       }
     })
-    const { container } = renderComponent(widget, 'img_001.png')
-    expect(container.innerHTML.length).toBeGreaterThan(0)
-  })
-
-  it('emits update:modelValue when selection changes', async () => {
-    const widget = createMockWidget<string | undefined>({
-      value: 'img_001.png',
-      name: 'test_image',
-      type: 'combo',
-      options: {
-        values: ['img_001.png', 'photo_abc.jpg']
-      }
-    })
-    const { emitted } = renderComponent(widget, 'img_001.png')
-
-    expect(emitted()).toBeDefined()
+    renderComponent(widget, 'img_001.png')
+    expect(screen.getByText('img_001.png')).toBeDefined()
   })
 
   it('renders in cloud asset mode', () => {
@@ -153,11 +139,11 @@ describe('WidgetSelectDropdown', () => {
         nodeType: 'CheckpointLoaderSimple'
       }
     })
-    const { container } = renderComponent(widget, 'model_a.safetensors', {
+    renderComponent(widget, 'model_a.safetensors', {
       assetKind: 'model',
       isAssetMode: true,
       nodeType: 'CheckpointLoaderSimple'
     })
-    expect(container.innerHTML.length).toBeGreaterThan(0)
+    expect(screen.getByText('model_a.safetensors')).toBeDefined()
   })
 })

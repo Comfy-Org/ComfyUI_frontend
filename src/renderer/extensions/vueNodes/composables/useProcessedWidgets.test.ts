@@ -280,3 +280,157 @@ describe('computeProcessedWidgets borderStyle', () => {
     )
   })
 })
+
+describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
+  let promotionStore: ReturnType<typeof usePromotionStore>
+  let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
+  let missingModelStore: ReturnType<typeof useMissingModelStore>
+  let widgetValueStore: ReturnType<typeof useWidgetValueStore>
+
+  const noopTooltip = () => ''
+  const noopTooltipConfig = () => ({}) as never
+  const noopRightClick = () => {}
+
+  const GRAPH_ID = 'graph-test'
+  const NODE_ID = '1'
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    promotionStore = usePromotionStore()
+    executionErrorStore = useExecutionErrorStore()
+    missingModelStore = useMissingModelStore()
+    widgetValueStore = useWidgetValueStore()
+  })
+
+  function makeNodeData(widgets: SafeWidgetData[]) {
+    return {
+      id: NODE_ID,
+      type: 'TestNode',
+      widgets,
+      title: 'Test',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    }
+  }
+
+  function processWidgets(widgets: SafeWidgetData[]) {
+    return computeProcessedWidgets(
+      makeNodeData(widgets),
+      GRAPH_ID,
+      false,
+      promotionStore,
+      executionErrorStore,
+      missingModelStore,
+      widgetValueStore,
+      noopTooltip,
+      noopTooltipConfig,
+      noopRightClick
+    )
+  }
+
+  it('calls widget.callback with the new value when widgetState exists', () => {
+    const callback = vi.fn()
+    const widget = createMockWidget({
+      name: 'seed',
+      nodeId: NODE_ID,
+      callback
+    })
+
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: NODE_ID,
+      name: 'seed',
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler(42)
+
+    expect(callback).toHaveBeenCalledWith(42)
+  })
+
+  it('calls widget.callback even when widgetState is undefined (no store entry)', () => {
+    const callback = vi.fn()
+    const widget = createMockWidget({
+      name: 'unregistered_widget',
+      nodeId: NODE_ID,
+      callback
+    })
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler('new-value')
+
+    expect(callback).toHaveBeenCalledWith('new-value')
+  })
+
+  it('updates widgetState.value when store entry exists', () => {
+    const widget = createMockWidget({
+      name: 'seed',
+      nodeId: NODE_ID
+    })
+
+    widgetValueStore.registerWidget(GRAPH_ID, {
+      nodeId: NODE_ID,
+      name: 'seed',
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
+
+    const [processed] = processWidgets([widget])
+    processed.updateHandler(99)
+
+    const state = widgetValueStore.getWidget(GRAPH_ID, NODE_ID, 'seed')
+    expect(state?.value).toBe(99)
+  })
+
+  it('clears execution errors on update', () => {
+    const widget = createMockWidget({
+      name: 'seed',
+      nodeId: NODE_ID
+    })
+
+    executionErrorStore.lastNodeErrors = {
+      [NODE_ID]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'seed is required',
+            details: '',
+            extra_info: { input_name: 'seed' }
+          }
+        ],
+        class_type: 'TestNode',
+        dependent_outputs: []
+      }
+    }
+
+    const [processed] = processWidgets([widget])
+
+    expect(
+      hasWidgetError(
+        widget,
+        NODE_ID,
+        executionErrorStore.lastNodeErrors[NODE_ID],
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+
+    processed.updateHandler('fixed-value')
+
+    expect(
+      hasWidgetError(
+        widget,
+        NODE_ID,
+        executionErrorStore.lastNodeErrors?.[NODE_ID],
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(false)
+  })
+})
