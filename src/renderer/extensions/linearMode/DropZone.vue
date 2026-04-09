@@ -15,7 +15,8 @@ const {
   onDragOver,
   onDragDrop,
   dropIndicator,
-  forceHovered = false
+  forceHovered = false,
+  persistedHeight
 } = defineProps<{
   onDragOver?: (e: DragEvent) => boolean
   onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
@@ -27,6 +28,7 @@ const {
     onMaskEdit?: () => void
   }
   forceHovered?: boolean
+  persistedHeight?: number
 }>()
 
 const dropZoneRef = ref<HTMLElement | null>(null)
@@ -90,6 +92,9 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
         :type="dropIndicator.onClick ? 'button' : undefined"
         :aria-label="dropIndicator.onClick ? dropIndicator.label : undefined"
         data-slot="drop-zone-indicator"
+        :style="
+          persistedHeight ? { height: `${persistedHeight}px` } : undefined
+        "
         :class="
           cn(
             'm-3 block h-25 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',

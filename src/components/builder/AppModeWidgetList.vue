@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useEventListener,
+  useResizeObserver
+} from '@vueuse/core'
 import { computed, provide, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,7 +12,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
@@ -28,6 +32,9 @@ import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
   key: string
+  nodeId: NodeId
+  widgetName: string
+  persistedHeight: number | undefined
   nodeData: ReturnType<typeof nodeToNodeData> & {
     widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
   }
@@ -43,6 +50,59 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const maskEditor = useMaskEditor()
+
+interface ResizableEntry {
+  el: HTMLElement
+  nodeId: NodeId
+  widgetName: string
+}
+const resizablesByKey = new Map<string, ResizableEntry>()
+const resizablesByEl = new WeakMap<HTMLElement, ResizableEntry>()
+const observedElements = shallowRef<HTMLElement[]>([])
+
+const persistHeight = useDebounceFn(
+  (nodeId: NodeId, widgetName: string, height: number) => {
+    appModeStore.updateInputConfig(nodeId, widgetName, { height })
+  },
+  100
+)
+
+useResizeObserver(observedElements, (entries) => {
+  for (const entry of entries) {
+    const el = entry.target as HTMLElement
+    // Only persist user-initiated resizes (browser sets inline style.height on drag)
+    if (!el.style.height) continue
+    const info = resizablesByEl.get(el)
+    if (!info) continue
+    persistHeight(info.nodeId, info.widgetName, el.offsetHeight)
+  }
+})
+
+function trackResizable(
+  el: unknown,
+  key: string,
+  nodeId: NodeId,
+  widgetName: string
+) {
+  const prev = resizablesByKey.get(key)
+  if (prev) resizablesByEl.delete(prev.el)
+  resizablesByKey.delete(key)
+
+  if (el instanceof HTMLElement) {
+    // Queries match elements owned by DropZone (data-slot="drop-zone-indicator")
+    // and NodeWidgets (textarea).
+    const resizable =
+      el.querySelector<HTMLElement>('textarea') ??
+      el.querySelector<HTMLElement>('[data-slot="drop-zone-indicator"]')
+    if (resizable) {
+      const entry = { el: resizable, nodeId, widgetName }
+      resizablesByKey.set(key, entry)
+      resizablesByEl.set(resizable, entry)
+    }
+  }
+
+  observedElements.value = [...resizablesByKey.values()].map((r) => r.el)
+}
 
 provide(HideLayoutFieldKey, true)
 provide(OverlayAppendToKey, 'body')
@@ -61,7 +121,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
     ReturnType<typeof nodeToNodeData>
   >()
 
-  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName]) => {
+  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName, config]) => {
     const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
 
@@ -90,6 +150,9 @@ const mappedSelections = computed((): WidgetEntry[] => {
     return [
       {
         key: `${nodeId}:${widgetName}`,
+        nodeId,
+        widgetName,
+        persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,
           widgets: [matchingWidget]
@@ -157,7 +220,14 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{ key, nodeData, action } in mappedSelections"
+    v-for="{
+      key,
+      nodeId,
+      widgetName,
+      persistedHeight,
+      nodeData,
+      action
+    } in mappedSelections"
     :key
     :class="
       cn(
@@ -222,6 +292,7 @@ defineExpose({ handleDragDrop })
       </Popover>
     </div>
     <div
+      :ref="(el) => trackResizable(el, key, nodeId, widgetName)"
       :class="builderMode && 'pointer-events-none'"
       :inert="builderMode || undefined"
     >
@@ -229,13 +300,22 @@ defineExpose({ handleDragDrop })
         :on-drag-over="nodeData.onDragOver"
         :on-drag-drop="nodeData.onDragDrop"
         :drop-indicator="nodeData.dropIndicator"
+        :persisted-height="nodeData.dropIndicator ? persistedHeight : undefined"
         class="text-muted-foreground"
       >
         <NodeWidgets
           :node-data
+          :style="
+            !nodeData.dropIndicator && persistedHeight
+              ? { '--persisted-height': `${persistedHeight}px` }
+              : undefined
+          "
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
+              !nodeData.dropIndicator &&
+                persistedHeight &&
+                '[&_textarea]:h-(--persisted-height)',
               nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
             )
           "
