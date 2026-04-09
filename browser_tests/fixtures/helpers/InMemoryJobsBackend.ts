@@ -174,7 +174,13 @@ export class InMemoryJobsBackend {
 
     if (!this.historyRouteHandler) {
       this.historyRouteHandler = async (route: Route) => {
-        const requestBody = route.request().postDataJSON() as
+        const request = route.request()
+        if (request.method() !== 'POST') {
+          await route.continue()
+          return
+        }
+
+        const requestBody = request.postDataJSON() as
           | { delete?: string[]; clear?: boolean }
           | undefined
 

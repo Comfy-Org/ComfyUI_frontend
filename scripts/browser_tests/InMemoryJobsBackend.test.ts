@@ -101,22 +101,28 @@ function getRouteHandler(routes: RegisteredRoute[], url: string): RouteHandler {
 
 function createRouteInvocation({
   url,
+  method = 'POST',
   requestBody
 }: {
   url: string
+  method?: string
   requestBody?: unknown
 }): {
   route: Route
+  continued: ReturnType<typeof vi.fn>
   getFulfilled: () => FulfillOptions | undefined
 } {
   let fulfilled: FulfillOptions | undefined
+  const continued = vi.fn(async () => {})
 
   const route = {
     request: () =>
       ({
+        method: () => method,
         url: () => url,
         postDataJSON: () => requestBody
       }) as ReturnType<Route['request']>,
+    continue: continued,
     fulfill: vi.fn(async (options?: FulfillOptions) => {
       if (!options) {
         throw new Error('Expected route to be fulfilled with options')
@@ -128,6 +134,7 @@ function createRouteInvocation({
 
   return {
     route: route as unknown as Route,
+    continued,
     getFulfilled: () => fulfilled
   }
 }
@@ -323,6 +330,27 @@ describe('InMemoryJobsBackend', () => {
     })
 
     expect(response.body.jobs.map((job) => job.id)).toEqual(['job-b'])
+  })
+
+  it('continues non-POST history requests without fulfilling them', async () => {
+    const { page, routes } = createPageStub()
+    const backend = new InMemoryJobsBackend(page as unknown as Page)
+
+    await backend.seed([createSeededJob({ id: 'job-a', createTime: 1_000 })])
+
+    const historyRouteHandler = getRouteHandler(
+      routes,
+      'http://localhost/api/history'
+    )
+    const invocation = createRouteInvocation({
+      url: 'http://localhost/api/history',
+      method: 'GET'
+    })
+
+    await historyRouteHandler(invocation.route)
+
+    expect(invocation.continued).toHaveBeenCalledOnce()
+    expect(invocation.getFulfilled()).toBeUndefined()
   })
 
   it('clears terminal history while preserving pending and in_progress jobs', async () => {
