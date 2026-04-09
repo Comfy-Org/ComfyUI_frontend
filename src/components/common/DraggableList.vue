@@ -3,6 +3,10 @@ import { onBeforeUnmount, ref, useTemplateRef, watchPostEffect } from 'vue'
 
 import { DraggableList } from '@/scripts/ui/draggableList'
 
+const { dragAxis } = defineProps<{
+  dragAxis?: 'x' | 'y' | 'both'
+}>()
+
 const modelValue = defineModel<T[]>({ required: true })
 const draggableList = ref<DraggableList>()
 const draggableItems = useTemplateRef('draggableItems')
@@ -13,7 +17,8 @@ watchPostEffect(() => {
   if (!draggableItems.value?.children?.length) return
   draggableList.value = new DraggableList(
     draggableItems.value,
-    '.draggable-item'
+    '.draggable-item',
+    { dragAxis }
   )
   draggableList.value.applyNewItemsOrder = function () {
     const reorderedItems = []

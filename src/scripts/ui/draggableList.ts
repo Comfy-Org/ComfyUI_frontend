@@ -53,14 +53,19 @@ export class DraggableList extends EventTarget {
   items = []
   itemSelector
   handleClass = 'drag-handle'
+  dragAxis: 'x' | 'y' | 'both' = 'both'
   off = []
   offDrag = []
 
-  // @ts-expect-error fixme ts strict error
-  constructor(element, itemSelector) {
+  constructor(
+    element: HTMLElement,
+    itemSelector: string,
+    options?: { dragAxis?: 'x' | 'y' | 'both' }
+  ) {
     super()
     this.listContainer = element
     this.itemSelector = itemSelector
+    if (options?.dragAxis) this.dragAxis = options.dragAxis
 
     if (!this.listContainer) return
 
@@ -203,8 +208,10 @@ export class DraggableList extends EventTarget {
       this.listContainer.scrollBy(0, -10)
     }
 
-    const pointerOffsetX = clientX - this.pointerStartX
-    const pointerOffsetY = clientY - this.pointerStartY
+    const pointerOffsetX =
+      this.dragAxis === 'y' ? 0 : clientX - this.pointerStartX
+    const pointerOffsetY =
+      this.dragAxis === 'x' ? 0 : clientY - this.pointerStartY
 
     this.updateIdleItemsStateAndPosition()
     this.draggableItem.style.transform = `translate(${pointerOffsetX}px, ${pointerOffsetY}px)`

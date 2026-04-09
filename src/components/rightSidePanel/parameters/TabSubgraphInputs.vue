@@ -52,6 +52,7 @@ const isAllCollapsed = computed({
   }
 })
 const draggableList = ref<DraggableList | undefined>(undefined)
+const isDragging = ref(false)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
@@ -155,8 +156,21 @@ function setDraggableState() {
   const container = sectionWidgetsRef.value?.widgetsContainer
   if (isSearching.value || !container?.children?.length) return
 
-  draggableList.value = new DraggableList(container, '.draggable-item')
+  draggableList.value = new DraggableList(container, '.draggable-item', {
+    dragAxis: 'y'
+  })
 
+  draggableList.value.addEventListener('dragstart', () => {
+    isDragging.value = true
+  })
+
+  /**
+   * Override to skip the base class's DOM `appendChild` reorder, which breaks
+   * Vue's vdom tracking inside <TransitionGroup> fragments. Instead, only
+   * update reactive state and let Vue handle the DOM reconciliation.
+   * TransitionGroup's move animation is suppressed via the `isDragging` prop
+   * on SectionWidgets to prevent the FLIP "snap-back" effect.
+   */
   draggableList.value.applyNewItemsOrder = function () {
     const reorderedItems: HTMLElement[] = []
 
@@ -189,14 +203,18 @@ function setDraggableState() {
     const newPosition = reorderedItems.indexOf(
       this.draggableItem as HTMLElement
     )
-
-    promotionStore.movePromotion(
-      node.rootGraph.id,
-      node.id,
-      oldPosition,
-      newPosition
-    )
-    canvasStore.canvas?.setDirty(true, true)
+    if (oldPosition !== newPosition) {
+      promotionStore.movePromotion(
+        node.rootGraph.id,
+        node.id,
+        oldPosition,
+        newPosition
+      )
+      canvasStore.canvas?.setDirty(true, true)
+    }
+    nextTick(() => {
+      isDragging.value = false
+    })
   }
 }
 
@@ -236,6 +254,7 @@ const label = computed(() => {
     :parents
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
+    :is-dragging="isDragging"
     :enable-empty-state="isSearching"
     :tooltip="
       isSearching || searchedWidgetsList.length
