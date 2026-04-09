@@ -21,7 +21,8 @@ const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, STABLE_CHECKPOINT_2]
 const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
   stubCloudAssets: [
     async ({ page }, use) => {
-      await page.route('**/api/assets**', (route) =>
+      const pattern = '**/api/assets?*'
+      await page.route(pattern, (route) =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -29,7 +30,7 @@ const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
         })
       )
       await use()
-      await page.unroute('**/api/assets**')
+      await page.unroute(pattern)
     },
     { auto: true }
   ]
@@ -73,6 +74,9 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
       return String(widget?.value ?? '')
     })
 
+    // Production resolves via getAssetFilename (user_metadata.filename →
+    // metadata.filename → asset.name). Test fixtures have no metadata
+    // filename, so asset.name is the resolved value.
     expect(widgetValue).toBe(CLOUD_ASSETS[0].name)
   })
 })

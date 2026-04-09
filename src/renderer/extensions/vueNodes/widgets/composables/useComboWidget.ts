@@ -119,7 +119,9 @@ function resolveCloudDefault(
     const inAssets = assets.some((a) => getAssetFilename(a) === specDefault)
     if (inAssets) return specDefault
   }
-  return (assets.length ? getAssetFilename(assets[0]) : undefined) || undefined
+  // empty filename → undefined (shows placeholder)
+  const filename = assets.length ? getAssetFilename(assets[0]) : undefined
+  return filename || undefined
 }
 
 function createAssetBrowserWidget(
