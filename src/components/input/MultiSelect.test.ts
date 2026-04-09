@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -27,7 +28,7 @@ const options = [
   { name: 'Option C', value: 'c' }
 ]
 
-function mountInParent(
+function renderInParent(
   multiSelectProps: Record<string, unknown> = {},
   modelValue: { name: string; value: string }[] = []
 ) {
@@ -49,12 +50,12 @@ function mountInParent(
     }
   }
 
-  const wrapper = mount(Parent, {
-    attachTo: document.body,
+  const { unmount } = render(Parent, {
+    container: document.body.appendChild(document.createElement('div')),
     global: { plugins: [i18n] }
   })
 
-  return { wrapper, parentEscapeCount }
+  return { unmount, parentEscapeCount }
 }
 
 function dispatchEscape(element: Element) {
@@ -73,30 +74,32 @@ function findContentElement(): HTMLElement | null {
 
 describe('MultiSelect', () => {
   it('keeps open-state border styling available while the dropdown is open', async () => {
-    const { wrapper } = mountInParent()
+    const user = userEvent.setup()
+    const { unmount } = renderInParent()
 
-    const trigger = wrapper.get('button[aria-haspopup="listbox"]')
+    const trigger = screen.getByRole('button')
 
-    expect(trigger.classes()).toContain(
+    expect(trigger).toHaveClass(
       'data-[state=open]:border-node-component-border'
     )
-    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
-    await trigger.trigger('click')
+    await user.click(trigger)
     await nextTick()
 
-    expect(trigger.attributes('aria-expanded')).toBe('true')
-    expect(trigger.attributes('data-state')).toBe('open')
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(trigger).toHaveAttribute('data-state', 'open')
 
-    wrapper.unmount()
+    unmount()
   })
 
   describe('Escape key propagation', () => {
     it('stops Escape from propagating to parent when popover is open', async () => {
-      const { wrapper, parentEscapeCount } = mountInParent()
+      const user = userEvent.setup()
+      const { unmount, parentEscapeCount } = renderInParent()
 
-      const trigger = wrapper.find('button[aria-haspopup="listbox"]')
-      await trigger.trigger('click')
+      const trigger = screen.getByRole('button')
+      await user.click(trigger)
       await nextTick()
 
       const content = findContentElement()
@@ -107,48 +110,46 @@ describe('MultiSelect', () => {
 
       expect(parentEscapeCount.value).toBe(0)
 
-      wrapper.unmount()
+      unmount()
     })
 
     it('closes the popover when Escape is pressed', async () => {
-      const { wrapper } = mountInParent()
+      const user = userEvent.setup()
+      const { unmount } = renderInParent()
 
-      const trigger = wrapper.find('button[aria-haspopup="listbox"]')
-      await trigger.trigger('click')
+      const trigger = screen.getByRole('button')
+      await user.click(trigger)
       await nextTick()
-      expect(trigger.attributes('data-state')).toBe('open')
+      expect(trigger).toHaveAttribute('data-state', 'open')
 
       const content = findContentElement()
       dispatchEscape(content!)
       await nextTick()
 
-      expect(trigger.attributes('data-state')).toBe('closed')
+      expect(trigger).toHaveAttribute('data-state', 'closed')
 
-      wrapper.unmount()
+      unmount()
     })
   })
 
   describe('selected count badge', () => {
     it('shows selected count when items are selected', () => {
-      const { wrapper } = mountInParent({}, [
+      const { unmount } = renderInParent({}, [
         { name: 'Option A', value: 'a' },
         { name: 'Option B', value: 'b' }
       ])
 
-      expect(wrapper.text()).toContain('2')
+      expect(screen.getByText('2')).toBeInTheDocument()
 
-      wrapper.unmount()
+      unmount()
     })
 
     it('does not show count badge when no items are selected', () => {
-      const { wrapper } = mountInParent()
-      const multiSelect = wrapper.findComponent(MultiSelect)
-      const spans = multiSelect.findAll('span')
-      const countBadge = spans.find((s) => /^\d+$/.test(s.text().trim()))
+      const { unmount } = renderInParent()
 
-      expect(countBadge).toBeUndefined()
+      expect(screen.queryByText(/^\d+$/)).not.toBeInTheDocument()
 
-      wrapper.unmount()
+      unmount()
     })
   })
 })

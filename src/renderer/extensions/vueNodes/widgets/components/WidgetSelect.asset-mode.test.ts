@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -13,7 +13,9 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-// Mock modules
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     shouldUseAssetBrowser: vi.fn(() => true),
@@ -21,9 +23,20 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-// Import after mocks are defined
 import { assetService } from '@/platform/assets/services/assetService'
 const mockShouldUseAssetBrowser = vi.mocked(assetService.shouldUseAssetBrowser)
+
+const stubs = {
+  WidgetSelectDropdown: {
+    template: '<div data-testid="widget-select-dropdown" />'
+  },
+  WidgetSelectDefault: {
+    template: '<div data-testid="widget-select-default" />'
+  },
+  WidgetWithControl: {
+    template: '<div data-testid="widget-with-control" />'
+  }
+}
 
 describe('WidgetSelect asset mode', () => {
   const createWidget = () =>
@@ -39,35 +52,31 @@ describe('WidgetSelect asset mode', () => {
     mockShouldUseAssetBrowser.mockReturnValue(true)
   })
 
-  // Helper to mount with common setup
-  const mountWidget = () => {
-    return mount(WidgetSelect, {
+  const renderWidget = () => {
+    return render(WidgetSelect, {
       props: {
         widget: createWidget(),
         modelValue: undefined,
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
+        plugins: [PrimeVue, createTestingPinia(), i18n],
+        stubs
       }
     })
   }
 
   it('uses dropdown when isCloud && UseAssetAPI && isEligible', async () => {
-    const wrapper = mountWidget()
+    renderWidget()
     await flushPromises()
 
-    expect(
-      wrapper.findComponent({ name: 'WidgetSelectDropdown' }).exists()
-    ).toBe(true)
+    expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
   })
 
   it('uses default widget when shouldUseAssetBrowser returns false', () => {
     mockShouldUseAssetBrowser.mockReturnValue(false)
-    const wrapper = mountWidget()
+    renderWidget()
 
-    expect(
-      wrapper.findComponent({ name: 'WidgetSelectDefault' }).exists()
-    ).toBe(true)
+    expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
   })
 })
