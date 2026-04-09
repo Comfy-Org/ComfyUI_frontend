@@ -20,3 +20,17 @@ export interface OutputSelection {
 export type SelectionValue =
   | { id: string; kind: 'inProgress'; itemId: string }
   | { id: string; kind: 'history'; assetId: string; key: number }
+  | { id: string; kind: 'nonAsset'; itemId: string }
+
+export interface TimelineItem {
+  id: string
+  output: ResultItemImpl
+  groupKey: string
+  selectionValue: SelectionValue
+}
+
+export interface NonAssetEntry {
+  id: string
+  jobId: string
+  output: ResultItemImpl
+}

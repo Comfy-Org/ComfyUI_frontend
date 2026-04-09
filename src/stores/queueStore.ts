@@ -32,6 +32,11 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+export interface CompareImages {
+  before: readonly ResultItemImpl[]
+  after: readonly ResultItemImpl[]
+}
+
 interface ResultItemInit extends ResultItem {
   nodeId: NodeId
   mediaType: string
@@ -39,6 +44,7 @@ interface ResultItemInit extends ResultItem {
   frame_rate?: number
   display_name?: string
   content?: string
+  compareImages?: CompareImages
 }
 
 export class ResultItemImpl {
@@ -59,6 +65,8 @@ export class ResultItemImpl {
   // text specific field
   content?: string
 
+  compareImages?: CompareImages
+
   constructor(obj: ResultItemInit) {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
@@ -72,6 +80,7 @@ export class ResultItemImpl {
     this.format = obj.format
     this.frame_rate = obj.frame_rate
     this.content = obj.content
+    this.compareImages = obj.compareImages
   }
 
   get urlParams(): URLSearchParams {
@@ -224,6 +233,10 @@ export class ResultItemImpl {
   }
   get isText(): boolean {
     return this.mediaType === 'text'
+  }
+
+  get isImageCompare(): boolean {
+    return this.mediaType === 'image_compare'
   }
 
   get supportsPreview(): boolean {
