@@ -96,9 +96,6 @@ export function useComfyHubProfileGate() {
 
     const workspaceAuthStore = useWorkspaceAuthStore()
     const workspaceId = workspaceAuthStore.currentWorkspace?.id
-    if (!workspaceId) {
-      throw new Error('Unable to determine current workspace')
-    }
 
     let avatarToken: string | undefined
     if (data.profilePicture) {

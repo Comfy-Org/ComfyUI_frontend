@@ -12,7 +12,7 @@ type HubThumbnailType = 'image' | 'video' | 'image_comparison'
 type ThumbnailTypeInput = HubThumbnailType | 'imageComparison'
 
 interface CreateProfileInput {
-  workspaceId: string
+  workspaceId?: string
   username: string
   displayName?: string
   description?: string

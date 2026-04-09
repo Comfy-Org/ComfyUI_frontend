@@ -202,5 +202,22 @@ describe('useComfyHubProfileGate', () => {
       expect(requestCallOrder[0]).toBeLessThan(uploadCallOrder[0])
       expect(uploadCallOrder[0]).toBeLessThan(createCallOrder[0])
     })
+
+    it('creates profile without workspace_id when workspace is not available', async () => {
+      mockCurrentWorkspace.value = null
+
+      await gate.createProfile({
+        username: 'testuser',
+        name: 'Test User'
+      })
+
+      expect(mockCreateProfile).toHaveBeenCalledWith({
+        workspaceId: undefined,
+        username: 'testuser',
+        displayName: 'Test User',
+        description: undefined,
+        avatarToken: undefined
+      })
+    })
   })
 })
