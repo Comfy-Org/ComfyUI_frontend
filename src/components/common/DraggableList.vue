@@ -4,7 +4,7 @@ import { onBeforeUnmount, ref, useTemplateRef, watchPostEffect } from 'vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 
 const { dragAxis } = defineProps<{
-  dragAxis?: 'x' | 'y' | 'both'
+  dragAxis?: 'y' | 'both'
 }>()
 
 const modelValue = defineModel<T[]>({ required: true })

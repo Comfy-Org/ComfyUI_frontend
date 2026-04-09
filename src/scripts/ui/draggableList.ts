@@ -53,14 +53,14 @@ export class DraggableList extends EventTarget {
   items = []
   itemSelector
   handleClass = 'drag-handle'
-  dragAxis: 'x' | 'y' | 'both' = 'both'
+  dragAxis: 'y' | 'both' = 'both'
   off = []
   offDrag = []
 
   constructor(
     element: HTMLElement,
     itemSelector: string,
-    options?: { dragAxis?: 'x' | 'y' | 'both' }
+    options?: { dragAxis?: 'y' | 'both' }
   ) {
     super()
     this.listContainer = element
@@ -210,8 +210,7 @@ export class DraggableList extends EventTarget {
 
     const pointerOffsetX =
       this.dragAxis === 'y' ? 0 : clientX - this.pointerStartX
-    const pointerOffsetY =
-      this.dragAxis === 'x' ? 0 : clientY - this.pointerStartY
+    const pointerOffsetY = clientY - this.pointerStartY
 
     this.updateIdleItemsStateAndPosition()
     this.draggableItem.style.transform = `translate(${pointerOffsetX}px, ${pointerOffsetY}px)`
