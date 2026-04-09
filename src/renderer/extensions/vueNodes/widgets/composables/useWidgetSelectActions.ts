@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -19,6 +20,11 @@ interface UseWidgetSelectActionsOptions {
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
   const toastStore = useToastStore()
+  const { wrapWithErrorHandlingAsync } = useErrorHandling()
+
+  function checkWorkflowState() {
+    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
+  }
 
   function updateSelectedItems(selectedItems: Set<string>) {
     const id =
@@ -29,7 +35,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         : dropdownItems.value.find((item) => item.id === id)?.name
 
     modelValue.value = name
-    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
+    checkWorkflowState()
   }
 
   async function uploadFile(
@@ -75,10 +81,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     return results.filter((path): path is string => path !== null)
   }
 
-  async function handleFilesUpdate(files: File[]) {
-    if (!files || files.length === 0) return
+  const handleFilesUpdate = wrapWithErrorHandlingAsync(
+    async (files: File[]) => {
+      if (!files || files.length === 0) return
 
-    try {
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
@@ -102,12 +108,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         widget.callback(uploadedPaths[0])
       }
 
-      useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
-    } catch (error) {
-      console.error('Upload error:', error)
-      toastStore.addAlert(`Upload failed: ${error}`)
+      checkWorkflowState()
     }
-  }
+  )
 
   return {
     updateSelectedItems,

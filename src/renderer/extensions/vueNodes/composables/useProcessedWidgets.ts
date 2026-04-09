@@ -1,5 +1,5 @@
 import type { TooltipOptions } from 'primevue'
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import type { Component } from 'vue'
 
 import type {
@@ -391,9 +391,17 @@ export function useProcessedWidgets(
     )
   })
 
+  const visibleWidgets = computed(() =>
+    processedWidgets.value.filter((w) =>
+      isWidgetVisible(
+        { hidden: w.hidden, advanced: w.advanced },
+        showAdvanced.value
+      )
+    )
+  )
+
   const gridTemplateRows = computed((): string =>
-    toValue(processedWidgets)
-      .filter((w) => !w.hidden && (!w.advanced || showAdvanced.value))
+    visibleWidgets.value
       .map((w) =>
         shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
       )
@@ -405,6 +413,7 @@ export function useProcessedWidgets(
     gridTemplateRows,
     nodeType,
     processedWidgets,
-    showAdvanced
+    showAdvanced,
+    visibleWidgets
   }
 }

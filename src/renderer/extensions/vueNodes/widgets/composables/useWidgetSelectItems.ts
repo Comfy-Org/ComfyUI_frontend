@@ -98,10 +98,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     return availableBaseModels.value
   })
 
-  const selectedSet = ref<Set<string>>(new Set())
-
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
-  const pendingJobIds = new Set<string>()
 
   watch(
     () => outputMediaAssets.media.value,
@@ -110,21 +107,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       onCleanup(() => {
         cancelled = true
       })
-      pendingJobIds.clear()
 
       for (const asset of assets) {
         const meta = getOutputAssetMetadata(asset.user_metadata)
         if (!meta) continue
 
         const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
-        if (
-          outputCount <= 1 ||
-          resolvedByJobId.value.has(meta.jobId) ||
-          pendingJobIds.has(meta.jobId)
-        )
-          continue
+        if (outputCount <= 1 || resolvedByJobId.value.has(meta.jobId)) continue
 
-        pendingJobIds.add(meta.jobId)
         void resolveOutputAssetItems(meta, { createdAt: asset.created_at })
           .then((resolved) => {
             if (cancelled || !resolved.length) return
@@ -138,9 +128,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
               meta.jobId,
               error
             )
-          })
-          .finally(() => {
-            pendingJobIds.delete(meta.jobId)
           })
       }
     },
@@ -251,20 +238,16 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }))
   })
 
-  const ownershipFilteredAssetItems = computed<FormDropdownItem[]>(() =>
-    filterItemByOwnership(assetItems.value, ownershipSelected.value)
-  )
-
-  const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() =>
+  const filteredAssetItems = computed<FormDropdownItem[]>(() =>
     filterItemByBaseModels(
-      ownershipFilteredAssetItems.value,
+      filterItemByOwnership(assetItems.value, ownershipSelected.value),
       baseModelSelected.value
     )
   )
 
   const allItems = computed<FormDropdownItem[]>(() => {
     if (toValue(options.isAssetMode) && assetData) {
-      return baseModelFilteredAssetItems.value
+      return filteredAssetItems.value
     }
     return [
       ...(missingValueItem.value ? [missingValueItem.value] : []),
@@ -291,29 +274,18 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
   const displayItems = computed<FormDropdownItem[]>(() => {
     if (toValue(options.isAssetMode) && assetData && missingValueItem.value) {
-      return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
+      return [missingValueItem.value, ...filteredAssetItems.value]
     }
     return dropdownItems.value
   })
 
-  watch(
-    [modelValue, displayItems],
-    ([currentValue]) => {
-      if (currentValue === undefined) {
-        selectedSet.value.clear()
-        return
-      }
+  const selectedSet = computed<Set<string>>(() => {
+    const currentValue = modelValue.value
+    if (currentValue === undefined) return new Set()
 
-      const item = displayItems.value.find((item) => item.name === currentValue)
-      if (!item) {
-        selectedSet.value.clear()
-        return
-      }
-      selectedSet.value.clear()
-      selectedSet.value.add(item.id)
-    },
-    { immediate: true }
-  )
+    const item = displayItems.value.find((item) => item.name === currentValue)
+    return item ? new Set([item.id]) : new Set()
+  })
 
   return {
     dropdownItems,
