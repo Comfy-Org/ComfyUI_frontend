@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.42.9",
+  "version": "1.42.10",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -203,5 +203,6 @@
     "overrides": {
       "vite": "catalog:"
     }
-  }
+  },
+  "packageManager": "pnpm@10.33.0"
 }
