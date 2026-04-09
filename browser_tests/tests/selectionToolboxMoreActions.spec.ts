@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
+async function panToNode(comfyPage: ComfyPage, nodeRef: NodeReference) {
   const nodePos = await nodeRef.getPosition()
   await comfyPage.page.evaluate((pos) => {
     const canvas = window.app!.canvas
@@ -14,11 +14,41 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
     canvas.setDirty(true, true)
   }, nodePos)
   await comfyPage.nextFrame()
+}
+
+async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
+  await panToNode(comfyPage, nodeRef)
   await nodeRef.click('title')
+}
+
+async function selectNodesWithPan(comfyPage: ComfyPage, nodeTitles: string[]) {
+  // Select nodes using canvas.selectItems() to properly trigger all internal
+  // state updates (selectedItems, selected_nodes, onSelectionChange).
+  await comfyPage.page.evaluate((titles) => {
+    const graph = window.app!.graph
+    const canvas = window.app!.canvas
+    const nodes = titles
+      .map((title) =>
+        graph.nodes.find((n: { title: string }) => n.title === title)
+      )
+      .filter((n): n is NonNullable<typeof n> => n != null)
+    canvas.selectItems(nodes)
+  }, nodeTitles)
+  await comfyPage.nextFrame()
+
+  // Pan to the first node so the toolbox is within the viewport
+  const firstNodeRefs = await comfyPage.nodeOps.getNodeRefsByTitle(
+    nodeTitles[0]
+  )
+  if (firstNodeRefs.length > 0) {
+    await panToNode(comfyPage, firstNodeRefs[0])
+  }
 }
 
 // force: true is needed because the canvas overlay (z-999) intercepts pointer events
 async function openMoreOptions(comfyPage: ComfyPage) {
+  await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+
   const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
   await expect(moreOptionsBtn).toBeVisible()
   await moreOptionsBtn.click({ force: true })
@@ -124,7 +154,10 @@ test.describe(
 
       const enlargedSize = await nodeRef.getSize()
 
-      await selectNodeWithPan(comfyPage, nodeRef)
+      // Re-pan to the node after resizing, since the enlarged node
+      // may push the toolbox outside the viewport
+      await panToNode(comfyPage, nodeRef)
+      await nodeRef.click('title')
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Adjust Size', { exact: true })
@@ -178,7 +211,7 @@ test.describe(
         .toBe(initialCount + 1)
     })
 
-    test('refresh button is visible when node is selected', async ({
+    test('refresh button visibility reflects node refreshable state', async ({
       comfyPage
     }) => {
       const nodeRef = (
@@ -186,8 +219,31 @@ test.describe(
       )[0]
       await selectNodeWithPan(comfyPage, nodeRef)
 
+      // The toolbox should be visible after selecting a node
+      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+
+      // The refresh button uses v-show, so it exists in the DOM but is
+      // only visible when the selected node has refreshable widgets.
       const refreshButton = comfyPage.page.getByTestId('refresh-button')
-      await expect(refreshButton).toBeVisible()
+      await expect(refreshButton).toBeAttached()
+
+      const hasRefreshableWidgets = await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.graph.getNodeById(nodeId)
+        if (!node?.widgets) return false
+        return node.widgets.some(
+          (w: unknown) =>
+            w != null &&
+            typeof w === 'object' &&
+            'refresh' in w &&
+            typeof (w as { refresh: unknown }).refresh === 'function'
+        )
+      }, nodeRef.id)
+
+      if (hasRefreshableWidgets) {
+        await expect(refreshButton).toBeVisible()
+      } else {
+        await expect(refreshButton).not.toBeVisible()
+      }
     })
   }
 )
@@ -205,8 +261,7 @@ test.describe(
     test('align selected nodes to top via More Options menu', async ({
       comfyPage
     }) => {
-      await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
-      await comfyPage.nextFrame()
+      await selectNodesWithPan(comfyPage, ['KSampler', 'Empty Latent Image'])
 
       const ksampler = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
@@ -243,8 +298,7 @@ test.describe(
     test('align selected nodes to left via More Options menu', async ({
       comfyPage
     }) => {
-      await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
-      await comfyPage.nextFrame()
+      await selectNodesWithPan(comfyPage, ['KSampler', 'Empty Latent Image'])
 
       const ksampler = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
@@ -280,12 +334,11 @@ test.describe(
       comfyPage
     }) => {
       // Select 3 nodes for meaningful distribution
-      await comfyPage.nodeOps.selectNodes([
+      await selectNodesWithPan(comfyPage, [
         'KSampler',
         'Empty Latent Image',
         'VAE Decode'
       ])
-      await comfyPage.nextFrame()
 
       const ksampler = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
@@ -329,12 +382,11 @@ test.describe(
     test('distribute nodes vertically via More Options menu', async ({
       comfyPage
     }) => {
-      await comfyPage.nodeOps.selectNodes([
+      await selectNodesWithPan(comfyPage, [
         'KSampler',
         'Empty Latent Image',
         'VAE Decode'
       ])
-      await comfyPage.nextFrame()
 
       const ksampler = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
