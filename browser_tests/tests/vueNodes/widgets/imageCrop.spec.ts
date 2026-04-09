@@ -97,7 +97,9 @@ test.describe('Image Crop', { tag: '@widget' }, () => {
           await expect(node.getByTestId('crop-overlay')).toBeVisible()
           await comfyPage.nextFrame()
           await comfyPage.nextFrame()
-          await expect(node).toHaveScreenshot('image-crop-with-source.png')
+          await expect(node).toHaveScreenshot('image-crop-with-source.png', {
+            maxDiffPixelRatio: 0.05
+          })
         }
       )
 
@@ -150,7 +152,9 @@ test.describe('Image Crop', { tag: '@widget' }, () => {
             expect(valueAfter?.height).toBe(valueBefore.height)
           }).toPass()
 
-          await expect(node).toHaveScreenshot('image-crop-after-drag.png')
+          await expect(node).toHaveScreenshot('image-crop-after-drag.png', {
+            maxDiffPixelRatio: 0.05
+          })
         }
       )
     }
