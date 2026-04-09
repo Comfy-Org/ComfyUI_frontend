@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -37,7 +37,7 @@ function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')
 }
 
-function mountInParent(modelValue?: string) {
+function renderInParent(modelValue?: string) {
   const parentEscapeCount = { value: 0 }
 
   const Parent = {
@@ -55,12 +55,12 @@ function mountInParent(modelValue?: string) {
     }
   }
 
-  const wrapper = mount(Parent, {
-    attachTo: document.body,
+  const { unmount } = render(Parent, {
+    container: document.body.appendChild(document.createElement('div')),
     global: { plugins: [i18n] }
   })
 
-  return { wrapper, parentEscapeCount }
+  return { unmount, parentEscapeCount }
 }
 
 async function openSelect(triggerEl: HTMLElement) {
@@ -81,10 +81,10 @@ async function openSelect(triggerEl: HTMLElement) {
 describe('SingleSelect', () => {
   describe('Escape key propagation', () => {
     it('stops Escape from propagating to parent when popover is open', async () => {
-      const { wrapper, parentEscapeCount } = mountInParent()
+      const { unmount, parentEscapeCount } = renderInParent()
 
-      const trigger = wrapper.find('button[role="combobox"]')
-      await openSelect(trigger.element as HTMLElement)
+      const trigger = screen.getByRole('combobox')
+      await openSelect(trigger)
 
       const content = findContentElement()
       expect(content).not.toBeNull()
@@ -94,23 +94,23 @@ describe('SingleSelect', () => {
 
       expect(parentEscapeCount.value).toBe(0)
 
-      wrapper.unmount()
+      unmount()
     })
 
     it('closes the popover when Escape is pressed', async () => {
-      const { wrapper } = mountInParent()
+      const { unmount } = renderInParent()
 
-      const trigger = wrapper.find('button[role="combobox"]')
-      await openSelect(trigger.element as HTMLElement)
-      expect(trigger.attributes('data-state')).toBe('open')
+      const trigger = screen.getByRole('combobox')
+      await openSelect(trigger)
+      expect(trigger).toHaveAttribute('data-state', 'open')
 
       const content = findContentElement()
       dispatchEscape(content!)
       await nextTick()
 
-      expect(trigger.attributes('data-state')).toBe('closed')
+      expect(trigger).toHaveAttribute('data-state', 'closed')
 
-      wrapper.unmount()
+      unmount()
     })
   })
 })

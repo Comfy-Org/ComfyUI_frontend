@@ -1,5 +1,7 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
@@ -26,12 +28,12 @@ function createMockSecret(
   }
 }
 
-function mountComponent(props: {
+function renderComponent(props: {
   secret: SecretMetadata
   loading?: boolean
   disabled?: boolean
 }) {
-  return mount(SecretListItem, {
+  return render(SecretListItem, {
     props,
     global: {
       stubs: {
@@ -56,123 +58,134 @@ describe('SecretListItem', () => {
   describe('rendering', () => {
     it('displays secret name', () => {
       const secret = createMockSecret({ name: 'My API Key' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('My API Key')
+      expect(screen.getByText('My API Key')).toBeInTheDocument()
     })
 
     it('displays provider label when provider exists', () => {
       const secret = createMockSecret({ provider: 'huggingface' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('HuggingFace')
+      expect(screen.getByText('HuggingFace')).toBeInTheDocument()
     })
 
     it('displays Civitai provider label', () => {
       const secret = createMockSecret({ provider: 'civitai' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('Civitai')
+      expect(screen.getByText('Civitai')).toBeInTheDocument()
     })
 
     it('hides provider badge when no provider', () => {
       const secret = createMockSecret({ provider: undefined })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).not.toContain('HuggingFace')
-      expect(wrapper.text()).not.toContain('Civitai')
+      expect(screen.queryByText('HuggingFace')).not.toBeInTheDocument()
+      expect(screen.queryByText('Civitai')).not.toBeInTheDocument()
     })
 
     it('displays created date', () => {
       const secret = createMockSecret({ created_at: '2024-01-15T10:00:00Z' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('secrets.createdAt')
+      expect(screen.getByText(/secrets\.createdAt/)).toBeInTheDocument()
     })
 
     it('displays last used date when available', () => {
       const secret = createMockSecret({ last_used_at: '2024-01-20T10:00:00Z' })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).toContain('secrets.lastUsed')
+      expect(screen.getByText(/secrets\.lastUsed/)).toBeInTheDocument()
     })
 
     it('hides last used when not available', () => {
       const secret = createMockSecret({ last_used_at: undefined })
-      const wrapper = mountComponent({ secret })
+      renderComponent({ secret })
 
-      expect(wrapper.text()).not.toContain('secrets.lastUsed')
+      expect(screen.queryByText(/secrets\.lastUsed/)).not.toBeInTheDocument()
     })
   })
 
   describe('loading state', () => {
     it('shows spinner when loading', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, loading: true })
+      const { container } = renderComponent({ secret, loading: true })
 
-      expect(wrapper.find('.pi-spinner').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      expect(container.querySelector('.pi-spinner')).toBeInTheDocument()
     })
 
     it('hides action buttons when loading', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, loading: true })
+      const { container } = renderComponent({ secret, loading: true })
 
-      expect(wrapper.find('.pi-pen-to-square').exists()).toBe(false)
-      expect(wrapper.find('.pi-trash').exists()).toBe(false)
+      expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+        container.querySelector('.pi-pen-to-square')
+      ).not.toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      expect(container.querySelector('.pi-trash')).not.toBeInTheDocument()
     })
 
     it('shows action buttons when not loading', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, loading: false })
+      const { container } = renderComponent({ secret, loading: false })
 
-      expect(wrapper.find('.pi-pen-to-square').exists()).toBe(true)
-      expect(wrapper.find('.pi-trash').exists()).toBe(true)
+      expect(
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+        container.querySelector('.pi-pen-to-square')
+      ).toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
+      expect(container.querySelector('.pi-trash')).toBeInTheDocument()
     })
   })
 
   describe('disabled state', () => {
     it('disables buttons when disabled prop is true', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, disabled: true })
+      renderComponent({ secret, disabled: true })
 
-      const buttons = wrapper.findAll('button')
+      const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button.attributes('disabled')).toBeDefined()
+        expect(button).toBeDisabled()
       })
     })
 
     it('enables buttons when disabled prop is false', () => {
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret, disabled: false })
+      renderComponent({ secret, disabled: false })
 
-      const buttons = wrapper.findAll('button')
+      const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button.attributes('disabled')).toBeUndefined()
+        expect(button).toBeEnabled()
       })
     })
   })
 
   describe('events', () => {
     it('emits edit event when edit button clicked', async () => {
+      const user = userEvent.setup()
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret })
+      const { emitted } = renderComponent({ secret })
 
-      const editButton = wrapper.findAll('button')[0]
-      await editButton.trigger('click')
+      const buttons = screen.getAllByRole('button')
+      await user.click(buttons[0])
 
-      expect(wrapper.emitted('edit')).toBeDefined()
-      expect(wrapper.emitted('edit')!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['edit']).toBeDefined()
+      expect(emitted()['edit']!.length).toBeGreaterThanOrEqual(1)
     })
 
     it('emits delete event when delete button clicked', async () => {
+      const user = userEvent.setup()
       const secret = createMockSecret()
-      const wrapper = mountComponent({ secret })
+      const { emitted } = renderComponent({ secret })
 
-      const deleteButton = wrapper.findAll('button')[1]
-      await deleteButton.trigger('click')
+      const buttons = screen.getAllByRole('button')
+      await user.click(buttons[1])
 
-      expect(wrapper.emitted('delete')).toBeDefined()
-      expect(wrapper.emitted('delete')!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['delete']).toBeDefined()
+      expect(emitted()['delete']!.length).toBeGreaterThanOrEqual(1)
     })
   })
 })

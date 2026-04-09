@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
+import { render } from '@testing-library/vue'
 
 const initializeStandaloneViewer = vi.fn()
 const cleanup = vi.fn()
@@ -44,20 +45,20 @@ describe('Preview3d', () => {
     vi.restoreAllMocks()
   })
 
-  async function mountPreview3d(
+  async function renderPreview3d(
     modelUrl = 'http://localhost/view?filename=model.glb'
   ) {
-    const wrapper = mount(
+    const result = render(
       (await import('@/renderer/extensions/linearMode/Preview3d.vue')).default,
       { props: { modelUrl } }
     )
     await nextTick()
     await nextTick()
-    return wrapper
+    return result
   }
 
   it('initializes the viewer on mount', async () => {
-    const wrapper = await mountPreview3d()
+    const { unmount } = await renderPreview3d()
 
     expect(initializeStandaloneViewer).toHaveBeenCalledOnce()
     expect(initializeStandaloneViewer).toHaveBeenCalledWith(
@@ -65,14 +66,14 @@ describe('Preview3d', () => {
       'http://localhost/view?filename=model.glb'
     )
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('cleans up the viewer on unmount', async () => {
-    const wrapper = await mountPreview3d()
+    const { unmount } = await renderPreview3d()
     cleanup.mockClear()
 
-    wrapper.unmount()
+    unmount()
 
     expect(cleanup).toHaveBeenCalledOnce()
   })
@@ -80,16 +81,16 @@ describe('Preview3d', () => {
   it('reinitializes correctly after unmount and remount', async () => {
     const url = 'http://localhost/view?filename=model.glb'
 
-    const wrapper1 = await mountPreview3d(url)
+    const result1 = await renderPreview3d(url)
     expect(initializeStandaloneViewer).toHaveBeenCalledTimes(1)
 
     cleanup.mockClear()
-    wrapper1.unmount()
+    result1.unmount()
     expect(cleanup).toHaveBeenCalledOnce()
 
     vi.clearAllMocks()
 
-    const wrapper2 = await mountPreview3d(url)
+    const result2 = await renderPreview3d(url)
     expect(initializeStandaloneViewer).toHaveBeenCalledTimes(1)
     expect(initializeStandaloneViewer).toHaveBeenCalledWith(
       expect.any(HTMLElement),
@@ -97,19 +98,19 @@ describe('Preview3d', () => {
     )
 
     cleanup.mockClear()
-    wrapper2.unmount()
+    result2.unmount()
     expect(cleanup).toHaveBeenCalledOnce()
   })
 
   it('reinitializes when modelUrl changes on existing instance', async () => {
-    const wrapper = await mountPreview3d(
+    const result = await renderPreview3d(
       'http://localhost/view?filename=model-a.glb'
     )
     expect(initializeStandaloneViewer).toHaveBeenCalledOnce()
 
     vi.clearAllMocks()
 
-    await wrapper.setProps({
+    await result.rerender({
       modelUrl: 'http://localhost/view?filename=model-b.glb'
     })
     await nextTick()
@@ -122,6 +123,6 @@ describe('Preview3d', () => {
       'http://localhost/view?filename=model-b.glb'
     )
 
-    wrapper.unmount()
+    result.unmount()
   })
 })
