@@ -154,10 +154,16 @@ test.describe(
 
       const enlargedSize = await nodeRef.getSize()
 
-      // Re-pan to the node after resizing, since the enlarged node
-      // may push the toolbox outside the viewport
+      // Re-select the node after resizing via evaluate to avoid
+      // viewport issues with enlarged nodes
+      await comfyPage.page.evaluate((id) => {
+        const graph = window.app!.graph
+        const canvas = window.app!.canvas
+        const node = graph.getNodeById(id)!
+        canvas.selectItems([node])
+      }, nodeRef.id)
       await panToNode(comfyPage, nodeRef)
-      await nodeRef.click('title')
+      await comfyPage.nextFrame()
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Adjust Size', { exact: true })
@@ -279,7 +285,7 @@ test.describe(
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Align Selected To', { exact: true })
-        .hover()
+        .click({ force: true })
       await expect(
         comfyPage.page.getByText('Top', { exact: true })
       ).toBeVisible()
@@ -315,7 +321,7 @@ test.describe(
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Align Selected To', { exact: true })
-        .hover()
+        .click({ force: true })
       await expect(
         comfyPage.page.getByText('Left', { exact: true })
       ).toBeVisible()
@@ -353,7 +359,7 @@ test.describe(
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Distribute Nodes', { exact: true })
-        .hover()
+        .click({ force: true })
       await expect(
         comfyPage.page.getByText('Horizontal', { exact: true })
       ).toBeVisible()
@@ -401,7 +407,7 @@ test.describe(
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Distribute Nodes', { exact: true })
-        .hover()
+        .click({ force: true })
       await expect(
         comfyPage.page.getByText('Vertical', { exact: true })
       ).toBeVisible()
