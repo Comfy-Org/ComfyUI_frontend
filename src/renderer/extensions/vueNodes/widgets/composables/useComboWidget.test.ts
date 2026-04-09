@@ -202,8 +202,11 @@ describe('useComboWidget', () => {
   })
 
   describe('cloud asset browser widget', () => {
-    function createAssetWidget(
-      expectedValue: string,
+    // "Select model" is the fallback from t('widgets.selectModel')
+    // in createAssetWidget when defaultValue is undefined.
+    const PLACEHOLDER = 'Select model'
+
+    function setupCloudAssetWidget(
       inputSpecOverrides: Partial<InputSpec> = {}
     ) {
       mockDistributionState.isCloud = true
@@ -213,7 +216,7 @@ describe('useComboWidget', () => {
       const mockWidget = createMockWidget({
         type: 'asset',
         name: 'ckpt_name',
-        value: expectedValue
+        value: ''
       })
       const mockNode = createMockNode('CheckpointLoaderSimple')
       vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
@@ -222,16 +225,12 @@ describe('useComboWidget', () => {
         ...inputSpecOverrides
       })
 
-      const widget = constructor(mockNode, inputSpec)
+      constructor(mockNode, inputSpec)
+      return { mockNode }
+    }
 
-      expect(mockNode.addWidget).toHaveBeenCalledWith(
-        'asset',
-        'ckpt_name',
-        expectedValue,
-        expect.any(Function),
-        expect.any(Object)
-      )
-      return { widget, mockWidget, mockNode }
+    function getWidgetDefault(mockNode: ReturnType<typeof createMockNode>) {
+      return vi.mocked(mockNode.addWidget).mock.calls[0]?.[2]
     }
 
     it('should create asset browser widget when API enabled', () => {
@@ -239,15 +238,20 @@ describe('useComboWidget', () => {
         createMockAssetItem({ name: 'cloud_model.safetensors' })
       ])
 
-      const { widget, mockWidget } = createAssetWidget(
-        'cloud_model.safetensors',
-        { options: ['model1.safetensors', 'model2.safetensors'] }
-      )
+      const { mockNode } = setupCloudAssetWidget({
+        options: ['model1.safetensors', 'model2.safetensors']
+      })
 
       expect(
         vi.mocked(assetService.shouldUseAssetBrowser)
       ).toHaveBeenCalledWith('CheckpointLoaderSimple', 'ckpt_name')
-      expect(widget).toBe(mockWidget)
+      expect(mockNode.addWidget).toHaveBeenCalledWith(
+        'asset',
+        'ckpt_name',
+        expect.anything(),
+        expect.any(Function),
+        expect.any(Object)
+      )
     })
 
     it('should use first cloud asset as default instead of server combo options', () => {
@@ -255,12 +259,11 @@ describe('useComboWidget', () => {
         createMockAssetItem({ name: 'cloud_model.safetensors' })
       ])
 
-      const { widget, mockWidget } = createAssetWidget(
-        'cloud_model.safetensors',
-        { options: ['local_only_model.safetensors'] }
-      )
+      const { mockNode } = setupCloudAssetWidget({
+        options: ['local_only_model.safetensors']
+      })
 
-      expect(widget).toBe(mockWidget)
+      expect(getWidgetDefault(mockNode)).toBe('cloud_model.safetensors')
     })
 
     it('should fallback to assets[0] when inputSpec.default not in cloud assets', () => {
@@ -268,12 +271,11 @@ describe('useComboWidget', () => {
         createMockAssetItem({ name: 'cloud_model.safetensors' })
       ])
 
-      const { widget, mockWidget } = createAssetWidget(
-        'cloud_model.safetensors',
-        { default: 'not_in_cloud.safetensors' }
-      )
+      const { mockNode } = setupCloudAssetWidget({
+        default: 'not_in_cloud.safetensors'
+      })
 
-      expect(widget).toBe(mockWidget)
+      expect(getWidgetDefault(mockNode)).toBe('cloud_model.safetensors')
     })
 
     it('should prefer inputSpec.default when it exists in cloud assets', () => {
@@ -282,35 +284,33 @@ describe('useComboWidget', () => {
         createMockAssetItem({ name: 'fallback.safetensors' })
       ])
 
-      const { widget, mockWidget } = createAssetWidget(
-        'fallback.safetensors',
+      const { mockNode } = setupCloudAssetWidget({
         // Note: no options array provided
-        { default: 'fallback.safetensors' }
-      )
+        default: 'fallback.safetensors'
+      })
 
-      expect(widget).toBe(mockWidget)
+      expect(getWidgetDefault(mockNode)).toBe('fallback.safetensors')
     })
 
     it('should create asset browser widget when default value provided without options', () => {
       mockGetAssets.mockReturnValue([])
 
-      const { widget, mockWidget } = createAssetWidget(
-        'Select model',
+      const { mockNode } = setupCloudAssetWidget({
         // Note: no options array provided
-        { default: 'fallback.safetensors' }
-      )
+        default: 'fallback.safetensors'
+      })
 
-      expect(widget).toBe(mockWidget)
+      expect(getWidgetDefault(mockNode)).toBe(PLACEHOLDER)
     })
 
     it('should fallback to placeholder when cloud assets not loaded', () => {
       mockGetAssets.mockReturnValue([])
 
-      const { widget, mockWidget } = createAssetWidget('Select model', {
+      const { mockNode } = setupCloudAssetWidget({
         options: ['local_model.safetensors']
       })
 
-      expect(widget).toBe(mockWidget)
+      expect(getWidgetDefault(mockNode)).toBe(PLACEHOLDER)
     })
   })
 

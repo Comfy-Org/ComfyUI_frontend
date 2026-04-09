@@ -36,12 +36,17 @@ const test = comfyPageFixture.extend<{ stubCloudAssets: void }>({
 })
 
 test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.nodeOps.clearGraph()
+  })
+
   test('should use first cloud asset when server default is not in assets', async ({
     comfyPage
   }) => {
-    // Default workflow contains CheckpointLoaderSimple whose server
-    // default (from object_info) is a local file not in cloud assets.
-    // Wait for the assets store to populate from the stub.
+    // The default workflow contains a CheckpointLoaderSimple node whose
+    // server default (from object_info) is a local file not in cloud assets.
+    // Wait for the existing node's asset widget to mount, confirming the
+    // assets store has been populated from the stub before adding a new node.
     await expect
       .poll(
         () =>
@@ -65,7 +70,7 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
       const widget = node!.widgets?.find(
         (w: { name: string }) => w.name === 'ckpt_name'
       )
-      return widget?.value as string | undefined
+      return String(widget?.value ?? '')
     })
 
     expect(widgetValue).toBe(STABLE_CHECKPOINT.name)

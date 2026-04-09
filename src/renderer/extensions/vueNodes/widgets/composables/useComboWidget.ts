@@ -105,6 +105,23 @@ const addMultiSelectWidget = (
   return widget
 }
 
+/**
+ * Resolve the default value for a cloud asset widget.
+ * Priority: inputSpec.default (if present in cloud assets) → first cloud
+ * asset → undefined (shows placeholder).
+ */
+function resolveCloudDefault(
+  nodeType: string,
+  specDefault: string | undefined
+): string | undefined {
+  const assets = useAssetsStore().getAssets(nodeType)
+  if (specDefault != null) {
+    const inAssets = assets.some((a) => getAssetFilename(a) === specDefault)
+    if (inAssets) return specDefault
+  }
+  return (assets.length ? getAssetFilename(assets[0]) : undefined) || undefined
+}
+
 function createAssetBrowserWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec,
@@ -199,15 +216,10 @@ const addComboWidget = (
       // Default from cloud assets, not from server combo options.
       // Server options list local files that may not exist in the user's
       // cloud asset library, leading to missing-model errors on undo/reload.
-      const assets = useAssetsStore().getAssets(node.comfyClass ?? '')
-      const defaultInAssets =
-        inputSpec.default &&
-        assets.some((a) => getAssetFilename(a) === inputSpec.default)
-      const cloudDefault = defaultInAssets
-        ? inputSpec.default
-        : assets.length
-          ? getAssetFilename(assets[0])
-          : undefined
+      const cloudDefault = resolveCloudDefault(
+        node.comfyClass ?? '',
+        inputSpec.default
+      )
       return createAssetBrowserWidget(node, inputSpec, cloudDefault)
     }
 
