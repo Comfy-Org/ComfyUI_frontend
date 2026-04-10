@@ -157,10 +157,14 @@ export const useAssetsStore = defineStore('assets', () => {
 
   function removeHistoryItems(ids: string[]) {
     const idSet = new Set(ids)
+    const removedCount = allHistoryItems.value.filter((item) =>
+      idSet.has(item.id)
+    ).length
     allHistoryItems.value = allHistoryItems.value.filter(
       (item) => !idSet.has(item.id)
     )
     ids.forEach((id) => loadedIds.delete(id))
+    historyOffset.value = Math.max(0, historyOffset.value - removedCount)
     historyAssets.value = allHistoryItems.value
   }
 

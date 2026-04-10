@@ -438,6 +438,26 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(ids).not.toContain('prompt_3')
     })
 
+    it('should adjust pagination offset after deletion', async () => {
+      const mockHistory = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(mockHistory)
+      await store.updateHistory()
+
+      // Delete 3 items — offset should shift from 200 to 197
+      store.removeHistoryItems(['prompt_1', 'prompt_3', 'prompt_5'])
+      expect(store.historyAssets).toHaveLength(197)
+
+      const nextBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValueOnce(nextBatch)
+      await store.loadMoreHistory()
+
+      expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 197 })
+    })
+
     it('should allow re-inserting a removed item on next updateHistory', async () => {
       const mockHistory = Array.from({ length: 3 }, (_, i) =>
         createMockJobItem(i)
