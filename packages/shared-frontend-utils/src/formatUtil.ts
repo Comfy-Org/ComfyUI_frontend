@@ -542,7 +542,8 @@ const IMAGE_EXTENSIONS = [
   'bmp',
   'avif',
   'tif',
-  'tiff'
+  'tiff',
+  'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
@@ -630,4 +631,11 @@ export function isPreviewableMediaType(mediaType: MediaType): boolean {
     mediaType === 'audio' ||
     mediaType === '3D'
   )
+}
+
+export function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds === 0) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
 }

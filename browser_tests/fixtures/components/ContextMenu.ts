@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ContextMenu {
@@ -19,6 +20,10 @@ export class ContextMenu {
     await this.page.getByRole('menuitem', { name }).click()
   }
 
+  async clickMenuItemExact(name: string): Promise<void> {
+    await this.page.getByRole('menuitem', { name, exact: true }).click()
+  }
+
   async clickLitegraphMenuItem(name: string): Promise<void> {
     await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
   }
@@ -33,22 +38,36 @@ export class ContextMenu {
     return primeVueVisible || litegraphVisible
   }
 
-  async waitForHidden(): Promise<void> {
-    const waitIfExists = async (locator: Locator, menuName: string) => {
-      const count = await locator.count()
-      if (count > 0) {
-        await locator.waitFor({ state: 'hidden' }).catch((error: Error) => {
-          console.warn(
-            `[waitForHidden] ${menuName} waitFor failed:`,
-            error.message
-          )
-        })
-      }
+  async assertHasItems(items: string[]): Promise<void> {
+    for (const item of items) {
+      await expect
+        .soft(this.page.getByRole('menuitem', { name: item }))
+        .toBeVisible()
     }
+  }
 
+  async openFor(locator: Locator): Promise<this> {
+    await locator.click({ button: 'right' })
+    await expect.poll(() => this.isVisible()).toBe(true)
+    return this
+  }
+
+  /**
+   * Select a Vue node by clicking its header, then right-click to open
+   * the context menu. Vue nodes require a selection click before the
+   * right-click so the correct per-node menu items appear.
+   */
+  async openForVueNode(header: Locator): Promise<this> {
+    await header.click()
+    await header.click({ button: 'right' })
+    await this.primeVueMenu.waitFor({ state: 'visible' })
+    return this
+  }
+
+  async waitForHidden(): Promise<void> {
     await Promise.all([
-      waitIfExists(this.primeVueMenu, 'primeVueMenu'),
-      waitIfExists(this.litegraphMenu, 'litegraphMenu')
+      this.primeVueMenu.waitFor({ state: 'hidden' }),
+      this.litegraphMenu.waitFor({ state: 'hidden' })
     ])
   }
 }

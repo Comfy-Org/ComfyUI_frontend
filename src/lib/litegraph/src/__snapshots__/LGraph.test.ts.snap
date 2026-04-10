@@ -18,7 +18,6 @@ exports[`LGraph > supports schema v0.4 graphs > oldSchemaGraph 1`] = `
       ],
       "color": "#6029aa",
       "flags": {},
-      "font_size": 14,
       "id": 123,
       "title": "A group to test with",
     },

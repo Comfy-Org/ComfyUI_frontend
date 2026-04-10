@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -31,18 +31,18 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
       })
-      expect(await comfyPage.settings.getSetting('Comfy.LinkRenderMode')).toBe(
-        hiddenLinkRenderMode
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .toBe(hiddenLinkRenderMode)
 
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'canvas-with-visible-links.png'
       )
-      expect(
-        await comfyPage.settings.getSetting('Comfy.LinkRenderMode')
-      ).not.toBe(hiddenLinkRenderMode)
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .not.toBe(hiddenLinkRenderMode)
     }
   )
 
@@ -57,6 +57,15 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
 
     // Test that the button can be clicked without error
     await minimapButton.click()
+    await comfyPage.nextFrame()
+  })
+
+  test('Fit view button is present and clickable', async ({ comfyPage }) => {
+    const fitViewButton = comfyPage.page
+      .locator('button')
+      .filter({ has: comfyPage.page.locator('.icon-\\[lucide--focus\\]') })
+    await expect(fitViewButton).toBeVisible()
+    await fitViewButton.click()
     await comfyPage.nextFrame()
   })
 
@@ -83,7 +92,6 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     // Click backdrop to close
     const backdrop = comfyPage.page.locator('.fixed.inset-0').first()
     await backdrop.click()
-    await comfyPage.nextFrame()
 
     // Modal should be hidden
     await expect(zoomModal).not.toBeVisible()

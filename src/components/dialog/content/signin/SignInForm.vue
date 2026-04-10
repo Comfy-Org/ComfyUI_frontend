@@ -88,14 +88,14 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const authStore = useFirebaseAuthStore()
-const firebaseAuthActions = useFirebaseAuthActions()
+const authStore = useAuthStore()
+const authActions = useAuthActions()
 const loading = computed(() => authStore.loading)
 const toast = useToast()
 
@@ -127,6 +127,6 @@ const handleForgotPassword = async (
     document.getElementById(emailInputId)?.focus?.()
     return
   }
-  await firebaseAuthActions.sendPasswordReset(email)
+  await authActions.sendPasswordReset(email)
 }
 </script>

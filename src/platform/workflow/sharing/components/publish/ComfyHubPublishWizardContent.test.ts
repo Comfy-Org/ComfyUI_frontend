@@ -1,4 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -8,13 +9,20 @@ import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/
 const mockCheckProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockHasProfile = ref<boolean | null>(true)
+const mockIsFetchingProfile = ref(false)
+const mockProfile = ref<{ username: string; name?: string } | null>({
+  username: 'testuser',
+  name: 'Test User'
+})
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
   () => ({
     useComfyHubProfileGate: () => ({
       checkProfile: mockCheckProfile,
-      hasProfile: mockHasProfile
+      hasProfile: mockHasProfile,
+      isFetchingProfile: mockIsFetchingProfile,
+      profile: mockProfile
     })
   })
 )
@@ -39,15 +47,21 @@ function createDefaultFormData(): ComfyHubPublishFormData {
   return {
     name: 'Test Workflow',
     description: '',
-    workflowType: '',
     tags: [],
+    models: [],
+    customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
     exampleImages: [],
-    selectedExampleIds: []
+    tutorialUrl: '',
+    metadata: {}
   }
+}
+
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
 }
 
 describe('ComfyHubPublishWizardContent', () => {
@@ -61,17 +75,20 @@ describe('ComfyHubPublishWizardContent', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
     mockHasProfile.value = true
+    mockIsFetchingProfile.value = false
+    mockProfile.value = { username: 'testuser', name: 'Test User' }
     mockFlags.comfyHubProfileGateEnabled = true
   })
 
-  function createWrapper(
+  function renderComponent(
     overrides: Partial<
       InstanceType<typeof ComfyHubPublishWizardContent>['$props']
     > = {}
   ) {
-    return mount(ComfyHubPublishWizardContent, {
+    return render(ComfyHubPublishWizardContent, {
       props: {
         currentStep: 'finish',
         formData: createDefaultFormData(),
@@ -99,8 +116,22 @@ describe('ComfyHubPublishWizardContent', () => {
             template: '<div data-testid="publish-gate-flow" />',
             props: ['onProfileCreated', 'onClose', 'showCloseButton']
           },
+          Skeleton: {
+            template: '<div class="skeleton" />'
+          },
           ComfyHubDescribeStep: {
             template: '<div data-testid="describe-step" />'
+          },
+          ComfyHubFinishStep: {
+            template: '<div data-testid="finish-step" />',
+            props: ['profile', 'acknowledged', 'ready'],
+            emits: ['update:ready', 'update:acknowledged'],
+            setup(
+              _: unknown,
+              { emit }: { emit: (e: string, v: boolean) => void }
+            ) {
+              emit('update:ready', true)
+            }
           },
           ComfyHubExamplesStep: {
             template: '<div data-testid="examples-step" />'
@@ -115,8 +146,13 @@ describe('ComfyHubPublishWizardContent', () => {
           },
           ComfyHubPublishFooter: {
             template:
-              '<div data-testid="publish-footer" :data-publish-disabled="isPublishDisabled"><button data-testid="publish-btn" @click="$emit(\'publish\')" /><button data-testid="next-btn" @click="$emit(\'next\')" /><button data-testid="back-btn" @click="$emit(\'back\')" /></div>',
-            props: ['isFirstStep', 'isLastStep', 'isPublishDisabled'],
+              '<div data-testid="publish-footer" :data-publish-disabled="isPublishDisabled" :data-is-publishing="isPublishing"><button data-testid="publish-btn" @click="$emit(\'publish\')" /><button data-testid="next-btn" @click="$emit(\'next\')" /><button data-testid="back-btn" @click="$emit(\'back\')" /></div>',
+            props: [
+              'isFirstStep',
+              'isLastStep',
+              'isPublishDisabled',
+              'isPublishing'
+            ],
             emits: ['publish', 'next', 'back']
           }
         }
@@ -124,48 +160,24 @@ describe('ComfyHubPublishWizardContent', () => {
     })
   }
 
-  describe('handlePublish — double-click guard', () => {
-    it('prevents concurrent publish calls', async () => {
-      let resolveCheck!: (v: boolean) => void
-      mockCheckProfile.mockReturnValue(
-        new Promise<boolean>((resolve) => {
-          resolveCheck = resolve
-        })
-      )
+  function createDeferred<T>() {
+    let resolve: (value: T) => void = () => {}
+    let reject: (error: unknown) => void = () => {}
 
-      const wrapper = createWrapper()
-
-      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
-      await publishBtn.trigger('click')
-      await publishBtn.trigger('click')
-
-      resolveCheck(true)
-      await flushPromises()
-
-      expect(mockCheckProfile).toHaveBeenCalledTimes(1)
-      expect(onPublish).toHaveBeenCalledTimes(1)
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
     })
-  })
 
-  describe('handlePublish — feature flag bypass', () => {
-    it('calls onPublish directly when profile gate is disabled', async () => {
-      mockFlags.comfyHubProfileGateEnabled = false
+    return { promise, resolve, reject }
+  }
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
-      await flushPromises()
-
-      expect(mockCheckProfile).not.toHaveBeenCalled()
-      expect(onPublish).toHaveBeenCalledOnce()
-    })
-  })
-
-  describe('handlePublish — profile check routing', () => {
+  describe('handlePublish - profile check routing', () => {
     it('calls onPublish when profile exists', async () => {
       mockCheckProfile.mockResolvedValue(true)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(mockCheckProfile).toHaveBeenCalledOnce()
@@ -176,8 +188,8 @@ describe('ComfyHubPublishWizardContent', () => {
     it('calls onRequireProfile when no profile exists', async () => {
       mockCheckProfile.mockResolvedValue(false)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(onRequireProfile).toHaveBeenCalledOnce()
@@ -188,8 +200,8 @@ describe('ComfyHubPublishWizardContent', () => {
       const error = new Error('Network error')
       mockCheckProfile.mockRejectedValue(error)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
@@ -197,67 +209,125 @@ describe('ComfyHubPublishWizardContent', () => {
       expect(onRequireProfile).not.toHaveBeenCalled()
     })
 
-    it('resets guard after checkProfile error so retry is possible', async () => {
-      mockCheckProfile.mockRejectedValueOnce(new Error('Network error'))
+    it('calls onPublish directly when profile gate is disabled', async () => {
+      mockFlags.comfyHubProfileGateEnabled = false
 
-      const wrapper = createWrapper()
-      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
-
-      await publishBtn.trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
-      expect(onPublish).not.toHaveBeenCalled()
 
-      mockCheckProfile.mockResolvedValue(true)
-      await publishBtn.trigger('click')
-      await flushPromises()
+      expect(mockCheckProfile).not.toHaveBeenCalled()
       expect(onPublish).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('handlePublish - async submission', () => {
+    it('prevents duplicate publish submissions while in-flight', async () => {
+      const publishDeferred = createDeferred<void>()
+      onPublish.mockReturnValue(publishDeferred.promise)
+
+      renderComponent()
+      const publishBtn = screen.getByTestId('publish-btn')
+
+      await userEvent.click(publishBtn)
+      await userEvent.click(publishBtn)
+      await flushPromises()
+
+      expect(onPublish).toHaveBeenCalledTimes(1)
+
+      publishDeferred.resolve(undefined)
+      await flushPromises()
+    })
+
+    it('calls onPublish and does not close when publish request fails', async () => {
+      const publishError = new Error('Publish failed')
+      onPublish.mockRejectedValueOnce(publishError)
+
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
+      await flushPromises()
+
+      expect(onPublish).toHaveBeenCalledOnce()
+      expect(mockToastErrorHandler).toHaveBeenCalledWith(publishError)
+      expect(onGateClose).not.toHaveBeenCalled()
+    })
+
+    it('shows publish disabled while submitting', async () => {
+      const publishDeferred = createDeferred<void>()
+      onPublish.mockReturnValue(publishDeferred.promise)
+
+      renderComponent()
+      const publishBtn = screen.getByTestId('publish-btn')
+
+      await userEvent.click(publishBtn)
+      await flushPromises()
+
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('true')
+      expect(footer.getAttribute('data-is-publishing')).toBe('true')
+
+      publishDeferred.resolve(undefined)
+      await flushPromises()
+
+      expect(footer.getAttribute('data-is-publishing')).toBe('false')
+    })
+
+    it('resets guard after publish error so retry is possible', async () => {
+      onPublish.mockRejectedValueOnce(new Error('Publish failed'))
+
+      renderComponent()
+      const publishBtn = screen.getByTestId('publish-btn')
+
+      await userEvent.click(publishBtn)
+      await flushPromises()
+
+      onPublish.mockResolvedValueOnce(undefined)
+      await userEvent.click(publishBtn)
+      await flushPromises()
+
+      expect(onPublish).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('isPublishDisabled', () => {
     it('disables publish when gate enabled and hasProfile is not true', () => {
       mockHasProfile.value = null
-      const wrapper = createWrapper()
+      renderComponent()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('true')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('true')
     })
 
-    it('enables publish when gate enabled and hasProfile is true', () => {
+    it('enables publish when gate enabled and hasProfile is true', async () => {
       mockHasProfile.value = true
-      const wrapper = createWrapper()
+      renderComponent()
+      await flushPromises()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('false')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('false')
     })
 
     it('enables publish when gate is disabled regardless of profile', () => {
       mockFlags.comfyHubProfileGateEnabled = false
       mockHasProfile.value = null
-      const wrapper = createWrapper()
+      renderComponent()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('false')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('false')
     })
   })
 
   describe('profileCreation step rendering', () => {
     it('shows profile creation form when on profileCreation step', () => {
-      const wrapper = createWrapper({ currentStep: 'profileCreation' })
-      expect(wrapper.find('[data-testid="publish-gate-flow"]').exists()).toBe(
-        true
-      )
-      expect(wrapper.find('[data-testid="publish-footer"]').exists()).toBe(
-        false
-      )
+      renderComponent({ currentStep: 'profileCreation' })
+      expect(screen.getByTestId('publish-gate-flow')).toBeTruthy()
+      expect(screen.queryByTestId('publish-footer')).not.toBeInTheDocument()
     })
 
     it('shows wizard content when not on profileCreation step', () => {
-      const wrapper = createWrapper({ currentStep: 'finish' })
-      expect(wrapper.find('[data-testid="publish-gate-flow"]').exists()).toBe(
-        false
-      )
-      expect(wrapper.find('[data-testid="publish-footer"]').exists()).toBe(true)
+      renderComponent({ currentStep: 'finish' })
+      expect(screen.queryByTestId('publish-gate-flow')).not.toBeInTheDocument()
+      expect(screen.getByTestId('publish-footer')).toBeTruthy()
     })
   })
 })

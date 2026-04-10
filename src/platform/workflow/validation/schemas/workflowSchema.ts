@@ -282,6 +282,7 @@ const zExtra = z
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
     BlueprintSearchAliases: z.array(z.string()).optional(),
+    linearMode: z.boolean().optional(),
     linearData: z
       .object({
         inputs: z.array(z.tuple([zNodeId, z.string()])).optional(),

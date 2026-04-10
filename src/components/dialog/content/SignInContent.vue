@@ -77,29 +77,31 @@
           </Button>
         </template>
 
-        <Button
-          type="button"
-          class="h-10"
-          variant="secondary"
-          @click="showApiKeyForm = true"
-        >
-          <img
-            src="/assets/images/comfy-logo-mono.svg"
-            class="mr-2 size-5"
-            :alt="$t('g.comfy')"
-          />
-          {{ t('auth.login.useApiKey') }}
-        </Button>
-        <small class="text-center text-muted">
-          {{ t('auth.apiKey.helpText') }}
-          <a
-            :href="`${comfyPlatformBaseUrl}/login`"
-            target="_blank"
-            class="cursor-pointer text-blue-500"
+        <template v-if="!isCloud">
+          <Button
+            type="button"
+            class="h-10"
+            variant="secondary"
+            @click="showApiKeyForm = true"
           >
-            {{ t('auth.apiKey.generateKey') }}
-          </a>
-        </small>
+            <img
+              src="/assets/images/comfy-logo-mono.svg"
+              class="mr-2 size-5"
+              :alt="$t('g.comfy')"
+            />
+            {{ t('auth.login.useApiKey') }}
+          </Button>
+          <small class="text-center text-muted">
+            {{ t('auth.apiKey.helpText') }}
+            <a
+              :href="`${comfyPlatformBaseUrl}/login`"
+              target="_blank"
+              class="cursor-pointer text-blue-500"
+            >
+              {{ t('auth.apiKey.generateKey') }}
+            </a>
+          </small>
+        </template>
         <Message
           v-if="authActions.accessError.value"
           severity="info"
@@ -145,13 +147,14 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
 
@@ -164,7 +167,7 @@ const { onSuccess } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
@@ -183,13 +186,13 @@ const toggleState = () => {
 }
 
 const signInWithGoogle = async () => {
-  if (await authActions.signInWithGoogle()) {
+  if (await authActions.signInWithGoogle({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }
 
 const signInWithGithub = async () => {
-  if (await authActions.signInWithGithub()) {
+  if (await authActions.signInWithGithub({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }

@@ -1,4 +1,6 @@
 import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
 import type { Point } from '@/renderer/core/layout/types'
 import {
@@ -15,7 +17,7 @@ interface Positioned {
   size: LGPoint
 }
 
-function unprojectPosSize(item: Positioned, anchor: Point) {
+function unprojectPosSize(item: Positioned, anchor: Point, graph: LGraph) {
   const c = unprojectBounds(
     {
       x: item.pos[0],
@@ -30,6 +32,14 @@ function unprojectPosSize(item: Positioned, anchor: Point) {
   item.pos[1] = c.y
   item.size[0] = c.width
   item.size[1] = c.height
+
+  if (LiteGraph.alwaysSnapToGrid) {
+    const snapTo = graph.getSnapToGridSize?.()
+    if (snapTo) {
+      snapPoint(item.pos, snapTo, 'round')
+      snapPoint(item.size, snapTo, 'ceil')
+    }
+  }
 }
 
 /**
@@ -60,6 +70,18 @@ export function ensureCorrectLayoutScale(
 
   const anchor = getGraphRenderAnchor(graph)
 
+  const applySnap = (
+    pos: [number, number],
+    method: 'round' | 'ceil' | 'floor' = 'round'
+  ) => {
+    if (LiteGraph.alwaysSnapToGrid) {
+      const snapTo = graph.getSnapToGridSize?.()
+      if (snapTo) {
+        snapPoint(pos, snapTo, method)
+      }
+    }
+  }
+
   for (const node of graph.nodes) {
     const c = unprojectBounds(
       {
@@ -75,6 +97,9 @@ export function ensureCorrectLayoutScale(
     node.pos[1] = c.y
     node.size[0] = c.width
     node.size[1] = c.height
+
+    applySnap(node.pos)
+    applySnap(node.size, 'ceil')
   }
 
   for (const reroute of graph.reroutes.values()) {
@@ -84,10 +109,11 @@ export function ensureCorrectLayoutScale(
       RENDER_SCALE_FACTOR
     )
     reroute.pos = [p.x, p.y]
+    applySnap(reroute.pos)
   }
 
   for (const group of graph.groups) {
-    unprojectPosSize(group, anchor)
+    unprojectPosSize(group, anchor, graph)
   }
 
   if ('inputNode' in graph && 'outputNode' in graph) {
@@ -96,7 +122,7 @@ export function ensureCorrectLayoutScale(
       graph.outputNode as SubgraphOutputNode
     ]) {
       if (ioNode) {
-        unprojectPosSize(ioNode, anchor)
+        unprojectPosSize(ioNode, anchor, graph)
       }
     }
   }

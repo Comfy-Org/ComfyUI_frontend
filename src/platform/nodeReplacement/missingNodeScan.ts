@@ -2,12 +2,13 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
 function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
@@ -40,5 +41,7 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
 /** Re-scan the graph for missing nodes and update the error store. */
 export function rescanAndSurfaceMissingNodes(rootGraph: LGraph): void {
   const types = scanMissingNodes(rootGraph)
-  useExecutionErrorStore().surfaceMissingNodes(types)
+  if (useMissingNodesErrorStore().surfaceMissingNodes(types)) {
+    useExecutionErrorStore().showErrorOverlay()
+  }
 }

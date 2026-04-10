@@ -1,71 +1,51 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { describe, expect, it } from 'vitest'
 
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
-type ComponentInstance = InstanceType<typeof BaseThumbnail> & {
-  error: boolean
-}
-
-vi.mock('@vueuse/core', () => ({
-  useEventListener: vi.fn()
-}))
-
 describe('BaseThumbnail', () => {
-  const mountThumbnail = (props = {}, slots = {}) => {
-    return mount(BaseThumbnail, {
-      props,
+  function renderThumbnail(
+    props: Partial<ComponentProps<typeof BaseThumbnail>> = {}
+  ) {
+    return render(BaseThumbnail, {
+      props: props as ComponentProps<typeof BaseThumbnail>,
       slots: {
-        default: '<img src="/test.jpg" alt="test" />',
-        ...slots
+        default: '<img src="/test.jpg" alt="test" />'
       }
     })
   }
 
   it('renders slot content', () => {
-    const wrapper = mountThumbnail()
-    expect(wrapper.find('img').exists()).toBe(true)
+    renderThumbnail()
+    expect(screen.getByAltText('test')).toBeTruthy()
   })
 
   it('applies hover zoom with correct style', () => {
-    const wrapper = mountThumbnail({ isHovered: true })
-    const contentDiv = wrapper.find('.transform-gpu')
-    expect(contentDiv.attributes('style')).toContain('transform')
-    expect(contentDiv.attributes('style')).toContain('scale')
+    renderThumbnail({ isHovered: true })
+    const contentDiv = screen.getByTestId('thumbnail-content')
+    expect(contentDiv).toHaveStyle({ transform: 'scale(1.04)' })
   })
 
   it('applies custom hover zoom value', () => {
-    const wrapper = mountThumbnail({ hoverZoom: 10, isHovered: true })
-    const contentDiv = wrapper.find('.transform-gpu')
-    expect(contentDiv.attributes('style')).toContain('scale(1.1)')
+    renderThumbnail({ hoverZoom: 10, isHovered: true })
+    const contentDiv = screen.getByTestId('thumbnail-content')
+    expect(contentDiv).toHaveStyle({ transform: 'scale(1.1)' })
   })
 
   it('does not apply scale when not hovered', () => {
-    const wrapper = mountThumbnail({ isHovered: false })
-    const contentDiv = wrapper.find('.transform-gpu')
-    expect(contentDiv.attributes('style')).toBeUndefined()
+    renderThumbnail({ isHovered: false })
+    const contentDiv = screen.getByTestId('thumbnail-content')
+    expect(contentDiv).not.toHaveAttribute('style')
   })
 
   it('shows error state when image fails to load', async () => {
-    const wrapper = mountThumbnail()
-    const vm = wrapper.vm as ComponentInstance
-
-    // Manually set error since useEventListener is mocked
-    vm.error = true
-    await nextTick()
-
-    expect(
-      wrapper.find('img[src="/assets/images/default-template.png"]').exists()
-    ).toBe(true)
-  })
-
-  it('applies transition classes to content', () => {
-    const wrapper = mountThumbnail()
-    const contentDiv = wrapper.find('.transform-gpu')
-    expect(contentDiv.classes()).toContain('transform-gpu')
-    expect(contentDiv.classes()).toContain('transition-transform')
-    expect(contentDiv.classes()).toContain('duration-1000')
-    expect(contentDiv.classes()).toContain('ease-out')
+    renderThumbnail()
+    const img = screen.getByAltText('test')
+    await fireEvent.error(img)
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      '/assets/images/default-template.png'
+    )
   })
 })

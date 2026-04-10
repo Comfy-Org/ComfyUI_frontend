@@ -1,7 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Upload Widgets', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -19,10 +20,14 @@ test.describe('Vue Upload Widgets', () => {
     ).not.toBeVisible()
 
     await expect
-      .poll(() => comfyPage.page.getByText('Error loading image').count())
+      .poll(() =>
+        comfyPage.page.getByTestId(TestIds.errors.imageLoadError).count()
+      )
       .toBeGreaterThan(0)
     await expect
-      .poll(() => comfyPage.page.getByText('Error loading video').count())
+      .poll(() =>
+        comfyPage.page.getByTestId(TestIds.errors.videoLoadError).count()
+      )
       .toBeGreaterThan(0)
   })
 })

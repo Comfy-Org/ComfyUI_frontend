@@ -3,8 +3,13 @@
     ref="svgRef"
     viewBox="-0.04 -0.04 1.08 1.08"
     preserveAspectRatio="xMidYMid meet"
-    class="aspect-square w-full cursor-crosshair rounded-[5px] bg-node-component-surface"
-    @pointerdown.stop="handleSvgPointerDown"
+    :class="
+      cn(
+        'aspect-square w-full rounded-[5px] bg-node-component-surface',
+        disabled ? 'cursor-default' : 'cursor-crosshair'
+      )
+    "
+    @pointerdown.stop="onSvgPointerDown"
     @contextmenu.prevent.stop
   >
     <line
@@ -56,35 +61,46 @@
       :stroke="curveColor"
       stroke-width="0.008"
       stroke-linecap="round"
+      :opacity="disabled ? 0.5 : 1"
     />
 
-    <circle
-      v-for="(point, i) in modelValue"
-      :key="i"
-      :cx="point[0]"
-      :cy="1 - point[1]"
-      r="0.02"
-      :fill="curveColor"
-      stroke="white"
-      stroke-width="0.004"
-      class="cursor-grab"
-      @pointerdown.stop="startDrag(i, $event)"
-    />
+    <template v-if="!disabled">
+      <circle
+        v-for="(point, i) in modelValue"
+        :key="i"
+        :cx="point[0]"
+        :cy="1 - point[1]"
+        r="0.02"
+        :fill="curveColor"
+        stroke="white"
+        stroke-width="0.004"
+        class="cursor-grab"
+        @pointerdown.stop="startDrag(i, $event)"
+      />
+    </template>
   </svg>
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
+import { cn } from '@/utils/tailwindUtil'
 
-import type { CurvePoint } from './types'
+import type { CurveInterpolation, CurvePoint } from './types'
 
-import { histogramToPath } from './curveUtils'
+import { histogramToPath } from '@/utils/histogramUtil'
 
-const { curveColor = 'white', histogram } = defineProps<{
+const {
+  curveColor = 'white',
+  histogram,
+  disabled = false,
+  interpolation = 'monotone_cubic'
+} = defineProps<{
   curveColor?: string
   histogram?: Uint32Array | null
+  disabled?: boolean
+  interpolation?: CurveInterpolation
 }>()
 
 const modelValue = defineModel<CurvePoint[]>({
@@ -95,8 +111,13 @@ const svgRef = useTemplateRef<SVGSVGElement>('svgRef')
 
 const { curvePath, handleSvgPointerDown, startDrag } = useCurveEditor({
   svgRef,
-  modelValue
+  modelValue,
+  interpolation: toRef(() => interpolation)
 })
+
+function onSvgPointerDown(e: PointerEvent) {
+  if (!disabled) handleSvgPointerDown(e)
+}
 
 const histogramPath = computed(() =>
   histogram ? histogramToPath(histogram) : ''

@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -21,13 +22,14 @@ test.describe('Workflows sidebar', () => {
 
   test('Can create new blank workflow', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
-    expect(await tab.getOpenedWorkflowNames()).toEqual(['*Unsaved Workflow'])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow'])
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    expect(await tab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow',
-      '*Unsaved Workflow (2)'
-    ])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow', '*Unsaved Workflow (2)'])
   })
 
   test('Can show top level saved workflows', async ({ comfyPage }) => {
@@ -38,39 +40,38 @@ test.describe('Workflows sidebar', () => {
 
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
-    expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
-      expect.arrayContaining(['workflow1', 'workflow2'])
-    )
+    await expect
+      .poll(() => tab.getTopLevelSavedWorkflowNames())
+      .toEqual(expect.arrayContaining(['workflow1', 'workflow2']))
   })
 
   test('Can duplicate workflow', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
     await comfyPage.menu.topbar.saveWorkflow('workflow1')
 
-    expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
-      expect.arrayContaining(['workflow1'])
-    )
+    await expect
+      .poll(() => tab.getTopLevelSavedWorkflowNames())
+      .toEqual(expect.arrayContaining(['workflow1']))
 
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    expect(await tab.getOpenedWorkflowNames()).toEqual([
-      'workflow1',
-      '*workflow1 (Copy)'
-    ])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual(['workflow1', '*workflow1 (Copy)'])
 
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    expect(await tab.getOpenedWorkflowNames()).toEqual([
-      'workflow1',
-      '*workflow1 (Copy)',
-      '*workflow1 (Copy) (2)'
-    ])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual(['workflow1', '*workflow1 (Copy)', '*workflow1 (Copy) (2)'])
 
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    expect(await tab.getOpenedWorkflowNames()).toEqual([
-      'workflow1',
-      '*workflow1 (Copy)',
-      '*workflow1 (Copy) (2)',
-      '*workflow1 (Copy) (3)'
-    ])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual([
+        'workflow1',
+        '*workflow1 (Copy)',
+        '*workflow1 (Copy) (2)',
+        '*workflow1 (Copy) (3)'
+      ])
   })
 
   test('Can open workflow after insert', async ({ comfyPage }) => {
@@ -110,10 +111,9 @@ test.describe('Workflows sidebar', () => {
 
     const openedWorkflow = tab.getOpenedItem('foo/bar')
     await tab.renameWorkflow(openedWorkflow, 'foo/baz')
-    expect(await tab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow',
-      'foo/baz'
-    ])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow', 'foo/baz'])
   })
 
   test('Can save workflow as', async ({ comfyPage }) => {
@@ -133,20 +133,28 @@ test.describe('Workflows sidebar', () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow({
-      api: false
-    })
-    expect(exportedWorkflow).toBeDefined()
-    for (const node of exportedWorkflow.nodes) {
-      for (const slot of node.inputs ?? []) {
-        expect(slot.localized_name).toBeUndefined()
-        expect(slot.label).toBeUndefined()
-      }
-      for (const slot of node.outputs ?? []) {
-        expect(slot.localized_name).toBeUndefined()
-        expect(slot.label).toBeUndefined()
-      }
-    }
+    await expect
+      .poll(async () => {
+        const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow({
+          api: false
+        })
+        for (const node of exportedWorkflow.nodes) {
+          for (const slot of node.inputs ?? []) {
+            if (slot.localized_name !== undefined)
+              return `input localized_name found: ${slot.localized_name}`
+            if (slot.label !== undefined)
+              return `input label found: ${slot.label}`
+          }
+          for (const slot of node.outputs ?? []) {
+            if (slot.localized_name !== undefined)
+              return `output localized_name found: ${slot.localized_name}`
+            if (slot.label !== undefined)
+              return `output label found: ${slot.label}`
+          }
+        }
+        return 'ok'
+      })
+      .toBe('ok')
   })
 
   test('Can export same workflow with different locales', async ({
@@ -163,6 +171,9 @@ test.describe('Workflows sidebar', () => {
     expect(download.suggestedFilename()).toBe('exported_default.json')
 
     // Get the exported workflow content
+    await expect
+      .poll(() => comfyPage.workflow.getExportedWorkflow({ api: false }))
+      .toBeDefined()
     const downloadedContent = await comfyPage.workflow.getExportedWorkflow({
       api: false
     })
@@ -170,42 +181,49 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
     await comfyPage.setup()
 
-    const downloadedContentZh = await comfyPage.workflow.getExportedWorkflow({
-      api: false
-    })
-
     // Compare the exported workflow with the original
     delete downloadedContent.id
-    delete downloadedContentZh.id
-    expect(downloadedContent).toBeDefined()
-    expect(downloadedContent).toEqual(downloadedContentZh)
+    await expect
+      .poll(async () => {
+        const downloadedContentZh =
+          await comfyPage.workflow.getExportedWorkflow({ api: false })
+        delete downloadedContentZh.id
+        return downloadedContentZh
+      })
+      .toEqual(downloadedContent)
   })
 
   test('Can save workflow as with same name', async ({ comfyPage }) => {
     await comfyPage.menu.topbar.saveWorkflow('workflow5')
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      'workflow5'
-    ])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['workflow5'])
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow5')
     await comfyPage.confirmDialog.click('overwrite')
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      'workflow5'
-    ])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['workflow5'])
   })
 
   test('Can save temporary workflow with unmodified name', async ({
     comfyPage
   }) => {
-    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+    await expect
+      .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+      .toBe(false)
 
     await comfyPage.menu.topbar.saveWorkflow('Unsaved Workflow')
     // Should not trigger the overwrite dialog
-    expect(
-      await comfyPage.page.locator('.comfy-modal-content:visible').count()
-    ).toBe(0)
+    await expect
+      .poll(() =>
+        comfyPage.page.locator('.comfy-modal-content:visible').count()
+      )
+      .toBe(0)
 
-    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+    await expect
+      .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+      .toBe(false)
   })
 
   test('Can overwrite other workflows with save as', async ({ comfyPage }) => {
@@ -231,26 +249,33 @@ test.describe('Workflows sidebar', () => {
       .toEqual('workflow1')
   })
 
-  test('Does not report warning when switching between opened workflows', async ({
+  test('Reports missing nodes warning again when switching back to workflow', async ({
     comfyPage
   }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-    await comfyPage.page
-      .locator('.p-dialog')
-      .getByRole('button', { name: 'Close' })
-      .click({ force: true })
-    await comfyPage.page.locator('.p-dialog').waitFor({ state: 'hidden' })
+
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+
+    // Dismiss the error overlay
+    await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
+    await expect(errorOverlay).not.toBeVisible()
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
-    // Switch back to the missing_nodes workflow
+    // Switch back to the missing_nodes workflow — overlay should reappear
+    // so users can install missing node packs without a page reload
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
-    await expect(
-      comfyPage.page.locator('.comfy-missing-nodes')
-    ).not.toBeVisible()
+    await expect(errorOverlay).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({
@@ -263,16 +288,20 @@ test.describe('Workflows sidebar', () => {
       '.comfyui-workflows-open .close-workflow-button'
     )
     await closeButton.click()
-    expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow'
-    ])
+    await expect
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames(), {
+        timeout: 5000
+      })
+      .toEqual(['*Unsaved Workflow'])
   })
 
   test('Can close saved workflow with command', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
     await comfyPage.menu.topbar.saveWorkflow('workflow1')
     await comfyPage.command.executeCommand('Workspace.CloseWorkflow')
-    expect(await tab.getOpenedWorkflowNames()).toEqual(['*Unsaved Workflow'])
+    await expect
+      .poll(() => tab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow'])
   })
 
   test('Can delete workflows (confirm disabled)', async ({ comfyPage }) => {
@@ -282,17 +311,17 @@ test.describe('Workflows sidebar', () => {
 
     const filename = 'workflow18'
     await topbar.saveWorkflow(filename)
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual([filename])
 
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
     await comfyPage.contextMenu.clickMenuItem('Delete')
-    await comfyPage.nextFrame()
-
     await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow'
-    ])
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow'])
   })
 
   test('Can delete workflows', async ({ comfyPage }) => {
@@ -300,7 +329,9 @@ test.describe('Workflows sidebar', () => {
 
     const filename = 'workflow18'
     await topbar.saveWorkflow(filename)
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual([filename])
 
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.contextMenu.clickMenuItem('Delete')
@@ -309,9 +340,9 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.confirmDialog.click('delete')
 
     await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow'
-    ])
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toEqual(['*Unsaved Workflow'])
   })
 
   test('Can duplicate workflow from context menu', async ({ comfyPage }) => {
@@ -362,7 +393,7 @@ test.describe('Workflows sidebar', () => {
 
     // Wait for nodes to be inserted after drag-drop with retryable assertion
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 3000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(nodeCount * 2)
   })
 })

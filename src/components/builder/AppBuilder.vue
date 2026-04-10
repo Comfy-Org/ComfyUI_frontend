@@ -25,7 +25,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
-import { promptRenameWidget } from '@/utils/widgetUtil'
+import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
@@ -63,7 +63,7 @@ const inputsWithState = computed(() =>
       widgetName,
       label: widget.label,
       subLabel: node.title,
-      rename: () => promptRenameWidget(widget, node, t)
+      canRename: true
     }
   })
 )
@@ -73,6 +73,16 @@ const outputsWithState = computed<[NodeId, string][]>(() =>
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
 )
+
+function inlineRenameInput(
+  nodeId: NodeId,
+  widgetName: string,
+  newLabel: string
+) {
+  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+  if (!node || !widget) return
+  renameWidget(widget, node, newLabel)
+}
 
 function getHovered(
   e: MouseEvent
@@ -234,7 +244,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               widgetName,
               label,
               subLabel,
-              rename
+              canRename
             } in inputsWithState"
             :key="`${nodeId}: ${widgetName}`"
             :class="
@@ -242,7 +252,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             "
             :title="label ?? widgetName"
             :sub-title="subLabel"
-            :rename
+            :can-rename="canRename"
             :remove="
               () =>
                 remove(
@@ -250,6 +260,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                   ([id, name]) => nodeId == id && widgetName === name
                 )
             "
+            @rename="inlineRenameInput(nodeId, widgetName, $event)"
           />
         </DraggableList>
       </PropertiesAccordionItem>
@@ -303,6 +314,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       </PropertiesAccordionItem>
       <div
         v-if="isSelectOutputsMode && !appModeStore.selectedOutputs.length"
+        data-testid="builder-output-placeholder"
         class="m-4 flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-warning-background bg-warning-background/20 text-center text-sm text-warning-background"
       >
         {{ t('linearMode.builder.outputPlaceholder') }}

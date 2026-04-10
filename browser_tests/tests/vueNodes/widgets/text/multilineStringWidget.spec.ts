@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Multiline String Widget', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -45,5 +45,17 @@ test.describe('Vue Multiline String Widget', () => {
     await getFirstClipNode(comfyPage).click()
 
     await expect(textarea).toHaveValue('Keep me around')
+  })
+  test('should use native context menu when focused', async ({ comfyPage }) => {
+    const textarea = getFirstMultilineStringWidget(comfyPage)
+    const vueContextMenu = comfyPage.page.locator('.p-contextmenu')
+
+    await textarea.focus()
+    await textarea.click({ button: 'right' })
+    await expect(vueContextMenu).not.toBeVisible()
+    await textarea.blur()
+
+    await textarea.click({ button: 'right' })
+    await expect(vueContextMenu).toBeVisible()
   })
 })

@@ -351,11 +351,15 @@ export function createBounds(
  * @returns `true` if snapTo is truthy, otherwise `false`
  * @remarks `NaN` propagates through this function and does not affect return value.
  */
-export function snapPoint(pos: Point | Rect, snapTo: number): boolean {
+export function snapPoint(
+  pos: Point | Rect,
+  snapTo: number,
+  method: 'round' | 'ceil' | 'floor' = 'round'
+): boolean {
   if (!snapTo) return false
 
-  pos[0] = snapTo * Math.round(pos[0] / snapTo)
-  pos[1] = snapTo * Math.round(pos[1] / snapTo)
+  pos[0] = snapTo * Math[method](pos[0] / snapTo)
+  pos[1] = snapTo * Math[method](pos[1] / snapTo)
   return true
 }
 

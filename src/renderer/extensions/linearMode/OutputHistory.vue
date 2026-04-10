@@ -204,11 +204,7 @@ useResizeObserver(outputsRef, () => {
   lastScrollWidth = outputsRef.value?.scrollWidth ?? 0
 })
 watch(
-  [
-    () => store.activeWorkflowInProgressItems.length,
-    () => visibleHistory.value[0]?.id,
-    queueCount
-  ],
+  () => visibleHistory.value[0]?.id,
   () => {
     const el = outputsRef.value
     if (!el || el.scrollLeft === 0) {
@@ -302,59 +298,57 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 })
 </script>
 <template>
-  <div role="group" class="min-w-0 px-4 pb-4">
+  <div
+    role="group"
+    class="flex h-21 min-w-0 items-start justify-center px-4 py-3 pb-4"
+  >
+    <div
+      v-if="queueCount > 0 || hasActiveContent"
+      class="flex h-15 shrink-0 items-start gap-0.5"
+    >
+      <OutputHistoryActiveQueueItem
+        v-if="queueCount > 1 || queueStore.pendingTasks.length"
+        class="mr-3"
+        :queue-count="queueCount"
+      />
+
+      <div
+        v-if="mayBeActiveWorkflowPending"
+        :ref="selectedRef('slot:pending')"
+        v-bind="itemAttrs('slot:pending')"
+        :class="itemClass"
+        @click="store.select('slot:pending')"
+      >
+        <OutputPreviewItem />
+      </div>
+
+      <div
+        v-for="item in store.activeWorkflowInProgressItems"
+        :key="`${item.id}-${item.state}`"
+        :ref="selectedRef(`slot:${item.id}`)"
+        v-bind="itemAttrs(`slot:${item.id}`)"
+        :class="itemClass"
+        @click="store.select(`slot:${item.id}`)"
+      >
+        <OutputPreviewItem
+          v-if="item.state !== 'image' || !item.output"
+          :latent-preview="item.latentPreviewUrl"
+        />
+        <OutputHistoryItem v-else :output="item.output" />
+      </div>
+
+      <div
+        v-if="hasActiveContent && visibleHistory.length > 0"
+        class="mx-4 h-12 shrink-0 border-l border-border-default"
+      />
+    </div>
+
     <article
       ref="outputsRef"
       data-testid="linear-outputs"
-      class="min-w-0 overflow-x-auto overflow-y-clip py-3"
+      class="min-w-0 overflow-x-auto overflow-y-clip"
     >
-      <div class="mx-auto flex h-21 w-fit items-start gap-0.5">
-        <div
-          v-if="queueCount > 0 || hasActiveContent"
-          :class="
-            cn(
-              'sticky left-0 z-10 flex shrink-0 items-start gap-0.5',
-              'md:bg-comfy-menu-secondary-bg bg-comfy-menu-bg'
-            )
-          "
-        >
-          <OutputHistoryActiveQueueItem
-            v-if="queueCount > 1"
-            class="mr-3"
-            :queue-count="queueCount"
-          />
-
-          <div
-            v-if="mayBeActiveWorkflowPending"
-            :ref="selectedRef('slot:pending')"
-            v-bind="itemAttrs('slot:pending')"
-            :class="itemClass"
-            @click="store.select('slot:pending')"
-          >
-            <OutputPreviewItem />
-          </div>
-
-          <div
-            v-for="item in store.activeWorkflowInProgressItems"
-            :key="`${item.id}-${item.state}`"
-            :ref="selectedRef(`slot:${item.id}`)"
-            v-bind="itemAttrs(`slot:${item.id}`)"
-            :class="itemClass"
-            @click="store.select(`slot:${item.id}`)"
-          >
-            <OutputPreviewItem
-              v-if="item.state !== 'image' || !item.output"
-              :latent-preview="item.latentPreviewUrl"
-            />
-            <OutputHistoryItem v-else :output="item.output" />
-          </div>
-
-          <div
-            v-if="hasActiveContent && visibleHistory.length > 0"
-            class="mx-4 h-12 shrink-0 border-l border-border-default"
-          />
-        </div>
-
+      <div class="flex h-15 w-fit items-start gap-0.5">
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
           <div
             v-if="aIdx > 0"
