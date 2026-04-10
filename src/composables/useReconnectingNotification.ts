@@ -36,7 +36,6 @@ export function useReconnectingNotification() {
 
   function onReconnected() {
     stop()
-    if (settingStore.get('Comfy.Toast.DisableReconnectingToast')) return
 
     if (reconnectingToastShown.value) {
       toast.remove(reconnectingMessage)
