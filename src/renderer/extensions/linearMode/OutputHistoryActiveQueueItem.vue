@@ -48,6 +48,7 @@ function clearQueue(close: () => void) {
           :disabled="queueCount === 0"
           variant="textonly"
           class="px-4 text-sm text-destructive-background"
+          data-testid="linear-queue-clear-button"
           @click="clearQueue(close)"
         >
           <i class="icon-[lucide--list-x]" />

@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
+import { makeResultItem } from '@/renderer/extensions/linearMode/__fixtures__/testResultItemFactory'
 import {
   buildTimeline,
   useOutputHistory
@@ -98,8 +99,27 @@ vi.mock('@/stores/queueStore', async (importOriginal) => {
   }
 })
 
-const { jobDetailResults } = vi.hoisted(() => ({
-  jobDetailResults: new Map<string, unknown>()
+const { jobDetailResults, commandExecuteFn, apiDeleteItemFn } = vi.hoisted(
+  () => ({
+    jobDetailResults: new Map<string, unknown>(),
+    commandExecuteFn: vi.fn(),
+    apiDeleteItemFn: vi.fn().mockResolvedValue(undefined)
+  })
+)
+
+vi.mock('@/stores/commandStore', () => ({
+  useCommandStore: () => ({
+    execute: commandExecuteFn
+  })
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: (path: string) => path,
+    deleteItem: apiDeleteItemFn,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
+  }
 }))
 
 vi.mock('@/services/jobOutputCache', () => ({
@@ -146,16 +166,6 @@ function makeAsset(
   }
 }
 
-function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
-  return new ResultItemImpl({
-    filename,
-    subfolder: '',
-    type: 'output',
-    nodeId,
-    mediaType: 'images'
-  })
-}
-
 describe(useOutputHistory, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -172,8 +182,8 @@ describe(useOutputHistory, () => {
     pendingTasksRef.value = []
     resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
-    selectAsLatestFn.mockReset()
-    resolveIfReadyFn.mockReset()
+    vi.resetAllMocks()
+    apiDeleteItemFn.mockResolvedValue(undefined)
   })
 
   describe('sessionMedia filtering', () => {
@@ -231,7 +241,10 @@ describe(useOutputHistory, () => {
 
     it('returns outputs from metadata allOutputs when count matches', () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png'), makeResult('b.png')]
+      const results = [
+        makeResultItem({ filename: 'a.png' }),
+        makeResultItem({ filename: 'b.png' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -248,9 +261,9 @@ describe(useOutputHistory, () => {
 
     it('filters outputs to selected output nodes only', () => {
       const results = [
-        makeResult('a.png', '1'),
-        makeResult('b.png', '2'),
-        makeResult('c.png', '3')
+        makeResultItem({ filename: 'a.png', nodeId: '1' }),
+        makeResultItem({ filename: 'b.png', nodeId: '2' }),
+        makeResultItem({ filename: 'c.png', nodeId: '3' })
       ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -268,7 +281,10 @@ describe(useOutputHistory, () => {
     })
 
     it('returns empty when no output nodes are selected', () => {
-      const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
+      const results = [
+        makeResultItem({ filename: 'a.png', nodeId: '1' }),
+        makeResultItem({ filename: 'b.png', nodeId: '2' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -281,7 +297,10 @@ describe(useOutputHistory, () => {
     })
 
     it('returns consistent filtered outputs across repeated calls', () => {
-      const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
+      const results = [
+        makeResultItem({ filename: 'a.png', nodeId: '1' }),
+        makeResultItem({ filename: 'b.png', nodeId: '2' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -307,13 +326,13 @@ describe(useOutputHistory, () => {
           id: 'item-1',
           jobId: 'job-1',
           state: 'image',
-          output: makeResult('a.png')
+          output: makeResultItem({ filename: 'a.png' })
         },
         {
           id: 'item-2',
           jobId: 'job-1',
           state: 'image',
-          output: makeResult('b.png')
+          output: makeResultItem({ filename: 'b.png' })
         }
       ]
       const asset = makeAsset('a1', 'job-1')
@@ -357,7 +376,7 @@ describe(useOutputHistory, () => {
   describe('watchEffect resolve loop', () => {
     it('resolves pending jobs when history outputs load', async () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png')]
+      const results = [makeResultItem({ filename: 'a.png' })]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 1
@@ -376,7 +395,7 @@ describe(useOutputHistory, () => {
 
     it('does not select first history when a selection exists', async () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png')]
+      const results = [makeResultItem({ filename: 'a.png' })]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 1
@@ -405,7 +424,10 @@ describe(useOutputHistory, () => {
 
     it('selects non-asset output from resolved job instead of first history', async () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png'), makeResult('b.png')]
+      const results = [
+        makeResultItem({ filename: 'a.png' }),
+        makeResultItem({ filename: 'b.png' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -420,7 +442,7 @@ describe(useOutputHistory, () => {
         {
           id: 'compare-1',
           jobId: 'job-1',
-          output: makeResult('compare.png', '2')
+          output: makeResultItem({ filename: 'compare.png', nodeId: '2' })
         }
       ]
 
@@ -501,6 +523,65 @@ describe(useOutputHistory, () => {
       expect(mayBeActiveWorkflowPending.value).toBe(false)
     })
   })
+
+  describe('cancelActiveWorkflowJobs', () => {
+    it('interrupts running job when it matches active workflow', async () => {
+      activeWorkflowPathRef.value = 'workflows/test.json'
+      runningTasksRef.value = [{ jobId: 'job-1' }]
+      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+
+      const { cancelActiveWorkflowJobs } = useOutputHistory()
+      await cancelActiveWorkflowJobs()
+
+      expect(commandExecuteFn).toHaveBeenCalledWith('Comfy.Interrupt')
+      expect(apiDeleteItemFn).not.toHaveBeenCalled()
+    })
+
+    it('deletes only the first matching pending job when no running job matches', async () => {
+      activeWorkflowPathRef.value = 'workflows/test.json'
+      runningTasksRef.value = []
+      pendingTasksRef.value = [{ jobId: 'job-2' }, { jobId: 'job-3' }]
+      jobIdToPathRef.value = new Map([
+        ['job-2', 'workflows/test.json'],
+        ['job-3', 'workflows/test.json']
+      ])
+
+      const { cancelActiveWorkflowJobs } = useOutputHistory()
+      await cancelActiveWorkflowJobs()
+
+      expect(commandExecuteFn).not.toHaveBeenCalled()
+      expect(apiDeleteItemFn).toHaveBeenCalledOnce()
+      expect(apiDeleteItemFn).toHaveBeenCalledWith('queue', 'job-2')
+    })
+
+    it('falls through to pending when running job belongs to a different workflow', async () => {
+      activeWorkflowPathRef.value = 'workflows/test.json'
+      runningTasksRef.value = [{ jobId: 'job-1' }]
+      pendingTasksRef.value = [{ jobId: 'job-2' }]
+      jobIdToPathRef.value = new Map([
+        ['job-1', 'workflows/other.json'],
+        ['job-2', 'workflows/test.json']
+      ])
+
+      const { cancelActiveWorkflowJobs } = useOutputHistory()
+      await cancelActiveWorkflowJobs()
+
+      expect(commandExecuteFn).not.toHaveBeenCalled()
+      expect(apiDeleteItemFn).toHaveBeenCalledOnce()
+      expect(apiDeleteItemFn).toHaveBeenCalledWith('queue', 'job-2')
+    })
+
+    it('does nothing when no workflow path is set', async () => {
+      activeWorkflowPathRef.value = ''
+      runningTasksRef.value = [{ jobId: 'job-1' }]
+
+      const { cancelActiveWorkflowJobs } = useOutputHistory()
+      await cancelActiveWorkflowJobs()
+
+      expect(commandExecuteFn).not.toHaveBeenCalled()
+      expect(apiDeleteItemFn).not.toHaveBeenCalled()
+    })
+  })
 })
 
 describe(buildTimeline, () => {
@@ -515,13 +596,7 @@ describe(buildTimeline, () => {
   }
 
   function makeOutput(filename: string): ResultItemImpl {
-    return new ResultItemImpl({
-      filename,
-      subfolder: '',
-      type: 'output',
-      nodeId: '1',
-      mediaType: 'images'
-    })
+    return makeResultItem({ filename })
   }
 
   it('returns empty for no history and no non-asset outputs', () => {
