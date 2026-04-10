@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import type { Locale } from '../i18n/translations'
+import { localePath, t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const mobileMenuOpen = ref(false)
 const currentPath = ref('')
 
-const navLinks = [
-  { label: 'ENTERPRISE', href: '/enterprise' },
-  { label: 'GALLERY', href: '/gallery' },
-  { label: 'ABOUT', href: '/about' },
-  { label: 'CAREERS', href: '/careers' }
-]
+const navLinks = computed(() => [
+  {
+    label: t('nav.enterprise', locale),
+    href: localePath('/enterprise', locale)
+  },
+  { label: t('nav.gallery', locale), href: localePath('/gallery', locale) },
+  { label: t('nav.about', locale), href: localePath('/about', locale) },
+  { label: t('nav.careers', locale), href: localePath('/careers', locale) }
+])
 
 const ctaLinks = [
   {
@@ -49,14 +57,19 @@ onUnmounted(() => {
 
 <template>
   <nav
-    class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md"
-    aria-label="Main navigation"
+    class="fixed inset-x-0 top-0 z-50 bg-black/80 backdrop-blur-md"
+    :aria-label="t('nav.ariaLabel', locale)"
   >
     <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <!-- Logo -->
-      <a href="/" class="text-2xl font-bold italic text-brand-yellow">
+      <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
+      <a
+        :href="localePath('/', locale)"
+        class="text-2xl font-bold text-brand-yellow italic"
+      >
         Comfy
       </a>
+      <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
 
       <!-- Desktop nav links -->
       <div class="hidden items-center gap-8 md:flex">
@@ -77,8 +90,8 @@ onUnmounted(() => {
             :href="cta.href"
             :class="
               cta.primary
-                ? 'bg-brand-yellow text-black hover:opacity-90 transition-opacity'
-                : 'border border-brand-yellow text-brand-yellow hover:bg-brand-yellow hover:text-black transition-colors'
+                ? 'bg-brand-yellow text-black transition-opacity hover:opacity-90'
+                : 'border border-brand-yellow text-brand-yellow transition-colors hover:bg-brand-yellow hover:text-black'
             "
             class="rounded-full px-5 py-2 text-sm font-semibold"
           >
@@ -90,7 +103,7 @@ onUnmounted(() => {
       <!-- Mobile hamburger -->
       <button
         class="flex flex-col gap-1.5 md:hidden"
-        aria-label="Toggle menu"
+        :aria-label="t('nav.toggleMenu', locale)"
         aria-controls="site-mobile-menu"
         :aria-expanded="mobileMenuOpen"
         @click="mobileMenuOpen = !mobileMenuOpen"
@@ -135,8 +148,8 @@ onUnmounted(() => {
             :href="cta.href"
             :class="
               cta.primary
-                ? 'bg-brand-yellow text-black hover:opacity-90 transition-opacity'
-                : 'border border-brand-yellow text-brand-yellow hover:bg-brand-yellow hover:text-black transition-colors'
+                ? 'bg-brand-yellow text-black transition-opacity hover:opacity-90'
+                : 'border border-brand-yellow text-brand-yellow transition-colors hover:bg-brand-yellow hover:text-black'
             "
             class="rounded-full px-5 py-2 text-center text-sm font-semibold"
           >

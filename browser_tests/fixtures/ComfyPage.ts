@@ -2,7 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
-import { NodeBadgeMode } from '../../src/types/nodeSource'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
 import { ComfyTemplates } from '@e2e/helpers/templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -34,6 +34,7 @@ import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -45,7 +46,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
 
@@ -181,6 +182,7 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
+  public readonly cloudAuth: CloudAuthHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -232,6 +234,7 @@ export class ComfyPage {
     this.assets = new AssetsHelper(page)
     this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
+    this.cloudAuth = new CloudAuthHelper(page)
   }
 
   get visibleToasts() {
@@ -389,9 +392,8 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
   }
 
   async setFocusMode(focusMode: boolean) {
@@ -442,6 +444,10 @@ export const comfyPageFixture = base.extend<{
       })
     } catch (e) {
       console.error(e)
+    }
+
+    if (testInfo.tags.includes('@cloud')) {
+      await comfyPage.cloudAuth.mockAuth()
     }
 
     await comfyPage.setup()

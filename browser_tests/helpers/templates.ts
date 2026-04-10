@@ -5,8 +5,8 @@ import path from 'path'
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '../../src/platform/workflow/templates/types/template'
-import { TestIds } from '../fixtures/selectors'
+} from '@/platform/workflow/templates/types/template'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class ComfyTemplates {
   readonly content: Locator

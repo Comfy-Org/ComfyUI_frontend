@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -77,31 +77,31 @@ describe('DesktopCloudNotificationController', () => {
     const loadSettings = createDeferred()
     settingStore.load.mockImplementation(() => loadSettings.promise)
 
-    const wrapper = mount(DesktopCloudNotificationController)
+    const { unmount } = render(DesktopCloudNotificationController)
     await nextTick()
 
     settingState.shown = true
     loadSettings.resolve()
 
-    await flushPromises()
+    await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('does not schedule or show the notification after unmounting before settings load resolves', async () => {
     const loadSettings = createDeferred()
     settingStore.load.mockImplementation(() => loadSettings.promise)
 
-    const wrapper = mount(DesktopCloudNotificationController)
+    const { unmount } = render(DesktopCloudNotificationController)
     await nextTick()
 
-    wrapper.unmount()
+    unmount()
     loadSettings.resolve()
 
-    await flushPromises()
+    await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(settingStore.set).not.toHaveBeenCalled()
@@ -114,9 +114,9 @@ describe('DesktopCloudNotificationController', () => {
       () => dialogOpen.promise
     )
 
-    const wrapper = mount(DesktopCloudNotificationController)
+    const { unmount } = render(DesktopCloudNotificationController)
 
-    await flushPromises()
+    await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(settingStore.set).toHaveBeenCalledWith(
@@ -128,8 +128,8 @@ describe('DesktopCloudNotificationController', () => {
     )
 
     dialogOpen.resolve()
-    await flushPromises()
+    await vi.advanceTimersByTimeAsync(0)
 
-    wrapper.unmount()
+    unmount()
   })
 })
