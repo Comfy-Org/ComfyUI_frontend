@@ -281,70 +281,82 @@ export class ModelLibrarySidebarTab extends SidebarTab {
 }
 
 export class AssetsSidebarTab extends SidebarTab {
+  public readonly root: Locator
+  public readonly generatedTab: Locator
+  public readonly importedTab: Locator
+  public readonly emptyStateMessage: Locator
+  public readonly searchInput: Locator
+  public readonly settingsButton: Locator
+  public readonly viewSettingsButton: Locator
+  public readonly listViewOption: Locator
+  public readonly listViewButton: Locator
+  public readonly gridViewOption: Locator
+  public readonly gridViewButton: Locator
+  public readonly backButton: Locator
+  public readonly copyJobIdButton: Locator
+  public readonly previewDialog: Locator
+  public readonly sortNewestFirst: Locator
+  public readonly sortOldestFirst: Locator
+  public readonly assetCards: Locator
+  public readonly selectedCards: Locator
+  public readonly listViewItems: Locator
+  public readonly selectionFooter: Locator
+  public readonly selectionCountButton: Locator
+  public readonly deselectAllButton: Locator
+  public readonly deleteSelectedButton: Locator
+  public readonly deleteSelectionButton: Locator
+  public readonly downloadSelectedButton: Locator
+  public readonly downloadSelectionButton: Locator
+  public readonly backToAssetsButton: Locator
+  public readonly skeletonLoaders: Locator
+
   constructor(public override readonly page: Page) {
     super(page, 'assets')
-  }
-
-  get root() {
-    return this.page.locator('.sidebar-content-container')
-  }
-
-  // --- Tab navigation ---
-
-  get generatedTab() {
-    return this.page.getByRole('tab', { name: 'Generated' })
-  }
-
-  get importedTab() {
-    return this.page.getByRole('tab', { name: 'Imported' })
-  }
-
-  // --- Empty state ---
-
-  get emptyStateMessage() {
-    return this.page.getByText(
+    this.root = this.page.locator('.sidebar-content-container')
+    this.generatedTab = this.page.getByRole('tab', { name: 'Generated' })
+    this.importedTab = this.page.getByRole('tab', { name: 'Imported' })
+    this.emptyStateMessage = this.page.getByText(
       'Upload files or generate content to see them here'
     )
-  }
-
-  get searchInput() {
-    return this.root.getByPlaceholder(/Search Assets/i)
-  }
-
-  get settingsButton() {
-    return this.root.getByLabel('View settings')
-  }
-
-  get viewSettingsButton() {
-    return this.settingsButton
-  }
-
-  get listViewOption() {
-    return this.page.getByText('List view')
-  }
-
-  get listViewButton() {
-    return this.listViewOption
-  }
-
-  get gridViewOption() {
-    return this.page.getByText('Grid view')
-  }
-
-  get gridViewButton() {
-    return this.gridViewOption
-  }
-
-  get backButton() {
-    return this.page.getByRole('button', { name: 'Back to all assets' })
-  }
-
-  get copyJobIdButton() {
-    return this.page.getByRole('button', { name: 'Copy job ID' })
-  }
-
-  get previewDialog() {
-    return this.page.getByRole('dialog', { name: 'Gallery' })
+    this.searchInput = this.root.getByPlaceholder(/Search Assets/i)
+    this.settingsButton = this.root.getByLabel('View settings')
+    this.viewSettingsButton = this.settingsButton
+    this.listViewOption = this.page.getByText('List view')
+    this.listViewButton = this.listViewOption
+    this.gridViewOption = this.page.getByText('Grid view')
+    this.gridViewButton = this.gridViewOption
+    this.backButton = this.page.getByRole('button', {
+      name: 'Back to all assets'
+    })
+    this.copyJobIdButton = this.page.getByRole('button', {
+      name: 'Copy job ID'
+    })
+    this.previewDialog = this.page.getByRole('dialog', { name: 'Gallery' })
+    this.sortNewestFirst = this.page.getByText('Newest first')
+    this.sortOldestFirst = this.page.getByText('Oldest first')
+    this.assetCards = this.root.locator('[role="button"][data-selected]')
+    this.selectedCards = this.root.locator('[data-selected="true"]')
+    this.listViewItems = this.root.locator('[role="button"][tabindex="0"]')
+    this.selectionFooter = this.root.locator('..').getByRole('toolbar', {
+      name: 'Selected asset actions'
+    })
+    this.selectionCountButton = this.root
+      .getByRole('button', { name: /Assets Selected:/ })
+      .or(this.page.getByText(/Assets Selected: \d+/))
+      .first()
+    this.deselectAllButton = this.page.getByText('Deselect all')
+    this.deleteSelectedButton = this.page
+      .getByTestId('assets-delete-selected')
+      .or(this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
+      .first()
+    this.deleteSelectionButton = this.deleteSelectedButton
+    this.downloadSelectedButton = this.page
+      .getByTestId('assets-download-selected')
+      .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
+      .first()
+    this.downloadSelectionButton = this.downloadSelectedButton
+    this.backToAssetsButton = this.backButton
+    this.skeletonLoaders = this.root.locator('.animate-pulse')
   }
 
   emptyStateTitle(title: string) {
@@ -359,75 +371,8 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.getAssetCardByName(name)
   }
 
-  // --- Sort options (cloud-only, shown inside settings popover) ---
-
-  get sortNewestFirst() {
-    return this.page.getByText('Newest first')
-  }
-
-  get sortOldestFirst() {
-    return this.page.getByText('Oldest first')
-  }
-
-  // --- Asset cards ---
-
-  get assetCards() {
-    return this.root.locator('[role="button"][data-selected]')
-  }
-
   getAssetCardByName(name: string) {
     return this.assetCards.filter({ hasText: name }).first()
-  }
-
-  get selectedCards() {
-    return this.root.locator('[data-selected="true"]')
-  }
-
-  // --- List view items ---
-
-  get listViewItems() {
-    return this.root.locator('[role="button"][tabindex="0"]')
-  }
-
-  // --- Selection footer ---
-
-  get selectionFooter() {
-    return this.root.locator('..').getByRole('toolbar', {
-      name: 'Selected asset actions'
-    })
-  }
-
-  get selectionCountButton() {
-    return this.root
-      .getByRole('button', { name: /Assets Selected:/ })
-      .or(this.page.getByText(/Assets Selected: \d+/))
-      .first()
-  }
-
-  get deselectAllButton() {
-    return this.page.getByText('Deselect all')
-  }
-
-  get deleteSelectedButton() {
-    return this.page
-      .getByTestId('assets-delete-selected')
-      .or(this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
-      .first()
-  }
-
-  get deleteSelectionButton() {
-    return this.deleteSelectedButton
-  }
-
-  get downloadSelectedButton() {
-    return this.page
-      .getByTestId('assets-download-selected')
-      .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
-      .first()
-  }
-
-  get downloadSelectionButton() {
-    return this.downloadSelectedButton
   }
 
   // --- Context menu ---
@@ -438,18 +383,6 @@ export class AssetsSidebarTab extends SidebarTab {
 
   contextMenuAction(label: string) {
     return this.contextMenuItem(label)
-  }
-
-  // --- Folder view ---
-
-  get backToAssetsButton() {
-    return this.backButton
-  }
-
-  // --- Loading ---
-
-  get skeletonLoaders() {
-    return this.root.locator('.animate-pulse')
   }
 
   async showGenerated() {
