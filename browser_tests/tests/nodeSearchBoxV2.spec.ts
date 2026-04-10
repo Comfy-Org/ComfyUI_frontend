@@ -31,8 +31,9 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await comfyPage.page.keyboard.press('Enter')
     await expect(searchBoxV2.input).not.toBeVisible()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount + 1)
   })
 
   test('Can add first default result with Enter', async ({ comfyPage }) => {
@@ -49,8 +50,9 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await comfyPage.page.keyboard.press('Enter')
     await expect(searchBoxV2.input).not.toBeVisible()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount + 1)
   })
 
   test.describe('Category navigation', () => {
@@ -81,8 +83,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await searchBoxV2.categoryButton('sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const count = await searchBoxV2.results.count()
-      expect(count).toBeGreaterThan(0)
+      await expect.poll(() => searchBoxV2.results.count()).toBeGreaterThan(0)
     })
   })
 
@@ -142,8 +143,9 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await comfyPage.page.keyboard.press('Enter')
       await expect(searchBoxV2.input).not.toBeVisible()
 
-      const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(newCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
   })
 })

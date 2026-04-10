@@ -39,18 +39,21 @@ test.describe('Painter', () => {
       const canvas = node.locator('.widget-expands canvas')
       await expect(canvas).toBeVisible()
 
-      const isEmptyBefore = await canvas.evaluate((el) => {
-        const ctx = (el as HTMLCanvasElement).getContext('2d')
-        if (!ctx) return true
-        const data = ctx.getImageData(
-          0,
-          0,
-          (el as HTMLCanvasElement).width,
-          (el as HTMLCanvasElement).height
+      await expect
+        .poll(async () =>
+          canvas.evaluate((el) => {
+            const ctx = (el as HTMLCanvasElement).getContext('2d')
+            if (!ctx) return true
+            const data = ctx.getImageData(
+              0,
+              0,
+              (el as HTMLCanvasElement).width,
+              (el as HTMLCanvasElement).height
+            )
+            return data.data.every((v, i) => (i % 4 === 3 ? v === 0 : true))
+          })
         )
-        return data.data.every((v, i) => (i % 4 === 3 ? v === 0 : true))
-      })
-      expect(isEmptyBefore).toBe(true)
+        .toBe(true)
 
       const box = await canvas.boundingBox()
       if (!box) throw new Error('Canvas bounding box not found')
@@ -68,23 +71,24 @@ test.describe('Painter', () => {
       await comfyPage.page.mouse.up()
       await comfyPage.nextFrame()
 
-      await expect(async () => {
-        const hasContent = await canvas.evaluate((el) => {
-          const ctx = (el as HTMLCanvasElement).getContext('2d')
-          if (!ctx) return false
-          const data = ctx.getImageData(
-            0,
-            0,
-            (el as HTMLCanvasElement).width,
-            (el as HTMLCanvasElement).height
-          )
-          for (let i = 3; i < data.data.length; i += 4) {
-            if (data.data[i] > 0) return true
-          }
-          return false
-        })
-        expect(hasContent).toBe(true)
-      }).toPass()
+      await expect
+        .poll(async () =>
+          canvas.evaluate((el) => {
+            const ctx = (el as HTMLCanvasElement).getContext('2d')
+            if (!ctx) return false
+            const data = ctx.getImageData(
+              0,
+              0,
+              (el as HTMLCanvasElement).width,
+              (el as HTMLCanvasElement).height
+            )
+            for (let i = 3; i < data.data.length; i += 4) {
+              if (data.data[i] > 0) return true
+            }
+            return false
+          })
+        )
+        .toBe(true)
 
       await expect(node).toHaveScreenshot('painter-after-stroke.png')
     }

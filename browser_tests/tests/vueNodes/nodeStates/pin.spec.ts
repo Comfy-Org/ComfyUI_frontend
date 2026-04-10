@@ -61,10 +61,9 @@ test.describe('Vue Node Pin', () => {
     )
 
     // Verify the node is not dragged (same position before and after click-and-drag)
-    const headerPosAfterDrag = await checkpointNodeHeader.boundingBox()
-    if (!headerPosAfterDrag)
-      throw new Error('Failed to get header position after drag')
-    expect(headerPosAfterDrag).toEqual(headerPos)
+    await expect
+      .poll(async () => await checkpointNodeHeader.boundingBox())
+      .toEqual(headerPos)
 
     // Unpin the node with the hotkey
     await checkpointNodeHeader.click()
@@ -77,9 +76,8 @@ test.describe('Vue Node Pin', () => {
     )
 
     // Verify the node is dragged
-    const headerPosAfterDrag2 = await checkpointNodeHeader.boundingBox()
-    if (!headerPosAfterDrag2)
-      throw new Error('Failed to get header position after drag')
-    expect(headerPosAfterDrag2).not.toEqual(headerPos)
+    await expect
+      .poll(async () => await checkpointNodeHeader.boundingBox())
+      .not.toEqual(headerPos)
   })
 })

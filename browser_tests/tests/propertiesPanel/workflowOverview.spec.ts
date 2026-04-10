@@ -30,8 +30,7 @@ test.describe('Properties panel - Workflow Overview', () => {
     comfyPage
   }) => {
     await panel.switchToTab('Nodes')
-    const nodeCount = await comfyPage.nodeOps.getNodeCount()
-    expect(nodeCount).toBeGreaterThan(0)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBeGreaterThan(0)
     await expect(panel.contentArea.locator('text=KSampler')).toBeVisible()
   })
 

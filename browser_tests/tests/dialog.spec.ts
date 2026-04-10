@@ -17,10 +17,9 @@ test.describe('Settings', () => {
     await expect(settingsDialog).toBeVisible()
     const contentArea = settingsDialog.locator('main')
     await expect(contentArea).toBeVisible()
-    const isUsableHeight = await contentArea.evaluate(
-      (el) => el.clientHeight > 30
-    )
-    expect(isUsableHeight).toBeTruthy()
+    await expect
+      .poll(() => contentArea.evaluate((el) => el.clientHeight))
+      .toBeGreaterThan(30)
   })
 
   test('Can open settings with hotkey', async ({ comfyPage }) => {
@@ -39,27 +38,27 @@ test.describe('Settings', () => {
     const maxSpeed = 2.5
     await comfyPage.settings.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
     await test.step('Setting should persist', async () => {
-      expect(await comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
-        maxSpeed
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed'))
+        .toBe(maxSpeed)
     })
   })
 
   test('Should persist keybinding setting', async ({ comfyPage }) => {
     // Open the settings dialog
     await comfyPage.page.keyboard.press('Control+,')
-    await comfyPage.page.waitForSelector('[data-testid="settings-dialog"]')
 
     // Open the keybinding tab
     const settingsDialog = comfyPage.page.locator(
       '[data-testid="settings-dialog"]'
     )
+    await expect(settingsDialog).toBeVisible()
     await settingsDialog
       .locator('nav [role="button"]', { hasText: 'Keybinding' })
       .click()
-    await comfyPage.page.waitForSelector(
-      '[placeholder="Search Keybindings..."]'
-    )
+    await expect(
+      comfyPage.page.getByPlaceholder('Search Keybindings...')
+    ).toBeVisible()
 
     // Focus the 'New Blank Workflow' row
     const newBlankWorkflowRow = comfyPage.page.locator('tr', {
@@ -156,6 +155,6 @@ test.describe('Signin dialog', () => {
     await input.press('Control+v')
     await expect(input).toHaveValue('test_password')
 
-    expect(await comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
   })
 })

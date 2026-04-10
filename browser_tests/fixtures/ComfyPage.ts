@@ -385,9 +385,8 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
   }
 
   async setFocusMode(focusMode: boolean) {

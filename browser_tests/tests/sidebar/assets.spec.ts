@@ -147,8 +147,7 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.open()
 
     await tab.waitForAssets()
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
 
   test('Displays imported files when switching to Imported tab', async ({
@@ -159,9 +158,6 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.switchToImported()
 
     await expect(tab.assetCards.first()).toBeVisible({ timeout: 5000 })
-
-    const count = await tab.assetCards.count()
-    expect(count).toBeGreaterThanOrEqual(1)
   })
   test('Displays svg outputs', async ({ comfyPage, assetScenario }) => {
     await assetScenario.seedGeneratedHistory([
@@ -247,10 +243,9 @@ test.describe('Assets sidebar - search', () => {
 
     await tab.searchInput.fill('landscape')
 
-    await expect(async () => {
-      const filteredCount = await tab.assetCards.count()
-      expect(filteredCount).toBeLessThan(initialCount)
-    }).toPass({ timeout: 5000 })
+    await expect
+      .poll(() => tab.assetCards.count(), { timeout: 5000 })
+      .toBeLessThan(initialCount)
   })
 
   test('Clearing search restores all assets', async ({ comfyPage }) => {
@@ -261,9 +256,7 @@ test.describe('Assets sidebar - search', () => {
     const initialCount = await tab.assetCards.count()
 
     await tab.searchInput.fill('landscape')
-    await expect(async () => {
-      expect(await tab.assetCards.count()).toBeLessThan(initialCount)
-    }).toPass({ timeout: 5000 })
+    await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
 
     await tab.searchInput.fill('')
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
@@ -302,8 +295,7 @@ test.describe('Assets sidebar - selection', () => {
     await tab.waitForAssets()
 
     const cards = tab.assetCards
-    const cardCount = await cards.count()
-    expect(cardCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
     await cards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
@@ -459,8 +451,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.waitForAssets()
 
     const cards = tab.assetCards
-    const cardCount = await cards.count()
-    expect(cardCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
     await tab.dismissToasts()
 
@@ -521,15 +512,16 @@ test.describe('Assets sidebar - bulk actions', () => {
     await tab.waitForAssets()
 
     const cards = tab.assetCards
-    const cardCount = await cards.count()
-    expect(cardCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3)
 
-    await cards.first().click()
-    await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
+    // Cards are sorted newest-first: gamma (idx 0), beta (1), alpha (2)
+    await cards.nth(1).click()
+    await comfyPage.page.keyboard.down('ControlOrMeta')
+    await cards.nth(2).click()
+    await comfyPage.page.keyboard.up('ControlOrMeta')
 
     await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
-    const text = await tab.selectionCountButton.textContent()
-    expect(text).toMatch(/Assets Selected: \d+/)
+    await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
   })
 })
 
