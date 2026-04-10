@@ -47,18 +47,32 @@ const contentBounds = useContentBounds()
 const allNodes = layoutStore.getAllNodes()
 const storeVersion = layoutStore.getVersion()
 let lastTrackedVersion = -1
+let sampleNodeId: string | null = null
 
 /**
  * When the layout store version changes, expand the tracked content
  * bounds to include any nodes that moved beyond the current area.
- * Uses grow-only strategy: bounds expand but never shrink.
+ *
+ * Detects workflow switches by checking whether a previously tracked
+ * node still exists. When the entire node set is replaced (e.g. on
+ * workflow load), resets bounds so they don't accumulate across
+ * unrelated workflows.
  */
 function updateContentBounds() {
   const currentVersion = storeVersion.value
   if (currentVersion === lastTrackedVersion) return
   lastTrackedVersion = currentVersion
 
-  for (const [, layout] of allNodes.value) {
+  const nodes = allNodes.value
+
+  // Detect workflow switch: if the sampled node is gone, the node set
+  // was replaced wholesale — reset bounds to avoid unbounded growth.
+  if (sampleNodeId !== null && nodes.size > 0 && !nodes.has(sampleNodeId)) {
+    contentBounds.reset()
+  }
+  sampleNodeId = nodes.size > 0 ? nodes.keys().next().value ?? null : null
+
+  for (const [, layout] of nodes) {
     contentBounds.expandToInclude(layout.bounds)
   }
 }

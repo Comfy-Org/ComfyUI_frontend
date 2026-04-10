@@ -35,15 +35,13 @@
  *
  * @example
  * ```typescript
- * const { camera, transformStyle, canvasToScreen } = useTransformState()
+ * const { camera, syncWithCanvas, canvasToScreen } = useTransformState()
  *
- * // In template
- * <div :style="transformStyle">
- *   <NodeComponent
- *     v-for="node in nodes"
- *     :style="{ left: node.x + 'px', top: node.y + 'px' }"
- *   />
- * </div>
+ * // Sync camera from LiteGraph each frame (via RAF)
+ * syncWithCanvas(canvas)
+ *
+ * // Apply transform via direct DOM mutation for performance
+ * el.style.transform = `scale3d(${camera.z}, ${camera.z}, ${camera.z}) translate3d(${camera.x}px, ${camera.y}px, 0)`
  *
  * // Convert coordinates
  * const screenPos = canvasToScreen({ x: nodeX, y: nodeY })
