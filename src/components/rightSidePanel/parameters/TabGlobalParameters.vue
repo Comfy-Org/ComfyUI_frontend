@@ -97,6 +97,8 @@ function setDraggableState() {
       reorderedItems[newIndex] = item
     })
 
+    if (oldPosition === -1) return
+
     for (let index = 0; index < this.getAllItems().length; index++) {
       const item = reorderedItems[index]
       if (typeof item === 'undefined') {
