@@ -2,6 +2,10 @@ declare const __COMFYUI_FRONTEND_VERSION__: string
 declare const __COMFYUI_FRONTEND_COMMIT__: string
 declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
+declare const __CI_BRANCH__: string
+declare const __CI_PR_NUMBER__: string
+declare const __CI_RUN_ID__: string
+declare const __CI_JOB_ID__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean

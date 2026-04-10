@@ -3798,5 +3798,24 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "connectionPanel": {
+    "title": "ComfyUI Frontend Preview",
+    "subtitle": "Connect to a running ComfyUI backend to use this preview.",
+    "backendUrl": "Backend URL",
+    "test": "Test",
+    "http": "HTTP",
+    "ws": "WS",
+    "status": "Connection Status",
+    "connected": "Connected — backend is reachable.",
+    "guide": "How to Run ComfyUI",
+    "guideDescription": "Start ComfyUI with CORS enabled so this preview can connect from a different origin:",
+    "corsNote": "Replace \"*\" with this page's URL for tighter security.",
+    "localAccess": "Local Network Access",
+    "localAccessDescription": "Your browser may prompt for permission to access local network devices. Allow it so this page can reach your local ComfyUI instance.",
+    "source": "Source",
+    "errorUnreachable": "Backend is unreachable. Ensure ComfyUI is running with CORS enabled.",
+    "errorHttpFailed": "HTTP connection failed. Check the URL and CORS settings.",
+    "errorWsFailed": "WebSocket connection failed. HTTP works — check firewall or proxy settings."
   }
 }

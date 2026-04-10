@@ -1,0 +1,264 @@
+<template>
+  <BaseViewTemplate dark>
+    <main
+      class="relative flex w-full max-w-lg flex-col gap-6 rounded-lg bg-(--comfy-menu-bg) p-8 shadow-lg"
+    >
+      <header class="flex flex-col gap-1">
+        <h1 class="text-xl font-semibold text-neutral-100">
+          {{ t('connectionPanel.title') }}
+        </h1>
+        <p class="text-sm text-neutral-400">
+          {{ t('connectionPanel.subtitle') }}
+        </p>
+      </header>
+
+      <section class="flex flex-col gap-2">
+        <label for="backend-url" class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.backendUrl') }}
+        </label>
+        <div class="flex gap-2">
+          <input
+            id="backend-url"
+            v-model="backendUrl"
+            type="url"
+            :placeholder="DEFAULT_BACKEND_URL"
+            class="flex h-10 w-full min-w-0 appearance-none rounded-lg border-none bg-neutral-800 px-4 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-neutral-600 focus-visible:outline-none"
+            @keyup.enter="testConnection"
+          />
+          <Button
+            variant="primary"
+            size="lg"
+            :loading="isTesting"
+            :disabled="isTesting"
+            @click="testConnection"
+          >
+            {{ t('connectionPanel.test') }}
+          </Button>
+        </div>
+      </section>
+
+      <section
+        v-if="httpStatus !== null || wsStatus !== null"
+        class="flex flex-col gap-2 rounded-md bg-neutral-800/50 p-3"
+      >
+        <h2
+          class="text-xs font-medium tracking-wide text-neutral-400 uppercase"
+        >
+          {{ t('connectionPanel.status') }}
+        </h2>
+        <div class="flex gap-4 text-sm">
+          <span class="flex items-center gap-1.5">
+            <span
+              :class="
+                cn(
+                  'inline-block size-2 rounded-full',
+                  httpStatus === true && 'bg-green-500',
+                  httpStatus === false && 'bg-red-500',
+                  httpStatus === null && 'bg-neutral-600'
+                )
+              "
+            />
+            {{ t('connectionPanel.http') }}
+            {{ httpStatus === true ? '✓' : httpStatus === false ? '✗' : '—' }}
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span
+              :class="
+                cn(
+                  'inline-block size-2 rounded-full',
+                  wsStatus === true && 'bg-green-500',
+                  wsStatus === false && 'bg-red-500',
+                  wsStatus === null && 'bg-neutral-600'
+                )
+              "
+            />
+            {{ t('connectionPanel.ws') }}
+            {{ wsStatus === true ? '✓' : wsStatus === false ? '✗' : '—' }}
+          </span>
+        </div>
+        <p v-if="connectionError" class="text-xs text-red-400">
+          {{ connectionError }}
+        </p>
+        <p
+          v-if="httpStatus === true && wsStatus === true"
+          class="text-xs text-green-400"
+        >
+          {{ t('connectionPanel.connected') }}
+        </p>
+      </section>
+
+      <section class="flex flex-col gap-2">
+        <h2 class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.guide') }}
+        </h2>
+        <p class="text-xs text-neutral-400">
+          {{ t('connectionPanel.guideDescription') }}
+        </p>
+        <code
+          class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+        >
+          python main.py --enable-cors-header="*"
+        </code>
+        <p class="text-xs text-neutral-500">
+          {{ t('connectionPanel.corsNote') }}
+        </p>
+      </section>
+
+      <section class="flex flex-col gap-2">
+        <h2 class="text-sm font-medium text-neutral-300">
+          {{ t('connectionPanel.localAccess') }}
+        </h2>
+        <p class="text-xs text-neutral-400">
+          {{ t('connectionPanel.localAccessDescription') }}
+        </p>
+      </section>
+
+      <footer
+        class="flex items-center justify-between border-t border-neutral-700 pt-4 text-xs text-neutral-500"
+      >
+        <span
+          :title="buildTooltip"
+          class="cursor-help underline decoration-dotted"
+        >
+          {{ buildLabel }}
+        </span>
+        <a
+          :href="repoUrl"
+          target="_blank"
+          rel="noopener"
+          class="text-neutral-400 hover:text-neutral-200"
+        >
+          {{ t('connectionPanel.source') }}
+        </a>
+      </footer>
+    </main>
+  </BaseViewTemplate>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+
+const { t } = useI18n()
+
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8188'
+const STORAGE_KEY = 'comfyui-preview-backend-url'
+const REPO = 'https://github.com/Comfy-Org/ComfyUI_frontend'
+
+const backendUrl = ref(localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
+
+const isTesting = ref(false)
+const httpStatus = ref<boolean | null>(null)
+const wsStatus = ref<boolean | null>(null)
+const connectionError = ref('')
+
+function normalizeUrl(raw: string): string {
+  let url = raw.trim()
+  if (!url) url = DEFAULT_BACKEND_URL
+  if (!/^https?:\/\//i.test(url)) url = 'http://' + url
+  return url.replace(/\/+$/, '')
+}
+
+async function testHttp(base: string): Promise<boolean> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
+  try {
+    const res = await fetch(`${base}/api/system_stats`, {
+      signal: controller.signal
+    })
+    return res.ok
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function testWs(base: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const protocol = base.startsWith('https') ? 'wss' : 'ws'
+    const host = base.replace(/^https?:\/\//, '')
+    const ws = new WebSocket(`${protocol}://${host}/ws`)
+    const timeout = setTimeout(() => {
+      ws.close()
+      resolve(false)
+    }, 5000)
+    ws.addEventListener('open', () => {
+      clearTimeout(timeout)
+      ws.close()
+      resolve(true)
+    })
+    ws.addEventListener('error', () => {
+      clearTimeout(timeout)
+      resolve(false)
+    })
+  })
+}
+
+async function testConnection() {
+  isTesting.value = true
+  httpStatus.value = null
+  wsStatus.value = null
+  connectionError.value = ''
+
+  const base = normalizeUrl(backendUrl.value)
+  backendUrl.value = base
+  localStorage.setItem(STORAGE_KEY, base)
+
+  try {
+    const [http, ws] = await Promise.all([testHttp(base), testWs(base)])
+    httpStatus.value = http
+    wsStatus.value = ws
+
+    if (!http && !ws) {
+      connectionError.value = t('connectionPanel.errorUnreachable')
+    } else if (!http) {
+      connectionError.value = t('connectionPanel.errorHttpFailed')
+    } else if (!ws) {
+      connectionError.value = t('connectionPanel.errorWsFailed')
+    }
+  } catch {
+    httpStatus.value = false
+    wsStatus.value = false
+    connectionError.value = t('connectionPanel.errorUnreachable')
+  } finally {
+    isTesting.value = false
+  }
+}
+
+const version = __COMFYUI_FRONTEND_VERSION__
+const commit = __COMFYUI_FRONTEND_COMMIT__
+const branch = __CI_BRANCH__
+const prNumber = __CI_PR_NUMBER__
+const runId = __CI_RUN_ID__
+const jobId = __CI_JOB_ID__
+
+const buildLabel = computed(() => {
+  if (prNumber) return `PR #${prNumber}`
+  if (branch) return branch
+  return `v${version}`
+})
+
+const buildTooltip = computed(() => {
+  const parts = [`Version: ${version}`]
+  if (commit) parts.push(`Commit: ${commit.slice(0, 8)}`)
+  if (branch) parts.push(`Branch: ${branch}`)
+  if (runId) parts.push(`Run ID: ${runId}`)
+  if (jobId) parts.push(`Job ID: ${jobId}`)
+  return parts.join('\n')
+})
+
+const repoUrl = computed(() => {
+  if (prNumber) return `${REPO}/pull/${prNumber}`
+  if (branch) return `${REPO}/tree/${branch}`
+  return REPO
+})
+
+onMounted(() => {
+  document.getElementById('splash-loader')?.remove()
+})
+</script>

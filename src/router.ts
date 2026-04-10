@@ -82,6 +82,11 @@ const router = createRouter({
           component: () => import('@/views/UserSelectView.vue')
         }
       ]
+    },
+    {
+      path: '/connect',
+      name: 'ConnectionPanel',
+      component: () => import('@/views/ConnectionPanelView.vue')
     }
   ],
 
