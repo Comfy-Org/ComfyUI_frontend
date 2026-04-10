@@ -105,7 +105,7 @@ export function extractUniformSources(
   return { floats, ints, bools, curves }
 }
 
-export function toNumber(v: unknown): number {
+function toNumber(v: unknown): number {
   if (typeof v === 'string' && v.startsWith('#')) return hexToInt(v)
   return Number(v) || 0
 }
