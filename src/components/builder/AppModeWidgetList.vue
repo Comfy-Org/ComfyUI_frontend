@@ -3,6 +3,9 @@ import { useEventListener } from '@vueuse/core'
 import { computed, provide, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { inputItemKey } from '@/components/builder/itemKeyHelper'
+import { autoGroupName } from '@/components/builder/useInputGroups'
+import type { PopoverMenuItem } from '@/components/ui/Popover.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -20,6 +23,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -42,6 +46,7 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const inputGroupStore = useInputGroupStore()
 const maskEditor = useMaskEditor()
 
 provide(HideLayoutFieldKey, true)
@@ -62,6 +67,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
   >()
 
   return appModeStore.selectedInputs.flatMap(([nodeId, widgetName]) => {
+    if (inputGroupStore.isGrouped(nodeId, widgetName)) return []
     const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
 
@@ -153,6 +159,53 @@ async function handleDragDrop(e: DragEvent) {
   }
 }
 
+function buildMenuEntries(action: WidgetEntry['action']): PopoverMenuItem[] {
+  const entries: PopoverMenuItem[] = [
+    {
+      label: t('g.rename'),
+      icon: 'icon-[lucide--pencil]',
+      command: () => promptRenameWidget(action.widget, action.node, t)
+    },
+    {
+      label: t('g.remove'),
+      icon: 'icon-[lucide--x]',
+      command: () =>
+        appModeStore.removeSelectedInput(action.widget, action.node)
+    }
+  ]
+
+  if (!builderMode) return entries
+
+  const itemKey = inputItemKey(action.node.id, action.widget.name)
+  const groups = inputGroupStore.inputGroups
+
+  if (groups.length > 0) {
+    entries.push({ separator: true })
+    for (const group of groups) {
+      const name = group.name || autoGroupName(group)
+      entries.push({
+        label: `${t('linearMode.groups.addToGroup')}: ${name}`,
+        icon: 'icon-[lucide--group]',
+        command: () => inputGroupStore.addItemToGroup(group.id, itemKey)
+      })
+    }
+  }
+
+  entries.push(
+    ...(groups.length === 0 ? [{ separator: true } as PopoverMenuItem] : []),
+    {
+      label: t('linearMode.groups.newGroup'),
+      icon: 'icon-[lucide--plus]',
+      command: () => {
+        const id = inputGroupStore.createGroup()
+        inputGroupStore.addItemToGroup(id, itemKey)
+      }
+    }
+  )
+
+  return entries
+}
+
 defineExpose({ handleDragDrop })
 </script>
 <template>
@@ -164,6 +217,9 @@ defineExpose({ handleDragDrop })
         builderMode &&
           'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
       )
+    "
+    :data-item-key="
+      builderMode ? inputItemKey(action.node.id, action.widget.name) : undefined
     "
     :aria-label="
       builderMode
@@ -196,19 +252,7 @@ defineExpose({ handleDragDrop })
       <div v-else class="flex-1" />
       <Popover
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
-          {
-            label: t('g.rename'),
-            icon: 'icon-[lucide--pencil]',
-            command: () => promptRenameWidget(action.widget, action.node, t)
-          },
-          {
-            label: t('g.remove'),
-            icon: 'icon-[lucide--x]',
-            command: () =>
-              appModeStore.removeSelectedInput(action.widget, action.node)
-          }
-        ]"
+        :entries="buildMenuEntries(action)"
       >
         <template #button>
           <Button
