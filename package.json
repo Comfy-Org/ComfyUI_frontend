@@ -43,6 +43,7 @@
     "storybook:desktop": "nx run @comfyorg/desktop-ui:storybook",
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
     "stylelint": "stylelint --cache '{apps,packages,src}/**/*.{css,vue}'",
+    "qa": "pnpm exec tsx .claude/skills/comfy-qa/scripts/qa.ts",
     "test:browser": "pnpm exec nx e2e",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "test:coverage": "vitest run --coverage",

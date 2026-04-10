@@ -2111,7 +2111,7 @@ export default withDemowright(baseConfig, {
           }
           // Cleanup
           try {
-            execSync(`rm -f "${browserTestFile}" "${qaConfigPath}"`)
+            execSync(`rm -f "${videoTestFile}" "${qaConfigPath}"`)
           } catch {
             /* ignore */
           }

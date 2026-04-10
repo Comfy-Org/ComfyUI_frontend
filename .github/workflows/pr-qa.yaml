@@ -156,7 +156,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p qa-guides
-          pnpm exec tsx scripts/qa-analyze-pr.ts \
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-analyze-pr.ts \
             --pr-number "${{ needs.resolve-matrix.outputs.number }}" \
             --repo "${{ github.repository }}" \
             --output-dir qa-guides \
@@ -331,7 +331,7 @@ jobs:
             DIFF_FLAG="--diff ${{ runner.temp }}/issue-body.txt"
           fi
 
-          pnpm exec tsx scripts/qa-record.ts \
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-record.ts \
             --mode "$MODE" \
             $DIFF_FLAG \
             --output-dir "$QA_ARTIFACTS" \
@@ -466,7 +466,7 @@ jobs:
             echo "Using QA guide for after recording"
             QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-after.json"
           fi
-          pnpm exec tsx scripts/qa-record.ts \
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-record.ts \
             --mode after \
             --diff "${{ runner.temp }}/pr-diff.txt" \
             --output-dir "$QA_ARTIFACTS" \
@@ -877,7 +877,7 @@ jobs:
                 ;;
             esac
             echo "::group::Reviewing $vid"
-            pnpm exec tsx scripts/qa-video-review.ts \
+            pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-video-review.ts \
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
@@ -950,7 +950,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           PIPELINE_SHA: ${{ github.sha }}
           RUN_START_TIME: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at || '' }}
-        run: bash scripts/qa-deploy-pages.sh
+        run: bash .claude/skills/comfy-qa/scripts/qa-deploy-pages.sh
 
       - name: Post unified QA comment
         env:

@@ -16,7 +16,10 @@
  */
 
 import type { Page } from '@playwright/test'
+/* eslint-disable import-x/no-unresolved */
+// @ts-expect-error — claude-agent-sdk has no type declarations for vue-tsc
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
+/* eslint-enable import-x/no-unresolved */
 import { z } from 'zod'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { execSync } from 'child_process'
@@ -96,7 +99,7 @@ export async function runResearchPhase(
           'Optional filter — only show elements matching this name/role. Omit for full tree.'
         )
     },
-    async (args) => {
+    async (args: { selector?: string }) => {
       let resultText: string
       try {
         const ariaText = await page
@@ -141,7 +144,7 @@ export async function runResearchPhase(
           'Relative path within browser_tests/fixtures/, e.g. "helpers/CanvasHelper.ts" or "components/Topbar.ts" or "ComfyPage.ts"'
         )
     },
-    async (args) => {
+    async (args: { path: string }) => {
       let resultText: string
       try {
         const fullPath = `${projectRoot}/browser_tests/fixtures/${args.path}`
@@ -177,7 +180,7 @@ export async function runResearchPhase(
           'Relative path within browser_tests/tests/, e.g. "workflow.spec.ts" or "subgraph.spec.ts"'
         )
     },
-    async (args) => {
+    async (args: { path: string }) => {
       let resultText: string
       try {
         const fullPath = `${projectRoot}/browser_tests/tests/${args.path}`
@@ -220,7 +223,7 @@ export async function runResearchPhase(
         .string()
         .describe('Complete Playwright test file content (.spec.ts)')
     },
-    async (args) => {
+    async (args: { code: string }) => {
       writeFileSync(testPath, args.code)
 
       researchLog.push({
@@ -337,7 +340,13 @@ export async function runResearchPhase(
           'Final Playwright test code. If REPRODUCED, this test asserts the bug exists and passes.'
         )
     },
-    async (args) => {
+    async (args: {
+      verdict: ResearchResult['verdict']
+      reproducedBy: ReproMethod
+      summary: string
+      evidence: string
+      testCode: string
+    }) => {
       agentDone = true
       finalVerdict = args.verdict
       finalReproducedBy = args.reproducedBy
