@@ -2,6 +2,7 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -62,15 +63,18 @@ function transferOutputConnections(
 ): void {
   const oldLinks = oldNode.outputs?.[oldOutputIdx]?.links
   if (!oldLinks?.length) return
-  if (!newNode.outputs?.[newOutputIdx]) return
+
+  const newOutput = newNode.outputs?.[newOutputIdx]
+  if (!newOutput) return
 
   for (const linkId of oldLinks) {
     const link = graph.links.get(linkId)
     if (!link) continue
     link.origin_id = newNode.id
     link.origin_slot = newOutputIdx
+    link.type = newOutput.type ?? link.type
   }
-  newNode.outputs[newOutputIdx].links = [...oldLinks]
+  newOutput.links = [...oldLinks]
   oldNode.outputs[oldOutputIdx].links = []
 }
 
@@ -216,6 +220,14 @@ function replaceWithMapping(
         nodeGraph
       )
     }
+  }
+
+  // Register the new node's widgets with the WidgetValueStore.
+  // replaceWithMapping bypasses graph.add(), which normally handles this
+  // registration. Without it, Nodes 2.0 (Vue) reads default/missing values
+  // from the store instead of the transferred widget values.
+  for (const widget of newNode.widgets ?? []) {
+    if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
   }
 
   newNode.has_errors = false

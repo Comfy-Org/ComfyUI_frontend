@@ -45,6 +45,14 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
+vi.mock('@/lib/litegraph/src/utils/type', () => ({
+  isNodeBindable: (widget: unknown): boolean =>
+    typeof widget === 'object' &&
+    widget !== null &&
+    'setNodeId' in widget &&
+    typeof (widget as Record<string, unknown>).setNodeId === 'function'
+}))
+
 const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
   mockRemoveMissingNodesByType: vi.fn()
 }))
@@ -137,7 +145,7 @@ function createPlaceholderNode(
 
 function createNewNode(
   inputs: { name: string; link: number | null }[] = [],
-  outputs: { name: string; links: number[] | null }[] = [],
+  outputs: { name: string; links: number[] | null; type?: string }[] = [],
   widgets: { name: string; value: unknown }[] = []
 ): LGraphNode {
   return fromAny<LGraphNode, unknown>({
@@ -150,8 +158,16 @@ function createNewNode(
     flags: {},
     has_errors: false,
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
-    outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-    widgets: widgets.map((w) => ({ ...w, type: 'combo', options: {} })),
+    outputs: outputs.map((o) => ({
+      ...o,
+      type: o.type ?? 'IMAGE'
+    })),
+    widgets: widgets.map((w) => ({
+      ...w,
+      type: 'combo',
+      options: {},
+      setNodeId: vi.fn()
+    })),
     configure: vi.fn(),
     serialize: vi.fn()
   })
@@ -659,6 +675,81 @@ describe('useNodeReplacement', () => {
 
       // Should still succeed (dot-notation skipped gracefully)
       expect(result).toEqual(['ImageBatch'])
+    })
+
+    it('should register new node widgets with WidgetValueStore via setNodeId', () => {
+      const placeholder = createPlaceholderNode(1, 'OldNode')
+      placeholder.last_serialization!.widgets_values = [42, 'hello']
+
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [],
+        [],
+        [
+          { name: 'exposure', value: 0 },
+          { name: 'annotation', value: '' }
+        ]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: ['gain', 'label'],
+          input_mapping: [
+            { new_id: 'exposure', old_id: 'gain' },
+            { new_id: 'annotation', old_id: 'label' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      // Each widget's setNodeId should be called with the node ID
+      for (const widget of newNode.widgets!) {
+        const bindable = widget as unknown as { setNodeId: ReturnType<typeof vi.fn> }
+        expect(bindable.setNodeId).toHaveBeenCalledWith(1)
+      }
+    })
+
+    it('should update link type to match new output slot type', () => {
+      const link = createMockLink(20, 1, 0, 5, 0)
+      const placeholder = createPlaceholderNode(
+        1,
+        'OldNode',
+        [],
+        [{ name: 'output_image', links: [20] }]
+      )
+      const graph = createMockGraph([placeholder], [link])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [],
+        [{ name: 'image_mean', links: null, type: 'FLOAT' }]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+        })
+      ])
+
+      expect(link.type).toBe('FLOAT')
     })
   })
 
