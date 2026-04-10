@@ -26,6 +26,7 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const RECORD_SCRIPT = resolve(SCRIPT_DIR, 'qa-record.ts')
 const DEFAULT_REPO = 'Comfy-Org/ComfyUI_frontend'
 const VALID_TARGETS = ['head', 'base', 'both'] as const
+const CLOUD_FALLBACK_URL = 'https://testcloud.comfy.org/'
 type PrTarget = (typeof VALID_TARGETS)[number]
 type TargetType = 'issue' | 'pr'
 
@@ -58,9 +59,9 @@ if (!VALID_TARGETS.includes(prTarget)) {
   process.exit(1)
 }
 
-// ── Ensure server is reachable ──
+// ── Ensure server is reachable (may fall back to cloud) ──
 
-await ensureServer(serverUrl)
+const resolvedServerUrl = await ensureServer(serverUrl)
 
 // ── Dispatch by mode ──
 
@@ -260,7 +261,7 @@ function runQaRecord(
       '--output-dir',
       outputDir,
       '--url',
-      serverUrl
+      resolvedServerUrl
     ],
     { stdio: 'inherit', env: process.env }
   )
@@ -269,10 +270,10 @@ function runQaRecord(
 
 // ── Server management ──
 
-async function ensureServer(url: string): Promise<void> {
+async function ensureServer(url: string): Promise<string> {
   if (await isReachable(url)) {
     console.warn(`Server OK: ${url}`)
-    return
+    return url
   }
 
   console.warn(`Server not reachable at ${url}, attempting auto-start...`)
@@ -292,7 +293,7 @@ async function ensureServer(url: string): Promise<void> {
     )
     proc.unref()
     await waitForServer(url, 120000)
-    return
+    return url
   } catch {
     // comfy-cli not available
   }
@@ -308,24 +309,32 @@ async function ensureServer(url: string): Promise<void> {
     })
     proc.unref()
     await waitForServer(url, 120000)
-    return
+    return url
   }
 
   // Strategy 3: clone ComfyUI and start
-  console.warn('No ComfyUI installation found, cloning...')
   const cloneDir = resolve('.comfy-qa/ComfyUI')
-  try {
-    execSync(
-      `git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git "${cloneDir}"`,
-      { stdio: 'inherit', timeout: 120000 }
-    )
-    console.warn('Installing ComfyUI dependencies...')
-    execSync('pip install -r requirements.txt', {
-      cwd: cloneDir,
-      stdio: 'inherit',
-      timeout: 300000
-    })
-    console.warn('Starting ComfyUI...')
+  if (!existsSync(resolve(cloneDir, 'main.py'))) {
+    console.warn('No ComfyUI installation found, cloning...')
+    try {
+      execSync(
+        `git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git "${cloneDir}"`,
+        { stdio: 'inherit', timeout: 120000 }
+      )
+      console.warn('Installing ComfyUI dependencies...')
+      execSync('pip install -r requirements.txt', {
+        cwd: cloneDir,
+        stdio: 'inherit',
+        timeout: 300000
+      })
+    } catch (err) {
+      console.warn(
+        `Clone/install failed: ${err instanceof Error ? err.message : err}`
+      )
+    }
+  }
+  if (existsSync(resolve(cloneDir, 'main.py'))) {
+    console.warn(`Starting ComfyUI from ${cloneDir}...`)
     const proc = spawn('python', ['main.py', '--cpu', '--port', port], {
       cwd: cloneDir,
       stdio: 'ignore',
@@ -333,19 +342,24 @@ async function ensureServer(url: string): Promise<void> {
     })
     proc.unref()
     await waitForServer(url, 120000)
-    return
-  } catch (err) {
-    console.error(
-      `Failed to setup ComfyUI: ${err instanceof Error ? err.message : err}`
-    )
+    return url
+  }
+
+  // Strategy 4: fallback to testcloud
+  console.warn(`Local server failed. Falling back to ${CLOUD_FALLBACK_URL}`)
+  if (await isReachable(CLOUD_FALLBACK_URL)) {
+    console.warn(`Cloud server OK: ${CLOUD_FALLBACK_URL}`)
+    return CLOUD_FALLBACK_URL
   }
 
   console.error(`
-Server not running at ${url} and auto-start failed.
+No ComfyUI server available. Tried:
+  1. ${url} (not reachable)
+  2. comfy-cli (not installed)
+  3. Local ComfyUI installation (not found)
+  4. ${CLOUD_FALLBACK_URL} (not reachable)
 
-Manual options:
-  pip install comfy-cli && comfy install && comfy launch --cpu
-  python /path/to/ComfyUI/main.py --cpu --port ${port}
+Install: pip install comfy-cli && comfy install && comfy launch --cpu
 `)
   process.exit(1)
 }
@@ -411,7 +425,7 @@ function resolveOutputDir(defaultPath: string): string {
 function logHeader(opts: { label: string; outputDir: string; extra?: string }) {
   console.warn(`QA target: ${opts.label}`)
   console.warn(`Output:    ${opts.outputDir}`)
-  console.warn(`Server:    ${serverUrl}`)
+  console.warn(`Server:    ${resolvedServerUrl}`)
   if (values.ref) console.warn(`Ref:       ${values.ref}`)
   if (opts.extra) console.warn(opts.extra)
 }

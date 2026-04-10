@@ -1972,7 +1972,7 @@ async function main() {
           const videoTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
 
-          // Inject demowright narrate() call for TTS voice narration
+          // Inject demowright annotate() call for TTS + subtitle intro
           const issueTitle =
             issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
           let testCode = research.testCode
@@ -1981,18 +1981,19 @@ async function main() {
           )
           if (bodyMatch?.index !== undefined) {
             const pos = bodyMatch.index + bodyMatch[0].length
-            const narrationInject = `
-    // demowright: narrate issue title (TTS + subtitle)
+            const introInject = `
+    // demowright: announce issue title with subtitle + TTS
     try {
-      const { narrate: _narrate } = await import('demowright/helpers')
-      await _narrate(comfyPage.page, ${JSON.stringify('Reproducing: ' + issueTitle)})
-      console.log('[qa] narrate() completed successfully')
+      const { annotate: _intro } = await import('demowright/helpers')
+      await _intro(comfyPage.page, ${JSON.stringify('Reproducing: ' + issueTitle)}, async () => {
+        await comfyPage.page.waitForTimeout(3000)
+      })
     } catch (e) {
-      console.log('[qa] narrate() failed:', e instanceof Error ? e.message : e)
+      console.warn('[qa] intro annotate failed:', e instanceof Error ? e.message : e)
     }
 `
             testCode =
-              testCode.slice(0, pos) + narrationInject + testCode.slice(pos)
+              testCode.slice(0, pos) + introInject + testCode.slice(pos)
           }
           // Inject step-by-step annotate() calls wrapping each code block
           // annotate(page, text, callback) shows subtitle + speaks TTS + runs action in parallel
@@ -2035,7 +2036,7 @@ export default withDemowright(baseConfig, {
   keyboard: true,
   cursorStyle: 'default',
   keyFadeMs: 2000,
-  actionDelay: 500,
+  actionDelay: 1500,
   audio: true,
   autoAnnotate: true,
   outputDir: '.demowright'
