@@ -56,12 +56,9 @@ export class BuilderSelectHelper {
    * @param title The widget title shown in the IoItem.
    */
   getInputItemMenu(title: string): Locator {
-    return this.page
-      .getByTestId(TestIds.builder.ioItem)
+    return this.inputItems
       .filter({
-        has: this.page
-          .getByTestId(TestIds.builder.ioItemTitle)
-          .getByText(title, { exact: true })
+        has: this.inputItemTitles.getByText(title, { exact: true })
       })
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
@@ -163,12 +160,9 @@ export class BuilderSelectHelper {
    * Useful for asserting "Widget not visible" on disconnected inputs.
    */
   getInputItemSubtitle(title: string): Locator {
-    return this.page
-      .getByTestId(TestIds.builder.ioItem)
+    return this.inputItems
       .filter({
-        has: this.page
-          .getByTestId(TestIds.builder.ioItemTitle)
-          .getByText(title, { exact: true })
+        has: this.inputItemTitles.getByText(title, { exact: true })
       })
       .getByTestId(TestIds.builder.ioItemSubtitle)
   }
@@ -178,8 +172,7 @@ export class BuilderSelectHelper {
    * Items are identified by their 0-based position among visible IoItems.
    */
   async dragInputItem(fromIndex: number, toIndex: number) {
-    const items = this.page.getByTestId(TestIds.builder.ioItem)
-    await dragByIndex(items, fromIndex, toIndex)
+    await dragByIndex(this.inputItems, fromIndex, toIndex)
     await this.comfyPage.nextFrame()
   }
 
