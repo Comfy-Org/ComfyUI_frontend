@@ -92,7 +92,7 @@ function copyBadge(){const u=location.href.replace(/\/[^/]*$/,'/');const b=u+'ba
 document.querySelectorAll('[data-md]').forEach(el=>{const t=el.textContent;el.removeAttribute('data-md');el.innerHTML=marked.parse(t)});
 const FPS=30,FT=1/FPS,SPEEDS=[0.1,0.25,0.5,1,1.5,2];
 document.querySelectorAll('.video-wrap video').forEach(v=>{
-  v.playbackRate=0.5;v.removeAttribute('autoplay');v.pause();
+  v.playbackRate=0.5;
   const c=document.createElement('div');c.className='vctrl';
   const btn=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.onclick=fn;c.appendChild(b);return b};
   const sep=()=>{const s=document.createElement('div');s.className='vsep';c.appendChild(s)};
