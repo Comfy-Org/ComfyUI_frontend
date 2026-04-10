@@ -17,27 +17,6 @@ import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    clientId: null,
-    apiURL: vi.fn((path: string) => path)
-  }
-}))
-
-vi.mock('@/stores/imagePreviewStore', () => ({
-  useNodeOutputStore: () => ({
-    revokePreviewsByExecutionId: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/jobPreviewStore', () => ({
-  useJobPreviewStore: () => ({
-    clearPreview: vi.fn()
-  })
-}))
-
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
