@@ -35,7 +35,7 @@ type Vec2 = readonly [number, number]
  * @param b - The second number.
  * @returns The GCD of the two numbers.
  */
-export const gcd = (a: number, b: number): number => {
+const gcd = (a: number, b: number): number => {
   // Use absolute values to handle negative numbers
   let x = Math.abs(a)
   let y = Math.abs(b)

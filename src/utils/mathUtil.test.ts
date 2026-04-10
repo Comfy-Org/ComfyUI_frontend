@@ -4,7 +4,6 @@ import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import {
   computeUnionBounds,
   denormalize,
-  gcd,
   lcm,
   normalize
 } from '@/utils/mathUtil'
@@ -31,29 +30,6 @@ describe('mathUtil', () => {
 
     it('round-trips with normalize', () => {
       expect(denormalize(normalize(100, 0, 255), 0, 255)).toBeCloseTo(100)
-    })
-  })
-
-  describe('gcd', () => {
-    it('should compute greatest common divisor correctly', () => {
-      expect(gcd(48, 18)).toBe(6)
-      expect(gcd(100, 25)).toBe(25)
-      expect(gcd(17, 13)).toBe(1)
-      expect(gcd(0, 5)).toBe(5)
-      expect(gcd(5, 0)).toBe(5)
-    })
-
-    it('should handle negative numbers', () => {
-      expect(gcd(-48, 18)).toBe(6)
-      expect(gcd(48, -18)).toBe(6)
-      expect(gcd(-48, -18)).toBe(6)
-    })
-
-    it('should not cause stack overflow with small floating-point step values', () => {
-      // This would cause Maximum call stack size exceeded with recursive impl
-      // when used in lcm calculations with small step values
-      expect(() => gcd(0.0001, 0.0003)).not.toThrow()
-      expect(() => gcd(1e-10, 1e-9)).not.toThrow()
     })
   })
 
