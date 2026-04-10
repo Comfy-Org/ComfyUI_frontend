@@ -171,12 +171,11 @@ function resolveTarget(input: string): {
 
 function detectType(number: string, repo: string): TargetType {
   try {
-    execSync(`gh pr view ${number} --repo ${repo} --json number`, {
-      encoding: 'utf-8',
-      timeout: 15000,
-      stdio: ['pipe', 'pipe', 'pipe']
-    })
-    return 'pr'
+    const result = execSync(
+      `gh api repos/${repo}/issues/${number} --jq 'has("pull_request")'`,
+      { encoding: 'utf-8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'] }
+    )
+    return result.trim() === 'true' ? 'pr' : 'issue'
   } catch {
     return 'issue'
   }
