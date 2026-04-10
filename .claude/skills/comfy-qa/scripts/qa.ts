@@ -31,19 +31,37 @@ for (const envFile of ['.env.local', '.env']) {
 
 // ── Parse CLI with node:util parseArgs ──
 
-const { values, positionals } = parseArgs({
-  args: process.argv.slice(2),
-  options: {
-    target: { type: 'string', short: 't', default: 'head' },
-    uncommitted: { type: 'boolean', default: false },
-    url: { type: 'string', default: '' },
-    ref: { type: 'string', default: '' },
-    output: { type: 'string', short: 'o', default: '' },
-    help: { type: 'boolean', short: 'h', default: false }
-  },
-  allowPositionals: true,
-  strict: true
-})
+let values: {
+  target: string
+  uncommitted: boolean
+  url: string
+  ref: string
+  output: string
+  help: boolean
+}
+let positionals: string[]
+
+try {
+  const parsed = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      target: { type: 'string', short: 't', default: 'head' },
+      uncommitted: { type: 'boolean', default: false },
+      url: { type: 'string', default: '' },
+      ref: { type: 'string', default: '' },
+      output: { type: 'string', short: 'o', default: '' },
+      help: { type: 'boolean', short: 'h', default: false }
+    },
+    allowPositionals: true,
+    strict: true
+  })
+  values = parsed.values as typeof values
+  positionals = parsed.positionals
+} catch (err) {
+  console.error(`Error: ${err instanceof Error ? err.message : err}\n`)
+  printUsage()
+  process.exit(1)
+}
 
 if (values.help) {
   printUsage()
