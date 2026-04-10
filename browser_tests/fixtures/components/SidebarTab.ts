@@ -249,24 +249,43 @@ export class ModelLibrarySidebarTab extends SidebarTab {
 }
 
 export class AssetsSidebarTab extends SidebarTab {
+  // --- Tab navigation ---
   public readonly generatedTab: Locator
   public readonly importedTab: Locator
+
+  // --- Empty state ---
   public readonly emptyStateMessage: Locator
+
+  // --- Search & filter ---
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
+
+  // --- View mode ---
   public readonly listViewOption: Locator
   public readonly gridViewOption: Locator
+
+  // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
+
+  // --- Asset cards ---
   public readonly assetCards: Locator
   public readonly selectedCards: Locator
+
+  // --- List view items ---
   public readonly listViewItems: Locator
+
+  // --- Selection footer ---
   public readonly selectionFooter: Locator
   public readonly selectionCountButton: Locator
   public readonly deselectAllButton: Locator
   public readonly deleteSelectedButton: Locator
   public readonly downloadSelectedButton: Locator
+
+  // --- Folder view ---
   public readonly backToAssetsButton: Locator
+
+  // --- Loading ---
   public readonly skeletonLoaders: Locator
 
   constructor(public override readonly page: Page) {
@@ -307,43 +326,17 @@ export class AssetsSidebarTab extends SidebarTab {
     )
   }
 
-  // --- Tab navigation ---
-
-  // --- Empty state ---
-
   emptyStateTitle(title: string) {
     return this.page.getByText(title)
   }
 
-  // --- Search & filter ---
-
-  // --- View mode ---
-
-  // --- Sort options (cloud-only, shown inside settings popover) ---
-
-  // --- Asset cards ---
-
   getAssetCardByName(name: string) {
-    return this.page.locator('[role="button"][data-selected]', {
-      hasText: name
-    })
+    return this.assetCards.filter({ hasText: name })
   }
-
-  // --- List view items ---
-
-  // --- Selection footer ---
-
-  // --- Context menu ---
 
   contextMenuItem(label: string) {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
-
-  // --- Folder view ---
-
-  // --- Loading ---
-
-  // --- Helpers ---
 
   override async open() {
     // Remove any toast notifications that may overlay the sidebar button
