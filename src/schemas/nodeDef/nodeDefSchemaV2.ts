@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   zBaseInputOptions,
   zBooleanInputOptions,
+  zColorStop,
   zComboInputOptions,
   zFloatInputOptions,
   zIntInputOptions,
@@ -140,6 +141,25 @@ const zCurveInputSpec = zBaseInputOptions.extend({
   default: zCurveData.optional()
 })
 
+const zRangeValue = z.object({
+  min: z.number(),
+  max: z.number(),
+  midpoint: z.number().optional()
+})
+
+const zRangeInputSpec = zBaseInputOptions.extend({
+  type: z.literal('RANGE'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  default: zRangeValue.optional(),
+  display: z.enum(['plain', 'gradient', 'histogram']).optional(),
+  gradient_stops: z.array(zColorStop).optional(),
+  show_midpoint: z.boolean().optional(),
+  midpoint_scale: z.enum(['linear', 'gamma']).optional(),
+  value_min: z.number().optional(),
+  value_max: z.number().optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -161,6 +181,7 @@ const zInputSpec = z.union([
   zGalleriaInputSpec,
   zTextareaInputSpec,
   zCurveInputSpec,
+  zRangeInputSpec,
   zCustomInputSpec
 ])
 
@@ -206,6 +227,7 @@ export type ChartInputSpec = z.infer<typeof zChartInputSpec>
 export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
+export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>
