@@ -427,8 +427,18 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
+          paths: [useVirtualListRestriction]
+        }
+      ]
+    }
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
           paths: [
-            useVirtualListRestriction,
             {
               name: '@vue/test-utils',
               message:

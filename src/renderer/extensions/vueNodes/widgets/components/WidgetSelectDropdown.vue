@@ -153,11 +153,11 @@ function handleIsOpenUpdate(isOpen: boolean) {
 <template>
   <WidgetLayoutField :widget>
     <FormDropdown
-      v-model:selected="selectedSet"
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
+      :selected="selectedSet"
       :items="dropdownItems"
       :display-items="displayItems"
       :placeholder="mediaPlaceholder"

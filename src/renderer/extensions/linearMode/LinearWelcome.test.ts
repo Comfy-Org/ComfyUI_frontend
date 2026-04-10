@@ -1,14 +1,19 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LinearWelcome from './LinearWelcome.vue'
 
-const hasNodes = ref(false)
-const hasOutputs = ref(false)
-const enterBuilder = vi.fn()
+const { hasNodes, hasOutputs, enterBuilder } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ref } = require('vue')
+  return {
+    hasNodes: ref(false),
+    hasOutputs: ref(false),
+    enterBuilder: vi.fn()
+  }
+})
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ setMode: vi.fn() })

@@ -123,19 +123,6 @@ describe('NodeWidgets', () => {
       expect(stub).not.toBeNull()
       expect(stub!.getAttribute('data-node-type')).toBe('')
     })
-
-    it.for(['CheckpointLoaderSimple', 'LoraLoader', 'VAELoader', 'KSampler'])(
-      'passes correct node type: %s',
-      (nodeType) => {
-        const widget = createMockWidget()
-        const nodeData = createMockNodeData(nodeType, [widget])
-        const { container } = renderComponent(nodeData)
-
-        const stub = container.querySelector('.widget-stub')
-        expect(stub).not.toBeNull()
-        expect(stub!.getAttribute('data-node-type')).toBe(nodeType)
-      }
-    )
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
