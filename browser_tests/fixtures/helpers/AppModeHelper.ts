@@ -69,29 +69,36 @@ export class AppModeHelper {
    * picks up the data via its activeWorkflow watcher.
    *
    * @param inputs - Widget selections as [nodeId, widgetName] tuples
+   * @param outputs - Explicit output node IDs. When omitted, auto-detects
+   *   SaveImage/PreviewImage nodes.
    */
-  async enterAppModeWithInputs(inputs: [string, string][]) {
-    await this.page.evaluate(async (inputTuples) => {
-      const graph = window.app!.graph
-      if (!graph) return
+  async enterAppModeWithInputs(inputs: [string, string][], outputs?: string[]) {
+    await this.page.evaluate(
+      async ({ inputTuples, explicitOutputs }) => {
+        const graph = window.app!.graph
+        if (!graph) return
 
-      const outputNodeIds = graph.nodes
-        .filter(
-          (n: { type?: string }) =>
-            n.type === 'SaveImage' || n.type === 'PreviewImage'
+        const outputNodeIds =
+          explicitOutputs ??
+          graph.nodes
+            .filter(
+              (n: { type?: string }) =>
+                n.type === 'SaveImage' || n.type === 'PreviewImage'
+            )
+            .map((n: { id: number | string }) => String(n.id))
+
+        const workflow = graph.serialize() as unknown as Record<string, unknown>
+        const extra = (workflow.extra ?? {}) as Record<string, unknown>
+        extra.linearData = { inputs: inputTuples, outputs: outputNodeIds }
+        workflow.extra = extra
+        await window.app!.loadGraphData(
+          workflow as unknown as Parameters<
+            NonNullable<typeof window.app>['loadGraphData']
+          >[0]
         )
-        .map((n: { id: number | string }) => String(n.id))
-
-      const workflow = graph.serialize() as unknown as Record<string, unknown>
-      const extra = (workflow.extra ?? {}) as Record<string, unknown>
-      extra.linearData = { inputs: inputTuples, outputs: outputNodeIds }
-      workflow.extra = extra
-      await window.app!.loadGraphData(
-        workflow as unknown as Parameters<
-          NonNullable<typeof window.app>['loadGraphData']
-        >[0]
-      )
-    }, inputs)
+      },
+      { inputTuples: inputs, explicitOutputs: outputs }
+    )
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()
   }

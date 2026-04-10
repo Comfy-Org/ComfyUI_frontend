@@ -149,6 +149,85 @@ describe(parseNodeOutput, () => {
     expect(result).toHaveLength(1)
     expect(result[0].filename).toBe('valid.png')
   })
+
+  describe('image compare outputs', () => {
+    it('produces a single image_compare item from a_images and b_images', () => {
+      const output = fromPartial<NodeExecutionOutput>({
+        a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
+        b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
+      })
+
+      const result = parseNodeOutput('10', output)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].mediaType).toBe('image_compare')
+      expect(result[0].nodeId).toBe('10')
+      expect(result[0].filename).toBe('')
+      expect(result[0].compareImages).toBeDefined()
+      expect(result[0].compareImages!.before).toHaveLength(1)
+      expect(result[0].compareImages!.after).toHaveLength(1)
+      expect(result[0].compareImages!.before[0].filename).toBe('before.png')
+      expect(result[0].compareImages!.after[0].filename).toBe('after.png')
+    })
+
+    it('handles multiple batch images in a_images and b_images', () => {
+      const output = fromPartial<NodeExecutionOutput>({
+        a_images: [
+          { filename: 'a1.png', subfolder: '', type: 'output' },
+          { filename: 'a2.png', subfolder: '', type: 'output' }
+        ],
+        b_images: [
+          { filename: 'b1.png', subfolder: '', type: 'output' },
+          { filename: 'b2.png', subfolder: '', type: 'output' },
+          { filename: 'b3.png', subfolder: '', type: 'output' }
+        ]
+      })
+
+      const result = parseNodeOutput('5', output)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].compareImages!.before).toHaveLength(2)
+      expect(result[0].compareImages!.after).toHaveLength(3)
+    })
+
+    it('handles only a_images present', () => {
+      const output = fromPartial<NodeExecutionOutput>({
+        a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }]
+      })
+
+      const result = parseNodeOutput('1', output)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].mediaType).toBe('image_compare')
+      expect(result[0].compareImages!.before).toHaveLength(1)
+      expect(result[0].compareImages!.after).toHaveLength(0)
+    })
+
+    it('handles only b_images present', () => {
+      const output = fromPartial<NodeExecutionOutput>({
+        b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
+      })
+
+      const result = parseNodeOutput('1', output)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].mediaType).toBe('image_compare')
+      expect(result[0].compareImages!.before).toHaveLength(0)
+      expect(result[0].compareImages!.after).toHaveLength(1)
+      expect(result[0].filename).toBe('')
+    })
+
+    it('skips image compare when both a_images and b_images are empty', () => {
+      const output = fromPartial<NodeExecutionOutput>({
+        a_images: [],
+        b_images: []
+      })
+
+      const result = parseNodeOutput('1', output)
+
+      expect(result).toHaveLength(0)
+    })
+  })
 })
 
 describe(parseTaskOutput, () => {

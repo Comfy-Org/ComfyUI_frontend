@@ -10,7 +10,6 @@ import {
   computed,
   nextTick,
   ref,
-  toValue,
   useTemplateRef,
   watch,
   watchEffect
@@ -31,8 +30,13 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
-  useOutputHistory()
+const {
+  outputs,
+  allOutputs,
+  timeline,
+  selectFirstHistory,
+  mayBeActiveWorkflowPending
+} = useOutputHistory()
 const { hasOutputs } = storeToRefs(useAppModeStore())
 const queueStore = useQueueStore()
 const store = useLinearOutputStore()
@@ -55,10 +59,6 @@ const hasActiveContent = computed(
   () => store.activeWorkflowInProgressItems.length > 0
 )
 
-const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => allOutputs(a).length > 0)
-)
-
 const selectableItems = computed(() => {
   const items: SelectionValue[] = []
   if (mayBeActiveWorkflowPending.value) {
@@ -71,16 +71,8 @@ const selectableItems = computed(() => {
       itemId: item.id
     })
   }
-  for (const asset of outputs.media.value) {
-    const outs = allOutputs(asset)
-    for (let k = 0; k < outs.length; k++) {
-      items.push({
-        id: `history:${asset.id}:${k}`,
-        kind: 'history',
-        assetId: asset.id,
-        key: k
-      })
-    }
+  for (const entry of timeline.value) {
+    items.push(entry.selectionValue)
   }
   return items
 })
@@ -137,6 +129,16 @@ function doEmit() {
     }
     return
   }
+  if (sel.kind === 'nonAsset') {
+    const entry = store.activeWorkflowNonAssetOutputs.find(
+      (e) => e.id === sel.itemId
+    )
+    emit('updateSelection', {
+      output: entry?.output,
+      canShowPreview: true
+    })
+    return
+  }
   const asset = outputs.media.value.find((a) => a.id === sel.assetId)
   const output = asset ? allOutputs(asset)[sel.key] : undefined
   const isFirst = outputs.media.value[0]?.id === sel.assetId
@@ -184,14 +186,24 @@ watch(
       ? selectionMap.value.get(store.selectedId)
       : undefined
 
-    if (!sv || sv.kind !== 'history') {
+    if (!sv || (sv.kind !== 'history' && sv.kind !== 'nonAsset')) {
+      if (hasOutputs.value) selectFirstHistory()
+      return
+    }
+
+    // Non-asset selections are stable — don't override them
+    if (sv.kind === 'nonAsset') return
+
+    const assetGone = !newAssets.some((a) => a.id === sv.assetId)
+    if (assetGone) {
       if (hasOutputs.value) selectFirstHistory()
       return
     }
 
     const wasFirst = sv.assetId === oldAssets[0]?.id
-    if (wasFirst || !newAssets.some((a) => a.id === sv.assetId)) {
-      if (hasOutputs.value) selectFirstHistory()
+    if (wasFirst && hasOutputs.value) {
+      const firstId = `history:${newAssets[0].id}:0`
+      store.autoSelectLatest(firstId)
     }
   }
 )
@@ -204,7 +216,11 @@ useResizeObserver(outputsRef, () => {
   lastScrollWidth = outputsRef.value?.scrollWidth ?? 0
 })
 watch(
-  () => visibleHistory.value[0]?.id,
+  [
+    () => store.activeWorkflowInProgressItems.length,
+    () => timeline.value[0]?.id,
+    queueCount
+  ],
   () => {
     const el = outputsRef.value
     if (!el || el.scrollLeft === 0) {
@@ -339,7 +355,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       </div>
 
       <div
-        v-if="hasActiveContent && visibleHistory.length > 0"
+        v-if="hasActiveContent && timeline.length > 0"
         class="mx-4 h-12 shrink-0 border-l border-border-default"
       />
     </div>
@@ -350,21 +366,20 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       class="min-w-0 overflow-x-auto overflow-y-clip"
     >
       <div class="flex h-15 w-fit items-start gap-0.5">
-        <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
+        <template v-for="(item, idx) in timeline" :key="item.id">
           <div
-            v-if="aIdx > 0"
+            v-if="idx > 0 && item.groupKey !== timeline[idx - 1].groupKey"
             class="mx-4 h-12 shrink-0 border-l border-border-default"
           />
           <div
-            v-for="(output, key) in toValue(allOutputs(asset))"
-            :key
-            :ref="selectedRef(`history:${asset.id}:${key}`)"
-            v-bind="itemAttrs(`history:${asset.id}:${key}`)"
+            :ref="selectedRef(item.id)"
+            v-bind="itemAttrs(item.id)"
             data-testid="linear-history-item"
+            :data-item-kind="item.selectionValue.kind"
             :class="itemClass"
-            @click="store.select(`history:${asset.id}:${key}`)"
+            @click="store.select(item.id)"
           >
-            <OutputHistoryItem :output="output" />
+            <OutputHistoryItem :output="item.output" />
           </div>
         </template>
       </div>

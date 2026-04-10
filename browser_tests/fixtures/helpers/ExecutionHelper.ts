@@ -1,8 +1,8 @@
 import type { WebSocketRoute } from '@playwright/test'
 
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyPage } from '../ComfyPage'
-import { createMockJob } from './AssetsHelper'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 /**
  * Helper for simulating prompt execution in e2e tests.
@@ -197,6 +197,29 @@ export class ExecutionHelper {
     this.executionSuccess(jobId)
     // Trigger queue/history refresh
     this.status(0)
+  }
+
+  /**
+   * Send `executed` WS event with image compare output (a_images + b_images).
+   * Each filename array is converted to the result item format.
+   */
+  executedImageCompare(
+    jobId: string,
+    nodeId: string,
+    aImages: string[],
+    bImages: string[]
+  ): void {
+    const toItems = (filenames: string[]) =>
+      filenames.map((filename) => ({
+        filename,
+        subfolder: '',
+        type: 'output'
+      }))
+
+    this.executed(jobId, nodeId, {
+      a_images: toItems(aImages),
+      b_images: toItems(bImages)
+    })
   }
 
   /** Send `status` WS event to update queue count. */
