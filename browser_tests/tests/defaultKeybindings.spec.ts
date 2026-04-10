@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 async function pressKeyAndExpectRequest(
   comfyPage: ComfyPage,
@@ -41,11 +41,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         await expect(selectedButton).not.toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await comfyPage.nextFrame()
         await expect(selectedButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await comfyPage.nextFrame()
         await expect(selectedButton).not.toBeVisible()
       })
     }
@@ -58,8 +56,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.canvas.press('Alt+Equal')
       await comfyPage.nextFrame()
 
-      const newScale = await comfyPage.canvasOps.getScale()
-      expect(newScale).toBeGreaterThan(initialScale)
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(initialScale)
     })
 
     test("'Alt+-' zooms out", async ({ comfyPage }) => {
@@ -68,15 +67,17 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.canvas.press('Alt+Minus')
       await comfyPage.nextFrame()
 
-      const newScale = await comfyPage.canvasOps.getScale()
-      expect(newScale).toBeLessThan(initialScale)
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeLessThan(initialScale)
     })
 
     test("'.' fits view to nodes", async ({ comfyPage }) => {
       // Set scale very small so fit-view will zoom back to fit nodes
       await comfyPage.canvasOps.setScale(0.1)
-      const scaleBefore = await comfyPage.canvasOps.getScale()
-      expect(scaleBefore).toBeCloseTo(0.1, 1)
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeCloseTo(0.1, 1)
 
       // Click canvas to ensure focus is within graph-canvas-container
       await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
@@ -85,29 +86,30 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.canvas.press('Period')
       await comfyPage.nextFrame()
 
-      const scaleAfter = await comfyPage.canvasOps.getScale()
-      expect(scaleAfter).toBeGreaterThan(scaleBefore)
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeGreaterThan(0.1)
     })
 
     test("'h' locks canvas", async ({ comfyPage }) => {
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(false)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
 
       await comfyPage.canvas.press('KeyH')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
     })
 
     test("'v' unlocks canvas", async ({ comfyPage }) => {
       // Lock first
       await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
       await comfyPage.nextFrame()
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
 
       await comfyPage.canvas.press('KeyV')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.canvasOps.isReadOnly()).toBe(false)
+      await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
     })
   })
 
@@ -122,15 +124,15 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await node.click('title')
       await comfyPage.nextFrame()
 
-      expect(await node.isCollapsed()).toBe(false)
+      await expect.poll(() => node.isCollapsed()).toBe(false)
 
       await comfyPage.canvas.press('Alt+KeyC')
       await comfyPage.nextFrame()
-      expect(await node.isCollapsed()).toBe(true)
+      await expect.poll(() => node.isCollapsed()).toBe(true)
 
       await comfyPage.canvas.press('Alt+KeyC')
       await comfyPage.nextFrame()
-      expect(await node.isCollapsed()).toBe(false)
+      await expect.poll(() => node.isCollapsed()).toBe(false)
     })
 
     test("'Ctrl+m' mutes and unmutes selected nodes", async ({ comfyPage }) => {
@@ -147,16 +149,16 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
           return window.app!.canvas.graph!.getNodeById(nodeId)!.mode
         }, node.id)
 
-      expect(await getMode()).toBe(0)
+      await expect.poll(() => getMode()).toBe(0)
 
       await comfyPage.canvas.press('Control+KeyM')
       await comfyPage.nextFrame()
       // NEVER (2) = muted
-      expect(await getMode()).toBe(2)
+      await expect.poll(() => getMode()).toBe(2)
 
       await comfyPage.canvas.press('Control+KeyM')
       await comfyPage.nextFrame()
-      expect(await getMode()).toBe(0)
+      await expect.poll(() => getMode()).toBe(0)
     })
   })
 
@@ -170,12 +172,10 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       // Toggle off with Alt+m
       await comfyPage.page.keyboard.press('Alt+KeyM')
-      await comfyPage.nextFrame()
       await expect(comfyPage.appMode.linearWidgets).not.toBeVisible()
 
       // Toggle on again
       await comfyPage.page.keyboard.press('Alt+KeyM')
-      await comfyPage.nextFrame()
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     })
 
@@ -189,11 +189,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await expect(minimap).toBeVisible()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
-      await comfyPage.nextFrame()
       await expect(minimap).not.toBeVisible()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
-      await comfyPage.nextFrame()
       await expect(minimap).toBeVisible()
     })
 
@@ -203,11 +201,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await expect(comfyPage.bottomPanel.root).not.toBeVisible()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
-      await comfyPage.nextFrame()
       await expect(comfyPage.bottomPanel.root).toBeVisible()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
-      await comfyPage.nextFrame()
       await expect(comfyPage.bottomPanel.root).not.toBeVisible()
     })
   })
@@ -254,7 +250,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       // The Save As dialog should appear (p-dialog overlay)
       const dialogOverlay = comfyPage.page.locator('.p-dialog-mask')
-      await expect(dialogOverlay).toBeVisible({ timeout: 3000 })
+      await expect(dialogOverlay).toBeVisible()
 
       // Dismiss the dialog
       await comfyPage.page.keyboard.press('Escape')
@@ -278,7 +274,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.page.keyboard.press('Control+o')
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.page.evaluate(() => window.TestCommand)).toBe(true)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
+        .toBe(true)
     })
   })
 
@@ -286,8 +284,14 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+Shift+e' converts selection to subgraph", async ({
       comfyPage
     }) => {
+      await expect
+        .poll(
+          () => comfyPage.nodeOps.getGraphNodesCount(),
+          'Default workflow should have multiple nodes'
+        )
+        .toBeGreaterThan(1)
+
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(initialCount).toBeGreaterThan(1)
 
       // Select all nodes
       await comfyPage.canvas.press('Control+a')
@@ -299,9 +303,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       // After conversion, node count should decrease
       // (multiple nodes replaced by single subgraph node)
       await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5000
-        })
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBeLessThan(initialCount)
     })
 

@@ -1,11 +1,16 @@
 import { createTestingPinia } from '@pinia/testing'
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
 
 const mockIsActiveSubscription = ref(false)
 const mockSubscriptionTier = ref<
@@ -131,8 +136,11 @@ const i18n = createI18n({
   }
 })
 
-function createWrapper() {
-  return mount(PricingTable, {
+function renderComponent() {
+  return render(PricingTable, {
+    props: {
+      onChooseTeamWorkspace: onChooseTeamWorkspace
+    },
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       components: {
@@ -149,6 +157,8 @@ function createWrapper() {
     }
   })
 }
+
+const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
@@ -169,15 +179,15 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const creatorButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Creator'))
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
 
       expect(creatorButton).toBeDefined()
-      await creatorButton?.trigger('click')
+      await userEvent.click(creatorButton!)
       await flushPromises()
 
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
@@ -194,14 +204,14 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const proButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Pro'))
+      const proButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Pro'))
 
-      await proButton?.trigger('click')
+      await userEvent.click(proButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('pro-yearly')
@@ -212,16 +222,16 @@ describe('PricingTable', () => {
       mockSubscriptionTier.value = 'STANDARD'
       mockUserId.value = 'user-early'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
       mockUserId.value = 'user-late'
 
-      const creatorButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Creator'))
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
 
-      await creatorButton?.trigger('click')
+      await userEvent.click(creatorButton!)
       await flushPromises()
 
       expect(mockTrackBeginCheckout).toHaveBeenCalledTimes(1)
@@ -238,14 +248,14 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'CREATOR'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const currentPlanButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Current Plan'))
+      const currentPlanButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Current Plan'))
 
-      await currentPlanButton?.trigger('click')
+      await userEvent.click(currentPlanButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).not.toHaveBeenCalled()
@@ -258,14 +268,14 @@ describe('PricingTable', () => {
         .spyOn(window, 'open')
         .mockImplementation(() => null)
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const subscribeButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Subscribe'))
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
 
-      await subscribeButton?.trigger('click')
+      await userEvent.click(subscribeButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).not.toHaveBeenCalled()
@@ -285,14 +295,14 @@ describe('PricingTable', () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'PRO'
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const standardButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Standard'))
+      const standardButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Standard'))
 
-      await standardButton?.trigger('click')
+      await userEvent.click(standardButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
@@ -301,17 +311,17 @@ describe('PricingTable', () => {
 
   describe('team workspace link', () => {
     it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const teamLink = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Need team workspace?'))
+      const teamLink = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Need team workspace?'))
 
       expect(teamLink).toBeDefined()
-      await teamLink?.trigger('click')
+      await userEvent.click(teamLink!)
 
-      expect(wrapper.emitted('chooseTeamWorkspace')).toHaveLength(1)
+      expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
     })
   })
 })

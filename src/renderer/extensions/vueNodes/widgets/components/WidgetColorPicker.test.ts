@@ -1,13 +1,35 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+/* eslint-disable vue/one-component-per-file */
+/* eslint-disable vue/no-unused-emit-declarations */
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-
 import WidgetColorPicker from './WidgetColorPicker.vue'
 import { createMockWidget } from './widgetTestUtils'
-import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+
+const WidgetLayoutFieldStub = defineComponent({
+  name: 'WidgetLayoutField',
+  props: {
+    widget: { type: Object, default: () => ({}) }
+  },
+  template:
+    '<div data-testid="layout-field" :data-widget-name="widget.name"><slot /></div>'
+})
+
+const ColorPickerStub = defineComponent({
+  name: 'ColorPicker',
+  props: {
+    modelValue: { type: String, default: '' }
+  },
+  emits: ['update:modelValue'],
+  template: `<input
+    data-testid="color-picker-input"
+    :value="modelValue"
+    @input="$emit('update:modelValue', $event.target.value)"
+  />`
+})
 
 describe('WidgetColorPicker Value Binding', () => {
   const createColorWidget = (
@@ -23,118 +45,98 @@ describe('WidgetColorPicker Value Binding', () => {
       callback
     })
 
-  const mountComponent = (
+  const renderComponent = (
     widget: SimplifiedWidget<string>,
-    modelValue: string
+    modelValue: string,
+    extraProps: Record<string, unknown> = {}
   ) => {
-    return mount(WidgetColorPicker, {
+    return render(WidgetColorPicker, {
       global: {
-        components: {
-          ColorPicker,
-          WidgetLayoutField
+        stubs: {
+          ColorPicker: ColorPickerStub,
+          WidgetLayoutField: WidgetLayoutFieldStub
         }
       },
       props: {
         widget,
-        modelValue
+        modelValue,
+        ...extraProps
       }
     })
   }
 
   describe('Vue Event Emission', () => {
     it('emits Vue event when color changes', async () => {
+      const onUpdateModelValue = vi.fn()
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000', {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      const colorPicker = wrapper.findComponent(ColorPicker)
-      await colorPicker.vm.$emit('update:modelValue', '#00ff00')
+      const input = screen.getByTestId('color-picker-input')
+      await fireEvent.update(input, '#00ff00')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('#00ff00')
     })
 
     it('handles missing callback gracefully', async () => {
+      const onUpdateModelValue = vi.fn()
       const widget = createColorWidget('#000000', {}, undefined)
-      const wrapper = mountComponent(widget, '#000000')
+      renderComponent(widget, '#000000', {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      const colorPicker = wrapper.findComponent(ColorPicker)
-      await colorPicker.vm.$emit('update:modelValue', '#ff00ff')
+      const input = screen.getByTestId('color-picker-input')
+      await fireEvent.update(input, '#ff00ff')
 
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#ff00ff')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('#ff00ff')
     })
   })
 
   describe('Component Rendering', () => {
     it('renders color picker component', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const colorPicker = wrapper.findComponent(ColorPicker)
-      expect(colorPicker.exists()).toBe(true)
+      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
     })
 
     it('renders layout field wrapper', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const layoutField = wrapper.findComponent({
-        name: 'WidgetLayoutField'
-      })
-      expect(layoutField.exists()).toBe(true)
-    })
-
-    it('uses default color when no value provided', () => {
-      const widget = createColorWidget('')
-      const wrapper = mountComponent(widget, '')
-
-      const colorPicker = wrapper.findComponent(ColorPicker)
-      expect(colorPicker.exists()).toBe(true)
+      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
     })
   })
 
   describe('Widget Layout Integration', () => {
     it('passes widget to layout field', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const layoutField = wrapper.findComponent({
-        name: 'WidgetLayoutField'
-      })
-      expect(layoutField.props('widget')).toEqual(widget)
+      const layoutField = screen.getByTestId('layout-field')
+      expect(layoutField.getAttribute('data-widget-name')).toBe(
+        'test_color_picker'
+      )
     })
 
     it('maintains proper component structure', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const layoutField = wrapper.findComponent({
-        name: 'WidgetLayoutField'
-      })
-      const colorPicker = wrapper.findComponent(ColorPicker)
-
-      expect(layoutField.exists()).toBe(true)
-      expect(colorPicker.exists()).toBe(true)
+      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
+      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
     })
   })
 
   describe('Edge Cases', () => {
-    it('handles empty color value', () => {
+    it('renders color picker with empty value', () => {
       const widget = createColorWidget('')
-      const wrapper = mountComponent(widget, '')
+      renderComponent(widget, '')
 
-      const colorPicker = wrapper.findComponent(ColorPicker)
-      expect(colorPicker.exists()).toBe(true)
-    })
-
-    it('handles widget with no options', () => {
-      const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
-
-      const colorPicker = wrapper.findComponent(ColorPicker)
-      expect(colorPicker.exists()).toBe(true)
+      const input = screen.getByTestId('color-picker-input')
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveValue('#000000')
     })
   })
 })

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { WorkspaceStore } from '../types/globals'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -157,6 +157,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
     )
@@ -177,7 +178,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
         window.app!.extensionManager as WorkspaceStore
       ).colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
-    expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
+    await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await comfyPage.nextFrame()
@@ -211,12 +212,14 @@ test.describe(
 
       // Drag mouse to force canvas to redraw
       await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.nextFrame()
 
       await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
 
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 1.0)
 
       await comfyPage.page.mouse.move(8, 8)
+      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
     })
 
@@ -225,8 +228,8 @@ test.describe(
     }) => {
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.2)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'arc')
-      await comfyPage.nextFrame()
       await comfyPage.page.mouse.move(0, 0)
+      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-opacity-0.2-arc-theme.png'
       )
@@ -238,22 +241,38 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.nextFrame()
-      const parsed = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.graph!
-        if (typeof graph.serialize !== 'function') {
-          throw new Error('app.graph.serialize is not available')
-        }
-        return graph.serialize() as {
-          nodes: Array<{ bgcolor?: string; color?: string }>
-        }
-      })
-      expect(parsed.nodes).toBeDefined()
-      expect(Array.isArray(parsed.nodes)).toBe(true)
-      const nodes = parsed.nodes
-      for (const node of nodes) {
-        if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
-        if (node.color) expect(node.color).not.toMatch(/hsla/)
-      }
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph!
+            if (typeof graph.serialize !== 'function') return undefined
+            const parsed = graph.serialize() as {
+              nodes: Array<{ bgcolor?: string; color?: string }>
+            }
+            return parsed.nodes
+          })
+        )
+        .toBeDefined()
+
+      await expect
+        .poll(async () => {
+          const nodes = await comfyPage.page.evaluate(() => {
+            return (
+              window.app!.graph!.serialize() as {
+                nodes: Array<{ bgcolor?: string; color?: string }>
+              }
+            ).nodes
+          })
+          if (!Array.isArray(nodes)) return 'not an array'
+          for (const node of nodes) {
+            if (node.bgcolor && /hsla/.test(node.bgcolor))
+              return `bgcolor contains hsla: ${node.bgcolor}`
+            if (node.color && /hsla/.test(node.color))
+              return `color contains hsla: ${node.color}`
+          }
+          return 'ok'
+        })
+        .toBe('ok')
     })
 
     test('should lighten node colors when switching to light theme', async ({

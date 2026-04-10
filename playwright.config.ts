@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test'
 import type { PlaywrightTestConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {

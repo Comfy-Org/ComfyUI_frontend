@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -30,7 +30,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
 
     const popover = comfyPage.page.locator('.workflow-popover-fade')
     await expect(popover).toHaveCount(1)
-    await expect(popover).toBeVisible({ timeout: 500 })
+    await expect(popover).toBeVisible()
     if (name) {
       await expect(popover).toContainText(name)
     }

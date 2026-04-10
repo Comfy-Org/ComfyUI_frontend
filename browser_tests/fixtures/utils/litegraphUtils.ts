@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '../../helpers/manageGroupNode'
-import type { ComfyPage } from '../ComfyPage'
-import type { Position, Size } from '../types'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ManageGroupNode } from '@e2e/helpers/manageGroupNode'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position, Size } from '@e2e/fixtures/types'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {

@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
-import type { TestGraphAccess } from '../../../types/globals'
+} from '@e2e/fixtures/ComfyPage'
+import type { TestGraphAccess } from '@e2e/types/globals'
 
 test.describe('Vue Widget Reactivity', () => {
   test.beforeEach(async ({ comfyPage }) => {

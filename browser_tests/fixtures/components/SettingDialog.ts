@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
-import { BaseDialog } from './BaseDialog'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
 export class SettingDialog extends BaseDialog {
   constructor(

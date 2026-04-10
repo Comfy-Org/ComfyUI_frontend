@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,10 +43,10 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 const NODE_ID = 'test-node'
 const SLOT_INDEX = 0
 
-function createWrapperComponent(type: 'input' | 'output') {
-  return defineComponent({
+function createTestSetup(type: 'input' | 'output') {
+  const el = ref<HTMLElement | null>(null)
+  const TestComponent = defineComponent({
     setup() {
-      const el = ref<HTMLElement | null>(null)
       useSlotElementTracking({
         nodeId: NODE_ID,
         index: SLOT_INDEX,
@@ -55,10 +55,9 @@ function createWrapperComponent(type: 'input' | 'output') {
       })
       return { el }
     },
-    // No template ref — el starts null so the immediate watcher doesn't fire
-    // before the stop handle is assigned
     template: '<div />'
   })
+  return { el, TestComponent }
 }
 
 function createSlotElement(collapsed = false): HTMLElement {
@@ -101,11 +100,12 @@ function createSlotElement(collapsed = false): HTMLElement {
  * Mount the wrapper, set the element ref, and wait for slot registration.
  */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
-  const wrapper = mount(createWrapperComponent(type))
-  wrapper.vm.el = createSlotElement()
+  const { el, TestComponent } = createTestSetup(type)
+  const { unmount } = render(TestComponent)
+  el.value = createSlotElement()
   await nextTick()
   flushScheduledSlotLayoutSync()
-  return wrapper
+  return { unmount }
 }
 
 describe('useSlotElementTracking', () => {
@@ -138,14 +138,14 @@ describe('useSlotElementTracking', () => {
     { type: 'input' as const, isInput: true },
     { type: 'output' as const, isInput: false }
   ])('cleans up $type slot layout on unmount', async ({ type, isInput }) => {
-    const wrapper = await mountAndRegisterSlot(type)
+    const { unmount } = await mountAndRegisterSlot(type)
 
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, isInput)
     const registryStore = useNodeSlotRegistryStore()
     expect(registryStore.getNode(NODE_ID)?.slots.has(slotKey)).toBe(true)
     expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
 
-    wrapper.unmount()
+    unmount()
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
     expect(registryStore.getNode(NODE_ID)).toBeUndefined()

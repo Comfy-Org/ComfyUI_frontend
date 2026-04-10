@@ -10,6 +10,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
+import { hexToInt } from '@/utils/colorUtil'
 
 interface AutogrowGroup {
   max: number
@@ -17,12 +18,14 @@ interface AutogrowGroup {
   prefix?: string
 }
 
-export interface UniformSource {
+interface UniformSource {
   nodeId: NodeId
   widgetName: string
+  /** Fallback getter for widgets not registered in widgetValueStore (e.g. hidden computed widgets). */
+  directValue: () => unknown
 }
 
-export interface UniformSources {
+interface UniformSources {
   floats: UniformSource[]
   ints: UniformSource[]
   bools: UniformSource[]
@@ -78,16 +81,19 @@ export function extractUniformSources(
     if (!link || link.origin_id === SUBGRAPH_INPUT_ID) continue
 
     const sourceNode = subgraph.getNodeById(link.origin_id)
-    if (!sourceNode?.widgets?.[0]) continue
+    if (!sourceNode?.widgets?.length) continue
 
     const inputName = input.name ?? ''
     const dotIndex = inputName.indexOf('.')
     if (dotIndex === -1) continue
 
     const prefix = inputName.slice(0, dotIndex)
+    if (link.origin_slot >= sourceNode.widgets.length) continue
+    const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
       nodeId: sourceNode.id as NodeId,
-      widgetName: sourceNode.widgets[0].name
+      widgetName: widget.name,
+      directValue: () => widget.value
     }
 
     if (prefix === 'floats') floats.push(source)
@@ -97,6 +103,11 @@ export function extractUniformSources(
   }
 
   return { floats, ints, bools, curves }
+}
+
+export function toNumber(v: unknown): number {
+  if (typeof v === 'string' && v.startsWith('#')) return hexToInt(v)
+  return Number(v) || 0
 }
 
 export function useGLSLUniforms(
@@ -120,9 +131,9 @@ export function useGLSLUniforms(
     if (!gId) return []
 
     if (subgraphSources) {
-      return subgraphSources.map(({ nodeId: nId, widgetName }) => {
+      return subgraphSources.map(({ nodeId: nId, widgetName, directValue }) => {
         const widget = widgetValueStore.getWidget(gId, nId, widgetName)
-        return coerce(widget?.value ?? defaultValue)
+        return coerce(widget?.value ?? directValue() ?? defaultValue)
       })
     }
 
@@ -142,19 +153,24 @@ export function useGLSLUniforms(
       const slot = node.inputs?.findIndex((inp) => inp.name === inputName)
       if (slot == null || slot < 0) break
 
+      const link = node.getInputLink(slot)
+      if (!link) break
       const upstreamNode = node.getInputNode(slot)
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
         upstreamNode.id as NodeId
       )
-      if (upstreamWidgets.length === 0) break
-      values.push(coerce(upstreamWidgets[0].value))
+      if (
+        upstreamWidgets.length === 0 ||
+        link.origin_slot >= upstreamWidgets.length
+      )
+        break
+      values.push(coerce(upstreamWidgets[link.origin_slot].value))
     }
     return values
   }
 
-  const toNumber = (v: unknown): number => Number(v) || 0
   const toBool = (v: unknown): boolean => Boolean(v)
 
   const floatValues = computed(() =>
@@ -197,11 +213,10 @@ export function useGLSLUniforms(
     const sources = uniformSources.value?.curves
     if (sources && sources.length > 0) {
       return sources
-        .map(({ nodeId: nId, widgetName }) => {
+        .map(({ nodeId: nId, widgetName, directValue }) => {
           const widget = widgetValueStore.getWidget(gId, nId, widgetName)
-          return widget && isCurveData(widget.value)
-            ? (widget.value as CurveData)
-            : null
+          const value = widget?.value ?? directValue()
+          return isCurveData(value) ? (value as CurveData) : null
         })
         .filter((v): v is CurveData => v !== null)
     }

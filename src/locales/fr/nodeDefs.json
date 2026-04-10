@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Histogramme d'image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rvb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminance",
+        "tooltip": null
+      },
+      "2": {
+        "name": "rouge",
+        "tooltip": null
+      },
+      "3": {
+        "name": "vert",
+        "tooltip": null
+      },
+      "4": {
+        "name": "bleu",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Inverser l'image",
     "inputs": {
@@ -17943,6 +17973,241 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "Générez une vidéo à partir d'une image de première image, avec une image de dernière image et un audio optionnels.",
+    "display_name": "Wan 2.7 Image vers Vidéo",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio pour guider la génération vidéo (ex : synchronisation labiale, mouvement sur le rythme). Durée : 2s-30s. Si non fourni, le modèle génère automatiquement une musique de fond ou des effets sonores adaptés."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_frame": {
+        "name": "première image",
+        "tooltip": "Image de la première image. Le format de sortie est dérivé de cette image."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de la dernière image. Le modèle génère une vidéo passant de la première à la dernière image."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt_extend": {
+        "name": "extension de prompt",
+        "tooltip": "Permet d'améliorer le prompt avec l'aide de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Générez une vidéo mettant en scène une personne ou un objet à partir de références. Prend en charge les performances à un personnage et les interactions multi-personnages.",
+    "display_name": "Wan 2.7 Référence vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Génère une vidéo à partir d'une invite textuelle en utilisant le modèle Wan 2.7.",
+    "display_name": "Wan 2.7 Texte en Vidéo",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio pour guider la génération vidéo (ex : synchronisation labiale, mouvement sur le rythme). Durée : 3s-30s. Si non fourni, le modèle génère automatiquement une musique de fond ou des effets sonores adaptés."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "invite négative"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt_extend": {
+        "name": "extension d'invite",
+        "tooltip": "Améliorer l'invite avec l'assistance de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Continue une vidéo à partir de l'endroit où elle s'est arrêtée, avec un contrôle optionnel de la dernière image.",
+    "display_name": "Wan 2.7 Continuation Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "first_clip": {
+        "name": "premier clip",
+        "tooltip": "Vidéo d'entrée à continuer. Durée : 2s-10s. Le ratio de sortie est dérivé de cette vidéo."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de la dernière frame. La continuation effectuera une transition vers cette image."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_negative_prompt": {
+        "name": "invite négative"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt_extend": {
+        "name": "extension d'invite",
+        "tooltip": "Améliorer l'invite avec l'assistance de l'IA."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter un filigrane généré par IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Éditez une vidéo à l'aide d'instructions textuelles, d'images de référence ou de transfert de style.",
+    "display_name": "Wan 2.7 Édition Vidéo",
+    "inputs": {
+      "audio_setting": {
+        "name": "paramètre audio",
+        "tooltip": "'auto' : le modèle décide de régénérer ou non l'audio selon l'invite. 'origin' : préserve l'audio original de la vidéo d'entrée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "La vidéo à éditer."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter un filigrane généré par IA au résultat."
       }
     },
     "outputs": {

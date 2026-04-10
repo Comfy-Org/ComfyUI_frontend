@@ -73,14 +73,22 @@ for PR in ${CONFLICT_PRS[@]}; do
   git cherry-pick -m 1 $MERGE_SHA
 
   # If conflict — NEVER skip based on file count alone!
-  # Categorize conflicts first: binary PNGs, modify/delete, content, add/add
+  # Categorize conflicts first: binary PNGs, modify/delete, content, add/add, component rewrites
   # See SKILL.md Conflict Triage table for resolution per type.
+
+  # For component rewrites (4+ markers in a .vue file, library migration):
+  # DO NOT use accept-theirs regex — it produces broken hybrids.
+  # Instead, use the complete file from the merge commit:
+  # git show $MERGE_SHA:path/to/file > path/to/file
+
+  # For simple content conflicts, accept theirs:
+  # python3 -c "import re; ..."
 
   # Resolve all conflicts, then:
   git add .
   GIT_EDITOR=true git cherry-pick --continue
 
-  git push origin backport-$PR-to-TARGET
+  git push origin backport-$PR-to-TARGET --no-verify
   NEW_PR=$(gh pr create --base TARGET_BRANCH --head backport-$PR-to-TARGET \
     --title "[backport TARGET] TITLE (#$PR)" \
     --body "Backport of #$PR..." | grep -oP '\d+$')
@@ -114,7 +122,30 @@ source ~/.nvm/nvm.sh && nvm use 24 && pnpm install && pnpm typecheck && pnpm tes
 git worktree remove /tmp/verify-TARGET --force
 ```
 
-If verification fails, stop and fix before proceeding to the next wave. Do not compound problems across waves.
+If verification fails, **do not skip** — create a fix PR:
+
+```bash
+# Stay in the verify worktree
+git checkout -b fix-backport-TARGET origin/TARGET_BRANCH
+
+# Common fixes:
+# 1. Component rewrite hybrids: overwrite with merge commit version
+git show MERGE_SHA:path/to/Component.vue > path/to/Component.vue
+
+# 2. Missing dependency files
+git show MERGE_SHA:path/to/missing.ts > path/to/missing.ts
+
+# 3. Missing type properties: edit the interface
+# 4. Unused imports: delete the import lines
+
+git add -A
+git commit --no-verify -m "fix: resolve backport typecheck issues on TARGET"
+git push origin fix-backport-TARGET --no-verify
+gh pr create --base TARGET --head fix-backport-TARGET --title "fix: resolve backport typecheck issues on TARGET" --body "..."
+gh pr merge $PR --squash --admin
+```
+
+Do not proceed to the next branch until typecheck passes.
 
 ## Conflict Resolution Patterns
 
@@ -142,7 +173,35 @@ git rm $FILE
 git checkout --theirs $FILE && git add $FILE
 ```
 
-### 4. Locale Files
+### 4. Component Rewrites (DO NOT accept-theirs)
+
+When a PR completely rewrites a component (e.g., PrimeVue → Reka UI), accept-theirs produces
+a broken hybrid with mismatched template/script sections.
+
+```bash
+# Use the complete correct file from the merge commit instead:
+git show $MERGE_SHA:src/components/input/MultiSelect.vue > src/components/input/MultiSelect.vue
+git show $MERGE_SHA:src/components/input/SingleSelect.vue > src/components/input/SingleSelect.vue
+git add src/components/input/MultiSelect.vue src/components/input/SingleSelect.vue
+```
+
+**Detection:** 4+ conflict markers in a single `.vue` file, imports changing between component
+libraries (PrimeVue → Reka UI, etc.), template structure completely different on each side.
+
+### 5. Missing Dependencies After Cherry-Pick
+
+Cherry-picks can succeed but leave the branch broken because the PR's code on main
+references composables/components introduced by an earlier PR.
+
+```bash
+# Add the missing file from the merge commit:
+git show $MERGE_SHA:src/composables/queue/useJobDetailsHover.ts > src/composables/queue/useJobDetailsHover.ts
+git show $MERGE_SHA:src/components/builder/BuilderSaveDialogContent.vue > src/components/builder/BuilderSaveDialogContent.vue
+```
+
+**Detection:** `pnpm typecheck` fails with "Cannot find module" or "X is not defined" after cherry-pick succeeds cleanly.
+
+### 6. Locale Files
 
 Usually adding new i18n keys — accept theirs, validate JSON:
 
@@ -176,8 +235,14 @@ gh pr checks $PR --watch --fail-fast && gh pr merge $PR --squash --admin
 8. **Always validate JSON** after resolving locale file conflicts
 9. **Dep refresh PRs** — skip on stable branches. Risk of transitive dep regressions outweighs audit cleanup. Cherry-pick individual CVE fixes instead.
 10. **Verify after each wave** — run `pnpm typecheck && pnpm test:unit` on the target branch after merging a batch. Catching breakage early prevents compounding errors.
-11. **Cloud-only PRs don't belong on core/\* branches** — app mode, cloud auth, and cloud-specific UI changes are irrelevant to local users. Always check PR scope against branch scope before backporting.
+11. **App mode and Firebase auth are NOT cloud-only** — they go to both core and cloud branches. Only team workspaces, cloud queue, and cloud-specific login are cloud-only.
 12. **Never admin-merge without CI** — `--admin` bypasses all branch protections including required status checks. A bulk session of 69 admin-merges shipped 3 test failures. Always wait for CI to pass first, or use `--auto --squash` which waits by design.
+13. **Accept-theirs regex breaks component rewrites** — when a PR migrates between component libraries (PrimeVue → Reka UI), the regex produces a broken hybrid. Use `git show SHA:path > path` to get the complete correct version instead.
+14. **Cherry-picks can silently bring in missing-dependency code** — if PR A references a composable introduced by PR B, cherry-picking A succeeds but typecheck fails. Always run typecheck after each wave and add missing files from the merge commit.
+15. **Fix PRs are expected** — plan for 1 fix PR per branch to resolve typecheck issues from conflict resolutions. This is normal, not a failure.
+16. **Use `--no-verify` in worktrees** — husky hooks fail in `/tmp/` worktrees. Always push/commit with `--no-verify`.
+17. **Automation success varies by branch** — core/1.42 got 18/26 auto-PRs (69%), cloud/1.42 got 1/25 (4%). Cloud branches diverge more. Plan for manual fallback.
+18. **Test-then-resolve pattern** — for branches with low automation success, run a dry-run loop to classify clean vs conflict PRs before processing. This is much faster than resolving conflicts serially.
 
 ## CI Failure Triage
 

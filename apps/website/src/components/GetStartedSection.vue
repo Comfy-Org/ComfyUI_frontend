@@ -1,30 +1,37 @@
 <script setup lang="ts">
-const steps = [
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const steps = computed(() => [
   {
     number: '1',
-    title: 'Download & Sign Up',
-    description: 'Get Comfy Desktop for free or create a Cloud account'
+    title: t('getStarted.step1.title', locale),
+    description: t('getStarted.step1.desc', locale)
   },
   {
     number: '2',
-    title: 'Load a Workflow',
-    description:
-      'Choose from thousands of community workflows or build your own'
+    title: t('getStarted.step2.title', locale),
+    description: t('getStarted.step2.desc', locale)
   },
   {
     number: '3',
-    title: 'Generate',
-    description: 'Hit run and watch your AI workflow come to life'
+    title: t('getStarted.step3.title', locale),
+    description: t('getStarted.step3.desc', locale)
   }
-]
+])
 </script>
 
 <template>
   <section class="border-t border-white/10 bg-black py-24">
     <div class="mx-auto max-w-7xl px-6 text-center">
-      <h2 class="text-3xl font-bold text-white">Get Started in Minutes</h2>
+      <h2 class="text-3xl font-bold text-white">
+        {{ t('getStarted.heading', locale) }}
+      </h2>
       <p class="mt-4 text-smoke-700">
-        From download to your first AI-generated output in three simple steps
+        {{ t('getStarted.subheading', locale) }}
       </p>
 
       <!-- Steps -->
@@ -55,7 +62,7 @@ const steps = [
         href="/download"
         class="mt-12 inline-block rounded-full bg-brand-yellow px-8 py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
       >
-        DOWNLOAD COMFY
+        {{ t('getStarted.cta', locale) }}
       </a>
     </div>
   </section>

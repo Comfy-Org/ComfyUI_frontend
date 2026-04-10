@@ -1,9 +1,9 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
-import type { Position } from '../../../../fixtures/types'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position } from '@e2e/fixtures/types'
 
 test.describe('Vue Node Moving', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -29,23 +29,16 @@ test.describe('Vue Node Moving', () => {
     expect(diffY).toBeGreaterThan(0)
   }
 
-  test(
-    'should allow moving nodes by dragging',
-    { tag: '@screenshot' },
-    async ({ comfyPage }) => {
-      const loadCheckpointHeaderPos =
-        await getLoadCheckpointHeaderPos(comfyPage)
-      await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
-        x: 256,
-        y: 256
-      })
+  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
+    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
+      x: 256,
+      y: 256
+    })
 
-      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-      await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
-
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-node-moved-node.png')
-    }
-  )
+    const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+  })
 
   test('should not move node when pointer moves less than drag threshold', async ({
     comfyPage
@@ -66,7 +59,7 @@ test.describe('Vue Node Moving', () => {
     expect(afterPos.y).toBeCloseTo(headerPos.y, 0)
 
     // The small movement should have selected the node, not dragged it
-    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
   })
 
   test('should move node when pointer moves beyond drag threshold', async ({

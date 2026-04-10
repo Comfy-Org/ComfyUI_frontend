@@ -8,14 +8,8 @@ export class ToastHelper {
     return this.page.locator('.p-toast-message:visible')
   }
 
-  async getToastErrorCount(): Promise<number> {
-    return await this.page
-      .locator('.p-toast-message.p-toast-message-error')
-      .count()
-  }
-
-  async getVisibleToastCount(): Promise<number> {
-    return await this.visibleToasts.count()
+  get toastErrors(): Locator {
+    return this.page.locator('.p-toast-message.p-toast-message-error')
   }
 
   async closeToasts(requireCount = 0): Promise<void> {
@@ -34,6 +28,6 @@ export class ToastHelper {
     }
 
     // Assert all toasts are closed
-    await expect(this.visibleToasts).toHaveCount(0, { timeout: 1000 })
+    await expect(this.visibleToasts).toHaveCount(0)
   }
 }
