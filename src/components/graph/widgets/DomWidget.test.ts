@@ -1,9 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
+import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
@@ -100,16 +100,17 @@ describe('DomWidget disabled style', () => {
 
   it('uses disabled style when promoted override widget is computedDisabled', async () => {
     const widgetState = createWidgetState(true)
-    const wrapper = mount(DomWidget, {
+    const { container } = render(DomWidget, {
       props: {
         widgetState
       }
     })
 
     widgetState.zIndex = 3
-    await wrapper.vm.$nextTick()
+    await nextTick()
 
-    const root = wrapper.get('.dom-widget').element as HTMLElement
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
   })

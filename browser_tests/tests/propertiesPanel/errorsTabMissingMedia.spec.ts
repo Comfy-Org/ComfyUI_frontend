@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
-import { openErrorsTabViaSeeErrors } from './ErrorsTabHelper'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { openErrorsTabViaSeeErrors } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 async function uploadFileViaDropzone(comfyPage: ComfyPage) {
   const dropzone = comfyPage.page.getByTestId(

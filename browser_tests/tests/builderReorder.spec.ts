@@ -1,14 +1,14 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import type { AppModeHelper } from '../fixtures/helpers/AppModeHelper'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import {
   builderSaveAs,
   openWorkflowFromSidebar,
   setupBuilder
-} from '../helpers/builderTestUtils'
+} from '@e2e/helpers/builderTestUtils'
 
 const WIDGETS = ['seed', 'steps', 'cfg']
 
@@ -21,7 +21,7 @@ async function saveCloseAndReopenAsApp(
   await appMode.steps.goToPreview()
   await builderSaveAs(appMode, workflowName)
   await appMode.saveAs.closeButton.click()
-  await comfyPage.nextFrame()
+  await expect(appMode.saveAs.successDialog).not.toBeVisible()
 
   await appMode.footer.exitBuilder()
   await openWorkflowFromSidebar(comfyPage, workflowName)

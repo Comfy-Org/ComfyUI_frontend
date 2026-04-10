@@ -1,7 +1,7 @@
 import type { Mouse } from '@playwright/test'
 
-import type { ComfyPage } from './ComfyPage'
-import type { Position } from './types'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position } from '@e2e/fixtures/types'
 
 /**
  * Used for drag and drop ops

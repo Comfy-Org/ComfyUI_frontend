@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { TestIds } from '../../fixtures/selectors'
-import { openErrorsTabViaSeeErrors } from './ErrorsTabHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { openErrorsTabViaSeeErrors } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

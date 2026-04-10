@@ -65,21 +65,9 @@ export class ContextMenu {
   }
 
   async waitForHidden(): Promise<void> {
-    const waitIfExists = async (locator: Locator, menuName: string) => {
-      const count = await locator.count()
-      if (count > 0) {
-        await locator.waitFor({ state: 'hidden' }).catch((error: Error) => {
-          console.warn(
-            `[waitForHidden] ${menuName} waitFor failed:`,
-            error.message
-          )
-        })
-      }
-    }
-
     await Promise.all([
-      waitIfExists(this.primeVueMenu, 'primeVueMenu'),
-      waitIfExists(this.litegraphMenu, 'litegraphMenu')
+      this.primeVueMenu.waitFor({ state: 'hidden' }),
+      this.litegraphMenu.waitFor({ state: 'hidden' })
     ])
   }
 }

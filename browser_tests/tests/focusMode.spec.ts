@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Focus Mode', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -29,11 +29,9 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
 
     await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-    await comfyPage.nextFrame()
     await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
 
     await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-    await comfyPage.nextFrame()
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
   })
 
