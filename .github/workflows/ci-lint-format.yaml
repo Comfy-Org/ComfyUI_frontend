@@ -1,10 +1,12 @@
-# Description: Linting and code formatting validation for pull requests
+# Description: Linting and code formatting validation for pull requests.
+# Paired with ci-lint-format-queue.yaml - workflow name and job name must
+# match so branch protection resolves a single required check in both the
+# pull_request and merge_group contexts.
 name: 'CI: Lint Format'
 
 on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,29 +29,17 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Detect browser_tests changes
-        id: changed-paths
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        with:
-          filters: |
-            browser_tests:
-              - 'browser_tests/**'
-
       - name: Run ESLint with auto-fix
-        if: github.event_name == 'pull_request'
         run: pnpm lint:fix
 
       - name: Run Stylelint with auto-fix
-        if: github.event_name == 'pull_request'
         run: pnpm stylelint:fix
 
       - name: Run oxfmt with auto-format
-        if: github.event_name == 'pull_request'
         run: pnpm format
 
       - name: Check for changes
         id: verify-changed-files
-        if: github.event_name == 'pull_request'
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -58,7 +48,7 @@ jobs:
           fi
 
       - name: Commit changes
-        if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -67,7 +57,7 @@ jobs:
           git push
 
       - name: Fail for fork PRs with unfixed lint/format issues
-        if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name != github.repository
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name != github.repository
         run: |
           echo "::error::Linting/formatting issues found. Since this PR is from a fork, auto-fix cannot be applied automatically."
           echo ""
@@ -82,19 +72,11 @@ jobs:
           echo "See CONTRIBUTING.md for more details."
           exit 1
 
-      - name: Final validation
-        run: |
-          pnpm lint
-          pnpm stylelint
-          pnpm format:check
-          pnpm knip
-
-      - name: Typecheck browser tests
-        if: steps.changed-paths.outputs.browser_tests == 'true'
-        run: pnpm typecheck:browser
+      - name: Verify lint and format
+        uses: ./.github/actions/lint-format-verify
 
       - name: Comment on PR about auto-fix
-        if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         continue-on-error: true
         uses: actions/github-script@v8
         with:
