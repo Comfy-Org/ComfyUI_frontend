@@ -3,13 +3,11 @@ import type { Locator, Page } from '@playwright/test'
 
 export class ComfyNodeSearchFilterSelectionPanel {
   readonly root: Locator
+  readonly header: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.getByRole('dialog')
-  }
-
-  get header() {
-    return this.root
+    this.header = this.root
       .locator('div')
       .filter({ hasText: 'Add node filter condition' })
   }
@@ -41,6 +39,8 @@ export class ComfyNodeSearchFilterSelectionPanel {
 export class ComfyNodeSearchBox {
   public readonly input: Locator
   public readonly dropdown: Locator
+  public readonly filterButton: Locator
+  public readonly filterChips: Locator
   public readonly filterSelectionPanel: ComfyNodeSearchFilterSelectionPanel
 
   constructor(public readonly page: Page) {
@@ -50,11 +50,13 @@ export class ComfyNodeSearchBox {
     this.dropdown = page.locator(
       '.comfy-vue-node-search-container .p-autocomplete-list'
     )
+    this.filterButton = page.locator(
+      '.comfy-vue-node-search-container .filter-button'
+    )
+    this.filterChips = page.locator(
+      '.comfy-vue-node-search-container .p-autocomplete-chip-item'
+    )
     this.filterSelectionPanel = new ComfyNodeSearchFilterSelectionPanel(page)
-  }
-
-  get filterButton() {
-    return this.page.locator('.comfy-vue-node-search-container .filter-button')
   }
 
   async fillAndSelectFirstNode(
@@ -76,12 +78,6 @@ export class ComfyNodeSearchBox {
   async addFilter(filterValue: string, filterType: string) {
     await this.filterButton.click()
     await this.filterSelectionPanel.addFilter(filterValue, filterType)
-  }
-
-  get filterChips() {
-    return this.page.locator(
-      '.comfy-vue-node-search-container .p-autocomplete-chip-item'
-    )
   }
 
   async removeFilter(index: number) {

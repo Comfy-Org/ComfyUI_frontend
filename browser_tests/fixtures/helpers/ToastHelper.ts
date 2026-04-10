@@ -2,14 +2,12 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ToastHelper {
-  constructor(private readonly page: Page) {}
+  public readonly visibleToasts: Locator
+  public readonly toastErrors: Locator
 
-  get visibleToasts(): Locator {
-    return this.page.locator('.p-toast-message:visible')
-  }
-
-  get toastErrors(): Locator {
-    return this.page.locator('.p-toast-message.p-toast-message-error')
+  constructor(private readonly page: Page) {
+    this.visibleToasts = page.locator('.p-toast-message:visible')
+    this.toastErrors = page.locator('.p-toast-message.p-toast-message-error')
   }
 
   async closeToasts(requireCount = 0): Promise<void> {
