@@ -1,3 +1,4 @@
+import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -196,22 +197,14 @@ describe('hasWidgetError', () => {
   })
 })
 
+const noopUi = {
+  getTooltipConfig: () => ({}) as TooltipOptions,
+  handleNodeRightClick: () => {}
+}
+
 describe('computeProcessedWidgets borderStyle', () => {
-  let promotionStore: ReturnType<typeof usePromotionStore>
-  let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
-  let missingModelStore: ReturnType<typeof useMissingModelStore>
-  let widgetValueStore: ReturnType<typeof useWidgetValueStore>
-
-  const noopTooltip = () => ''
-  const noopTooltipConfig = () => ({}) as never
-  const noopRightClick = () => {}
-
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    promotionStore = usePromotionStore()
-    executionErrorStore = useExecutionErrorStore()
-    missingModelStore = useMissingModelStore()
-    widgetValueStore = useWidgetValueStore()
   })
 
   it('applies promoted border styling to intermediate promoted widgets', () => {
@@ -224,38 +217,30 @@ describe('computeProcessedWidgets borderStyle', () => {
       slotName: 'text'
     })
 
-    promotionStore.promote('graph-test', '4', {
+    usePromotionStore().promote('graph-test', '4', {
       sourceNodeId: '3',
       sourceWidgetName: 'text',
       disambiguatingSourceNodeId: '1'
     })
 
-    const nodeData = {
-      id: '3',
-      type: 'SubgraphNode',
-      widgets: [promotedWidget],
-      title: 'Test',
-      mode: 0,
-      selected: false,
-      executing: false,
-      inputs: [],
-      outputs: []
-    }
-
-    const result = computeProcessedWidgets(
-      nodeData,
-      'graph-test',
-      false,
-      false,
-      null,
-      promotionStore,
-      executionErrorStore,
-      missingModelStore,
-      widgetValueStore,
-      noopTooltip,
-      noopTooltipConfig,
-      noopRightClick
-    )
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '3',
+        type: 'SubgraphNode',
+        widgets: [promotedWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
 
     expect(
       result.some((w) => w.simplified.borderStyle?.includes('promoted'))
@@ -272,38 +257,30 @@ describe('computeProcessedWidgets borderStyle', () => {
       slotName: 'text'
     })
 
-    promotionStore.promote('graph-test', '4', {
+    usePromotionStore().promote('graph-test', '4', {
       sourceNodeId: '3',
       sourceWidgetName: 'text',
       disambiguatingSourceNodeId: '1'
     })
 
-    const nodeData = {
-      id: '4',
-      type: 'SubgraphNode',
-      widgets: [promotedWidget],
-      title: 'Test',
-      mode: 0,
-      selected: false,
-      executing: false,
-      inputs: [],
-      outputs: []
-    }
-
-    const result = computeProcessedWidgets(
-      nodeData,
-      'graph-test',
-      false,
-      false,
-      null,
-      promotionStore,
-      executionErrorStore,
-      missingModelStore,
-      widgetValueStore,
-      noopTooltip,
-      noopTooltipConfig,
-      noopRightClick
-    )
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '4',
+        type: 'SubgraphNode',
+        widgets: [promotedWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
 
     expect(
       result.some((w) => w.simplified.borderStyle?.includes('promoted'))
@@ -317,32 +294,24 @@ describe('computeProcessedWidgets borderStyle', () => {
       options: { advanced: true }
     })
 
-    const nodeData = {
-      id: '1',
-      type: 'TestNode',
-      widgets: [advancedWidget],
-      title: 'Test',
-      mode: 0,
-      selected: false,
-      executing: false,
-      inputs: [],
-      outputs: []
-    }
-
-    const result = computeProcessedWidgets(
-      nodeData,
-      'graph-test',
-      true,
-      false,
-      null,
-      promotionStore,
-      executionErrorStore,
-      missingModelStore,
-      widgetValueStore,
-      noopTooltip,
-      noopTooltipConfig,
-      noopRightClick
-    )
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '1',
+        type: 'TestNode',
+        widgets: [advancedWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: true,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
 
     expect(result[0].simplified.borderStyle).toBe(
       'ring ring-component-node-widget-advanced'
@@ -369,32 +338,24 @@ describe('computeProcessedWidgets borderStyle', () => {
       slotName: 'text'
     })
 
-    const nodeData = {
-      id: '1',
-      type: 'TestNode',
-      widgets: [hiddenWidget, visibleWidget],
-      title: 'Test',
-      mode: 0,
-      selected: false,
-      executing: false,
-      inputs: [],
-      outputs: []
-    }
-
-    const result = computeProcessedWidgets(
-      nodeData,
-      'graph-test',
-      false,
-      false,
-      null,
-      promotionStore,
-      executionErrorStore,
-      missingModelStore,
-      widgetValueStore,
-      noopTooltip,
-      noopTooltipConfig,
-      noopRightClick
-    )
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '1',
+        type: 'TestNode',
+        widgets: [hiddenWidget, visibleWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
 
     expect(result).toHaveLength(1)
     expect(result[0].hidden).toBe(false)
@@ -402,55 +363,32 @@ describe('computeProcessedWidgets borderStyle', () => {
 })
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
-  let promotionStore: ReturnType<typeof usePromotionStore>
-  let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
-  let missingModelStore: ReturnType<typeof useMissingModelStore>
-  let widgetValueStore: ReturnType<typeof useWidgetValueStore>
-
-  const noopTooltip = () => ''
-  const noopTooltipConfig = () => ({}) as never
-  const noopRightClick = () => {}
-
   const GRAPH_ID = 'graph-test'
   const NODE_ID = '1'
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    promotionStore = usePromotionStore()
-    executionErrorStore = useExecutionErrorStore()
-    missingModelStore = useMissingModelStore()
-    widgetValueStore = useWidgetValueStore()
   })
 
-  function makeNodeData(widgets: SafeWidgetData[]) {
-    return {
-      id: NODE_ID,
-      type: 'TestNode',
-      widgets,
-      title: 'Test',
-      mode: 0,
-      selected: false,
-      executing: false,
-      inputs: [],
-      outputs: []
-    }
-  }
-
   function processWidgets(widgets: SafeWidgetData[]) {
-    return computeProcessedWidgets(
-      makeNodeData(widgets),
-      GRAPH_ID,
-      false,
-      false,
-      null,
-      promotionStore,
-      executionErrorStore,
-      missingModelStore,
-      widgetValueStore,
-      noopTooltip,
-      noopTooltipConfig,
-      noopRightClick
-    )
+    return computeProcessedWidgets({
+      nodeData: {
+        id: NODE_ID,
+        type: 'TestNode',
+        widgets,
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
   }
 
   it('calls widget.callback with the new value when widgetState exists', () => {
@@ -461,7 +399,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       callback
     })
 
-    widgetValueStore.registerWidget(GRAPH_ID, {
+    useWidgetValueStore().registerWidget(GRAPH_ID, {
       nodeId: NODE_ID,
       name: 'seed',
       type: 'combo',
@@ -495,7 +433,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       nodeId: NODE_ID
     })
 
-    widgetValueStore.registerWidget(GRAPH_ID, {
+    useWidgetValueStore().registerWidget(GRAPH_ID, {
       nodeId: NODE_ID,
       name: 'seed',
       type: 'combo',
@@ -506,7 +444,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processWidgets([widget])
     processed.updateHandler(99)
 
-    const state = widgetValueStore.getWidget(GRAPH_ID, NODE_ID, 'seed')
+    const state = useWidgetValueStore().getWidget(GRAPH_ID, NODE_ID, 'seed')
     expect(state?.value).toBe(99)
   })
 
@@ -515,6 +453,9 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       name: 'seed',
       nodeId: NODE_ID
     })
+
+    const executionErrorStore = useExecutionErrorStore()
+    const missingModelStore = useMissingModelStore()
 
     executionErrorStore.lastNodeErrors = {
       [NODE_ID]: {

@@ -61,6 +61,20 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
+interface WidgetUiCallbacks {
+  getTooltipConfig: (widget: SafeWidgetData) => TooltipOptions
+  handleNodeRightClick: (e: PointerEvent, nodeId: string) => void
+}
+
+interface ComputeProcessedWidgetsOptions {
+  nodeData: VueNodeData | undefined
+  graphId: string | undefined
+  showAdvanced: boolean
+  isGraphReady: boolean
+  rootGraph: LGraph | null
+  ui: WidgetUiCallbacks
+}
+
 function createWidgetUpdateHandler(
   widgetState: WidgetState | undefined,
   widget: SafeWidgetData,
@@ -143,21 +157,20 @@ export function isWidgetVisible(
   return !hidden && (!advanced || showAdvanced)
 }
 
-export function computeProcessedWidgets(
-  nodeData: VueNodeData | undefined,
-  graphId: string | undefined,
-  showAdvanced: boolean,
-  isGraphReady: boolean,
-  rootGraph: LGraph | null,
-  promotionStore: ReturnType<typeof usePromotionStore>,
-  executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
-  missingModelStore: ReturnType<typeof useMissingModelStore>,
-  widgetValueStore: ReturnType<typeof useWidgetValueStore>,
-  getWidgetTooltip: (widget: SafeWidgetData) => string,
-  createTooltipConfig: (text: string) => TooltipOptions,
-  handleNodeRightClick: (e: PointerEvent, nodeId: string) => void
-): ProcessedWidget[] {
+export function computeProcessedWidgets({
+  nodeData,
+  graphId,
+  showAdvanced,
+  isGraphReady,
+  rootGraph,
+  ui
+}: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
+
+  const promotionStore = usePromotionStore()
+  const executionErrorStore = useExecutionErrorStore()
+  const missingModelStore = useMissingModelStore()
+  const widgetValueStore = useWidgetValueStore()
 
   const nodeExecId =
     isGraphReady && rootGraph
@@ -305,12 +318,11 @@ export function computeProcessedWidgets(
       executionErrorStore
     )
 
-    const tooltipText = getWidgetTooltip(widget)
-    const tooltipConfig = createTooltipConfig(tooltipText)
+    const tooltipConfig = ui.getTooltipConfig(widget)
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (nodeId !== undefined) handleNodeRightClick(e, nodeId)
+      if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
       showNodeOptions(
         e,
         widget.name,
@@ -352,16 +364,17 @@ export function useProcessedWidgets(
   nodeDataGetter: () => VueNodeData | undefined
 ) {
   const canvasStore = useCanvasStore()
-  const promotionStore = usePromotionStore()
-  const executionErrorStore = useExecutionErrorStore()
-  const missingModelStore = useMissingModelStore()
-  const widgetValueStore = useWidgetValueStore()
   const settingStore = useSettingStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
 
   const nodeType = computed(() => nodeDataGetter()?.type || '')
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
+
+  const ui: WidgetUiCallbacks = {
+    getTooltipConfig: (widget) => createTooltipConfig(getWidgetTooltip(widget)),
+    handleNodeRightClick
+  }
 
   const showAdvanced = computed(
     () =>
@@ -379,23 +392,16 @@ export function useProcessedWidgets(
     )
   })
 
-  const processedWidgets = computed((): ProcessedWidget[] => {
-    const graphId = canvasStore.canvas?.graph?.rootGraph.id
-    return computeProcessedWidgets(
-      nodeDataGetter(),
-      graphId,
-      showAdvanced.value,
-      app.isGraphReady,
-      app.isGraphReady ? app.rootGraph : null,
-      promotionStore,
-      executionErrorStore,
-      missingModelStore,
-      widgetValueStore,
-      getWidgetTooltip,
-      createTooltipConfig,
-      handleNodeRightClick
-    )
-  })
+  const processedWidgets = computed((): ProcessedWidget[] =>
+    computeProcessedWidgets({
+      nodeData: nodeDataGetter(),
+      graphId: canvasStore.canvas?.graph?.rootGraph.id,
+      showAdvanced: showAdvanced.value,
+      isGraphReady: app.isGraphReady,
+      rootGraph: app.isGraphReady ? app.rootGraph : null,
+      ui
+    })
+  )
 
   const visibleWidgets = computed(() =>
     processedWidgets.value.filter((w) =>
