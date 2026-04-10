@@ -81,7 +81,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     const dialog = comfyPage.settingDialog
     await dialog.open()
 
-    expect(await dialog.categories.count()).toBeGreaterThan(0)
+    await expect.poll(() => dialog.categories.count()).toBeGreaterThan(0)
   })
 
   test('can select different categories in sidebar', async ({ comfyPage }) => {

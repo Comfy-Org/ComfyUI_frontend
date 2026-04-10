@@ -1,6 +1,25 @@
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
+/**
+ * Linearly maps a value from [min, max] to [0, 1].
+ * Returns 0 when min equals max to avoid division by zero.
+ */
+export function normalize(value: number, min: number, max: number): number {
+  return max === min ? 0 : (value - min) / (max - min)
+}
+
+/**
+ * Linearly maps a normalized value from [0, 1] back to [min, max].
+ */
+export function denormalize(
+  normalized: number,
+  min: number,
+  max: number
+): number {
+  return min + normalized * (max - min)
+}
+
 /** Simple 2D point or size as [x, y] or [width, height] */
 type Vec2 = readonly [number, number]
 

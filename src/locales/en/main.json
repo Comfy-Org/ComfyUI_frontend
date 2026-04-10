@@ -200,6 +200,7 @@
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
     "uploadAlreadyInProgress": "Upload already in progress",
+    "uploadTimedOut": "Upload timed out. Please try again.",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} node | {count} nodes",
