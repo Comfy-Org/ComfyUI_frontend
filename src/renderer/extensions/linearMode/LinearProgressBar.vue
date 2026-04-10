@@ -3,8 +3,6 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
-defineOptions({ inheritAttrs: false })
-
 const {
   class: className,
   overallOpacity = 1,
@@ -22,7 +20,6 @@ const executionStore = useExecutionStore()
 </script>
 <template>
   <div
-    v-bind="$attrs"
     :class="
       cn(
         'relative h-2 bg-secondary-background transition-opacity',
