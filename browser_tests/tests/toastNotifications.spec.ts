@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Toast Notifications', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -57,7 +57,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
 
     await comfyPage.toast.closeToasts()
 
-    expect(await comfyPage.toast.getVisibleToastCount()).toBe(0)
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
   })
 
   test('Toast error count is accurate', async ({ comfyPage }) => {
@@ -67,7 +67,6 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
       comfyPage.page.locator('.p-toast-message.p-toast-message-error').first()
     ).toBeVisible()
 
-    const errorCount = await comfyPage.toast.getToastErrorCount()
-    expect(errorCount).toBeGreaterThanOrEqual(1)
+    await expect(comfyPage.toast.toastErrors).not.toHaveCount(0)
   })
 })

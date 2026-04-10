@@ -41,10 +41,21 @@ export const TestIds = {
     missingNodeCard: 'missing-node-card',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
+    errorDialog: 'error-dialog',
+    errorDialogShowReport: 'error-dialog-show-report',
+    errorDialogContactSupport: 'error-dialog-contact-support',
+    errorDialogCopyReport: 'error-dialog-copy-report',
+    errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
+    missingModelExpand: 'missing-model-expand',
+    missingModelLocate: 'missing-model-locate',
+    missingModelCopyName: 'missing-model-copy-name',
+    missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelDownload: 'missing-model-download',
+    missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
     missingMediaRow: 'missing-media-row',
     missingMediaUploadDropzone: 'missing-media-upload-dropzone',
@@ -52,7 +63,8 @@ export const TestIds = {
     missingMediaStatusCard: 'missing-media-status-card',
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
-    missingMediaLocateButton: 'missing-media-locate-button'
+    missingMediaLocateButton: 'missing-media-locate-button',
+    publishTabPanel: 'publish-tab-panel'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -110,8 +122,21 @@ export const TestIds = {
     saveAsChevron: 'builder-save-as-chevron',
     ioItem: 'builder-io-item',
     ioItemTitle: 'builder-io-item-title',
+    ioItemSubtitle: 'builder-io-item-subtitle',
     widgetActionsMenu: 'widget-actions-menu',
-    opensAs: 'builder-opens-as'
+    opensAs: 'builder-opens-as',
+    widgetItem: 'builder-widget-item',
+    widgetLabel: 'builder-widget-label',
+    outputPlaceholder: 'builder-output-placeholder',
+    connectOutputPopover: 'builder-connect-output-popover'
+  },
+  appMode: {
+    widgetItem: 'app-mode-widget-item',
+    welcome: 'linear-welcome',
+    emptyWorkflow: 'linear-welcome-empty-workflow',
+    buildApp: 'linear-welcome-build-app',
+    backToWorkflow: 'linear-welcome-back-to-workflow',
+    loadTemplate: 'linear-welcome-load-template'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -130,6 +155,12 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  loading: {
+    overlay: 'loading-overlay'
+  },
+  load3dViewer: {
+    sidebar: 'load3d-viewer-sidebar'
   }
 } as const
 
@@ -149,6 +180,7 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
       (typeof TestIds.templates)[keyof typeof TestIds.templates],
@@ -159,3 +191,5 @@ export type TestIdValue =
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
+  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]

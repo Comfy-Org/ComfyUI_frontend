@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { WorkspaceStore } from '../types/globals'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.describe('Browser tab title', { tag: '@smoke' }, () => {
   test.describe('Beta Menu', () => {

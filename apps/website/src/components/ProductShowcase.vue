@@ -1,6 +1,16 @@
 <!-- TODO: Replace with actual workflow demo content -->
 <script setup lang="ts">
-const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const features = computed(() => [
+  t('showcase.nodeEditor', locale),
+  t('showcase.realTimePreview', locale),
+  t('showcase.versionControl', locale)
+])
 </script>
 
 <template>
@@ -8,9 +18,11 @@ const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
     <div class="mx-auto max-w-7xl px-6">
       <!-- Section header -->
       <div class="text-center">
-        <h2 class="text-3xl font-bold text-white">See Comfy in Action</h2>
+        <h2 class="text-3xl font-bold text-white">
+          {{ t('showcase.heading', locale) }}
+        </h2>
         <p class="mx-auto mt-4 max-w-2xl text-smoke-700">
-          Watch how professionals build AI workflows with unprecedented control
+          {{ t('showcase.subheading', locale) }}
         </p>
       </div>
 
@@ -28,7 +40,9 @@ const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
               class="ml-1 h-0 w-0 border-y-8 border-l-[14px] border-y-transparent border-l-white"
             />
           </div>
-          <p class="text-sm text-smoke-700">Workflow Demo Coming Soon</p>
+          <p class="text-sm text-smoke-700">
+            {{ t('showcase.placeholder', locale) }}
+          </p>
         </div>
       </div>
 

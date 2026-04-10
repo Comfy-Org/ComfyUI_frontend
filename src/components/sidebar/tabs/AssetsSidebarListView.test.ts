@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable vue/one-component-per-file */
+import { render, fireEvent } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -31,6 +32,32 @@ const VirtualGridStub = defineComponent({
     '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
 })
 
+const AssetsListItemStub = defineComponent({
+  name: 'AssetsListItem',
+  props: {
+    previewUrl: { type: String, default: '' },
+    isVideoPreview: { type: Boolean, default: false },
+    previewAlt: { type: String, default: '' },
+    iconName: { type: String, default: '' },
+    iconAriaLabel: { type: String, default: '' },
+    iconClass: { type: String, default: '' },
+    iconWrapperClass: { type: String, default: '' },
+    primaryText: { type: String, default: '' },
+    secondaryText: { type: String, default: '' },
+    stackCount: { type: Number, default: 0 },
+    stackIndicatorLabel: { type: String, default: '' },
+    stackExpanded: { type: Boolean, default: false },
+    progressTotalPercent: { type: Number, default: undefined },
+    progressCurrentPercent: { type: Number, default: undefined }
+  },
+  template: `<div
+    class="assets-list-item-stub"
+    :data-preview-url="previewUrl"
+    :data-is-video-preview="isVideoPreview"
+    data-testid="assets-list-item"
+  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
+})
+
 const buildAsset = (id: string, name: string): AssetItem =>
   ({
     id,
@@ -43,21 +70,27 @@ const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
   asset
 })
 
-const mountListView = (assetItems: OutputStackListItem[] = []) =>
-  mount(AssetsSidebarListView, {
+function renderListView(
+  assetItems: OutputStackListItem[] = [],
+  props: Record<string, unknown> = {}
+) {
+  return render(AssetsSidebarListView, {
     props: {
       assetItems,
       selectableAssets: [],
       isSelected: () => false,
       isStackExpanded: () => false,
-      toggleStack: async () => {}
+      toggleStack: async () => {},
+      ...props
     },
     global: {
       stubs: {
-        VirtualGrid: VirtualGridStub
+        VirtualGrid: VirtualGridStub,
+        AssetsListItem: AssetsListItemStub
       }
     }
   })
+}
 
 describe('AssetsSidebarListView', () => {
   it('marks mp4 assets as video previews', () => {
@@ -67,14 +100,17 @@ describe('AssetsSidebarListView', () => {
       user_metadata: {}
     } satisfies AssetItem
 
-    const wrapper = mountListView([buildOutputItem(videoAsset)])
+    const { container } = renderListView([buildOutputItem(videoAsset)])
 
-    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
-    const assetListItem = listItems.at(-1)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
+    const assetListItem = stubs[stubs.length - 1]
 
     expect(assetListItem).toBeDefined()
-    expect(assetListItem?.props('previewUrl')).toBe('/api/view/clip.mp4')
-    expect(assetListItem?.props('isVideoPreview')).toBe(true)
+    expect(assetListItem?.getAttribute('data-preview-url')).toBe(
+      '/api/view/clip.mp4'
+    )
+    expect(assetListItem?.getAttribute('data-is-video-preview')).toBe('true')
   })
 
   it('uses icon fallback for text assets even when preview_url exists', () => {
@@ -84,14 +120,15 @@ describe('AssetsSidebarListView', () => {
       user_metadata: {}
     } satisfies AssetItem
 
-    const wrapper = mountListView([buildOutputItem(textAsset)])
+    const { container } = renderListView([buildOutputItem(textAsset)])
 
-    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
-    const assetListItem = listItems.at(-1)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
+    const assetListItem = stubs[stubs.length - 1]
 
     expect(assetListItem).toBeDefined()
-    expect(assetListItem?.props('previewUrl')).toBe('')
-    expect(assetListItem?.props('isVideoPreview')).toBe(false)
+    expect(assetListItem?.getAttribute('data-preview-url')).toBe('')
+    expect(assetListItem?.getAttribute('data-is-video-preview')).toBe('false')
   })
 
   it('emits preview-asset when item preview is clicked', async () => {
@@ -101,16 +138,19 @@ describe('AssetsSidebarListView', () => {
       user_metadata: {}
     } satisfies AssetItem
 
-    const wrapper = mountListView([buildOutputItem(imageAsset)])
-    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
-    const assetListItem = listItems.at(-1)
+    const onPreviewAsset = vi.fn()
+    const { container } = renderListView([buildOutputItem(imageAsset)], {
+      'onPreview-asset': onPreviewAsset
+    })
 
-    expect(assetListItem).toBeDefined()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const trigger = container.querySelector(
+      '[data-testid="preview-click-trigger"]'
+    )!
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.click(trigger)
 
-    assetListItem!.vm.$emit('preview-click')
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.emitted('preview-asset')).toEqual([[imageAsset]])
+    expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
   })
 
   it('emits preview-asset when item is double-clicked', async () => {
@@ -120,15 +160,16 @@ describe('AssetsSidebarListView', () => {
       user_metadata: {}
     } satisfies AssetItem
 
-    const wrapper = mountListView([buildOutputItem(imageAsset)])
-    const listItems = wrapper.findAllComponents({ name: 'AssetsListItem' })
-    const assetListItem = listItems.at(-1)
+    const onPreviewAsset = vi.fn()
+    const { container } = renderListView([buildOutputItem(imageAsset)], {
+      'onPreview-asset': onPreviewAsset
+    })
 
-    expect(assetListItem).toBeDefined()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const stub = container.querySelector('[data-testid="assets-list-item"]')!
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(stub)
 
-    await assetListItem!.trigger('dblclick')
-    await wrapper.vm.$nextTick()
-
-    expect(wrapper.emitted('preview-asset')).toEqual([[imageAsset]])
+    expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
   })
 })

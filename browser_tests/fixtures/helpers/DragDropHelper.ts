@@ -2,9 +2,9 @@ import { readFileSync } from 'fs'
 
 import type { Page } from '@playwright/test'
 
-import type { Position } from '../types'
-import { getMimeType } from './mimeTypeUtil'
-import { assetPath } from '../utils/paths'
+import type { Position } from '@e2e/fixtures/types'
+import { getMimeType } from '@e2e/fixtures/helpers/mimeTypeUtil'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
