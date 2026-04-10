@@ -148,8 +148,6 @@
         "playwright/no-duplicate-hooks": "error",
         "playwright/no-element-handle": "error",
         "playwright/no-eval": "error",
-        // TODO: Enable in a dedicated PR — requires triaging 28 violations
-        // (canvas overlay workarounds vs. unnecessary force usage)
         "playwright/no-force-option": "off",
         "playwright/no-networkidle": "error",
         "playwright/no-page-pause": "error",
