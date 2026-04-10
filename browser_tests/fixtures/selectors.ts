@@ -37,10 +37,6 @@ export const TestIds = {
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
-    runtimeErrorPanel: 'runtime-error-panel',
-    missingNodeCard: 'missing-node-card',
-    errorCardFindOnGithub: 'error-card-find-on-github',
-    errorCardCopy: 'error-card-copy',
     errorDialog: 'error-dialog',
     errorDialogShowReport: 'error-dialog-show-report',
     errorDialogContactSupport: 'error-dialog-contact-support',
@@ -48,6 +44,13 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    publishTabPanel: 'publish-tab-panel'
+  },
+  errorsTab: {
+    runtimeErrorPanel: 'runtime-error-panel',
+    missingNodeCard: 'missing-node-card',
+    errorCardFindOnGithub: 'error-card-find-on-github',
+    errorCardCopy: 'error-card-copy',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
@@ -63,8 +66,7 @@ export const TestIds = {
     missingMediaStatusCard: 'missing-media-status-card',
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
-    missingMediaLocateButton: 'missing-media-locate-button',
-    publishTabPanel: 'publish-tab-panel'
+    missingMediaLocateButton: 'missing-media-locate-button'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -164,33 +166,3 @@ export const TestIds = {
     sidebar: 'load3d-viewer-sidebar'
   }
 } as const
-
-/**
- * Helper type for accessing nested TestIds (excludes function values)
- */
-export type TestIdValue =
-  | (typeof TestIds.sidebar)[keyof typeof TestIds.sidebar]
-  | (typeof TestIds.tree)[keyof typeof TestIds.tree]
-  | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
-  | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
-  | (typeof TestIds.keybindings)[keyof typeof TestIds.keybindings]
-  | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
-  | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]
-  | (typeof TestIds.propertiesPanel)[keyof typeof TestIds.propertiesPanel]
-  | (typeof TestIds.node)[keyof typeof TestIds.node]
-  | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
-  | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
-  | (typeof TestIds.builder)[keyof typeof TestIds.builder]
-  | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
-  | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
-  | Exclude<
-      (typeof TestIds.templates)[keyof typeof TestIds.templates],
-      (id: string) => string
-    >
-  | (typeof TestIds.user)[keyof typeof TestIds.user]
-  | (typeof TestIds.menu)[keyof typeof TestIds.menu]
-  | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
-  | (typeof TestIds.queue)[keyof typeof TestIds.queue]
-  | (typeof TestIds.errors)[keyof typeof TestIds.errors]
-  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
-  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]

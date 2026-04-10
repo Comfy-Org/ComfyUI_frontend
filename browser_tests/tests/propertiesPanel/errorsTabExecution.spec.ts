@@ -35,10 +35,10 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await openExecutionErrorTab(comfyPage)
 
     await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.errorCardFindOnGithub)
+      comfyPage.page.getByTestId(TestIds.errorsTab.errorCardFindOnGithub)
     ).toBeVisible()
     await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.errorCardCopy)
+      comfyPage.page.getByTestId(TestIds.errorsTab.errorCardCopy)
     ).toBeVisible()
   })
 
@@ -48,7 +48,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await openExecutionErrorTab(comfyPage)
 
     const runtimePanel = comfyPage.page.getByTestId(
-      TestIds.dialogs.runtimeErrorPanel
+      TestIds.errorsTab.runtimeErrorPanel
     )
     await expect(runtimePanel).toBeVisible()
     await expect(runtimePanel).toContainText(/\S/)

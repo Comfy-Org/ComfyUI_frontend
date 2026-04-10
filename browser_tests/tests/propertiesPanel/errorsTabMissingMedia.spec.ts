@@ -3,11 +3,11 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { openErrorsTabViaSeeErrors } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 async function uploadFileViaDropzone(comfyPage: ComfyPage) {
   const dropzone = comfyPage.page.getByTestId(
-    TestIds.dialogs.missingMediaUploadDropzone
+    TestIds.errorsTab.missingMediaUploadDropzone
   )
   const [fileChooser] = await Promise.all([
     comfyPage.page.waitForEvent('filechooser'),
@@ -18,22 +18,24 @@ async function uploadFileViaDropzone(comfyPage: ComfyPage) {
 
 async function confirmPendingSelection(comfyPage: ComfyPage) {
   const confirmButton = comfyPage.page.getByTestId(
-    TestIds.dialogs.missingMediaConfirmButton
+    TestIds.errorsTab.missingMediaConfirmButton
   )
   await expect(confirmButton).toBeEnabled()
   await confirmButton.click()
 }
 
 function getMediaRow(comfyPage: ComfyPage) {
-  return comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+  return comfyPage.page.getByTestId(TestIds.errorsTab.missingMediaRow)
 }
 
 function getStatusCard(comfyPage: ComfyPage) {
-  return comfyPage.page.getByTestId(TestIds.dialogs.missingMediaStatusCard)
+  return comfyPage.page.getByTestId(TestIds.errorsTab.missingMediaStatusCard)
 }
 
 function getDropzone(comfyPage: ComfyPage) {
-  return comfyPage.page.getByTestId(TestIds.dialogs.missingMediaUploadDropzone)
+  return comfyPage.page.getByTestId(
+    TestIds.errorsTab.missingMediaUploadDropzone
+  )
 }
 
 test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
@@ -47,17 +49,20 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
   test.describe('Detection', () => {
     test('Shows missing media group in errors tab', async ({ comfyPage }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
 
       await expect(
-        comfyPage.page.getByTestId(TestIds.dialogs.missingMediaGroup)
+        comfyPage.page.getByTestId(TestIds.errorsTab.missingMediaGroup)
       ).toBeVisible()
     })
 
     test('Shows correct number of missing media rows', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(
+      await loadWorkflowAndOpenErrorsTab(
         comfyPage,
         'missing/missing_media_multiple'
       )
@@ -68,11 +73,14 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     test('Shows upload dropzone and library select for each missing item', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
 
       await expect(getDropzone(comfyPage)).toBeVisible()
       await expect(
-        comfyPage.page.getByTestId(TestIds.dialogs.missingMediaLibrarySelect)
+        comfyPage.page.getByTestId(TestIds.errorsTab.missingMediaLibrarySelect)
       ).toBeVisible()
     })
   })
@@ -81,7 +89,10 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     test('Upload via file picker shows status card then allows confirm', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
       await uploadFileViaDropzone(comfyPage)
 
       await expect(getStatusCard(comfyPage)).toBeVisible()
@@ -95,10 +106,13 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     test('Selecting from library shows status card then allows confirm', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
 
       const librarySelect = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingMediaLibrarySelect
+        TestIds.errorsTab.missingMediaLibrarySelect
       )
       await librarySelect.getByRole('combobox').click()
 
@@ -121,14 +135,17 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     test('Cancelling pending selection returns to upload/library UI', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
       await uploadFileViaDropzone(comfyPage)
 
       await expect(getStatusCard(comfyPage)).toBeVisible()
       await expect(getDropzone(comfyPage)).not.toBeVisible()
 
       await comfyPage.page
-        .getByTestId(TestIds.dialogs.missingMediaCancelButton)
+        .getByTestId(TestIds.errorsTab.missingMediaCancelButton)
         .click()
 
       await expect(getStatusCard(comfyPage)).not.toBeVisible()
@@ -140,12 +157,15 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     test('Missing Inputs group disappears when all items are resolved', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
       await uploadFileViaDropzone(comfyPage)
       await confirmPendingSelection(comfyPage)
 
       await expect(
-        comfyPage.page.getByTestId(TestIds.dialogs.missingMediaGroup)
+        comfyPage.page.getByTestId(TestIds.errorsTab.missingMediaGroup)
       ).not.toBeVisible()
     })
   })
@@ -154,7 +174,10 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
     test('Locate button navigates canvas to the missing media node', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
 
       const offsetBefore = await comfyPage.page.evaluate(() => {
         const canvas = window['app']?.canvas
@@ -164,7 +187,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
       })
 
       const locateButton = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingMediaLocateButton
+        TestIds.errorsTab.missingMediaLocateButton
       )
       await expect(locateButton).toBeVisible()
       await locateButton.click()

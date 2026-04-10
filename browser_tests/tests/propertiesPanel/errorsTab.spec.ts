@@ -58,7 +58,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       await expect(errorOverlay).not.toBeVisible()
 
       const runtimePanel = comfyPage.page.getByTestId(
-        TestIds.dialogs.runtimeErrorPanel
+        TestIds.errorsTab.runtimeErrorPanel
       )
       await expect(runtimePanel).toBeVisible()
 

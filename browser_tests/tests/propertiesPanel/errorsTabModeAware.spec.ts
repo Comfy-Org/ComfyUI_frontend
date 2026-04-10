@@ -1,23 +1,12 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
+  cleanupFakeModel,
   openErrorsTab,
-  openErrorsTabViaSeeErrors
+  loadWorkflowAndOpenErrorsTab
 } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
-
-async function cleanupFakeModel(comfyPage: ComfyPage) {
-  await expect
-    .poll(() =>
-      comfyPage.page.evaluate(async (url: string) => {
-        const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
-        return response.ok
-      }, comfyPage.url)
-    )
-    .toBeTruthy()
-}
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -32,10 +21,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Deleting a missing node removes its error from the errors tab', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_nodes')
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
       const missingNodeGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingNodePacksGroup
+        TestIds.errorsTab.missingNodePacksGroup
       )
       await expect(missingNodeGroup).toBeVisible()
 
@@ -48,10 +37,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Undo after bypass restores error without showing overlay', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_nodes')
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
       const missingNodeGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingNodePacksGroup
+        TestIds.errorsTab.missingNodePacksGroup
       )
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -66,7 +55,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       await comfyPage.keyboard.undo()
       await expect.poll(() => node.isBypassed()).toBeFalsy()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+      await expect(errorOverlay).not.toBeVisible()
       await openErrorsTab(comfyPage)
       await expect(missingNodeGroup).toBeVisible()
 
@@ -81,6 +70,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await cleanupFakeModel(comfyPage)
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
     test('Loading a workflow with all nodes bypassed shows no errors', async ({
       comfyPage
     }) => {
@@ -89,7 +82,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
       )
-      await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+      await expect(errorOverlay).not.toBeVisible()
 
       await comfyPage.actionbar.propertiesButton.click()
       await expect(
@@ -100,10 +93,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Bypassing a node hides its error, un-bypassing restores it', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelsGroup
+        TestIds.errorsTab.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
 
@@ -123,10 +116,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Pasting a node with missing model increases referencing node count', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelsGroup
+        TestIds.errorsTab.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
       await expect(missingModelGroup).toContainText(
@@ -149,10 +142,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Pasting a bypassed node does not add a new error', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelsGroup
+        TestIds.errorsTab.missingModelsGroup
       )
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
@@ -168,16 +161,62 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingModelGroup).not.toBeVisible()
     })
 
+    test('Deleting a node with missing model removes its error', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.errorsTab.missingModelsGroup
+      )
+      await expect(missingModelGroup).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.delete()
+
+      await expect(missingModelGroup).not.toBeVisible()
+    })
+
+    test('Undo after bypass restores error without showing overlay', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.errorsTab.missingModelsGroup
+      )
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(missingModelGroup).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingModelGroup).not.toBeVisible()
+
+      await comfyPage.keyboard.undo()
+      await expect.poll(() => node.isBypassed()).toBeFalsy()
+      await expect(errorOverlay).not.toBeVisible()
+      await openErrorsTab(comfyPage)
+      await expect(missingModelGroup).toBeVisible()
+
+      await comfyPage.keyboard.redo()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingModelGroup).not.toBeVisible()
+    })
+
     test('Selecting a node filters errors tab to only that node', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(
+      await loadWorkflowAndOpenErrorsTab(
         comfyPage,
         'missing/missing_models_with_nodes'
       )
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelsGroup
+        TestIds.errorsTab.missingModelsGroup
       )
       await expect(missingModelGroup).toContainText(/\(2\)/)
 
@@ -199,7 +238,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
       )
-      await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+      await expect(errorOverlay).not.toBeVisible()
 
       await comfyPage.actionbar.propertiesButton.click()
       await expect(
@@ -210,10 +249,13 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Bypassing a node hides its error, un-bypassing restores it', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
 
       const missingMediaGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingMediaGroup
+        TestIds.errorsTab.missingMediaGroup
       )
       await expect(missingMediaGroup).toBeVisible()
 
@@ -234,10 +276,13 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Pasting a bypassed node does not add a new error', async ({
       comfyPage
     }) => {
-      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_media_single'
+      )
 
       const missingMediaGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingMediaGroup
+        TestIds.errorsTab.missingMediaGroup
       )
 
       await comfyPage.keyboard.selectAll()
@@ -268,7 +313,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const mediaRows = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingMediaRow
+        TestIds.errorsTab.missingMediaRow
       )
 
       await openErrorsTab(comfyPage)
@@ -290,6 +335,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await cleanupFakeModel(comfyPage)
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
     test('Bypassing a subgraph hides interior errors, un-bypassing restores them', async ({
       comfyPage
     }) => {
@@ -306,7 +355,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelsGroup
+        TestIds.errorsTab.missingModelsGroup
       )
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
@@ -344,7 +393,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelsGroup
+        TestIds.errorsTab.missingModelsGroup
       )
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
@@ -363,6 +412,60 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await comfyPage.keyboard.bypass()
       await openErrorsTab(comfyPage)
       await expect(missingModelGroup).toBeVisible()
+    })
+  })
+
+  test.describe('Workflow switching', () => {
+    test('Does not resurface error overlay when switching back to workflow with missing nodes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+      await expect(errorOverlay).not.toBeVisible()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+
+      await expect(errorOverlay).not.toBeVisible()
+    })
+
+    test('Restores missing nodes in errors tab when switching back to workflow', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+
+      const missingNodeGroup = comfyPage.page.getByTestId(
+        TestIds.errorsTab.missingNodePacksGroup
+      )
+
+      await openErrorsTab(comfyPage)
+      await expect(missingNodeGroup).toBeVisible()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await expect(missingNodeGroup).not.toBeVisible()
+
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+      await openErrorsTab(comfyPage)
+      await expect(missingNodeGroup).toBeVisible()
     })
   })
 })

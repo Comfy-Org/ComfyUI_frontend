@@ -299,11 +299,14 @@ function handleTitleCancel() {
               @cancel="handleTitleCancel"
               @click="isEditing = true"
             />
-            <i
+            <button
               v-if="!isEditing"
-              class="relative top-[2px] ml-2 icon-[lucide--pencil] size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
+              :aria-label="t('rightSidePanel.editTitle')"
+              class="relative top-[2px] ml-2 size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
               @click="isEditing = true"
-            />
+            >
+              <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
+            </button>
           </template>
           <template v-else>
             {{ panelTitle }}
@@ -316,6 +319,7 @@ function handleTitleCancel() {
             variant="secondary"
             size="icon"
             data-testid="subgraph-editor-toggle"
+            :aria-label="t('rightSidePanel.editSubgraph')"
             :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
             @click="
               rightSidePanelStore.openPanel(
