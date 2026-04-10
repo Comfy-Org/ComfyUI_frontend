@@ -1525,7 +1525,10 @@ export class ComfyApp {
     if (enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
-        verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+        void verifyAssetSupportedCandidates(
+          enrichedCandidates,
+          controller.signal
+        )
           .then(() => {
             if (controller.signal.aborted) return
             const confirmed = enrichedCandidates.filter(
@@ -1556,7 +1559,7 @@ export class ComfyApp {
         const controller = missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
         if (confirmed.length) {
-          api
+          void api
             .getFolderPaths()
             .then((paths) => {
               if (controller.signal.aborted) return

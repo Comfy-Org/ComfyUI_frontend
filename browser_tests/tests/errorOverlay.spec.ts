@@ -109,6 +109,33 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await comfyPage.keyboard.redo()
       await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
     })
+
+    test('Does not resurface error overlay when switching back to workflow with missing nodes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+      await comfyPage.menu.workflowsTab.open()
+
+      await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+      const errorOverlay = getOverlay(comfyPage.page)
+      await expect(errorOverlay).toBeVisible()
+
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+      await expect(errorOverlay).not.toBeVisible()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+
+      await expect(errorOverlay).not.toBeVisible()
+    })
   })
 
   test.describe('See Errors flow', () => {

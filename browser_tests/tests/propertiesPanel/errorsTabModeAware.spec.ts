@@ -412,27 +412,12 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   })
 
   test.describe('Workflow switching', () => {
-    test('Does not resurface error overlay when switching back to workflow with missing nodes', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
-
-      const errorOverlay = comfyPage.page.getByTestId(
-        TestIds.dialogs.errorOverlay
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
       )
-      await expect(errorOverlay).toBeVisible()
-
-      await errorOverlay
-        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
-        .click()
-      await expect(errorOverlay).not.toBeVisible()
-
       await comfyPage.menu.workflowsTab.open()
-      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-
-      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
-
-      await expect(errorOverlay).not.toBeVisible()
     })
 
     test('Restores missing nodes in errors tab when switching back to workflow', async ({
