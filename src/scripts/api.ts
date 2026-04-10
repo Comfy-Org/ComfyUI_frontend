@@ -370,10 +370,19 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
+
+    const remoteBackend = localStorage.getItem('comfyui-preview-backend-url')
+    if (remoteBackend) {
+      const url = new URL(remoteBackend)
+      this.api_host = url.host
+      this.api_base = url.origin + url.pathname.replace(/\/+$/, '')
+    } else {
+      this.api_host = location.host
+      this.api_base = isCloud
+        ? ''
+        : location.pathname.split('/').slice(0, -1).join('/')
+    }
+
     this.initialClientId = sessionStorage.getItem('clientId')
   }
 

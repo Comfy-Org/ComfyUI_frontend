@@ -13,6 +13,12 @@ vi.mock('@/platform/distribution/types', () => ({
   isDesktop: false
 }))
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  })
+}))
+
 const mockLocalStorage = vi.hoisted(() => {
   const store: Record<string, string> = {}
   return {
@@ -83,9 +89,14 @@ describe('ConnectionPanelView', () => {
     expect(buttons.length).toBeGreaterThan(0)
   })
 
-  it('displays the command-line guide', () => {
+  it('displays the comfy-cli install command', () => {
     const wrapper = mountPanel()
-    expect(wrapper.text()).toContain('python main.py --enable-cors-header="*"')
+    expect(wrapper.text()).toContain('pip install comfy-cli')
+  })
+
+  it('displays the comfy launch command', () => {
+    const wrapper = mountPanel()
+    expect(wrapper.text()).toContain('comfy launch -- --enable-cors-header="*"')
   })
 
   it('shows build info in footer', () => {

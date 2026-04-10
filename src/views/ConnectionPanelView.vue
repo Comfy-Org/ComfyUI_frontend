@@ -12,6 +12,7 @@
         </p>
       </header>
 
+      <!-- Backend URL input -->
       <section class="flex flex-col gap-2">
         <label for="backend-url" class="text-sm font-medium text-neutral-300">
           {{ t('connectionPanel.backendUrl') }}
@@ -37,6 +38,7 @@
         </div>
       </section>
 
+      <!-- Connection status -->
       <section
         v-if="httpStatus !== null || wsStatus !== null"
         class="flex flex-col gap-2 rounded-md bg-neutral-800/50 p-3"
@@ -85,25 +87,88 @@
         >
           {{ t('connectionPanel.connected') }}
         </p>
+
+        <!-- Connect & Go button -->
+        <Button
+          v-if="httpStatus === true"
+          variant="primary"
+          size="lg"
+          class="mt-2 w-full"
+          @click="connectAndGo"
+        >
+          {{ t('connectionPanel.connectAndGo') }}
+        </Button>
       </section>
 
-      <section class="flex flex-col gap-2">
+      <!-- Quick Start with Comfy CLI -->
+      <section class="flex flex-col gap-3">
         <h2 class="text-sm font-medium text-neutral-300">
-          {{ t('connectionPanel.guide') }}
+          {{ t('connectionPanel.quickStart') }}
         </h2>
         <p class="text-xs text-neutral-400">
-          {{ t('connectionPanel.guideDescription') }}
+          {{ t('connectionPanel.quickStartDescription') }}
         </p>
-        <code
-          class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-        >
-          python main.py --enable-cors-header="*"
-        </code>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step1Install') }}
+            </span>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              pip install comfy-cli
+            </code>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step2Install') }}
+            </span>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              comfy install
+            </code>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step3Launch') }}
+            </span>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              comfy launch -- --enable-cors-header="*"
+            </code>
+          </div>
+        </div>
+
         <p class="text-xs text-neutral-500">
           {{ t('connectionPanel.corsNote') }}
         </p>
       </section>
 
+      <!-- Alternative: manual python -->
+      <details class="group">
+        <summary
+          class="cursor-pointer text-sm font-medium text-neutral-400 hover:text-neutral-300"
+        >
+          {{ t('connectionPanel.altManualSetup') }}
+        </summary>
+        <div class="mt-2 flex flex-col gap-2">
+          <p class="text-xs text-neutral-400">
+            {{ t('connectionPanel.guideDescription') }}
+          </p>
+          <code
+            class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+          >
+            python main.py --enable-cors-header="*"
+          </code>
+        </div>
+      </details>
+
+      <!-- Local network access -->
       <section class="flex flex-col gap-2">
         <h2 class="text-sm font-medium text-neutral-300">
           {{ t('connectionPanel.localAccess') }}
@@ -138,7 +203,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
@@ -228,6 +292,13 @@ async function testConnection() {
   } finally {
     isTesting.value = false
   }
+}
+
+function connectAndGo() {
+  const base = normalizeUrl(backendUrl.value)
+  localStorage.setItem(STORAGE_KEY, base)
+  // Full page reload so ComfyApi constructor picks up the new backend URL
+  window.location.href = '/'
 }
 
 const version = __COMFYUI_FRONTEND_VERSION__
