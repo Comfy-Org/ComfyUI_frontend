@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -103,14 +103,15 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     const keyBadges = bottomPanel.shortcuts.keyBadges
     await keyBadges.first().waitFor({ state: 'visible' })
-    const count = await keyBadges.count()
-    expect(count).toBeGreaterThanOrEqual(1)
+    await expect.poll(() => keyBadges.count()).toBeGreaterThanOrEqual(1)
 
-    const badgeText = await keyBadges.allTextContents()
-    const hasModifiers = badgeText.some((text) =>
-      ['Ctrl', 'Cmd', 'Shift', 'Alt'].includes(text)
-    )
-    expect(hasModifiers).toBeTruthy()
+    await expect
+      .poll(() => keyBadges.allTextContents())
+      .toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/^(Ctrl|Cmd|Shift|Alt)$/)
+        ])
+      )
   })
 
   test('should maintain panel state when switching between panels', async ({
@@ -196,8 +197,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     ).toBeVisible()
 
     const subcategoryTitles = bottomPanel.shortcuts.subcategoryTitles
-    const titleCount = await subcategoryTitles.count()
-    expect(titleCount).toBeGreaterThanOrEqual(2)
+    await expect.poll(() => subcategoryTitles.count()).toBeGreaterThanOrEqual(2)
   })
 
   test('should open shortcuts panel with Ctrl+Shift+K', async ({

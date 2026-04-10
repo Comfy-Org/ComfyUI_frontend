@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -61,13 +62,16 @@ const createJob = (overrides: Partial<JobListItem> = {}): JobListItem => ({
   ...overrides
 })
 
-const mountComponent = (job: JobListItem) =>
-  mount(ActiveJobCard, {
+function renderComponent(job: JobListItem) {
+  const user = userEvent.setup()
+  const { container } = render(ActiveJobCard, {
     props: { job },
     global: {
       plugins: [i18n]
     }
   })
+  return { container, user }
+}
 
 describe('ActiveJobCard', () => {
   beforeEach(() => {
@@ -78,18 +82,19 @@ describe('ActiveJobCard', () => {
   })
 
   it('displays percentage and progress bar when job is running', () => {
-    const wrapper = mountComponent(
+    const { container } = renderComponent(
       createJob({ state: 'running', progressTotalPercent: 65 })
     )
 
-    expect(wrapper.text()).toContain('65%')
-    const progressBar = wrapper.find('.bg-blue-500')
-    expect(progressBar.exists()).toBe(true)
-    expect(progressBar.attributes('style')).toContain('width: 65%')
+    expect(container.textContent).toContain('65%')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- progress bar has no ARIA role in happy-dom
+    const progressBar = container.querySelector('.bg-blue-500')
+    expect(progressBar).not.toBeNull()
+    expect(progressBar).toHaveStyle({ width: '65%' })
   })
 
   it('displays status text when job is pending', () => {
-    const wrapper = mountComponent(
+    const { container } = renderComponent(
       createJob({
         state: 'pending',
         title: 'In queue...',
@@ -97,116 +102,114 @@ describe('ActiveJobCard', () => {
       })
     )
 
-    expect(wrapper.text()).toContain('In queue...')
-    const progressBar = wrapper.find('.bg-blue-500')
-    expect(progressBar.exists()).toBe(false)
+    expect(container.textContent).toContain('In queue...')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- progress bar has no ARIA role in happy-dom
+    expect(container.querySelector('.bg-blue-500')).toBeNull()
   })
 
   it('shows spinner for pending state', () => {
-    const wrapper = mountComponent(createJob({ state: 'pending' }))
+    const { container } = renderComponent(createJob({ state: 'pending' }))
 
-    const spinner = wrapper.find('.icon-\\[lucide--loader-circle\\]')
-    expect(spinner.exists()).toBe(true)
-    expect(spinner.classes()).toContain('animate-spin')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- spinner icon has no ARIA role in happy-dom
+    const spinner = container.querySelector('[class*="lucide--loader-circle"]')
+    expect(spinner).not.toBeNull()
+    expect(spinner).toHaveClass('animate-spin')
   })
 
   it('shows error icon for failed state', () => {
-    const wrapper = mountComponent(
+    const { container } = renderComponent(
       createJob({ state: 'failed', title: 'Failed' })
     )
 
-    const errorIcon = wrapper.find('.icon-\\[lucide--circle-alert\\]')
-    expect(errorIcon.exists()).toBe(true)
-    expect(wrapper.text()).toContain('Failed')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- error icon has no ARIA role in happy-dom
+    const errorIcon = container.querySelector('[class*="lucide--circle-alert"]')
+    expect(errorIcon).not.toBeNull()
+    expect(container.textContent).toContain('Failed')
   })
 
   it('shows preview image when running with iconImageUrl', () => {
-    const wrapper = mountComponent(
+    renderComponent(
       createJob({
         state: 'running',
         iconImageUrl: 'https://example.com/preview.jpg'
       })
     )
 
-    const img = wrapper.find('img')
-    expect(img.exists()).toBe(true)
-    expect(img.attributes('src')).toBe('https://example.com/preview.jpg')
+    const img = screen.getByRole('img')
+    expect(img).toHaveAttribute('src', 'https://example.com/preview.jpg')
   })
 
   it('has proper accessibility attributes', () => {
-    const wrapper = mountComponent(createJob({ title: 'Generating...' }))
+    renderComponent(createJob({ title: 'Generating...' }))
 
-    const container = wrapper.find('[role="status"]')
-    expect(container.exists()).toBe(true)
-    expect(container.attributes('aria-label')).toBe('Active job: Generating...')
+    const status = screen.getByRole('status', {
+      name: 'Active job: Generating...'
+    })
+    expect(status).toBeInTheDocument()
   })
 
   it('shows delete button on hover for failed jobs', async () => {
     mockCanDeleteJob.value = true
 
-    const wrapper = mountComponent(
+    const { user } = renderComponent(
       createJob({ state: 'failed', title: 'Failed' })
     )
 
-    expect(wrapper.findComponent({ name: 'Button' }).exists()).toBe(false)
+    expect(
+      screen.queryByRole('button', { name: 'Remove job' })
+    ).not.toBeInTheDocument()
 
-    await wrapper.find('[role="status"]').trigger('mouseenter')
+    await user.hover(screen.getByRole('status'))
 
-    const button = wrapper.findComponent({ name: 'Button' })
-    expect(button.exists()).toBe(true)
-    expect(button.attributes('aria-label')).toBe('Remove job')
+    expect(
+      screen.getByRole('button', { name: 'Remove job' })
+    ).toBeInTheDocument()
   })
 
   it('calls runDeleteJob when delete button is clicked on a failed job', async () => {
     mockCanDeleteJob.value = true
 
-    const wrapper = mountComponent(
+    const { user } = renderComponent(
       createJob({ state: 'failed', title: 'Failed' })
     )
 
-    await wrapper.find('[role="status"]').trigger('mouseenter')
-
-    const button = wrapper.findComponent({ name: 'Button' })
-    await button.trigger('click')
+    await user.hover(screen.getByRole('status'))
+    await user.click(screen.getByRole('button', { name: 'Remove job' }))
 
     expect(mockRunDeleteJob).toHaveBeenCalledOnce()
   })
 
   it('does not show action button when job cannot be cancelled or deleted', async () => {
-    const wrapper = mountComponent(
+    const { user } = renderComponent(
       createJob({ state: 'running', progressTotalPercent: 50 })
     )
 
-    await wrapper.find('[role="status"]').trigger('mouseenter')
+    await user.hover(screen.getByRole('status', { name: /Active job/ }))
 
-    expect(wrapper.findComponent({ name: 'Button' }).exists()).toBe(false)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('shows cancel button on hover for cancellable jobs', async () => {
     mockCanCancelJob.value = true
 
-    const wrapper = mountComponent(
+    const { user } = renderComponent(
       createJob({ state: 'running', progressTotalPercent: 50 })
     )
 
-    await wrapper.find('[role="status"]').trigger('mouseenter')
+    await user.hover(screen.getByRole('status', { name: /Active job/ }))
 
-    const button = wrapper.findComponent({ name: 'Button' })
-    expect(button.exists()).toBe(true)
-    expect(button.attributes('aria-label')).toBe('Cancel')
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
   })
 
   it('calls runCancelJob when cancel button is clicked', async () => {
     mockCanCancelJob.value = true
 
-    const wrapper = mountComponent(
+    const { user } = renderComponent(
       createJob({ state: 'running', progressTotalPercent: 50 })
     )
 
-    await wrapper.find('[role="status"]').trigger('mouseenter')
-
-    const button = wrapper.findComponent({ name: 'Button' })
-    await button.trigger('click')
+    await user.hover(screen.getByRole('status', { name: /Active job/ }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(mockRunCancelJob).toHaveBeenCalledOnce()
   })

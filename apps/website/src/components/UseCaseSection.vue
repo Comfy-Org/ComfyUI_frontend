@@ -1,14 +1,18 @@
 <!-- TODO: Wire category content swap when final assets arrive -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
 
-const categories = [
-  'VFX & Animation',
-  'Creative Agencies',
-  'Gaming',
-  'eCommerce & Fashion',
-  'Community & Hobbyists'
-]
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const categories = computed(() => [
+  t('useCase.vfx', locale),
+  t('useCase.agencies', locale),
+  t('useCase.gaming', locale),
+  t('useCase.ecommerce', locale),
+  t('useCase.community', locale)
+])
 
 const activeCategory = ref(0)
 </script>
@@ -27,7 +31,7 @@ const activeCategory = ref(0)
         <!-- Center content -->
         <div class="flex flex-col items-center text-center lg:flex-[2]">
           <h2 class="text-3xl font-bold text-white">
-            Built for Every Creative Industry
+            {{ t('useCase.heading', locale) }}
           </h2>
 
           <nav
@@ -37,6 +41,8 @@ const activeCategory = ref(0)
             <button
               v-for="(category, index) in categories"
               :key="category"
+              type="button"
+              :aria-pressed="index === activeCategory"
               class="transition-colors"
               :class="
                 index === activeCategory
@@ -50,15 +56,14 @@ const activeCategory = ref(0)
           </nav>
 
           <p class="mt-10 max-w-lg text-smoke-700">
-            Powered by 60,000+ nodes, thousands of workflows, and a community
-            that builds faster than any one company could.
+            {{ t('useCase.body', locale) }}
           </p>
 
           <a
             href="/workflows"
             class="mt-8 rounded-full border border-brand-yellow px-8 py-3 text-sm font-semibold text-brand-yellow transition-colors hover:bg-brand-yellow hover:text-black"
           >
-            EXPLORE WORKFLOWS
+            {{ t('useCase.cta', locale) }}
           </a>
         </div>
 

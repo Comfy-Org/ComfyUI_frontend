@@ -1,39 +1,73 @@
 <script setup lang="ts">
-const columns = [
+import { computed } from 'vue'
+
+import type { Locale } from '../i18n/translations'
+import { localePath, t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const columns = computed(() => [
   {
-    title: 'Product',
+    title: t('footer.product', locale),
     links: [
-      { label: 'Comfy Desktop', href: '/download' },
-      { label: 'Comfy Cloud', href: 'https://app.comfy.org' },
-      { label: 'ComfyHub', href: 'https://hub.comfy.org' },
-      { label: 'Pricing', href: '/pricing' }
+      {
+        label: t('footer.comfyDesktop', locale),
+        href: localePath('/download', locale)
+      },
+      { label: t('footer.comfyCloud', locale), href: 'https://app.comfy.org' },
+      { label: t('footer.comfyHub', locale), href: 'https://hub.comfy.org' },
+      {
+        label: t('footer.pricing', locale),
+        href: localePath('/pricing', locale)
+      }
     ]
   },
   {
-    title: 'Resources',
+    title: t('footer.resources', locale),
     links: [
-      { label: 'Documentation', href: 'https://docs.comfy.org' },
-      { label: 'Blog', href: 'https://blog.comfy.org' },
-      { label: 'Gallery', href: '/gallery' },
-      { label: 'GitHub', href: 'https://github.com/comfyanonymous/ComfyUI' }
+      {
+        label: t('footer.documentation', locale),
+        href: 'https://docs.comfy.org'
+      },
+      { label: t('footer.blog', locale), href: 'https://blog.comfy.org' },
+      {
+        label: t('footer.gallery', locale),
+        href: localePath('/gallery', locale)
+      },
+      {
+        label: t('footer.github', locale),
+        href: 'https://github.com/comfyanonymous/ComfyUI'
+      }
     ]
   },
   {
-    title: 'Company',
+    title: t('footer.company', locale),
     links: [
-      { label: 'About', href: '/about' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Enterprise', href: '/enterprise' }
+      { label: t('footer.about', locale), href: localePath('/about', locale) },
+      {
+        label: t('footer.careers', locale),
+        href: localePath('/careers', locale)
+      },
+      {
+        label: t('footer.enterprise', locale),
+        href: localePath('/enterprise', locale)
+      }
     ]
   },
   {
-    title: 'Legal',
+    title: t('footer.legal', locale),
     links: [
-      { label: 'Terms of Service', href: '/terms-of-service' },
-      { label: 'Privacy Policy', href: '/privacy-policy' }
+      {
+        label: t('footer.terms', locale),
+        href: localePath('/terms-of-service', locale)
+      },
+      {
+        label: t('footer.privacy', locale),
+        href: localePath('/privacy-policy', locale)
+      }
     ]
   }
-]
+])
 
 const socials = [
   {
@@ -76,11 +110,16 @@ const socials = [
     >
       <!-- Brand -->
       <div class="lg:col-span-1">
-        <a href="/" class="text-2xl font-bold text-brand-yellow italic">
+        <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
+        <a
+          :href="localePath('/', locale)"
+          class="text-2xl font-bold text-brand-yellow italic"
+        >
           Comfy
         </a>
+        <!-- eslint-enable @intlify/vue-i18n/no-raw-text -->
         <p class="mt-4 text-sm text-smoke-700">
-          Professional control of visual AI.
+          {{ t('footer.tagline', locale) }}
         </p>
       </div>
 
@@ -96,6 +135,10 @@ const socials = [
           v-for="link in column.links"
           :key="link.href"
           :href="link.href"
+          :target="link.href.startsWith('http') ? '_blank' : undefined"
+          :rel="
+            link.href.startsWith('http') ? 'noopener noreferrer' : undefined
+          "
           class="text-sm text-smoke-700 transition-colors hover:text-white"
         >
           {{ link.label }}
@@ -109,7 +152,8 @@ const socials = [
         class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 p-6 sm:flex-row"
       >
         <p class="text-sm text-smoke-700">
-          &copy; {{ new Date().getFullYear() }} Comfy Org. All rights reserved.
+          &copy; {{ new Date().getFullYear() }}
+          {{ t('footer.copyright', locale) }}
         </p>
 
         <!-- Social icons -->
