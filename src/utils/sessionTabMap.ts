@@ -11,6 +11,7 @@ export function createSessionTabMap(
   prefix: string,
   maxEntries: number = 200
 ): SessionTabMap {
+  const capacity = Math.max(0, Math.floor(maxEntries))
   const map = shallowRef<Map<string, string>>(restore(prefix))
 
   function set(key: string, value: string): void {
@@ -19,8 +20,9 @@ export function createSessionTabMap(
     next.delete(key)
     next.set(key, value)
 
-    while (next.size > maxEntries) {
-      const oldest = next.keys().next().value!
+    while (next.size > capacity) {
+      const oldest = next.keys().next().value
+      if (oldest === undefined) break
       next.delete(oldest)
     }
 
