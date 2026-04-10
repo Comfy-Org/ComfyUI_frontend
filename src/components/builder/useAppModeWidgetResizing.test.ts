@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -132,6 +133,58 @@ describe('useAppModeWidgetResizing', () => {
 
     expect(onResize).toHaveBeenCalledTimes(1)
     expect(onResize).toHaveBeenCalledWith(2, 'other', { height: 300 })
+  })
+
+  it('treats pointercancel as the end of a gesture and persists the new height', () => {
+    const { bind, onResize } = setup()
+    const { wrapper, textarea } = wrapWithTextarea()
+    bind(wrapper, 1 as NodeId, 'prompt')
+
+    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(textarea, 250)
+    window.dispatchEvent(new PointerEvent('pointercancel'))
+
+    expect(onResize).toHaveBeenCalledWith(1, 'prompt', { height: 250 })
+  })
+
+  it('after pointercancel, a subsequent stray pointerup is a no-op', () => {
+    const { bind, onResize } = setup()
+    const { wrapper, textarea } = wrapWithTextarea()
+    bind(wrapper, 1 as NodeId, 'prompt')
+
+    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(textarea, 250)
+    window.dispatchEvent(new PointerEvent('pointercancel'))
+    setHeight(textarea, 400)
+    window.dispatchEvent(new PointerEvent('pointerup'))
+
+    expect(onResize).toHaveBeenCalledTimes(1)
+    expect(onResize).toHaveBeenCalledWith(1, 'prompt', { height: 250 })
+  })
+
+  it('removes global listeners when the owning scope is disposed mid-gesture', () => {
+    const onResize =
+      vi.fn<
+        (nodeId: NodeId, widgetName: string, config: InputWidgetConfig) => void
+      >()
+    const scope = effectScope()
+    const { onPointerDown } = scope.run(() =>
+      useAppModeWidgetResizing(onResize)
+    )!
+    const { wrapper, textarea } = wrapWithTextarea()
+    wrapper.addEventListener(
+      'pointerdown',
+      (e) => onPointerDown(1 as NodeId, 'prompt', e as PointerEvent),
+      { capture: true }
+    )
+
+    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(textarea, 250)
+    scope.stop()
+    window.dispatchEvent(new PointerEvent('pointerup'))
+    window.dispatchEvent(new PointerEvent('pointercancel'))
+
+    expect(onResize).not.toHaveBeenCalled()
   })
 
   it('does not match a resizable that is an ancestor of the wrapper', () => {

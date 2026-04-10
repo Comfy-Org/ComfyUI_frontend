@@ -1,3 +1,5 @@
+import { onScopeDispose } from 'vue'
+
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 
@@ -12,6 +14,15 @@ export function useAppModeWidgetResizing(
 ) {
   let pendingHandler: (() => void) | null = null
 
+  function clearPendingHandler() {
+    if (!pendingHandler) return
+    window.removeEventListener('pointerup', pendingHandler)
+    window.removeEventListener('pointercancel', pendingHandler)
+    pendingHandler = null
+  }
+
+  onScopeDispose(clearPendingHandler)
+
   function onPointerDown(
     nodeId: NodeId,
     widgetName: string,
@@ -24,11 +35,12 @@ export function useAppModeWidgetResizing(
     const resizable = target.closest<HTMLElement>(RESIZABLE_SELECTOR)
     if (!resizable || !wrapper.contains(resizable)) return
 
-    if (pendingHandler) window.removeEventListener('pointerup', pendingHandler)
+    clearPendingHandler()
 
     const startHeight = resizable.offsetHeight
     const handler = () => {
       window.removeEventListener('pointerup', handler)
+      window.removeEventListener('pointercancel', handler)
       pendingHandler = null
       const height = resizable.offsetHeight
       if (height === startHeight) return
@@ -36,6 +48,7 @@ export function useAppModeWidgetResizing(
     }
     pendingHandler = handler
     window.addEventListener('pointerup', handler)
+    window.addEventListener('pointercancel', handler)
   }
 
   return { onPointerDown }
