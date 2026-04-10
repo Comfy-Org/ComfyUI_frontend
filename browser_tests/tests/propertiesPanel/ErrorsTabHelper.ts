@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 export async function openErrorsTabViaSeeErrors(
   comfyPage: ComfyPage,
@@ -14,4 +15,11 @@ export async function openErrorsTabViaSeeErrors(
 
   await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
   await expect(errorOverlay).not.toBeVisible()
+}
+
+export async function openErrorsTab(comfyPage: ComfyPage) {
+  const panel = new PropertiesPanelHelper(comfyPage.page)
+  await panel.open(comfyPage.actionbar.propertiesButton)
+  await expect(panel.errorsTabIcon).toBeVisible()
+  await panel.errorsTabIcon.click()
 }

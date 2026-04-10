@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { openErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -249,7 +250,7 @@ test.describe('Workflows sidebar', () => {
       .toEqual('workflow1')
   })
 
-  test('Reports missing nodes warning again when switching back to workflow', async ({
+  test('Does not resurface error overlay when switching back to workflow with missing nodes', async ({
     comfyPage
   }) => {
     await comfyPage.settings.setSetting(
@@ -271,11 +272,44 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
-    // Switch back to the missing_nodes workflow — overlay should reappear
-    // so users can install missing node packs without a page reload
+    // Switch back to the missing_nodes workflow — overlay should not reappear
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
+    await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+  })
+
+  test('Restores missing nodes in errors tab when switching back to workflow', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
+    await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
     await expect(errorOverlay).toBeVisible()
+    await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
+
+    const missingNodeGroup = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodePacksGroup
+    )
+
+    // Open errors tab and verify missing nodes group
+    await openErrorsTab(comfyPage)
+    await expect(missingNodeGroup).toBeVisible()
+
+    // Load blank workflow — missing nodes group should disappear
+    await comfyPage.menu.workflowsTab.open()
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await expect(missingNodeGroup).not.toBeVisible()
+
+    // Switch back — missing nodes should be restored in errors tab
+    await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+    await openErrorsTab(comfyPage)
+    await expect(missingNodeGroup).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({
