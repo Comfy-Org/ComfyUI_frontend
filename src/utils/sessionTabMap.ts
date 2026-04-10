@@ -68,9 +68,9 @@ function migrate(prefix: string, newKey: string): Map<string, string> {
       continue
     const raw = sessionStorage.getItem(existingKey)
     if (!raw) continue
-    sessionStorage.removeItem(existingKey)
     const migrated = new Map(JSON.parse(raw) as [string, string][])
     persist(prefix, migrated)
+    sessionStorage.removeItem(existingKey)
     return migrated
   }
   return new Map()
