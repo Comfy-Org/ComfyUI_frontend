@@ -27,7 +27,7 @@ test.describe('Settings', () => {
     const settingsLocator = comfyPage.page.getByTestId('settings-dialog')
     await expect(settingsLocator).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
-    await expect(settingsLocator).not.toBeVisible()
+    await expect(settingsLocator).toBeHidden()
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {

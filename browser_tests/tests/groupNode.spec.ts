@@ -157,7 +157,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await comfyPage.nextFrame()
     await expect(manage1.selectedNodeTypeSelect).toHaveValue('g1')
     await manage1.close()
-    await expect(manage1.root).not.toBeVisible()
+    await expect(manage1.root).toBeHidden()
 
     const manage2 = await group2.manageGroupNode()
     await expect(manage2.selectedNodeTypeSelect).toHaveValue('g2')
@@ -244,7 +244,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test.describe('Copy and paste', () => {

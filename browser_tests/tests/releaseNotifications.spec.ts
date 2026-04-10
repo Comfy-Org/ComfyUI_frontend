@@ -73,7 +73,7 @@ test.describe('Release Notifications', () => {
 
     // Close help center by dismissable mask
     await comfyPage.page.locator('.help-center-backdrop').click()
-    await expect(helpMenu).not.toBeVisible()
+    await expect(helpMenu).toBeHidden()
   })
 
   test('should not show release notifications when mocked (default behavior)', async ({
@@ -103,10 +103,10 @@ test.describe('Release Notifications', () => {
     ).toBeVisible()
 
     // Should not show any popups or toasts
-    await expect(comfyPage.page.locator('.whats-new-popup')).not.toBeVisible()
+    await expect(comfyPage.page.locator('.whats-new-popup')).toBeHidden()
     await expect(
       comfyPage.page.locator('.release-notification-toast')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should handle release API errors gracefully', async ({ comfyPage }) => {
@@ -189,13 +189,13 @@ test.describe('Release Notifications', () => {
     const whatsNewSection = comfyPage.page.getByTestId(
       TestIds.dialogs.whatsNewSection
     )
-    await expect(whatsNewSection).not.toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
 
     // Should not show any popups or toasts
-    await expect(comfyPage.page.locator('.whats-new-popup')).not.toBeVisible()
+    await expect(comfyPage.page.locator('.whats-new-popup')).toBeHidden()
     await expect(
       comfyPage.page.locator('.release-notification-toast')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should not make API calls when notifications are disabled', async ({
@@ -337,7 +337,7 @@ test.describe('Release Notifications', () => {
     await helpCenterButton.click()
 
     // Verify "What's New?" section is now hidden
-    await expect(whatsNewSection).not.toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
   })
 
   test('should handle edge case with empty releases and disabled notifications', async ({
@@ -381,6 +381,6 @@ test.describe('Release Notifications', () => {
     const whatsNewSection = comfyPage.page.getByTestId(
       TestIds.dialogs.whatsNewSection
     )
-    await expect(whatsNewSection).not.toBeVisible()
+    await expect(whatsNewSection).toBeHidden()
   })
 })

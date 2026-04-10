@@ -53,7 +53,7 @@ test.describe('Vue Multiline String Widget', () => {
 
     await textarea.focus()
     await textarea.click({ button: 'right' })
-    await expect(vueContextMenu).not.toBeVisible()
+    await expect(vueContextMenu).toBeHidden()
     await textarea.blur()
 
     await textarea.click({ button: 'right' })

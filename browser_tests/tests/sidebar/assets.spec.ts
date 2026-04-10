@@ -746,7 +746,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.delete.click()
 
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
@@ -768,7 +768,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.reject.click()
 
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
   })
 })

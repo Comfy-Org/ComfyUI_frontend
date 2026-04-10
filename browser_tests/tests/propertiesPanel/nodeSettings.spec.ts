@@ -42,8 +42,8 @@ test.describe('Properties panel - Node settings', () => {
       await expect(nodeLocator.getByText('Bypassed')).toBeVisible()
 
       await panel.getNodeStateButton('Normal').click()
-      await expect(nodeLocator.getByText('Bypassed')).not.toBeVisible()
-      await expect(nodeLocator.getByText('Muted')).not.toBeVisible()
+      await expect(nodeLocator.getByText('Bypassed')).toBeHidden()
+      await expect(nodeLocator.getByText('Muted')).toBeHidden()
     })
   })
 
@@ -116,7 +116,7 @@ test.describe('Properties panel - Node settings', () => {
       await panel.pinnedSwitch.click()
       await expect(
         nodeLocator.getByTestId('node-pin-indicator')
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
   })
 })

@@ -10,11 +10,11 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should toggle shortcuts panel visibility', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
     await bottomPanel.keyboardShortcutsButton.click()
     await expect(bottomPanel.root).toBeVisible()
     await bottomPanel.keyboardShortcutsButton.click()
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
   })
 
   test('should display essentials shortcuts tab', async ({ comfyPage }) => {
@@ -182,7 +182,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).toBeVisible()
 
     await bottomPanel.keyboardShortcutsButton.click()
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
   })
 
   test('should display shortcuts in organized columns', async ({
@@ -203,7 +203,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
 
     await comfyPage.page.keyboard.press('Control+Shift+KeyK')
 

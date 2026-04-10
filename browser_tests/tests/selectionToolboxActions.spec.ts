@@ -225,7 +225,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const frameButton = comfyPage.page.getByRole('button', {
       name: /Frame Nodes/i
     })
-    await expect(frameButton).not.toBeVisible()
+    await expect(frameButton).toBeHidden()
   })
 
   test('execute button visible when output node selected', async ({
@@ -255,6 +255,6 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const executeButton = comfyPage.page.getByRole('button', {
       name: /Execute to selected output nodes/i
     })
-    await expect(executeButton).not.toBeVisible()
+    await expect(executeButton).toBeHidden()
   })
 })

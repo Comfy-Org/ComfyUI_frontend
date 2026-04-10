@@ -31,7 +31,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
-    await expect(comfyPage.selectionToolbox).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeHidden()
 
     // Select multiple nodes
     await comfyPage.nodeOps.selectNodes([
@@ -87,7 +87,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(nodePos.x + 200, nodePos.y + 200)
     await comfyPage.nextFrame()
-    await expect(comfyPage.selectionToolbox).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeHidden()
   })
 
   test('shows border only with multiple selections', async ({ comfyPage }) => {
@@ -142,7 +142,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       comfyPage.page.locator(
         '.selection-toolbox *[data-testid="bypass-button"]'
       )
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test.describe('Color Picker', () => {
@@ -170,7 +170,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await blueColorOption.click()
 
       // Dropdown should close after selection
-      await expect(colorPickerGroup).not.toBeVisible()
+      await expect(colorPickerGroup).toBeHidden()
 
       // Node should have the selected color class/style
       // Note: Exact verification method depends on how color is applied to nodes

@@ -39,13 +39,13 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     await comfyPage.appMode.toggleAppMode()
 
     await expect(comfyPage.canvas).toBeVisible()
-    await expect(comfyPage.page.getByTestId('linear-widgets')).not.toBeVisible()
+    await expect(comfyPage.page.getByTestId('linear-widgets')).toBeHidden()
   })
 
   test('Canvas not visible in app mode', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([])
 
     await expect(comfyPage.page.getByTestId('linear-widgets')).toBeVisible()
-    await expect(comfyPage.canvas).not.toBeVisible()
+    await expect(comfyPage.canvas).toBeHidden()
   })
 })

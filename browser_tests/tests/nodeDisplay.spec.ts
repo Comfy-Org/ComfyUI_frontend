@@ -40,7 +40,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).not.toBeVisible()
+    ).toBeHidden()
 
     // If the node's multiline text widget is visible, then it was loaded successfully
     await expect(comfyPage.page.locator('.comfy-multiline-input')).toHaveCount(

@@ -148,10 +148,15 @@
         "playwright/no-duplicate-hooks": "error",
         "playwright/no-element-handle": "error",
         "playwright/no-eval": "error",
+        "playwright/no-focused-test": "error",
         "playwright/no-force-option": "off",
         "playwright/no-networkidle": "error",
         "playwright/no-page-pause": "error",
+        "playwright/no-skipped-test": "error",
+        "playwright/no-unsafe-references": "error",
+        "playwright/no-unused-locators": "error",
         "playwright/no-useless-await": "error",
+        "playwright/no-useless-not": "error",
         "playwright/no-wait-for-navigation": "error",
         "playwright/no-wait-for-selector": "error",
         "playwright/no-wait-for-timeout": "error",
@@ -161,7 +166,10 @@
         "playwright/prefer-to-have-length": "error",
         "playwright/prefer-web-first-assertions": "error",
         "playwright/prefer-native-locators": "error",
-        "playwright/require-to-pass-timeout": "error"
+        "playwright/require-to-pass-timeout": "error",
+        "playwright/valid-expect": "error",
+        "playwright/valid-expect-in-promise": "error",
+        "playwright/valid-title": "error"
       }
     }
   ]

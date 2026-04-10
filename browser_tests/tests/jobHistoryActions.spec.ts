@@ -62,7 +62,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     await expect(action).toBeVisible()
     await action.click()
 
-    await expect(action).not.toBeVisible()
+    await expect(action).toBeHidden()
   })
 
   test('Clicking show run progress bar toggles setting', async ({

@@ -40,6 +40,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   // page.route(), and change checkTemplateFileExists to use browser-context
   // fetch (page.request.head bypasses Playwright routing).
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
+  // oxlint-disable-next-line playwright/no-skipped-test -- https://github.com/Comfy-Org/ComfyUI_frontend/issues/3992
   test.skip('should have all required thumbnail media for each template', async ({
     comfyPage
   }) => {

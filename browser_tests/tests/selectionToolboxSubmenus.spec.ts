@@ -160,7 +160,7 @@ test.describe(
       await comfyPage.nextFrame()
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
 
     test('closes More Options menu when clicking the button again (toggle)', async ({
@@ -189,7 +189,7 @@ test.describe(
 
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
   }
 )
