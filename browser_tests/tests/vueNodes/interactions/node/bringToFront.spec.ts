@@ -23,18 +23,8 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
   ): Promise<number> {
     const node = comfyPage.vueNodes.getNodeByTitle(title)
     const style = await node.getAttribute('style')
-    if (!style) {
-      throw new Error(
-        `Node "${title}" has no style attribute (observed: ${style})`
-      )
-    }
-    const match = style.match(/z-index:\s*(\d+)/)
-    if (!match) {
-      throw new Error(
-        `Node "${title}" has no z-index in style (observed: "${style}")`
-      )
-    }
-    return parseInt(match[1], 10)
+    const match = style?.match(/z-index:\s*(\d+)/)
+    return match ? parseInt(match[1], 10) : Number.NaN
   }
 
   /**
@@ -73,9 +63,13 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     )
 
     // KSampler should be on top (higher z-index) after being dragged
-    const ksamplerZIndexBefore = await getNodeZIndex(comfyPage, 'KSampler')
-    const clipZIndexBefore = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-    expect(ksamplerZIndexBefore).toBeGreaterThan(clipZIndexBefore)
+    await expect
+      .poll(async () => {
+        const ksamplerZ = await getNodeZIndex(comfyPage, 'KSampler')
+        const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+        return ksamplerZ - clipZ
+      })
+      .toBeGreaterThan(0)
 
     // Click on CLIP Text Encode (underneath) - need to click on a visible part
     // Since KSampler is on top, we click on the edge of CLIP that should still be visible
@@ -88,9 +82,13 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     await comfyPage.nextFrame()
 
     // CLIP should now be on top - compare post-action z-indices
-    const clipZIndexAfter = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-    const ksamplerZIndexAfter = await getNodeZIndex(comfyPage, 'KSampler')
-    expect(clipZIndexAfter).toBeGreaterThan(ksamplerZIndexAfter)
+    await expect
+      .poll(async () => {
+        const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+        const ksamplerZ = await getNodeZIndex(comfyPage, 'KSampler')
+        return clipZ - ksamplerZ
+      })
+      .toBeGreaterThan(0)
 
     // Screenshot showing CLIP now on top
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -115,9 +113,13 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     await comfyPage.nextFrame()
 
     // VAE should be on top after drag
-    const vaeZIndexBefore = await getNodeZIndex(comfyPage, 'VAE Decode')
-    const clipZIndexBefore = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-    expect(vaeZIndexBefore).toBeGreaterThan(clipZIndexBefore)
+    await expect
+      .poll(async () => {
+        const vaeZ = await getNodeZIndex(comfyPage, 'VAE Decode')
+        const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+        return vaeZ - clipZ
+      })
+      .toBeGreaterThan(0)
 
     // Screenshot showing VAE on top
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -132,9 +134,13 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     await comfyPage.nextFrame()
 
     // CLIP should now be on top - compare post-action z-indices
-    const clipZIndexAfter = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
-    const vaeZIndexAfter = await getNodeZIndex(comfyPage, 'VAE Decode')
-    expect(clipZIndexAfter).toBeGreaterThan(vaeZIndexAfter)
+    await expect
+      .poll(async () => {
+        const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+        const vaeZ = await getNodeZIndex(comfyPage, 'VAE Decode')
+        return clipZ - vaeZ
+      })
+      .toBeGreaterThan(0)
 
     // Screenshot showing CLIP now on top after widget click
     await expect(comfyPage.canvas).toHaveScreenshot(

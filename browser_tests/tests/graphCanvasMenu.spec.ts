@@ -31,18 +31,18 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
       })
-      expect(await comfyPage.settings.getSetting('Comfy.LinkRenderMode')).toBe(
-        hiddenLinkRenderMode
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .toBe(hiddenLinkRenderMode)
 
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'canvas-with-visible-links.png'
       )
-      expect(
-        await comfyPage.settings.getSetting('Comfy.LinkRenderMode')
-      ).not.toBe(hiddenLinkRenderMode)
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .not.toBe(hiddenLinkRenderMode)
     }
   )
 
@@ -92,7 +92,6 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     // Click backdrop to close
     const backdrop = comfyPage.page.locator('.fixed.inset-0').first()
     await backdrop.click()
-    await comfyPage.nextFrame()
 
     // Modal should be hidden
     await expect(zoomModal).not.toBeVisible()

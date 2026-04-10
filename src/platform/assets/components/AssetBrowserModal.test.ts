@@ -1,4 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -60,6 +61,7 @@ vi.mock('@/components/widget/layout/BaseModalLayout.vue', () => ({
     emits: ['close'],
     template: `
       <div data-testid="base-modal-layout">
+        <span data-testid="modal-title">{{ contentTitle }}</span>
         <div v-if="$slots.leftPanel" data-testid="left-panel">
           <slot name="leftPanel" />
         </div>
@@ -87,15 +89,27 @@ vi.mock('@/components/widget/panel/LeftSidePanel.vue', () => ({
         <div v-if="$slots['header-title']" data-testid="header-title">
           <slot name="header-title" />
         </div>
-        <button
-          v-for="item in navItems"
-          :key="item.id"
-          @click="$emit('update:modelValue', item.id)"
-          :data-testid="'nav-item-' + item.id"
-          :class="{ active: modelValue === item.id }"
-        >
-          {{ item.label }}
-        </button>
+        <template v-for="item in navItems" :key="item.id || item.title">
+          <button
+            v-if="item.id"
+            @click="$emit('update:modelValue', item.id)"
+            :data-testid="'nav-item-' + item.id"
+            :class="{ active: modelValue === item.id }"
+          >
+            {{ item.label }}
+          </button>
+          <template v-else-if="item.items">
+            <button
+              v-for="child in item.items"
+              :key="child.id"
+              @click="$emit('update:modelValue', child.id)"
+              :data-testid="'nav-item-' + child.id"
+              :class="{ active: modelValue === child.id }"
+            >
+              {{ child.label }}
+            </button>
+          </template>
+        </template>
       </div>
     `
   }
@@ -151,6 +165,9 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
+
 describe('AssetBrowserModal', () => {
   const createTestAsset = (
     id: string,
@@ -173,11 +190,11 @@ describe('AssetBrowserModal', () => {
     }
   })
 
-  const createWrapper = (props: Record<string, unknown>) => {
+  function renderModal(props: Record<string, unknown>) {
     const pinia = createPinia()
     setActivePinia(pinia)
 
-    return mount(AssetBrowserModal, {
+    return render(AssetBrowserModal, {
       props,
       global: {
         plugins: [pinia],
@@ -207,14 +224,16 @@ describe('AssetBrowserModal', () => {
       ]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
-      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
 
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const gridAssets = assetGrid.props('assets') as AssetItem[]
-
-      expect(gridAssets).toHaveLength(2)
-      expect(gridAssets[0].id).toBe('asset1')
+      expect(screen.getByTestId('asset-asset1')).toBeDefined()
+      expect(screen.getByTestId('asset-asset2')).toBeDefined()
+      /* eslint-disable testing-library/no-node-access */
+      expect(
+        screen.getByTestId('asset-grid').querySelectorAll('.asset-card')
+      ).toHaveLength(2)
+      /* eslint-enable testing-library/no-node-access */
     })
 
     it('passes category-filtered assets to AssetFilterBar', async () => {
@@ -224,23 +243,22 @@ describe('AssetBrowserModal', () => {
       ]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
-      const wrapper = createWrapper({
+      renderModal({
         nodeType: 'CheckpointLoaderSimple',
         showLeftPanel: true
       })
       await flushPromises()
 
-      const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
-      const filterBarAssets = filterBar.props('assets') as AssetItem[]
-
-      expect(filterBarAssets).toHaveLength(2)
+      expect(screen.getByTestId('asset-filter-bar').textContent).toContain(
+        '2 assets'
+      )
     })
   })
 
   describe('Data fetching', () => {
     it('triggers store refresh for node type on mount', async () => {
       const store = useAssetsStore()
-      createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
 
       expect(store.updateModelsForNodeType).toHaveBeenCalledWith(
@@ -252,18 +270,17 @@ describe('AssetBrowserModal', () => {
       const assets = [createTestAsset('asset1', 'Cached Model', 'checkpoints')]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
-      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
 
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const gridAssets = assetGrid.props('assets') as AssetItem[]
-
-      expect(gridAssets).toHaveLength(1)
-      expect(gridAssets[0].name).toBe('Cached Model')
+      expect(screen.getByTestId('asset-asset1')).toBeDefined()
+      expect(screen.getByTestId('asset-asset1').textContent).toContain(
+        'Cached Model'
+      )
     })
 
     it('triggers store refresh for asset type (tag) on mount', async () => {
       const store = useAssetsStore()
-      createWrapper({ assetType: 'models' })
+      renderModal({ assetType: 'models' })
       await flushPromises()
 
       expect(store.updateModelsForTag).toHaveBeenCalledWith('models')
@@ -273,116 +290,133 @@ describe('AssetBrowserModal', () => {
       const assets = [createTestAsset('asset1', 'Tagged Model', 'models')]
       mockAssetsByKey.set('tag:models', assets)
 
-      const wrapper = createWrapper({ assetType: 'models' })
+      renderModal({ assetType: 'models' })
       await flushPromises()
 
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      const gridAssets = assetGrid.props('assets') as AssetItem[]
-
-      expect(gridAssets).toHaveLength(1)
-      expect(gridAssets[0].name).toBe('Tagged Model')
+      expect(screen.getByTestId('asset-asset1')).toBeDefined()
+      expect(screen.getByTestId('asset-asset1').textContent).toContain(
+        'Tagged Model'
+      )
     })
   })
 
   describe('Asset Selection', () => {
     it('emits asset-select event when asset is selected', async () => {
+      const user = userEvent.setup()
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
-      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      const onAssetSelect = vi.fn()
+      renderModal({
+        nodeType: 'CheckpointLoaderSimple',
+        'onAsset-select': onAssetSelect
+      })
       await flushPromises()
 
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      await assetGrid.vm.$emit('asset-select', assets[0])
+      await user.click(screen.getByTestId('asset-asset1'))
 
-      expect(wrapper.emitted('asset-select')).toEqual([[assets[0]]])
+      expect(onAssetSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ id: assets[0].id, name: assets[0].name })
+      )
     })
 
     it('executes onSelect callback when provided', async () => {
+      const user = userEvent.setup()
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
       const onSelect = vi.fn()
-      const wrapper = createWrapper({
+      renderModal({
         nodeType: 'CheckpointLoaderSimple',
         onSelect
       })
       await flushPromises()
 
-      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
-      await assetGrid.vm.$emit('asset-select', assets[0])
+      await user.click(screen.getByTestId('asset-asset1'))
 
-      expect(onSelect).toHaveBeenCalledWith(assets[0])
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ id: assets[0].id, name: assets[0].name })
+      )
     })
   })
 
   describe('Left Panel Conditional Logic', () => {
     it('hides left panel by default when showLeftPanel is undefined', async () => {
-      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
 
-      const leftPanel = wrapper.find('[data-testid="left-panel"]')
-      expect(leftPanel.exists()).toBe(false)
+      expect(screen.queryByTestId('left-panel')).toBeNull()
     })
 
     it('shows left panel when showLeftPanel prop is explicitly true', async () => {
-      const wrapper = createWrapper({
+      renderModal({
         nodeType: 'CheckpointLoaderSimple',
         showLeftPanel: true
       })
       await flushPromises()
 
-      const leftPanel = wrapper.find('[data-testid="left-panel"]')
-      expect(leftPanel.exists()).toBe(true)
+      expect(screen.getByTestId('left-panel')).toBeDefined()
+    })
+
+    it('hides left panel when showLeftPanel is false', async () => {
+      renderModal({
+        nodeType: 'CheckpointLoaderSimple',
+        showLeftPanel: false
+      })
+      await flushPromises()
+
+      expect(screen.queryByTestId('left-panel')).toBeNull()
     })
   })
 
   describe('Filter Options Reactivity', () => {
     it('updates filter options when category changes', async () => {
+      const user = userEvent.setup()
       const assets = [
         createTestAsset('asset1', 'Model A', 'checkpoints'),
         createTestAsset('asset2', 'Model B', 'loras')
       ]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
-      const wrapper = createWrapper({
+      renderModal({
         nodeType: 'CheckpointLoaderSimple',
         showLeftPanel: true
       })
       await flushPromises()
 
-      const filterBar = wrapper.findComponent({ name: 'AssetFilterBar' })
-      expect(filterBar.props('assets')).toHaveLength(2)
+      expect(screen.getByTestId('asset-filter-bar').textContent).toContain(
+        '2 assets'
+      )
 
-      const leftPanel = wrapper.findComponent({ name: 'LeftSidePanel' })
-      await leftPanel.vm.$emit('update:modelValue', 'loras')
-      await wrapper.vm.$nextTick()
+      await user.click(screen.getByTestId('nav-item-loras'))
 
-      expect(filterBar.props('assets')).toHaveLength(1)
+      await waitFor(() => {
+        expect(screen.getByTestId('asset-filter-bar').textContent).toContain(
+          '1 assets'
+        )
+      })
     })
   })
 
   describe('Title Management', () => {
     it('passes custom title to BaseModalLayout when title prop provided', async () => {
-      const wrapper = createWrapper({
+      renderModal({
         nodeType: 'CheckpointLoaderSimple',
         title: 'Custom Title'
       })
       await flushPromises()
 
-      const layout = wrapper.findComponent({ name: 'BaseModalLayout' })
-      expect(layout.props('contentTitle')).toBe('Custom Title')
+      expect(screen.getByTestId('modal-title').textContent).toBe('Custom Title')
     })
 
     it('passes computed contentTitle to BaseModalLayout when no title prop', async () => {
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
       mockAssetsByKey.set('CheckpointLoaderSimple', assets)
 
-      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+      renderModal({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
 
-      const layout = wrapper.findComponent({ name: 'BaseModalLayout' })
-      expect(layout.props('contentTitle')).toBe(
+      expect(screen.getByTestId('modal-title').textContent).toBe(
         'assetBrowser.allCategory:{"category":"Checkpoints"}'
       )
     })

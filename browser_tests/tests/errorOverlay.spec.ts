@@ -47,11 +47,16 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     test('Should display "Show missing models" button for missing model errors', async ({
       comfyPage
     }) => {
-      const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
-        const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
-        return response.ok
-      }, comfyPage.url)
-      expect(cleanupOk).toBeTruthy()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(async (url: string) => {
+            const response = await fetch(
+              `${url}/api/devtools/cleanup_fake_model`
+            )
+            return response.ok
+          }, comfyPage.url)
+        )
+        .toBeTruthy()
 
       await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
@@ -107,10 +112,10 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await comfyPage.nextFrame()
 
       await comfyPage.keyboard.undo()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
+      await expect(errorOverlay).not.toBeVisible()
 
       await comfyPage.keyboard.redo()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
+      await expect(errorOverlay).not.toBeVisible()
     })
   })
 
@@ -151,6 +156,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
+      await expect(overlay).not.toBeVisible()
       await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
     })
 

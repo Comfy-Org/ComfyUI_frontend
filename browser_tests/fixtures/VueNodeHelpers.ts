@@ -7,13 +7,20 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
-  constructor(private page: Page) {}
-
   /**
    * Get locator for all Vue node components in the DOM
    */
-  get nodes(): Locator {
-    return this.page.locator('[data-node-id]')
+  public readonly nodes: Locator
+  /**
+   * Get locator for selected Vue node components (using visual selection indicators)
+   */
+  public readonly selectedNodes: Locator
+
+  constructor(private page: Page) {
+    this.nodes = page.locator('[data-node-id]')
+    this.selectedNodes = page.locator(
+      '[data-node-id].outline-node-component-outline'
+    )
   }
 
   /**
@@ -21,13 +28,6 @@ export class VueNodeHelpers {
    */
   getNodeLocator(nodeId: string): Locator {
     return this.page.locator(`[data-node-id="${nodeId}"]`)
-  }
-
-  /**
-   * Get locator for selected Vue node components (using visual selection indicators)
-   */
-  get selectedNodes(): Locator {
-    return this.page.locator('[data-node-id].outline-node-component-outline')
   }
 
   /**
@@ -46,13 +46,6 @@ export class VueNodeHelpers {
    */
   async getNodeCount(): Promise<number> {
     return await this.nodes.count()
-  }
-
-  /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
   }
 
   /**

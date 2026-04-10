@@ -100,8 +100,9 @@ test.describe('Error dialog', () => {
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport).click()
 
     const reportText = await errorDialog.locator('pre').textContent()
-    const copiedText = await getClipboardText(comfyPage.page)
-    expect(copiedText).toBe(reportText)
+    await expect
+      .poll(async () => await getClipboardText(comfyPage.page))
+      .toBe(reportText)
   })
 
   test('Should open GitHub issues search when "Find Issues" is clicked', async ({

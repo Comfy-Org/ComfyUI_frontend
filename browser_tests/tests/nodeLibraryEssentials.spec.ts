@@ -82,9 +82,7 @@ test.describe('Node Library Essentials Tab', { tag: '@ui' }, () => {
     const firstCard = comfyPage.page.locator('[data-node-name]').first()
     await expect(firstCard).toBeVisible()
 
-    const nodeName = await firstCard.getAttribute('data-node-name')
-    expect(nodeName).toBeTruthy()
-    expect(nodeName!.length).toBeGreaterThan(0)
+    await expect(firstCard).toHaveAttribute('data-node-name', /.+/)
   })
 
   test('Node library can switch between all and essentials tabs', async ({

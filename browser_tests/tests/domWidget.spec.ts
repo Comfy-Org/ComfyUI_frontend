@@ -35,14 +35,14 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-      await comfyPage.nextFrame()
+      await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
       await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
     }
   )
 
   // No DOM widget should be created by creation of interim LGraphNode objects.
   test('Copy node with DOM widget by dragging + alt', async ({ comfyPage }) => {
-    const initialCount = await comfyPage.getDOMWidgetCount()
+    const initialCount = await comfyPage.domWidgets.count()
 
     // TextEncodeNode1
     await comfyPage.page.mouse.move(618, 191)
@@ -52,7 +52,6 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     await comfyPage.page.mouse.up()
     await comfyPage.page.keyboard.up('Alt')
 
-    const finalCount = await comfyPage.getDOMWidgetCount()
-    expect(finalCount).toBe(initialCount + 1)
+    await expect(comfyPage.domWidgets).toHaveCount(initialCount + 1)
   })
 })

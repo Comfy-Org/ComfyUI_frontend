@@ -43,7 +43,6 @@ test.describe('Properties panel - Title editing', () => {
     await comfyPage.page.evaluate(() => {
       window.app!.canvas.deselectAll()
     })
-    await comfyPage.nextFrame()
     await expect(panel.panelTitle).toContainText('Workflow Overview')
     await expect(panel.titleEditIcon).not.toBeVisible()
   })
