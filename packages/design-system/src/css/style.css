@@ -349,7 +349,7 @@
   --node-component-ring: rgb(var(--color-smoke-500) / 20%);
   --node-component-slot-dot-outline-opacity: 10%;
   --node-component-slot-dot-outline: var(--color-white);
-  --node-component-slot-text: var(--muted-foreground);
+  --node-component-slot-text: var(--color-smoke-700);
   --node-component-surface-highlight: var(--color-smoke-800);
   --node-component-surface-hovered: var(--color-charcoal-600);
   --node-component-surface-selected: var(--color-charcoal-200);
@@ -373,7 +373,7 @@
   );
   --color-interface-panel-job-progress-border: var(--base-foreground);
 
-  --text-secondary: var(--muted-foreground);
+  --text-secondary: var(--color-smoke-700);
   --text-primary: var(--color-white);
 
   --input-surface: rgb(130 130 130 / 0.1);
