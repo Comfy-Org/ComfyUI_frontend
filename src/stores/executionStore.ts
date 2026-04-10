@@ -633,6 +633,7 @@ export const useExecutionStore = defineStore('execution', () => {
   watch(
     () => workflowStore.activeWorkflow?.path,
     (newPath) => {
+      _executingNodeProgress.value = null
       if (!newPath) {
         nodeProgressStates.value = {}
         return
@@ -643,6 +644,17 @@ export const useExecutionStore = defineStore('execution', () => {
         const [jobId, states] = jobEntries[i]
         if (jobIdToSessionWorkflowPath.value.get(jobId) === newPath) {
           nodeProgressStates.value = states
+          const firstRunning = Object.values(states).find(
+            (state) => state.state === 'running'
+          )
+          if (firstRunning) {
+            _executingNodeProgress.value = {
+              value: firstRunning.value,
+              max: firstRunning.max,
+              prompt_id: firstRunning.prompt_id,
+              node: firstRunning.display_node_id || firstRunning.node_id
+            }
+          }
           return
         }
       }
