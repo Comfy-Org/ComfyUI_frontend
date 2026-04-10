@@ -11,8 +11,14 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { MissingNodeType } from '@/types/comfy'
 
+export interface InputWidgetConfig {
+  height?: number
+}
+
+export type LinearInput = [NodeId, string, InputWidgetConfig?]
+
 export interface LinearData {
-  inputs: [NodeId, string][]
+  inputs: LinearInput[]
   outputs: NodeId[]
 }
 
