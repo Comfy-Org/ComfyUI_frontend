@@ -46,10 +46,13 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-preview-node'
       )
-      await comfyPage.nextFrame()
 
-      const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
-      expect(beforePseudo.length).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const widgets = await getPseudoPreviewWidgets(comfyPage, '5')
+          return widgets.length
+        })
+        .toBeGreaterThan(0)
 
       await comfyPage.page.evaluate(() => {
         const graph = window.app!.graph!
@@ -71,17 +74,20 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-preview-node'
       )
-      await comfyPage.nextFrame()
 
-      const beforePseudo = await getPseudoPreviewWidgets(comfyPage, '5')
-      expect(beforePseudo.length).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const widgets = await getPseudoPreviewWidgets(comfyPage, '5')
+          return widgets.length
+        })
+        .toBeGreaterThan(0)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect.poll(() => subgraphNode.exists()).toBe(true)
 
       await subgraphNode.delete()
 
-      expect(await subgraphNode.exists()).toBe(false)
+      await expect.poll(() => subgraphNode.exists()).toBe(false)
 
       await expect
         .poll(async () => comfyPage.subgraph.countGraphPseudoPreviewEntries())

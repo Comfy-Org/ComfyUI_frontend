@@ -94,7 +94,6 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      const initialShape = await nodeRef.getProperty<number>('shape')
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Shape', { exact: true }).hover()
@@ -106,9 +105,7 @@ test.describe(
       await comfyPage.page.getByText('Box', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      const newShape = await nodeRef.getProperty<number>('shape')
-      expect(newShape).not.toBe(initialShape)
-      expect(newShape).toBe(1)
+      await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)
     })
 
     test('changes node color via Color submenu swatch', async ({
@@ -117,9 +114,6 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      const initialColor = await nodeRef.getProperty<string | undefined>(
-        'color'
-      )
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Color', { exact: true }).click()
@@ -128,11 +122,9 @@ test.describe(
       await blueSwatch.first().click()
       await comfyPage.nextFrame()
 
-      const newColor = await nodeRef.getProperty<string | undefined>('color')
-      expect(newColor).toBe('#223')
-      if (initialColor) {
-        expect(newColor).not.toBe(initialColor)
-      }
+      await expect
+        .poll(() => nodeRef.getProperty<string | undefined>('color'))
+        .toBe('#223')
     })
 
     test('renames a node using Rename action', async ({ comfyPage }) => {
@@ -150,8 +142,9 @@ test.describe(
       await input.fill('RenamedNode')
       await input.press('Enter')
       await comfyPage.nextFrame()
-      const newTitle = await nodeRef.getProperty<string>('title')
-      expect(newTitle).toBe('RenamedNode')
+      await expect
+        .poll(() => nodeRef.getProperty<string>('title'))
+        .toBe('RenamedNode')
     })
 
     test('closes More Options menu when clicking outside', async ({

@@ -18,7 +18,6 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
   async function openExecutionErrorTab(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('nodes/execution_error')
     await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-    await comfyPage.nextFrame()
 
     const errorOverlay = comfyPage.page.getByTestId(
       TestIds.dialogs.errorOverlay

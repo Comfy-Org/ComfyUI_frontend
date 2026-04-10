@@ -15,11 +15,14 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
     )
-    const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
-      const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
-      return response.ok
-    }, comfyPage.url)
-    expect(cleanupOk).toBeTruthy()
+    await expect
+      .poll(async () => {
+        return await comfyPage.page.evaluate(async (url: string) => {
+          const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
+          return response.ok
+        }, comfyPage.url)
+      })
+      .toBeTruthy()
   })
 
   test('Should show missing models group in errors tab', async ({

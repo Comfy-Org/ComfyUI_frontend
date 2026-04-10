@@ -55,13 +55,15 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
     await comfyPage.command.executeCommand('Comfy.Subgraph.SetDescription', {
       description: 'This is a test description'
     })
-
-    const description = await comfyPage.page.evaluate(() => {
-      const subgraph = window.app!.canvas.subgraph
-      return (subgraph?.extra as Record<string, unknown>)?.BlueprintDescription
-    })
-
-    expect(description).toBe('This is a test description')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const subgraph = window.app!.canvas.subgraph
+          return (subgraph?.extra as Record<string, unknown>)
+            ?.BlueprintDescription
+        })
+      )
+      .toBe('This is a test description')
   })
 
   test('Published search aliases remain searchable after reload', async ({
