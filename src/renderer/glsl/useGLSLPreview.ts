@@ -282,7 +282,44 @@ function createInnerPreview(
     }
   }
 
+  function getCustomResolution(): [number, number] | null {
+    const gId = graphId.value
+    if (!gId) return null
+
+    const sizeModeNodeId = innerGLSLNode
+      ? (innerGLSLNode.id as NodeId)
+      : nodeId.value
+    if (sizeModeNodeId == null) return null
+
+    const sizeMode = widgetValueStore.getWidget(
+      gId,
+      sizeModeNodeId,
+      'size_mode'
+    )
+    if (sizeMode?.value !== 'custom') return null
+
+    const widthWidget = widgetValueStore.getWidget(
+      gId,
+      sizeModeNodeId,
+      'size_mode.width'
+    )
+    const heightWidget = widgetValueStore.getWidget(
+      gId,
+      sizeModeNodeId,
+      'size_mode.height'
+    )
+    if (!widthWidget || !heightWidget) return null
+
+    return clampResolution(
+      normalizeDimension(widthWidget.value),
+      normalizeDimension(heightWidget.value)
+    )
+  }
+
   function getResolution(): [number, number] {
+    const custom = getCustomResolution()
+    if (custom) return custom
+
     const node = nodeRef.value
     if (!node?.inputs) return [DEFAULT_SIZE, DEFAULT_SIZE]
 
@@ -322,27 +359,6 @@ function createInnerPreview(
             img.naturalHeight || DEFAULT_SIZE
           )
         }
-      }
-    }
-
-    const gId = graphId.value
-    const nId = nodeId.value
-    if (gId && nId != null) {
-      const widthWidget = widgetValueStore.getWidget(
-        gId,
-        nId,
-        'size_mode.width'
-      )
-      const heightWidget = widgetValueStore.getWidget(
-        gId,
-        nId,
-        'size_mode.height'
-      )
-      if (widthWidget && heightWidget) {
-        return clampResolution(
-          normalizeDimension(widthWidget.value),
-          normalizeDimension(heightWidget.value)
-        )
       }
     }
 
