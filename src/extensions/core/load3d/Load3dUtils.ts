@@ -131,6 +131,19 @@ class Load3dUtils {
 
     await Promise.all(uploadPromises)
   }
+
+  static mapSceneLightIntensityToHdri(
+    sceneIntensity: number,
+    sceneMin: number,
+    sceneMax: number
+  ): number {
+    const span = sceneMax - sceneMin
+    const t = span > 0 ? (sceneIntensity - sceneMin) / span : 0
+    const clampedT = Math.min(1, Math.max(0, t))
+    const mapped = clampedT * 5
+    const minHdri = 0.25
+    return Math.min(5, Math.max(minHdri, mapped))
+  }
 }
 
 export default Load3dUtils

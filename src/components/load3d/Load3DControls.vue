@@ -15,7 +15,7 @@
         class="rounded-full"
         @click="toggleMenu"
       >
-        <i class="pi pi-bars text-lg text-base-foreground" />
+        <i class="icon-[lucide--menu] text-lg text-base-foreground" />
       </Button>
 
       <div
@@ -43,6 +43,21 @@
           </Button>
         </div>
       </div>
+    </div>
+    <div v-if="activeCategory === 'light'" class="mt-2 flex flex-col">
+      <Button
+        variant="textonly"
+        size="icon"
+        :class="
+          cn(
+            'flex items-center justify-center rounded-full',
+            'bg-button-active-surface'
+          )
+        "
+        @click="selectCategory('light')"
+      >
+        <i :class="getCategoryIcon('light')" />
+      </Button>
     </div>
 
     <div v-show="activeCategory" class="rounded-lg bg-smoke-700/30">
@@ -72,19 +87,24 @@
         v-model:fov="cameraConfig!.fov"
       />
 
-      <HDRIControls
+      <div
         v-if="showLightControls"
-        v-model:hdri-config="lightConfig!.hdri"
-        :hdri-supported="hdriSupported"
-        @update-hdri-file="handleHDRIFileUpdate"
-      />
+        class="flex max-h-[min(70vh,520px)] w-[216px] flex-col gap-3 overflow-y-auto p-2"
+      >
+        <LightControls
+          v-model:light-intensity="lightConfig!.intensity"
+          v-model:material-mode="modelConfig!.materialMode"
+          v-model:hdri-config="lightConfig!.hdri"
+          embedded
+        />
 
-      <LightControls
-        v-if="showLightControls"
-        v-model:light-intensity="lightConfig!.intensity"
-        v-model:material-mode="modelConfig!.materialMode"
-        :hdri-enabled="lightConfig?.hdri?.enabled ?? false"
-      />
+        <HDRIControls
+          v-model:hdri-config="lightConfig!.hdri"
+          embedded
+          :hdri-supported="hdriSupported"
+          @update-hdri-file="handleHDRIFileUpdate"
+        />
+      </div>
 
       <ExportControls
         v-if="showExportControls"
@@ -181,20 +201,28 @@ const toggleMenu = () => {
 }
 
 const selectCategory = (category: string) => {
-  activeCategory.value = category
+  if (category === 'light') {
+    activeCategory.value = activeCategory.value === 'light' ? '' : 'light'
+  } else {
+    activeCategory.value = category
+  }
   isMenuOpen.value = false
 }
 
+const categoryIcons = {
+  scene: 'icon-[lucide--image]',
+  model: 'icon-[lucide--box]',
+  camera: 'icon-[lucide--camera]',
+  light: 'icon-[lucide--sun]',
+  export: 'icon-[lucide--download]'
+} as const
+
 const getCategoryIcon = (category: string) => {
-  const icons = {
-    scene: 'pi pi-image',
-    model: 'pi pi-box',
-    camera: 'pi pi-camera',
-    light: 'pi pi-sun',
-    export: 'pi pi-download'
-  }
-  // @ts-expect-error fixme ts strict error
-  return `${icons[category]} text-base-foreground text-lg`
+  const icon =
+    category in categoryIcons
+      ? categoryIcons[category as keyof typeof categoryIcons]
+      : 'icon-[lucide--circle]'
+  return cn(icon, 'text-lg text-base-foreground')
 }
 
 const emit = defineEmits<{

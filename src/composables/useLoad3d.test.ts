@@ -23,7 +23,17 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn(),
-    uploadFile: vi.fn()
+    uploadFile: vi.fn(),
+    mapSceneLightIntensityToHdri: vi.fn(
+      (scene: number, min: number, max: number) => {
+        const span = max - min
+        const t = span > 0 ? (scene - min) / span : 0
+        const clampedT = Math.min(1, Math.max(0, t))
+        const mapped = clampedT * 5
+        const minHdri = 0.25
+        return Math.min(5, Math.max(minHdri, mapped))
+      }
+    )
   }
 }))
 

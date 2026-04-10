@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-col">
-    <div class="relative">
+    <div :class="embedded ? undefined : 'relative'">
       <Button
+        v-if="!embedded"
         ref="triggerRef"
         v-tooltip.right="{
           value: $t('load3d.hdri.label'),
@@ -19,85 +20,75 @@
         :disabled="!hdriSupported"
         @click="toggleHDRIPanel"
       >
-        <i class="pi pi-globe text-lg text-base-foreground" />
+        <i class="icon-[lucide--globe] text-lg text-base-foreground" />
       </Button>
 
       <div
-        v-show="showPanel"
+        v-show="embedded || showPanel"
         ref="panelRef"
-        class="absolute top-0 left-12 z-30 w-[200px] rounded-lg bg-black/50 p-3 shadow-lg"
+        :class="
+          cn(
+            'flex w-[200px] flex-col gap-3 rounded-lg bg-black/50 p-3 shadow-lg',
+            !embedded && 'absolute top-0 left-12 z-30'
+          )
+        "
       >
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              class="w-full truncate text-xs"
-              @click="triggerFileInput"
+        <div class="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            class="w-full truncate text-xs"
+            :disabled="!hdriSupported"
+            @click="triggerFileInput"
+          >
+            {{
+              hdriConfig?.hdriPath
+                ? $t('load3d.hdri.changeFile')
+                : $t('load3d.hdri.uploadFile')
+            }}
+          </Button>
+          <Button
+            v-if="hdriConfig?.hdriPath"
+            size="icon"
+            variant="textonly"
+            :aria-label="$t('load3d.hdri.removeFile')"
+            @click="onRemoveHDRI"
+          >
+            <i class="icon-[lucide--x] text-sm text-base-foreground" />
+          </Button>
+        </div>
+
+        <template v-if="hdriConfig?.hdriPath">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-base-foreground">{{
+              $t('load3d.hdri.label')
+            }}</span>
+            <SwitchRoot
+              :model-value="hdriConfig?.enabled ?? false"
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors data-[state=checked]:bg-primary-background data-[state=unchecked]:bg-node-stroke"
+              @update:model-value="onEnabledChange"
             >
-              {{
-                hdriConfig?.hdriPath
-                  ? $t('load3d.hdri.changeFile')
-                  : $t('load3d.hdri.uploadFile')
-              }}
-            </Button>
-            <Button
-              v-if="hdriConfig?.hdriPath"
-              size="icon"
-              variant="textonly"
-              :aria-label="$t('load3d.hdri.removeFile')"
-              @click="onRemoveHDRI"
-            >
-              <i class="pi pi-times text-sm text-base-foreground" />
-            </Button>
+              <SwitchThumb
+                class="pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
+              />
+            </SwitchRoot>
           </div>
 
-          <template v-if="hdriConfig?.hdriPath">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm text-base-foreground">{{
-                $t('load3d.hdri.label')
-              }}</span>
-              <SwitchRoot
-                :model-value="hdriConfig?.enabled ?? false"
-                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors data-[state=checked]:bg-primary-background data-[state=unchecked]:bg-node-stroke"
-                @update:model-value="onEnabledChange"
-              >
-                <SwitchThumb
-                  class="pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-                />
-              </SwitchRoot>
-            </div>
-
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm text-base-foreground">{{
-                $t('load3d.hdri.showAsBackground')
-              }}</span>
-              <SwitchRoot
-                :model-value="hdriConfig?.showAsBackground ?? false"
-                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors data-[state=checked]:bg-primary-background data-[state=unchecked]:bg-node-stroke"
-                @update:model-value="onShowAsBackgroundChange"
-              >
-                <SwitchThumb
-                  class="pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-                />
-              </SwitchRoot>
-            </div>
-
-            <div v-if="hdriConfig?.enabled" class="flex flex-col gap-1">
-              <span class="text-sm text-base-foreground">{{
-                $t('load3d.hdri.intensity')
-              }}</span>
-              <Slider
-                :model-value="[hdriConfig?.intensity ?? 1]"
-                class="w-full"
-                :min="0"
-                :max="5"
-                :step="0.1"
-                @update:model-value="onIntensityChange"
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-base-foreground">{{
+              $t('load3d.hdri.showAsBackground')
+            }}</span>
+            <SwitchRoot
+              :model-value="hdriConfig?.showAsBackground ?? false"
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors data-[state=checked]:bg-primary-background data-[state=unchecked]:bg-node-stroke"
+              @update:model-value="onShowAsBackgroundChange"
+            >
+              <SwitchThumb
+                class="pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
               />
-            </div>
-          </template>
-        </div>
+            </SwitchRoot>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -117,7 +108,6 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
@@ -129,8 +119,9 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
-const { hdriSupported = false } = defineProps<{
+const { hdriSupported = false, embedded = false } = defineProps<{
   hdriSupported?: boolean
+  embedded?: boolean
 }>()
 
 const hdriConfig = defineModel<HDRIConfig>('hdriConfig')
@@ -154,7 +145,7 @@ useDismissableOverlay({
 })
 
 function toggleHDRIPanel() {
-  if (!hdriSupported) return
+  if (embedded || !hdriSupported) return
   showPanel.value = !showPanel.value
 }
 
@@ -184,11 +175,6 @@ function onEnabledChange(value: boolean) {
 function onShowAsBackgroundChange(value: boolean) {
   if (!hdriConfig.value) return
   hdriConfig.value = { ...hdriConfig.value, showAsBackground: value }
-}
-
-function onIntensityChange(value: number[] | undefined) {
-  if (!hdriConfig.value || !value?.length) return
-  hdriConfig.value = { ...hdriConfig.value, intensity: value[0] }
 }
 
 function onRemoveHDRI() {
