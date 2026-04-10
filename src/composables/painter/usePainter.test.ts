@@ -94,11 +94,11 @@ function makeWidget(name: string, value: unknown = null): IBaseWidget {
 /**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.
  */
-function mountPainter(nodeId = 'test-node') {
+function mountPainter(nodeId = 'test-node', initialModelValue = '') {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
   const cursorEl = ref<HTMLElement | null>(null)
-  const modelValue = ref('')
+  const modelValue = ref(initialModelValue)
 
   const Wrapper = defineComponent({
     setup() {
@@ -384,25 +384,7 @@ describe('usePainter', () => {
     it('calls api.apiURL with parsed filename params when modelValue is set', () => {
       vi.mocked(api.apiURL).mockClear()
 
-      const canvasEl = ref<HTMLCanvasElement | null>(null)
-      const cursorEl = ref<HTMLElement | null>(null)
-      const modelValue = ref('painter/my-image.png [temp]')
-
-      const Wrapper = defineComponent({
-        setup() {
-          usePainter('test-node', {
-            canvasEl,
-            cursorEl,
-            modelValue
-          })
-          return {}
-        },
-        render() {
-          return null
-        }
-      })
-
-      mount(Wrapper)
+      mountPainter('test-node', 'painter/my-image.png [temp]')
 
       expect(api.apiURL).toHaveBeenCalledWith(
         expect.stringContaining('filename=my-image.png')
