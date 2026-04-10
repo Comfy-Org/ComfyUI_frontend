@@ -42,6 +42,7 @@ fi
 ```
 
 If download fails (artifact not found), check what artifact names the workflow actually uploads:
+
 ```bash
 gh run view "$RUN_ID" --json jobs -q '.jobs[].steps[].name' | grep -i upload
 gh api "repos/{owner}/{repo}/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[].name'
@@ -90,6 +91,7 @@ grep -v -E '(\.d\.ts|/locales/|/assets/|\.test\.ts|\.spec\.ts|\.stories\.ts|/lib
 ```
 
 This removes:
+
 - Files at 100% coverage (missed=0) or 0 lines (empty/generated)
 - Type declarations, locales, assets, test files, stories
 - `src/lib/litegraph/**` (has its own test suite, excluded from vitest config)
@@ -117,6 +119,7 @@ NR==FNR { gsub(/^[ \t]+/, ""); churn[$2] = $1; next }
 ### 1d. Classify Candidates
 
 For each candidate in the top 20, determine test type by path:
+
 - **Unit test**: paths containing `composables/`, `stores/`, `utils/`, `services/`, `schemas/`, `scripts/` (non-Vue pure logic)
 - **E2E test**: paths containing `components/`, `views/`, or files ending in `.vue`
 - **Either**: ambiguous — note both in the task file
@@ -193,6 +196,7 @@ For each doc found, include the path and a one-line description (read the first 
 ### 3c. Determine Test Placement
 
 **Unit tests** — colocated next to source:
+
 ```bash
 SOURCE="src/composables/useImageCrop.ts"
 TEST_FILE="${SOURCE%.ts}.test.ts"  # src/composables/useImageCrop.test.ts
@@ -200,6 +204,7 @@ TEST_FILE="${SOURCE%.ts}.test.ts"  # src/composables/useImageCrop.test.ts
 ```
 
 **E2E tests** — find the best-fit existing spec file:
+
 ```bash
 # Search for spec files with similar names or in related directories
 FEATURE_NAME="imageCrop"  # derived from source file
@@ -213,6 +218,7 @@ If no existing file matches, suggest the most appropriate subdirectory and expla
 ### 3d. Audit Available Helpers & Patterns
 
 **For E2E tests** — list every file with its key exports:
+
 ```bash
 for f in browser_tests/fixtures/*.ts \
          browser_tests/fixtures/components/*.ts \
@@ -230,6 +236,7 @@ done
 ```
 
 **For unit tests** — check for shared test utilities and note patterns from docs:
+
 ```bash
 # Find any shared test helpers
 find src/ -name "*test*util*" -o -name "*test*helper*" -o -name "__test*" 2>/dev/null | \
@@ -244,6 +251,7 @@ echo "See: docs/testing/component-testing.md (if testing a Vue component)"
 ### 3e. Read the Source File
 
 Before writing the task file, **read the actual source file** to extract:
+
 - Key exported functions/classes/composables
 - Dependencies that will need mocking (imports from `@/stores/`, `@/scripts/api`, external libs)
 - Complexity indicators (LOC, number of functions, branching)
@@ -258,6 +266,7 @@ The task file MUST contain ALL of these sections:
 # Test Task: <filename>
 
 ## Target File
+
 - **Source**: `<full path>`
 - **Current coverage**: <X>% lines, <Y> missed lines
 - **Churn**: <N> commits in last 90 days
@@ -265,23 +274,29 @@ The task file MUST contain ALL of these sections:
 - **Test type**: unit | e2e | either
 
 ## Coverage Gaps
+
 <Specific uncovered functions/regions from reading the source file and LCOV data>
 
 ## Key Dependencies to Mock
+
 <List imports from the source file that need mocking, with suggested mock approach>
 
 ## Skills to Load
+
 <Dynamically discovered use-skill: directives, filtered by test type>
 
 ## Reference Documentation
+
 <All relevant .md files with one-line description of each>
 
 ## Test Placement
+
 - **Target test file**: `<path>`
 - **Rationale**: <why this file — existing file to extend, or new colocated file>
 - **Existing tests in same area**: <list nearby test files for reference>
 
 ## Project Guidelines
+
 - Colocated tests: `*.test.ts` next to source (unit), `browser_tests/tests/*.spec.ts` (e2e)
 - Frameworks: Vitest + @testing-library/vue (unit), Playwright (e2e)
 - Run: `pnpm test:unit -- src/path/to/file.test.ts` (unit)
@@ -293,9 +308,11 @@ The task file MUST contain ALL of these sections:
 - Prefer `expect.poll()` over `expect().toPass()` for single assertions
 
 ## Available Helpers & Patterns
+
 <Full audited list: file path, exported symbols, one-line summary>
 
 ## Anti-Patterns to Avoid
+
 - Don't test mocks — ensure tests fail when real code breaks
 - Don't mock what you don't own
 - Don't create new utility files if existing helpers cover the need
@@ -379,7 +396,7 @@ Manual steps:
 
 - ❌ **Hardcoding skill names** — Always discover dynamically from `.claude/skills/` directories
 - ❌ **Picking the #1 ranked file** — Random selection from top 20 ensures breadth over time
-- ❌ **Generating the test itself** — This skill generates the *task file*; a separate agent writes the test
+- ❌ **Generating the test itself** — This skill generates the _task file_; a separate agent writes the test
 - ❌ **Ignoring existing test files** — Always check for existing coverage before suggesting new files
 - ❌ **Running without coverage data** — Don't guess; require actual LCOV data
 - ❌ **Using `cp` instead of `mv`** — Task files must be moved into the worktree, not copied, to avoid stale duplicates in the source repo
