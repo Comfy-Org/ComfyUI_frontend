@@ -129,10 +129,10 @@ describe('useReconnectingNotification', () => {
     const { onReconnecting } = useReconnectingNotification()
 
     onReconnecting()
-    vi.advanceTimersByTime(500)
-    onReconnecting()
-    vi.advanceTimersByTime(1500)
+    vi.advanceTimersByTime(1500) // first toast fires
+    onReconnecting() // second reconnecting event
+    vi.advanceTimersByTime(1500) // second toast fires
 
-    expect(mockToastAdd).toHaveBeenCalledTimes(1)
+    expect(mockToastAdd).toHaveBeenCalledTimes(2)
   })
 })
