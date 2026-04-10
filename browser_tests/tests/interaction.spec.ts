@@ -351,6 +351,17 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
+      // Wait for the double-click window (300ms) to expire so the next
+      // click at the same position isn't interpreted as a double-click.
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const pointer = window.app!.canvas.pointer
+            if (!pointer.eLastDown) return true
+            return performance.now() - pointer.eLastDown.timeStamp > 300
+          })
+        )
+        .toBe(true)
       await comfyPage.canvas.click({
         position: togglerPos
       })

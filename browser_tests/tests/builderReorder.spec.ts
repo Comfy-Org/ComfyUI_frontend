@@ -123,7 +123,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     const workflowName = `${Date.now()} reorder-preview`
     await saveCloseAndReopenAsApp(comfyPage, appMode, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.select.previewWidgetLabels).toHaveText([
       'steps',
       'cfg',
@@ -148,7 +148,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     const workflowName = `${Date.now()} reorder-persist`
     await saveCloseAndReopenAsApp(comfyPage, appMode, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.select.previewWidgetLabels).toHaveText([
       'steps',
       'cfg',

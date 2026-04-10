@@ -153,7 +153,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
         const expanded = await select.getAttribute('aria-expanded')
         if (expanded !== 'true') await select.click()
         await expect(select).toHaveAttribute('aria-expanded', 'true')
-      }).toPass({ timeout: 3000 })
+      }).toPass({ timeout: 5000 })
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'

@@ -219,9 +219,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
-          timeout: 5_000
-        })
+        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
         .toBe(true)
     })
 
@@ -237,9 +235,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.vueNodes.enterSubgraph('11')
 
       await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
-          timeout: 5_000
-        })
+        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
         .toBe(true)
     })
 
@@ -263,13 +259,11 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const ds = window.app!.canvas.ds
-              return { scale: ds.scale, offset: [...ds.offset] }
-            }),
-          { timeout: 5_000 }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const ds = window.app!.canvas.ds
+            return { scale: ds.scale, offset: [...ds.offset] }
+          })
         )
         .toEqual({
           scale: expect.closeTo(rootViewport.scale, 2),
@@ -314,12 +308,10 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate((nodeId) => {
-              return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-            }, subgraphNodeId),
-          { timeout: 2_000 }
+        .poll(() =>
+          comfyPage.page.evaluate((nodeId) => {
+            return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
+          }, subgraphNodeId)
         )
         .toBeUndefined()
     })
@@ -350,20 +342,18 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const graph = window.app!.canvas.graph!
-              const subgraphNode = graph.nodes.find(
-                (node) =>
-                  typeof node.isSubgraphNode === 'function' &&
-                  node.isSubgraphNode()
-              )
-              if (!subgraphNode) return { exists: false, progress: null }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            const subgraphNode = graph.nodes.find(
+              (node) =>
+                typeof node.isSubgraphNode === 'function' &&
+                node.isSubgraphNode()
+            )
+            if (!subgraphNode) return { exists: false, progress: null }
 
-              return { exists: true, progress: subgraphNode.progress }
-            }),
-          { timeout: 5_000 }
+            return { exists: true, progress: subgraphNode.progress }
+          })
         )
         .toEqual({ exists: true, progress: undefined })
     })

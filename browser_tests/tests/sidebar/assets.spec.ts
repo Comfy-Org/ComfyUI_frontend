@@ -157,7 +157,11 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.open()
     await tab.switchToImported()
 
-    await expect(tab.assetCards.first()).toBeVisible({ timeout: 5000 })
+    // Wait for imported assets to render
+    await expect(tab.assetCards.first()).toBeVisible()
+
+    // Imported tab should show the mocked files
+    await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
   test('Displays svg outputs', async ({ comfyPage, assetScenario }) => {
     await assetScenario.seedGeneratedHistory([
@@ -199,7 +203,8 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
 
-    await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
+    // List view items should now be visible
+    await expect(tab.listViewItems.first()).toBeVisible()
   })
 
   test('Can switch back to grid view', async ({ comfyPage }) => {
@@ -209,12 +214,13 @@ test.describe('Assets sidebar - view mode toggle', () => {
 
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
-    await expect(tab.listViewItems.first()).toBeVisible({ timeout: 5000 })
+    await expect(tab.listViewItems.first()).toBeVisible()
 
     await tab.gridViewOption.click()
     await tab.waitForAssets()
 
-    await expect(tab.assetCards.first()).toBeVisible({ timeout: 5000 })
+    // Grid cards (with data-selected attribute) should be visible again
+    await expect(tab.assetCards.first()).toBeVisible()
   })
 })
 
@@ -243,9 +249,8 @@ test.describe('Assets sidebar - search', () => {
 
     await tab.searchInput.fill('landscape')
 
-    await expect
-      .poll(() => tab.assetCards.count(), { timeout: 5000 })
-      .toBeLessThan(initialCount)
+    // Wait for filter to reduce the count
+    await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
   })
 
   test('Clearing search restores all assets', async ({ comfyPage }) => {
@@ -259,7 +264,7 @@ test.describe('Assets sidebar - search', () => {
     await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
 
     await tab.searchInput.fill('')
-    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
+    await expect(tab.assetCards).toHaveCount(initialCount)
   })
 
   test('Search with no matches shows empty state', async ({ comfyPage }) => {
@@ -268,7 +273,7 @@ test.describe('Assets sidebar - search', () => {
     await tab.waitForAssets()
 
     await tab.searchInput.fill('nonexistent_file_xyz')
-    await expect(tab.assetCards).toHaveCount(0, { timeout: 5000 })
+    await expect(tab.assetCards).toHaveCount(0)
   })
 })
 
@@ -313,7 +318,8 @@ test.describe('Assets sidebar - selection', () => {
 
     await tab.assetCards.first().click()
 
-    await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
+    // Footer should show selection count
+    await expect(tab.selectionCountButton).toBeVisible()
   })
 
   test('Deselect all clears selection', async ({ comfyPage }) => {
@@ -325,7 +331,7 @@ test.describe('Assets sidebar - selection', () => {
     await expect(tab.selectedCards).toHaveCount(1)
 
     await tab.selectionCountButton.hover()
-    await expect(tab.deselectAllButton).toBeVisible({ timeout: 3000 })
+    await expect(tab.deselectAllButton).toBeVisible()
 
     await tab.deselectAllButton.click()
     await expect(tab.selectedCards).toHaveCount(0)
@@ -362,7 +368,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.assetCards.first().click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible({ timeout: 3000 })
+    await expect(contextMenu).toBeVisible()
   })
 
   test('Context menu contains Download action for output asset', async ({
@@ -435,7 +441,7 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.assetCards.first().click({ button: 'right' })
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible({ timeout: 3000 })
+    await expect(contextMenu).toBeVisible()
 
     await expect(
       tab.contextMenuItem('Open as workflow in new tab')
@@ -460,8 +466,9 @@ test.describe('Assets sidebar - context menu', () => {
     await cards.nth(1).click()
     await comfyPage.page.keyboard.up('ControlOrMeta')
 
-    await expect(tab.selectedCards).toHaveCount(2, { timeout: 3000 })
-    await expect(tab.selectionFooter).toBeVisible({ timeout: 3000 })
+    // Verify multi-selection took effect and footer is stable before right-clicking
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionFooter).toBeVisible()
 
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await cards.first().dispatchEvent('contextmenu', {
@@ -491,7 +498,8 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     await tab.assetCards.first().click()
 
-    await expect(tab.downloadSelectedButton).toBeVisible({ timeout: 3000 })
+    // Download button in footer should be visible
+    await expect(tab.downloadSelectedButton).toBeVisible()
   })
 
   test('Footer shows delete button when output assets selected', async ({
@@ -503,7 +511,8 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     await tab.assetCards.first().click()
 
-    await expect(tab.deleteSelectedButton).toBeVisible({ timeout: 3000 })
+    // Delete button in footer should be visible
+    await expect(tab.deleteSelectedButton).toBeVisible()
   })
 
   test('Selection count displays correct number', async ({ comfyPage }) => {
@@ -520,7 +529,8 @@ test.describe('Assets sidebar - bulk actions', () => {
     await cards.nth(2).click()
     await comfyPage.page.keyboard.up('ControlOrMeta')
 
-    await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
+    // Selection count should show the count
+    await expect(tab.selectionCountButton).toBeVisible()
     await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
   })
 })
@@ -567,12 +577,11 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.click('delete')
 
-    await expect(tab.assetCards).toHaveCount(initialCount - 1, {
-      timeout: 5000
-    })
+    await expect(dialog).not.toBeVisible()
+    await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(successToast).toBeVisible({ timeout: 5000 })
+    await expect(successToast).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {

@@ -66,16 +66,14 @@ test.describe('Load3D', () => {
       await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const n = window.app!.graph.getNodeById(1)
-              const config = n?.properties?.['Scene Config'] as
-                | Record<string, string>
-                | undefined
-              return config?.backgroundColor
-            }),
-          { timeout: 3000 }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const n = window.app!.graph.getNodeById(1)
+            const config = n?.properties?.['Scene Config'] as
+              | Record<string, string>
+              | undefined
+            return config?.backgroundColor
+          })
         )
         .toBe('#cc3333')
 
@@ -111,9 +109,7 @@ test.describe('Load3D', () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById(1)
       const modelFileWidget = await node.getWidget(0)
-      await expect
-        .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
-        .toContain('cube.obj')
+      await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
       await comfyPage.nextFrame()
@@ -143,9 +139,7 @@ test.describe('Load3D', () => {
 
       const node = await comfyPage.nodeOps.getNodeRefById(1)
       const modelFileWidget = await node.getWidget(0)
-      await expect
-        .poll(() => modelFileWidget.getValue(), { timeout: 5000 })
-        .toContain('cube.obj')
+      await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
       await comfyPage.nextFrame()

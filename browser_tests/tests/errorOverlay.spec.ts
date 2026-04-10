@@ -112,10 +112,10 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await comfyPage.nextFrame()
 
       await comfyPage.keyboard.undo()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
+      await expect(errorOverlay).not.toBeVisible()
 
       await comfyPage.keyboard.redo()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
+      await expect(errorOverlay).not.toBeVisible()
     })
   })
 

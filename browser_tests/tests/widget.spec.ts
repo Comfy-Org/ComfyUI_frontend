@@ -132,9 +132,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
-        timeout: 2_000
-      })
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
       .toBeDefined()
   })
 })
@@ -156,9 +154,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
-        timeout: 2_000
-      })
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
       .toBeDefined()
   })
 })
