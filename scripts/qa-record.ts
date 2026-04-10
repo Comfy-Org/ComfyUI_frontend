@@ -2016,7 +2016,9 @@ export default withDemowright(baseConfig, {
   keyboard: true,
   cursorStyle: 'default',
   keyFadeMs: 2000,
-  actionDelay: 300,
+  actionDelay: 500,
+  audio: true,
+  autoAnnotate: true,
   outputDir: '.demowright'
 })
 `
