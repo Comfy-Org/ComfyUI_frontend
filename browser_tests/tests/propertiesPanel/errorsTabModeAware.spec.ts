@@ -1,0 +1,368 @@
+import { expect } from '@playwright/test'
+
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  openErrorsTab,
+  openErrorsTabViaSeeErrors
+} from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+
+async function cleanupFakeModel(comfyPage: ComfyPage) {
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate(async (url: string) => {
+        const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
+        return response.ok
+      }, comfyPage.url)
+    )
+    .toBeTruthy()
+}
+
+test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
+  })
+
+  test.describe('Missing nodes', () => {
+    test('Deleting a missing node removes its error from the errors tab', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_nodes')
+
+      const missingNodeGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodePacksGroup
+      )
+      await expect(missingNodeGroup).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.delete()
+
+      await expect(missingNodeGroup).not.toBeVisible()
+    })
+
+    test('Undo after bypass restores error without showing overlay', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_nodes')
+
+      const missingNodeGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodePacksGroup
+      )
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(missingNodeGroup).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingNodeGroup).not.toBeVisible()
+
+      await comfyPage.keyboard.undo()
+      await expect.poll(() => node.isBypassed()).toBeFalsy()
+      await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+      await openErrorsTab(comfyPage)
+      await expect(missingNodeGroup).toBeVisible()
+
+      await comfyPage.keyboard.redo()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingNodeGroup).not.toBeVisible()
+    })
+  })
+
+  test.describe('Missing models', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
+    test('Loading a workflow with all nodes bypassed shows no errors', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_models_bypassed')
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+
+      await comfyPage.actionbar.propertiesButton.click()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
+      ).not.toBeVisible()
+    })
+
+    test('Bypassing a node hides its error, un-bypassing restores it', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await expect(missingModelGroup).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingModelGroup).not.toBeVisible()
+
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeFalsy()
+      await openErrorsTab(comfyPage)
+      await expect(missingModelGroup).toBeVisible()
+    })
+
+    test('Pasting a node with missing model increases referencing node count', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await expect(missingModelGroup).toBeVisible()
+      await expect(missingModelGroup).toContainText(
+        /fake_model\.safetensors\s*\(1\)/
+      )
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+
+      await comfyPage.canvas.click()
+      await expect(missingModelGroup).toContainText(
+        /fake_model\.safetensors\s*\(2\)/
+      )
+    })
+
+    test('Pasting a bypassed node does not add a new error', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_models')
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingModelGroup).not.toBeVisible()
+
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+      await expect(missingModelGroup).not.toBeVisible()
+    })
+
+    test('Selecting a node filters errors tab to only that node', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(
+        comfyPage,
+        'missing/missing_models_with_nodes'
+      )
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await expect(missingModelGroup).toContainText(/\(2\)/)
+
+      const node1 = await comfyPage.nodeOps.getNodeRefById('1')
+      await node1.click('title')
+      await expect(missingModelGroup).toContainText(/\(1\)/)
+
+      await comfyPage.canvas.click()
+      await expect(missingModelGroup).toContainText(/\(2\)/)
+    })
+  })
+
+  test.describe('Missing media', () => {
+    test('Loading a workflow with all nodes bypassed shows no errors', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_media_bypassed')
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).not.toBeVisible({ timeout: 3000 })
+
+      await comfyPage.actionbar.propertiesButton.click()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
+      ).not.toBeVisible()
+    })
+
+    test('Bypassing a node hides its error, un-bypassing restores it', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+
+      const missingMediaGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaGroup
+      )
+      await expect(missingMediaGroup).toBeVisible()
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+
+      const errorsTab = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.errorsTab
+      )
+      await expect(errorsTab).not.toBeVisible()
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+      await openErrorsTab(comfyPage)
+      await expect(missingMediaGroup).toBeVisible()
+    })
+
+    test('Pasting a bypassed node does not add a new error', async ({
+      comfyPage
+    }) => {
+      await openErrorsTabViaSeeErrors(comfyPage, 'missing/missing_media_single')
+
+      const missingMediaGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaGroup
+      )
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+
+      await expect(
+        comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
+      ).not.toBeVisible()
+
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+      await expect(missingMediaGroup).not.toBeVisible()
+    })
+
+    test('Selecting a node filters errors tab to only that node', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_media_multiple')
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+
+      const mediaRows = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaRow
+      )
+
+      await openErrorsTab(comfyPage)
+      await expect(mediaRows).toHaveCount(2)
+
+      const node = await comfyPage.nodeOps.getNodeRefById('10')
+      await node.click('title')
+      await expect(mediaRows).toHaveCount(1)
+
+      await comfyPage.page.evaluate(() => {
+        window.app!.canvas.deselectAll()
+      })
+      await expect(mediaRows).toHaveCount(2)
+    })
+  })
+
+  test.describe('Subgraph', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
+    test('Bypassing a subgraph hides interior errors, un-bypassing restores them', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_in_subgraph'
+      )
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      const errorsTab = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.errorsTab
+      )
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => subgraphNode.isBypassed()).toBeTruthy()
+
+      await comfyPage.actionbar.propertiesButton.click()
+      await expect(errorsTab).not.toBeVisible()
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => subgraphNode.isBypassed()).toBeFalsy()
+      await openErrorsTab(comfyPage)
+      await expect(missingModelGroup).toBeVisible()
+    })
+
+    test('Bypassing a node inside a subgraph hides its error, un-bypassing restores it', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_in_subgraph'
+      )
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+
+      const errorsTab = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.errorsTab
+      )
+      await comfyPage.actionbar.propertiesButton.click()
+      await expect(errorsTab).not.toBeVisible()
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.bypass()
+      await openErrorsTab(comfyPage)
+      await expect(missingModelGroup).toBeVisible()
+    })
+  })
+})

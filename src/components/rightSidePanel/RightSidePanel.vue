@@ -350,6 +350,7 @@ function handleTitleCancel() {
             :key="tab.value"
             class="px-2 py-1 font-inter text-sm transition-all active:scale-95"
             :value="tab.value"
+            :data-testid="`panel-tab-${tab.value}`"
           >
             {{ tab.label() }}
             <i

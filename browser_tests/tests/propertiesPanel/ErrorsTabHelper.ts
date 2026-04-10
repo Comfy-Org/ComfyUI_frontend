@@ -20,6 +20,10 @@ export async function openErrorsTabViaSeeErrors(
 export async function openErrorsTab(comfyPage: ComfyPage) {
   const panel = new PropertiesPanelHelper(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
-  await expect(panel.errorsTabIcon).toBeVisible()
-  await panel.errorsTabIcon.click()
+
+  const errorsTab = comfyPage.page.getByTestId(
+    TestIds.propertiesPanel.errorsTab
+  )
+  await expect(errorsTab).toBeVisible()
+  await errorsTab.click()
 }

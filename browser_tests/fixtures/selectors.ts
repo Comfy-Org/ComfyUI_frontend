@@ -79,7 +79,8 @@ export const TestIds = {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
-    root: 'properties-panel'
+    root: 'properties-panel',
+    errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
     toggle: 'subgraph-editor-toggle',
