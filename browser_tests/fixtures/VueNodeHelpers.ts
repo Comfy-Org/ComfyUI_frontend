@@ -146,7 +146,7 @@ export class VueNodeHelpers {
         expectedCount
       )
     } else {
-      await this.page.locator('[data-node-id]').waitFor()
+      await this.page.locator('[data-node-id]').first().waitFor()
     }
   }
 
