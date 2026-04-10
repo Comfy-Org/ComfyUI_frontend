@@ -132,6 +132,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       return
     }
 
+    // Prune stale references
+    resetSelectedToWorkflow()
+
     useSidebarTabStore().activeSidebarTabId = null
 
     setMode(

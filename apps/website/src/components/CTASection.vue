@@ -1,37 +1,43 @@
 <script setup lang="ts">
-const cards = [
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const cards = computed(() => [
   {
     icon: '🖥️',
-    title: 'Comfy Desktop',
-    description: 'Full power on your local machine. Free and open source.',
-    cta: 'DOWNLOAD',
+    title: t('cta.desktop.title', locale),
+    description: t('cta.desktop.desc', locale),
+    cta: t('cta.desktop.cta', locale),
     href: '/download',
     outlined: false
   },
   {
     icon: '☁️',
-    title: 'Comfy Cloud',
-    description: 'Run workflows in the cloud. No GPU required.',
-    cta: 'TRY CLOUD',
+    title: t('cta.cloud.title', locale),
+    description: t('cta.cloud.desc', locale),
+    cta: t('cta.cloud.cta', locale),
     href: 'https://app.comfy.org',
     outlined: false
   },
   {
     icon: '⚡',
-    title: 'Comfy API',
-    description: 'Integrate AI generation into your applications.',
-    cta: 'VIEW DOCS',
+    title: t('cta.api.title', locale),
+    description: t('cta.api.desc', locale),
+    cta: t('cta.api.cta', locale),
     href: 'https://docs.comfy.org',
     outlined: true
   }
-]
+])
 </script>
 
 <template>
   <section class="bg-charcoal-800 py-24">
     <div class="mx-auto max-w-5xl px-6">
       <h2 class="text-center text-3xl font-bold text-white">
-        Choose Your Way to Comfy
+        {{ t('cta.heading', locale) }}
       </h2>
 
       <!-- CTA cards -->

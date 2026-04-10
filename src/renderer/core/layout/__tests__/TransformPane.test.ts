@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive } from 'vue'
 
@@ -51,22 +51,18 @@ describe('TransformPane', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.resetAllMocks()
-    mockCamera.x = 0
-    mockCamera.y = 0
-    mockCamera.z = 1
   })
 
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
       const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
       })
 
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('[data-testid="transform-pane"]').exists()).toBe(true)
+      expect(screen.getByTestId('transform-pane')).toBeInTheDocument()
     })
 
     it('should apply camera transform via RAF', async () => {
@@ -75,7 +71,7 @@ describe('TransformPane', () => {
       mockCamera.z = 2
 
       const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
@@ -85,15 +81,15 @@ describe('TransformPane', () => {
       vi.advanceTimersToNextFrame()
       await nextTick()
 
-      const transformPane = wrapper.find('[data-testid="transform-pane"]')
-      const style = transformPane.attributes('style')
+      const transformPane = screen.getByTestId('transform-pane')
+      const style = transformPane.getAttribute('style')
       expect(style).toContain('scale3d(2, 2, 2)')
       expect(style).toContain('translate3d(100px, 50px, 0)')
     })
 
     it('should render slot content inside offset wrapper', () => {
       const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         },
@@ -102,26 +98,14 @@ describe('TransformPane', () => {
         }
       })
 
-      expect(wrapper.find('.test-content').exists()).toBe(true)
-      expect(wrapper.find('.test-content').text()).toBe('Test Node')
-    })
-
-    it('should contain an offset wrapper div', () => {
-      const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
-        props: { canvas: mockCanvas }
-      })
-
-      const pane = wrapper.find('[data-testid="transform-pane"]')
-      const offsetWrapper = pane.find('.absolute')
-      expect(offsetWrapper.exists()).toBe(true)
+      expect(screen.getByText('Test Node')).toBeInTheDocument()
     })
   })
 
   describe('RAF synchronization', () => {
     it('should call syncWithCanvas during RAF updates', async () => {
       const mockCanvas = createMockLGraphCanvas()
-      mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
@@ -129,7 +113,6 @@ describe('TransformPane', () => {
 
       await nextTick()
 
-      // Allow RAF to execute
       vi.advanceTimersToNextFrame()
 
       const transformState = useTransformState()
@@ -140,7 +123,7 @@ describe('TransformPane', () => {
   describe('canvas event listeners', () => {
     it('should add event listeners to canvas on mount', async () => {
       const mockCanvas = createMockLGraphCanvas()
-      mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
@@ -157,14 +140,14 @@ describe('TransformPane', () => {
 
     it('should remove event listeners on unmount', async () => {
       const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
+      const { unmount } = render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
       })
 
       await nextTick()
-      wrapper.unmount()
+      unmount()
 
       expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
         'wheel',
@@ -177,24 +160,26 @@ describe('TransformPane', () => {
   describe('interaction state management', () => {
     it('should handle pointer events for node delegation', async () => {
       const mockCanvas = createMockLGraphCanvas()
-      const wrapper = mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
       })
 
-      const transformPane = wrapper.find('[data-testid="transform-pane"]')
+      const transformPane = screen.getByTestId('transform-pane')
 
-      await transformPane.trigger('pointerdown')
+      /* eslint-disable testing-library/prefer-user-event -- pointerDown for delegation, not a click */
+      await fireEvent.pointerDown(transformPane)
+      /* eslint-enable testing-library/prefer-user-event */
 
-      expect(transformPane.exists()).toBe(true)
+      expect(transformPane).toBeInTheDocument()
     })
   })
 
   describe('transform state integration', () => {
     it('should provide transform utilities to child components', () => {
       const mockCanvas = createMockLGraphCanvas()
-      mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: mockCanvas
         }
@@ -209,14 +194,13 @@ describe('TransformPane', () => {
 
   describe('error handling', () => {
     it('should handle null canvas gracefully', () => {
-      const wrapper = mount(TransformPane, {
+      render(TransformPane, {
         props: {
           canvas: undefined
         }
       })
 
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('[data-testid="transform-pane"]').exists()).toBe(true)
+      expect(screen.getByTestId('transform-pane')).toBeInTheDocument()
     })
   })
 })

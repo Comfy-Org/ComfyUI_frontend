@@ -20,6 +20,10 @@ export class ContextMenu {
     await this.page.getByRole('menuitem', { name }).click()
   }
 
+  async clickMenuItemExact(name: string): Promise<void> {
+    await this.page.getByRole('menuitem', { name, exact: true }).click()
+  }
+
   async clickLitegraphMenuItem(name: string): Promise<void> {
     await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
   }
@@ -48,22 +52,22 @@ export class ContextMenu {
     return this
   }
 
-  async waitForHidden(): Promise<void> {
-    const waitIfExists = async (locator: Locator, menuName: string) => {
-      const count = await locator.count()
-      if (count > 0) {
-        await locator.waitFor({ state: 'hidden' }).catch((error: Error) => {
-          console.warn(
-            `[waitForHidden] ${menuName} waitFor failed:`,
-            error.message
-          )
-        })
-      }
-    }
+  /**
+   * Select a Vue node by clicking its header, then right-click to open
+   * the context menu. Vue nodes require a selection click before the
+   * right-click so the correct per-node menu items appear.
+   */
+  async openForVueNode(header: Locator): Promise<this> {
+    await header.click()
+    await header.click({ button: 'right' })
+    await this.primeVueMenu.waitFor({ state: 'visible' })
+    return this
+  }
 
+  async waitForHidden(): Promise<void> {
     await Promise.all([
-      waitIfExists(this.primeVueMenu, 'primeVueMenu'),
-      waitIfExists(this.litegraphMenu, 'litegraphMenu')
+      this.primeVueMenu.waitFor({ state: 'hidden' }),
+      this.litegraphMenu.waitFor({ state: 'hidden' })
     ])
   }
 }

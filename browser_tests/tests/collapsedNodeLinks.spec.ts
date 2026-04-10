@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { assertNodeSlotsWithinBounds } from '../fixtures/utils/slotBoundsUtil'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
 
 const NODE_ID = '3'
 const NODE_TITLE = 'KSampler'
@@ -35,8 +35,8 @@ test.describe(
       await node.toggleCollapse()
       await comfyPage.nextFrame()
 
+      await expect.poll(async () => await node.boundingBox()).not.toBeNull()
       const box = await node.boundingBox()
-      expect(box).not.toBeNull()
       await comfyPage.page.mouse.move(
         box!.x + box!.width / 2,
         box!.y + box!.height / 2

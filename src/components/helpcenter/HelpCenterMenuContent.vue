@@ -159,7 +159,7 @@ import { useI18n } from 'vue-i18n'
 
 import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
@@ -299,9 +299,18 @@ const menuItems = computed<MenuItem[]>(() => {
       type: 'item',
       icon: 'icon-[lucide--clipboard-pen]',
       label: t('helpCenter.feedback'),
+      showExternalIcon: isCloud || isNightly,
       action: () => {
-        trackResourceClick('help_feedback', false)
-        void commandStore.execute('Comfy.ContactSupport')
+        trackResourceClick('help_feedback', isCloud || isNightly)
+        if (isCloud || isNightly) {
+          window.open(
+            'https://form.typeform.com/to/q7azbWPi',
+            '_blank',
+            'noopener,noreferrer'
+          )
+        } else {
+          void commandStore.execute('Comfy.ContactSupport')
+        }
         emit('close')
       }
     },

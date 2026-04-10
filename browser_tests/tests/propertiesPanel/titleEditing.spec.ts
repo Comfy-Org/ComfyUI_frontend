@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { PropertiesPanelHelper } from './PropertiesPanelHelper'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Properties panel - Title editing', () => {
   let panel: PropertiesPanelHelper
@@ -43,7 +43,6 @@ test.describe('Properties panel - Title editing', () => {
     await comfyPage.page.evaluate(() => {
       window.app!.canvas.deselectAll()
     })
-    await comfyPage.nextFrame()
     await expect(panel.panelTitle).toContainText('Workflow Overview')
     await expect(panel.titleEditIcon).not.toBeVisible()
   })

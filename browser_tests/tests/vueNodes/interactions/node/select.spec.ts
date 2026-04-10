@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -24,40 +24,41 @@ test.describe('Vue Node Selection', () => {
       comfyPage
     }) => {
       await comfyPage.page.getByText('Load Checkpoint').click()
-      expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
       await comfyPage.page.getByText('Empty Latent Image').click({
         modifiers: [modifier]
       })
-      expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(2)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
 
       await comfyPage.page.getByText('KSampler').click({
         modifiers: [modifier]
       })
-      expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(3)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
     })
 
     test(`should allow de-selecting nodes with ${name}+click`, async ({
       comfyPage
     }) => {
       await comfyPage.page.getByText('Load Checkpoint').click()
-      expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
       await comfyPage.page.getByText('Load Checkpoint').click({
         modifiers: [modifier]
       })
-      expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
     })
   }
 
   test('should select all nodes with ctrl+a', async ({ comfyPage }) => {
+    await expect
+      .poll(() => comfyPage.vueNodes.getNodeCount())
+      .toBeGreaterThan(0)
     const initialCount = await comfyPage.vueNodes.getNodeCount()
-    expect(initialCount).toBeGreaterThan(0)
 
     await comfyPage.canvas.press('Control+a')
 
-    const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()
-    expect(selectedCount).toBe(initialCount)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(initialCount)
   })
 
   test('should select pinned node without dragging', async ({ comfyPage }) => {
@@ -73,7 +74,7 @@ test.describe('Vue Node Selection', () => {
     const pinIndicator = checkpointNode.locator(PIN_INDICATOR)
     await expect(pinIndicator).toBeVisible()
 
-    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
     const initialPos = await checkpointNodeHeader.boundingBox()
     if (!initialPos) throw new Error('Failed to get header position')
@@ -83,10 +84,10 @@ test.describe('Vue Node Selection', () => {
       { x: initialPos.x + 100, y: initialPos.y + 100 }
     )
 
-    const finalPos = await checkpointNodeHeader.boundingBox()
-    if (!finalPos) throw new Error('Failed to get header position after drag')
-    expect(finalPos).toEqual(initialPos)
+    await expect
+      .poll(async () => await checkpointNodeHeader.boundingBox())
+      .toEqual(initialPos)
 
-    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
   })
 })

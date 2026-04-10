@@ -3,7 +3,7 @@ import type { Locator } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Job History Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -83,9 +83,10 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     )
     await action.click()
 
-    const settingAfter = await comfyPage.settings.getSetting<boolean>(
-      'Comfy.Queue.ShowRunProgressBar'
-    )
-    expect(settingAfter).toBe(!settingBefore)
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Queue.ShowRunProgressBar')
+      )
+      .toBe(!settingBefore)
   })
 })
