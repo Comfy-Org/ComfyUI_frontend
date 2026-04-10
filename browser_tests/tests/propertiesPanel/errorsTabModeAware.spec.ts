@@ -259,16 +259,15 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
       await expect(missingMediaGroup).toBeVisible()
 
-      await comfyPage.keyboard.selectAll()
+      const node = await comfyPage.nodeOps.getNodeRefById('10')
+      await node.click('title')
       await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingMediaGroup).not.toBeVisible()
 
-      const errorsTab = comfyPage.page.getByTestId(
-        TestIds.propertiesPanel.errorsTab
-      )
-      await expect(errorsTab).not.toBeVisible()
-
-      await comfyPage.keyboard.selectAll()
+      await node.click('title')
       await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeFalsy()
       await openErrorsTab(comfyPage)
       await expect(missingMediaGroup).toBeVisible()
     })
@@ -285,12 +284,11 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.errorsTab.missingMediaGroup
       )
 
-      await comfyPage.keyboard.selectAll()
+      const node = await comfyPage.nodeOps.getNodeRefById('10')
+      await node.click('title')
       await comfyPage.keyboard.bypass()
-
-      await expect(
-        comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
-      ).not.toBeVisible()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+      await expect(missingMediaGroup).not.toBeVisible()
 
       await comfyPage.clipboard.copy()
       await comfyPage.clipboard.paste()
@@ -323,9 +321,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await node.click('title')
       await expect(mediaRows).toHaveCount(1)
 
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.deselectAll()
-      })
+      await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       await expect(mediaRows).toHaveCount(2)
     })
   })
