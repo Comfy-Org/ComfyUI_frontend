@@ -1,7 +1,7 @@
 import { config as dotenvConfig } from 'dotenv'
 
-import { writePerfReport } from './helpers/perfReporter'
-import { restorePath } from './utils/backupUtils'
+import { writePerfReport } from '@e2e/helpers/perfReporter'
+import { restorePath } from '@e2e/utils/backupUtils'
 
 dotenvConfig()
 

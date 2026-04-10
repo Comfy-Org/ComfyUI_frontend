@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class BuilderFooterHelper {
   constructor(private readonly comfyPage: ComfyPage) {}
@@ -28,6 +28,10 @@ export class BuilderFooterHelper {
 
   get saveButton(): Locator {
     return this.page.getByTestId(TestIds.builder.saveButton)
+  }
+
+  get saveGroup(): Locator {
+    return this.page.getByTestId(TestIds.builder.saveGroup)
   }
 
   get saveAsButton(): Locator {

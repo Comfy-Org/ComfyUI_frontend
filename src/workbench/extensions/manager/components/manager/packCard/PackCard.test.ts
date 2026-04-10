@@ -1,7 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
 
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import type {
@@ -79,11 +80,11 @@ describe('PackCard', () => {
     storageMap.clear()
   })
 
-  const createWrapper = (props: {
+  function renderComponent(props: {
     nodePack: MergedNodePack | RegistryPack
     isSelected?: boolean
-  }) => {
-    const wrapper = mount(PackCard, {
+  }) {
+    return render(PackCard, {
       props,
       global: {
         plugins: [createTestingPinia({ stubActions: false })],
@@ -100,8 +101,6 @@ describe('PackCard', () => {
         }
       }
     })
-
-    return wrapper
   }
 
   const mockNodePack: RegistryPack = {
@@ -116,80 +115,89 @@ describe('PackCard', () => {
 
   describe('basic rendering', () => {
     it('should render package card with basic information', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.text()).toContain('Test Package')
-      expect(wrapper.text()).toContain('Test package description')
-      expect(wrapper.text()).toContain('Test Author')
+      expect(screen.getByText('Test Package')).toBeInTheDocument()
+      expect(screen.getByText('Test package description')).toBeInTheDocument()
+      expect(screen.getByText('Test Author')).toBeInTheDocument()
     })
 
     it('should render date correctly', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.text()).toContain('2024. 1. 1.')
+      expect(screen.getByText('2024. 1. 1.')).toBeInTheDocument()
     })
 
     it('should apply selected ring when isSelected is true', () => {
-      const wrapper = createWrapper({
+      const { container } = renderComponent({
         nodePack: mockNodePack,
         isSelected: true
       })
 
-      expect(wrapper.find('.ring-3').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
+      expect(container.querySelector('.ring-3')).toBeInTheDocument()
     })
 
     it('should not apply selected ring when isSelected is false', () => {
-      const wrapper = createWrapper({
+      const { container } = renderComponent({
         nodePack: mockNodePack,
         isSelected: false
       })
 
-      expect(wrapper.find('.ring-3').exists()).toBe(false)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
+      expect(container.querySelector('.ring-3')).not.toBeInTheDocument()
     })
   })
 
   describe('component behavior', () => {
     it('should render without errors', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      const { container } = renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.exists()).toBe(true)
-      expect(wrapper.find('.rounded-lg').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-node-access -- structural root element check
+      expect(container.firstElementChild).toBeInTheDocument()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class has no ARIA role
+      expect(container.querySelector('.rounded-lg')).toBeInTheDocument()
     })
   })
 
   describe('package information display', () => {
     it('should display package name', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.text()).toContain('Test Package')
+      expect(screen.getByText('Test Package')).toBeInTheDocument()
     })
 
     it('should display package description', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.text()).toContain('Test package description')
+      expect(screen.getByText('Test package description')).toBeInTheDocument()
     })
 
     it('should display author name', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.text()).toContain('Test Author')
+      expect(screen.getByText('Test Author')).toBeInTheDocument()
     })
 
     it('should handle missing description', () => {
-      const packWithoutDescription = { ...mockNodePack, description: undefined }
-      const wrapper = createWrapper({ nodePack: packWithoutDescription })
+      const packWithoutDescription = {
+        ...mockNodePack,
+        description: undefined
+      }
+      const { container } = renderComponent({
+        nodePack: packWithoutDescription
+      })
 
-      expect(wrapper.find('p').exists()).toBe(false)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <p> has no implicit ARIA role
+      expect(container.querySelector('p')).not.toBeInTheDocument()
     })
 
     it('should handle missing author', () => {
       const packWithoutAuthor = { ...mockNodePack, author: undefined }
-      const wrapper = createWrapper({ nodePack: packWithoutAuthor })
+      const { container } = renderComponent({ nodePack: packWithoutAuthor })
 
-      // Should still render without errors
-      expect(wrapper.exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-node-access -- structural root element check
+      expect(container.firstElementChild).toBeInTheDocument()
     })
 
     it('should use localized singular/plural nodes label', () => {
@@ -198,30 +206,36 @@ describe('PackCard', () => {
         comfy_nodes: ['node-a']
       } as MergedNodePack
 
-      const wrapper = createWrapper({ nodePack: packWithNodes })
+      renderComponent({ nodePack: packWithNodes })
 
-      expect(wrapper.text()).toContain('g.nodesCount-1')
+      expect(screen.getByText('g.nodesCount-1')).toBeInTheDocument()
       expect(translateMock).toHaveBeenCalledWith('g.nodesCount', 1)
     })
   })
 
   describe('component structure', () => {
     it('should render PackBanner component', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      const { container } = renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.find('pack-banner-stub').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
+      const banner = container.querySelector('pack-banner-stub')
+      expect(banner).toBeInTheDocument()
     })
 
     it('should render PackVersionBadge component', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      const { container } = renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.find('pack-version-badge-stub').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
+      const badge = container.querySelector('pack-version-badge-stub')
+      expect(badge).toBeInTheDocument()
     })
 
     it('should render PackCardFooter component', () => {
-      const wrapper = createWrapper({ nodePack: mockNodePack })
+      const { container } = renderComponent({ nodePack: mockNodePack })
 
-      expect(wrapper.find('pack-card-footer-stub').exists()).toBe(true)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- stub component tag has no ARIA role
+      const footer = container.querySelector('pack-card-footer-stub')
+      expect(footer).toBeInTheDocument()
     })
   })
 })

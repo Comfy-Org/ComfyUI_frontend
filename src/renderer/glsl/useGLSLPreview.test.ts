@@ -1,13 +1,17 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { MaybeRefOrGetter } from 'vue'
+type WidgetValueStoreStub = {
+  _widgetMap: Map<string, { value: unknown }>
+}
 
 const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)
@@ -99,7 +103,7 @@ vi.mock('@/utils/objectUrlUtil', () => ({
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
   const graph = { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } }
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'GLSLShader',
     inputs: [],
@@ -107,7 +111,7 @@ function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
     getInputNode: vi.fn(() => null),
     isSubgraphNode: () => false,
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function wrapNode(
@@ -177,9 +181,9 @@ describe('useGLSLPreview', () => {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
-      const store = useWidgetValueStore() as unknown as {
-        _widgetMap: Map<string, { value: unknown }>
-      }
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
       store._widgetMap.set('fragment_shader', {
         value: 'void main() {}'
       })
@@ -241,9 +245,9 @@ describe('useGLSLPreview', () => {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
-      const store = useWidgetValueStore() as unknown as {
-        _widgetMap: Map<string, { value: unknown }>
-      }
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
       store._widgetMap.set('fragment_shader', {
         value: 'void main() {}'
       })
@@ -299,9 +303,9 @@ describe('useGLSLPreview', () => {
     })
 
     it('skips render when shader source is unavailable', async () => {
-      const store = useWidgetValueStore() as unknown as {
-        _widgetMap: Map<string, { value: unknown }>
-      }
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
       store._widgetMap.delete('fragment_shader')
 
       const node = createMockNode()
@@ -317,6 +321,38 @@ describe('useGLSLPreview', () => {
       await nextTick()
 
       expect(mockRendererFactory.compileFragment).not.toHaveBeenCalled()
+    })
+
+    it('uses custom resolution when size_mode is custom', async () => {
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
+      store._widgetMap.set('size_mode', { value: 'custom' })
+      store._widgetMap.set('size_mode.width', { value: 800 })
+      store._widgetMap.set('size_mode.height', { value: 600 })
+
+      const node = createMockNode()
+      await setupAndRender(node)
+
+      expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(800, 600)
+
+      store._widgetMap.delete('size_mode')
+      store._widgetMap.delete('size_mode.width')
+      store._widgetMap.delete('size_mode.height')
+    })
+
+    it('uses default resolution when size_mode is not custom', async () => {
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
+      store._widgetMap.set('size_mode', { value: 'from_input' })
+
+      const node = createMockNode()
+      await setupAndRender(node)
+
+      expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(512, 512)
+
+      store._widgetMap.delete('size_mode')
     })
 
     it('disposes renderer and cancels debounce on cleanup', async () => {

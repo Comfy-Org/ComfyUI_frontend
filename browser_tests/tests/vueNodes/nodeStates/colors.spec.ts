@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
-import { TestIds } from '../../../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -39,6 +39,7 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
 
   test('should load node colors from workflow', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+    await comfyPage.vueNodes.waitForNodes()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-colors-dark-all-colors.png'
     )
@@ -49,6 +50,7 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+    await comfyPage.vueNodes.waitForNodes()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-node-custom-colors-light-all-colors.png'
     )

@@ -1,11 +1,15 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ComfyNodeSearchFilterSelectionPanel {
-  constructor(public readonly page: Page) {}
+  readonly root: Locator
+
+  constructor(public readonly page: Page) {
+    this.root = page.getByRole('dialog')
+  }
 
   get header() {
-    return this.page
-      .getByRole('dialog')
+    return this.root
       .locator('div')
       .filter({ hasText: 'Add node filter condition' })
   }
@@ -60,17 +64,13 @@ export class ComfyNodeSearchBox {
     await this.input.waitFor({ state: 'visible' })
     await this.input.fill(nodeName)
     await this.dropdown.waitFor({ state: 'visible' })
-    if (options?.exact) {
-      await this.dropdown
-        .locator(`li[aria-label="${nodeName}"]`)
-        .first()
-        .click()
-    } else {
-      await this.dropdown
-        .locator('li')
-        .nth(options?.suggestionIndex || 0)
-        .click()
-    }
+
+    const nodeOption = options?.exact
+      ? this.dropdown.locator(`li[aria-label="${nodeName}"]`).first()
+      : this.dropdown.locator('li').nth(options?.suggestionIndex ?? 0)
+
+    await expect(nodeOption).toBeVisible()
+    await nodeOption.click()
   }
 
   async addFilter(filterValue: string, filterType: string) {
