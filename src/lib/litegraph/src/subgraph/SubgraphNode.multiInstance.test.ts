@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   createTestSubgraph,
@@ -13,23 +13,18 @@ import {
 
 function createNodeWithWidget(
   title: string,
-  widgetValue: unknown = 42,
+  widgetValue: number = 42,
   slotType: ISlotType = 'number'
 ) {
   const node = new LGraphNode(title)
   const input = node.addInput('value', slotType)
   node.addOutput('out', slotType)
 
-  // @ts-expect-error Abstract class instantiation
-  const widget = new BaseWidget({
-    name: 'widget',
-    type: 'number',
-    value: widgetValue,
-    y: 0,
-    options: { min: 0, max: 100, step: 1 },
-    node
+  const widget = node.addWidget('number', 'widget', widgetValue, () => {}, {
+    min: 0,
+    max: 100,
+    step: 1
   })
-  node.widgets = [widget]
   input.widget = { name: widget.name }
 
   return { node, widget, input }
@@ -131,6 +126,106 @@ describe('SubgraphNode multi-instance widget isolation', () => {
     const restoredWidget = restoredInstance.widgets?.[0]
     expect(restoredWidget?.value).toBe(33)
     expect(restoredWidget?.serializeValue?.(restoredInstance, 0)).toBe(33)
+  })
+
+  it('keeps fresh sibling instances isolated before save or reload', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node } = createNodeWithWidget('TestNode', 7)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance1 = createTestSubgraphNode(subgraph, { id: 401 })
+    const instance2 = createTestSubgraphNode(subgraph, { id: 402 })
+    instance1.graph!.add(instance1)
+    instance2.graph!.add(instance2)
+
+    const widget1 = instance1.widgets?.[0]
+    const widget2 = instance2.widgets?.[0]
+
+    expect(widget1?.value).toBe(7)
+    expect(widget2?.value).toBe(7)
+
+    widget1!.value = 10
+
+    expect(widget1?.value).toBe(10)
+    expect(widget2?.value).toBe(7)
+    expect(widget1?.serializeValue?.(instance1, 0)).toBe(10)
+    expect(widget2?.serializeValue?.(instance2, 0)).toBe(7)
+  })
+
+  it('syncs restored promoted widgets when the inner source widget changes directly', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node, widget } = createNodeWithWidget('TestNode', 0)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const originalInstance = createTestSubgraphNode(subgraph, { id: 601 })
+    originalInstance.configure({
+      id: 601,
+      type: subgraph.id,
+      pos: [100, 100],
+      size: [200, 100],
+      inputs: [],
+      outputs: [],
+      mode: 0,
+      order: 0,
+      flags: {},
+      properties: { proxyWidgets: [['-1', 'widget']] },
+      widgets_values: [33]
+    })
+
+    const serialized = originalInstance.serialize()
+
+    const restoredInstance = createTestSubgraphNode(subgraph, { id: 602 })
+    restoredInstance.configure({
+      ...serialized,
+      id: 602,
+      type: subgraph.id
+    })
+
+    expect(restoredInstance.widgets?.[0].value).toBe(33)
+
+    widget.value = 45
+
+    expect(restoredInstance.widgets?.[0].value).toBe(45)
+    expect(
+      restoredInstance.widgets?.[0].serializeValue?.(restoredInstance, 0)
+    ).toBe(45)
+  })
+
+  it('clears stale per-instance values when reconfigured without widgets_values', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+
+    const { node, widget } = createNodeWithWidget('TestNode', 5)
+    subgraph.add(node)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+    const instance = createTestSubgraphNode(subgraph, { id: 701 })
+    instance.graph!.add(instance)
+
+    const promotedWidget = instance.widgets?.[0]
+    promotedWidget!.value = 11
+    widget.value = 17
+
+    const serialized = instance.serialize()
+    delete serialized.widgets_values
+
+    instance.configure({
+      ...serialized,
+      id: instance.id,
+      type: subgraph.id
+    })
+
+    expect(instance.widgets?.[0].value).toBe(17)
+    expect(instance.widgets?.[0].serializeValue?.(instance, 0)).toBe(17)
   })
 
   it('skips non-serializable source widgets during serialize', () => {

@@ -1005,6 +1005,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   readonly _instanceWidgetValues = new Map<string, unknown>()
 
   override configure(info: ExportedSubgraphInstance): void {
+    this._instanceWidgetValues.clear()
     this._pendingWidgetsValues = info.widgets_values
 
     for (const input of this.inputs) {
@@ -1546,6 +1547,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onRemoved(): void {
     this._eventAbortController.abort()
     this._invalidatePromotedViewsCache()
+    this._instanceWidgetValues.clear()
 
     for (const widget of this.widgets) {
       if (isPromotedWidgetView(widget)) {
