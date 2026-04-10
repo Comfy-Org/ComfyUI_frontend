@@ -297,9 +297,9 @@ async function ensureServer(url: string): Promise<void> {
     // comfy-cli not available
   }
 
-  // Strategy 2: python main.py from TEST_COMFYUI_DIR
-  const comfyDir = process.env.TEST_COMFYUI_DIR
-  if (comfyDir && existsSync(resolve(comfyDir, 'main.py'))) {
+  // Strategy 2: python main.py from TEST_COMFYUI_DIR or .comfy-qa/ComfyUI
+  const comfyDir = findComfyUIDir()
+  if (comfyDir) {
     console.warn(`Starting ComfyUI from ${comfyDir}...`)
     const proc = spawn('python', ['main.py', '--cpu', '--port', port], {
       cwd: comfyDir,
@@ -311,19 +311,52 @@ async function ensureServer(url: string): Promise<void> {
     return
   }
 
-  // No auto-start available
+  // Strategy 3: clone ComfyUI and start
+  console.warn('No ComfyUI installation found, cloning...')
+  const cloneDir = resolve('.comfy-qa/ComfyUI')
+  try {
+    execSync(
+      `git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git "${cloneDir}"`,
+      { stdio: 'inherit', timeout: 120000 }
+    )
+    console.warn('Installing ComfyUI dependencies...')
+    execSync('pip install -r requirements.txt', {
+      cwd: cloneDir,
+      stdio: 'inherit',
+      timeout: 300000
+    })
+    console.warn('Starting ComfyUI...')
+    const proc = spawn('python', ['main.py', '--cpu', '--port', port], {
+      cwd: cloneDir,
+      stdio: 'ignore',
+      detached: true
+    })
+    proc.unref()
+    await waitForServer(url, 120000)
+    return
+  } catch (err) {
+    console.error(
+      `Failed to setup ComfyUI: ${err instanceof Error ? err.message : err}`
+    )
+  }
+
   console.error(`
-Server not running at ${url}.
+Server not running at ${url} and auto-start failed.
 
-To start automatically, install one of:
-  1. pip install comfy-cli && comfy install   # then pnpm qa will auto-launch
-  2. Set TEST_COMFYUI_DIR=/path/to/ComfyUI in .env
-
-Or start manually:
-  comfy launch --cpu
+Manual options:
+  pip install comfy-cli && comfy install && comfy launch --cpu
   python /path/to/ComfyUI/main.py --cpu --port ${port}
 `)
   process.exit(1)
+}
+
+function findComfyUIDir(): string | undefined {
+  const candidates = [
+    process.env.TEST_COMFYUI_DIR,
+    resolve('.comfy-qa/ComfyUI'),
+    '/home/ComfyUI'
+  ]
+  return candidates.find((d) => d && existsSync(resolve(d, 'main.py')))
 }
 
 async function isReachable(url: string): Promise<boolean> {
