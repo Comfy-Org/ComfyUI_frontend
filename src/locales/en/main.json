@@ -1921,7 +1921,9 @@
   "imageCompare": {
     "noImages": "No images to compare",
     "batchLabelA": "A:",
-    "batchLabelB": "B:"
+    "batchLabelB": "B:",
+    "altBefore": "Before image",
+    "altAfter": "After image"
   },
   "batch": {
     "index": "{current} / {total}"

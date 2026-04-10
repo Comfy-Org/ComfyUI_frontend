@@ -4,7 +4,10 @@ import { nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import {
+  buildTimeline,
+  useOutputHistory
+} from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 
@@ -16,6 +19,9 @@ const selectedIdRef = ref<string | null>(null)
 const activeWorkflowPathRef = ref<string>('workflows/test.json')
 const jobIdToPathRef = ref(new Map<string, string>())
 const isActiveWorkflowRunningRef = ref(false)
+const activeWorkflowNonAssetOutputsRef = ref<
+  { id: string; jobId: string; output: ResultItemImpl }[]
+>([])
 const runningTasksRef = ref<Array<{ jobId: string }>>([])
 const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
@@ -46,6 +52,9 @@ vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
     },
     get activeWorkflowInProgressItems() {
       return activeWorkflowInProgressItemsRef.value
+    },
+    get activeWorkflowNonAssetOutputs() {
+      return activeWorkflowNonAssetOutputsRef.value
     },
     get selectedId() {
       return selectedIdRef.value
@@ -98,11 +107,11 @@ vi.mock('@/services/jobOutputCache', () => ({
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
 }))
 
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
+vi.mock('@/stores/resultItemParsing', () => ({
+  parseNodeOutput: (
+    nodeId: string | number,
+    output: Record<string, unknown>
+  ) => {
     if (!output.images) return []
     return (output.images as Array<Record<string, string>>).map(
       (img) =>
@@ -154,6 +163,7 @@ describe(useOutputHistory, () => {
     pendingResolveRef.value = new Set()
     inProgressItemsRef.value = []
     activeWorkflowInProgressItemsRef.value = []
+    activeWorkflowNonAssetOutputsRef.value = []
     selectedIdRef.value = null
     activeWorkflowPathRef.value = 'workflows/test.json'
     jobIdToPathRef.value = new Map()
@@ -392,6 +402,35 @@ describe(useOutputHistory, () => {
 
       expect(resolveIfReadyFn).not.toHaveBeenCalled()
     })
+
+    it('selects non-asset output from resolved job instead of first history', async () => {
+      useAppModeStore().selectedOutputs.push('1')
+      const results = [makeResult('a.png'), makeResult('b.png')]
+      const asset = makeAsset('a1', 'job-1', {
+        allOutputs: results,
+        outputCount: 2
+      })
+      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+      pendingResolveRef.value = new Set(['job-1'])
+      mediaRef.value = [asset]
+      selectedIdRef.value = null
+
+      // Job also produced a compare output now in nonAssetOutputs
+      activeWorkflowNonAssetOutputsRef.value = [
+        {
+          id: 'compare-1',
+          jobId: 'job-1',
+          output: makeResult('compare.png', '2')
+        }
+      ]
+
+      useOutputHistory()
+      await nextTick()
+
+      expect(resolveIfReadyFn).toHaveBeenCalledWith('job-1', true)
+      // Should select the non-asset output, not the history asset
+      expect(selectAsLatestFn).toHaveBeenCalledWith('nonasset:compare-1')
+    })
   })
 
   describe('selectFirstHistory', () => {
@@ -461,5 +500,64 @@ describe(useOutputHistory, () => {
       const { mayBeActiveWorkflowPending } = useOutputHistory()
       expect(mayBeActiveWorkflowPending.value).toBe(false)
     })
+  })
+})
+
+describe(buildTimeline, () => {
+  function makeAssetWithJobId(id: string, jobId: string): AssetItem {
+    return {
+      id,
+      name: `${id}.png`,
+      tags: [],
+      preview_url: `/view?filename=${id}.png`,
+      user_metadata: { jobId, nodeId: '1', subfolder: '' }
+    }
+  }
+
+  function makeOutput(filename: string): ResultItemImpl {
+    return new ResultItemImpl({
+      filename,
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    })
+  }
+
+  it('returns empty for no history and no non-asset outputs', () => {
+    expect(buildTimeline([], [], () => [])).toEqual([])
+  })
+
+  it('places orphan non-asset outputs first', () => {
+    const entry = { id: 'c1', jobId: 'job-1', output: makeOutput('cmp.png') }
+    const items = buildTimeline([], [entry], () => [])
+
+    expect(items).toHaveLength(1)
+    expect(items[0].id).toBe('nonasset:c1')
+    expect(items[0].groupKey).toBe('orphans')
+  })
+
+  it('pairs non-asset outputs with matching history by jobId', () => {
+    const asset = makeAssetWithJobId('a1', 'job-1')
+    const entry = { id: 'c1', jobId: 'job-1', output: makeOutput('cmp.png') }
+    const historyOutput = makeOutput('saved.png')
+
+    const items = buildTimeline([asset], [entry], () => [historyOutput])
+
+    expect(items).toHaveLength(2)
+    expect(items[0].id).toBe('nonasset:c1')
+    expect(items[0].groupKey).toBe('a1')
+    expect(items[1].id).toBe('history:a1:0')
+    expect(items[1].groupKey).toBe('a1')
+  })
+
+  it('keeps non-asset outputs as orphans when jobId has no history match', () => {
+    const asset = makeAssetWithJobId('a1', 'job-1')
+    const entry = { id: 'c1', jobId: 'job-2', output: makeOutput('cmp.png') }
+
+    const items = buildTimeline([asset], [entry], () => [makeOutput('s.png')])
+
+    expect(items[0].groupKey).toBe('orphans')
+    expect(items[1].groupKey).toBe('a1')
   })
 })

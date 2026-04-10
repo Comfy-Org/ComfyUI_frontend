@@ -47,6 +47,20 @@ function handleSelection(sel: OutputSelection) {
   showSkeleton.value = sel.showSkeleton ?? false
 }
 
+function downloadOutput(output?: ResultItemImpl) {
+  if (!output) return
+  if (output.compareImages) {
+    for (const img of [
+      ...output.compareImages.before,
+      ...output.compareImages.after
+    ]) {
+      downloadFile(img.url, img.filename)
+    }
+    return
+  }
+  if (output.url) downloadFile(output.url, output.filename)
+}
+
 function downloadAsset(item?: AssetItem) {
   for (const output of allOutputs(item))
     downloadFile(output.url, output.filename)
@@ -93,11 +107,7 @@ async function rerun(e: Event) {
       v-tooltip.top="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
-      @click="
-        () => {
-          if (selectedOutput?.url) downloadFile(selectedOutput.url)
-        }
-      "
+      @click="() => downloadOutput(selectedOutput)"
     >
       <i class="icon-[lucide--download]" />
     </Button>

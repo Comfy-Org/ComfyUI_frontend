@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -23,7 +23,7 @@ const existingOutput = computed(() => {
     const locatorId = nodeIdToNodeLocatorId(nodeId)
     const nodeOutput = nodeOutputStore.nodeOutputs[locatorId]
     if (!nodeOutput) continue
-    const results = flattenNodeOutput([nodeId, nodeOutput])
+    const results = parseNodeOutput(nodeId, nodeOutput)
     if (results.length > 0) return results[0]
   }
   return undefined
