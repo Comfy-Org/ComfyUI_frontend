@@ -45,9 +45,7 @@ test.describe('Node library sidebar V2', () => {
     await expect(tab.getNode('KSampler (Advanced)')).not.toBeVisible()
 
     await tab.searchInput.fill('KSampler')
-    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
     await expect(tab.getNode('CLIPLoader')).not.toBeVisible()
   })
 
@@ -96,7 +94,7 @@ test.describe('Node library sidebar V2', () => {
     const contextMenu = comfyPage.page.getByRole('menuitem', {
       name: /Bookmark Node/
     })
-    await expect(contextMenu).toBeVisible({ timeout: 3000 })
+    await expect(contextMenu).toBeVisible()
   })
 
   test('Search clear restores folder view', async ({ comfyPage }) => {
@@ -105,14 +103,12 @@ test.describe('Node library sidebar V2', () => {
     await expect(tab.getFolder('sampling')).toBeVisible()
 
     await tab.searchInput.fill('KSampler')
-    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
 
     await tab.searchInput.clear()
     await tab.searchInput.press('Enter')
 
-    await expect(tab.getFolder('sampling')).toBeVisible({ timeout: 5000 })
+    await expect(tab.getFolder('sampling')).toBeVisible()
   })
 
   test('Sort dropdown shows sorting options', async ({ comfyPage }) => {
@@ -122,7 +118,7 @@ test.describe('Node library sidebar V2', () => {
 
     // Reka UI DropdownMenuRadioItem renders with role="menuitemradio"
     const options = comfyPage.page.getByRole('menuitemradio')
-    await expect(options.first()).toBeVisible({ timeout: 3000 })
+    await expect(options.first()).toBeVisible()
     await expect.poll(() => options.count()).toBeGreaterThanOrEqual(2)
   })
 })

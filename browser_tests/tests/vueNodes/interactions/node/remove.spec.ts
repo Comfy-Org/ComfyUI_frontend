@@ -102,7 +102,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
 
     // Node count should remain the same
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialNodeCount)
   })
 

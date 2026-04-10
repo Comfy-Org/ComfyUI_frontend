@@ -289,9 +289,7 @@ test.describe('Workflows sidebar', () => {
     )
     await closeButton.click()
     await expect
-      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames(), {
-        timeout: 5000
-      })
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
   })
 
@@ -370,7 +368,7 @@ test.describe('Workflows sidebar', () => {
     // Wait for workflow to appear in Browse section after sync
     const workflowItem =
       comfyPage.menu.workflowsTab.getPersistedItem('workflow1')
-    await expect(workflowItem).toBeVisible({ timeout: 3000 })
+    await expect(workflowItem).toBeVisible()
 
     const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 

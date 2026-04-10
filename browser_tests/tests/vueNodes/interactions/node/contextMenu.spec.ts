@@ -217,14 +217,12 @@ test.describe('Vue Node Context Menu', () => {
       if (!loadImageNode) throw new Error('Load Image node not found')
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(
-              (nodeId) =>
-                window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
-              loadImageNode.id
-            ),
-          { timeout: 5_000 }
+        .poll(() =>
+          comfyPage.page.evaluate(
+            (nodeId) =>
+              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+            loadImageNode.id
+          )
         )
         .toBeGreaterThan(0)
     })

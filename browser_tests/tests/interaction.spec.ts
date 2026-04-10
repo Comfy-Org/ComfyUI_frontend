@@ -393,16 +393,20 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      // Re-expand: clicking the canvas toggler on a collapsed node is
-      // unreliable because DOM widget overlays may intercept the pointer
-      // event. Use programmatic collapse() for the expand step.
-      // TODO(#11006): Restore click-to-expand once DOM widget overlay pointer interception is fixed
-      await comfyPage.page.evaluate((nodeId) => {
-        const node = window.app!.graph.getNodeById(nodeId)!
-        node.collapse()
-        window.app!.canvas.setDirty(true, true)
-      }, targetNode.id)
-      await comfyPage.nextFrame()
+      // Wait for the double-click window (300ms) to expire so the next
+      // click at the same position isn't interpreted as a double-click.
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const pointer = window.app!.canvas.pointer
+            if (!pointer.eLastDown) return true
+            return performance.now() - pointer.eLastDown.timeStamp > 300
+          })
+        )
+        .toBe(true)
+      await comfyPage.canvas.click({
+        position: togglerPos
+      })
       await expect.poll(() => targetNode.isCollapsed()).toBe(false)
       // Move mouse away to avoid hover highlight differences.
       await comfyPage.canvasOps.moveMouseToEmptyArea()

@@ -21,7 +21,7 @@ async function reSaveAs(
   viewType: 'App' | 'Node graph'
 ) {
   await appMode.footer.openSaveAsFromChevron()
-  await expect(appMode.saveAs.nameInput).toBeVisible({ timeout: 5000 })
+  await expect(appMode.saveAs.nameInput).toBeVisible()
   await appMode.saveAs.fillAndSave(workflowName, viewType)
 }
 
@@ -48,7 +48,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
     await comfyPage.appMode.footer.saveAsButton.click()
 
-    await expect(saveAs.dialog).toBeVisible({ timeout: 5000 })
+    await expect(saveAs.dialog).toBeVisible()
     await expect(saveAs.nameInput).toBeVisible()
     await expect(saveAs.title).toBeVisible()
     await expect(saveAs.radioGroup).toBeVisible()
@@ -68,7 +68,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
     await comfyPage.appMode.footer.saveAsButton.click()
 
-    await expect(saveAs.dialog).toBeVisible({ timeout: 5000 })
+    await expect(saveAs.dialog).toBeVisible()
     await saveAs.nameInput.fill('')
     await expect(saveAs.saveButton).toBeDisabled()
   })
@@ -78,7 +78,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await setupBuilder(comfyPage)
     await comfyPage.appMode.footer.saveAsButton.click()
 
-    await expect(saveAs.dialog).toBeVisible({ timeout: 5000 })
+    await expect(saveAs.dialog).toBeVisible()
 
     const appRadio = saveAs.viewTypeRadio('App')
     await expect(appRadio).toHaveAttribute('aria-checked', 'true')
@@ -136,12 +136,12 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     // Modify the workflow so the save button becomes enabled
     await comfyPage.appMode.steps.goToInputs()
     await comfyPage.appMode.select.deleteInput('seed')
-    await expect(footer.saveButton).toBeEnabled({ timeout: 5000 })
+    await expect(footer.saveButton).toBeEnabled()
 
     await footer.saveButton.click()
     await comfyPage.nextFrame()
 
-    await expect(saveAs.dialog).not.toBeVisible({ timeout: 2000 })
+    await expect(saveAs.dialog).not.toBeVisible()
     await expect(footer.saveButton).toBeDisabled()
   })
 
@@ -156,7 +156,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await footer.openSaveAsFromChevron()
 
-    await expect(saveAs.title).toBeVisible({ timeout: 5000 })
+    await expect(saveAs.title).toBeVisible()
     await expect(saveAs.nameInput).toBeVisible()
   })
 
@@ -209,7 +209,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(
       comfyPage.page.getByText('Connect an output', { exact: false })
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
   })
 
   test('save as app produces correct extension and linearMode', async ({
@@ -291,7 +291,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     // Re-save as node graph — creates a copy
     await reSaveAs(appMode, `${Date.now()} copy`, 'Node graph')
-    await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
+    await expect(appMode.saveAs.successMessage).toBeVisible()
 
     await expect
       .poll(() => comfyPage.workflow.getActiveWorkflowPath())
@@ -325,11 +325,11 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await reSaveAs(appMode, name, 'App')
 
-    await expect(appMode.saveAs.overwriteDialog).toBeVisible({ timeout: 5000 })
+    await expect(appMode.saveAs.overwriteDialog).toBeVisible()
     await appMode.saveAs.overwriteButton.click()
     await expect(appMode.saveAs.overwriteDialog).not.toBeVisible()
 
-    await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
+    await expect(appMode.saveAs.successMessage).toBeVisible()
 
     await expect
       .poll(() => comfyPage.workflow.getActiveWorkflowPath())
@@ -351,7 +351,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await dismissSuccessDialog(appMode.saveAs)
 
     await reSaveAs(appMode, name, 'Node graph')
-    await expect(appMode.saveAs.successMessage).toBeVisible({ timeout: 5000 })
+    await expect(appMode.saveAs.successMessage).toBeVisible()
 
     await expect
       .poll(() => comfyPage.workflow.getActiveWorkflowPath())
