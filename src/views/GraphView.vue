@@ -26,6 +26,7 @@
   <ModelImportProgressDialog />
   <AssetExportProgressDialog />
   <ManagerProgressToast />
+  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
 </template>
@@ -62,6 +63,7 @@ import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -77,7 +79,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -117,7 +119,7 @@ watch(linearMode, (isLinear) => {
 })
 
 const telemetry = useTelemetry()
-const firebaseAuthStore = useFirebaseAuthStore()
+const authStore = useAuthStore()
 let hasTrackedLogin = false
 
 watch(
@@ -284,7 +286,7 @@ void nextTick(() => {
 const onGraphReady = () => {
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
-    if (isCloud && firebaseAuthStore.isAuthenticated && !hasTrackedLogin) {
+    if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
       telemetry?.trackUserLoggedIn()
       hasTrackedLogin = true
     }

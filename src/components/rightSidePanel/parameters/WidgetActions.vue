@@ -5,10 +5,11 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import {
   demoteWidget,
+  isLinkedPromotion,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -16,6 +17,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -41,9 +43,15 @@ const label = defineModel<string>('label', { required: true })
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
+const promotionStore = usePromotionStore()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
+const isLinked = computed(() => {
+  if (!node.isSubgraphNode() || !isPromotedWidgetView(widget)) return false
+  return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
+})
+const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
   isShownOnParents && hasParents.value ? parents[0] : node
 )
@@ -73,26 +81,27 @@ function handleHideInput() {
   if (!parents?.length) return
 
   if (isPromotedWidgetView(widget)) {
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) {
-      console.error('Could not resolve source widget for promoted widget')
-      return
+    for (const parent of parents) {
+      const source: PromotedWidgetSource = {
+        sourceNodeId:
+          String(node.id) === String(parent.id)
+            ? widget.sourceNodeId
+            : String(node.id),
+        sourceWidgetName: widget.sourceWidgetName,
+        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+      }
+      promotionStore.demote(parent.rootGraph.id, parent.id, source)
+      parent.computeSize(parent.size)
     }
-
-    demoteWidget(sourceWidget.node, sourceWidget.widget, parents)
+    canvasStore.canvas?.setDirty(true, true)
   } else {
-    // For regular widgets (not yet promoted), use them directly
     demoteWidget(node, widget, parents)
   }
-
-  canvasStore.canvas?.setDirty(true, true)
 }
 
 function handleShowInput() {
   if (!parents?.length) return
-
   promoteWidget(node, widget, parents)
-  canvasStore.canvas?.setDirty(true, true)
 }
 
 function handleToggleFavorite() {
@@ -108,6 +117,7 @@ function handleResetToDefault() {
 <template>
   <MoreButton
     is-vertical
+    data-testid="widget-actions-menu-button"
     class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
     <template #default="{ close }">
@@ -127,7 +137,7 @@ function handleResetToDefault() {
       </Button>
 
       <Button
-        v-if="hasParents"
+        v-if="canToggleVisibility"
         variant="textonly"
         size="unset"
         class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-all active:scale-95"

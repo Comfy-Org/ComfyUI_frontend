@@ -3,6 +3,7 @@ issue_enrichment:
     enabled: true
 reviews:
   high_level_summary: false
+  request_changes_workflow: true
   auto_review:
     drafts: true
     ignore_title_keywords:
@@ -13,13 +14,35 @@ reviews:
       - github-actions
       - github-actions[bot]
   pre_merge_checks:
+    override_requested_reviewers_only: true
     custom_checks:
       - name: End-to-end regression coverage for fixes
-        mode: warning
+        mode: error
         instructions: |
+          Use only PR metadata already available in the review context: the PR title, commit subjects in this PR, the files changed in this PR relative to the PR base (equivalent to `base...head`), and the PR description.
+          Do not rely on shell commands. Do not inspect reverse diffs, files changed only on the base branch, or files outside this PR. If the changed-file list or commit subjects are unavailable, mark the check inconclusive instead of guessing.
+
           Pass if at least one of the following is true:
           1. Neither the PR title nor any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
           2. The PR changes at least one file under `browser_tests/`.
           3. The PR description includes a concrete, non-placeholder explanation of why an end-to-end regression test was not added.
 
           Fail otherwise. When failing, mention which bug-fix signal you found and ask the author to either add or update a Playwright regression test under `browser_tests/` or add a concrete explanation in the PR description of why an end-to-end regression test is not practical.
+      - name: ADR compliance for entity/litegraph changes
+        mode: warning
+        instructions: |
+          Use only PR metadata already available in the review context: the changed-file list relative to the PR base, the PR description, and the diff content. Do not rely on shell commands.
+
+          This check applies ONLY when the PR modifies files under `src/lib/litegraph/`, `src/ecs/`, or files related to graph entities (nodes, links, widgets, slots, reroutes, groups, subgraphs).
+
+          If none of those paths appear in the changed files, pass immediately.
+
+          When applicable, check for:
+          1. **Command pattern (ADR 0003)**: Entity state mutations must be serializable, idempotent, deterministic commands — not imperative fire-and-forget side effects. Flag direct spatial mutation (`node.pos =`, `node.size =`, `group.pos =`) outside of a store or command, and any new void-returning mutation API that should produce a command object.
+          2. **God-object growth (ADR 0008)**: New methods/properties added to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph` that add responsibilities rather than extracting/migrating existing ones.
+          3. **ECS data/behavior separation (ADR 0008)**: Component-like data structures that contain methods or back-references to parent entities. ECS components must be plain data. New OOP instance patterns (`node.someProperty`, `node.someMethod()`) for data that should be a World component.
+          4. **Extension ecosystem (ADR 0008)**: Changes to extension-facing callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConfigure`, `onConnectInput/Output`, `onWidgetChanged`), `node.widgets` access, `node.serialize` overrides, or `graph._version++` without migration guidance. These affect 40+ custom node repos.
+
+          Pass if none of these patterns are found in the diff.
+
+          When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR 0003 and 0008 are in Proposed status.

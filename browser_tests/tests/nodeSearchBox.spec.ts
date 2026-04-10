@@ -1,8 +1,18 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
+async function waitForSearchInsertion(
+  comfyPage: ComfyPage,
+  initialNodeCount: number
+) {
+  await expect(comfyPage.searchBox.input).toHaveCount(0)
+  await expect
+    .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+    .toBe(initialNodeCount + 1)
+}
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -60,18 +70,22 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('Can add node', { tag: '@screenshot' }, async ({ comfyPage }) => {
+    const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    await waitForSearchInsertion(comfyPage, initialNodeCount)
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
   })
 
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
+    const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvasOps.disconnectEdge()
     // Select the second item as the first item is always reroute
     await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
       suggestionIndex: 0
     })
+    await waitForSearchInsertion(comfyPage, initialNodeCount)
     await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
   })
 
@@ -79,7 +93,9 @@ test.describe('Node search box', { tag: '@node' }, () => {
     'Can auto link batch moved node',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.AutoPanSpeed', 0)
       await comfyPage.workflow.loadWorkflow('links/batch_move_links')
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       // Get the CLIP output slot (index 1) from the first CheckpointLoaderSimple node (id: 4)
       const checkpointNode = await comfyPage.nodeOps.getNodeRefById(4)
@@ -97,6 +113,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
         suggestionIndex: 0
       })
+      await waitForSearchInsertion(comfyPage, initialNodeCount)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'auto-linked-node-batch.png'
       )
@@ -107,12 +124,14 @@ test.describe('Node search box', { tag: '@node' }, () => {
     'Link release connecting to node with no slots',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
       await comfyPage.page.locator('.p-chip-remove-icon').click()
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
         exact: true
       })
+      await waitForSearchInsertion(comfyPage, initialNodeCount)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'added-node-no-connection.png'
       )
@@ -175,40 +194,13 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await expectFilterChips(comfyPage, ['MODEL'])
     })
 
-    // Flaky test.
-    // Sample test failure:
-    // https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/12696912248/job/35391990861?pr=2210
-    /*
-    1) [chromium-2x] › nodeSearchBox.spec.ts:135:5 › Node search box › Filtering › Outer click dismisses filter panel but keeps search box visible
-
-    Error: expect(locator).not.toBeVisible()
-
-    Locator: getByRole('dialog').locator('div').filter({ hasText: 'Add node filter condition' })
-    Expected: not visible
-    Received: visible
-    Call log:
-      - expect.not.toBeVisible with timeout 5000ms
-      - waiting for getByRole('dialog').locator('div').filter({ hasText: 'Add node filter condition' })
-
-
-      143 |
-      144 |       // Verify the filter selection panel is hidden
-    > 145 |       expect(panel.header).not.toBeVisible()
-          |                                ^
-      146 |
-      147 |       // Verify the node search dialog is still visible
-      148 |       expect(comfyPage.searchBox.input).toBeVisible()
-
-        at /home/runner/work/ComfyUI_frontend/ComfyUI_frontend/ComfyUI_frontend/browser_tests/nodeSearchBox.spec.ts:145:32
-     */
-    test.skip('Outer click dismisses filter panel but keeps search box visible', async ({
+    test('Outer click dismisses filter panel but keeps search box visible', async ({
       comfyPage
     }) => {
       await comfyPage.searchBox.filterButton.click()
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
-      const panelBounds = await panel.header.boundingBox()
-      await comfyPage.page.mouse.click(panelBounds!.x - 10, panelBounds!.y - 10)
+      await comfyPage.page.keyboard.press('Escape')
 
       // Verify the filter selection panel is hidden
       await expect(panel.header).not.toBeVisible()
@@ -322,11 +314,13 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     'Can search and add node from context menu',
     { tag: '@screenshot' },
     async ({ comfyPage, comfyMouse }) => {
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
       await comfyPage.canvasOps.disconnectEdge()
       await comfyMouse.move({ x: 10, y: 10 })
       await comfyPage.contextMenu.clickMenuItem('Search')
       await comfyPage.nextFrame()
       await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
+      await waitForSearchInsertion(comfyPage, initialNodeCount)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'link-context-menu-search.png'
       )

@@ -1,5 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -9,9 +10,19 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { usePromotionStore } from '@/stores/promotionStore'
+import {
+  makePromotionEntryKey,
+  usePromotionStore
+} from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
+
+import {
+  groupLinksByTuple,
+  purgeOrphanedLinks,
+  repairInputLinks,
+  selectSurvivorLink
+} from './linkDeduplication'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -45,7 +56,8 @@ import { LiteGraph, SubgraphNode } from './litegraph'
 import {
   alignOutsideContainer,
   alignToContainer,
-  createBounds
+  createBounds,
+  snapPoint
 } from './measure'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
@@ -77,7 +89,10 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
-import { deduplicateSubgraphNodeIds } from './utils/subgraphDeduplication'
+import {
+  deduplicateSubgraphNodeIds,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 
 export type {
   LGraphTriggerAction,
@@ -163,11 +178,6 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
-
-  /** Generates a unique string key for a link's connection tuple. */
-  static _linkTupleKey(link: LLink): string {
-    return `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
-  }
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -1622,44 +1632,21 @@ export class LGraph
    * (origin_id, origin_slot, target_id, target_slot). Keeps the link
    * referenced by input.link and removes orphaned duplicates from
    * output.links and the graph's _links map.
+   *
+   * Three phases: group links by tuple, select the survivor, purge duplicates.
    */
   _removeDuplicateLinks(): void {
-    const seen = new Map<string, LinkId>()
-    const toRemove: LinkId[] = []
+    const groups = groupLinksByTuple(this._links)
 
-    for (const [id, link] of this._links) {
-      const key = LGraph._linkTupleKey(link)
-      if (seen.has(key)) {
-        const existingId = seen.get(key)!
-        // Keep the link that the input side references
-        const node = this.getNodeById(link.target_id)
-        const input = node?.inputs?.[link.target_slot]
-        if (input?.link === id) {
-          toRemove.push(existingId)
-          seen.set(key, id)
-        } else {
-          toRemove.push(id)
-        }
-      } else {
-        seen.set(key, id)
-      }
-    }
+    for (const ids of groups.values()) {
+      if (ids.length <= 1) continue
 
-    for (const id of toRemove) {
-      const link = this._links.get(id)
-      if (!link) continue
+      const sampleLink = this._links.get(ids[0])!
+      const node = this.getNodeById(sampleLink.target_id)
+      const keepId = selectSurvivorLink(ids, node)
 
-      // Remove from origin node's output.links array
-      const originNode = this.getNodeById(link.origin_id)
-      if (originNode) {
-        const output = originNode.outputs?.[link.origin_slot]
-        if (output?.links) {
-          const idx = output.links.indexOf(id)
-          if (idx !== -1) output.links.splice(idx, 1)
-        }
-      }
-
-      this._links.delete(id)
+      purgeOrphanedLinks(ids, keepId, this._links, (id) => this.getNodeById(id))
+      repairInputLinks(ids, keepId, node)
     }
   }
 
@@ -1924,6 +1911,13 @@ export class LGraph
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
 
+    // Repair ancestor promotions: when nodes are packed into a nested
+    // subgraph, any host SubgraphNode whose proxyWidgets referenced the
+    // moved nodes must be repointed to chain through the new nested node.
+    if (!this.isRootGraph) {
+      this._repointAncestorPromotions(nodes, subgraphNode as SubgraphNode)
+    }
+
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
@@ -1934,6 +1928,75 @@ export class LGraph
     )
 
     return { subgraph, node: subgraphNode as SubgraphNode }
+  }
+
+  /**
+   * After packing nodes into a nested subgraph, repoint any ancestor
+   * SubgraphNode promotions that referenced the moved nodes so they
+   * chain through the newly created nested SubgraphNode.
+   */
+  private _repointAncestorPromotions(
+    movedNodes: Set<LGraphNode>,
+    nestedSubgraphNode: SubgraphNode
+  ): void {
+    const movedNodeIds = new Set([...movedNodes].map((n) => String(n.id)))
+    const store = usePromotionStore()
+    const nestedNodeId = String(nestedSubgraphNode.id)
+    const graphId = this.rootGraph.id
+    const nestedEntries = store.getPromotions(graphId, nestedSubgraphNode.id)
+    const nextNestedEntries = [...nestedEntries]
+    const nestedEntryKeys = new Set(
+      nestedEntries.map((entry) => makePromotionEntryKey(entry))
+    )
+    const hostUpdates: Array<{
+      node: SubgraphNode
+      entries: PromotedWidgetSource[]
+    }> = []
+
+    // Find all SubgraphNode instances that host `this` subgraph.
+    // They live in any graph and have `type === this.id`.
+    const allGraphs: LGraph[] = [
+      this.rootGraph,
+      ...this.rootGraph._subgraphs.values()
+    ]
+    for (const graph of allGraphs) {
+      for (const node of graph._nodes) {
+        if (!node.isSubgraphNode() || node.type !== this.id) continue
+
+        const entries = store.getPromotions(graphId, node.id)
+        const movedEntries = entries.filter((entry) =>
+          movedNodeIds.has(entry.sourceNodeId)
+        )
+        if (movedEntries.length === 0) continue
+
+        for (const entry of movedEntries) {
+          const key = makePromotionEntryKey(entry)
+          if (nestedEntryKeys.has(key)) continue
+          nestedEntryKeys.add(key)
+          nextNestedEntries.push(entry)
+        }
+
+        const nextEntries = entries.map((entry) => {
+          if (!movedNodeIds.has(entry.sourceNodeId)) return entry
+          return {
+            sourceNodeId: nestedNodeId,
+            sourceWidgetName: entry.sourceWidgetName,
+            disambiguatingSourceNodeId:
+              entry.disambiguatingSourceNodeId ?? entry.sourceNodeId
+          }
+        })
+
+        hostUpdates.push({ node, entries: nextEntries })
+      }
+    }
+
+    if (nextNestedEntries.length !== nestedEntries.length)
+      store.setPromotions(graphId, nestedSubgraphNode.id, nextNestedEntries)
+
+    for (const { node, entries } of hostUpdates) {
+      store.setPromotions(graphId, node.id, entries)
+      node.rebuildInputWidgetBindings()
+    }
   }
 
   unpackSubgraph(
@@ -2417,8 +2480,8 @@ export class LGraph
   protected _configureBase(data: ISerialisedGraph | SerialisableGraph): void {
     const { id, extra } = data
 
-    // Create a new graph ID if none is provided
-    if (id) {
+    // Create a new graph ID if none is provided or the zero UUID is used on the root graph
+    if (id && !(this.isRootGraph && id === zeroUuid)) {
       this.id = id
     } else if (this.id === zeroUuid) {
       this.id = createUuidv4()
@@ -2560,7 +2623,12 @@ export class LGraph
         effectiveNodesData = deduplicated?.rootNodes ?? nodesData
 
         for (const subgraph of finalSubgraphs) this.createSubgraph(subgraph)
-        for (const subgraph of finalSubgraphs)
+
+        // Configure in leaf-first order so that when a SubgraphNode is
+        // configured, its referenced subgraph definition already has its
+        // nodes/links/inputs populated.
+        const configureOrder = topologicalSortSubgraphs(finalSubgraphs)
+        for (const subgraph of configureOrder)
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
@@ -2594,7 +2662,18 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          this.getNodeById(id)?.configure(nodeData)
+          const node = this.getNodeById(id)
+          node?.configure(nodeData)
+
+          if (LiteGraph.alwaysSnapToGrid && node) {
+            const snapTo = this.getSnapToGridSize()
+            if (node.snapToGrid(snapTo)) {
+              // snapToGrid mutates the internal _pos array in-place, bypassing the setter
+              // This reassignment triggers the pos setter to sync to the Vue layout store
+              node.pos = [node.pos[0], node.pos[1]]
+            }
+            snapPoint(node.size, snapTo, 'ceil')
+          }
         }
       }
 
@@ -2842,6 +2921,10 @@ export class Subgraph
       }
     }
 
+    // Repair IO slot linkIds that reference links removed by
+    // _removeDuplicateLinks during super.configure().
+    this._repairIOSlotLinkIds()
+
     if (widgets) {
       this.widgets.length = 0
       for (const widget of widgets) {
@@ -2864,6 +2947,50 @@ export class Subgraph
 
     this._configureSubgraph(data)
     return r
+  }
+
+  /**
+   * Repairs SubgraphInput/Output `linkIds` that reference links removed
+   * by `_removeDuplicateLinks` during `super.configure()`.
+   *
+   * For each stale link ID, finds the surviving link that connects to the
+   * same IO node and slot index, and substitutes it.
+   */
+  private _repairIOSlotLinkIds(): void {
+    for (const [slotIndex, slot] of this.inputs.entries()) {
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
+    }
+    for (const [slotIndex, slot] of this.outputs.entries()) {
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
+    }
+  }
+
+  private _repairSlotLinkIds(
+    linkIds: LinkId[],
+    ioNodeId: number,
+    slotIndex: number
+  ): void {
+    const repaired = linkIds.map((id) =>
+      this._links.has(id)
+        ? id
+        : (this._findLinkBySlot(ioNodeId, slotIndex)?.id ?? id)
+    )
+    repaired.forEach((id, i) => {
+      linkIds[i] = id
+    })
+  }
+
+  private _findLinkBySlot(
+    nodeId: number,
+    slotIndex: number
+  ): LLink | undefined {
+    for (const link of this._links.values()) {
+      if (
+        (link.origin_id === nodeId && link.origin_slot === slotIndex) ||
+        (link.target_id === nodeId && link.target_slot === slotIndex)
+      )
+        return link
+    }
   }
 
   override attachCanvas(canvas: LGraphCanvas): void {
@@ -2960,13 +3087,13 @@ export class Subgraph
    * @param input The input slot to remove.
    */
   removeInput(input: SubgraphInput): void {
-    input.disconnect()
-
     const index = this.inputs.indexOf(input)
     if (index === -1) throw new Error('Input not found')
 
     const mayContinue = this.events.dispatch('removing-input', { input, index })
     if (!mayContinue) return
+
+    input.disconnect()
 
     this.inputs.splice(index, 1)
 
@@ -2981,8 +3108,6 @@ export class Subgraph
    * @param output The output slot to remove.
    */
   removeOutput(output: SubgraphOutput): void {
-    output.disconnect()
-
     const index = this.outputs.indexOf(output)
     if (index === -1) throw new Error('Output not found')
 
@@ -2991,6 +3116,8 @@ export class Subgraph
       index
     })
     if (!mayContinue) return
+
+    output.disconnect()
 
     this.outputs.splice(index, 1)
 

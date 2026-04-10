@@ -10,6 +10,7 @@ import type {
 } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type {
@@ -21,6 +22,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { resolveComboValues } from '@/utils/litegraphUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -30,6 +32,9 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
+// Full set of model file extensions used for scanning candidate widgets.
+// Intentionally broader than ALLOWED_SUFFIXES in missingModelDownload.ts,
+// which restricts which files are eligible for download.
 export const MODEL_FILE_EXTENSIONS = new Set([
   '.safetensors',
   '.ckpt',
@@ -43,18 +48,7 @@ export const MODEL_FILE_EXTENSIONS = new Set([
 
 export function isModelFileName(name: string): boolean {
   const lower = name.toLowerCase()
-  for (const ext of MODEL_FILE_EXTENSIONS) {
-    if (lower.endsWith(ext)) return true
-  }
-  return false
-}
-
-function resolveComboOptions(widget: IComboWidget): string[] {
-  const values = widget.options.values
-  if (!values) return []
-  if (typeof values === 'function') return values(widget)
-  if (Array.isArray(values)) return values
-  return Object.keys(values)
+  return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
 
 /**
@@ -138,7 +132,7 @@ function scanComboWidget(
   if (!isModelFileName(value)) return null
 
   const nodeIsAssetSupported = isAssetSupported(node.type, widget.name)
-  const options = resolveComboOptions(widget)
+  const options = resolveComboValues(widget)
   const inOptions = options.includes(value)
 
   return {

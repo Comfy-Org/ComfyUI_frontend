@@ -3,6 +3,7 @@ import { toValue } from 'vue'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -532,6 +533,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   readonly pointer: CanvasPointer
   zoom_modify_alpha: boolean
   zoom_speed: number
+  auto_pan_speed: number
   node_title_color: string
   default_link_color: string
   default_connection_color: {
@@ -679,6 +681,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   highlighted_links: Dictionary<boolean> = {}
 
   private _visibleReroutes: Set<Reroute> = new Set()
+  private _autoPan: AutoPanController | null = null
+  private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -834,6 +838,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // @deprecated Workaround: Keep until connecting_links is removed.
     this.linkConnector.events.addEventListener('reset', () => {
+      // Only stop link-drag autoPan; ghost placement manages its own.
+      if (this.state.ghostNodeId == null) {
+        this._autoPan?.stop()
+        this._autoPan = null
+      }
       this.connecting_links = null
       this.dirty_bgcanvas = true
     })
@@ -901,6 +910,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.zoom_modify_alpha = true
     // in range (1.01, 2.5). Less than 1 will invert the zoom direction
     this.zoom_speed = 1.1
+    this.auto_pan_speed = 15
 
     this.node_title_color = LiteGraph.NODE_TITLE_COLOR
     this.default_link_color = LiteGraph.LINK_COLOR
@@ -2070,7 +2080,28 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) throw new NullGraphError()
 
     pointer.onDragEnd = (upEvent) => linkConnector.dropLinks(graph, upEvent)
-    pointer.finally = () => this.linkConnector.reset(true)
+    pointer.finally = () => {
+      this._autoPan?.stop()
+      this._autoPan = null
+      this.linkConnector.reset(true)
+    }
+
+    this._autoPan = new AutoPanController({
+      canvas: this.canvas,
+      ds: this.ds,
+      maxPanSpeed: this.auto_pan_speed,
+      onPan: () => {
+        const rect = this.canvas.getBoundingClientRect()
+        const { scale } = this.ds
+        this.graph_mouse[0] =
+          (this.mouse[0] - rect.left) / scale - this.ds.offset[0]
+        this.graph_mouse[1] =
+          (this.mouse[1] - rect.top) / scale - this.ds.offset[1]
+        this._dirty()
+      }
+    })
+    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
+    this._autoPan.start()
   }
 
   /**
@@ -2585,8 +2616,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
           pointer.finally = () => (this.resizingGroup = null)
         } else {
-          const f = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
-          const headerHeight = f * 1.4
+          const headerHeight = LiteGraph.NODE_TITLE_HEIGHT
           if (
             isInRectangle(
               x,
@@ -2959,6 +2989,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
             // Enforce minimum size
             const min = node.computeSize()
+            if (this._snapToGrid) {
+              // Previously newBounds.size is snapped with 'round'
+              // Now the minimum size is snapped with 'ceil' to avoid clipping
+              snapPoint(min, this._snapToGrid, 'ceil')
+            }
             if (newBounds.width < min[0]) {
               // If resizing from left, adjust position to maintain right edge
               if (resizeDirection.includes('W')) {
@@ -3277,7 +3312,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (this.allow_interaction || node?.flags.allow_interaction) &&
       !this.read_only
     ) {
-      if (linkConnector.isConnecting) this.dirty_canvas = true
+      if (linkConnector.isConnecting) {
+        this._autoPan?.updatePointer(e.clientX, e.clientY)
+        this.dirty_canvas = true
+      }
 
       // remove mouseover flag
       this.updateMouseOverNodes(node, e)
@@ -3483,6 +3521,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       // Items being dragged
       if (this.isDragging) {
+        this._autoPan?.updatePointer(e.clientX, e.clientY)
+
         const selected = this.selectedItems
         const allItems = e.ctrlKey ? selected : getAllNestedItems(selected)
 
@@ -3561,12 +3601,40 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Ensure that dragging is properly cleaned up, on success or failure.
     pointer.finally = () => {
       this.isDragging = false
+      this._autoPan?.stop()
+      this._autoPan = null
       this.graph?.afterChange()
       this.emitAfterChange()
     }
 
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
+
+    this._startNodeAutoPan()
+  }
+
+  private _startNodeAutoPan(): void {
+    this._autoPan = new AutoPanController({
+      canvas: this.canvas,
+      ds: this.ds,
+      maxPanSpeed: this.auto_pan_speed,
+      onPan: (panX, panY) => {
+        const selected = this.selectedItems
+        const allItems = getAllNestedItems(selected)
+
+        if (LiteGraph.vueNodesMode) {
+          this.moveChildNodesInGroupVueMode(allItems, panX, panY)
+        } else {
+          for (const item of allItems) {
+            item.move(panX, panY, true)
+          }
+        }
+
+        this._dirty()
+      }
+    })
+    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
+    this._autoPan.start()
   }
 
   /**
@@ -3614,6 +3682,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselectAll()
     this.select(node)
     this.isDragging = true
+
+    this._startNodeAutoPan()
+
+    // Listen on document so autopan works when the pointer is over DOM elements.
+    this._ghostPointerHandler = (e: PointerEvent) => {
+      // Trigger mouse move so the ghost node follows the cursor the same as when dragging a node.
+      this.processMouseMove(e)
+    }
+    document.addEventListener('pointermove', this._ghostPointerHandler)
+    // When the pointer leaves the viewport quickly, ensure we still trigger auto-pan.
+    document.documentElement.addEventListener(
+      'pointerleave',
+      this._ghostPointerHandler
+    )
   }
 
   /**
@@ -3626,6 +3708,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this._autoPan?.stop()
+    this._autoPan = null
+
+    if (this._ghostPointerHandler) {
+      document.removeEventListener('pointermove', this._ghostPointerHandler)
+      document.documentElement.removeEventListener(
+        'pointerleave',
+        this._ghostPointerHandler
+      )
+      this._ghostPointerHandler = null
+    }
 
     const node = this.graph?.getNodeById(nodeId)
     if (!node) return
@@ -4155,6 +4248,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         item.setPos(item.pos[0] + dx, item.pos[1] + dy)
       } else if (item instanceof Reroute) {
         item.move(dx, dy)
+      } else if (item instanceof LGraphGroup) {
+        item.move(dx, dy, true)
       }
     }
 
@@ -5786,7 +5881,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawSnapGuide(
     ctx: CanvasRenderingContext2D,
     item: Positionable,
-    shape = RenderShape.ROUND
+    shape = RenderShape.ROUND,
+    { offsetToSlot }: { offsetToSlot?: boolean } = {}
   ) {
     const snapGuide = temp
     snapGuide.set(item.boundingRect)
@@ -5794,7 +5890,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Not all items have pos equal to top-left of bounds
     const { pos } = item
     const offsetX = pos[0] - snapGuide[0]
-    const offsetY = pos[1] - snapGuide[1]
+    const offsetY =
+      pos[1] -
+      snapGuide[1] -
+      (offsetToSlot ? LiteGraph.NODE_SLOT_HEIGHT * 0.7 : 0)
 
     // Normalise boundingRect to pos to snap
     snapGuide[0] += offsetX
@@ -5854,6 +5953,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.globalAlpha = this.editor_alpha
     // for every node
     const nodes = graph._nodes
+
+    // Ensure widget-input slot positions are computed before rendering links.
+    // arrange() sets input.pos for widget-backed slots, but is normally called
+    // in drawNode (foreground canvas). drawConnections runs on the background
+    // canvas, which may render before drawNode has executed for this frame.
+    // The dirty flag avoids a per-frame O(N) scan of all inputs.
+    for (const node of nodes) {
+      if (node.flags.collapsed || !node._widgetSlotsDirty) continue
+
+      node._setConcreteSlots()
+      node.arrange()
+    }
+
     for (const node of nodes) {
       // for every input (we render just inputs because it is easier as every slot can only have one input)
       const { inputs } = node
@@ -5971,7 +6083,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.isDragging &&
         this.selectedItems.has(reroute)
       ) {
-        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
+        this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE, {
+          offsetToSlot: true
+        })
       }
       reroute.draw(ctx, this._pattern)
 

@@ -143,11 +143,16 @@
             <Button
               v-if="shouldShowDeleteButton"
               size="icon"
+              data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button size="icon" @click="handleDownloadSelected">
+            <Button
+              size="icon"
+              data-testid="assets-download-selected"
+              @click="handleDownloadSelected"
+            >
               <i class="icon-[lucide--download] size-4" />
             </Button>
           </template>
@@ -156,12 +161,17 @@
             <Button
               v-if="shouldShowDeleteButton"
               variant="secondary"
+              data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
               <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button variant="secondary" @click="handleDownloadSelected">
+            <Button
+              variant="secondary"
+              data-testid="assets-download-selected"
+              @click="handleDownloadSelected"
+            >
               <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
               <i class="icon-[lucide--download] size-4" />
             </Button>
@@ -170,7 +180,7 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ResultGallery
+  <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
@@ -220,7 +230,7 @@ import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridVi
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'

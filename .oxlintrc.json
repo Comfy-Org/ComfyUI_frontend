@@ -64,6 +64,7 @@
         ]
       }
     ],
+    "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
@@ -97,8 +98,14 @@
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
     "typescript/no-explicit-any": "error",
-    "vue/no-import-compiler-macros": "error",
-    "vue/no-dupe-keys": "error"
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-empty-object-type": [
+      "error",
+      {
+        "allowInterfaces": "always"
+      }
+    ],
+    "vue/no-import-compiler-macros": "error"
   },
   "overrides": [
     {

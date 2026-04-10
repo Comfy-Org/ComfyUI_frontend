@@ -7,7 +7,7 @@
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-transparent"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -46,6 +46,7 @@
         v-if="!videoError"
         :src="currentVideoUrl"
         :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        preload="metadata"
         controls
         loop
         playsinline
@@ -101,7 +102,11 @@
 
     <!-- Video Dimensions -->
     <div class="mt-2 text-center text-xs text-muted-foreground">
-      <span v-if="videoError" class="text-red-400">
+      <span
+        v-if="videoError"
+        class="text-red-400"
+        data-testid="error-loading-video"
+      >
         {{ $t('g.errorLoadingVideo') }}
       </span>
       <span v-else-if="showLoader" class="text-smoke-400">
@@ -203,6 +208,7 @@ const handleDownload = () => {
       severity: 'error',
       summary: 'Error',
       detail: t('g.failedToDownloadVideo'),
+      life: 3000,
       group: 'video-preview'
     })
   }

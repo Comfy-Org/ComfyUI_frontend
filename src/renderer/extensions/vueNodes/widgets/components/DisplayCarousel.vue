@@ -36,7 +36,7 @@
             :aria-label="t('g.switchToGridView')"
             @click="switchToGrid"
           >
-            <i class="icon-[lucide--layout-grid] size-4" />
+            <i class="icon-[lucide--undo-2] size-4" />
           </button>
 
           <!-- Action Buttons (hover, top-right) -->
@@ -142,41 +142,19 @@
           ref="gridContainerEl"
           class="relative h-72 overflow-x-hidden overflow-y-auto rounded-sm bg-component-node-background"
           tabindex="0"
-          @mouseenter="isHovered = true"
-          @mouseleave="isHovered = false"
-          @focusin="isFocused = true"
-          @focusout="handleFocusOut"
         >
-          <!-- Toggle to Single (hover, top-left) -->
-          <button
-            v-if="showControls"
-            :class="toggleButtonClass"
-            class="absolute top-2 left-2 z-10"
-            :aria-label="t('g.switchToSingleView')"
-            @click="switchToSingle"
-          >
-            <i class="icon-[lucide--square] size-4" />
-          </button>
-
           <div class="flex flex-wrap content-start gap-1">
             <button
               v-for="(item, index) in galleryImages"
               :key="getItemSrc(item)"
               class="size-14 shrink-0 cursor-pointer overflow-hidden border-0 p-0"
               :aria-label="getItemAlt(item, index)"
-              @mouseenter="hoveredGridIndex = index"
-              @mouseleave="hoveredGridIndex = -1"
               @click="selectFromGrid(index)"
             >
               <img
                 :src="getItemThumbnail(item)"
                 :alt="getItemAlt(item, index)"
-                :class="
-                  cn(
-                    'size-full object-cover transition-opacity',
-                    hoveredGridIndex === index && 'opacity-50'
-                  )
-                "
+                class="size-full object-cover"
               />
             </button>
           </div>
@@ -193,8 +171,8 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { resolveNode } from '@/utils/litegraphUtil'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -229,7 +207,6 @@ const activeIndex = ref(0)
 const displayMode = ref<DisplayMode>('single')
 const isHovered = ref(false)
 const isFocused = ref(false)
-const hoveredGridIndex = ref(-1)
 const imageDimensions = ref<string | null>(null)
 const thumbnailRefs = ref<(HTMLElement | null)[]>([])
 const imageContainerEl = ref<HTMLDivElement>()
@@ -359,11 +336,6 @@ function switchToGrid() {
   displayMode.value = 'grid'
 }
 
-function switchToSingle() {
-  isHovered.value = false
-  displayMode.value = 'single'
-}
-
 function selectFromGrid(index: number) {
   activeIndex.value = index
   imageDimensions.value = null
@@ -374,7 +346,7 @@ function selectFromGrid(index: number) {
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = app.rootGraph?.getNodeById(Number(nodeId))
+  const node = resolveNode(Number(nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
@@ -395,7 +367,7 @@ function handleDownload() {
 
 function handleRemove() {
   if (!nodeId) return
-  const node = app.rootGraph?.getNodeById(Number(nodeId))
+  const node = resolveNode(Number(nodeId))
   nodeOutputStore.removeNodeOutputs(nodeId)
   if (node) {
     node.imgs = undefined

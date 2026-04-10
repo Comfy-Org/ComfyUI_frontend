@@ -5,23 +5,26 @@ import type { ChangeTracker } from '@/scripts/changeTracker'
 import type { AppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
-import type {
-  ComfyWorkflowJSON,
-  ModelFile
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
+export interface InputWidgetConfig {
+  height?: number
+}
+
+export type LinearInput = [NodeId, string, InputWidgetConfig?]
+
 export interface LinearData {
-  inputs: [NodeId, string][]
+  inputs: LinearInput[]
   outputs: NodeId[]
 }
 
 export interface PendingWarnings {
   missingNodeTypes?: MissingNodeType[]
-  missingModels?: {
-    missingModels: ModelFile[]
-    paths: Record<string, string[]>
-  }
+  // TODO: Currently unused — missing models are surfaced directly on every
+  // graph load. Reserved for future per-workflow missing model state management.
+  missingModelCandidates?: MissingModelCandidate[]
 }
 
 export class ComfyWorkflow extends UserFile {

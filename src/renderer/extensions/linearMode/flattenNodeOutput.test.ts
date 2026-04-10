@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
@@ -11,7 +12,7 @@ function makeOutput(
 
 describe(flattenNodeOutput, () => {
   it('returns empty array for output with no known media types', () => {
-    const result = flattenNodeOutput(['1', makeOutput({ text: 'hello' })])
+    const result = flattenNodeOutput(['1', makeOutput({ unknown: 'hello' })])
     expect(result).toEqual([])
   })
 
@@ -81,5 +82,74 @@ describe(flattenNodeOutput, () => {
     const output = makeOutput({ images: [], audio: [] })
     const result = flattenNodeOutput(['1', output])
     expect(result).toEqual([])
+  })
+
+  it('flattens non-standard output keys with ResultItem-like values', () => {
+    const output = makeOutput(
+      fromPartial<NodeExecutionOutput>({
+        a_images: [{ filename: 'before.png', subfolder: '', type: 'output' }],
+        b_images: [{ filename: 'after.png', subfolder: '', type: 'output' }]
+      })
+    )
+
+    const result = flattenNodeOutput(['10', output])
+
+    expect(result).toHaveLength(2)
+    expect(result.map((r) => r.filename)).toContain('before.png')
+    expect(result.map((r) => r.filename)).toContain('after.png')
+  })
+
+  it('excludes animated key', () => {
+    const output = makeOutput({
+      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
+      animated: [true]
+    })
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].mediaType).toBe('images')
+  })
+
+  it('excludes non-ResultItem array items', () => {
+    const output = fromPartial<NodeExecutionOutput>({
+      images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
+      custom_data: [{ randomKey: 123 }]
+    })
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].mediaType).toBe('images')
+  })
+
+  it('accepts items with filename but no subfolder', () => {
+    const output = fromPartial<NodeExecutionOutput>({
+      images: [
+        { filename: 'valid.png', subfolder: '', type: 'output' },
+        { filename: 'no-subfolder.png' }
+      ]
+    })
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(2)
+    expect(result[0].filename).toBe('valid.png')
+    expect(result[1].filename).toBe('no-subfolder.png')
+    expect(result[1].subfolder).toBe('')
+  })
+
+  it('excludes items missing filename', () => {
+    const output = fromPartial<NodeExecutionOutput>({
+      images: [
+        { filename: 'valid.png', subfolder: '', type: 'output' },
+        { subfolder: '', type: 'output' }
+      ]
+    })
+
+    const result = flattenNodeOutput(['1', output])
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('valid.png')
   })
 })

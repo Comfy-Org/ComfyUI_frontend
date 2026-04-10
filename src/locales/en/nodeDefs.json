@@ -798,7 +798,7 @@
     }
   },
   "CaseConverter": {
-    "display_name": "Case Converter",
+    "display_name": "Text Case Converter",
     "inputs": {
       "string": {
         "name": "string"
@@ -1438,6 +1438,22 @@
       }
     }
   },
+  "ComfyNumberConvert": {
+    "display_name": "Number Convert",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfySwitchNode": {
     "display_name": "Switch",
     "inputs": {
@@ -1767,6 +1783,14 @@
       "freenoise": {
         "name": "freenoise",
         "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
+      },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "List of latent indices to retain in the conditioning tensors for each window, for example setting this to '0' will use the initial start image for each window."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
       }
     },
     "outputs": {
@@ -2177,6 +2201,10 @@
       "padding": {
         "name": "padding",
         "tooltip": "Extra padding in pixels added on each side of the bbox before cropping."
+      },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Whether to stretch the crop to fit the output size, or pad with black pixels to preserve aspect ratio."
       }
     },
     "outputs": {
@@ -2206,6 +2234,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Curve Editor",
+    "inputs": {
+      "curve": {
+        "name": "curve"
+      },
+      "histogram": {
+        "name": "histogram"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curve",
         "tooltip": null
       }
     }
@@ -2268,6 +2313,23 @@
     "display_name": "DisableNoise",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Draw BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -3715,6 +3777,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "First image from the model's thinking process. Only available with thinking_level HIGH and IMAGE+TEXT modality."
       }
     }
   },
@@ -3951,11 +4017,19 @@
       },
       "floats": {
         "name": "floats",
-        "tooltip": "Floats are available as u_float0-4 in the shader code"
+        "tooltip": "Floats are available as u_float0-19 in the shader code"
       },
       "ints": {
         "name": "ints",
-        "tooltip": "Ints are available as u_int0-4 in the shader code"
+        "tooltip": "Ints are available as u_int0-19 in the shader code"
+      },
+      "bools": {
+        "name": "bools",
+        "tooltip": "Booleans are available as u_bool0-9 (bool) in the shader code"
+      },
+      "curves": {
+        "name": "curves",
+        "tooltip": "Curves are available as u_curve0-3 (sampler2D, 1D LUT) in the shader code. Sample with texture(u_curve0, vec2(x, 0.5)).r"
       }
     },
     "outputs": {
@@ -4080,6 +4154,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "display_name": "Grok Video Extend",
+    "description": "Extend an existing video with a seamless continuation based on a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of what should happen next in the video."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Source video to extend. MP4 format, 2-15 seconds."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video extension."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "display_name": "Grok Video",
     "description": "Generate video from a prompt or an image",
@@ -4112,6 +4219,41 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoReferenceNode": {
+    "display_name": "Grok Reference-to-Video",
+    "description": "Generate video guided by reference images as style and content references.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired video."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The model to use for video generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4861,6 +5003,36 @@
       "0": {
         "name": "images",
         "tooltip": "Processed images"
+      }
+    }
+  },
+  "ImageHistogram": {
+    "display_name": "Image Histogram",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminance",
+        "tooltip": null
+      },
+      "2": {
+        "name": "red",
+        "tooltip": null
+      },
+      "3": {
+        "name": "green",
+        "tooltip": null
+      },
+      "4": {
+        "name": "blue",
+        "tooltip": null
       }
     }
   },
@@ -7607,6 +7779,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "description": "Set reference audio for ID-LoRA speaker identity transfer. Encodes a reference audio clip into the conditioning and optionally patches the model with identity guidance (extra forward pass without reference, amplifying the speaker identity effect).",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "reference_audio": {
+        "name": "reference_audio",
+        "tooltip": "Reference audio clip whose speaker identity to transfer. ~5 seconds recommended (training duration). Shorter or longer clips may degrade voice identity transfer."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE for encoding."
+      },
+      "identity_guidance_scale": {
+        "name": "identity_guidance_scale",
+        "tooltip": "Strength of identity guidance. Runs an extra forward pass without reference each step to amplify speaker identity. Set to 0 to disable (no extra pass)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Start of the sigma range where identity guidance is active."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "End of the sigma range where identity guidance is active."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11949,6 +12169,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "display_name": "Quiver Image to SVG",
+    "description": "Vectorize a raster image into SVG using Quiver AI.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Input image to vectorize."
+      },
+      "auto_crop": {
+        "name": "auto_crop",
+        "tooltip": "Automatically crop to the dominant subject."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG vectorization."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "display_name": "Quiver Text to SVG",
+    "description": "Generate an SVG from a text prompt using Quiver AI.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired SVG output."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "instructions": {
+        "name": "instructions",
+        "tooltip": "Additional style or formatting guidance."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 4 reference images to guide the generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -12565,7 +12870,7 @@
     }
   },
   "RegexExtract": {
-    "display_name": "Regex Extract",
+    "display_name": "Text Extract Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -12596,7 +12901,7 @@
     }
   },
   "RegexMatch": {
-    "display_name": "Regex Match",
+    "display_name": "Text Match",
     "inputs": {
       "string": {
         "name": "string"
@@ -12622,7 +12927,7 @@
     }
   },
   "RegexReplace": {
-    "display_name": "Regex Replace",
+    "display_name": "Text Replace (Regex)",
     "description": "Find and replace text using regex patterns.",
     "inputs": {
       "string": {
@@ -13159,6 +13464,34 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detect",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "threshold": {
+        "name": "threshold"
+      },
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filter detections by class. Set to 'all' to disable filtering."
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Maximum number of detections to return per image. In order of descending confidence score."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
         "tooltip": null
       }
     }
@@ -13850,7 +14183,7 @@
       },
       "steps": {
         "name": "steps",
-        "tooltip": "Optional: The number of steps to LoRA has been trained for, used to name the saved file."
+        "tooltip": "Optional: The number of steps the LoRA has been trained for, used to name the saved file."
       }
     }
   },
@@ -14917,7 +15250,7 @@
     }
   },
   "StringCompare": {
-    "display_name": "Compare",
+    "display_name": "Text Compare",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -14939,7 +15272,7 @@
     }
   },
   "StringConcatenate": {
-    "display_name": "Concatenate",
+    "display_name": "Text Concatenate",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -14958,7 +15291,7 @@
     }
   },
   "StringContains": {
-    "display_name": "Contains",
+    "display_name": "Text Contains",
     "inputs": {
       "string": {
         "name": "string"
@@ -14978,7 +15311,7 @@
     }
   },
   "StringLength": {
-    "display_name": "Length",
+    "display_name": "Text Length",
     "inputs": {
       "string": {
         "name": "string"
@@ -14992,7 +15325,7 @@
     }
   },
   "StringReplace": {
-    "display_name": "Replace",
+    "display_name": "Text Replace",
     "inputs": {
       "string": {
         "name": "string"
@@ -15011,7 +15344,7 @@
     }
   },
   "StringSubstring": {
-    "display_name": "Substring",
+    "display_name": "Text Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -15030,7 +15363,7 @@
     }
   },
   "StringTrim": {
-    "display_name": "Trim",
+    "display_name": "Text Trim",
     "inputs": {
       "string": {
         "name": "string"
@@ -15251,6 +15584,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "display_name": "Hunyuan3D: 3D Texture Edit",
+    "description": "After inputting the 3D model, perform 3D model texture redrawing.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model in FBX format. Model should have less than 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes texture editing. Supports up to 1024 UTF-8 characters."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Image(s) to Model",
     "inputs": {
@@ -15299,6 +15667,22 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
       }
     }
   },
@@ -15325,6 +15709,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
         "tooltip": null
       }
     }
@@ -15399,6 +15787,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -15609,8 +16001,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -15653,8 +16052,15 @@
       "image": {
         "name": "image"
       },
+      "thinking": {
+        "name": "thinking",
+        "tooltip": "Operate in thinking mode if the model supports it."
+      },
       "sampling_mode_min_p": {
         "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
       },
       "sampling_mode_repetition_penalty": {
         "name": "repetition_penalty"
@@ -15918,11 +16324,15 @@
       },
       "training_dtype": {
         "name": "training_dtype",
-        "tooltip": "The dtype to use for training."
+        "tooltip": "The dtype to use for training. 'none' preserves the model's native compute dtype instead of overriding it. For fp16 models, GradScaler is automatically enabled."
       },
       "lora_dtype": {
         "name": "lora_dtype",
         "tooltip": "The dtype to use for lora."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "When using training_dtype 'none' and training on quantized model, doing backward with quantized matmul when enabled."
       },
       "algorithm": {
         "name": "algorithm",
@@ -15938,7 +16348,7 @@
       },
       "offloading": {
         "name": "offloading",
-        "tooltip": "Offload the Model to RAM. Requires Bypass Mode."
+        "tooltip": "Offload model weights to CPU during training to save GPU memory."
       },
       "existing_lora": {
         "name": "existing_lora",
@@ -17588,6 +17998,241 @@
       },
       "start_image": {
         "name": "start_image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "display_name": "Wan 2.7 Image to Video",
+    "description": "Generate a video from a first-frame image, with optional last-frame image and audio.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image. The output aspect ratio is derived from this image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The model generates a video transitioning from first to last frame."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio for driving video generation (e.g., lip sync, beat-matched motion). Duration: 2s-30s. If not provided, the model automatically generates matching background music or sound effects."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "display_name": "Wan 2.7 Reference to Video",
+    "description": "Generate a video featuring a person or object from reference materials. Supports single-character performances and multi-character interactions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "display_name": "Wan 2.7 Text to Video",
+    "description": "Generates a video based on a text prompt using the Wan 2.7 model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio for driving video generation (e.g., lip sync, beat-matched motion). Duration: 3s-30s. If not provided, the model automatically generates matching background music or sound effects."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "display_name": "Wan 2.7 Video Continuation",
+    "description": "Continue a video from where it left off, with optional last-frame control.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "Input video to continue from. Duration: 2s-10s. The output aspect ratio is derived from this video."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Whether to enhance the prompt with AI assistance."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The continuation will transition towards this frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "display_name": "Wan 2.7 Video Edit",
+    "description": "Edit a video using text instructions, reference images, or style transfer.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The video to edit."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "'auto': model decides whether to regenerate audio based on the prompt. 'origin': preserve the original audio from the input video."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {

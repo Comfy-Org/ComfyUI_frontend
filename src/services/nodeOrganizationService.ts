@@ -1,5 +1,10 @@
+import { resolveBlueprintEssentialsCategory } from '@/constants/essentialsDisplayNames'
 import type { EssentialsCategory } from '@/constants/essentialsNodes'
-import { ESSENTIALS_NODES } from '@/constants/essentialsNodes'
+import {
+  ESSENTIALS_CATEGORY_CANONICAL,
+  ESSENTIALS_CATEGORY_RANK,
+  ESSENTIALS_NODE_RANK
+} from '@/constants/essentialsNodes'
 import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
@@ -15,6 +20,34 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 const DEFAULT_ICON = 'pi pi-sort'
+const UNKNOWN_RANK = Number.MAX_SAFE_INTEGER
+
+function resolveEssentialsCategory(
+  nodeDef: ComfyNodeDefImpl
+): EssentialsCategory | undefined {
+  if (!nodeDef.isCoreNode) return undefined
+
+  if (nodeDef.essentials_category) {
+    return (
+      ESSENTIALS_CATEGORY_CANONICAL.get(
+        nodeDef.essentials_category.toLowerCase()
+      ) ?? (nodeDef.essentials_category as EssentialsCategory)
+    )
+  }
+  return resolveBlueprintEssentialsCategory(nodeDef.name)
+}
+
+function sortByKnownOrder<T>(
+  items: T[],
+  getKey: (item: T) => string | undefined,
+  rankMap: ReadonlyMap<string, number>
+): void {
+  items.sort(
+    (a, b) =>
+      (rankMap.get(getKey(a) ?? '') ?? UNKNOWN_RANK) -
+      (rankMap.get(getKey(b) ?? '') ?? UNKNOWN_RANK)
+  )
+}
 
 function categoryPathExtractor(nodeDef: ComfyNodeDefImpl): string[] {
   const category = nodeDef.category || ''
@@ -143,31 +176,39 @@ class NodeOrganizationService {
   }
 
   private organizeEssentials(nodes: ComfyNodeDefImpl[]): NodeSection[] {
-    const essentialNodes = nodes.filter(
-      (nodeDef) => !!nodeDef.essentials_category
-    )
-    const tree = buildNodeDefTree(essentialNodes, {
-      pathExtractor: (nodeDef) => {
-        const folder = nodeDef.essentials_category || ''
-        return folder ? [folder, nodeDef.name] : [nodeDef.name]
-      }
+    const categoryByNode = new Map<ComfyNodeDefImpl, EssentialsCategory>()
+    const essentialNodes = nodes.filter((node) => {
+      const category = resolveEssentialsCategory(node)
+      if (!category) return false
+      categoryByNode.set(node, category)
+      return true
     })
-    this.sortEssentialsFolders(tree)
+
+    const tree = buildNodeDefTree(essentialNodes, {
+      pathExtractor: (node) => [categoryByNode.get(node)!, node.name]
+    })
+    this.sortEssentialsTree(tree)
     return [{ tree }]
   }
 
-  private sortEssentialsFolders(tree: TreeNode): void {
+  private sortEssentialsTree(tree: TreeNode): void {
     if (!tree.children) return
+
+    sortByKnownOrder(
+      tree.children,
+      (node) => node.label,
+      ESSENTIALS_CATEGORY_RANK
+    )
+
     for (const folder of tree.children) {
       if (!folder.children) continue
-      const order = ESSENTIALS_NODES[folder.label as EssentialsCategory]
-      if (!order) continue
-      const orderLen = order.length
-      folder.children.sort((a, b) => {
-        const ai = order.indexOf(a.data?.name ?? a.label ?? '')
-        const bi = order.indexOf(b.data?.name ?? b.label ?? '')
-        return (ai === -1 ? orderLen : ai) - (bi === -1 ? orderLen : bi)
-      })
+      const rankMap = ESSENTIALS_NODE_RANK[folder.label as EssentialsCategory]
+      if (!rankMap) continue
+      sortByKnownOrder(
+        folder.children,
+        (node) => node.data?.name ?? node.label,
+        rankMap
+      )
     }
   }
 

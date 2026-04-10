@@ -12,6 +12,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -56,20 +57,8 @@ function makeWorkflowData(
   }
 }
 
-const { mockShowMissingNodes, mockShowMissingModels, mockConfirm } = vi.hoisted(
-  () => ({
-    mockShowMissingNodes: vi.fn(),
-    mockShowMissingModels: vi.fn(),
-    mockConfirm: vi.fn()
-  })
-)
-
-vi.mock('@/composables/useMissingNodesDialog', () => ({
-  useMissingNodesDialog: () => ({ show: mockShowMissingNodes, hide: vi.fn() })
-}))
-
-vi.mock('@/composables/useMissingModelsDialog', () => ({
-  useMissingModelsDialog: () => ({ show: mockShowMissingModels, hide: vi.fn() })
+const { mockConfirm } = vi.hoisted(() => ({
+  mockConfirm: vi.fn()
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -82,7 +71,7 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
-    rootGraph: { serialize: vi.fn(() => ({})) },
+    rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
     loadGraphData: vi.fn()
   }
 }))
@@ -104,7 +93,11 @@ vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => null
+  useTelemetry: () => ({
+    trackDefaultViewSet: vi.fn(),
+    trackWorkflowSaved: vi.fn(),
+    trackEnterLinear: vi.fn()
+  })
 }))
 
 vi.mock('@/platform/workflow/persistence/stores/workflowDraftStore', () => ({
@@ -130,13 +123,6 @@ vi.mock('@/stores/workspaceStore', () => ({
   })
 }))
 
-const MISSING_MODELS: PendingWarnings['missingModels'] = {
-  missingModels: [
-    { name: 'model.safetensors', url: '', directory: 'checkpoints' }
-  ],
-  paths: { checkpoints: ['/models/checkpoints'] }
-}
-
 function createWorkflow(
   warnings: PendingWarnings | null = null,
   options: { loadable?: boolean; path?: string } = {}
@@ -156,7 +142,6 @@ function createWorkflow(
 function enableWarningSettings() {
   vi.spyOn(useSettingStore(), 'get').mockImplementation(
     (key: string): boolean => {
-      if (key === 'Comfy.Workflow.ShowMissingNodesWarning') return true
       if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
       return false
     }
@@ -178,43 +163,35 @@ describe('useWorkflowService', () => {
       const workflow = createWorkflow(null)
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).not.toHaveBeenCalled()
-      expect(mockShowMissingModels).not.toHaveBeenCalled()
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
     })
 
-    it('should show missing nodes dialog and clear warnings', () => {
+    it('should surface missing nodes and clear warnings', () => {
       const missingNodeTypes = ['CustomNode1', 'CustomNode2']
       const workflow = createWorkflow({ missingNodeTypes })
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).toHaveBeenCalledWith({
-        missingNodeTypes
-      })
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(missingNodeTypes)
       expect(workflow.pendingWarnings).toBeNull()
     })
 
-    it('should show missing models dialog and clear warnings', () => {
-      const workflow = createWorkflow({ missingModels: MISSING_MODELS })
-
-      useWorkflowService().showPendingWarnings(workflow)
-
-      expect(mockShowMissingModels).toHaveBeenCalledWith(MISSING_MODELS)
-      expect(workflow.pendingWarnings).toBeNull()
-    })
-
-    it('should not show dialogs when settings are disabled', () => {
+    it('should always surface missing nodes regardless of settings', () => {
       vi.spyOn(useSettingStore(), 'get').mockReturnValue(false)
 
       const workflow = createWorkflow({
-        missingNodeTypes: ['CustomNode1'],
-        missingModels: MISSING_MODELS
+        missingNodeTypes: ['CustomNode1']
       })
 
       useWorkflowService().showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).not.toHaveBeenCalled()
-      expect(mockShowMissingModels).not.toHaveBeenCalled()
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -227,7 +204,9 @@ describe('useWorkflowService', () => {
       service.showPendingWarnings(workflow)
       service.showPendingWarnings(workflow)
 
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -250,7 +229,9 @@ describe('useWorkflowService', () => {
         { loadable: true }
       )
 
-      expect(mockShowMissingNodes).not.toHaveBeenCalled()
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).not.toHaveBeenCalled()
 
       await useWorkflowService().openWorkflow(workflow)
 
@@ -261,9 +242,9 @@ describe('useWorkflowService', () => {
         workflow,
         expect.objectContaining({ deferWarnings: true })
       )
-      expect(mockShowMissingNodes).toHaveBeenCalledWith({
-        missingNodeTypes: ['CustomNode1']
-      })
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).toBeNull()
     })
 
@@ -280,18 +261,22 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
 
       await service.openWorkflow(workflow1)
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
-      expect(mockShowMissingNodes).toHaveBeenCalledWith({
-        missingNodeTypes: ['MissingNodeA']
-      })
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['MissingNodeA'])
       expect(workflow1.pendingWarnings).toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
       await service.openWorkflow(workflow2)
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(2)
-      expect(mockShowMissingNodes).toHaveBeenLastCalledWith({
-        missingNodeTypes: ['MissingNodeB']
-      })
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(2)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenLastCalledWith(['MissingNodeB'])
       expect(workflow2.pendingWarnings).toBeNull()
     })
 
@@ -304,10 +289,14 @@ describe('useWorkflowService', () => {
       const service = useWorkflowService()
 
       await service.openWorkflow(workflow, { force: true })
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
 
       await service.openWorkflow(workflow, { force: true })
-      expect(mockShowMissingNodes).toHaveBeenCalledTimes(1)
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -339,48 +328,6 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().saveWorkflow(workflow)
 
-      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('saveWorkflowAs', () => {
-    let workflowStore: ReturnType<typeof useWorkflowStore>
-
-    beforeEach(() => {
-      setActivePinia(createTestingPinia())
-      workflowStore = useWorkflowStore()
-    })
-
-    it('should rename then save when workflow is temporary', async () => {
-      const workflow = createModeTestWorkflow({
-        path: 'workflows/Unsaved Workflow.json'
-      })
-      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
-      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
-      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue()
-      vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
-
-      const result = await useWorkflowService().saveWorkflowAs(workflow, {
-        filename: 'my-workflow'
-      })
-
-      expect(result).toBe(true)
-      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
-        workflow,
-        'workflows/my-workflow.json'
-      )
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
-    })
-
-    it('should return false when no filename is provided', async () => {
-      const workflow = createModeTestWorkflow({
-        path: 'workflows/test.json'
-      })
-      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
-
-      const result = await useWorkflowService().saveWorkflowAs(workflow)
-
-      expect(result).toBe(false)
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
     })
   })
@@ -553,6 +500,20 @@ describe('useWorkflowService', () => {
         expect(workflow.initialMode).toBe('graph')
         expect(appMode.mode.value).toBe('builder:arrange')
       })
+
+      it('sets activeMode even when initialMode already matches', () => {
+        const workflow = createModeTestWorkflow({
+          initialMode: 'app',
+          activeMode: null
+        })
+        workflowStore.activeWorkflow = workflow
+
+        // mode.value is 'app' via initialMode fallback, but activeMode
+        // must still be set so the UI transitions to app view
+        appMode.setMode('app')
+
+        expect(workflow.activeMode).toBe('app')
+      })
     })
 
     describe('afterLoadNewGraph initializes initialMode', () => {
@@ -701,6 +662,7 @@ describe('useWorkflowService', () => {
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      app.rootGraph.extra = {}
     })
 
     function createTemporaryWorkflow(
@@ -717,6 +679,34 @@ describe('useWorkflowService', () => {
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
       return workflow as LoadedComfyWorkflow
     }
+
+    it('should rename then save when workflow is temporary', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(true)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('should return false when no filename is provided', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+
+      const result = await service.saveWorkflowAs(workflow)
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
 
     it('appends .app.json extension when initialMode is app', async () => {
       const workflow = createTemporaryWorkflow()
@@ -751,6 +741,211 @@ describe('useWorkflowService', () => {
         workflow,
         'workflows/my-workflow.json'
       )
+    })
+
+    it('uses isApp option over initialMode when provided (graph -> app)', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.initialMode = 'graph'
+
+      await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow',
+        isApp: true
+      })
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.app.json'
+      )
+    })
+
+    it('uses isApp option over initialMode when provided (app -> graph)', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.initialMode = 'app'
+
+      await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow',
+        isApp: false
+      })
+
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+    })
+
+    it('creates a copy when saving same name with different mode (not self-overwrite)', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/test.json',
+        initialMode: 'graph'
+      })
+
+      const copy = createModeTestWorkflow({
+        path: 'workflows/test.app.json'
+      })
+      vi.spyOn(workflowStore, 'saveAs').mockReturnValue(copy)
+      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(copy)
+
+      await service.saveWorkflowAs(source, {
+        filename: 'test',
+        isApp: true
+      })
+
+      // Different extension means different path, so it's not a self-overwrite
+      // — a new copy is created instead of modifying the source in place
+      expect(source.initialMode).toBe('graph')
+      expect(workflowStore.saveAs).toHaveBeenCalledWith(
+        source,
+        'workflows/test.app.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+    })
+
+    it('self-overwrites when saving same name with same mode', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/test.app.json',
+        initialMode: 'app'
+      })
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
+      mockConfirm.mockResolvedValue(true)
+
+      await service.saveWorkflowAs(source, {
+        filename: 'test',
+        isApp: true
+      })
+
+      // Same path → self-overwrite: saves in place via saveWorkflow, no copy
+      expect(workflowStore.saveAs).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source)
+    })
+
+    it('does not modify source workflow mode when saving persisted workflow as different mode', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/original.json',
+        initialMode: 'graph'
+      })
+
+      const copy = createModeTestWorkflow({
+        path: 'workflows/copy.app.json'
+      })
+      vi.spyOn(workflowStore, 'saveAs').mockReturnValue(copy)
+      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(copy)
+
+      await service.saveWorkflowAs(source, {
+        filename: 'copy',
+        isApp: true
+      })
+
+      expect(source.initialMode).toBe('graph')
+      expect(copy.initialMode).toBe('app')
+      expect(workflowStore.saveAs).toHaveBeenCalledWith(
+        source,
+        'workflows/copy.app.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+    })
+
+    it('does not modify source workflow mode when saving app as graph', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/original.app.json',
+        initialMode: 'app'
+      })
+
+      const copy = createModeTestWorkflow({
+        path: 'workflows/copy.json'
+      })
+      vi.spyOn(workflowStore, 'saveAs').mockReturnValue(copy)
+      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(copy)
+
+      await service.saveWorkflowAs(source, {
+        filename: 'copy',
+        isApp: false
+      })
+
+      expect(source.initialMode).toBe('app')
+      expect(copy.initialMode).toBe('graph')
+      expect(workflowStore.saveAs).toHaveBeenCalledWith(
+        source,
+        'workflows/copy.json'
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+    })
+
+    function captureLinearModeAtSaveTime() {
+      let value: boolean | undefined
+      vi.mocked(workflowStore.saveWorkflow).mockImplementation(async () => {
+        value = app.rootGraph.extra?.linearMode as boolean | undefined
+      })
+      return () => value
+    }
+
+    it('sets linearMode in graph data before saving (graph -> app)', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.initialMode = 'graph'
+      app.rootGraph.extra = { linearMode: false }
+      const getLinearMode = captureLinearModeAtSaveTime()
+
+      await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow',
+        isApp: true
+      })
+
+      expect(getLinearMode()).toBe(true)
+    })
+
+    it('sets linearMode in graph data before saving (app -> graph)', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.initialMode = 'app'
+      app.rootGraph.extra = { linearMode: true }
+      const getLinearMode = captureLinearModeAtSaveTime()
+
+      await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow',
+        isApp: false
+      })
+
+      expect(getLinearMode()).toBe(false)
+    })
+
+    it('sets linearMode before saving persisted workflow copy', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/original.json',
+        initialMode: 'graph'
+      })
+      app.rootGraph.extra = { linearMode: false }
+
+      const copy = createModeTestWorkflow({
+        path: 'workflows/original.app.json'
+      })
+      vi.spyOn(workflowStore, 'saveAs').mockReturnValue(copy)
+      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(copy)
+      const getLinearMode = captureLinearModeAtSaveTime()
+
+      await service.saveWorkflowAs(source, {
+        filename: 'original',
+        isApp: true
+      })
+
+      expect(getLinearMode()).toBe(true)
+    })
+
+    it('does not change initialMode when isApp is omitted (persisted copy)', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/original.app.json',
+        initialMode: 'app'
+      })
+
+      // Real saveAs copies initialMode from source; replicate that here
+      const copy = createModeTestWorkflow({
+        path: 'workflows/copy.app.json',
+        initialMode: 'app'
+      })
+      vi.spyOn(workflowStore, 'saveAs').mockReturnValue(copy)
+      vi.spyOn(workflowStore, 'openWorkflow').mockResolvedValue(copy)
+
+      await service.saveWorkflowAs(source, { filename: 'copy' })
+
+      // saveWorkflowAs should not change initialMode when isApp is omitted
+      expect(copy.initialMode).toBe('app')
     })
   })
 

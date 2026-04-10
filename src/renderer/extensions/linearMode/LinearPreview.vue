@@ -103,6 +103,7 @@ async function rerun(e: Event) {
     </Button>
     <Button
       v-if="isWorkflowActive && !selectedItem"
+      data-testid="linear-cancel-run"
       variant="destructive"
       @click="cancelActiveWorkflowJobs()"
     >
@@ -136,6 +137,7 @@ async function rerun(e: Event) {
     v-if="canShowPreview && latentPreview"
     :mobile
     :src="latentPreview"
+    :show-size="false"
   />
   <MediaOutputPreview
     v-else-if="selectedOutput"

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe(
   'Mobile Baseline Snapshots',
@@ -10,9 +10,7 @@ test.describe(
     test('@mobile empty canvas', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
       await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
-      await expect(async () => {
-        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      }).toPass({ timeout: 5000 })
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png')
     })
@@ -21,6 +19,20 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('default')
       await expect(comfyPage.canvas).toHaveScreenshot(
         'mobile-default-workflow.png'
+      )
+    })
+
+    test('@mobile graph canvas toolbar visible', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      await comfyPage.nextFrame()
+
+      const minimapButton = comfyPage.page.getByTestId(
+        TestIds.canvas.toggleMinimapButton
+      )
+      await expect(minimapButton).toBeVisible()
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'mobile-graph-canvas-toolbar.png'
       )
     })
 

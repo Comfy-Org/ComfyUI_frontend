@@ -25,6 +25,10 @@
     },
     "tooltip": "시스템 제목 표시 줄을 숨기려면 사용자 정의 옵션을 선택하세요"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "애니메이션 비활성화",
+    "tooltip": "대부분의 CSS 애니메이션과 전환 효과를 끕니다. 디스플레이 GPU가 생성에도 사용될 때 추론 속도가 빨라집니다."
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "캔버스 배경 이미지",
     "tooltip": "캔버스 배경에 사용할 이미지 URL입니다. 출력 패널에서 이미지를 마우스 오른쪽 버튼으로 클릭한 후 \"배경으로 설정\"을 선택해 사용할 수 있습니다."
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "부동 소수점 위젯 반올림 소수 자리 수 [0 = 자동]",
     "tooltip": "(페이지 새로 고침 필요)"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "자동 팬 속도",
+    "tooltip": "캔버스 가장자리로 드래그할 때 자동 팬의 최대 속도입니다. 0으로 설정하면 자동 팬이 비활성화됩니다."
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "왼쪽 하단 모서리에 캔버스 정보 표시 (fps 등)"
@@ -454,9 +462,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "누락된 모델 경고 표시"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "누락된 노드 경고 표시"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"
   },
@@ -480,6 +485,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "그룹 클릭 시 자식 선택",
+    "tooltip": "활성화하면 그룹을 클릭할 때 그룹 안의 모든 노드와 항목이 선택됩니다"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "새 노드를 항상 축소",

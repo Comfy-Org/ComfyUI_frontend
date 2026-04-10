@@ -25,6 +25,10 @@
     },
     "tooltip": "自訂：以 ComfyUI 的頂部選單取代系統標題列"
   },
+  "Comfy_Appearance_DisableAnimations": {
+    "name": "停用動畫",
+    "tooltip": "關閉大多數 CSS 動畫與過渡效果。當顯示卡同時用於生成時，可加快推理速度。"
+  },
   "Comfy_Canvas_BackgroundImage": {
     "name": "畫布背景圖片",
     "tooltip": "畫布背景的圖片網址。你可以在輸出面板中右鍵點擊圖片並選擇「設為背景」來使用，或是使用上傳按鈕上傳你自己的圖片。"
@@ -94,6 +98,10 @@
   "Comfy_FloatRoundingPrecision": {
     "name": "浮點元件小數點位數 [0 = 自動]。",
     "tooltip": "（需重新載入頁面）"
+  },
+  "Comfy_Graph_AutoPanSpeed": {
+    "name": "自動平移速度",
+    "tooltip": "拖曳至畫布邊緣時自動平移的最大速度。設為 0 可停用自動平移。"
   },
   "Comfy_Graph_CanvasInfo": {
     "name": "在左下角顯示畫布資訊（fps 等）"
@@ -454,9 +462,6 @@
   "Comfy_Workflow_ShowMissingModelsWarning": {
     "name": "顯示缺少模型警告"
   },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "顯示缺少節點警告"
-  },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"
   },
@@ -480,6 +485,10 @@
   },
   "LiteGraph_ContextMenu_Scaling": {
     "name": "放大時縮放節點組合小工具選單（清單）"
+  },
+  "LiteGraph_Group_SelectChildrenOnClick": {
+    "name": "點擊時選取群組內的子項目",
+    "tooltip": "啟用後，點擊群組會選取群組內的所有節點與項目"
   },
   "LiteGraph_Node_DefaultPadding": {
     "name": "新增節點時自動縮小",
