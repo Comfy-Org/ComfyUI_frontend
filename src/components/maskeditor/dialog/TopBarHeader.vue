@@ -106,7 +106,6 @@
         <button :class="textButtonClass" @click="onInvert">
           {{ t('maskEditor.invert') }}
         </button>
-
         <button :class="textButtonClass" @click="onClear">
           {{ t('maskEditor.clear') }}
         </button>

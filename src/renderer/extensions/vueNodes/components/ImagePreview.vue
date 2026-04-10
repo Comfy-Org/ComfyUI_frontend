@@ -89,6 +89,22 @@
           <i-comfy:mask class="size-4" />
         </button>
 
+        <button
+          v-if="!hasMultipleImages"
+          :class="actionButtonClass"
+          :title="$t('g.clearMask')"
+          :aria-label="$t('g.clearMask')"
+          :disabled="isClearingMask"
+          @click.stop="handleClearMask"
+        >
+          <i
+            v-if="isClearingMask"
+            class="icon-[lucide--loader-circle] size-4 animate-spin"
+            aria-hidden="true"
+          />
+          <i v-else class="icon-[lucide--eraser] size-4" aria-hidden="true" />
+        </button>
+
         <!-- Download Button -->
         <button
           :class="actionButtonClass"
@@ -188,7 +204,7 @@ interface ImagePreviewProps {
 const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const maskEditor = useMaskEditor()
+const { openMaskEditor, clearMask, isClearingMask } = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
 
@@ -284,7 +300,22 @@ function handleEditMask() {
   if (!nodeId) return
   const node = resolveNode(Number(nodeId))
   if (!node) return
-  maskEditor.openMaskEditor(node)
+  openMaskEditor(node)
+}
+
+async function handleClearMask() {
+  if (!nodeId) return
+  const node = resolveNode(Number(nodeId))
+  if (!node) return
+  try {
+    await clearMask(node)
+  } catch {
+    toastStore.add({
+      severity: 'error',
+      summary: t('maskEditor.clearMaskError'),
+      detail: t('maskEditor.clearMaskFailed')
+    })
+  }
 }
 
 function handleDownload() {
