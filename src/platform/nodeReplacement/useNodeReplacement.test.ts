@@ -713,7 +713,9 @@ describe('useNodeReplacement', () => {
 
       // Each widget's setNodeId should be called with the node ID
       for (const widget of newNode.widgets!) {
-        const bindable = widget as unknown as { setNodeId: ReturnType<typeof vi.fn> }
+        const bindable = widget as unknown as {
+          setNodeId: ReturnType<typeof vi.fn>
+        }
         expect(bindable.setNodeId).toHaveBeenCalledWith(1)
       }
     })
