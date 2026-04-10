@@ -37,10 +37,21 @@ jobs:
           path: temp/coverage-shards
           if_no_artifact_found: warn
 
+      - name: Install lcov
+        run: sudo apt-get install -y -qq lcov
+
       - name: Merge shard coverage into single LCOV
         run: |
           mkdir -p coverage/playwright
-          pnpm exec tsx scripts/merge-lcov.ts temp/coverage-shards coverage/playwright/coverage.lcov
+          LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
+          if [ -z "$LCOV_FILES" ]; then
+            echo "No coverage.lcov files found"
+            touch coverage/playwright/coverage.lcov
+            exit 0
+          fi
+          ADD_ARGS=""
+          for f in $LCOV_FILES; do ADD_ARGS="$ADD_ARGS -a $f"; done
+          lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
           wc -l coverage/playwright/coverage.lcov
 
       - name: Upload merged coverage data
