@@ -18,12 +18,12 @@ export function useReconnectingNotification() {
     summary: t('g.reconnecting')
   }
 
-  const toastVisible = ref(false)
+  const reconnectingToastShown = ref(false)
 
   const { start, stop } = useTimeoutFn(
     () => {
       toast.add(reconnectingMessage)
-      toastVisible.value = true
+      reconnectingToastShown.value = true
     },
     RECONNECT_TOAST_DELAY_MS,
     { immediate: false }
@@ -38,14 +38,14 @@ export function useReconnectingNotification() {
     stop()
     if (settingStore.get('Comfy.Toast.DisableReconnectingToast')) return
 
-    if (toastVisible.value) {
+    if (reconnectingToastShown.value) {
       toast.remove(reconnectingMessage)
       toast.add({
         severity: 'success',
         summary: t('g.reconnected'),
         life: 2000
       })
-      toastVisible.value = false
+      reconnectingToastShown.value = false
     }
   }
 
