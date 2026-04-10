@@ -114,9 +114,7 @@ test.describe('Properties panel - Node settings', () => {
       await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeVisible()
 
       await panel.pinnedSwitch.click()
-      await expect(
-        nodeLocator.getByTestId('node-pin-indicator')
-      ).toBeHidden()
+      await expect(nodeLocator.getByTestId('node-pin-indicator')).toBeHidden()
     })
   })
 })

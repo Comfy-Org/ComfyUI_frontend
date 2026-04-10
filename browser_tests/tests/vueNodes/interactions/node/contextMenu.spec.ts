@@ -194,9 +194,7 @@ test.describe('Vue Node Context Menu', () => {
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('KSampler')
-      ).toBeHidden()
+      await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeHidden()
     })
   })
 
@@ -309,9 +307,7 @@ test.describe('Vue Node Context Menu', () => {
 
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('KSampler')
-      ).toBeHidden()
+      await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeHidden()
 
       // Unpack the subgraph
       await openContextMenu(comfyPage, 'New Subgraph')

@@ -182,9 +182,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
 
       await expect(overlay).toBeHidden()
-      await expect(
-        comfyPage.page.getByTestId('properties-panel')
-      ).toBeHidden()
+      await expect(comfyPage.page.getByTestId('properties-panel')).toBeHidden()
     })
 
     test('Close button (X) dismisses overlay', async ({ comfyPage }) => {

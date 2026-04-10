@@ -104,8 +104,6 @@ test.describe('Queue overlay', () => {
 
     await toggle.click()
 
-    await expect(
-      comfyPage.page.locator('[data-job-id]').first()
-    ).toBeHidden()
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeHidden()
   })
 })

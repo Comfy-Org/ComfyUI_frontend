@@ -43,12 +43,8 @@ test.describe('Advanced Widget Visibility', () => {
     await expect(node.getByLabel('height', { exact: true })).toBeVisible()
 
     // Advanced widgets should not be rendered
-    await expect(
-      node.getByLabel('max_shift', { exact: true })
-    ).toBeHidden()
-    await expect(
-      node.getByLabel('base_shift', { exact: true })
-    ).toBeHidden()
+    await expect(node.getByLabel('max_shift', { exact: true })).toBeHidden()
+    await expect(node.getByLabel('base_shift', { exact: true })).toBeHidden()
 
     // "Show advanced inputs" button should be present
     await expect(node.getByText('Show advanced inputs')).toBeVisible()
