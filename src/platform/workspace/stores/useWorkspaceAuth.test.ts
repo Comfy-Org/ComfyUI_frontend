@@ -580,6 +580,71 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(workspaceToken.value).toBe('refreshed-token')
     })
+
+    it('keeps the current workspace token when refresh auth fails before expiry', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      mockGetIdToken.mockResolvedValue(undefined)
+      const refreshPromise = store.refreshToken()
+      await vi.advanceTimersByTimeAsync(7_000)
+      await refreshPromise
+
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('workspace-token-abc')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'recovered-token'
+          })
+      })
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      await vi.waitFor(() => {
+        expect(workspaceToken.value).toBe('recovered-token')
+      })
+    })
+
+    it('clears workspace context when refresh keeps failing after token expiry', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      vi.setSystemTime(Date.now() + 2 * 60 * 60 * 1000)
+      mockGetIdToken.mockResolvedValue(undefined)
+
+      const refreshPromise = store.refreshToken()
+      await vi.advanceTimersByTimeAsync(7_000)
+      await refreshPromise
+
+      expect(currentWorkspace.value).toBeNull()
+      expect(workspaceToken.value).toBeNull()
+    })
   })
 
   describe('isAuthenticated computed', () => {
