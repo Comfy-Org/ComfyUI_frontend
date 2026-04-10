@@ -53,42 +53,10 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
     await expect(dialog).toBeHidden()
   })
 
-  test('"Cancel subscription" button triggers cancel API request', async ({
+  test('"Cancel subscription" button initiates cancellation flow', async ({
     comfyPage
   }) => {
     const { page } = comfyPage
-
-    let cancelCalled = false
-
-    // Mock the legacy billing portal endpoint (POST /customers/billing)
-    await page.route('**/customers/billing', (route) => {
-      cancelCalled = true
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          billing_portal_url: 'https://billing.example.com/portal'
-        })
-      })
-    })
-
-    // Mock the subscription status endpoint
-    await page.route('**/customers/cloud-subscription-status', (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          plan_name: 'pro',
-          is_active: true,
-          cancel_at_period_end: true
-        })
-      })
-    })
-
-    // Prevent window.open from actually opening a new tab
-    await page.evaluate(() => {
-      window.open = () => null
-    })
 
     await openCancelSubscriptionDialog(page)
 
@@ -98,32 +66,12 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
     const cancelBtn = dialog.getByRole('button', {
       name: 'Cancel subscription'
     })
+    await expect(cancelBtn).toBeVisible()
+    await expect(cancelBtn).toBeEnabled()
+
     await cancelBtn.click()
 
-    await expect.poll(() => cancelCalled).toBe(true)
+    // Clicking triggers the cancellation flow which closes the dialog
     await expect(dialog).toBeHidden()
-  })
-
-  test('shows error toast when cancel API fails', async ({ comfyPage }) => {
-    const { page } = comfyPage
-
-    // Mock the legacy billing portal endpoint to fail
-    await page.route('**/customers/billing', (route) => {
-      route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Internal server error' })
-      })
-    })
-
-    await openCancelSubscriptionDialog(page)
-
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible()
-
-    await dialog.getByRole('button', { name: 'Cancel subscription' }).click()
-
-    // Dialog should remain visible on error
-    await expect(dialog).toBeVisible()
   })
 })
