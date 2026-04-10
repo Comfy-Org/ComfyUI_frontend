@@ -346,6 +346,46 @@ describe('appModeStore', () => {
     })
   })
 
+  describe('updateInputConfig', () => {
+    it('sets config on an existing input', () => {
+      store.selectedInputs.push([1, 'prompt'])
+
+      store.updateInputConfig(1 as NodeId, 'prompt', { height: 200 })
+
+      expect(store.selectedInputs[0][2]).toEqual({ height: 200 })
+    })
+
+    it('is a no-op when entry is not found', () => {
+      store.selectedInputs.push([1, 'prompt'])
+
+      store.updateInputConfig(99 as NodeId, 'prompt', { height: 200 })
+
+      expect(store.selectedInputs[0][2]).toBeUndefined()
+    })
+
+    it('matches nodeId with loose equality', () => {
+      store.selectedInputs.push(['1', 'prompt'])
+
+      store.updateInputConfig(1 as NodeId, 'prompt', { height: 200 })
+
+      expect(store.selectedInputs[0][2]).toEqual({ height: 200 })
+    })
+
+    it('triggers linearData sync watcher', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      store.selectedInputs.push([42, 'prompt'])
+      await nextTick()
+
+      store.updateInputConfig(42 as NodeId, 'prompt', { height: 300 })
+      await nextTick()
+
+      expect(app.rootGraph.extra.linearData).toEqual({
+        inputs: [[42, 'prompt', { height: 300 }]],
+        outputs: []
+      })
+    })
+  })
+
   describe('autoEnableVueNodes', () => {
     it('enables Vue nodes when entering select mode with them disabled', async () => {
       mockSettings.store['Comfy.VueNodes.Enabled'] = false

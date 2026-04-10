@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { computed, provide, shallowRef } from 'vue'
+
+import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -8,7 +10,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
@@ -28,6 +30,9 @@ import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
   key: string
+  nodeId: NodeId
+  widgetName: string
+  persistedHeight: number | undefined
   nodeData: ReturnType<typeof nodeToNodeData> & {
     widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
   }
@@ -43,6 +48,11 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const maskEditor = useMaskEditor()
+
+const { onPointerDown } = useAppModeWidgetResizing(
+  (nodeId, widgetName, config) =>
+    appModeStore.updateInputConfig(nodeId, widgetName, config)
+)
 
 provide(HideLayoutFieldKey, true)
 provide(OverlayAppendToKey, 'body')
@@ -61,7 +71,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
     ReturnType<typeof nodeToNodeData>
   >()
 
-  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName]) => {
+  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName, config]) => {
     const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
 
@@ -90,6 +100,9 @@ const mappedSelections = computed((): WidgetEntry[] => {
     return [
       {
         key: `${nodeId}:${widgetName}`,
+        nodeId,
+        widgetName,
+        persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,
           widgets: [matchingWidget]
@@ -142,7 +155,14 @@ function nodeToNodeData(node: LGraphNode) {
 </script>
 <template>
   <div
-    v-for="{ key, nodeData, action } in mappedSelections"
+    v-for="{
+      key,
+      nodeId,
+      widgetName,
+      persistedHeight,
+      nodeData,
+      action
+    } in mappedSelections"
     :key
     :class="
       cn(
@@ -204,8 +224,20 @@ function nodeToNodeData(node: LGraphNode) {
       </Popover>
     </div>
     <div
-      :class="builderMode && 'pointer-events-none'"
+      :style="
+        persistedHeight
+          ? { '--persisted-height': `${persistedHeight}px` }
+          : undefined
+      "
+      :class="
+        cn(
+          builderMode && 'pointer-events-none',
+          persistedHeight &&
+            '**:data-[slot=drop-zone-indicator]:h-(--persisted-height) [&_textarea]:h-(--persisted-height)'
+        )
+      "
       :inert="builderMode || undefined"
+      @pointerdown.capture="(e) => onPointerDown(nodeId, widgetName, e)"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"
