@@ -70,7 +70,7 @@ function updateContentBounds() {
   if (sampleNodeId !== null && nodes.size > 0 && !nodes.has(sampleNodeId)) {
     contentBounds.reset()
   }
-  sampleNodeId = nodes.size > 0 ? nodes.keys().next().value ?? null : null
+  sampleNodeId = nodes.size > 0 ? (nodes.keys().next().value ?? null) : null
 
   for (const [, layout] of nodes) {
     contentBounds.expandToInclude(layout.bounds)
