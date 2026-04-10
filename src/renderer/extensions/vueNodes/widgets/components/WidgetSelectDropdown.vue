@@ -127,6 +127,8 @@ const uploadable = computed(() => {
 })
 
 const acceptTypes = computed(() => {
+  // Be permissive with accept types because backend uses libraries
+  // that can handle a wide range of formats
   switch (props.assetKind) {
     case 'image':
       return 'image/*'

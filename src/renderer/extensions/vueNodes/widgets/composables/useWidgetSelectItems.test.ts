@@ -54,7 +54,9 @@ vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
     mockResolveOutputAssetItems(...args)
 }))
 
-function createDefaultOptions(overrides: Record<string, unknown> = {}) {
+function createDefaultOptions(
+  overrides: Partial<Parameters<typeof useWidgetSelectItems>[0]> = {}
+) {
   return {
     values: () => ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
     getOptionLabel: () =>
