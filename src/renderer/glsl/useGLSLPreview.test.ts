@@ -319,6 +319,38 @@ describe('useGLSLPreview', () => {
       expect(mockRendererFactory.compileFragment).not.toHaveBeenCalled()
     })
 
+    it('uses custom resolution when size_mode is custom', async () => {
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
+      store._widgetMap.set('size_mode', { value: 'custom' })
+      store._widgetMap.set('size_mode.width', { value: 800 })
+      store._widgetMap.set('size_mode.height', { value: 600 })
+
+      const node = createMockNode()
+      await setupAndRender(node)
+
+      expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(800, 600)
+
+      store._widgetMap.delete('size_mode')
+      store._widgetMap.delete('size_mode.width')
+      store._widgetMap.delete('size_mode.height')
+    })
+
+    it('uses default resolution when size_mode is not custom', async () => {
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
+      store._widgetMap.set('size_mode', { value: 'from_input' })
+
+      const node = createMockNode()
+      await setupAndRender(node)
+
+      expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(512, 512)
+
+      store._widgetMap.delete('size_mode')
+    })
+
     it('disposes renderer and cancels debounce on cleanup', async () => {
       const node = createMockNode()
       const { dispose } = await setupAndRender(node)
