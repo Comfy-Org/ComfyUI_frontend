@@ -41,10 +41,6 @@
   --color-sand-300: #888682;
   --color-sand-400: #eed7ac;
 
-  --color-slate-100: #9c9eab;
-  --color-slate-200: #9fa2bd;
-  --color-slate-300: #5b5e7d;
-
   --color-azure-300: #78bae9;
   --color-azure-400: #31b9f4;
   --color-azure-600: #0b8ce9;
@@ -53,7 +49,6 @@
 
   --color-jade-400: #47e469;
   --color-jade-600: #00cd72;
-  --color-graphite-400: #9c9eab;
 
   --color-gold-400: #fcbf64;
   --color-gold-500: #fdab34;
@@ -212,7 +207,7 @@
   --node-component-slot-dot-outline-opacity: 5%;
   --node-component-slot-dot-outline: var(--color-black);
   --node-component-slot-text: var(--color-ash-800);
-  --node-component-surface-highlight: var(--color-ash-500);
+  --node-component-surface-highlight: var(--color-smoke-800);
   --node-component-surface-hovered: var(--color-smoke-200);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-white);
@@ -231,7 +226,7 @@
   --node-stroke-error: var(--color-error);
   --node-stroke-executing: var(--color-azure-600);
 
-  --text-secondary: var(--color-ash-500);
+  --text-secondary: var(--color-smoke-800);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
 
@@ -268,7 +263,7 @@
     --secondary-background-selected
   );
   --component-node-widget-background-disabled: var(--color-alpha-ash-500-20);
-  --component-node-widget-background-highlighted: var(--color-ash-500);
+  --component-node-widget-background-highlighted: var(--color-smoke-800);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-400);
 
@@ -348,19 +343,19 @@
   --node-component-border-error: var(--color-danger-100);
   --node-component-border-executing: var(--color-blue-500);
   --node-component-border-selected: var(--color-charcoal-200);
-  --node-component-header-icon: var(--color-slate-300);
+  --node-component-header-icon: var(--muted-foreground);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);
   --node-component-ring: rgb(var(--color-smoke-500) / 20%);
   --node-component-slot-dot-outline-opacity: 10%;
   --node-component-slot-dot-outline: var(--color-white);
-  --node-component-slot-text: var(--color-slate-200);
-  --node-component-surface-highlight: var(--color-slate-100);
+  --node-component-slot-text: var(--muted-foreground);
+  --node-component-surface-highlight: var(--color-smoke-800);
   --node-component-surface-hovered: var(--color-charcoal-600);
   --node-component-surface-selected: var(--color-charcoal-200);
   --node-component-surface: var(--color-charcoal-600);
   --node-component-tooltip: var(--color-white);
-  --node-component-tooltip-border: var(--color-slate-300);
+  --node-component-tooltip-border: var(--color-charcoal-200);
   --node-component-tooltip-surface: var(--color-charcoal-800);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-component-disabled: var(--color-alpha-charcoal-600-30);
@@ -378,7 +373,7 @@
   );
   --color-interface-panel-job-progress-border: var(--base-foreground);
 
-  --text-secondary: var(--color-slate-100);
+  --text-secondary: var(--muted-foreground);
   --text-primary: var(--color-white);
 
   --input-surface: rgb(130 130 130 / 0.1);
@@ -418,7 +413,7 @@
   --component-node-widget-background-disabled: var(
     --color-alpha-charcoal-600-30
   );
-  --component-node-widget-background-highlighted: var(--color-graphite-400);
+  --component-node-widget-background-highlighted: var(--color-smoke-800);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);
 
