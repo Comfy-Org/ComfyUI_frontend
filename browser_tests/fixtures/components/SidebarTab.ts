@@ -287,12 +287,9 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly emptyStateMessage: Locator
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
-  public readonly viewSettingsButton: Locator
   public readonly listViewOption: Locator
-  public readonly listViewButton: Locator
   public readonly gridViewOption: Locator
-  public readonly gridViewButton: Locator
-  public readonly backButton: Locator
+  public readonly backToAssetsButton: Locator
   public readonly copyJobIdButton: Locator
   public readonly previewDialog: Locator
   public readonly sortNewestFirst: Locator
@@ -304,10 +301,7 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly selectionCountButton: Locator
   public readonly deselectAllButton: Locator
   public readonly deleteSelectedButton: Locator
-  public readonly deleteSelectionButton: Locator
   public readonly downloadSelectedButton: Locator
-  public readonly downloadSelectionButton: Locator
-  public readonly backToAssetsButton: Locator
   public readonly skeletonLoaders: Locator
 
   constructor(public override readonly page: Page) {
@@ -320,12 +314,9 @@ export class AssetsSidebarTab extends SidebarTab {
     )
     this.searchInput = this.root.getByPlaceholder(/Search Assets/i)
     this.settingsButton = this.root.getByLabel('View settings')
-    this.viewSettingsButton = this.settingsButton
     this.listViewOption = this.page.getByText('List view')
-    this.listViewButton = this.listViewOption
     this.gridViewOption = this.page.getByText('Grid view')
-    this.gridViewButton = this.gridViewOption
-    this.backButton = this.page.getByRole('button', {
+    this.backToAssetsButton = this.page.getByRole('button', {
       name: 'Back to all assets'
     })
     this.copyJobIdButton = this.page.getByRole('button', {
@@ -349,13 +340,10 @@ export class AssetsSidebarTab extends SidebarTab {
       .getByTestId('assets-delete-selected')
       .or(this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
       .first()
-    this.deleteSelectionButton = this.deleteSelectedButton
     this.downloadSelectedButton = this.page
       .getByTestId('assets-download-selected')
       .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
       .first()
-    this.downloadSelectionButton = this.downloadSelectedButton
-    this.backToAssetsButton = this.backButton
     this.skeletonLoaders = this.root.locator('.animate-pulse')
   }
 
