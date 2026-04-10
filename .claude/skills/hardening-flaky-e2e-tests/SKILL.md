@@ -66,7 +66,7 @@ await expect(async () => {
 
 #### Rule: Wait for the Real Readiness Boundary
 
-Visible is not always ready. If behavior depends on internal state, wait on that state.
+Visible is not always ready. Prefer user-facing assertions when possible; poll internal state only when there is no UI surface to assert on.
 
 Common readiness boundaries:
 
@@ -95,7 +95,7 @@ get domWidgets(): Locator {
 await expect(comfyPage.domWidgets).toHaveCount(2)
 ```
 
-Keep the existing `async getCount()` method for backward compatibility — just add the locator getter alongside it.
+Replace count methods with locator getters so callers can use retrying assertions directly.
 
 #### Rule: Fix Check-then-Act Races in Helpers
 
@@ -171,13 +171,13 @@ await expect(async () => {
 
 ```bash
 # Targeted rerun with repetition
-pnpm test:browser:local -- browser_tests/tests/myFile.spec.ts --repeat-each 5
+pnpm test:browser:local -- browser_tests/tests/myFile.spec.ts --repeat-each 10
 
 # Single test by line number (avoids grep quoting issues on Windows)
 pnpm test:browser:local -- browser_tests/tests/myFile.spec.ts:42
 ```
 
-- Use `--repeat-each 5` for targeted flake verification.
+- Use `--repeat-each 10` for targeted flake verification (use 20 for single test cases).
 - Verify with the smallest command that exercises the flaky path.
 
 ### 6. Watch CI E2E Runs

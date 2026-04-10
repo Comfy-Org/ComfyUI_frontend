@@ -169,7 +169,11 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await appMode.enterBuilder()
 
     // State 1: Disabled "Save as" (no outputs selected)
+    await expect(appMode.footer.saveAsButton).toBeVisible()
     const disabledBox = await appMode.footer.saveAsButton.boundingBox()
+    if (!disabledBox)
+      throw new Error('saveAsButton boundingBox returned null while visible')
+    const disabledWidth = disabledBox.width
 
     // Select I/O to enable the button
     await appMode.steps.goToInputs()
@@ -182,7 +186,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
       .poll(
         async () => (await appMode.footer.saveAsButton.boundingBox())?.width
       )
-      .toBe(disabledBox!.width)
+      .toBe(disabledWidth)
 
     // Save the workflow to transition to the Save + chevron state
     await builderSaveAs(appMode, `${Date.now()} width-test`, 'App')
@@ -191,7 +195,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     // State 3: Save + chevron button group (saved workflow)
     await expect
       .poll(async () => (await appMode.footer.saveGroup.boundingBox())?.width)
-      .toBe(disabledBox!.width)
+      .toBe(disabledWidth)
   })
 
   test('Connect output popover appears when no outputs selected', async ({

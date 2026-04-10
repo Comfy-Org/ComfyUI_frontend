@@ -624,7 +624,9 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     // Cards are sorted newest-first: gamma (idx 0), beta (1), alpha (2)
     await cards.nth(1).click()
-    await cards.nth(2).click({ modifiers: ['ControlOrMeta'] })
+    await comfyPage.page.keyboard.down('Control')
+    await cards.nth(2).click()
+    await comfyPage.page.keyboard.up('Control')
 
     // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible({ timeout: 3000 })
