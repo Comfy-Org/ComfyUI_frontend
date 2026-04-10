@@ -5,13 +5,22 @@ import type { InputWidgetConfig } from '@/platform/workflow/management/stores/co
 
 import { useAppModeWidgetResizing } from './useAppModeWidgetResizing'
 
-function wrapWithTextarea(): {
+function setHeight(el: HTMLElement, height: number) {
+  Object.defineProperty(el, 'offsetHeight', {
+    value: height,
+    configurable: true
+  })
+}
+
+function wrapWithTextarea(initialHeight = 100): {
   wrapper: HTMLDivElement
   textarea: HTMLTextAreaElement
 } {
   const wrapper = document.createElement('div')
   const textarea = document.createElement('textarea')
   wrapper.appendChild(textarea)
+  document.body.appendChild(wrapper)
+  setHeight(textarea, initialHeight)
   return { wrapper, textarea }
 }
 
@@ -21,59 +30,128 @@ describe('useAppModeWidgetResizing', () => {
       vi.fn<
         (nodeId: NodeId, widgetName: string, config: InputWidgetConfig) => void
       >()
-    const { trackResizable, observedElements } =
-      useAppModeWidgetResizing(onResize)
-    return { onResize, trackResizable, observedElements }
+    const { onPointerDown } = useAppModeWidgetResizing(onResize)
+
+    function bind(wrapper: HTMLElement, nodeId: NodeId, widgetName: string) {
+      wrapper.addEventListener(
+        'pointerdown',
+        (e) => onPointerDown(nodeId, widgetName, e as PointerEvent),
+        { capture: true }
+      )
+    }
+
+    return { onResize, bind }
   }
 
-  it('tracks a resizable child element', () => {
-    const { trackResizable, observedElements } = setup()
+  it('persists height when textarea is resized via drag', () => {
+    const { bind, onResize } = setup()
     const { wrapper, textarea } = wrapWithTextarea()
+    bind(wrapper, 1 as NodeId, 'prompt')
 
-    trackResizable(wrapper, '1:prompt', 1 as NodeId, 'prompt')
+    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(textarea, 250)
+    window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(observedElements.value).toEqual([textarea])
+    expect(onResize).toHaveBeenCalledWith(1, 'prompt', { height: 250 })
   })
 
-  it('removes element when called with null', () => {
-    const { trackResizable, observedElements } = setup()
-    const { wrapper } = wrapWithTextarea()
+  it('does not persist when no height change occurs (e.g. a click)', () => {
+    const { bind, onResize } = setup()
+    const { wrapper, textarea } = wrapWithTextarea()
+    bind(wrapper, 1 as NodeId, 'prompt')
 
-    trackResizable(wrapper, '1:prompt', 1 as NodeId, 'prompt')
-    trackResizable(null, '1:prompt', 1 as NodeId, 'prompt')
+    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(observedElements.value).toEqual([])
+    expect(onResize).not.toHaveBeenCalled()
   })
 
-  it('replaces element when same key is re-tracked', () => {
-    const { trackResizable, observedElements } = setup()
-    const first = wrapWithTextarea()
-    const second = wrapWithTextarea()
+  it('persists once per drag gesture; stray pointerup is a no-op', () => {
+    const { bind, onResize } = setup()
+    const { wrapper, textarea } = wrapWithTextarea()
+    bind(wrapper, 1 as NodeId, 'prompt')
 
-    trackResizable(first.wrapper, '1:prompt', 1 as NodeId, 'prompt')
-    trackResizable(second.wrapper, '1:prompt', 1 as NodeId, 'prompt')
+    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(textarea, 250)
+    window.dispatchEvent(new PointerEvent('pointerup'))
+    window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(observedElements.value).toEqual([second.textarea])
+    expect(onResize).toHaveBeenCalledTimes(1)
   })
 
-  it('ignores elements with no resizable child', () => {
-    const { trackResizable, observedElements } = setup()
+  it('ignores pointerdown on non-resizable targets (label, button, popover)', () => {
+    const { bind, onResize } = setup()
     const wrapper = document.createElement('div')
+    const button = document.createElement('button')
+    wrapper.appendChild(button)
+    document.body.appendChild(wrapper)
+    bind(wrapper, 1 as NodeId, 'prompt')
 
-    trackResizable(wrapper, '1:prompt', 1 as NodeId, 'prompt')
+    button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(observedElements.value).toEqual([])
+    expect(onResize).not.toHaveBeenCalled()
   })
 
-  it('finds drop-zone-indicator as resizable child', () => {
-    const { trackResizable, observedElements } = setup()
+  it('persists when target is a descendant of the drop-zone-indicator', () => {
+    const { bind, onResize } = setup()
     const wrapper = document.createElement('div')
     const indicator = document.createElement('div')
     indicator.setAttribute('data-slot', 'drop-zone-indicator')
+    const inner = document.createElement('span')
+    indicator.appendChild(inner)
     wrapper.appendChild(indicator)
+    document.body.appendChild(wrapper)
+    setHeight(indicator, 100)
+    bind(wrapper, 1 as NodeId, 'image')
 
-    trackResizable(wrapper, '1:image', 1 as NodeId, 'image')
+    inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(indicator, 250)
+    window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(observedElements.value).toEqual([indicator])
+    expect(onResize).toHaveBeenCalledWith(1, 'image', { height: 250 })
+  })
+
+  it('drops a stale gesture when a new pointerdown starts before pointerup arrives', () => {
+    const { bind, onResize } = setup()
+    const first = wrapWithTextarea()
+    const second = wrapWithTextarea()
+    bind(first.wrapper, 1 as NodeId, 'prompt')
+    bind(second.wrapper, 2 as NodeId, 'other')
+
+    first.textarea.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true })
+    )
+    setHeight(first.textarea, 250)
+
+    second.textarea.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true })
+    )
+    setHeight(second.textarea, 300)
+    window.dispatchEvent(new PointerEvent('pointerup'))
+
+    expect(onResize).toHaveBeenCalledTimes(1)
+    expect(onResize).toHaveBeenCalledWith(2, 'other', { height: 300 })
+  })
+
+  it('does not match a resizable that is an ancestor of the wrapper', () => {
+    const { bind, onResize } = setup()
+    // An unrelated drop-zone-indicator outside the wrapper would otherwise be
+    // returned by target.closest(...) walking up the tree.
+    const outerIndicator = document.createElement('div')
+    outerIndicator.setAttribute('data-slot', 'drop-zone-indicator')
+    const wrapper = document.createElement('div')
+    const inner = document.createElement('span')
+    wrapper.appendChild(inner)
+    outerIndicator.appendChild(wrapper)
+    document.body.appendChild(outerIndicator)
+    setHeight(outerIndicator, 100)
+    bind(wrapper, 1 as NodeId, 'prompt')
+
+    inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    setHeight(outerIndicator, 250)
+    window.dispatchEvent(new PointerEvent('pointerup'))
+
+    expect(onResize).not.toHaveBeenCalled()
   })
 })

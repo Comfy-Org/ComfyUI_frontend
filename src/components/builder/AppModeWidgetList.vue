@@ -49,7 +49,7 @@ const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const maskEditor = useMaskEditor()
 
-const { trackResizable } = useAppModeWidgetResizing(
+const { onPointerDown } = useAppModeWidgetResizing(
   (nodeId, widgetName, config) =>
     appModeStore.updateInputConfig(nodeId, widgetName, config)
 )
@@ -242,30 +242,32 @@ defineExpose({ handleDragDrop })
       </Popover>
     </div>
     <div
-      :ref="(el) => trackResizable(el, key, nodeId, widgetName)"
-      :class="builderMode && 'pointer-events-none'"
+      :style="
+        persistedHeight
+          ? { '--persisted-height': `${persistedHeight}px` }
+          : undefined
+      "
+      :class="
+        cn(
+          builderMode && 'pointer-events-none',
+          persistedHeight &&
+            '**:data-[slot=drop-zone-indicator]:h-(--persisted-height) [&_textarea]:h-(--persisted-height)'
+        )
+      "
       :inert="builderMode || undefined"
+      @pointerdown.capture="(e) => onPointerDown(nodeId, widgetName, e)"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"
         :on-drag-drop="nodeData.onDragDrop"
         :drop-indicator="nodeData.dropIndicator"
-        :persisted-height="nodeData.dropIndicator ? persistedHeight : undefined"
         class="text-muted-foreground"
       >
         <NodeWidgets
           :node-data
-          :style="
-            !nodeData.dropIndicator && persistedHeight
-              ? { '--persisted-height': `${persistedHeight}px` }
-              : undefined
-          "
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
-              !nodeData.dropIndicator &&
-                persistedHeight &&
-                '[&_textarea]:h-(--persisted-height)',
               nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
             )
           "
