@@ -65,6 +65,14 @@ function setDraggableState() {
     isDragging.value = true
   })
 
+  const baseDragEnd = draggableList.value.dragEnd
+  draggableList.value.dragEnd = function () {
+    baseDragEnd.call(this)
+    nextTick(() => {
+      isDragging.value = false
+    })
+  }
+
   /**
    * Override to skip the base class's DOM `appendChild` reorder, which breaks
    * Vue's vdom tracking inside <TransitionGroup> fragments. Instead, only
@@ -106,9 +114,6 @@ function setDraggableState() {
       searchedFavoritedWidgets.value = widgets
       favoritedWidgetsStore.reorderFavorites(widgets)
     }
-    nextTick(() => {
-      isDragging.value = false
-    })
   }
 }
 
