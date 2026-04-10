@@ -26,21 +26,35 @@
         </slot>
       </span>
       <div class="flex shrink-0 items-center gap-0.5">
-        <button
+        <Button
           v-if="isUserBlueprint"
-          :class="cn(ACTION_BTN_CLASS, 'text-destructive')"
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2]" />
-        </button>
-        <button
-          :class="cn(ACTION_BTN_CLASS, 'text-muted-foreground')"
+          <i class="icon-[lucide--trash-2] bg-destructive-background" />
+        </Button>
+        <Button
+          v-if="isUserBlueprint"
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
+          :aria-label="$t('g.edit')"
+          @click.stop="editBlueprint"
+        >
+          <i class="icon-[lucide--square-pen]" />
+        </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
           :aria-label="$t('icon.bookmark')"
           @click.stop="toggleBookmark"
         >
           <i :class="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'" />
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -93,6 +107,7 @@ import { computed, inject } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import Button from '@/components/ui/button/Button.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -106,9 +121,6 @@ defineOptions({
 
 const ROW_CLASS =
   'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input rounded'
-
-const ACTION_BTN_CLASS =
-  'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-sm opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
@@ -146,6 +158,13 @@ function deleteBlueprint() {
   if (nodeDef.value) {
     void subgraphStore.deleteBlueprint(nodeDef.value.name)
   }
+}
+const editBlueprint = async () => {
+  if (!nodeDef.value)
+    throw new Error(
+      'Failed to edit subgraph blueprint lacking backing node data'
+    )
+  await useSubgraphStore().editBlueprint(nodeDef.value.name)
 }
 
 const {
