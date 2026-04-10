@@ -3,16 +3,17 @@
  * QA CLI — simplified entry point for local & CI QA runs
  *
  * Usage:
- *   pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/issues/10253
- *   pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270
- *   pnpm qa 10253                  # auto-detects issue vs PR
- *   pnpm qa <url> --ref=abc123     # pin to a specific commit/branch
- *   pnpm qa <url> --url=http://...  # custom ComfyUI server URL
+ *   pnpm qa 10253                         # auto-detects issue vs PR
+ *   pnpm qa https://github.com/.../pull/10270
+ *   pnpm qa 10270 -t base                 # test PR base (reproduce bug)
+ *   pnpm qa 10270 -t both                 # test base + head
+ *   pnpm qa --uncommitted                 # test local uncommitted changes
  *
  * Automatically loads .env.local / .env for GEMINI_API_KEY, ANTHROPIC_API_KEY.
- * Results are written to .comfy-qa/<type>-<number>/ by default.
+ * Results are written to .comfy-qa/<number>/ by default.
  */
 
+import { parseArgs } from 'node:util'
 import { config } from 'dotenv'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { resolve, dirname } from 'path'
@@ -28,45 +29,68 @@ for (const envFile of ['.env.local', '.env']) {
   }
 }
 
-// ── Parse CLI ──
+// ── Parse CLI with node:util parseArgs ──
 
-const args = process.argv.slice(2)
-let target = ''
-let ref = ''
-let serverUrl = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
-let outputBase = ''
-let includeBase = false
+const { values, positionals } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
+    target: { type: 'string', short: 't', default: 'head' },
+    uncommitted: { type: 'boolean', default: false },
+    url: { type: 'string', default: '' },
+    ref: { type: 'string', default: '' },
+    output: { type: 'string', short: 'o', default: '' },
+    help: { type: 'boolean', short: 'h', default: false }
+  },
+  allowPositionals: true,
+  strict: true
+})
 
-for (let i = 0; i < args.length; i++) {
-  const arg = args[i]
-  if (arg === '--help' || arg === '-h') {
-    printUsage()
-    process.exit(0)
-  } else if (arg === '--base') {
-    includeBase = true
-  } else if (arg.startsWith('--ref=')) {
-    ref = arg.slice(6)
-  } else if (arg === '--ref') {
-    ref = args[++i]
-  } else if (arg.startsWith('--url=')) {
-    serverUrl = arg.slice(6)
-  } else if (arg === '--url') {
-    serverUrl = args[++i]
-  } else if (arg.startsWith('--output=')) {
-    outputBase = arg.slice(9)
-  } else if (arg === '--output') {
-    outputBase = args[++i]
-  } else if (!arg.startsWith('-')) {
-    target = arg
-  }
+if (values.help) {
+  printUsage()
+  process.exit(0)
 }
 
-if (!target) {
+const serverUrl =
+  values.url || process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+const prTarget = (values.target ?? 'head') as 'head' | 'base' | 'both'
+
+// ── Handle --uncommitted mode ──
+
+if (values.uncommitted) {
+  const diff = execSync('git diff && git diff --staged', {
+    encoding: 'utf-8'
+  })
+  if (!diff.trim()) {
+    console.error('No uncommitted changes found')
+    process.exit(1)
+  }
+
+  const outputDir = values.output
+    ? resolve(values.output)
+    : resolve('.comfy-qa/local')
+  mkdirSync(outputDir, { recursive: true })
+
+  const tmpDir = resolve(outputDir, '.tmp')
+  mkdirSync(tmpDir, { recursive: true })
+  const diffFile = resolve(tmpDir, 'uncommitted.diff')
+  writeFileSync(diffFile, diff)
+
+  console.warn('QA target: uncommitted changes')
+  console.warn(`Output:    ${outputDir}`)
+  console.warn(`Server:    ${serverUrl}`)
+
+  const exitCode = runQaRecord('after', diffFile, outputDir)
+  printSummary(outputDir)
+  process.exit(exitCode)
+}
+
+// ── Parse positional target ──
+
+const input = positionals[0]
+if (!input) {
   printUsage()
   process.exit(1)
 }
-
-// ── Parse target into type + number ──
 
 type TargetType = 'issue' | 'pr'
 
@@ -74,7 +98,7 @@ let targetType: TargetType | undefined
 let number: string
 let repo = 'Comfy-Org/ComfyUI_frontend'
 
-const ghUrlMatch = target.match(
+const ghUrlMatch = input.match(
   /github\.com\/([^/]+\/[^/]+)\/(issues|pull)\/(\d+)/
 )
 
@@ -82,10 +106,10 @@ if (ghUrlMatch) {
   repo = ghUrlMatch[1]
   targetType = ghUrlMatch[2] === 'pull' ? 'pr' : 'issue'
   number = ghUrlMatch[3]
-} else if (/^\d+$/.test(target)) {
-  number = target
+} else if (/^\d+$/.test(input)) {
+  number = input
 } else {
-  console.error(`Cannot parse target: ${target}`)
+  console.error(`Cannot parse target: ${input}`)
   console.error('Expected a GitHub URL or number')
   process.exit(1)
 }
@@ -106,14 +130,17 @@ if (!targetType) {
 
 // ── Set up output directory ──
 
-const outputDir = outputBase || resolve(`.comfy-qa/${number}`)
+const outputDir = values.output
+  ? resolve(values.output)
+  : resolve(`.comfy-qa/${number}`)
 
 mkdirSync(outputDir, { recursive: true })
 
 console.warn(`QA target: ${targetType} #${number} (${repo})`)
 console.warn(`Output:    ${outputDir}`)
 console.warn(`Server:    ${serverUrl}`)
-if (ref) console.warn(`Ref:       ${ref}`)
+if (values.ref) console.warn(`Ref:       ${values.ref}`)
+if (targetType === 'pr') console.warn(`Target:    ${prTarget}`)
 
 // ── Fetch issue/PR data via gh CLI ──
 
@@ -132,7 +159,6 @@ if (targetType === 'issue') {
   writeFileSync(diffFile, body)
 } else {
   console.warn(`Fetching PR #${number}...`)
-  // Fetch PR metadata + diff + refs
   const prJson = execSync(
     `gh pr view ${number} --repo ${repo} --json title,body,baseRefName,headRefName,baseRefOid,headRefOid`,
     { encoding: 'utf-8', timeout: 30000 }
@@ -163,7 +189,6 @@ if (targetType === 'issue') {
     `Title: ${pr.title}\n\n${pr.body}\n\n--- DIFF ---\n\n${diff}`
   )
 
-  // Save refs for potential before/after runs
   writeFileSync(
     resolve(tmpDir, 'refs.json'),
     JSON.stringify(
@@ -177,15 +202,44 @@ if (targetType === 'issue') {
   )
 }
 
-// ── Determine mode ──
-// Issue → reproduce (find & prove the bug on current code)
-// PR default → after (demonstrate the fix on head)
-// PR --base → also run before (reproduce bug on base) first
+// ── Run QA ──
 
-const scriptDir = dirname(fileURLToPath(import.meta.url))
-const recordScript = resolve(scriptDir, 'qa-record.ts')
+let exitCode = 0
 
-function runQaRecord(qaMode: string, qaOutputDir: string): number {
+if (targetType === 'issue') {
+  exitCode = runQaRecord('reproduce', diffFile, outputDir)
+} else if (prTarget === 'both') {
+  console.warn('\n=== Phase 1: Reproduce bug on base ===')
+  const baseDir = resolve(outputDir, 'base')
+  mkdirSync(baseDir, { recursive: true })
+  const baseCode = runQaRecord('before', diffFile, baseDir)
+  if (baseCode !== 0) {
+    console.warn('Base phase failed, continuing to head phase...')
+  }
+
+  console.warn('\n=== Phase 2: Demonstrate fix on head ===')
+  const headDir = resolve(outputDir, 'head')
+  mkdirSync(headDir, { recursive: true })
+  exitCode = runQaRecord('after', diffFile, headDir)
+} else if (prTarget === 'base') {
+  exitCode = runQaRecord('before', diffFile, outputDir)
+} else {
+  exitCode = runQaRecord('after', diffFile, outputDir)
+}
+
+printSummary(outputDir)
+process.exit(exitCode)
+
+// ── Helpers ──
+
+function runQaRecord(
+  qaMode: string,
+  qaDiffFile: string,
+  qaOutputDir: string
+): number {
+  const scriptDir = dirname(fileURLToPath(import.meta.url))
+  const recordScript = resolve(scriptDir, 'qa-record.ts')
+
   const cmd = [
     'pnpm',
     'exec',
@@ -194,7 +248,7 @@ function runQaRecord(qaMode: string, qaOutputDir: string): number {
     '--mode',
     qaMode,
     '--diff',
-    diffFile,
+    qaDiffFile,
     '--output-dir',
     qaOutputDir,
     '--url',
@@ -210,73 +264,51 @@ function runQaRecord(qaMode: string, qaOutputDir: string): number {
   return r.status ?? 1
 }
 
-let exitCode = 0
-
-if (targetType === 'issue') {
-  exitCode = runQaRecord('reproduce', outputDir)
-} else if (includeBase) {
-  // PR with --base: run both phases
-  console.warn('\n=== Phase 1: Reproduce bug on base ===')
-  const baseDir = resolve(outputDir, 'base')
-  mkdirSync(baseDir, { recursive: true })
-  const baseCode = runQaRecord('before', baseDir)
-  if (baseCode !== 0) {
-    console.warn('Base phase failed, continuing to head phase...')
+function printSummary(dir: string) {
+  console.warn('\n=== QA Complete ===')
+  console.warn(`Results: ${dir}`)
+  try {
+    const files = execSync(`ls -la "${dir}"`, { encoding: 'utf-8' })
+    console.warn(files)
+  } catch {
+    // not critical
   }
-
-  console.warn('\n=== Phase 2: Demonstrate fix on head ===')
-  const headDir = resolve(outputDir, 'head')
-  mkdirSync(headDir, { recursive: true })
-  exitCode = runQaRecord('after', headDir)
-} else {
-  // PR default: just test the head (current state)
-  exitCode = runQaRecord('after', outputDir)
 }
-
-const result = { status: exitCode }
-
-// ── Summary ──
-
-console.warn('\n=== QA Complete ===')
-console.warn(`Results: ${outputDir}`)
-
-try {
-  const files = execSync(`ls -la "${outputDir}"`, { encoding: 'utf-8' })
-  console.warn(files)
-} catch {
-  // directory listing failed, not critical
-}
-
-process.exit(result.status ?? 1)
-
-// ── Helpers ──
 
 function printUsage() {
   console.warn(`
 QA CLI — Reproduce issues & test PRs for ComfyUI frontend
 
 Usage:
-  pnpm qa <target> [options]
+  pnpm qa <number|url> [options]
+  pnpm qa --uncommitted
 
 Targets:
+  10253              Number (auto-detects issue vs PR)
   https://github.com/Comfy-Org/ComfyUI_frontend/issues/10253
   https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270
-  10253              Number (auto-detects issue vs PR)
 
 Options:
-  --base             For PRs: also test the base ref (reproduce bug before fix)
-  --url=<url>        ComfyUI server URL (default: from .env or http://127.0.0.1:8188)
-  --ref=<ref>        Git ref to test against (commit hash or branch)
-  --output=<dir>     Override output directory (default: .comfy-qa/<number>)
-  --help, -h         Show this help
+  -t, --target <head|base|both>
+                     For PRs: which ref to test (default: head)
+                       head  — test the fix (PR head)
+                       base  — reproduce the bug (PR base)
+                       both  — base then head
+  --uncommitted      Test local uncommitted changes
+  --url <url>        ComfyUI server URL (default: from .env or http://127.0.0.1:8188)
+  --ref <ref>        Git ref to test against
+  -o, --output <dir> Override output directory (default: .comfy-qa/<number>)
+  -h, --help         Show this help
 
 Environment (auto-loaded from .env.local or .env):
   GEMINI_API_KEY     Required — used for PR analysis, video review, TTS
   ANTHROPIC_API_KEY  Optional locally — Claude Agent SDK auto-detects Claude Code session
 
 Examples:
-  pnpm qa 10253
-  pnpm qa 10270 --url=http://localhost:8188
-  pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270 --ref=fix-branch
+  pnpm qa 10253                  # reproduce an issue
+  pnpm qa 10270                  # test PR head (the fix)
+  pnpm qa 10270 -t base          # reproduce bug on PR base
+  pnpm qa 10270 -t both          # test base + head
+  pnpm qa --uncommitted          # test local changes
 `)
 }
