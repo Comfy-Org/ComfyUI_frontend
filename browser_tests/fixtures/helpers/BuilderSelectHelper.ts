@@ -32,7 +32,20 @@ async function dragByIndex(items: Locator, fromIndex: number, toIndex: number) {
 }
 
 export class BuilderSelectHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  /** All IoItem locators in the current step sidebar. */
+  public readonly inputItems: Locator
+  /** All IoItem title locators in the inputs step sidebar. */
+  public readonly inputItemTitles: Locator
+  /** All widget label locators in the preview/arrange sidebar. */
+  public readonly previewWidgetLabels: Locator
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.inputItems = this.page.getByTestId(TestIds.builder.ioItem)
+    this.inputItemTitles = this.page.getByTestId(TestIds.builder.ioItemTitle)
+    this.previewWidgetLabels = this.page.getByTestId(
+      TestIds.builder.widgetLabel
+    )
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -158,21 +171,6 @@ export class BuilderSelectHelper {
           .getByText(title, { exact: true })
       })
       .getByTestId(TestIds.builder.ioItemSubtitle)
-  }
-
-  /** All IoItem locators in the current step sidebar. */
-  get inputItems(): Locator {
-    return this.page.getByTestId(TestIds.builder.ioItem)
-  }
-
-  /** All IoItem title locators in the inputs step sidebar. */
-  get inputItemTitles(): Locator {
-    return this.page.getByTestId(TestIds.builder.ioItemTitle)
-  }
-
-  /** All widget label locators in the preview/arrange sidebar. */
-  get previewWidgetLabels(): Locator {
-    return this.page.getByTestId(TestIds.builder.widgetLabel)
   }
 
   /**
