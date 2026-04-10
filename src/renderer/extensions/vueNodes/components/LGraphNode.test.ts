@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, toValue } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -131,6 +132,22 @@ function getNodeRoot(container: Element): HTMLElement {
 
 function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return render(LGraphNode, {
+    props,
+    global: {
+      plugins: [pinia, i18n],
+      stubs: {
+        NodeHeader: true,
+        NodeSlots: true,
+        NodeWidgets: true,
+        NodeContent: true,
+        SlotConnectionDot: true
+      }
+    }
+  })
+}
+
+function mountLGraphNode(props: ComponentProps<typeof LGraphNode>) {
+  return mount(LGraphNode, {
     props,
     global: {
       plugins: [pinia, i18n],
@@ -359,8 +376,9 @@ describe('LGraphNode', () => {
       const dataTransfer = createFileDataTransfer()
 
       const parentListener = vi.fn()
+      const parent = wrapper.element.parentElement
       expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
+      parent!.addEventListener('drop', parentListener)
 
       wrapper.element.dispatchEvent(createDragEvent('dragover', dataTransfer))
       wrapper.element.dispatchEvent(createDragEvent('drop', dataTransfer))
@@ -453,8 +471,9 @@ describe('LGraphNode', () => {
       const dataTransfer = createFileDataTransfer()
 
       const parentListener = vi.fn()
+      const parent = wrapper.element.parentElement
       expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
+      parent!.addEventListener('drop', parentListener)
 
       child.element.dispatchEvent(createDragEvent('dragover', dataTransfer))
       child.element.dispatchEvent(createDragEvent('drop', dataTransfer))
