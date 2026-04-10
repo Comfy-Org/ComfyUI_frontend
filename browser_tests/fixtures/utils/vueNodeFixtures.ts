@@ -1,6 +1,6 @@
 import type { Locator } from '@playwright/test'
 
-import { TestIds } from '../selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {

@@ -3,8 +3,8 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from './selectors'
-import { VueNodeFixture } from './utils/vueNodeFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
   constructor(private page: Page) {}
@@ -46,13 +46,6 @@ export class VueNodeHelpers {
    */
   async getNodeCount(): Promise<number> {
     return await this.nodes.count()
-  }
-
-  /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
   }
 
   /**

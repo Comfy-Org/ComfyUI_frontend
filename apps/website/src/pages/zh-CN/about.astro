@@ -4,89 +4,89 @@ import SiteNav from '../../components/SiteNav.vue'
 import SiteFooter from '../../components/SiteFooter.vue'
 
 const team = [
-  { name: 'comfyanonymous', role: 'Creator of ComfyUI, cofounder' },
-  { name: 'Dr.Lt.Data', role: 'Creator of ComfyUI-Manager and Impact/Inspire Pack' },
-  { name: 'pythongosssss', role: 'Major contributor, creator of ComfyUI-Custom-Scripts' },
-  { name: 'yoland68', role: 'Creator of ComfyCLI, cofounder, ex-Google' },
-  { name: 'robinjhuang', role: 'Maintains Comfy Registry, cofounder, ex-Google Cloud' },
-  { name: 'jojodecay', role: 'ComfyUI event series host, community & partnerships' },
-  { name: 'christian-byrne', role: 'Fullstack developer' },
-  { name: 'Kosinkadink', role: 'Creator of AnimateDiff-Evolved and Advanced-ControlNet' },
-  { name: 'webfiltered', role: 'Overhauled Litegraph library' },
-  { name: 'Pablo', role: 'Product Design, ex-AI startup founder' },
-  { name: 'ComfyUI Wiki (Daxiong)', role: 'Official docs and templates' },
-  { name: 'ctrlbenlu (Ben)', role: 'Software engineer, ex-robotics' },
-  { name: 'Purz Beats', role: 'Motion graphics designer and ML Engineer' },
-  { name: 'Ricyu (Rich)', role: 'Software engineer, ex-Meta' },
+  { name: 'comfyanonymous', role: 'ComfyUI 创始人、联合创始人' },
+  { name: 'Dr.Lt.Data', role: 'ComfyUI-Manager 和 Impact/Inspire Pack 作者' },
+  { name: 'pythongosssss', role: '核心贡献者、ComfyUI-Custom-Scripts 作者' },
+  { name: 'yoland68', role: 'ComfyCLI 作者、联合创始人、前 Google' },
+  { name: 'robinjhuang', role: 'Comfy Registry 维护者、联合创始人、前 Google Cloud' },
+  { name: 'jojodecay', role: 'ComfyUI 活动主持人、社区与合作关系' },
+  { name: 'christian-byrne', role: '全栈开发工程师' },
+  { name: 'Kosinkadink', role: 'AnimateDiff-Evolved 和 Advanced-ControlNet 作者' },
+  { name: 'webfiltered', role: 'Litegraph 库重构者' },
+  { name: 'Pablo', role: '产品设计、前 AI 初创公司创始人' },
+  { name: 'ComfyUI Wiki (Daxiong)', role: '官方文档和模板' },
+  { name: 'ctrlbenlu (Ben)', role: '软件工程师、前机器人领域' },
+  { name: 'Purz Beats', role: '动效设计师和机器学习工程师' },
+  { name: 'Ricyu (Rich)', role: '软件工程师、前 Meta' },
 ]
 
 const collaborators = [
-  { name: 'Yogo', role: 'Collaborator' },
-  { name: 'Fill (Machine Delusions)', role: 'Collaborator' },
-  { name: 'Julien (MJM)', role: 'Collaborator' },
+  { name: 'Yogo', role: '协作者' },
+  { name: 'Fill (Machine Delusions)', role: '协作者' },
+  { name: 'Julien (MJM)', role: '协作者' },
 ]
 
 const projects = [
-  { name: 'ComfyUI', description: 'The core node-based interface for generative AI workflows.' },
-  { name: 'ComfyUI Manager', description: 'Install, update, and manage custom nodes with one click.' },
-  { name: 'Comfy Registry', description: 'The official registry for publishing and discovering custom nodes.' },
-  { name: 'Frontends', description: 'The desktop and web frontends that power the ComfyUI experience.' },
-  { name: 'Docs', description: 'Official documentation, guides, and tutorials.' },
+  { name: 'ComfyUI', description: '生成式 AI 工作流的核心节点式界面。' },
+  { name: 'ComfyUI Manager', description: '一键安装、更新和管理自定义节点。' },
+  { name: 'Comfy Registry', description: '发布和发现自定义节点的官方注册表。' },
+  { name: 'Frontends', description: '驱动 ComfyUI 体验的桌面端和 Web 前端。' },
+  { name: 'Docs', description: '官方文档、指南和教程。' },
 ]
 
 const faqs = [
   {
-    q: 'Is ComfyUI free?',
-    a: 'Yes. ComfyUI is free and open-source under the GPL-3.0 license. You can use it for personal and commercial projects.',
+    q: 'ComfyUI 免费吗？',
+    a: '是的。ComfyUI 是免费开源的，基于 GPL-3.0 许可证。您可以将其用于个人和商业项目。',
   },
   {
-    q: 'Who is behind ComfyUI?',
-    a: 'ComfyUI was created by comfyanonymous and is maintained by a small, dedicated team of developers and community contributors.',
+    q: '谁在开发 ComfyUI？',
+    a: 'ComfyUI 由 comfyanonymous 创建，由一个小而专注的开发团队和社区贡献者共同维护。',
   },
   {
-    q: 'How can I contribute?',
-    a: 'Check out our GitHub repositories to report issues, submit pull requests, or build custom nodes. Join our Discord community to connect with other contributors.',
+    q: '如何参与贡献？',
+    a: '查看我们的 GitHub 仓库来报告问题、提交 Pull Request 或构建自定义节点。加入我们的 Discord 社区与其他贡献者交流。',
   },
   {
-    q: 'What are the future plans?',
-    a: 'We are focused on making ComfyUI the operating system for generative AI — improving performance, expanding model support, and building better tools for creators and developers.',
+    q: '未来有什么计划？',
+    a: '我们专注于让 ComfyUI 成为生成式 AI 的操作系统——提升性能、扩展模型支持，为创作者和开发者打造更好的工具。',
   },
 ]
 ---
 
-<BaseLayout title="关于我们 — Comfy" description="Learn about the team and mission behind ComfyUI, the open-source generative AI platform.">
-  <SiteNav client:load />
+<BaseLayout title="关于我们 — Comfy" description="了解 ComfyUI 背后的团队和使命——开源的生成式 AI 平台。">
+  <SiteNav locale="zh-CN" client:load />
   <main>
-    <!-- Hero -->
+    <!-- 主页横幅 -->
     <section class="px-6 pb-24 pt-40 text-center">
       <h1 class="mx-auto max-w-4xl text-4xl font-bold leading-tight md:text-6xl">
-        Crafting the next frontier of visual and audio media
+        开创视觉与音频媒体的下一个前沿
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg text-smoke-700">
-        An open-source community and company building the most powerful tools for generative AI creators.
+        一个开源社区和公司，致力于为生成式 AI 创作者打造最强大的工具。
       </p>
     </section>
 
-    <!-- Our Mission -->
+    <!-- 我们的使命 -->
     <section class="bg-charcoal-800 px-6 py-24">
       <div class="mx-auto max-w-3xl text-center">
-        <h2 class="text-sm font-semibold uppercase tracking-widest text-brand-yellow">Our Mission</h2>
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-brand-yellow">我们的使命</h2>
         <p class="mt-6 text-3xl font-bold md:text-4xl">
-          We want to build the operating system for Gen AI.
+          我们想打造生成式 AI 的操作系统。
         </p>
         <p class="mt-6 text-lg leading-relaxed text-smoke-700">
-          We're building the foundational tools that give creators full control over generative AI.
-          From image and video synthesis to audio generation, ComfyUI provides a modular,
-          node-based environment where professionals and enthusiasts can craft, iterate,
-          and deploy production-quality workflows — without black boxes.
+          我们正在构建让创作者完全掌控生成式 AI 的基础工具。
+          从图像和视频合成到音频生成，ComfyUI 提供了一个模块化的
+          节点式环境，让专业人士和爱好者可以创建、迭代
+          和部署生产级工作流——没有黑箱。
         </p>
       </div>
     </section>
 
-    <!-- What Do We Do? -->
+    <!-- 我们做什么？ -->
     <section class="px-6 py-24">
       <div class="mx-auto max-w-5xl">
-        <h2 class="text-center text-3xl font-bold md:text-4xl">What Do We Do?</h2>
+        <h2 class="text-center text-3xl font-bold md:text-4xl">我们做什么？</h2>
         <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <div class="rounded-xl border border-white/10 bg-charcoal-600 p-6">
@@ -98,24 +98,23 @@ const faqs = [
       </div>
     </section>
 
-    <!-- Who We Are -->
+    <!-- 我们是谁 -->
     <section class="bg-charcoal-800 px-6 py-24">
       <div class="mx-auto max-w-3xl text-center">
-        <h2 class="text-3xl font-bold md:text-4xl">Who We Are</h2>
+        <h2 class="text-3xl font-bold md:text-4xl">我们是谁</h2>
         <p class="mt-6 text-lg leading-relaxed text-smoke-700">
-          ComfyUI started as a personal project by comfyanonymous and grew into a global community
-          of creators, developers, and researchers. Today, Comfy Org is a small, flat team based in
-          San Francisco, backed by investors who believe in open-source AI tooling. We work
-          alongside an incredible community of contributors who build custom nodes, share workflows,
-          and push the boundaries of what's possible with generative AI.
+          ComfyUI 最初是 comfyanonymous 的个人项目，后来发展成为一个全球性的
+          创作者、开发者和研究者社区。今天，Comfy Org 是一个位于旧金山的小型扁平化团队，
+          由相信开源 AI 工具的投资者支持。我们与令人难以置信的贡献者社区一起工作，
+          他们构建自定义节点、分享工作流，并不断突破生成式 AI 的边界。
         </p>
       </div>
     </section>
 
-    <!-- Team -->
+    <!-- 团队 -->
     <section class="px-6 py-24">
       <div class="mx-auto max-w-6xl">
-        <h2 class="text-center text-3xl font-bold md:text-4xl">Team</h2>
+        <h2 class="text-center text-3xl font-bold md:text-4xl">团队</h2>
         <div class="mt-12 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {team.map((member) => (
             <div class="rounded-xl border border-white/10 p-5 text-center">
@@ -128,10 +127,10 @@ const faqs = [
       </div>
     </section>
 
-    <!-- Collaborators -->
+    <!-- 协作者 -->
     <section class="bg-charcoal-800 px-6 py-16">
       <div class="mx-auto max-w-4xl text-center">
-        <h2 class="text-2xl font-bold">Collaborators</h2>
+        <h2 class="text-2xl font-bold">协作者</h2>
         <div class="mt-8 flex flex-wrap items-center justify-center gap-8">
           {collaborators.map((person) => (
             <div class="text-center">
@@ -143,10 +142,10 @@ const faqs = [
       </div>
     </section>
 
-    <!-- FAQs -->
+    <!-- 常见问题 -->
     <section class="px-6 py-24">
       <div class="mx-auto max-w-3xl">
-        <h2 class="text-center text-3xl font-bold md:text-4xl">FAQs</h2>
+        <h2 class="text-center text-3xl font-bold md:text-4xl">常见问题</h2>
         <div class="mt-12 space-y-10">
           {faqs.map((faq) => (
             <div>
@@ -158,19 +157,19 @@ const faqs = [
       </div>
     </section>
 
-    <!-- Join Our Team CTA -->
+    <!-- 加入我们 CTA -->
     <section class="bg-charcoal-800 px-6 py-24 text-center">
-      <h2 class="text-3xl font-bold md:text-4xl">Join Our Team</h2>
+      <h2 class="text-3xl font-bold md:text-4xl">加入我们的团队</h2>
       <p class="mx-auto mt-4 max-w-xl text-smoke-700">
-        We're looking for people who are passionate about open-source, generative AI, and building great developer tools.
+        我们正在寻找热衷于开源、生成式 AI 和打造优秀开发者工具的人。
       </p>
       <a
         href="/careers"
         class="mt-8 inline-block rounded-full bg-brand-yellow px-8 py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
       >
-        View Open Positions
+        查看开放职位
       </a>
     </section>
   </main>
-  <SiteFooter />
+  <SiteFooter locale="zh-CN" />
 </BaseLayout>

@@ -1331,6 +1331,7 @@
     "updating": "更新中",
     "upload": "上傳",
     "uploadAlreadyInProgress": "上傳已在進行中",
+    "uploadTimedOut": "上傳逾時。請再試一次。",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "使用者",

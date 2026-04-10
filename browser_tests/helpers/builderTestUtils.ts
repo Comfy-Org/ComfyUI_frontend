@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import type { AppModeHelper } from '../fixtures/helpers/AppModeHelper'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-import { comfyExpect } from '../fixtures/ComfyPage'
-import { fitToViewInstant } from './fitToView'
+import { comfyExpect } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
 interface BuilderSetupResult {
   inputNodeTitle: string

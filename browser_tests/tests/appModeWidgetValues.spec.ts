@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 /** One representative of each widget type from the default workflow. */
 type WidgetType = 'textarea' | 'number' | 'select' | 'text'

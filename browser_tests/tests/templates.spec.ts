@@ -1,9 +1,9 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkflowTemplates } from '../../src/platform/workflow/templates/types/template'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -78,9 +78,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
-      .toBe(0)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -94,7 +92,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     // Ensure we now have some nodes
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 250 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBeGreaterThan(0)
   })
 

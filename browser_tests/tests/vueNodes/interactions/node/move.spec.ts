@@ -1,9 +1,9 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
-import type { Position } from '../../../../fixtures/types'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position } from '@e2e/fixtures/types'
 
 test.describe('Vue Node Moving', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -59,7 +59,7 @@ test.describe('Vue Node Moving', () => {
     expect(afterPos.y).toBeCloseTo(headerPos.y, 0)
 
     // The small movement should have selected the node, not dragged it
-    expect(await comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
   })
 
   test('should move node when pointer moves beyond drag threshold', async ({

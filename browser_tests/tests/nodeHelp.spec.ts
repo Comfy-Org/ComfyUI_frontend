@@ -1,11 +1,11 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { fitToViewInstant } from '../helpers/fitToView'
-import type { WorkspaceStore } from '../types/globals'
-import type { NodeReference } from '../fixtures/utils/litegraphUtils'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node
@@ -433,8 +433,7 @@ This is documentation for a custom node.
       const imageCount = await images.count()
       for (let i = 0; i < imageCount; i++) {
         const img = images.nth(i)
-        const onError = await img.getAttribute('onerror')
-        expect(onError).toBeNull()
+        await expect(img).not.toHaveAttribute('onerror')
       }
 
       // Check that javascript: links are sanitized
@@ -442,10 +441,7 @@ This is documentation for a custom node.
       const linkCount = await links.count()
       for (let i = 0; i < linkCount; i++) {
         const link = links.nth(i)
-        const href = await link.getAttribute('href')
-        if (href !== null) {
-          expect(href).not.toContain('javascript:')
-        }
+        await expect(link).not.toHaveAttribute('href', /^javascript:/i)
       }
 
       // Safe content should remain
@@ -512,8 +508,7 @@ This is English documentation.
       await expect(helpPage.locator('.p-progressspinner')).not.toBeVisible()
 
       // Should show some content even on error
-      const content = await helpPage.textContent()
-      expect(content).toBeTruthy()
+      await expect(helpPage).not.toHaveText('')
     })
 
     test('Should update help content when switching between nodes', async ({

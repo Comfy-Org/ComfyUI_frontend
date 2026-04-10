@@ -63,7 +63,8 @@ export const TestIds = {
     missingMediaStatusCard: 'missing-media-status-card',
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
-    missingMediaLocateButton: 'missing-media-locate-button'
+    missingMediaLocateButton: 'missing-media-locate-button',
+    publishTabPanel: 'publish-tab-panel'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -130,7 +131,12 @@ export const TestIds = {
     connectOutputPopover: 'builder-connect-output-popover'
   },
   appMode: {
-    widgetItem: 'app-mode-widget-item'
+    widgetItem: 'app-mode-widget-item',
+    welcome: 'linear-welcome',
+    emptyWorkflow: 'linear-welcome-empty-workflow',
+    buildApp: 'linear-welcome-build-app',
+    backToWorkflow: 'linear-welcome-back-to-workflow',
+    loadTemplate: 'linear-welcome-load-template'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
@@ -149,6 +155,12 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  loading: {
+    overlay: 'loading-overlay'
+  },
+  load3dViewer: {
+    sidebar: 'load3d-viewer-sidebar'
   }
 } as const
 
@@ -179,3 +191,5 @@ export type TestIdValue =
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
+  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]

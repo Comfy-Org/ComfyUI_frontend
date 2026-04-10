@@ -3,8 +3,8 @@ import type { Page } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -47,11 +47,16 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     test('Should display "Show missing models" button for missing model errors', async ({
       comfyPage
     }) => {
-      const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
-        const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
-        return response.ok
-      }, comfyPage.url)
-      expect(cleanupOk).toBeTruthy()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(async (url: string) => {
+            const response = await fetch(
+              `${url}/api/devtools/cleanup_fake_model`
+            )
+            return response.ok
+          }, comfyPage.url)
+        )
+        .toBeTruthy()
 
       await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
@@ -151,6 +156,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
+      await expect(overlay).not.toBeVisible()
       await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
     })
 

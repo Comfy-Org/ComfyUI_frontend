@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 type KeysOfType<T, Match> = {
   [K in keyof T]: T[K] extends Match ? K : never

@@ -2,13 +2,13 @@ import type { Page } from '@playwright/test'
 
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   interceptClipboardWrite,
   getClipboardText
-} from '../helpers/clipboardSpy'
+} from '@e2e/helpers/clipboardSpy'
 
 async function triggerConfigureError(
   comfyPage: ComfyPage,
@@ -100,8 +100,9 @@ test.describe('Error dialog', () => {
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport).click()
 
     const reportText = await errorDialog.locator('pre').textContent()
-    const copiedText = await getClipboardText(comfyPage.page)
-    expect(copiedText).toBe(reportText)
+    await expect
+      .poll(async () => await getClipboardText(comfyPage.page))
+      .toBe(reportText)
   })
 
   test('Should open GitHub issues search when "Find Issues" is clicked', async ({

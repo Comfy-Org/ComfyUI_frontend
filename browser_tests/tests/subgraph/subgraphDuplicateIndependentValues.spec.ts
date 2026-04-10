@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 async function openVueNodeContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
   const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
@@ -27,14 +27,14 @@ test.describe(
       // Convert first CLIP Text Encode node to subgraph
       await openVueNodeContextMenu(comfyPage, clipNodeTitle)
       await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
-      await comfyPage.nextFrame()
+      await comfyPage.contextMenu.waitForHidden()
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
       // Duplicate the subgraph
       await openVueNodeContextMenu(comfyPage, 'New Subgraph')
       await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
-      await comfyPage.nextFrame()
+      await comfyPage.contextMenu.waitForHidden()
 
       // Capture both subgraph node IDs
       const subgraphNodes = comfyPage.vueNodes.getNodeByTitle('New Subgraph')

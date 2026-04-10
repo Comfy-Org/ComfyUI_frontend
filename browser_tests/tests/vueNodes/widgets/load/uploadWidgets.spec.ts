@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import { TestIds } from '../../../../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Upload Widgets', () => {
   test.beforeEach(async ({ comfyPage }) => {
