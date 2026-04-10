@@ -166,10 +166,6 @@ function makeAsset(
   }
 }
 
-function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
-  return makeResultItem({ filename, nodeId })
-}
-
 describe(useOutputHistory, () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -245,7 +241,10 @@ describe(useOutputHistory, () => {
 
     it('returns outputs from metadata allOutputs when count matches', () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png'), makeResult('b.png')]
+      const results = [
+        makeResultItem({ filename: 'a.png' }),
+        makeResultItem({ filename: 'b.png' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -262,9 +261,9 @@ describe(useOutputHistory, () => {
 
     it('filters outputs to selected output nodes only', () => {
       const results = [
-        makeResult('a.png', '1'),
-        makeResult('b.png', '2'),
-        makeResult('c.png', '3')
+        makeResultItem({ filename: 'a.png', nodeId: '1' }),
+        makeResultItem({ filename: 'b.png', nodeId: '2' }),
+        makeResultItem({ filename: 'c.png', nodeId: '3' })
       ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -282,7 +281,10 @@ describe(useOutputHistory, () => {
     })
 
     it('returns empty when no output nodes are selected', () => {
-      const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
+      const results = [
+        makeResultItem({ filename: 'a.png', nodeId: '1' }),
+        makeResultItem({ filename: 'b.png', nodeId: '2' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -295,7 +297,10 @@ describe(useOutputHistory, () => {
     })
 
     it('returns consistent filtered outputs across repeated calls', () => {
-      const results = [makeResult('a.png', '1'), makeResult('b.png', '2')]
+      const results = [
+        makeResultItem({ filename: 'a.png', nodeId: '1' }),
+        makeResultItem({ filename: 'b.png', nodeId: '2' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -321,13 +326,13 @@ describe(useOutputHistory, () => {
           id: 'item-1',
           jobId: 'job-1',
           state: 'image',
-          output: makeResult('a.png')
+          output: makeResultItem({ filename: 'a.png' })
         },
         {
           id: 'item-2',
           jobId: 'job-1',
           state: 'image',
-          output: makeResult('b.png')
+          output: makeResultItem({ filename: 'b.png' })
         }
       ]
       const asset = makeAsset('a1', 'job-1')
@@ -371,7 +376,7 @@ describe(useOutputHistory, () => {
   describe('watchEffect resolve loop', () => {
     it('resolves pending jobs when history outputs load', async () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png')]
+      const results = [makeResultItem({ filename: 'a.png' })]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 1
@@ -390,7 +395,7 @@ describe(useOutputHistory, () => {
 
     it('does not select first history when a selection exists', async () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png')]
+      const results = [makeResultItem({ filename: 'a.png' })]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 1
@@ -419,7 +424,10 @@ describe(useOutputHistory, () => {
 
     it('selects non-asset output from resolved job instead of first history', async () => {
       useAppModeStore().selectedOutputs.push('1')
-      const results = [makeResult('a.png'), makeResult('b.png')]
+      const results = [
+        makeResultItem({ filename: 'a.png' }),
+        makeResultItem({ filename: 'b.png' })
+      ]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
         outputCount: 2
@@ -434,7 +442,7 @@ describe(useOutputHistory, () => {
         {
           id: 'compare-1',
           jobId: 'job-1',
-          output: makeResult('compare.png', '2')
+          output: makeResultItem({ filename: 'compare.png', nodeId: '2' })
         }
       ]
 
