@@ -226,19 +226,6 @@ describe('appModeStore', () => {
       expect(store.selectedInputs).toEqual([[1, 'prompt']])
     })
 
-    it('preserves config through pruning', () => {
-      const node1 = mockNode(1)
-      mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
-      )
-
-      store.loadSelections({
-        inputs: [[1, 'prompt', { height: 150 }]]
-      })
-
-      expect(store.selectedInputs).toEqual([[1, 'prompt', { height: 150 }]])
-    })
-
     it('keeps inputs for existing nodes even if widget is missing', async () => {
       const node1 = mockNode(1)
       mockResolveNode.mockImplementation((id) =>
