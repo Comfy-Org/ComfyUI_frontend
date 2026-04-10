@@ -24,15 +24,10 @@ test.describe('Sidebar splitter width independence', () => {
       .locator('.p-splitter-gutter:not(.hidden)')
       .first()
     await expect(gutter).toBeVisible()
-    let box: Awaited<ReturnType<typeof gutter.boundingBox>> = null
-    await expect
-      .poll(async () => {
-        box = await gutter.boundingBox()
-        return box
-      })
-      .not.toBeNull()
-    const centerX = box!.x + box!.width / 2
-    const centerY = box!.y + box!.height / 2
+    await expect.poll(() => gutter.boundingBox()).not.toBeNull()
+    const box = (await gutter.boundingBox())!
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
     await comfyPage.page.mouse.move(centerX, centerY)
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(centerX + deltaX, centerY, { steps: 10 })

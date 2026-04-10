@@ -38,18 +38,10 @@ test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
 
     await expect.poll(getGroupPositions).toHaveLength(2)
 
-    await expect
-      .poll(async () => {
-        const positions = await getGroupPositions()
-        return Math.abs(positions[0].x - positions[1].x)
-      })
-      .toBeCloseTo(50, 0)
-
-    await expect
-      .poll(async () => {
-        const positions = await getGroupPositions()
-        return Math.abs(positions[0].y - positions[1].y)
-      })
-      .toBeCloseTo(15, 0)
+    await expect(async () => {
+      const positions = await getGroupPositions()
+      expect(Math.abs(positions[0].x - positions[1].x)).toBeCloseTo(50, 0)
+      expect(Math.abs(positions[0].y - positions[1].y)).toBeCloseTo(15, 0)
+    }).toPass({ timeout: 5000 })
   })
 })

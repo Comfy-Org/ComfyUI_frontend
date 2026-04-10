@@ -149,16 +149,11 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       // Retry because the PrimeVue Select may re-render during search
       // filtering, causing the first click to land on a stale element.
       const select = settingRow.getByRole('combobox')
-      await expect
-        .poll(
-          async () => {
-            const expanded = await select.getAttribute('aria-expanded')
-            if (expanded !== 'true') await select.click()
-            return await select.getAttribute('aria-expanded')
-          },
-          { timeout: 3000 }
-        )
-        .toBe('true')
+      await expect(async () => {
+        const expanded = await select.getAttribute('aria-expanded')
+        if (expanded !== 'true') await select.click()
+        await expect(select).toHaveAttribute('aria-expanded', 'true')
+      }).toPass({ timeout: 3000 })
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
