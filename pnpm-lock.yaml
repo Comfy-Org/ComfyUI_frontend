@@ -21,9 +21,6 @@ catalogs:
     '@eslint/js':
       specifier: ^9.39.1
       version: 9.39.1
-    '@floating-ui/vue':
-      specifier: ^1.1.11
-      version: 1.1.11
     '@formkit/auto-animate':
       specifier: ^0.9.0
       version: 0.9.0
@@ -431,9 +428,6 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
-      '@floating-ui/vue':
-        specifier: 'catalog:'
-        version: 1.1.11(vue@3.5.13(typescript@5.9.3))
       '@formkit/auto-animate':
         specifier: 'catalog:'
         version: 0.9.0

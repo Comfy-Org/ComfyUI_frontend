@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
-import { computedAsync, onClickOutside, refDebounced } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computedAsync, refDebounced } from '@vueuse/core'
+import {
+  PopoverAnchor,
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot
+} from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -93,18 +98,6 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
-const triggerRef = useTemplateRef('triggerRef')
-const floatingRef = useTemplateRef('floatingRef')
-
-const { floatingStyles } = useFloating(triggerRef, floatingRef, {
-  placement: 'bottom-start',
-  whileElementsMounted: autoUpdate,
-  middleware: [offset(8), flip(), shift({ padding: 8 })]
-})
-
-onClickOutside(floatingRef, () => {
-  if (isOpen.value) closeDropdown()
-}, { ignore: [triggerRef] })
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
@@ -160,12 +153,6 @@ function closeDropdown() {
   isOpen.value = false
 }
 
-function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isOpen.value) {
-    closeDropdown()
-  }
-}
-
 function handleFileChange(event: Event) {
   if (disabled) return
   const target = event.target
@@ -201,8 +188,8 @@ function handleSelection(item: FormDropdownItem, index: number) {
 </script>
 
 <template>
-  <div @keydown="handleKeydown">
-    <div ref="triggerRef">
+  <PopoverRoot v-model:open="isOpen">
+    <PopoverAnchor as-child>
       <FormDropdownInput
         :files
         :is-open
@@ -217,34 +204,40 @@ function handleSelection(item: FormDropdownItem, index: number) {
         @select-click="toggleDropdown"
         @file-change="handleFileChange"
       />
-    </div>
-    <div
-      v-if="isOpen"
-      ref="floatingRef"
-      data-floating-menu
-      :style="floatingStyles"
-      class="z-50"
-    >
-      <FormDropdownMenu
-        v-model:filter-selected="filterSelected"
-        v-model:layout-mode="layoutMode"
-        v-model:sort-selected="sortSelected"
-        v-model:search-query="searchQuery"
-        v-model:ownership-selected="ownershipSelected"
-        v-model:base-model-selected="baseModelSelected"
-        :filter-options
-        :sort-options
-        :show-ownership-filter
-        :ownership-options
-        :show-base-model-filter
-        :base-model-options
-        :disabled
-        :items="sortedItems"
-        :is-selected="internalIsSelected"
-        :max-selectable
-        @close="closeDropdown"
-        @item-click="handleSelection"
-      />
-    </div>
-  </div>
+    </PopoverAnchor>
+    <PopoverPortal>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        :side-offset="8"
+        :collision-padding="8"
+        data-testid="form-dropdown-content"
+        class="z-50"
+        @escape-key-down="closeDropdown"
+        @pointer-down-outside="closeDropdown"
+        @focus-outside.prevent
+      >
+        <FormDropdownMenu
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          v-model:ownership-selected="ownershipSelected"
+          v-model:base-model-selected="baseModelSelected"
+          :filter-options
+          :sort-options
+          :show-ownership-filter
+          :ownership-options
+          :show-base-model-filter
+          :base-model-options
+          :disabled
+          :items="sortedItems"
+          :is-selected="internalIsSelected"
+          :max-selectable
+          @close="closeDropdown"
+          @item-click="handleSelection"
+        />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
 </template>

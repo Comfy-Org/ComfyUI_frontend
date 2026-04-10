@@ -24,10 +24,10 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
     await trigger.click()
   }
 
-  function getFloatingMenu(
+  function getDropdownContent(
     comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
   ) {
-    return comfyPage.page.locator('[data-floating-menu]')
+    return comfyPage.page.getByTestId('form-dropdown-content')
   }
 
   function getTriggerButton(
@@ -44,7 +44,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
   }) => {
     await clickDropdownTrigger(comfyPage)
 
-    const menu = getFloatingMenu(comfyPage)
+    const menu = getDropdownContent(comfyPage)
     await expect(menu).toBeVisible()
 
     const trigger = getTriggerButton(comfyPage)
@@ -55,7 +55,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
     expect(menuBox).not.toBeNull()
 
     // Menu should appear below the trigger, within a reasonable gap
-    // (offset middleware adds 8px, plus some tolerance for rounding)
+    // (side-offset is 8px, plus some tolerance for rounding)
     const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
     expect(gap).toBeGreaterThanOrEqual(-2)
     expect(gap).toBeLessThanOrEqual(20)
@@ -78,7 +78,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
 
     await clickDropdownTrigger(comfyPage)
 
-    const menu = getFloatingMenu(comfyPage)
+    const menu = getDropdownContent(comfyPage)
     await expect(menu).toBeVisible()
 
     const trigger = getTriggerButton(comfyPage)
@@ -107,7 +107,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
 
     await clickDropdownTrigger(comfyPage)
 
-    const menu = getFloatingMenu(comfyPage)
+    const menu = getDropdownContent(comfyPage)
     await expect(menu).toBeVisible()
 
     const trigger = getTriggerButton(comfyPage)
@@ -125,7 +125,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
   test('dropdown closes on Escape key', async ({ comfyPage }) => {
     await clickDropdownTrigger(comfyPage)
 
-    const menu = getFloatingMenu(comfyPage)
+    const menu = getDropdownContent(comfyPage)
     await expect(menu).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
@@ -135,7 +135,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
   test('dropdown closes on click outside', async ({ comfyPage }) => {
     await clickDropdownTrigger(comfyPage)
 
-    const menu = getFloatingMenu(comfyPage)
+    const menu = getDropdownContent(comfyPage)
     await expect(menu).toBeVisible()
 
     // Click on empty canvas area

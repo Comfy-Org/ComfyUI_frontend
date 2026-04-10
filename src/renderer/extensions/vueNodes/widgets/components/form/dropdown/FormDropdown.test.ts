@@ -19,19 +19,6 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
-vi.mock('@floating-ui/vue', () => ({
-  useFloating: vi.fn(() => ({
-    floatingStyles: {
-      value: { position: 'absolute', top: '0px', left: '0px' }
-    },
-    update: vi.fn()
-  })),
-  autoUpdate: vi.fn(() => vi.fn()),
-  offset: vi.fn(() => ({})),
-  flip: vi.fn(() => ({})),
-  shift: vi.fn(() => ({}))
-}))
-
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
   props: [
@@ -81,7 +68,8 @@ function mountDropdown(
       plugins: [PrimeVue, i18n],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        FormDropdownMenu: MockFormDropdownMenu
+        FormDropdownMenu: MockFormDropdownMenu,
+        PopoverPortal: { template: '<slot />' }
       }
     }
   })
@@ -122,29 +110,6 @@ describe('FormDropdown', () => {
 
       await openDropdown(result)
       expect(screen.queryByTestId('dropdown-menu')).toBeNull()
-    })
-
-    it('closes the dropdown on Escape key', async () => {
-      const result = mountDropdown([createItem('1', 'item1')])
-      await flushPromises()
-
-      await openDropdown(result)
-      expect(screen.getByTestId('dropdown-menu')).toBeInTheDocument()
-
-      await result.user.keyboard('{Escape}')
-      await flushPromises()
-      expect(screen.queryByTestId('dropdown-menu')).toBeNull()
-    })
-  })
-
-  describe('floating positioning', () => {
-    it('renders floating menu container when open', async () => {
-      const result = mountDropdown([createItem('1', 'item1')])
-      await flushPromises()
-
-      await openDropdown(result)
-
-      expect(screen.getByTestId('dropdown-menu')).toBeInTheDocument()
     })
   })
 
