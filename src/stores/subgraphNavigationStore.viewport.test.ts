@@ -24,8 +24,11 @@ vi.mock('@/scripts/app', () => {
       scale: 1,
       offset: [0, 0],
       state: { scale: 1, offset: [0, 0] },
-      fitToBounds: vi.fn()
+      fitToBounds: vi.fn(),
+      visible_area: [0, 0, 1000, 1000],
+      computeVisibleArea: vi.fn()
     },
+    viewport: [0, 0, 1000, 1000],
     setDirty: mockSetDirty,
     get empty() {
       return true
@@ -184,6 +187,11 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       // Ensure no cached entry
       store.viewportCache.delete(':root')
 
+      // Add a node outside the visible area so anyItemOverlapsRect returns false
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [9999, 9999], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+
       // Use the root graph ID so the stale-guard passes
       store.restoreViewport('root')
 
@@ -194,6 +202,10 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       rafCallbacks[0](performance.now())
 
       expect(mockFitView).toHaveBeenCalledOnce()
+
+      // Cleanup
+      mockGraph.nodes = []
+      mockGraph._nodes = []
     })
 
     it('skips fitView if active graph changed before rAF fires', () => {

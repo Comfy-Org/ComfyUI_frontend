@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -37,7 +37,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Only optional inputs', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/only_optional_inputs')
-    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).not.toBeVisible()

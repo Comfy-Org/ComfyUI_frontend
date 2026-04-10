@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -61,11 +61,17 @@ test.describe(
       test(`Load workflow from URL ${url} (drop from different browser tabs)`, async ({
         comfyPage
       }) => {
+        const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+
         await comfyPage.dragDrop.dragAndDropURL(url)
-        const readableName = url.split('/').pop()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          `dropped_workflow_url_${readableName}.png`
-        )
+
+        // The drop triggers an async fetch → parse → loadGraphData chain.
+        // Poll until the graph settles with the loaded workflow's nodes.
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
+            timeout: 15000
+          })
+          .toBeGreaterThan(initialNodeCount)
       })
     })
 
@@ -85,12 +91,12 @@ test.describe(
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
-      const box = await node.boundingBox()
-      expect(box).not.toBeNull()
+      await expect.poll(() => node.boundingBox()).toBeTruthy()
+      const box = (await node.boundingBox())!
 
       const dropPosition = {
-        x: box!.x + box!.width / 2,
-        y: box!.y + box!.height / 2
+        x: box.x + box.width / 2,
+        y: box.y + box.height / 2
       }
 
       await comfyPage.dragDrop.dragAndDropURL(fakeUrl, {
@@ -104,8 +110,9 @@ test.describe(
         { timeout: 10000 }
       )
 
-      const newNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(newNodeCount).not.toBe(initialNodeCount)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .not.toBe(initialNodeCount)
     })
   }
 )

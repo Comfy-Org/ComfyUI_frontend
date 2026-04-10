@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { logMeasurement, recordMeasurement } from '../helpers/perfReporter'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { logMeasurement, recordMeasurement } from '@e2e/helpers/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -327,8 +327,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       // Verify we actually entered the culling regime.
       // isNodeTooSmall triggers when max(width, height) * scale < 4px.
       // Typical nodes are ~200px wide, so scale must be < 0.02.
-      const scale = await comfyPage.canvasOps.getScale()
-      expect(scale).toBeLessThan(0.02)
+      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
 
       // Idle at extreme zoom-out — most nodes should be culled
       for (let i = 0; i < 60; i++) {
@@ -358,9 +357,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     // Wait for the output widget to populate (execution_success)
     const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
-    await expect(async () => {
-      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
-    }).toPass({ timeout: 10000 })
+    await expect
+      .poll(async () => (await outputNode.getWidget(0)).getValue(), {
+        timeout: 10000
+      })
+      .toBe('foo')
 
     const m = await comfyPage.perf.stopMeasuring('workflow-execution')
     recordMeasurement(m)
