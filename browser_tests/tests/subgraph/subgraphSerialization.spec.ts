@@ -35,10 +35,12 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     )
     await comfyPage.nextFrame()
 
-    const widgets = await getPromotedWidgets(comfyPage, '2')
-    expect(widgets.some(([, widgetName]) => widgetName === 'batch_size')).toBe(
-      true
-    )
+    await expect
+      .poll(async () => {
+        const widgets = await getPromotedWidgets(comfyPage, '2')
+        return widgets.some(([, widgetName]) => widgetName === 'batch_size')
+      })
+      .toBe(true)
   })
 
   test('Duplicate ID remap workflow remains navigable after a full reload boot path', async ({
@@ -55,12 +57,12 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
     await subgraphNode.navigateIntoSubgraph()
 
-    expect(await comfyPage.subgraph.isInSubgraph()).toBe(true)
+    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.nextFrame()
 
-    expect(await comfyPage.subgraph.isInSubgraph()).toBe(false)
+    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
   })
 
   test.describe('Legacy prefixed proxyWidget normalization', () => {

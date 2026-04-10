@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Node context menu viewport overflow (#10824)',
@@ -37,19 +37,17 @@ test.describe(
       await ksamplerNodes[0].click('title')
       await comfyPage.nextFrame()
 
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible({
-        timeout: 5000
-      })
+      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
       const moreOptionsBtn = comfyPage.page.locator(
         '[data-testid="more-options-button"]'
       )
-      await expect(moreOptionsBtn).toBeVisible({ timeout: 3000 })
+      await expect(moreOptionsBtn).toBeVisible()
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
       const menu = comfyPage.page.locator('.p-contextmenu')
-      await expect(menu).toBeVisible({ timeout: 3000 })
+      await expect(menu).toBeVisible()
 
       // Wait for constrainMenuHeight (runs via requestAnimationFrame in onMenuShow)
       await comfyPage.nextFrame()
@@ -68,8 +66,7 @@ test.describe(
           () => rootList.evaluate((el) => el.scrollHeight > el.clientHeight),
           {
             message:
-              'Menu should overflow vertically so this test exercises the viewport clamp',
-            timeout: 3000
+              'Menu should overflow vertically so this test exercises the viewport clamp'
           }
         )
         .toBe(true)
@@ -97,9 +94,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // The node should be removed from the graph
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 3000 })
-        .toBe(0)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     })
   }
 )

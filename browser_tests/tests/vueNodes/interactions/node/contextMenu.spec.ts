@@ -11,7 +11,7 @@ const BYPASS_CLASS = /before:bg-bypass\/60/
 
 async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
   await comfyPage.contextMenu.clickMenuItemExact(name)
-  await comfyPage.nextFrame()
+  await expect(comfyPage.contextMenu.primeVueMenu).toBeHidden()
 }
 
 async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
@@ -135,8 +135,9 @@ test.describe('Vue Node Context Menu', () => {
         { x: posBeforeDrag.x + 10, y: posBeforeDrag.y + 10 },
         { x: posBeforeDrag.x + 256, y: posBeforeDrag.y + 256 }
       )
-      const posAfterDrag = await header.boundingBox()
-      expect(posAfterDrag).toEqual(posBeforeDrag)
+      await expect
+        .poll(async () => await header.boundingBox())
+        .toEqual(posBeforeDrag)
 
       // Unpin via context menu
       await openContextMenu(comfyPage, nodeTitle)
@@ -216,14 +217,12 @@ test.describe('Vue Node Context Menu', () => {
       if (!loadImageNode) throw new Error('Load Image node not found')
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(
-              (nodeId) =>
-                window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
-              loadImageNode.id
-            ),
-          { timeout: 5_000 }
+        .poll(() =>
+          comfyPage.page.evaluate(
+            (nodeId) =>
+              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+            loadImageNode.id
+          )
         )
         .toBeGreaterThan(0)
     })
@@ -330,7 +329,9 @@ test.describe('Vue Node Context Menu', () => {
       // Convert to subgraph first
       await openContextMenu(comfyPage, 'Empty Latent Image')
       await clickExactMenuItem(comfyPage, 'Convert to Subgraph')
-      await comfyPage.nextFrame()
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      ).toBeVisible()
 
       // Right-click subgraph and edit widgets
       await openContextMenu(comfyPage, 'New Subgraph')
@@ -345,7 +346,9 @@ test.describe('Vue Node Context Menu', () => {
       // Convert to subgraph first
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Convert to Subgraph')
-      await comfyPage.nextFrame()
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      ).toBeVisible()
 
       // Add to library
       await openContextMenu(comfyPage, 'New Subgraph')
@@ -362,7 +365,6 @@ test.describe('Vue Node Context Menu', () => {
       })
       await searchBox.waitFor({ state: 'visible' })
       await searchBox.fill('TestBlueprint')
-      await comfyPage.nextFrame()
 
       await expect(comfyPage.page.getByText('TestBlueprint')).toBeVisible()
     })
@@ -492,10 +494,11 @@ test.describe('Vue Node Context Menu', () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Frame Nodes')
 
-      const newGroupCount = await comfyPage.page.evaluate(
-        () => window.app!.graph.groups.length
-      )
-      expect(newGroupCount).toBe(initialGroupCount + 1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.graph.groups.length)
+        )
+        .toBe(initialGroupCount + 1)
     })
 
     test('should convert to group node via context menu', async ({
@@ -507,10 +510,14 @@ test.describe('Vue Node Context Menu', () => {
       await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'visible' })
       await comfyPage.nodeOps.fillPromptDialog('TestGroupNode')
 
-      const groupNodes = await comfyPage.nodeOps.getNodeRefsByType(
-        'workflow>TestGroupNode'
-      )
-      expect(groupNodes.length).toBe(1)
+      await expect
+        .poll(async () => {
+          const groupNodes = await comfyPage.nodeOps.getNodeRefsByType(
+            'workflow>TestGroupNode'
+          )
+          return groupNodes.length
+        })
+        .toBe(1)
     })
 
     test('should convert selected nodes to subgraph via context menu', async ({

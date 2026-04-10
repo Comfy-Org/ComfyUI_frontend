@@ -445,7 +445,7 @@ export class SubgraphHelper {
       await this.rightClickOutputSlot(slotName)
     }
     await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.contextMenu.waitForHidden()
   }
 
   async findSubgraphNodeId(): Promise<string> {

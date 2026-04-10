@@ -83,9 +83,10 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     )
     await action.click()
 
-    const settingAfter = await comfyPage.settings.getSetting<boolean>(
-      'Comfy.Queue.ShowRunProgressBar'
-    )
-    expect(settingAfter).toBe(!settingBefore)
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Queue.ShowRunProgressBar')
+      )
+      .toBe(!settingBefore)
   })
 })

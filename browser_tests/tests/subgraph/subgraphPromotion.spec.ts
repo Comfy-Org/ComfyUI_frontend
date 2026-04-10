@@ -15,9 +15,7 @@ async function expectPromotedWidgetNamesToContain(
   widgetName: string
 ) {
   await expect
-    .poll(() => getPromotedWidgetNames(comfyPage, nodeId), {
-      timeout: 5000
-    })
+    .poll(() => getPromotedWidgetNames(comfyPage, nodeId))
     .toContain(widgetName)
 }
 
@@ -27,9 +25,7 @@ async function expectPromotedWidgetCountToBeGreaterThan(
   count: number
 ) {
   await expect
-    .poll(() => getPromotedWidgetCount(comfyPage, nodeId), {
-      timeout: 5000
-    })
+    .poll(() => getPromotedWidgetCount(comfyPage, nodeId))
     .toBeGreaterThan(count)
 }
 
@@ -52,7 +48,7 @@ test.describe(
         const subgraphNode = await ksampler.convertToSubgraph()
         await comfyPage.nextFrame()
 
-        expect(await subgraphNode.exists()).toBe(true)
+        await expect.poll(() => subgraphNode.exists()).toBe(true)
 
         const nodeId = String(subgraphNode.id)
         await expectPromotedWidgetNamesToContain(comfyPage, nodeId, 'seed')
@@ -217,7 +213,7 @@ test.describe(
 
         await expect(promoteEntry).toBeVisible()
         await promoteEntry.click()
-        await comfyPage.nextFrame()
+        await expect(promoteEntry).toBeHidden()
 
         // Navigate back to parent
         await comfyPage.subgraph.exitViaBreadcrumb()
@@ -252,12 +248,12 @@ test.describe(
 
         await expect(promoteEntry).toBeVisible()
         await promoteEntry.click()
-        await comfyPage.nextFrame()
+        // Wait for the context menu to close, confirming the action completed.
+        await expect(promoteEntry).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await fitToViewInstant(comfyPage)
-        await comfyPage.nextFrame()
         await comfyPage.nextFrame()
 
         await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '2', 0)
@@ -283,14 +279,12 @@ test.describe(
 
         await expect(unpromoteEntry).toBeVisible()
         await unpromoteEntry.click()
-        await comfyPage.nextFrame()
+        await expect(unpromoteEntry).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '2'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '2'))
           .toBeLessThan(initialWidgetCount)
       })
     })
@@ -332,7 +326,7 @@ test.describe(
           .locator('.p-contextmenu')
           .locator('text=Promote Widget')
 
-        await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
+        await expect(promoteEntry.first()).toBeVisible()
       })
     })
 
@@ -389,9 +383,14 @@ test.describe(
         const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(subgraphVueNode).toBeVisible()
 
-        const promotedNames = await getPromotedWidgetNames(comfyPage, '5')
-        expect(promotedNames).toContain('filename_prefix')
-        expect(promotedNames.some((name) => name.startsWith('$$'))).toBe(true)
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
+          .toEqual(
+            expect.arrayContaining([
+              'filename_prefix',
+              expect.stringMatching(/^\$\$/)
+            ])
+          )
 
         const loadImageNode = await comfyPage.nodeOps.getNodeRefById('11')
         const loadImagePosition = await loadImageNode.getPosition()
@@ -425,20 +424,22 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        const promotedNames = await getPromotedWidgetNames(comfyPage, '5')
-        expect(promotedNames).toContain('string_a')
-        expect(promotedNames).toContain('value')
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
+          .toEqual(expect.arrayContaining(['string_a', 'value']))
 
-        const disabledState = await comfyPage.page.evaluate(() => {
-          const node = window.app!.canvas.graph!.getNodeById('5')
-          return (node?.widgets ?? []).map((w) => ({
-            name: w.name,
-            disabled: !!w.computedDisabled
-          }))
-        })
-
-        const linkedWidget = disabledState.find((w) => w.name === 'string_a')
-        expect(linkedWidget?.disabled).toBe(true)
+        await expect
+          .poll(async () => {
+            const disabledState = await comfyPage.page.evaluate(() => {
+              const node = window.app!.canvas.graph!.getNodeById('5')
+              return (node?.widgets ?? []).map((w) => ({
+                name: w.name,
+                disabled: !!w.computedDisabled
+              }))
+            })
+            return disabledState.find((w) => w.name === 'string_a')?.disabled
+          })
+          .toBe(true)
 
         const textareas = comfyPage.page.getByTestId(
           TestIds.widgets.domWidgetTextarea
@@ -476,15 +477,16 @@ test.describe(
         await comfyPage.nextFrame()
 
         // Verify promotions exist
-        const namesBefore = await getPromotedWidgetNames(comfyPage, '11')
-        expect(namesBefore.length).toBeGreaterThan(0)
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, '11'))
+          .toEqual(expect.arrayContaining([expect.anything()]))
 
         // Delete the subgraph node
         const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
         await subgraphNode.delete()
 
         // Node no longer exists, so promoted widgets should be gone
-        expect(await subgraphNode.exists()).toBe(false)
+        await expect.poll(() => subgraphNode.exists()).toBe(false)
       })
 
       test('Nested promoted widget entries reflect interior changes after slot removal', async ({
@@ -503,12 +505,20 @@ test.describe(
         const outerSubgraph = await comfyPage.nodeOps.getNodeRefById('5')
         await outerSubgraph.navigateIntoSubgraph()
 
+        await expect
+          .poll(async () => {
+            return await comfyPage.page.evaluate(() => {
+              const graph = window.app!.canvas.graph
+              if (!graph || !('inputNode' in graph)) return null
+              return graph.inputs?.[0]?.name ?? null
+            })
+          })
+          .not.toBeNull()
         const removedSlotName = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph
           if (!graph || !('inputNode' in graph)) return null
           return graph.inputs?.[0]?.name ?? null
         })
-        expect(removedSlotName).not.toBeNull()
 
         await comfyPage.subgraph.removeSlot('input')
 
@@ -520,9 +530,7 @@ test.describe(
         expectedNames.splice(removedIndex, 1)
 
         await expect
-          .poll(() => getPromotedWidgetNames(comfyPage, '5'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
           .toEqual(expectedNames)
       })
 
@@ -537,9 +545,7 @@ test.describe(
 
         let initialWidgetCount = 0
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeGreaterThan(0)
         initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
 
@@ -555,9 +561,7 @@ test.describe(
 
         // Widget count should be reduced
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeLessThan(initialWidgetCount)
       })
     })

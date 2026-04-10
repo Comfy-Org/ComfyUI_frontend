@@ -76,9 +76,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
     await comfyPage.page.keyboard.press('r')
 
     // Wait for nodes' widgets to be updated
-    await expect
-      .poll(() => getComboValues(), { timeout: 5000 })
-      .not.toEqual(initialComboValues)
+    await expect.poll(() => getComboValues()).not.toEqual(initialComboValues)
   })
 
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
@@ -100,9 +98,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
     // press R to trigger refresh
     await comfyPage.page.keyboard.press('r')
 
-    await expect
-      .poll(() => getComboValues(), { timeout: 5_000 })
-      .toEqual(['A', 'B'])
+    await expect.poll(() => getComboValues()).toEqual(['A', 'B'])
   })
 })
 
@@ -136,9 +132,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
-        timeout: 2_000
-      })
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
       .toBeDefined()
   })
 })
@@ -160,9 +154,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
-        timeout: 2_000
-      })
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
       .toBeDefined()
   })
 })
@@ -175,11 +167,17 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+      const initialSize = await node.getSize()
 
       await comfyPage.page.evaluate(() => {
         window.app!.graph!.nodes[0].addWidget('number', 'new_widget', 10, null)
         window.app!.graph!.setDirtyCanvas(true, true)
       })
+
+      await expect
+        .poll(async () => (await node.getSize()).height)
+        .toBeGreaterThan(initialSize.height)
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'ksampler_widget_added.png'
@@ -245,6 +243,24 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
 
     // Wait for the image to load from the server
     await imageLoaded
+
+    // Wait for the image to decode and appear on the node
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.graph!.getNodeById(nodeId)
+            const img = node?.imgs?.[0]
+            return (
+              !!img &&
+              img.complete &&
+              img.naturalWidth > 0 &&
+              img.src.includes('image32x32.webp')
+            )
+          }, loadImageNode.id),
+        { timeout: 10_000 }
+      )
+      .toBe(true)
     await comfyPage.nextFrame()
 
     // Expect the image preview to change automatically
@@ -362,6 +378,13 @@ test.describe(
               ([loadId, saveId]) => {
                 const graph = window.app!.graph
 
+                // Re-dirty the canvas so onDrawBackground fires again on the
+                // next frame. Without this, the single setDirty(true) above
+                // only triggers one paint; if the async image load inside
+                // showPreview() hasn't completed by then, node.imgs stays
+                // empty and no further paints re-check it.
+                window.app!.canvas.setDirty(true, true)
+
                 return [loadId, saveId].map(
                   (nodeId) => (graph.getNodeById(nodeId)?.imgs?.length ?? 0) > 0
                 )
@@ -378,9 +401,7 @@ test.describe(
 test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_audio_widget')
-    // Wait for the audio widget to be rendered in the DOM
-    await comfyPage.page.waitForSelector('.comfy-audio', { state: 'attached' })
-    await comfyPage.nextFrame()
+    await expect(comfyPage.page.locator('.comfy-audio')).toBeVisible()
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })
@@ -397,6 +418,8 @@ test.describe('Unserialized widgets', { tag: '@widget' }, () => {
     await comfyPage.page.mouse.click(10, 10)
 
     // Expect the graph to not be modified
-    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+    await expect
+      .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+      .toBe(false)
   })
 })
