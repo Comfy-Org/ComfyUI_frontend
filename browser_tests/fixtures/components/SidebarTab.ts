@@ -427,24 +427,20 @@ export class AssetsSidebarTab extends SidebarTab {
     }
     // Wait for all toast elements to fully animate out and detach from DOM
     await expect(this.page.locator('.p-toast-message'))
-      .toHaveCount(0, { timeout: 5000 })
+      .toHaveCount(0)
       .catch(() => {})
   }
 
   async switchToImported() {
     await this.dismissToasts()
     await this.importedTab.click()
-    await expect(this.importedTab).toHaveAttribute('aria-selected', 'true', {
-      timeout: 3000
-    })
+    await expect(this.importedTab).toHaveAttribute('aria-selected', 'true')
   }
 
   async switchToGenerated() {
     await this.dismissToasts()
     await this.generatedTab.click()
-    await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true', {
-      timeout: 3000
-    })
+    await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true')
   }
 
   async openSettingsMenu() {
@@ -467,7 +463,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async waitForAssets(count?: number) {
     if (count !== undefined) {
-      await expect(this.assetCards).toHaveCount(count, { timeout: 5000 })
+      await expect(this.assetCards).toHaveCount(count)
     } else {
       await this.assetCards.first().waitFor({ state: 'visible', timeout: 5000 })
     }

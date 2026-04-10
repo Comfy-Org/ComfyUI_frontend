@@ -134,11 +134,7 @@ test.describe('Workflow Persistence', () => {
     await tab.switchToWorkflow('outputs-test')
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    await expect
-      .poll(() => getNodeOutputImageCount(comfyPage, nodeId), {
-        timeout: 5_000
-      })
-      .toBe(1)
+    await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
   })
 
   test('Loading a new workflow cleanly replaces the previous graph', async ({
@@ -191,9 +187,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
 
     await expect
-      .poll(() => getWidgetValueSnapshot(comfyPage), {
-        timeout: 5_000
-      })
+      .poll(() => getWidgetValueSnapshot(comfyPage))
       .toEqual(widgetValuesBefore)
   })
 

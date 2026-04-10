@@ -16,7 +16,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.locator('[data-testid="linear-widgets"]')
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
   })
 
   test('Run button visible in linear mode', async ({ comfyPage }) => {
@@ -24,7 +24,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.locator('[data-testid="linear-run-button"]')
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
   })
 
   test('Workflow info section visible', async ({ comfyPage }) => {
@@ -32,7 +32,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.locator('[data-testid="linear-workflow-info"]')
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
   })
 
   test('Returns to graph mode', async ({ comfyPage }) => {
@@ -40,11 +40,11 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.locator('[data-testid="linear-widgets"]')
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
 
     await comfyPage.appMode.toggleAppMode()
 
-    await expect(comfyPage.canvas).toBeVisible({ timeout: 5000 })
+    await expect(comfyPage.canvas).toBeVisible()
     await expect(
       comfyPage.page.locator('[data-testid="linear-widgets"]')
     ).not.toBeVisible()
@@ -55,7 +55,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
 
     await expect(
       comfyPage.page.locator('[data-testid="linear-widgets"]')
-    ).toBeVisible({ timeout: 5000 })
+    ).toBeVisible()
     await expect(comfyPage.canvas).not.toBeVisible()
   })
 })

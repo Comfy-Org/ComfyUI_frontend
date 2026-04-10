@@ -28,6 +28,6 @@ export class ToastHelper {
     }
 
     // Assert all toasts are closed
-    await expect(this.visibleToasts).toHaveCount(0, { timeout: 1000 })
+    await expect(this.visibleToasts).toHaveCount(0)
   }
 }
