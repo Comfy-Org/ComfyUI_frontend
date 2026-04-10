@@ -151,12 +151,12 @@
                           ({{ $t('g.you') }})
                         </span>
                       </span>
-                      <span
+                      <StatusBadge
                         v-if="uiConfig.showRoleBadge"
-                        class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
-                      >
-                        {{ $t('workspaceSwitcher.roleOwner') }}
-                      </span>
+                        :label="$t('workspaceSwitcher.roleOwner')"
+                        severity="contrast"
+                        class="py-0.5 text-2xs font-bold"
+                      />
                     </div>
                     <span class="text-sm text-muted-foreground">
                       {{ userEmail }}
@@ -200,12 +200,12 @@
                           ({{ $t('g.you') }})
                         </span>
                       </span>
-                      <span
+                      <StatusBadge
                         v-if="uiConfig.showRoleBadge"
-                        class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
-                      >
-                        {{ getRoleBadgeLabel(member.role) }}
-                      </span>
+                        :label="getRoleBadgeLabel(member.role)"
+                        severity="contrast"
+                        class="py-0.5 text-2xs font-bold"
+                      />
                     </div>
                     <span class="text-sm text-muted-foreground">
                       {{ member.email }}
@@ -367,6 +367,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
