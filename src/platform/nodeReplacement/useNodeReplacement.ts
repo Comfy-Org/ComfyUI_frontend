@@ -96,9 +96,15 @@ function planReplacementTopology(
   }
 
   for (const outputMap of replacement.output_mapping ?? []) {
-    if (!newNode.outputs?.[outputMap.new_idx]) continue
+    const newOutput = newNode.outputs?.[outputMap.new_idx]
+    if (!newOutput) continue
     for (const link of outputLinks(graph, oldNode.id, outputMap.old_idx)) {
       addUpdate(link, { originSlot: outputMap.new_idx })
+      // link.type is not part of EndpointPatch/topology identity, so it is
+      // safe to update directly here rather than deferring it into the
+      // batched endpoint update below. Keeps port colors correct after the
+      // link is retargeted to the replacement node's output slot.
+      link.type = newOutput.type ?? link.type
     }
   }
 
