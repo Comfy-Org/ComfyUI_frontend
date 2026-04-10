@@ -35,12 +35,15 @@ let target = ''
 let ref = ''
 let serverUrl = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
 let outputBase = ''
+let includeBase = false
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i]
   if (arg === '--help' || arg === '-h') {
     printUsage()
     process.exit(0)
+  } else if (arg === '--base') {
+    includeBase = true
   } else if (arg.startsWith('--ref=')) {
     ref = arg.slice(6)
   } else if (arg === '--ref') {
@@ -175,26 +178,9 @@ if (targetType === 'issue') {
 }
 
 // ── Determine mode ──
-// Issue → reproduce (find & prove the bug)
-// PR → before (reproduce bug on base), then after (show fix on head)
-// For local dev, run "before" by default; CI runs both phases on separate runners
-
-const mode = targetType === 'issue' ? 'reproduce' : 'before'
-
-// ── Handle --ref (checkout specific commit if requested) ──
-
-if (ref) {
-  console.warn(`Checking out ref: ${ref}`)
-  try {
-    execSync(`git fetch origin ${ref} --depth=1 2>/dev/null || true`, {
-      encoding: 'utf-8'
-    })
-  } catch {
-    // fetch may fail for local refs, that's fine
-  }
-}
-
-// ── Run qa-record.ts ──
+// Issue → reproduce (find & prove the bug on current code)
+// PR default → after (demonstrate the fix on head)
+// PR --base → also run before (reproduce bug on base) first
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const recordScript = resolve(scriptDir, 'qa-record.ts')
@@ -224,7 +210,30 @@ function runQaRecord(qaMode: string, qaOutputDir: string): number {
   return r.status ?? 1
 }
 
-const result = { status: runQaRecord(mode, outputDir) }
+let exitCode = 0
+
+if (targetType === 'issue') {
+  exitCode = runQaRecord('reproduce', outputDir)
+} else if (includeBase) {
+  // PR with --base: run both phases
+  console.warn('\n=== Phase 1: Reproduce bug on base ===')
+  const baseDir = resolve(outputDir, 'base')
+  mkdirSync(baseDir, { recursive: true })
+  const baseCode = runQaRecord('before', baseDir)
+  if (baseCode !== 0) {
+    console.warn('Base phase failed, continuing to head phase...')
+  }
+
+  console.warn('\n=== Phase 2: Demonstrate fix on head ===')
+  const headDir = resolve(outputDir, 'head')
+  mkdirSync(headDir, { recursive: true })
+  exitCode = runQaRecord('after', headDir)
+} else {
+  // PR default: just test the head (current state)
+  exitCode = runQaRecord('after', outputDir)
+}
+
+const result = { status: exitCode }
 
 // ── Summary ──
 
@@ -255,6 +264,7 @@ Targets:
   10253              Number (auto-detects issue vs PR)
 
 Options:
+  --base             For PRs: also test the base ref (reproduce bug before fix)
   --url=<url>        ComfyUI server URL (default: from .env or http://127.0.0.1:8188)
   --ref=<ref>        Git ref to test against (commit hash or branch)
   --output=<dir>     Override output directory (default: .comfy-qa/<number>)
