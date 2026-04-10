@@ -99,6 +99,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
+  const pendingJobIds = new Set<string>()
 
   watch(
     () => outputMediaAssets.media.value,
@@ -106,6 +107,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       let cancelled = false
       onCleanup(() => {
         cancelled = true
+        pendingJobIds.clear()
       })
 
       for (const asset of assets) {
@@ -113,8 +115,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         if (!meta) continue
 
         const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
-        if (outputCount <= 1 || resolvedByJobId.value.has(meta.jobId)) continue
+        if (
+          outputCount <= 1 ||
+          resolvedByJobId.value.has(meta.jobId) ||
+          pendingJobIds.has(meta.jobId)
+        )
+          continue
 
+        pendingJobIds.add(meta.jobId)
         void resolveOutputAssetItems(meta, { createdAt: asset.created_at })
           .then((resolved) => {
             if (cancelled || !resolved.length) return
@@ -128,6 +136,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
               meta.jobId,
               error
             )
+          })
+          .finally(() => {
+            pendingJobIds.delete(meta.jobId)
           })
       }
     },
@@ -169,7 +180,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       seen.add(asset.id)
       const annotatedPath = `${asset.name} [output]`
       items.push({
-        id: `output-${annotatedPath}`,
+        id: `output-${asset.id}`,
         preview_url:
           asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,

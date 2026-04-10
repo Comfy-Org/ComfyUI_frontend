@@ -627,4 +627,40 @@ describe('useWidgetSelectItems', () => {
       consoleWarnSpy.mockRestore()
     })
   })
+
+  describe('selectedSet', () => {
+    beforeEach(() => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+    })
+
+    it('returns empty set when modelValue is undefined', () => {
+      const { selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: ref(undefined)
+        })
+      )
+      expect(selectedSet.value.size).toBe(0)
+    })
+
+    it('returns set with matching item id when modelValue matches', () => {
+      const { selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: ref('img_001.png')
+        })
+      )
+      expect(selectedSet.value.size).toBe(1)
+      expect(selectedSet.value.has('input-0')).toBe(true)
+    })
+
+    it('returns set with missing item id when modelValue matches no input', () => {
+      const { selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: ref('nonexistent.png'),
+          values: () => ['img_001.png']
+        })
+      )
+      expect(selectedSet.value.size).toBe(1)
+      expect(selectedSet.value.has('missing-nonexistent.png')).toBe(true)
+    })
+  })
 })

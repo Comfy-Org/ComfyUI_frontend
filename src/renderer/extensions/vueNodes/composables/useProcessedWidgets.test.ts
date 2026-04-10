@@ -131,6 +131,69 @@ describe('hasWidgetError', () => {
       )
     ).toBe(true)
   })
+
+  it('returns true via sourceExecutionId when execution store has matching error', () => {
+    const widget = createMockWidget({
+      name: 'seed',
+      sourceExecutionId: '65:18'
+    })
+    executionErrorStore.lastNodeErrors = {
+      '65:18': {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'seed is required',
+            details: '',
+            extra_info: { input_name: 'seed' }
+          }
+        ],
+        class_type: 'TestNode',
+        dependent_outputs: []
+      }
+    }
+    expect(
+      hasWidgetError(
+        widget,
+        '1',
+        undefined,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+  })
+
+  it('returns true when widget has missing model', () => {
+    const widget = createMockWidget({ name: 'ckpt_name' })
+    vi.spyOn(missingModelStore, 'isWidgetMissingModel').mockReturnValue(true)
+    expect(
+      hasWidgetError(
+        widget,
+        '1',
+        undefined,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+  })
+
+  it('uses slotName for error matching when present', () => {
+    const widget = createMockWidget({
+      name: 'internal_name',
+      slotName: 'display_slot'
+    })
+    const nodeErrors = {
+      errors: [{ extra_info: { input_name: 'display_slot' } }]
+    }
+    expect(
+      hasWidgetError(
+        widget,
+        '1',
+        nodeErrors,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+  })
 })
 
 describe('computeProcessedWidgets borderStyle', () => {
@@ -284,6 +347,57 @@ describe('computeProcessedWidgets borderStyle', () => {
     expect(result[0].simplified.borderStyle).toBe(
       'ring ring-component-node-widget-advanced'
     )
+  })
+
+  it('deduplication keeps visible widget over hidden duplicate', () => {
+    const hiddenWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: '1',
+      storeNodeId: '1',
+      storeName: 'text',
+      slotName: 'text',
+      options: { hidden: true }
+    })
+
+    const visibleWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: '1',
+      storeNodeId: '1',
+      storeName: 'text',
+      slotName: 'text'
+    })
+
+    const nodeData = {
+      id: '1',
+      type: 'TestNode',
+      widgets: [hiddenWidget, visibleWidget],
+      title: 'Test',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    }
+
+    const result = computeProcessedWidgets(
+      nodeData,
+      'graph-test',
+      false,
+      false,
+      null,
+      promotionStore,
+      executionErrorStore,
+      missingModelStore,
+      widgetValueStore,
+      noopTooltip,
+      noopTooltipConfig,
+      noopRightClick
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].hidden).toBe(false)
   })
 })
 

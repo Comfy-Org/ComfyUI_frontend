@@ -92,6 +92,7 @@ describe('useWidgetSelectActions', () => {
       updateSelectedItems(new Set())
 
       expect(modelValue.value).toBeUndefined()
+      expect(mockCheckState).toHaveBeenCalledOnce()
     })
   })
 
@@ -129,6 +130,94 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('uploaded.png')
       expect(mockCheckState).toHaveBeenCalledOnce()
+    })
+
+    it('adds uploaded path to widget values array', async () => {
+      const { api } = await import('@/scripts/api')
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'new.png', subfolder: '' })
+        })
+      )
+
+      const modelValue = ref<string | undefined>()
+      const widgetValues = ['existing.png']
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: widgetValues }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'new.png')])
+
+      expect(widgetValues).toContain('new.png')
+      expect(widgetValues).toHaveLength(2)
+    })
+
+    it('calls widget callback after upload', async () => {
+      const { api } = await import('@/scripts/api')
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'uploaded.png', subfolder: '' })
+        })
+      )
+
+      const mockCallback = vi.fn()
+      const modelValue = ref<string | undefined>()
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            callback: mockCallback,
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'uploaded.png')])
+
+      expect(mockCallback).toHaveBeenCalledWith('uploaded.png')
+    })
+
+    it('shows alert toast on upload failure', async () => {
+      const { api } = await import('@/scripts/api')
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
+
+      const modelValue = ref<string | undefined>('original.png')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'fail.png')])
+
+      expect(modelValue.value).toBe('original.png')
     })
   })
 })
