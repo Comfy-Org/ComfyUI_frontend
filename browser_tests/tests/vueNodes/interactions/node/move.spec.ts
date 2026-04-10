@@ -11,8 +11,15 @@ test.describe('Vue Node Moving', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  const getHeaderPos = async (comfyPage: ComfyPage, title: string) => {
-    const box = await comfyPage.page.getByText(title).boundingBox()
+  const getHeaderPos = async (
+    comfyPage: ComfyPage,
+    title: string
+  ): Promise<{ x: number; y: number; width: number; height: number }> => {
+    const box = await comfyPage.vueNodes
+      .getNodeByTitle(title)
+      .getByTestId('node-title')
+      .first()
+      .boundingBox()
     if (!box) throw new Error(`${title} header not found`)
     return box
   }
@@ -98,16 +105,20 @@ test.describe('Vue Node Moving', () => {
     const dx = 120
     const dy = 80
 
+    const clickNodeTitleWithMeta = async (title: string) => {
+      await comfyPage.vueNodes
+        .getNodeByTitle(title)
+        .locator('[data-testid="node-title"]')
+        .first()
+        .click({ modifiers: ['Meta'] })
+    }
+
     await comfyPage.page.keyboard.down('Meta')
     try {
-      await comfyPage.page
-        .getByText('Load Checkpoint')
-        .click({ modifiers: ['Meta'] })
-      await comfyPage.page.getByText('KSampler').click({ modifiers: ['Meta'] })
-      await comfyPage.page
-        .getByText('Empty Latent Image')
-        .click({ modifiers: ['Meta'] })
-      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(3)
+      await clickNodeTitleWithMeta('Load Checkpoint')
+      await clickNodeTitleWithMeta('KSampler')
+      await clickNodeTitleWithMeta('Empty Latent Image')
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
 
       // Re-fetch drag source after clicks in case the header reflowed.
       const dragSrc = await getHeaderPos(comfyPage, 'Load Checkpoint')
@@ -127,7 +138,7 @@ test.describe('Vue Node Moving', () => {
       await comfyPage.nextFrame()
     }
 
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(3)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
 
     const checkpointAfter = await getHeaderPos(comfyPage, 'Load Checkpoint')
     const ksamplerAfter = await getHeaderPos(comfyPage, 'KSampler')

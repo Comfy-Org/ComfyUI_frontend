@@ -181,9 +181,19 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Duplication', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      // Pin this suite to the legacy canvas path so Alt+drag exercises
+      // LGraphCanvas, not the Vue node drag handler.
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.nextFrame()
+    })
+
     test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
       const before = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      expect(before.length).toBe(2)
+      expect(
+        before,
+        'Expected exactly 2 CLIPTextEncode nodes in default graph'
+      ).toHaveLength(2)
 
       const target = before[0]
       const pos = await target.getPosition()
