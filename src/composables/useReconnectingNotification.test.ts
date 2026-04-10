@@ -116,6 +116,15 @@ describe('useReconnectingNotification', () => {
     expect(mockToastRemove).not.toHaveBeenCalled()
   })
 
+  it('does nothing when onReconnected is called without prior onReconnecting', () => {
+    const { onReconnected } = useReconnectingNotification()
+
+    onReconnected()
+
+    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(mockToastRemove).not.toHaveBeenCalled()
+  })
+
   it('handles multiple reconnecting events without duplicating toasts', () => {
     const { onReconnecting } = useReconnectingNotification()
 
