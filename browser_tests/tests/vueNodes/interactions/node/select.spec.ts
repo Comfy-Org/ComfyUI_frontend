@@ -24,29 +24,29 @@ test.describe('Vue Node Selection', () => {
       comfyPage
     }) => {
       await comfyPage.page.getByText('Load Checkpoint').click()
-      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
       await comfyPage.page.getByText('Empty Latent Image').click({
         modifiers: [modifier]
       })
-      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(2)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
 
       await comfyPage.page.getByText('KSampler').click({
         modifiers: [modifier]
       })
-      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(3)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
     })
 
     test(`should allow de-selecting nodes with ${name}+click`, async ({
       comfyPage
     }) => {
       await comfyPage.page.getByText('Load Checkpoint').click()
-      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
       await comfyPage.page.getByText('Load Checkpoint').click({
         modifiers: [modifier]
       })
-      await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
     })
   }
 
@@ -58,9 +58,7 @@ test.describe('Vue Node Selection', () => {
 
     await comfyPage.canvas.press('Control+a')
 
-    await expect
-      .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
-      .toBe(initialCount)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(initialCount)
   })
 
   test('should select pinned node without dragging', async ({ comfyPage }) => {
@@ -76,7 +74,7 @@ test.describe('Vue Node Selection', () => {
     const pinIndicator = checkpointNode.locator(PIN_INDICATOR)
     await expect(pinIndicator).toBeVisible()
 
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
     const initialPos = await checkpointNodeHeader.boundingBox()
     if (!initialPos) throw new Error('Failed to get header position')
@@ -90,6 +88,6 @@ test.describe('Vue Node Selection', () => {
       .poll(async () => await checkpointNodeHeader.boundingBox())
       .toEqual(initialPos)
 
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
   })
 })

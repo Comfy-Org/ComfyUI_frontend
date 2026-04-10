@@ -396,11 +396,6 @@ export class ComfyPage {
     return this.page.locator('.dom-widget')
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
-  }
-
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
       ;(window.app!.extensionManager as WorkspaceStore).focusMode = focusMode

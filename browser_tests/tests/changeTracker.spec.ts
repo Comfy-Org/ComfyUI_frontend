@@ -112,7 +112,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
       // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
-      await expect.poll(() => comfyPage.toast.getToastErrorCount()).toBe(0)
+      await expect(comfyPage.toast.toastErrors).toHaveCount(0)
       await expect
         .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
         .toBe(false)

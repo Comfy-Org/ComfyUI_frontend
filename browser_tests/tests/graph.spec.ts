@@ -23,7 +23,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
   test('Validate workflow links', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Validation.Workflows', true)
     await comfyPage.workflow.loadWorkflow('links/bad_link')
-    await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(2)
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(2)
   })
 
   // Regression: duplicate links with shifted target_slot (widget-to-input

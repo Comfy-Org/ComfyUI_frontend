@@ -40,7 +40,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     })
 
     await comfyPage.command.executeCommand('TestCommand')
-    await expect.poll(() => comfyPage.toast.getToastErrorCount()).toBe(1)
+    await expect(comfyPage.toast.toastErrors).toHaveCount(1)
   })
 
   test('Should handle async command errors', async ({ comfyPage }) => {
@@ -53,6 +53,6 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
     })
 
     await comfyPage.command.executeCommand('TestCommand')
-    await expect.poll(() => comfyPage.toast.getToastErrorCount()).toBe(1)
+    await expect(comfyPage.toast.toastErrors).toHaveCount(1)
   })
 })

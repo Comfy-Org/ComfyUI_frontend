@@ -21,17 +21,13 @@ test.describe('@canvas Selection Rectangle', () => {
     await comfyPage.canvas.press('Control+a')
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
-      .toBe(totalCount)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(totalCount)
   })
 
   test('Click empty space deselects all', async ({ comfyPage }) => {
     await comfyPage.canvas.press('Control+a')
     await comfyPage.nextFrame()
-    await expect
-      .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
-      .toBeGreaterThan(0)
+    await expect(comfyPage.vueNodes.selectedNodes).not.toHaveCount(0)
 
     // Deselect by Ctrl+clicking the already-selected node (reliable cross-env)
     await comfyPage.page
@@ -43,26 +39,26 @@ test.describe('@canvas Selection Rectangle', () => {
     })
     await comfyPage.nextFrame()
 
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
   })
 
   test('Single click selects one node', async ({ comfyPage }) => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()
 
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
   })
 
   test('Ctrl+click adds to selection', async ({ comfyPage }) => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
     await comfyPage.page.getByText('Empty Latent Image').click({
       modifiers: ['Control']
     })
     await comfyPage.nextFrame()
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(2)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
   })
 
   test('Selected nodes have visual indicator', async ({ comfyPage }) => {
@@ -77,7 +73,7 @@ test.describe('@canvas Selection Rectangle', () => {
   test('Drag-select rectangle selects multiple nodes', async ({
     comfyPage
   }) => {
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
 
     // Use Ctrl+A to select all, which is functionally equivalent to
     // drag-selecting the entire canvas and more reliable in CI
@@ -88,8 +84,6 @@ test.describe('@canvas Selection Rectangle', () => {
       .poll(() => comfyPage.vueNodes.getNodeCount())
       .toBeGreaterThan(1)
     const totalCount = await comfyPage.vueNodes.getNodeCount()
-    await expect
-      .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
-      .toBe(totalCount)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(totalCount)
   })
 })

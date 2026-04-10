@@ -29,9 +29,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.keyboard.selectAll()
 
     // Verify all Vue nodes are selected
-    await expect
-      .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
-      .toBe(initialNodeCount)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(initialNodeCount)
 
     // Delete with Delete key
     await comfyPage.vueNodes.deleteSelected()
@@ -54,7 +52,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.selectNode(nodeIds[0])
 
     // Verify selection
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(1)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
 
     // Delete with Delete key
     await comfyPage.vueNodes.deleteSelected()
@@ -115,7 +113,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
 
     // Ensure no Vue nodes are selected
     await comfyPage.vueNodes.clearSelection()
-    await expect.poll(() => comfyPage.vueNodes.getSelectedNodeCount()).toBe(0)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
 
     // Press Delete key - should not crash and should handle gracefully
     await comfyPage.page.keyboard.press('Delete')
@@ -138,9 +136,9 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await comfyPage.vueNodes.selectNodes(nodesToSelect)
 
     // Verify expected nodes are selected
-    await expect
-      .poll(() => comfyPage.vueNodes.getSelectedNodeCount())
-      .toBe(nodesToSelect.length)
+    await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(
+      nodesToSelect.length
+    )
 
     // Delete selected Vue nodes
     await comfyPage.vueNodes.deleteSelected()

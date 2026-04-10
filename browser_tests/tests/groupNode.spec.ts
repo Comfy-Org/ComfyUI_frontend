@@ -345,18 +345,18 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
   test.describe('Keybindings', () => {
     test('Convert to group node, no selection', async ({ comfyPage }) => {
-      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(0)
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
       await comfyPage.page.keyboard.press('Alt+g')
-      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(1)
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
     })
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
-      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(0)
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNode1
       })
       await comfyPage.nextFrame()
       await comfyPage.page.keyboard.press('Alt+g')
-      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(1)
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
     })
   })
 })

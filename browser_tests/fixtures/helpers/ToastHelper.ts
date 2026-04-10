@@ -12,16 +12,6 @@ export class ToastHelper {
     return this.page.locator('.p-toast-message.p-toast-message-error')
   }
 
-  async getToastErrorCount(): Promise<number> {
-    return await this.page
-      .locator('.p-toast-message.p-toast-message-error')
-      .count()
-  }
-
-  async getVisibleToastCount(): Promise<number> {
-    return await this.visibleToasts.count()
-  }
-
   async closeToasts(requireCount = 0): Promise<void> {
     if (requireCount) {
       await this.visibleToasts

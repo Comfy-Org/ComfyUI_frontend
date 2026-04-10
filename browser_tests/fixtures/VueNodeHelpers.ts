@@ -49,13 +49,6 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
-  }
-
-  /**
    * Get all Vue node IDs currently in the DOM
    */
   async getNodeIds(): Promise<string[]> {
