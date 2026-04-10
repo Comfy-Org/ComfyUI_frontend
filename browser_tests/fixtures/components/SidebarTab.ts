@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
-import { TestIds } from '../selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 class SidebarTab {
   constructor(
@@ -179,10 +179,14 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .allInnerTexts()
   }
 
+  get activeWorkflowLabel(): Locator {
+    return this.root.locator(
+      '.comfyui-workflows-open .p-tree-node-selected .node-label'
+    )
+  }
+
   async getActiveWorkflowName() {
-    return await this.root
-      .locator('.comfyui-workflows-open .p-tree-node-selected .node-label')
-      .innerText()
+    return await this.activeWorkflowLabel.innerText()
   }
 
   async getTopLevelSavedWorkflowNames() {

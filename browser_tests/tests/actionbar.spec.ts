@@ -1,10 +1,10 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '../../src/schemas/apiSchema'
+import type { StatusWsMessage } from '@/schemas/apiSchema'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -22,10 +22,10 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
   }) => {
     // Enable change auto-queue mode
     const queueOpts = await comfyPage.actionbar.queueButton.toggleOptions()
-    expect(await queueOpts.getMode()).toBe('disabled')
+    await expect.poll(() => queueOpts.getMode()).toBe('disabled')
     await queueOpts.setMode('change')
     await comfyPage.nextFrame()
-    expect(await queueOpts.getMode()).toBe('change')
+    await expect.poll(() => queueOpts.getMode()).toBe('change')
     await comfyPage.actionbar.queueButton.toggleOptions()
 
     // Intercept the prompt queue endpoint
@@ -124,6 +124,8 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    expect(await comfyPage.actionbar.isDocked()).toBe(true)
+    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
+      /static/
+    )
   })
 })

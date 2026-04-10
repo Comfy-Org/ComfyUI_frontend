@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "هیستوگرام تصویر",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "درخشندگی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "قرمز",
+        "tooltip": null
+      },
+      "3": {
+        "name": "سبز",
+        "tooltip": null
+      },
+      "4": {
+        "name": "آبی",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "معکوس‌سازی تصویر",
     "inputs": {
