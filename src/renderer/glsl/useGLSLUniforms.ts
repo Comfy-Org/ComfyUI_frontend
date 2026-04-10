@@ -88,9 +88,8 @@ export function extractUniformSources(
     if (dotIndex === -1) continue
 
     const prefix = inputName.slice(0, dotIndex)
-    const widgetIndex =
-      link.origin_slot < sourceNode.widgets.length ? link.origin_slot : 0
-    const widget = sourceNode.widgets[widgetIndex]
+    if (link.origin_slot >= sourceNode.widgets.length) continue
+    const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
       nodeId: sourceNode.id as NodeId,
       widgetName: widget.name,
@@ -162,10 +161,12 @@ export function useGLSLUniforms(
         gId,
         upstreamNode.id as NodeId
       )
-      if (upstreamWidgets.length === 0) break
-      const wIdx =
-        link.origin_slot < upstreamWidgets.length ? link.origin_slot : 0
-      values.push(coerce(upstreamWidgets[wIdx].value))
+      if (
+        upstreamWidgets.length === 0 ||
+        link.origin_slot >= upstreamWidgets.length
+      )
+        break
+      values.push(coerce(upstreamWidgets[link.origin_slot].value))
     }
     return values
   }

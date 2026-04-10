@@ -57,6 +57,21 @@ describe('extractUniformSources', () => {
     expect(result.ints[1].widgetName).toBe('value')
   })
 
+  it('skips source when origin_slot exceeds widget count', () => {
+    const glslNode = fromAny<LGraphNode, unknown>({
+      inputs: [{ name: 'floats.u_float0', link: 1 }]
+    })
+
+    const subgraph = createMockSubgraph(
+      { 1: { origin_id: 10, origin_slot: 5 } },
+      { 10: { id: 10, widgets: [{ name: 'value', value: 3.14 }] } }
+    )
+
+    const result = extractUniformSources(glslNode, subgraph)
+
+    expect(result.floats).toHaveLength(0)
+  })
+
   it('provides directValue getter that reads from the widget', () => {
     const indexWidget = {
       name: 'index',
