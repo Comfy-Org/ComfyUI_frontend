@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 
@@ -354,7 +355,7 @@ describe('usePainter', () => {
 
       mountPainter()
 
-      const result = await maskWidget.serializeValue!.call(maskWidget)
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       expect(result).toBe('')
     })
 
@@ -365,7 +366,7 @@ describe('usePainter', () => {
       const { modelValue } = mountPainter()
       modelValue.value = 'painter/existing.png [temp]'
 
-      const result = await maskWidget.serializeValue!.call(maskWidget)
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
       // isCanvasEmpty() is true (no strokes drawn), so returns ''
       expect(result).toBe('')
     })
