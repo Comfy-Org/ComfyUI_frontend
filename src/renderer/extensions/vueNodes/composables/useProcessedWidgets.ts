@@ -13,6 +13,7 @@ import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
@@ -31,6 +32,7 @@ import {
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
   SimplifiedWidget,
@@ -40,7 +42,6 @@ import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
-import { app } from '@/scripts/app'
 
 interface ProcessedWidget {
   advanced: boolean
@@ -146,6 +147,8 @@ export function computeProcessedWidgets(
   nodeData: VueNodeData | undefined,
   graphId: string | undefined,
   showAdvanced: boolean,
+  isGraphReady: boolean,
+  rootGraph: LGraph | null,
   promotionStore: ReturnType<typeof usePromotionStore>,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>,
   missingModelStore: ReturnType<typeof useMissingModelStore>,
@@ -156,9 +159,10 @@ export function computeProcessedWidgets(
 ): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
 
-  const nodeExecId = app.isGraphReady
-    ? getExecutionIdFromNodeData(app.rootGraph, nodeData)
-    : String(nodeData.id ?? '')
+  const nodeExecId =
+    isGraphReady && rootGraph
+      ? getExecutionIdFromNodeData(rootGraph, nodeData)
+      : String(nodeData.id ?? '')
 
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
 
@@ -381,6 +385,8 @@ export function useProcessedWidgets(
       nodeDataGetter(),
       graphId,
       showAdvanced.value,
+      app.isGraphReady,
+      app.isGraphReady ? app.rootGraph : null,
       promotionStore,
       executionErrorStore,
       missingModelStore,

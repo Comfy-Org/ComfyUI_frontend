@@ -90,8 +90,8 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value on label function error', () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
       .mockImplementation(() => {})
     const getOptionLabel = (v?: string | null) => {
       if (v === 'photo_abc.jpg') throw new Error('fail')
@@ -103,8 +103,8 @@ describe('display label behavior', () => {
     expect(dropdownItems.value[0].label).toBe('Labeled: img_001.png')
     expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
     expect(dropdownItems.value[2].label).toBe('Labeled: hash789.png')
-    expect(consoleErrorSpy).toHaveBeenCalled()
-    consoleErrorSpy.mockRestore()
+    expect(consoleWarnSpy).toHaveBeenCalled()
+    consoleWarnSpy.mockRestore()
   })
 
   it('falls back to value when label function returns empty string', () => {

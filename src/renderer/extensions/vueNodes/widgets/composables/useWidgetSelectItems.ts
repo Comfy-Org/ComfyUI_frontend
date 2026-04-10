@@ -35,7 +35,7 @@ function getDisplayLabel(
   try {
     return getOptionLabel(value) || value
   } catch (e) {
-    console.error('Failed to map value:', e)
+    console.warn('Failed to map value:', e)
     return value
   }
 }
