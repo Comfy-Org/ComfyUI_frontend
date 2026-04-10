@@ -1,4 +1,5 @@
-import type { ComputedRef, Ref } from 'vue'
+import { toValue } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -12,9 +13,9 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: ComputedRef<FormDropdownItem[]>
-  widget: () => SimplifiedWidget<string | undefined>
-  uploadFolder: () => ResultItemType | undefined
-  uploadSubfolder: () => string | undefined
+  widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
+  uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
+  uploadSubfolder: MaybeRefOrGetter<string | undefined>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -47,7 +48,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     body.append('image', file)
     if (isPasted) body.append('subfolder', 'pasted')
     else {
-      const subfolder = options.uploadSubfolder()
+      const subfolder = toValue(options.uploadSubfolder)
       if (subfolder) body.append('subfolder', subfolder)
     }
     if (formFields.type) body.append('type', formFields.type)
@@ -73,7 +74,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   }
 
   async function uploadFiles(files: File[]): Promise<string[]> {
-    const folder = options.uploadFolder() ?? 'input'
+    const folder = toValue(options.uploadFolder) ?? 'input'
     const uploadPromises = files.map((file) =>
       uploadFile(file, false, { type: folder })
     )
@@ -92,7 +93,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         return
       }
 
-      const widget = options.widget()
+      const widget = toValue(options.widget)
       const values = widget.options?.values
       if (Array.isArray(values)) {
         uploadedPaths.forEach((path) => {
