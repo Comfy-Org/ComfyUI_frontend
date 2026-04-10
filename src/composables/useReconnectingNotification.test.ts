@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as I18n from 'vue-i18n'
 
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 
@@ -15,15 +14,11 @@ vi.mock('primevue/usetoast', () => ({
   })
 }))
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof I18n>()
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
-})
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
 
 const settingMocks = vi.hoisted(() => ({
   disableToast: false
