@@ -5,8 +5,7 @@
  * Usage:
  *   pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/issues/10253
  *   pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270
- *   pnpm qa 10253                  # issue shorthand (uses default repo)
- *   pnpm qa pr:10270               # PR shorthand
+ *   pnpm qa 10253                  # auto-detects issue vs PR
  *   pnpm qa <url> --ref=abc123     # pin to a specific commit/branch
  *   pnpm qa <url> --url=http://...  # custom ComfyUI server URL
  *
@@ -68,7 +67,7 @@ if (!target) {
 
 type TargetType = 'issue' | 'pr'
 
-let targetType: TargetType
+let targetType: TargetType | undefined
 let number: string
 let repo = 'Comfy-Org/ComfyUI_frontend'
 
@@ -80,21 +79,31 @@ if (ghUrlMatch) {
   repo = ghUrlMatch[1]
   targetType = ghUrlMatch[2] === 'pull' ? 'pr' : 'issue'
   number = ghUrlMatch[3]
-} else if (target.startsWith('pr:')) {
-  targetType = 'pr'
-  number = target.slice(3)
 } else if (/^\d+$/.test(target)) {
-  targetType = 'issue'
   number = target
 } else {
   console.error(`Cannot parse target: ${target}`)
-  console.error('Expected a GitHub URL, issue number, or pr:<number>')
+  console.error('Expected a GitHub URL or number')
   process.exit(1)
+}
+
+// Auto-detect issue vs PR when only a number is given
+if (!targetType) {
+  try {
+    execSync(`gh pr view ${number} --repo ${repo} --json number`, {
+      encoding: 'utf-8',
+      timeout: 15000,
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+    targetType = 'pr'
+  } catch {
+    targetType = 'issue'
+  }
 }
 
 // ── Set up output directory ──
 
-const outputDir = outputBase || resolve(`.comfy-qa/${targetType}-${number}`)
+const outputDir = outputBase || resolve(`.comfy-qa/${number}`)
 
 mkdirSync(outputDir, { recursive: true })
 
@@ -120,11 +129,22 @@ if (targetType === 'issue') {
   writeFileSync(diffFile, body)
 } else {
   console.warn(`Fetching PR #${number}...`)
-  // Fetch PR metadata + diff
-  const meta = execSync(
-    `gh pr view ${number} --repo ${repo} --json title,body --jq '"Title: " + .title + "\\n\\n" + .body'`,
+  // Fetch PR metadata + diff + refs
+  const prJson = execSync(
+    `gh pr view ${number} --repo ${repo} --json title,body,baseRefName,headRefName,baseRefOid,headRefOid`,
     { encoding: 'utf-8', timeout: 30000 }
   )
+  const pr = JSON.parse(prJson) as {
+    title: string
+    body: string
+    baseRefName: string
+    headRefName: string
+    baseRefOid: string
+    headRefOid: string
+  }
+  console.warn(`  Base: ${pr.baseRefName} (${pr.baseRefOid.slice(0, 8)})`)
+  console.warn(`  Head: ${pr.headRefName} (${pr.headRefOid.slice(0, 8)})`)
+
   let diff = ''
   try {
     diff = execSync(`gh pr diff ${number} --repo ${repo}`, {
@@ -135,10 +155,29 @@ if (targetType === 'issue') {
     console.warn('Could not fetch PR diff (PR may be closed/merged)')
   }
   diffFile = resolve(tmpDir, `pr-${number}.txt`)
-  writeFileSync(diffFile, meta + '\n\n--- DIFF ---\n\n' + diff)
+  writeFileSync(
+    diffFile,
+    `Title: ${pr.title}\n\n${pr.body}\n\n--- DIFF ---\n\n${diff}`
+  )
+
+  // Save refs for potential before/after runs
+  writeFileSync(
+    resolve(tmpDir, 'refs.json'),
+    JSON.stringify(
+      {
+        base: { ref: pr.baseRefName, sha: pr.baseRefOid },
+        head: { ref: pr.headRefName, sha: pr.headRefOid }
+      },
+      null,
+      2
+    )
+  )
 }
 
 // ── Determine mode ──
+// Issue → reproduce (find & prove the bug)
+// PR → before (reproduce bug on base), then after (show fix on head)
+// For local dev, run "before" by default; CI runs both phases on separate runners
 
 const mode = targetType === 'issue' ? 'reproduce' : 'before'
 
@@ -160,27 +199,32 @@ if (ref) {
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const recordScript = resolve(scriptDir, 'qa-record.ts')
 
-const cmd = [
-  'pnpm',
-  'exec',
-  'tsx',
-  recordScript,
-  '--mode',
-  mode,
-  '--diff',
-  diffFile,
-  '--output-dir',
-  outputDir,
-  '--url',
-  serverUrl
-]
+function runQaRecord(qaMode: string, qaOutputDir: string): number {
+  const cmd = [
+    'pnpm',
+    'exec',
+    'tsx',
+    recordScript,
+    '--mode',
+    qaMode,
+    '--diff',
+    diffFile,
+    '--output-dir',
+    qaOutputDir,
+    '--url',
+    serverUrl
+  ]
 
-console.warn(`\nStarting QA ${mode} mode...\n`)
+  console.warn(`\nStarting QA ${qaMode} mode...\n`)
 
-const result = spawnSync(cmd[0], cmd.slice(1), {
-  stdio: 'inherit',
-  env: process.env
-})
+  const r = spawnSync(cmd[0], cmd.slice(1), {
+    stdio: 'inherit',
+    env: process.env
+  })
+  return r.status ?? 1
+}
+
+const result = { status: runQaRecord(mode, outputDir) }
 
 // ── Summary ──
 
@@ -208,13 +252,12 @@ Usage:
 Targets:
   https://github.com/Comfy-Org/ComfyUI_frontend/issues/10253
   https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270
-  10253              Issue number (shorthand)
-  pr:10270           PR number (shorthand)
+  10253              Number (auto-detects issue vs PR)
 
 Options:
   --url=<url>        ComfyUI server URL (default: from .env or http://127.0.0.1:8188)
   --ref=<ref>        Git ref to test against (commit hash or branch)
-  --output=<dir>     Override output directory (default: .comfy-qa/<type>-<number>)
+  --output=<dir>     Override output directory (default: .comfy-qa/<number>)
   --help, -h         Show this help
 
 Environment (auto-loaded from .env.local or .env):
@@ -223,7 +266,7 @@ Environment (auto-loaded from .env.local or .env):
 
 Examples:
   pnpm qa 10253
-  pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270
-  pnpm qa pr:10270 --url=http://localhost:8188 --ref=fix-branch
+  pnpm qa 10270 --url=http://localhost:8188
+  pnpm qa https://github.com/Comfy-Org/ComfyUI_frontend/pull/10270 --ref=fix-branch
 `)
 }
