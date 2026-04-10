@@ -250,7 +250,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       // The Save As dialog should appear (p-dialog overlay)
       const dialogOverlay = comfyPage.page.locator('.p-dialog-mask')
-      await expect(dialogOverlay).toBeVisible({ timeout: 3000 })
+      await expect(dialogOverlay).toBeVisible()
 
       // Dismiss the dialog
       await comfyPage.page.keyboard.press('Escape')
@@ -303,9 +303,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       // After conversion, node count should decrease
       // (multiple nodes replaced by single subgraph node)
       await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5000
-        })
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBeLessThan(initialCount)
     })
 

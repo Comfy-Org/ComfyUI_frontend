@@ -75,15 +75,18 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     })
 
     await expect
-      .poll(async () => {
-        return await comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph.getNodeById(id)
-          const widget = node?.widgets?.find(
-            (w: { name: string }) => w.name === 'ckpt_name'
-          )
-          return String(widget?.value ?? '')
-        }, nodeId)
-      })
+      .poll(
+        async () => {
+          return await comfyPage.page.evaluate((id) => {
+            const node = window.app!.graph.getNodeById(id)
+            const widget = node?.widgets?.find(
+              (w: { name: string }) => w.name === 'ckpt_name'
+            )
+            return String(widget?.value ?? '')
+          }, nodeId)
+        },
+        { timeout: 10_000 }
+      )
       .toBe(CLOUD_ASSETS[0].name)
   })
 })

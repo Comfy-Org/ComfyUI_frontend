@@ -15,9 +15,7 @@ async function expectPromotedWidgetNamesToContain(
   widgetName: string
 ) {
   await expect
-    .poll(() => getPromotedWidgetNames(comfyPage, nodeId), {
-      timeout: 5000
-    })
+    .poll(() => getPromotedWidgetNames(comfyPage, nodeId))
     .toContain(widgetName)
 }
 
@@ -27,9 +25,7 @@ async function expectPromotedWidgetCountToBeGreaterThan(
   count: number
 ) {
   await expect
-    .poll(() => getPromotedWidgetCount(comfyPage, nodeId), {
-      timeout: 5000
-    })
+    .poll(() => getPromotedWidgetCount(comfyPage, nodeId))
     .toBeGreaterThan(count)
 }
 
@@ -288,9 +284,7 @@ test.describe(
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '2'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '2'))
           .toBeLessThan(initialWidgetCount)
       })
     })
@@ -332,7 +326,7 @@ test.describe(
           .locator('.p-contextmenu')
           .locator('text=Promote Widget')
 
-        await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
+        await expect(promoteEntry.first()).toBeVisible()
       })
     })
 
@@ -536,9 +530,7 @@ test.describe(
         expectedNames.splice(removedIndex, 1)
 
         await expect
-          .poll(() => getPromotedWidgetNames(comfyPage, '5'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
           .toEqual(expectedNames)
       })
 
@@ -553,9 +545,7 @@ test.describe(
 
         let initialWidgetCount = 0
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeGreaterThan(0)
         initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
 
@@ -571,9 +561,7 @@ test.describe(
 
         // Widget count should be reduced
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeLessThan(initialWidgetCount)
       })
     })

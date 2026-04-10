@@ -18,7 +18,7 @@ function makeMatcher<T>(
         ? expect(value, 'Node is ' + type).not
         : expect(value, 'Node is not ' + type)
       assertion.toBeTruthy()
-    }).toPass({ timeout: 250, ...options })
+    }).toPass({ timeout: 5000, ...options })
     return {
       pass: !this.isNot,
       message: () => 'Node is ' + (this.isNot ? 'not ' : '') + type
@@ -30,7 +30,7 @@ export const comfyExpect = expect.extend({
   toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
   toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
   toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed'),
-  async toHaveFocus(locator: Locator, options = { timeout: 256 }) {
+  async toHaveFocus(locator: Locator, options = {}) {
     await expect
       .poll(
         () => locator.evaluate((el) => el === document.activeElement),

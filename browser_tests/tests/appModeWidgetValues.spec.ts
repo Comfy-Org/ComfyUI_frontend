@@ -63,7 +63,7 @@ test.describe('App mode widget values in prompt', { tag: '@ui' }, () => {
       ({ nodeId, widgetName }) => [nodeId, widgetName]
     )
     await appMode.enterAppModeWithInputs(inputs)
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
 
     for (const { nodeId, widgetName, type, fill } of WIDGET_TEST_DATA) {
       const key = `${nodeId}:${widgetName}`

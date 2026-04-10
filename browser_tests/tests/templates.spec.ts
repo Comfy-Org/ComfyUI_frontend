@@ -106,7 +106,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.setup({ clearStorage: true })
 
     // Expect the templates dialog to be shown
-    await expect(comfyPage.templates.content).toBeVisible({ timeout: 5000 })
+    await expect(comfyPage.templates.content).toBeVisible()
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
@@ -305,7 +305,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
         comfyPage.page.locator(
           '[data-testid="template-workflow-short-description"]'
         )
-      ).toBeVisible({ timeout: 5000 })
+      ).toBeVisible()
 
       // Verify all three cards with different descriptions are visible
       const shortDescCard = comfyPage.page.locator(
@@ -399,7 +399,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       const taggedCard = comfyPage.page.getByTestId(
         TestIds.templates.workflowCard('tagged-template')
       )
-      await expect(taggedCard).toBeVisible({ timeout: 5000 })
+      await expect(taggedCard).toBeVisible()
       await expect(taggedCard.getByText('Relight')).toBeVisible()
       await expect(taggedCard.getByText('Image Edit')).toBeVisible()
 
