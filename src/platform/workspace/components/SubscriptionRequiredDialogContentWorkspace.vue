@@ -104,10 +104,7 @@ import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type {
-  PreviewSubscribeResponse,
-  SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -212,58 +209,48 @@ function handleBackToPricing() {
   previewData.value = null
 }
 
-async function subscribeToSelectedPlan() {
+async function handleAddCreditCard() {
   if (!selectedTierKey.value) return
 
-  const planSlug = getApiPlanSlug(
-    selectedTierKey.value,
-    selectedBillingCycle.value
-  )
-  if (!planSlug) return
-
-  return subscribe(
-    planSlug,
-    `${getComfyPlatformBaseUrl()}/payment/success`,
-    `${getComfyPlatformBaseUrl()}/payment/failed`
-  )
-}
-
-async function handleSubscribeResponse(
-  response: SubscribeResponse
-): Promise<void> {
-  if (response.status === 'subscribed') {
-    telemetry?.trackMonthlySubscriptionSucceeded()
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.required.pollingSuccess'),
-      life: 5000
-    })
-    await Promise.all([fetchStatus(), fetchBalance()])
-    emit('close', true)
-    return
-  }
-
-  if (
-    response.status === 'needs_payment_method' &&
-    response.payment_method_url
-  ) {
-    window.open(response.payment_method_url, '_blank')
-    billingOperationStore.startOperation(response.billing_op_id, 'subscription')
-    return
-  }
-
-  if (response.status === 'pending_payment') {
-    billingOperationStore.startOperation(response.billing_op_id, 'subscription')
-  }
-}
-
-async function handleAddCreditCard() {
   isSubscribing.value = true
   try {
-    const response = await subscribeToSelectedPlan()
+    const planSlug = getApiPlanSlug(
+      selectedTierKey.value,
+      selectedBillingCycle.value
+    )
+    if (!planSlug) return
+    const response = await subscribe(
+      planSlug,
+      `${getComfyPlatformBaseUrl()}/payment/success`,
+      `${getComfyPlatformBaseUrl()}/payment/failed`
+    )
+
     if (!response) return
 
-    await handleSubscribeResponse(response)
+    if (response.status === 'subscribed') {
+      telemetry?.trackMonthlySubscriptionSucceeded()
+      toast.add({
+        severity: 'success',
+        summary: t('subscription.required.pollingSuccess'),
+        life: 5000
+      })
+      await Promise.all([fetchStatus(), fetchBalance()])
+      emit('close', true)
+    } else if (
+      response.status === 'needs_payment_method' &&
+      response.payment_method_url
+    ) {
+      window.open(response.payment_method_url, '_blank')
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+    } else if (response.status === 'pending_payment') {
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to subscribe'
@@ -278,12 +265,47 @@ async function handleAddCreditCard() {
 }
 
 async function handleConfirmTransition() {
+  if (!selectedTierKey.value) return
+
   isSubscribing.value = true
   try {
-    const response = await subscribeToSelectedPlan()
+    const planSlug = getApiPlanSlug(
+      selectedTierKey.value,
+      selectedBillingCycle.value
+    )
+    if (!planSlug) return
+    const response = await subscribe(
+      planSlug,
+      `${getComfyPlatformBaseUrl()}/payment/success`,
+      `${getComfyPlatformBaseUrl()}/payment/failed`
+    )
+
     if (!response) return
 
-    await handleSubscribeResponse(response)
+    if (response.status === 'subscribed') {
+      telemetry?.trackMonthlySubscriptionSucceeded()
+      toast.add({
+        severity: 'success',
+        summary: t('subscription.required.pollingSuccess'),
+        life: 5000
+      })
+      await Promise.all([fetchStatus(), fetchBalance()])
+      emit('close', true)
+    } else if (
+      response.status === 'needs_payment_method' &&
+      response.payment_method_url
+    ) {
+      window.open(response.payment_method_url, '_blank')
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+    } else if (response.status === 'pending_payment') {
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to update subscription'
