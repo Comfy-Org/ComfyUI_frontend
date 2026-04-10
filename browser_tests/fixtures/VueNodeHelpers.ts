@@ -37,7 +37,7 @@ export class VueNodeHelpers {
    */
   getNodeByTitle(title: string): Locator {
     return this.page.locator('[data-node-id]').filter({
-      has: this.page.locator('[data-testid="node-title"]', { hasText: title })
+      has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
   }
 
@@ -146,7 +146,7 @@ export class VueNodeHelpers {
         expectedCount
       )
     } else {
-      await this.page.waitForSelector('[data-node-id]')
+      await this.page.locator('[data-node-id]').waitFor()
     }
   }
 

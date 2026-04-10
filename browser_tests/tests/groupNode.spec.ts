@@ -88,7 +88,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .getNode(groupNodeName)
         .locator('.bookmark-button')
         .click()
-      await comfyPage.page.hover('.p-tree-node-label.tree-explorer-node-label')
+      await comfyPage.page
+        .locator('.p-tree-node-label.tree-explorer-node-label')
+        .hover()
       await expect(
         comfyPage.page.locator('.node-lib-node-preview')
       ).toBeVisible()
@@ -99,6 +101,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
     })
   })
+
   test(
     'Can be added to canvas using search',
     { tag: '@screenshot' },
@@ -349,6 +352,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await comfyPage.page.keyboard.press('Alt+g')
       await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
     })
+
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
       await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
       await comfyPage.canvas.click({

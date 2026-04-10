@@ -56,7 +56,7 @@ test.describe(
       await comfyPage.page.waitForFunction(
         () => window.app && window.app.extensionManager
       )
-      await comfyPage.page.waitForSelector('.p-blockui-mask', {
+      await comfyPage.page.locator('.p-blockui-mask').waitFor({
         state: 'hidden'
       })
       await comfyPage.nextFrame()

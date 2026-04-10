@@ -9,6 +9,7 @@ const test = comfyPageFixture
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
@@ -127,7 +128,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.workflow.loadWorkflow('groups/single_group')
 
     // Select group + node should show bypass button
-    await comfyPage.page.focus('canvas')
+    await comfyPage.page.locator('canvas').focus()
     await comfyPage.page.keyboard.press('Control+A')
     await expect(
       comfyPage.page.locator(

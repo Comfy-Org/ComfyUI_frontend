@@ -47,12 +47,10 @@ test.describe(
 
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      const moreOptionsBtn = comfyPage.page.locator(
-        '[data-testid="more-options-button"]'
-      )
+      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
       await expect(moreOptionsBtn).toBeVisible()
 
-      await comfyPage.page.click('[data-testid="more-options-button"]')
+      await moreOptionsBtn.click()
 
       await comfyPage.nextFrame()
 
@@ -113,7 +111,7 @@ test.describe(
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Color', { exact: true }).click()
-      const blueSwatch = comfyPage.page.locator('[title="Blue"]')
+      const blueSwatch = comfyPage.page.getByTitle('Blue')
       await expect(blueSwatch.first()).toBeVisible()
       await blueSwatch.first().click()
       await comfyPage.nextFrame()

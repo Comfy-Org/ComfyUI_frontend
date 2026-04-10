@@ -104,9 +104,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         .click()
 
       // Verify filter chip appeared and results changed
-      const filterChip = searchBoxV2.dialog.locator(
-        '[data-testid="filter-chip"]'
-      )
+      const filterChip = searchBoxV2.dialog.getByTestId('filter-chip')
       await expect(filterChip).toBeVisible()
       await expect(searchBoxV2.results.first()).toBeVisible()
       await expect

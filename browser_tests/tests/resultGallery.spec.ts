@@ -31,7 +31,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
 
     // Wait for any asset card to appear (may contain img or video)
     const assetCard = comfyPage.page
-      .locator('[role="button"]')
+      .getByRole('button')
       .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 

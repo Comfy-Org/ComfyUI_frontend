@@ -11,11 +11,11 @@ export class VueNodeFixture {
   }
 
   get title(): Locator {
-    return this.locator.locator('[data-testid="node-title"]')
+    return this.locator.getByTestId('node-title')
   }
 
   get titleInput(): Locator {
-    return this.locator.locator('[data-testid="node-title-input"]')
+    return this.locator.getByTestId('node-title-input')
   }
 
   get body(): Locator {
@@ -27,7 +27,7 @@ export class VueNodeFixture {
   }
 
   get collapseButton(): Locator {
-    return this.locator.locator('[data-testid="node-collapse-button"]')
+    return this.locator.getByTestId('node-collapse-button')
   }
 
   get collapseIcon(): Locator {

@@ -72,7 +72,7 @@ test.describe('Release Notifications', () => {
     ).toBeVisible()
 
     // Close help center by dismissable mask
-    await comfyPage.page.click('.help-center-backdrop')
+    await comfyPage.page.locator('.help-center-backdrop').click()
     await expect(helpMenu).not.toBeVisible()
   })
 
@@ -325,7 +325,7 @@ test.describe('Release Notifications', () => {
     await expect(whatsNewSection).toBeVisible()
 
     // Close help center
-    await comfyPage.page.click('.help-center-backdrop')
+    await comfyPage.page.locator('.help-center-backdrop').click()
 
     // Disable notifications
     await comfyPage.settings.setSetting(

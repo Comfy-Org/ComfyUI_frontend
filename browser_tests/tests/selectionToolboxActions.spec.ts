@@ -204,7 +204,9 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       name: /Frame Nodes/i
     })
     await expect(frameButton).toBeVisible()
-    await frameButton.click({ force: true })
+    await comfyPage.page
+      .getByRole('button', { name: /Frame Nodes/i })
+      .click({ force: true })
     await comfyPage.nextFrame()
 
     await expect

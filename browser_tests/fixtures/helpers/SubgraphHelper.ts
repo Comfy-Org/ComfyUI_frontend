@@ -157,7 +157,7 @@ export class SubgraphHelper {
 
     // Wait for the appropriate UI element to appear
     if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
+      await this.page.locator('.litemenu-entry').waitFor({
         state: 'visible',
         timeout: 5000
       })

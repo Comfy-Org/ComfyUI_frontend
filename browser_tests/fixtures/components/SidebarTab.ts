@@ -340,13 +340,15 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Asset cards ---
 
   get assetCards() {
-    return this.page.locator('[role="button"][data-selected]')
+    return this.page
+      .getByRole('button')
+      .and(this.page.locator('[data-selected]'))
   }
 
   getAssetCardByName(name: string) {
-    return this.page.locator('[role="button"][data-selected]', {
-      hasText: name
-    })
+    return this.page
+      .getByRole('button', { name })
+      .and(this.page.locator('[data-selected]'))
   }
 
   get selectedCards() {

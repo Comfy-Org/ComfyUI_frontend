@@ -105,7 +105,7 @@ export class AppModeHelper {
 
   /** The linear-mode widget list container (visible in app mode). */
   get linearWidgets(): Locator {
-    return this.page.locator('[data-testid="linear-widgets"]')
+    return this.page.getByTestId('linear-widgets')
   }
 
   /** The PrimeVue Popover for the image picker (renders with role="dialog"). */

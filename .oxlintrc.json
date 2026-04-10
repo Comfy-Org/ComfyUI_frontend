@@ -116,13 +116,54 @@
     },
     {
       "files": ["browser_tests/**/*.ts"],
+      "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
         "typescript/no-explicit-any": "error",
         "no-async-promise-executor": "error",
         "no-control-regex": "error",
         "no-useless-rename": "error",
         "no-unused-private-class-members": "error",
-        "unicorn/no-empty-file": "error"
+        "unicorn/no-empty-file": "error",
+        "playwright/consistent-spacing-between-blocks": "error",
+        "playwright/expect-expect": [
+          "error",
+          {
+            "assertFunctionNames": [
+              "recordMeasurement",
+              "logMeasurement",
+              "builderSaveAs"
+            ],
+            "assertFunctionPatterns": [
+              "^expect",
+              "^assert",
+              "^verify",
+              "^searchAndExpect",
+              "waitForOpen",
+              "waitForClosed",
+              "waitForRequest"
+            ]
+          }
+        ],
+        "playwright/max-nested-describe": "error",
+        "playwright/no-duplicate-hooks": "error",
+        "playwright/no-element-handle": "error",
+        "playwright/no-eval": "error",
+        // TODO: Enable in a dedicated PR — requires triaging 28 violations
+        // (canvas overlay workarounds vs. unnecessary force usage)
+        "playwright/no-force-option": "off",
+        "playwright/no-networkidle": "error",
+        "playwright/no-page-pause": "error",
+        "playwright/no-useless-await": "error",
+        "playwright/no-wait-for-navigation": "error",
+        "playwright/no-wait-for-selector": "error",
+        "playwright/no-wait-for-timeout": "error",
+        "playwright/prefer-hooks-on-top": "error",
+        "playwright/prefer-locator": "error",
+        "playwright/prefer-to-have-count": "error",
+        "playwright/prefer-to-have-length": "error",
+        "playwright/prefer-web-first-assertions": "error",
+        "playwright/prefer-native-locators": "error",
+        "playwright/require-to-pass-timeout": "error"
       }
     }
   ]

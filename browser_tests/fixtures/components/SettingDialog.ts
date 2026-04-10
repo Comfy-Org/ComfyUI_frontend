@@ -57,6 +57,6 @@ export class SettingDialog extends BaseDialog {
       name: 'About'
     })
     await aboutButton.click()
-    await this.page.waitForSelector('.about-container')
+    await this.page.locator('.about-container').waitFor()
   }
 }
