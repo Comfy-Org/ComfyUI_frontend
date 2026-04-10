@@ -17,7 +17,7 @@ import { parseArgs } from 'node:util'
 import { config } from 'dotenv'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { dirname, resolve } from 'path'
-import { execSync, spawnSync } from 'child_process'
+import { execSync, spawn, spawnSync } from 'child_process'
 import { fileURLToPath } from 'url'
 
 // ── Constants ──
@@ -57,6 +57,10 @@ if (!VALID_TARGETS.includes(prTarget)) {
   )
   process.exit(1)
 }
+
+// ── Ensure server is reachable ──
+
+await ensureServer(serverUrl)
 
 // ── Dispatch by mode ──
 
@@ -261,6 +265,90 @@ function runQaRecord(
     { stdio: 'inherit', env: process.env }
   )
   return r.status ?? 1
+}
+
+// ── Server management ──
+
+async function ensureServer(url: string): Promise<void> {
+  if (await isReachable(url)) {
+    console.warn(`Server OK: ${url}`)
+    return
+  }
+
+  console.warn(`Server not reachable at ${url}, attempting auto-start...`)
+  const port = new URL(url).port || '8188'
+
+  // Strategy 1: comfy-cli (pip install comfy-cli)
+  try {
+    execSync('which comfy', { stdio: 'pipe' })
+    console.warn('Starting ComfyUI via comfy-cli...')
+    const proc = spawn(
+      'comfy',
+      ['launch', '--background', '--', '--cpu', '--port', port],
+      {
+        stdio: 'ignore',
+        detached: true
+      }
+    )
+    proc.unref()
+    await waitForServer(url, 120000)
+    return
+  } catch {
+    // comfy-cli not available
+  }
+
+  // Strategy 2: python main.py from TEST_COMFYUI_DIR
+  const comfyDir = process.env.TEST_COMFYUI_DIR
+  if (comfyDir && existsSync(resolve(comfyDir, 'main.py'))) {
+    console.warn(`Starting ComfyUI from ${comfyDir}...`)
+    const proc = spawn('python', ['main.py', '--cpu', '--port', port], {
+      cwd: comfyDir,
+      stdio: 'ignore',
+      detached: true
+    })
+    proc.unref()
+    await waitForServer(url, 120000)
+    return
+  }
+
+  // No auto-start available
+  console.error(`
+Server not running at ${url}.
+
+To start automatically, install one of:
+  1. pip install comfy-cli && comfy install   # then pnpm qa will auto-launch
+  2. Set TEST_COMFYUI_DIR=/path/to/ComfyUI in .env
+
+Or start manually:
+  comfy launch --cpu
+  python /path/to/ComfyUI/main.py --cpu --port ${port}
+`)
+  process.exit(1)
+}
+
+async function isReachable(url: string): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const res = await fetch(url, { signal: controller.signal })
+    clearTimeout(timeout)
+    return res.ok || res.status === 200 || res.status === 304
+  } catch {
+    return false
+  }
+}
+
+async function waitForServer(url: string, timeoutMs: number): Promise<void> {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (await isReachable(url)) {
+      console.warn('Server is ready')
+      return
+    }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  console.error(`Server did not start within ${timeoutMs / 1000}s`)
+  process.exit(1)
 }
 
 // ── Utilities ──
