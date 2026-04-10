@@ -1974,8 +1974,7 @@ async function main() {
 
           // Inject demowright narrate() call for TTS voice narration
           const issueTitle =
-            issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ??
-            'Bug Reproduction'
+            issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
           let testCode = research.testCode
           const bodyMatch = testCode.match(
             /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
@@ -2004,22 +2003,35 @@ async function main() {
           )
 
           const demowrightDir = `${projectRoot}/.demowright`
+
+          // Create a temporary Playwright config with demowright wrapper
+          const qaConfigPath = `${projectRoot}/playwright.qa.config.ts`
+          writeFileSync(
+            qaConfigPath,
+            `import { withDemowright } from 'demowright/config'
+import baseConfig from './playwright.config'
+
+export default withDemowright(baseConfig, {
+  cursor: true,
+  keyboard: true,
+  cursorStyle: 'default',
+  keyFadeMs: 2000,
+  actionDelay: 300,
+  outputDir: '.demowright'
+})
+`
+          )
+
           try {
             const output = execSync(
-              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --reporter=list --timeout=120000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
+              `cd "${projectRoot}" && npx playwright test browser_tests/tests/qa-reproduce.spec.ts --config=playwright.qa.config.ts --reporter=list --timeout=120000 --retries=0 --workers=1 --output="${testResultsDir}" 2>&1`,
               {
                 timeout: 180000,
                 encoding: 'utf-8',
                 env: {
                   ...process.env,
                   COMFYUI_BASE_URL: opts.serverUrl,
-                  PLAYWRIGHT_LOCAL: '1',
-                  NODE_OPTIONS: '--require demowright/register',
-                  QA_HUD_DELAY: '300',
-                  QA_HUD_CURSOR_STYLE: 'default',
-                  QA_HUD_KEY_FADE: '2000',
-                  QA_HUD_AUDIO: '1',
-                  QA_HUD_OUTPUT_DIR: '.demowright'
+                  PLAYWRIGHT_LOCAL: '1'
                 }
               }
             )
@@ -2052,9 +2064,7 @@ async function main() {
           }
 
           if (demowrightMp4) {
-            execSync(
-              `cp "${demowrightMp4}" "${opts.outputDir}/qa-session.mp4"`
-            )
+            execSync(`cp "${demowrightMp4}" "${opts.outputDir}/qa-session.mp4"`)
             console.warn(
               `Phase 2: Narrated video → ${opts.outputDir}/qa-session.mp4`
             )
@@ -2071,14 +2081,16 @@ async function main() {
               .filter(Boolean)
             if (videos.length > 0) {
               execSync(`cp "${videos[0]}" "${opts.outputDir}/qa-session.webm"`)
-              console.warn(`Phase 2: Raw video → ${opts.outputDir}/qa-session.webm`)
+              console.warn(
+                `Phase 2: Raw video → ${opts.outputDir}/qa-session.webm`
+              )
             }
           } catch {
             console.warn('Phase 2: No test video found')
           }
           // Cleanup
           try {
-            execSync(`rm -f "${browserTestFile}"`)
+            execSync(`rm -f "${browserTestFile}" "${qaConfigPath}"`)
           } catch {
             /* ignore */
           }
