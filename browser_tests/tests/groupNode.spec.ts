@@ -90,6 +90,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
       await comfyPage.page
         .locator('.p-tree-node-label.tree-explorer-node-label')
+        .first()
         .hover()
       await expect(
         comfyPage.page.locator('.node-lib-node-preview')
