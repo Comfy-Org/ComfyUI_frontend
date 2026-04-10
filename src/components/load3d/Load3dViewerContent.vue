@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div class="flex w-72 flex-col">
+    <div class="flex w-72 flex-col" data-testid="load3d-viewer-sidebar">
       <div class="flex-1 overflow-y-auto p-4">
         <div class="space-y-2">
           <div class="space-y-4 p-2">
