@@ -153,6 +153,7 @@
     "@vue/test-utils": "catalog:",
     "@webgpu/types": "catalog:",
     "cross-env": "catalog:",
+    "demowright": "^2.0.9",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-import-resolver-typescript": "catalog:",

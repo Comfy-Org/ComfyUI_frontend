@@ -699,6 +699,9 @@ importers:
       cross-env:
         specifier: 'catalog:'
         version: 10.1.0
+      demowright:
+        specifier: ^2.0.9
+        version: 2.0.9(@playwright/test@1.58.1)
       eslint:
         specifier: 'catalog:'
         version: 9.39.1(jiti@2.6.1)
@@ -5786,6 +5789,11 @@ packages:
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
+
+  demowright@2.0.9:
+    resolution: {integrity: sha512-zg9wYP6Ur9jJoqfGzyUAFn7788yPGlVciJpwMvv0uGzSHW9dIeuTp1gwDfPsP1DctW51/ZLj9UfR+YQp1v/xjQ==}
+    peerDependencies:
+      '@playwright/test': '>=1.40.0'
 
   dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
@@ -15116,6 +15124,10 @@ snapshots:
   defu@6.1.4: {}
 
   delayed-stream@1.0.0: {}
+
+  demowright@2.0.9(@playwright/test@1.58.1):
+    dependencies:
+      '@playwright/test': 1.58.1
 
   dequal@2.0.3: {}
 
