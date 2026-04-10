@@ -29,11 +29,9 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
 
     await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-    await comfyPage.nextFrame()
     await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
 
     await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-    await comfyPage.nextFrame()
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
   })
 

@@ -65,18 +65,25 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
 
     // Add a new CheckpointLoaderSimple — should use first cloud asset,
     // not the server's object_info default.
-    const widgetValue = await comfyPage.page.evaluate(() => {
-      const node = window.LiteGraph!.createNode('CheckpointLoaderSimple')
-      window.app!.graph.add(node!)
-      const widget = node!.widgets?.find(
-        (w: { name: string }) => w.name === 'ckpt_name'
-      )
-      return String(widget?.value ?? '')
-    })
-
     // Production resolves via getAssetFilename (user_metadata.filename →
     // metadata.filename → asset.name). Test fixtures have no metadata
     // filename, so asset.name is the resolved value.
-    expect(widgetValue).toBe(CLOUD_ASSETS[0].name)
+    const nodeId = await comfyPage.page.evaluate(() => {
+      const node = window.LiteGraph!.createNode('CheckpointLoaderSimple')
+      window.app!.graph.add(node!)
+      return node!.id
+    })
+
+    await expect
+      .poll(async () => {
+        return await comfyPage.page.evaluate((id) => {
+          const node = window.app!.graph.getNodeById(id)
+          const widget = node?.widgets?.find(
+            (w: { name: string }) => w.name === 'ckpt_name'
+          )
+          return String(widget?.value ?? '')
+        }, nodeId)
+      })
+      .toBe(CLOUD_ASSETS[0].name)
   })
 })

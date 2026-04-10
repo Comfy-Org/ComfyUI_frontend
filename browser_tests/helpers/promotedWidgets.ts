@@ -22,7 +22,24 @@ export async function getPromotedWidgets(
 ): Promise<PromotedWidgetEntry[]> {
   const raw = await comfyPage.page.evaluate((id) => {
     const node = window.app!.canvas.graph!.getNodeById(id)
-    return node?.properties?.proxyWidgets ?? []
+    const widgets = node?.widgets ?? []
+
+    // Read the live promoted widget views from the host node instead of the
+    // serialized proxyWidgets snapshot, which can lag behind the current graph
+    // state during promotion and cleanup flows.
+    return widgets.flatMap((widget) => {
+      if (
+        widget &&
+        typeof widget === 'object' &&
+        'sourceNodeId' in widget &&
+        typeof widget.sourceNodeId === 'string' &&
+        'sourceWidgetName' in widget &&
+        typeof widget.sourceWidgetName === 'string'
+      ) {
+        return [[widget.sourceNodeId, widget.sourceWidgetName]]
+      }
+      return []
+    })
   }, nodeId)
 
   return normalizePromotedWidgets(raw)

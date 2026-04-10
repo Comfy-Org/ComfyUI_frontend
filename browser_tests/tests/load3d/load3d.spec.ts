@@ -12,9 +12,18 @@ test.describe('Load3D', () => {
 
       await expect(load3d.canvas).toBeVisible()
 
-      const canvasBox = await load3d.canvas.boundingBox()
-      expect(canvasBox!.width).toBeGreaterThan(0)
-      expect(canvasBox!.height).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await load3d.canvas.boundingBox()
+          return b?.width ?? 0
+        })
+        .toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const b = await load3d.canvas.boundingBox()
+          return b?.height ?? 0
+        })
+        .toBeGreaterThan(0)
 
       await expect(load3d.getUploadButton('upload 3d model')).toBeVisible()
       await expect(

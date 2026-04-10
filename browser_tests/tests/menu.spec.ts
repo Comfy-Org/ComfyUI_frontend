@@ -22,10 +22,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
         }
       })
     })
-    await comfyPage.nextFrame()
-
-    const newChildrenCount = await comfyPage.menu.buttons.count()
-    expect(newChildrenCount).toBe(initialChildrenCount + 1)
+    await expect(comfyPage.menu.buttons).toHaveCount(initialChildrenCount + 1)
   })
 
   test.describe('Workflows topbar tabs', () => {
@@ -38,15 +35,17 @@ test.describe('Menu', { tag: '@ui' }, () => {
     })
 
     test('Can show opened workflows', async ({ comfyPage }) => {
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow'
-      ])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(['Unsaved Workflow'])
     })
 
     test('Can close saved-workflow tabs', async ({ comfyPage }) => {
       const workflowName = `tempWorkflow-${test.info().title}`
       await comfyPage.menu.topbar.saveWorkflow(workflowName)
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
@@ -62,10 +61,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
       const topLevelMenuItem = comfyPage.page
         .locator('a.p-menubar-item-link')
         .first()
-      const isTextCutoff = await topLevelMenuItem.evaluate((el) => {
-        return el.scrollWidth > el.clientWidth
-      })
-      expect(isTextCutoff).toBe(false)
+      await expect
+        .poll(() =>
+          topLevelMenuItem.evaluate((el) => el.scrollWidth > el.clientWidth)
+        )
+        .toBe(false)
     })
 
     test('Clicking on active state items does not close menu', async ({
@@ -148,7 +148,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       const exportTag = comfyPage.page.locator('.keybinding-tag', {
         hasText: 'Ctrl + s'
       })
-      expect(await exportTag.count()).toBe(1)
+      await expect(exportTag).toHaveCount(1)
     })
 
     test('Can catch error when executing command', async ({ comfyPage }) => {
@@ -173,7 +173,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
         })
       })
       await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
-      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(1)
+      await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
     })
 
     test('Can navigate Theme menu and switch between Dark and Light themes', async ({
@@ -205,7 +205,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(async () => {
         await expect(menu).toBeVisible()
         await expect(themeSubmenu).toBeVisible()
-        expect(await topbar.isMenuItemActive(lightThemeItem)).toBe(true)
+        await expect(lightThemeItem.locator('.pi-check')).not.toHaveClass(
+          /invisible/
+        )
       }).toPass({ timeout: 5000 })
 
       // Screenshot with light theme active
@@ -230,9 +232,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(async () => {
         await expect(menu).toBeVisible()
         await expect(themeItems2.submenu).toBeVisible()
-        expect(await topbar.isMenuItemActive(themeItems2.darkTheme)).toBe(true)
-        expect(await topbar.isMenuItemActive(themeItems2.lightTheme)).toBe(
-          false
+        await expect(
+          themeItems2.darkTheme.locator('.pi-check')
+        ).not.toHaveClass(/invisible/)
+        await expect(themeItems2.lightTheme.locator('.pi-check')).toHaveClass(
+          /invisible/
         )
       }).toPass({ timeout: 5000 })
 
@@ -256,9 +260,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
-      expect(await comfyPage.settings.getSetting('Comfy.UseNewMenu')).toBe(
-        'Top'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))
+        .toBe('Top')
     })
 
     test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
@@ -266,9 +270,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
     }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
       await comfyPage.setup()
-      expect(await comfyPage.settings.getSetting('Comfy.UseNewMenu')).toBe(
-        'Top'
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))
+        .toBe('Top')
     })
   })
 })
