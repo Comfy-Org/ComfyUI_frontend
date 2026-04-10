@@ -1252,7 +1252,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
 
     test('Space + left-click drag should pan canvas', async ({ comfyPage }) => {
       // Click canvas to focus it
-      await comfyPage.page.locator('canvas').click()
+      await comfyPage.canvas.click()
       await comfyPage.nextFrame()
 
       await comfyPage.page.keyboard.down('Space')
@@ -1321,7 +1321,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       'panning'
     )
 
-    await comfyPage.page.locator('canvas').click()
+    await comfyPage.canvas.click()
     await comfyPage.nextFrame()
 
     await expect(comfyPage.canvas).toHaveScreenshot('standard-initial.png')

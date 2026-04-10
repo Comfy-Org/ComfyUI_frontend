@@ -128,7 +128,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.workflow.loadWorkflow('groups/single_group')
 
     // Select group + node should show bypass button
-    await comfyPage.page.locator('canvas').focus()
+    await comfyPage.canvas.focus()
     await comfyPage.page.keyboard.press('Control+A')
     await expect(
       comfyPage.page.locator(
