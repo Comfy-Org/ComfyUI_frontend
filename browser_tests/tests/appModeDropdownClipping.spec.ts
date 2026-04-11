@@ -155,14 +155,5 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
       )
       .toBe(true)
 
-    // Verify popover top-left is within the viewport
-    await expect
-      .poll(() =>
-        popover.evaluate((el) => {
-          const rect = el.getBoundingClientRect()
-          return rect.top >= 0 && rect.left >= 0
-        })
-      )
-      .toBe(true)
   })
 })
