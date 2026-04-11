@@ -117,12 +117,14 @@ describe('DomWidgets app mode round-trip', () => {
     // Simulate stale visibility from lack of draw calls during app mode
     // (in production, v-show hides the canvas so updateWidgets doesn't run)
     widgetState.visible = false
+    vi.mocked(canvas.isNodeVisible).mockClear()
 
     // Return to graph mode
     setMode('graph')
     await nextTick()
 
-    // The widget should be visible again without needing a manual drawFrame
+    // The whenever watcher should have called updateWidgets automatically
+    expect(canvas.isNodeVisible).toHaveBeenCalled()
     expect(widgetState.visible).toBe(true)
   })
 })
