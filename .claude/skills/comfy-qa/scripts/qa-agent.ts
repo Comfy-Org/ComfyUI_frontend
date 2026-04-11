@@ -45,6 +45,7 @@ export interface ResearchResult {
   summary: string
   evidence: string
   testCode: string
+  videoScript?: string
   log: Array<{
     turn: number
     timestampMs: number
@@ -69,6 +70,7 @@ export async function runResearchPhase(
   let finalSummary = 'Agent did not complete'
   let finalEvidence = ''
   let finalTestCode = ''
+  let finalVideoScript = ''
   let turnCount = 0
   let lastPassedTurn = -1
   const startTime = Date.now()
@@ -338,6 +340,12 @@ export async function runResearchPhase(
         .string()
         .describe(
           'Final Playwright test code. If REPRODUCED, this test asserts the bug exists and passes.'
+        ),
+      videoScript: z
+        .string()
+        .optional()
+        .describe(
+          'Optional demowright video script code for Phase 2 demo recording. A separate test file that imports createVideoScript from demowright/video-script and renders a narrated demo. Do NOT include demowright imports in testCode — put them here instead.'
         )
     },
     async (args: {
@@ -346,6 +354,7 @@ export async function runResearchPhase(
       summary: string
       evidence: string
       testCode: string
+      videoScript?: string
     }) => {
       agentDone = true
       finalVerdict = args.verdict
@@ -353,7 +362,11 @@ export async function runResearchPhase(
       finalSummary = args.summary
       finalEvidence = args.evidence
       finalTestCode = args.testCode
+      finalVideoScript = args.videoScript ?? ''
       writeFileSync(testPath, args.testCode)
+      if (args.videoScript) {
+        writeFileSync(`${outputDir}/video-script.spec.ts`, args.videoScript)
+      }
       return {
         content: [
           { type: 'text' as const, text: `Research complete: ${args.verdict}` }
@@ -503,43 +516,47 @@ export async function runResearchPhase(
 - helpers/KeyboardHelper.ts, SettingsHelper.ts, SubgraphHelper.ts
 - components/Topbar.ts, ContextMenu.ts, SettingDialog.ts, SidebarTab.ts
 
-## Video Script (demowright createVideoScript)
+## Video Script (IMPORTANT — provide via done() tool)
 
-After your test works, ALSO export a \`videoScript\` function that builds a demowright video script.
-This will be used in Phase 2 to record a narrated demo video with subtitles, TTS, and chapter markers.
+When calling done(), provide a \`videoScript\` parameter with a SEPARATE test file that uses demowright's createVideoScript.
+Do NOT put demowright imports in testCode — they won't resolve in Phase 1.
+
+The videoScript is a complete, standalone Playwright test file for Phase 2 demo recording:
 
 \`\`\`typescript
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { createVideoScript } from 'demowright/video-script'
 
-// Export this alongside your test
-export function videoScript() {
-  return createVideoScript()
+test('Demo: Bug Title', async ({ comfyPage }) => {
+  const script = createVideoScript()
     .title('Bug Title Here', { subtitle: 'Issue #NNNN', durationMs: 4000 })
     .segment('Step 1: description of what we do', async (pace) => {
-      // ... playwright actions ...
-      await pace() // wait for narration to finish
+      // ... same playwright actions as the test ...
+      await pace()
     })
     .segment('Step 2: description', async (pace) => {
       // ... more actions ...
       await pace()
     })
-    .segment('Bug evidence: what we see that proves the bug', async (pace) => {
-      // ... final state showing the bug ...
+    .segment('Bug evidence: what we see proves the bug', async (pace) => {
+      // ... show final state for 3 seconds ...
+      await comfyPage.page.waitForTimeout(3000)
       await pace()
     })
-    .outro({ text: 'Bug Reproduced', subtitle: 'Summary of the issue' })
-}
+    .outro({ text: 'Bug Reproduced', subtitle: 'Summary' })
+
+  await script.render(comfyPage.page)
+})
 \`\`\`
 
 Key API:
-- \`.title(text, {subtitle?, durationMs?})\` — full-screen title card
-- \`.segment(narrationText, async (pace) => { ...actions...; await pace() })\` — narrated step with TTS
-- \`.transition('fade' | 'crossfade', durationMs?)\` — visual transition
+- \`.title(text, {subtitle?, durationMs?})\` — title card (4s default)
+- \`.segment(narrationText, async (pace) => { ...actions...; await pace() })\` — TTS narrated step
 - \`.outro({text?, subtitle?, durationMs?})\` — ending card
-- \`pace()\` — call after actions to wait for narration to finish before next segment
+- \`pace()\` — wait for narration audio to finish before next segment
 
-The videoScript function receives comfyPage as argument. Include it as a named export in the test file.
-The test itself (for Phase 1 assertion) and the video script (for Phase 2 demo) should be in the SAME file.
+IMPORTANT: The videoScript should reproduce the same steps as testCode but slower and with clear narration.
+Include a final segment that PAUSES on the bug evidence for 3+ seconds so viewers can see it.
 
 ## Current UI state (accessibility tree)
 ${initialA11y}
@@ -620,6 +637,7 @@ ${issueContext}`
     summary: finalSummary,
     evidence: finalEvidence,
     testCode: finalTestCode,
+    videoScript: finalVideoScript || undefined,
     log: researchLog
   }
 

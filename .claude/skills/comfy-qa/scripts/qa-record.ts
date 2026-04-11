@@ -1972,21 +1972,25 @@ async function main() {
           const videoTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
 
-          const testCode = research.testCode
-          const hasVideoScript = testCode.includes('createVideoScript')
+          // Check if agent provided a separate video script file
+          const videoScriptPath = `${opts.outputDir}/video-script.spec.ts`
+          const hasVideoScript = statSync(videoScriptPath, {
+            throwIfNoEntry: false
+          })
 
           if (hasVideoScript) {
-            // Test already uses createVideoScript — write as-is
+            // Use the dedicated video script for Phase 2
             console.warn(
-              'Phase 2: Test uses createVideoScript (native demowright)'
+              'Phase 2: Using video-script.spec.ts (native demowright)'
             )
-            writeFileSync(videoTestFile, testCode)
+            const vsCode = readFileSync(videoScriptPath, 'utf-8')
+            writeFileSync(videoTestFile, vsCode)
           } else {
             // Fallback: inject basic narration before step comments
             console.warn('Phase 2: Injecting step narration (fallback)')
             const issueTitle =
               issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
-            let injectedCode = testCode
+            let injectedCode = research.testCode
             const bodyMatch = injectedCode.match(
               /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
             )
@@ -2000,7 +2004,7 @@ async function main() {
             // Insert narrate calls before step comments
             injectedCode = injectedCode.replace(
               /(\n\s*)(\/\/\s*(?:Step \d+|── Step \d+)[^\n]*)/g,
-              (_m, indent, comment) => {
+              (_m: string, indent: string, comment: string) => {
                 const text = comment
                   .replace(/^\/\/\s*(?:──\s*)?/, '')
                   .replace(/\s*──+\s*$/, '')
