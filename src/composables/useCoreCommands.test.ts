@@ -447,9 +447,7 @@ describe('useCoreCommands', () => {
     })
 
     it('should paste with connect option', async () => {
-      await findCommand(
-        'Comfy.Canvas.PasteFromClipboardWithConnect'
-      ).function()
+      await findCommand('Comfy.Canvas.PasteFromClipboardWithConnect').function()
 
       expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith({
         connectInputs: true
@@ -516,7 +514,9 @@ describe('useCoreCommands', () => {
 
   describe('Canvas delete command', () => {
     it('should delete selected items when selection exists', async () => {
-      app.canvas.selectedItems = new Set([{}]) as typeof app.canvas.selectedItems
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
 
       await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
 
@@ -735,9 +735,7 @@ describe('useCoreCommands', () => {
       mockStore.get = vi.fn().mockReturnValue(true)
       vi.mocked(useSettingStore).mockReturnValue(mockStore)
 
-      await findCommand(
-        'Comfy.Memory.UnloadModelsAndExecutionCache'
-      ).function()
+      await findCommand('Comfy.Memory.UnloadModelsAndExecutionCache').function()
 
       expect(api.freeMemory).toHaveBeenCalledWith({
         freeExecutionCache: true
@@ -747,7 +745,10 @@ describe('useCoreCommands', () => {
 
   describe('FitView command', () => {
     it('should show error toast when canvas is empty', async () => {
-      Object.defineProperty(app.canvas, 'empty', { value: true, writable: true })
+      Object.defineProperty(app.canvas, 'empty', {
+        value: true,
+        writable: true
+      })
 
       await findCommand('Comfy.Canvas.FitView').function()
 
@@ -758,7 +759,10 @@ describe('useCoreCommands', () => {
     })
 
     it('should fit view when canvas has content', async () => {
-      Object.defineProperty(app.canvas, 'empty', { value: false, writable: true })
+      Object.defineProperty(app.canvas, 'empty', {
+        value: false,
+        writable: true
+      })
 
       await findCommand('Comfy.Canvas.FitView').function()
 
@@ -817,18 +821,14 @@ describe('useCoreCommands', () => {
 
   describe('ToggleSelectedNodes commands', () => {
     it('Mute should toggle selected nodes mode and mark dirty', async () => {
-      await findCommand(
-        'Comfy.Canvas.ToggleSelectedNodes.Mute'
-      ).function()
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Mute').function()
 
       expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalled()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
     it('Bypass should toggle selected nodes mode and mark dirty', async () => {
-      await findCommand(
-        'Comfy.Canvas.ToggleSelectedNodes.Bypass'
-      ).function()
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Bypass').function()
 
       expect(mockSelectedItems.toggleSelectedNodesMode).toHaveBeenCalled()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
@@ -836,13 +836,14 @@ describe('useCoreCommands', () => {
 
     it('Pin should toggle pin state on each selected node', async () => {
       const mockNode = createMockLGraphNode({ id: 1 })
-      Object.defineProperty(mockNode, 'pinned', { value: false, writable: true })
+      Object.defineProperty(mockNode, 'pinned', {
+        value: false,
+        writable: true
+      })
       mockNode.pin = vi.fn()
       mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
 
-      await findCommand(
-        'Comfy.Canvas.ToggleSelectedNodes.Pin'
-      ).function()
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Pin').function()
 
       expect(mockNode.pin).toHaveBeenCalledWith(true)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
@@ -853,9 +854,7 @@ describe('useCoreCommands', () => {
       mockNode.collapse = vi.fn()
       mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
 
-      await findCommand(
-        'Comfy.Canvas.ToggleSelectedNodes.Collapse'
-      ).function()
+      await findCommand('Comfy.Canvas.ToggleSelectedNodes.Collapse').function()
 
       expect(mockNode.collapse).toHaveBeenCalled()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
