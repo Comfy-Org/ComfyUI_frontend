@@ -19,9 +19,7 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
       .filter({
         has: comfyPage.page.locator('.icon-\\[lucide--chevron-down\\]')
       })
-      .and(
-        comfyPage.page.locator(':not([data-testid="node-collapse-button"])')
-      )
+      .and(comfyPage.page.locator(':not([data-testid="node-collapse-button"])'))
   }
 
   async function clickDropdownTrigger(

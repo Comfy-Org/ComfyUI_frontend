@@ -147,13 +147,10 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     await expect
       .poll(() =>
         popover.evaluate((el) => {
-          const panel = document.querySelector(
-            '[data-testid="linear-widgets"]'
-          )
+          const panel = document.querySelector('[data-testid="linear-widgets"]')
           return panel ? !panel.contains(el) : true
         })
       )
       .toBe(true)
-
   })
 })
