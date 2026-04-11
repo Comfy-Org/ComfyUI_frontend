@@ -94,24 +94,19 @@ export class CanvasHelper {
     position: Position,
     options?: {
       button?: 'left' | 'right' | 'middle'
-      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta' | 'ControlOrMeta')[]
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
     }
   ): Promise<void> {
     const abs = await this.toAbsolute(position)
-    const resolveModifier = (
-      mod: 'Shift' | 'Control' | 'Alt' | 'Meta' | 'ControlOrMeta'
-    ) =>
-      mod === 'ControlOrMeta'
-        ? process.platform === 'darwin'
-          ? 'Meta'
-          : 'Control'
-        : mod
-    const modifiers = (options?.modifiers ?? []).map(resolveModifier)
+    const modifiers = options?.modifiers ?? []
     for (const mod of modifiers) await this.page.keyboard.down(mod)
-    await this.page.mouse.click(abs.x, abs.y, {
-      button: options?.button
-    })
-    for (const mod of modifiers) await this.page.keyboard.up(mod)
+    try {
+      await this.page.mouse.click(abs.x, abs.y, {
+        button: options?.button
+      })
+    } finally {
+      for (const mod of modifiers) await this.page.keyboard.up(mod)
+    }
     await this.nextFrame()
   }
 

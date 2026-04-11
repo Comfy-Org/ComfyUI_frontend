@@ -71,9 +71,7 @@ export class Topbar {
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    const closeBtn = tab.locator('.close-button')
-    await closeBtn.waitFor({ state: 'visible' })
-    await closeBtn.click()
+    await tab.locator('.close-button').click()
   }
 
   getSaveDialog(): Locator {

@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ManageGroupNode } from '@e2e/helpers/manageGroupNode'
@@ -356,7 +355,11 @@ export class NodeReference {
   }
   async click(
     position: 'title' | 'collapse',
-    options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
+    options?: {
+      button?: 'left' | 'right' | 'middle'
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+      moveMouseToEmptyArea?: boolean
+    }
   ) {
     let clickPos: Position
     switch (position) {
@@ -378,7 +381,6 @@ export class NodeReference {
     }
 
     await this.comfyPage.canvasOps.mouseClickAt(clickPos, options)
-    await this.comfyPage.nextFrame()
     if (moveMouseToEmptyArea) {
       await this.comfyPage.canvasOps.moveMouseToEmptyArea()
     }
