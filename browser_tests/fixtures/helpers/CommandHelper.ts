@@ -5,6 +5,10 @@ import type { KeyCombo } from '@/platform/keybindings/types'
 export class CommandHelper {
   constructor(private readonly page: Page) {}
 
+  private async nextFrame(): Promise<void> {
+    await this.page.evaluate(() => new Promise<number>(requestAnimationFrame))
+  }
+
   async executeCommand(
     commandId: string,
     metadata?: Record<string, unknown>
@@ -20,6 +24,7 @@ export class CommandHelper {
       },
       { commandId, metadata }
     )
+    await this.nextFrame()
   }
 
   async registerCommand(

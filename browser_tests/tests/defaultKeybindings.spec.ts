@@ -103,7 +103,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'v' unlocks canvas", async ({ comfyPage }) => {
       // Lock first
       await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
-      await comfyPage.nextFrame()
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
 
       await comfyPage.canvas.press('KeyV')

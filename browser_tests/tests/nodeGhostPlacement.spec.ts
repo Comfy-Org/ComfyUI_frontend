@@ -14,7 +14,6 @@ async function setVueMode(comfyPage: ComfyPage, enabled: boolean) {
 
 async function addGhostAtCenter(comfyPage: ComfyPage) {
   await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-  await comfyPage.nextFrame()
 
   const viewport = comfyPage.page.viewportSize()!
   const centerX = Math.round(viewport.width / 2)
@@ -53,7 +52,6 @@ for (const mode of ['litegraph', 'vue'] as const) {
 
     test('positions ghost node at cursor', async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.nextFrame()
 
       const viewport = comfyPage.page.viewportSize()!
       const centerX = Math.round(viewport.width / 2)

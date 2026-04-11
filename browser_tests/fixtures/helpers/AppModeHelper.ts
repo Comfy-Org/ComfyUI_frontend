@@ -108,7 +108,6 @@ export class AppModeHelper {
   async toggleAppMode() {
     await this.comfyPage.workflow.waitForActiveWorkflow()
     await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
-    await this.comfyPage.nextFrame()
   }
 
   /**

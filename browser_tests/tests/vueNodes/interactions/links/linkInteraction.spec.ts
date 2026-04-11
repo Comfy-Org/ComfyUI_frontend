@@ -1064,7 +1064,6 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.nodeOps.waitForGraphNodes(0)
     await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
-    await comfyPage.nextFrame()
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
     await comfyPage.nodeOps.waitForGraphNodes(1)
 

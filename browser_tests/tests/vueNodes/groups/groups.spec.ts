@@ -134,7 +134,6 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
     await comfyPage.workflow.loadWorkflow('groups/oversized_group')
     await comfyPage.keyboard.selectAll()
     await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-groups-fit-to-contents.png'
     )
