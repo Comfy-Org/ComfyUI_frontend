@@ -15,7 +15,7 @@ history by comparing serialized graph snapshots.
 links, etc.) are only captured when `captureCanvasState()` is explicitly triggered.
 
 **INVARIANT:** `captureCanvasState()` asserts that it is called on the active
-workflow's tracker. Calling it on an inactive tracker logs an error in DEV and
+workflow's tracker. Calling it on an inactive tracker logs a warning and
 returns early, preventing cross-workflow data corruption.
 
 ## Automatic Triggers
@@ -71,20 +71,25 @@ These locations call `captureCanvasState()` directly:
 - `useSubgraphOperations.ts` — After subgraph enter/exit
 - `useCanvasRefresh.ts` — After canvas refresh
 - `useCoreCommands.ts` — After metadata/subgraph commands
+- `appModeStore.ts` — After app mode transitions
 
 `workflowService.ts` calls `captureCanvasState()` indirectly via
 `deactivate()` and `prepareForSave()` (see Lifecycle Methods below).
 
+> **Deprecated:** `checkState()` is an alias for `captureCanvasState()` kept
+> for extension compatibility. Extension authors should migrate to
+> `captureCanvasState()`. See the `@deprecated` JSDoc on the method.
+
 ## Lifecycle Methods
 
-| Method                 | Caller                          | Purpose                                                                                                                    |
-| ---------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `captureCanvasState()` | Event handlers, UI interactions | Snapshots canvas into activeState, pushes undo. Asserts active tracker.                                                    |
-| `deactivate()`         | `beforeLoadNewGraph` only       | `captureCanvasState()` + `store()`. Freezes everything for tab switch. Must be called while this workflow is still active. |
-| `prepareForSave()`     | Save paths only                 | Active: calls `captureCanvasState()`. Inactive: no-op (state was frozen by `deactivate()`).                                |
-| `store()`              | Internal to `deactivate()`      | Saves viewport scale/offset, node outputs, subgraph navigation.                                                            |
-| `restore()`            | `afterLoadNewGraph`             | Restores viewport, outputs, subgraph navigation.                                                                           |
-| `reset()`              | `afterLoadNewGraph`, save       | Resets initial state (marks workflow as "clean").                                                                          |
+| Method                 | Caller                          | Purpose                                                                                                                                          |
+| ---------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `captureCanvasState()` | Event handlers, UI interactions | Snapshots canvas into activeState, pushes undo. Asserts active tracker.                                                                          |
+| `deactivate()`         | `beforeLoadNewGraph` only       | `captureCanvasState()` (skipped during undo/redo) + `store()`. Freezes state for tab switch. Must be called while this workflow is still active. |
+| `prepareForSave()`     | Save paths only                 | Active: calls `captureCanvasState()`. Inactive: no-op (state was frozen by `deactivate()`).                                                      |
+| `store()`              | Internal to `deactivate()`      | Saves viewport scale/offset, node outputs, subgraph navigation.                                                                                  |
+| `restore()`            | `afterLoadNewGraph`             | Restores viewport, outputs, subgraph navigation.                                                                                                 |
+| `reset()`              | `afterLoadNewGraph`, save       | Resets initial state (marks workflow as "clean").                                                                                                |
 
 ## Transaction Guards
 
@@ -102,7 +107,7 @@ The `litegraph:canvas` custom event also supports this with `before-change` /
 ## Key Invariants
 
 - `captureCanvasState()` asserts it is called on the active workflow's tracker;
-  inactive trackers get an early return (and a DEV error log)
+  inactive trackers get an early return (and a warning log)
 - `captureCanvasState()` is a no-op during `loadGraphData` (guarded by
   `isLoadingGraph`) to prevent cross-workflow corruption
 - `captureCanvasState()` is a no-op during undo/redo (guarded by

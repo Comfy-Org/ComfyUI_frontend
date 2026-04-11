@@ -4,10 +4,8 @@ import log from 'loglevel'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -97,28 +95,25 @@ export class ChangeTracker {
 
   /**
    * Freeze this tracker's state before the workflow goes inactive.
-   * Captures the final canvas state + viewport/outputs.
-   * Called exactly once when switching away from this workflow.
+   * Always calls store() to preserve viewport/outputs. Calls
+   * captureCanvasState() only when not in undo/redo (to avoid
+   * corrupting undo history with intermediate graph state).
    *
    * PRECONDITION: must be called while this workflow is still the active one
    * (before the activeWorkflow pointer is moved). If called after the pointer
    * has already moved, this is a no-op to avoid freezing wrong viewport data.
-   * Also skipped during undo/redo to avoid overwriting viewport with
-   * intermediate canvas state.
    *
    * @internal Not part of the public extension API.
    */
   deactivate() {
-    if (!isActiveTracker(this) || this._restoringState) {
-      if (import.meta.env.DEV && !this._restoringState) {
-        logger.error(
-          'deactivate() called on inactive tracker for:',
-          this.workflow.path
-        )
-      }
+    if (!isActiveTracker(this)) {
+      logger.warn(
+        'deactivate() called on inactive tracker for:',
+        this.workflow.path
+      )
       return
     }
-    this.captureCanvasState()
+    if (!this._restoringState) this.captureCanvasState()
     this.store()
   }
 
@@ -195,12 +190,10 @@ export class ChangeTracker {
       return
 
     if (!isActiveTracker(this)) {
-      if (import.meta.env.DEV) {
-        logger.error(
-          'captureCanvasState called on inactive tracker for:',
-          this.workflow.path
-        )
-      }
+      logger.warn(
+        'captureCanvasState called on inactive tracker for:',
+        this.workflow.path
+      )
       return
     }
 

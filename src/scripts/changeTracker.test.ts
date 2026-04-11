@@ -244,14 +244,14 @@ describe('ChangeTracker', () => {
       expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
     })
 
-    it('is a no-op during undo/redo to avoid overwriting viewport', () => {
+    it('skips captureCanvasState but still calls store during undo/redo', () => {
       const tracker = createTracker(createState(1))
       tracker._restoringState = true
 
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
+      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
     })
 
     it('is a full no-op when called on inactive tracker', () => {

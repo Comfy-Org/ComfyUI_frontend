@@ -20,7 +20,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: () => ({
       activeWorkflow: {
         changeTracker: {
-          checkState: mockCheckState
+          captureCanvasState: mockCheckState
         }
       }
     })
