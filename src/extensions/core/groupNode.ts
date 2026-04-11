@@ -550,8 +550,11 @@ export class GroupNodeConfig {
       'control_after_generate' in configOptions &&
       configOptions.control_after_generate
     ) {
-      if (!extra) extra = {}
-      extra.control_after_generate = `${prefix}control_after_generate`
+      const controlPrefix = prefix.trimEnd()
+      if (controlPrefix) {
+        if (!extra) extra = {}
+        extra.control_prefix = controlPrefix
+      }
     }
     if (config[0] === 'IMAGEUPLOAD') {
       if (!extra) extra = {}
