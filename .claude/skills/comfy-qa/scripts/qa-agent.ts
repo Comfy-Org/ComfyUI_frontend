@@ -551,12 +551,25 @@ test('Demo: Bug Title', async ({ comfyPage }) => {
 
 Key API:
 - \`.title(text, {subtitle?, durationMs?})\` — title card (4s default)
-- \`.segment(narrationText, async (pace) => { ...actions...; await pace() })\` — TTS narrated step
+- \`.segment(narrationText, async (pace) => { await pace(); ...actions... })\` — TTS narrated step
 - \`.outro({text?, subtitle?, durationMs?})\` — ending card
-- \`pace()\` — wait for narration audio to finish before next segment
+- \`pace()\` — wait for narration audio to finish
+
+CRITICAL TIMING: Call \`await pace()\` FIRST in each segment, BEFORE the Playwright actions.
+This makes the narration play and finish, THEN the actions execute — so viewers hear what's about
+to happen before it happens. Pattern:
+
+\`\`\`typescript
+.segment('Now we save the workflow as a new name', async (pace) => {
+  await pace()  // narration finishes first
+  await comfyPage.menu.topbar.saveWorkflowAs('new-name')  // then action happens
+  await comfyPage.page.waitForTimeout(2000)  // pause so viewer sees the result
+})
+\`\`\`
 
 IMPORTANT: The videoScript should reproduce the same steps as testCode but slower and with clear narration.
-Include a final segment that PAUSES on the bug evidence for 3+ seconds so viewers can see it.
+Add \`waitForTimeout(2000)\` after each significant action so viewers can see the result.
+Include a final segment that PAUSES on the bug evidence for 5+ seconds.
 
 ## Current UI state (accessibility tree)
 ${initialA11y}
