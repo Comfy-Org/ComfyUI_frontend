@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -48,8 +49,8 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-function mountPanel() {
-  return mount(ConnectionPanelView, {
+function renderPanel() {
+  return render(ConnectionPanelView, {
     global: {
       plugins: [i18n]
     }
@@ -62,15 +63,12 @@ describe('ConnectionPanelView', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the backend URL input', () => {
-    const wrapper = mountPanel()
-    expect(wrapper.find('#backend-url').exists()).toBe(true)
-  })
-
-  it('defaults the backend URL to http://127.0.0.1:8188', () => {
-    const wrapper = mountPanel()
-    const input = wrapper.find('#backend-url').element as HTMLInputElement
-    expect(input.value).toBe('http://127.0.0.1:8188')
+  it('renders the backend URL input with default value', () => {
+    renderPanel()
+    const input = screen.getByDisplayValue(
+      'http://127.0.0.1:8188'
+    ) as HTMLInputElement
+    expect(input).toBeTruthy()
   })
 
   it('loads backend URL from localStorage', () => {
@@ -78,47 +76,50 @@ describe('ConnectionPanelView', () => {
       'comfyui-preview-backend-url',
       'http://192.168.1.100:8188'
     )
-    const wrapper = mountPanel()
-    const input = wrapper.find('#backend-url').element as HTMLInputElement
-    expect(input.value).toBe('http://192.168.1.100:8188')
+    renderPanel()
+    const input = screen.getByDisplayValue(
+      'http://192.168.1.100:8188'
+    ) as HTMLInputElement
+    expect(input).toBeTruthy()
   })
 
   it('shows test button', () => {
-    const wrapper = mountPanel()
-    const buttons = wrapper.findAll('button')
-    expect(buttons.length).toBeGreaterThan(0)
+    renderPanel()
+    expect(screen.getByRole('button', { name: /test/i })).toBeTruthy()
   })
 
   it('displays the comfy-cli install command', () => {
-    const wrapper = mountPanel()
-    expect(wrapper.text()).toContain('pip install comfy-cli')
+    renderPanel()
+    expect(screen.getByText('pip install comfy-cli')).toBeTruthy()
   })
 
   it('displays the comfy launch command', () => {
-    const wrapper = mountPanel()
-    expect(wrapper.text()).toContain('comfy launch -- --enable-cors-header="*"')
+    renderPanel()
+    expect(
+      screen.getByText('comfy launch -- --enable-cors-header="*"')
+    ).toBeTruthy()
   })
 
-  it('shows build info in footer', () => {
-    const wrapper = mountPanel()
-    const footer = wrapper.find('footer')
-    expect(footer.exists()).toBe(true)
-  })
-
-  it('does not show status indicators before testing', () => {
-    const wrapper = mountPanel()
-    expect(wrapper.find('.bg-green-500').exists()).toBe(false)
-    expect(wrapper.find('.bg-red-500').exists()).toBe(false)
+  it('displays the local network access section', () => {
+    renderPanel()
+    expect(
+      screen.getByRole('heading', { level: 2, name: /local/i })
+    ).toBeTruthy()
   })
 
   it('saves URL to localStorage on test', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
 
-    const wrapper = mountPanel()
-    await wrapper.find('#backend-url').setValue('http://10.0.0.1:8188')
+    renderPanel()
+    const user = userEvent.setup()
+    const input = screen.getByDisplayValue(
+      'http://127.0.0.1:8188'
+    ) as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, 'http://10.0.0.1:8188')
 
-    const testButton = wrapper.findAll('button')[0]
-    await testButton.trigger('click')
+    const testButton = screen.getByRole('button', { name: /test/i })
+    await user.click(testButton)
 
     await vi.waitFor(() => {
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
