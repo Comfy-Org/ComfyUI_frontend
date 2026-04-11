@@ -464,11 +464,7 @@ export class SubgraphHelper {
     const serialized = await this.page.evaluate(() =>
       window.app!.graph!.serialize()
     )
-    await this.page.evaluate(
-      (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
-      serialized as ComfyWorkflowJSON
-    )
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
   }
 
   async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {

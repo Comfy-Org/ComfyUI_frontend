@@ -336,12 +336,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
       )
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
-        await comfyPage.page.evaluate(
-          (workflow) =>
-            window.app!.loadGraphData(workflow as ComfyWorkflowJSON),
-          currentGraphState
+        await comfyPage.workflow.loadGraphData(
+          currentGraphState as ComfyWorkflowJSON
         )
-        await comfyPage.nextFrame()
         await verifyNodeLoaded(comfyPage, 1)
       })
     })
