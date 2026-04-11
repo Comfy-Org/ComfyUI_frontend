@@ -528,20 +528,21 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { createVideoScript } from 'demowright/video-script'
 
 test('Demo: Bug Title', async ({ comfyPage }) => {
+  // IMPORTANT: ALL setup code MUST go here BEFORE createVideoScript()
+  // so the title card is the FIRST thing viewers see in the video
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  await comfyPage.workflow.setupWorkflowsDirectory({})
+
   const script = createVideoScript()
     .title('Bug Title Here', { subtitle: 'Issue #NNNN', durationMs: 4000 })
     .segment('Step 1: description of what we do', async (pace) => {
-      // ... same playwright actions as the test ...
-      await pace()
-    })
-    .segment('Step 2: description', async (pace) => {
-      // ... more actions ...
-      await pace()
+      await pace()  // narration finishes FIRST
+      await comfyPage.menu.topbar.saveWorkflow('name')  // THEN action
+      await comfyPage.page.waitForTimeout(2000)  // pause for viewer
     })
     .segment('Bug evidence: what we see proves the bug', async (pace) => {
-      // ... show final state for 3 seconds ...
-      await comfyPage.page.waitForTimeout(3000)
       await pace()
+      await comfyPage.page.waitForTimeout(5000)  // hold on evidence
     })
     .outro({ text: 'Bug Reproduced', subtitle: 'Summary' })
 
@@ -567,9 +568,12 @@ to happen before it happens. Pattern:
 })
 \`\`\`
 
-IMPORTANT: The videoScript should reproduce the same steps as testCode but slower and with clear narration.
-Add \`waitForTimeout(2000)\` after each significant action so viewers can see the result.
-Include a final segment that PAUSES on the bug evidence for 5+ seconds.
+IMPORTANT RULES for videoScript:
+1. ALL setup code (setSetting, setupWorkflowsDirectory) goes BEFORE createVideoScript() — title card must be first thing in video
+2. Call \`await pace()\` FIRST in each segment callback, BEFORE actions
+3. Add \`waitForTimeout(2000)\` after each action so viewers can see the result
+4. Final evidence segment: hold for 5+ seconds
+5. Reproduce the same steps as testCode but slower with clear narration
 
 ## Current UI state (accessibility tree)
 ${initialA11y}
