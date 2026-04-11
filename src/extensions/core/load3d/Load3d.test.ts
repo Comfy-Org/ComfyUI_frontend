@@ -344,7 +344,10 @@ vi.mock('@/scripts/metadata/ply', () => ({
 }))
 vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
 
+import * as THREE from 'three'
+
 import Load3d from './Load3d'
+import type { CameraState } from './interfaces'
 
 function createContainer(): HTMLDivElement {
   const el = document.createElement('div')
@@ -537,13 +540,13 @@ describe('Load3d', () => {
 
     it('setCameraState delegates and forces render', () => {
       const renderSpy = vi.spyOn(load3d, 'forceRender')
-      const state = {
-        position: { x: 1, y: 2, z: 3 },
-        target: { x: 0, y: 0, z: 0 },
+      const state: CameraState = {
+        position: new THREE.Vector3(1, 2, 3),
+        target: new THREE.Vector3(0, 0, 0),
         zoom: 1,
-        cameraType: 'perspective' as const
+        cameraType: 'perspective'
       }
-      load3d.setCameraState(state as never)
+      load3d.setCameraState(state)
       expect(load3d.cameraManager.setCameraState).toHaveBeenCalledWith(state)
       expect(renderSpy).toHaveBeenCalled()
     })
@@ -606,7 +609,9 @@ describe('Load3d', () => {
     })
 
     it('hasAnimations returns true when clips exist', () => {
-      load3d.animationManager.animationClips = [{} as never]
+      load3d.animationManager.animationClips = [
+        { name: 'clip' } as THREE.AnimationClip
+      ]
       expect(load3d.hasAnimations()).toBe(true)
     })
 
@@ -724,7 +729,7 @@ describe('Load3d', () => {
     it('throws for unsupported format', async () => {
       load3d.modelManager.currentModel = {
         clone: vi.fn().mockReturnValue({})
-      } as never
+      } as unknown as THREE.Object3D
       load3d.modelManager.originalFileName = 'test'
       const promise = load3d.exportModel('xyz')
       // exportModel uses setTimeout(resolve, 10) internally
@@ -735,7 +740,7 @@ describe('Load3d', () => {
     it('calls correct exporter and emits loading events for glb', async () => {
       load3d.modelManager.currentModel = {
         clone: vi.fn().mockReturnValue({})
-      } as never
+      } as unknown as THREE.Object3D
       load3d.modelManager.originalFileName = 'test'
 
       const { ModelExporter } = await import('./ModelExporter')
@@ -768,9 +773,9 @@ describe('Load3d', () => {
     })
 
     it('sets up animations when model has been loaded', async () => {
-      const mockModel = {} as never
+      const mockModel = {} as unknown as THREE.Object3D
       load3d.modelManager.currentModel = mockModel
-      load3d.modelManager.originalModel = {} as never
+      load3d.modelManager.originalModel = {} as unknown as THREE.Object3D
 
       await load3d.loadModel('http://example.com/model.glb', 'model.glb')
 
