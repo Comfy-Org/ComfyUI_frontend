@@ -503,6 +503,44 @@ export async function runResearchPhase(
 - helpers/KeyboardHelper.ts, SettingsHelper.ts, SubgraphHelper.ts
 - components/Topbar.ts, ContextMenu.ts, SettingDialog.ts, SidebarTab.ts
 
+## Video Script (demowright createVideoScript)
+
+After your test works, ALSO export a \`videoScript\` function that builds a demowright video script.
+This will be used in Phase 2 to record a narrated demo video with subtitles, TTS, and chapter markers.
+
+\`\`\`typescript
+import { createVideoScript } from 'demowright/video-script'
+
+// Export this alongside your test
+export function videoScript() {
+  return createVideoScript()
+    .title('Bug Title Here', { subtitle: 'Issue #NNNN', durationMs: 4000 })
+    .segment('Step 1: description of what we do', async (pace) => {
+      // ... playwright actions ...
+      await pace() // wait for narration to finish
+    })
+    .segment('Step 2: description', async (pace) => {
+      // ... more actions ...
+      await pace()
+    })
+    .segment('Bug evidence: what we see that proves the bug', async (pace) => {
+      // ... final state showing the bug ...
+      await pace()
+    })
+    .outro({ text: 'Bug Reproduced', subtitle: 'Summary of the issue' })
+}
+\`\`\`
+
+Key API:
+- \`.title(text, {subtitle?, durationMs?})\` — full-screen title card
+- \`.segment(narrationText, async (pace) => { ...actions...; await pace() })\` — narrated step with TTS
+- \`.transition('fade' | 'crossfade', durationMs?)\` — visual transition
+- \`.outro({text?, subtitle?, durationMs?})\` — ending card
+- \`pace()\` — call after actions to wait for narration to finish before next segment
+
+The videoScript function receives comfyPage as argument. Include it as a named export in the test file.
+The test itself (for Phase 1 assertion) and the video script (for Phase 2 demo) should be in the SAME file.
+
 ## Current UI state (accessibility tree)
 ${initialA11y}
 

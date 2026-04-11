@@ -1972,46 +1972,46 @@ async function main() {
           const videoTestFile = `${projectRoot}/browser_tests/tests/qa-reproduce.spec.ts`
           const testResultsDir = `${opts.outputDir}/test-results`
 
-          // Inject demowright annotate() call for TTS + subtitle intro
-          const issueTitle =
-            issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
-          let testCode = research.testCode
-          const bodyMatch = testCode.match(
-            /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
-          )
-          if (bodyMatch?.index !== undefined) {
-            const pos = bodyMatch.index + bodyMatch[0].length
-            const introInject = `
-    // demowright: announce issue title with subtitle + TTS
-    try {
-      const { annotate: _intro } = await import('demowright/helpers')
-      await _intro(comfyPage.page, ${JSON.stringify('Reproducing: ' + issueTitle)}, async () => {
-        await comfyPage.page.waitForTimeout(3000)
-      })
-    } catch (e) {
-      console.warn('[qa] intro annotate failed:', e instanceof Error ? e.message : e)
-    }
-`
-            testCode =
-              testCode.slice(0, pos) + introInject + testCode.slice(pos)
-          }
-          // Inject step-by-step narrate() calls BEFORE each step comment
-          // narrate(page, text) speaks TTS + shows subtitle, then code runs normally
-          // This is safer than wrapping code in annotate() callbacks which can break syntax
-          testCode = testCode.replace(
-            /(\n\s*)(\/\/\s*(?:Step \d+|── Step \d+)[^\n]*)/g,
-            (_match, indent, comment) => {
-              const stepText = comment
-                .replace(/^\/\/\s*(?:──\s*)?/, '')
-                .replace(/\s*──+\s*$/, '')
-                .replace(/'/g, "\\'")
-                .trim()
-              if (!stepText) return `${indent}${comment}`
-              return `${indent}try { const { annotate: _a } = await import('demowright/helpers'); await _a(comfyPage.page, '${stepText}', async () => { await comfyPage.page.waitForTimeout(2000) }); } catch(e) { console.warn('[qa-narrate]', e); }\n${indent}${comment}`
-            }
-          )
+          const testCode = research.testCode
+          const hasVideoScript = testCode.includes('createVideoScript')
 
-          writeFileSync(videoTestFile, testCode)
+          if (hasVideoScript) {
+            // Test already uses createVideoScript — write as-is
+            console.warn(
+              'Phase 2: Test uses createVideoScript (native demowright)'
+            )
+            writeFileSync(videoTestFile, testCode)
+          } else {
+            // Fallback: inject basic narration before step comments
+            console.warn('Phase 2: Injecting step narration (fallback)')
+            const issueTitle =
+              issueCtx.match(/Title:\s*(.+)/)?.[1]?.trim() ?? 'Bug Reproduction'
+            let injectedCode = testCode
+            const bodyMatch = injectedCode.match(
+              /async\s*\(\{\s*comfyPage\s*\}\)\s*=>\s*\{/
+            )
+            if (bodyMatch?.index !== undefined) {
+              const pos = bodyMatch.index + bodyMatch[0].length
+              injectedCode =
+                injectedCode.slice(0, pos) +
+                `\n    try { const { annotate: _intro } = await import('demowright/helpers'); await _intro(comfyPage.page, ${JSON.stringify('Reproducing: ' + issueTitle)}, async () => { await comfyPage.page.waitForTimeout(3000) }); } catch(e) { console.warn('[qa]', e); }\n` +
+                injectedCode.slice(pos)
+            }
+            // Insert narrate calls before step comments
+            injectedCode = injectedCode.replace(
+              /(\n\s*)(\/\/\s*(?:Step \d+|── Step \d+)[^\n]*)/g,
+              (_m, indent, comment) => {
+                const text = comment
+                  .replace(/^\/\/\s*(?:──\s*)?/, '')
+                  .replace(/\s*──+\s*$/, '')
+                  .replace(/'/g, "\\'")
+                  .trim()
+                if (!text) return `${indent}${comment}`
+                return `${indent}try { const { annotate: _a } = await import('demowright/helpers'); await _a(comfyPage.page, '${text}', async () => { await comfyPage.page.waitForTimeout(2000) }); } catch(e) { /* skip */ }\n${indent}${comment}`
+              }
+            )
+            writeFileSync(videoTestFile, injectedCode)
+          }
 
           // Also save original test for the report
           writeFileSync(
