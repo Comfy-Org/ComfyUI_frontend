@@ -112,18 +112,37 @@
         <div class="flex flex-col gap-2">
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-neutral-400">
-              {{ t('connectionPanel.step1Install') }}
+              {{ t('connectionPanel.step1InstallUv') }}
             </span>
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
             >
-              pip install comfy-cli
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+            </code>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+            </code>
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.uvNote') }}
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-neutral-400">
+              {{ t('connectionPanel.step2InstallComfyCli') }}
+            </span>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              uv pip install comfy-cli --system
             </code>
           </div>
 
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-neutral-400">
-              {{ t('connectionPanel.step2Install') }}
+              {{ t('connectionPanel.step3InstallComfyui') }}
             </span>
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
@@ -134,7 +153,7 @@
 
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium text-neutral-400">
-              {{ t('connectionPanel.step3Launch') }}
+              {{ t('connectionPanel.step4Launch') }}
             </span>
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
@@ -149,22 +168,37 @@
         </p>
       </section>
 
-      <!-- Alternative: manual python -->
+      <!-- Alternative: manual python / pip -->
       <details class="group">
         <summary
           class="cursor-pointer text-sm font-medium text-neutral-400 hover:text-neutral-300"
         >
           {{ t('connectionPanel.altManualSetup') }}
         </summary>
-        <div class="mt-2 flex flex-col gap-2">
-          <p class="text-xs text-neutral-400">
-            {{ t('connectionPanel.guideDescription') }}
-          </p>
-          <code
-            class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
-          >
-            python main.py --enable-cors-header="*"
-          </code>
+        <div class="mt-2 flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <p class="text-xs text-neutral-400">
+              {{ t('connectionPanel.altPipDescription') }}
+            </p>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              pip install comfy-cli
+            </code>
+            <p class="text-xs text-neutral-500">
+              {{ t('connectionPanel.altPipNote') }}
+            </p>
+          </div>
+          <div class="flex flex-col gap-1">
+            <p class="text-xs text-neutral-400">
+              {{ t('connectionPanel.guideDescription') }}
+            </p>
+            <code
+              class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
+            >
+              python main.py --enable-cors-header="*"
+            </code>
+          </div>
         </div>
       </details>
 
