@@ -15,7 +15,7 @@ async function openMoreOptions(comfyPage: ComfyPage) {
 
   // Wait for the context menu to appear by checking for 'Copy', which is
   // always present regardless of single or multi-node selection.
-  const menu = comfyPage.page.locator('.p-popover')
+  const menu = comfyPage.page.locator('.p-contextmenu')
   await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
 }
 
