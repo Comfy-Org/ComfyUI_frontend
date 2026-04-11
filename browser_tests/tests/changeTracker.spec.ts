@@ -71,7 +71,7 @@ async function waitForChangeTrackerSettled(
 ) {
   // Visible node flags can flip before undo finishes loadGraphData() and
   // updates the tracker. Poll the tracker's own settled state so we do not
-  // start the next transaction while checkState() is still gated.
+  // start the next transaction while captureCanvasState() is still gated.
   await expect
     .poll(() => getChangeTrackerDebugState(comfyPage))
     .toMatchObject({
