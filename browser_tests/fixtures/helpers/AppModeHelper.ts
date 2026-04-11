@@ -23,7 +23,7 @@ export class AppModeHelper {
   public readonly outputPlaceholder: Locator
   /** The linear-mode widget list container (visible in app mode). */
   public readonly linearWidgets: Locator
-  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
+  /** The Reka UI Popover for the image picker (teleported to body). */
   public readonly imagePickerPopover: Locator
   /** The Run button in the app mode footer. */
   public readonly runButton: Locator
@@ -54,10 +54,7 @@ export class AppModeHelper {
       TestIds.builder.outputPlaceholder
     )
     this.linearWidgets = this.page.locator('[data-testid="linear-widgets"]')
-    this.imagePickerPopover = this.page
-      .getByRole('dialog')
-      .filter({ has: this.page.getByRole('button', { name: 'All' }) })
-      .first()
+    this.imagePickerPopover = this.page.getByTestId('form-dropdown-content')
     this.runButton = this.page
       .getByTestId('linear-run-button')
       .getByRole('button', { name: /run/i })

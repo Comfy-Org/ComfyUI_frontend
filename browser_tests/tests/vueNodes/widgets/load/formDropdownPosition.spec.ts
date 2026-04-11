@@ -14,29 +14,30 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
    * Click the FormDropdown trigger button inside the LoadImage node.
    * The trigger is a button with a chevron icon inside the dropdown widget.
    */
-  async function clickDropdownTrigger(
+  function getTriggerButton(
     comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
   ) {
     const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
-    const trigger = node.locator('button').filter({
-      has: comfyPage.page.locator('.icon-\\[lucide--chevron-down\\]')
-    })
-    await trigger.click()
+    return node
+      .locator('button')
+      .filter({
+        has: comfyPage.page.locator('.icon-\\[lucide--chevron-down\\]')
+      })
+      .and(
+        comfyPage.page.locator(':not([data-testid="node-collapse-button"])')
+      )
+  }
+
+  async function clickDropdownTrigger(
+    comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
+  ) {
+    await getTriggerButton(comfyPage).click()
   }
 
   function getDropdownContent(
     comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
   ) {
     return comfyPage.page.getByTestId('form-dropdown-content')
-  }
-
-  function getTriggerButton(
-    comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
-  ) {
-    const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
-    return node.locator('button').filter({
-      has: comfyPage.page.locator('.icon-\\[lucide--chevron-down\\]')
-    })
   }
 
   test('dropdown menu appears near trigger at default zoom', async ({

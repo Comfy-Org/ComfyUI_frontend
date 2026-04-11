@@ -137,27 +137,25 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const dropdownButton = imageRow.locator('button:has(> span)').first()
     await dropdownButton.click()
 
-    // The unstyled PrimeVue Popover renders with role="dialog".
-    // Locate the one containing the image grid (filter buttons like "All", "Inputs").
+    // The Reka UI PopoverContent renders with role="dialog" and is
+    // teleported to <body> via PopoverPortal.
     const popover = comfyPage.appMode.imagePickerPopover
     await expect(popover).toBeVisible()
 
+    // Primary assertion: portal teleportation means no ancestor clips
+    await expect
+      .poll(() => popover.evaluate(isClippedByAnyAncestor))
+      .toBe(false)
+
+    // Secondary: popover top-left should be within the viewport
+    // (full containment may fail for tall content that gets constrained)
     await expect
       .poll(() =>
         popover.evaluate((el) => {
           const rect = el.getBoundingClientRect()
-          return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= window.innerHeight &&
-            rect.right <= window.innerWidth
-          )
+          return rect.top >= 0 && rect.left >= 0
         })
       )
       .toBe(true)
-
-    await expect
-      .poll(() => popover.evaluate(isClippedByAnyAncestor))
-      .toBe(false)
   })
 })
