@@ -74,6 +74,40 @@ export class CanvasHelper {
     await this.nextFrame()
   }
 
+  /**
+   * Convert a canvas-element-relative position to absolute page coordinates.
+   * Use with `page.mouse` APIs when Vue DOM overlays above the canvas would
+   * cause Playwright's actionability check to fail on the canvas locator.
+   */
+  private async toAbsolute(position: Position): Promise<Position> {
+    const box = await this.canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+    return { x: box.x + position.x, y: box.y + position.y }
+  }
+
+  /**
+   * Click at canvas-element-relative coordinates using `page.mouse.click()`.
+   * Bypasses Playwright's actionability checks on the canvas locator, which
+   * can fail when Vue-rendered DOM nodes overlay the `<canvas>` element.
+   */
+  async mouseClickAt(
+    position: Position,
+    options?: { button?: 'left' | 'right' | 'middle' }
+  ): Promise<void> {
+    const abs = await this.toAbsolute(position)
+    await this.page.mouse.click(abs.x, abs.y, options)
+    await this.nextFrame()
+  }
+
+  /**
+   * Double-click at canvas-element-relative coordinates using `page.mouse`.
+   */
+  async mouseDblclickAt(position: Position): Promise<void> {
+    const abs = await this.toAbsolute(position)
+    await this.page.mouse.dblclick(abs.x, abs.y)
+    await this.nextFrame()
+  }
+
   async clickEmptySpace(): Promise<void> {
     await this.canvas.click({ position: DefaultGraphPositions.emptySpaceClick })
     await this.nextFrame()

@@ -151,7 +151,7 @@ export class BuilderSelectHelper {
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
       .getByLabel(widgetName, { exact: true })
-    await widgetLocator.click({ force: true })
+    await widgetLocator.click()
     await this.comfyPage.nextFrame()
   }
 
@@ -199,7 +199,7 @@ export class BuilderSelectHelper {
     const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
       String(nodeRef.id)
     )
-    await nodeLocator.click({ force: true })
+    await nodeLocator.click()
     await this.comfyPage.nextFrame()
   }
 }

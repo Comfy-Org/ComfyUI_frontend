@@ -29,7 +29,7 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
 
   const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
   await expect(helpButton).toBeVisible()
-  await helpButton.click({ force: true })
+  await helpButton.click()
   await comfyPage.nextFrame()
 
   return comfyPage.page.getByTestId('properties-panel')
