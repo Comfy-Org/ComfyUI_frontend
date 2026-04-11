@@ -74,10 +74,17 @@ deploy_preview() {
         if output=$(wrangler pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
-            
-            # Extract URL from output (improved regex for valid URL characters)
-            url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
-            result="${url:-https://${branch}.${project}.pages.dev}"
+
+            # Prefer the branch alias URL over the deployment hash URL so the
+            # link in the PR comment stays stable across redeploys.
+            branch_url="https://${branch}.${project}.pages.dev"
+            if echo "$output" | grep -qF "$branch_url"; then
+                result="$branch_url"
+            else
+                # Fall back to first pages.dev URL in wrangler output
+                url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
+                result="${url:-$branch_url}"
+            fi
             echo "Success! URL: $result" >&2
             echo "$result"  # Only this goes to stdout for capture
             return
