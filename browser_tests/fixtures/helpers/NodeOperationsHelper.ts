@@ -8,7 +8,13 @@ import type { Position, Size } from '@e2e/fixtures/types'
 import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class NodeOperationsHelper {
-  constructor(private comfyPage: ComfyPage) {}
+  public readonly promptDialogInput: Locator
+
+  constructor(private comfyPage: ComfyPage) {
+    this.promptDialogInput = this.page.locator(
+      '.p-dialog-content input[type="text"]'
+    )
+  }
 
   private get page() {
     return this.comfyPage.page
@@ -28,6 +34,12 @@ export class NodeOperationsHelper {
         ).length || 0
       )
     })
+  }
+
+  /** Remove all nodes from the graph and clean. */
+  async clearGraph() {
+    await this.comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
+    await this.comfyPage.command.executeCommand('Comfy.ClearWorkflow')
   }
 
   /** Reads from `window.app.graph` (the root workflow graph). */
@@ -147,10 +159,6 @@ export class NodeOperationsHelper {
     await node.clickContextMenuOption('Convert to Group Node')
     await this.fillPromptDialog(groupNodeName)
     await this.comfyPage.nextFrame()
-  }
-
-  get promptDialogInput(): Locator {
-    return this.page.locator('.p-dialog-content input[type="text"]')
   }
 
   async fillPromptDialog(value: string): Promise<void> {

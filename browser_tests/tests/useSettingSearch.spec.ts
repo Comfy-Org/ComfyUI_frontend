@@ -81,7 +81,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     const dialog = comfyPage.settingDialog
     await dialog.open()
 
-    expect(await dialog.categories.count()).toBeGreaterThan(0)
+    await expect.poll(() => dialog.categories.count()).toBeGreaterThan(0)
   })
 
   test('can select different categories in sidebar', async ({ comfyPage }) => {
@@ -112,7 +112,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     await dialog.open()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(dialog.root).not.toBeVisible()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('search box has proper debouncing behavior', async ({ comfyPage }) => {

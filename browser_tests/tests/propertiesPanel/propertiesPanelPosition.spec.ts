@@ -15,7 +15,6 @@ test.describe('Properties panel position', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
-    await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId(
       TestIds.propertiesPanel.root
@@ -25,23 +24,24 @@ test.describe('Properties panel position', () => {
     await expect(propertiesPanel).toBeVisible()
     await expect(sidebar).toBeVisible()
 
-    const propsBoundingBox = await propertiesPanel.boundingBox()
-    const sidebarBoundingBox = await sidebar.boundingBox()
+    await expect
+      .poll(async () => {
+        const propsBoundingBox = await propertiesPanel.boundingBox()
+        const sidebarBoundingBox = await sidebar.boundingBox()
 
-    expect(propsBoundingBox).not.toBeNull()
-    expect(sidebarBoundingBox).not.toBeNull()
+        if (!propsBoundingBox || !sidebarBoundingBox) return false
 
-    // Properties panel should be to the right of the sidebar
-    expect(propsBoundingBox!.x).toBeGreaterThan(
-      sidebarBoundingBox!.x + sidebarBoundingBox!.width
-    )
+        return (
+          propsBoundingBox.x > sidebarBoundingBox.x + sidebarBoundingBox.width
+        )
+      })
+      .toBe(true)
   })
 
   test('positions on the left when sidebar is on the right', async ({
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
-    await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId(
       TestIds.propertiesPanel.root
@@ -51,16 +51,18 @@ test.describe('Properties panel position', () => {
     await expect(propertiesPanel).toBeVisible()
     await expect(sidebar).toBeVisible()
 
-    const propsBoundingBox = await propertiesPanel.boundingBox()
-    const sidebarBoundingBox = await sidebar.boundingBox()
+    await expect
+      .poll(async () => {
+        const propsBoundingBox = await propertiesPanel.boundingBox()
+        const sidebarBoundingBox = await sidebar.boundingBox()
 
-    expect(propsBoundingBox).not.toBeNull()
-    expect(sidebarBoundingBox).not.toBeNull()
+        if (!propsBoundingBox || !sidebarBoundingBox) return false
 
-    // Properties panel should be to the left of the sidebar
-    expect(propsBoundingBox!.x + propsBoundingBox!.width).toBeLessThan(
-      sidebarBoundingBox!.x
-    )
+        return (
+          propsBoundingBox.x + propsBoundingBox.width < sidebarBoundingBox.x
+        )
+      })
+      .toBe(true)
   })
 
   test('close button icon updates based on sidebar location', async ({
@@ -72,7 +74,6 @@ test.describe('Properties panel position', () => {
 
     // When sidebar is on the left, panel is on the right
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
-    await comfyPage.nextFrame()
 
     await expect(propertiesPanel).toBeVisible()
     const closeButtonLeft = propertiesPanel
@@ -83,7 +84,6 @@ test.describe('Properties panel position', () => {
 
     // When sidebar is on the right, panel is on the left
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
-    await comfyPage.nextFrame()
 
     const closeButtonRight = propertiesPanel
       .locator('button[aria-pressed]')

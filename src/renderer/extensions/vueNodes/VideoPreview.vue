@@ -46,6 +46,7 @@
         v-if="!videoError"
         :src="currentVideoUrl"
         :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        preload="metadata"
         controls
         loop
         playsinline

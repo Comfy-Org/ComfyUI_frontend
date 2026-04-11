@@ -157,7 +157,7 @@ export class SubgraphHelper {
 
     // Wait for the appropriate UI element to appear
     if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
+      await this.page.locator('.litemenu-entry').first().waitFor({
         state: 'visible',
         timeout: 5000
       })
@@ -445,7 +445,7 @@ export class SubgraphHelper {
       await this.rightClickOutputSlot(slotName)
     }
     await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.contextMenu.waitForHidden()
   }
 
   async findSubgraphNodeId(): Promise<string> {
