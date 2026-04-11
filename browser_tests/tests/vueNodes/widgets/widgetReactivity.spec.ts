@@ -9,6 +9,7 @@ test.describe('Vue Widget Reactivity', () => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
+
   test('Should display added widgets', async ({ comfyPage }) => {
     const loadCheckpointNode = comfyPage.page.locator(
       'css=[data-testid="node-body-4"] > .lg-node-widgets > div'
@@ -32,6 +33,7 @@ test.describe('Vue Widget Reactivity', () => {
     })
     await expect(loadCheckpointNode).toHaveCount(4)
   })
+
   test('Should hide removed widgets', async ({ comfyPage }) => {
     const loadCheckpointNode = comfyPage.page.locator(
       'css=[data-testid="node-body-3"] > .lg-node-widgets > div'

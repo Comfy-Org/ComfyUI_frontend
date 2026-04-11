@@ -38,10 +38,15 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await comfyPage.subgraph.getSlotCount('input')
-      const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
+      const vaeEncodeNodes = await comfyPage.nodeOps.getNodeRefsByType(
         'VAEEncode',
         true
       )
+      expect(
+        vaeEncodeNodes.length,
+        'Expected at least one VAEEncode node'
+      ).toBeGreaterThan(0)
+      const [vaeEncodeNode] = vaeEncodeNodes
 
       await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
@@ -58,10 +63,15 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await comfyPage.subgraph.getSlotCount('output')
-      const [vaeEncodeNode] = await comfyPage.nodeOps.getNodeRefsByType(
+      const vaeEncodeNodes = await comfyPage.nodeOps.getNodeRefsByType(
         'VAEEncode',
         true
       )
+      expect(
+        vaeEncodeNodes.length,
+        'Expected at least one VAEEncode node'
+      ).toBeGreaterThan(0)
+      const [vaeEncodeNode] = vaeEncodeNodes
 
       await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
@@ -122,7 +132,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_INPUT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
@@ -143,10 +155,12 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel!)
 
-      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+      await comfyPage.page.locator(SELECTORS.promptDialog).waitFor({
         state: 'visible'
       })
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_INPUT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       // Force re-render
@@ -168,11 +182,13 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel!)
 
-      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+      await comfyPage.page.locator(SELECTORS.promptDialog).waitFor({
         state: 'visible'
       })
       const renamedOutputName = 'renamed_output'
-      await comfyPage.page.fill(SELECTORS.promptDialog, renamedOutputName)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(renamedOutputName)
       await comfyPage.page.keyboard.press('Enter')
 
       // Force re-render
@@ -199,11 +215,13 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
       await comfyPage.nextFrame()
 
-      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+      await comfyPage.page.locator(SELECTORS.promptDialog).waitFor({
         state: 'visible'
       })
       const rightClickRenamedName = 'right_click_renamed'
-      await comfyPage.page.fill(SELECTORS.promptDialog, rightClickRenamedName)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(rightClickRenamedName)
       await comfyPage.page.keyboard.press('Enter')
 
       // Force re-render
@@ -222,8 +240,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
-
-      const initialInputLabel = await comfyPage.subgraph.getSlotLabel('input')
 
       // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
@@ -262,15 +278,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
       const labelClickRenamedName = 'label_click_renamed'
-      await comfyPage.page.fill(SELECTORS.promptDialog, labelClickRenamedName)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(labelClickRenamedName)
       await comfyPage.page.keyboard.press('Enter')
 
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const newInputName = await comfyPage.subgraph.getSlotLabel('input')
-      expect(newInputName).toBe(labelClickRenamedName)
-      expect(newInputName).not.toBe(initialInputLabel)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(labelClickRenamedName)
     })
   })
 
@@ -295,8 +313,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_SLOT_NAME)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_SLOT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
@@ -304,18 +324,15 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const afterFirstRename = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        if (!graph || !('inputNode' in graph))
-          return { label: null, name: null, displayName: null }
-        const slot = graph.inputs?.[0]
-        return {
-          label: slot?.label || null,
-          name: slot?.name || null,
-          displayName: slot?.displayName || slot?.label || slot?.name || null
-        }
-      })
-      expect(afterFirstRename.label).toBe(RENAMED_SLOT_NAME)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph
+            if (!graph || !('inputNode' in graph)) return null
+            return graph.inputs?.[0]?.label || null
+          })
+        )
+        .toBe(RENAMED_SLOT_NAME)
 
       await comfyPage.subgraph.rightClickInputSlot()
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
@@ -323,14 +340,14 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
 
-      const dialogValue = await comfyPage.page.inputValue(
-        SELECTORS.promptDialog
+      await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toHaveValue(
+        RENAMED_SLOT_NAME
       )
-      expect(dialogValue).toBe(RENAMED_SLOT_NAME)
-      expect(dialogValue).not.toBe(afterFirstRename.name)
 
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, SECOND_RENAMED_NAME)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(SECOND_RENAMED_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
@@ -338,8 +355,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
       await comfyPage.nextFrame()
 
-      const afterSecondRename = await comfyPage.subgraph.getSlotLabel('input')
-      expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
+      await expect
+        .poll(() => comfyPage.subgraph.getSlotLabel('input'))
+        .toBe(SECOND_RENAMED_NAME)
     })
 
     test('Shows current output slot label in rename dialog', async ({
@@ -362,8 +380,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_SLOT_NAME)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_SLOT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
@@ -377,10 +397,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
 
-      const dialogValue = await comfyPage.page.inputValue(
-        SELECTORS.promptDialog
+      await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toHaveValue(
+        RENAMED_SLOT_NAME
       )
-      expect(dialogValue).toBe(RENAMED_SLOT_NAME)
     })
   })
 
@@ -410,23 +429,29 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('19')
       await subgraphNodeRef.navigateIntoSubgraph()
 
-      const seedSlotName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        if (!graph) return null
-        const inputs = (graph as { inputs?: Array<{ name: string }> }).inputs
-        return (
-          inputs?.find((input) => input.name.includes('seed'))?.name ?? null
-        )
-      })
-      expect(seedSlotName).not.toBeNull()
+      let seedSlotName: string | null = null
+      await expect
+        .poll(async () => {
+          seedSlotName = await comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph
+            if (!graph) return null
+            const inputs = (graph as { inputs?: Array<{ name: string }> })
+              .inputs
+            return (
+              inputs?.find((input) => input.name.includes('seed'))?.name ?? null
+            )
+          })
+          return seedSlotName
+        })
+        .not.toBeNull()
 
       await comfyPage.subgraph.rightClickInputSlot(seedSlotName!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_LABEL)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill(RENAMED_LABEL)
       await comfyPage.page.keyboard.press('Enter')
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
 
@@ -437,15 +462,18 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNodeAfter).toBeVisible()
 
-      const updatedLabel = await comfyPage.page.evaluate(() => {
-        const node = window.app!.canvas.graph!.getNodeById('19')
-        if (!node) return null
-        const widget = node.widgets?.find((entry: { name: string }) =>
-          entry.name.includes('seed')
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.canvas.graph!.getNodeById('19')
+            if (!node) return null
+            const widget = node.widgets?.find((entry: { name: string }) =>
+              entry.name.includes('seed')
+            )
+            return widget?.label || widget?.name || null
+          })
         )
-        return widget?.label || widget?.name || null
-      })
-      expect(updatedLabel).toBe(RENAMED_LABEL)
+        .toBe(RENAMED_LABEL)
 
       const seedWidgetAfter = subgraphNodeAfter.getByLabel('seed', {
         exact: true
@@ -468,17 +496,16 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      // Two frames needed: first renders slot changes, second stabilizes layout
-      await comfyPage.nextFrame()
-      await comfyPage.nextFrame()
 
-      const result = await SubgraphHelper.getTextSlotPosition(
-        comfyPage.page,
-        '11'
-      )
-      expect(result).not.toBeNull()
-      expect(result!.hasPos).toBe(true)
-      expect(result!.posY).toBeGreaterThan(result!.titleHeight)
+      await expect
+        .poll(async () => {
+          const result = await SubgraphHelper.getTextSlotPosition(
+            comfyPage.page,
+            '11'
+          )
+          return result?.hasPos && result.posY! > result.titleHeight
+        })
+        .toBe(true)
     })
 
     test('Slot position remains correct after renaming subgraph input label', async ({
@@ -487,17 +514,21 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      // Two frames needed: first renders slot changes, second stabilizes layout
-      await comfyPage.nextFrame()
-      await comfyPage.nextFrame()
+
+      await expect
+        .poll(async () => {
+          const result = await SubgraphHelper.getTextSlotPosition(
+            comfyPage.page,
+            '11'
+          )
+          return result?.hasPos && result.posY! > result.titleHeight
+        })
+        .toBe(true)
 
       const before = await SubgraphHelper.getTextSlotPosition(
         comfyPage.page,
         '11'
       )
-      expect(before).not.toBeNull()
-      expect(before!.hasPos).toBe(true)
-      expect(before!.posY).toBeGreaterThan(before!.titleHeight)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.navigateIntoSubgraph()
@@ -518,21 +549,28 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, 'my_custom_prompt')
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill('my_custom_prompt')
       await comfyPage.page.keyboard.press('Enter')
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
 
       await comfyPage.subgraph.exitViaBreadcrumb()
 
-      const after = await SubgraphHelper.getTextSlotPosition(
-        comfyPage.page,
-        '11'
-      )
-      expect(after).not.toBeNull()
-      expect(after!.hasPos).toBe(true)
-      expect(after!.posY).toBeGreaterThan(after!.titleHeight)
-      expect(after!.widgetName).toBe(before!.widgetName)
+      await expect
+        .poll(async () => {
+          const result = await SubgraphHelper.getTextSlotPosition(
+            comfyPage.page,
+            '11'
+          )
+          return (
+            result?.hasPos &&
+            result.posY! > result.titleHeight &&
+            result.widgetName === before!.widgetName
+          )
+        })
+        .toBe(true)
     })
   })
 
@@ -566,16 +604,30 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.locator('[data-slot-key]').first().waitFor()
 
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () =>
+              window.app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
+                .length
+          )
+        )
+        .toBeGreaterThan(0)
+
       const nodeIds = await comfyPage.page.evaluate(() =>
         window
           .app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
           .map((n) => String(n.id))
       )
-      expect(nodeIds.length).toBeGreaterThan(0)
 
       for (const nodeId of nodeIds) {
-        const data = await measureNodeSlotOffsets(comfyPage.page, nodeId)
-        expect(data, `Node ${nodeId} not found in DOM`).not.toBeNull()
+        let data: Awaited<ReturnType<typeof measureNodeSlotOffsets>> = null
+        await expect
+          .poll(async () => {
+            data = await measureNodeSlotOffsets(comfyPage.page, nodeId)
+            return data
+          })
+          .not.toBeNull()
         expectSlotsWithinBounds(data!, SLOT_BOUNDS_MARGIN, `Node ${nodeId}`)
       }
     })

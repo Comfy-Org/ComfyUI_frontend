@@ -1,6 +1,16 @@
 <!-- TODO: Replace with actual workflow demo content -->
 <script setup lang="ts">
-const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const features = computed(() => [
+  t('showcase.nodeEditor', locale),
+  t('showcase.realTimePreview', locale),
+  t('showcase.versionControl', locale)
+])
 </script>
 
 <template>
@@ -8,9 +18,11 @@ const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
     <div class="mx-auto max-w-7xl px-6">
       <!-- Section header -->
       <div class="text-center">
-        <h2 class="text-3xl font-bold text-white">See Comfy in Action</h2>
+        <h2 class="text-3xl font-bold text-white">
+          {{ t('showcase.heading', locale) }}
+        </h2>
         <p class="mx-auto mt-4 max-w-2xl text-smoke-700">
-          Watch how professionals build AI workflows with unprecedented control
+          {{ t('showcase.subheading', locale) }}
         </p>
       </div>
 
@@ -21,14 +33,16 @@ const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
         <div class="flex flex-col items-center gap-4">
           <!-- Play button triangle -->
           <div
-            class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20"
+            class="flex size-16 items-center justify-center rounded-full border-2 border-white/20"
             aria-hidden="true"
           >
             <div
-              class="ml-1 h-0 w-0 border-y-8 border-l-[14px] border-y-transparent border-l-white"
+              class="ml-1 size-0 border-y-8 border-l-14 border-y-transparent border-l-white"
             />
           </div>
-          <p class="text-sm text-smoke-700">Workflow Demo Coming Soon</p>
+          <p class="text-sm text-smoke-700">
+            {{ t('showcase.placeholder', locale) }}
+          </p>
         </div>
       </div>
 
@@ -40,7 +54,7 @@ const features = ['Node-Based Editor', 'Real-Time Preview', 'Version Control']
           class="flex items-center gap-2"
         >
           <span
-            class="h-2 w-2 rounded-full bg-brand-yellow"
+            class="size-2 rounded-full bg-brand-yellow"
             aria-hidden="true"
           />
           <span class="text-sm text-smoke-700">{{ feature }}</span>

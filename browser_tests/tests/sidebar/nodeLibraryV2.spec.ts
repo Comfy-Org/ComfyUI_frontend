@@ -42,13 +42,11 @@ test.describe('Node library sidebar V2', () => {
   test('Search filters nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await expect(tab.getNode('KSampler (Advanced)')).not.toBeVisible()
+    await expect(tab.getNode('KSampler (Advanced)')).toBeHidden()
 
     await tab.searchInput.fill('KSampler')
-    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
-      timeout: 5000
-    })
-    await expect(tab.getNode('CLIPLoader')).not.toBeVisible()
+    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
+    await expect(tab.getNode('CLIPLoader')).toBeHidden()
   })
 
   test('Drag node to canvas adds it', async ({ comfyPage }) => {
@@ -59,13 +57,17 @@ test.describe('Node library sidebar V2', () => {
 
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-    const canvasBoundingBox = await comfyPage.page
+    await expect
+      .poll(
+        async () => await comfyPage.page.locator('#graph-canvas').boundingBox()
+      )
+      .toBeTruthy()
+    const canvasBoundingBox = (await comfyPage.page
       .locator('#graph-canvas')
-      .boundingBox()
-    expect(canvasBoundingBox).not.toBeNull()
+      .boundingBox())!
     const targetPosition = {
-      x: canvasBoundingBox!.x + canvasBoundingBox!.width / 2,
-      y: canvasBoundingBox!.y + canvasBoundingBox!.height / 2
+      x: canvasBoundingBox.x + canvasBoundingBox.width / 2,
+      y: canvasBoundingBox.y + canvasBoundingBox.height / 2
     }
 
     const nodeLocator = tab.getNode('KSampler (Advanced)')
@@ -74,7 +76,7 @@ test.describe('Node library sidebar V2', () => {
     })
 
     await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 5000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBe(initialCount + 1)
   })
 
@@ -92,7 +94,7 @@ test.describe('Node library sidebar V2', () => {
     const contextMenu = comfyPage.page.getByRole('menuitem', {
       name: /Bookmark Node/
     })
-    await expect(contextMenu).toBeVisible({ timeout: 3000 })
+    await expect(contextMenu).toBeVisible()
   })
 
   test('Search clear restores folder view', async ({ comfyPage }) => {
@@ -101,14 +103,12 @@ test.describe('Node library sidebar V2', () => {
     await expect(tab.getFolder('sampling')).toBeVisible()
 
     await tab.searchInput.fill('KSampler')
-    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
 
     await tab.searchInput.clear()
     await tab.searchInput.press('Enter')
 
-    await expect(tab.getFolder('sampling')).toBeVisible({ timeout: 5000 })
+    await expect(tab.getFolder('sampling')).toBeVisible()
   })
 
   test('Sort dropdown shows sorting options', async ({ comfyPage }) => {
@@ -118,9 +118,7 @@ test.describe('Node library sidebar V2', () => {
 
     // Reka UI DropdownMenuRadioItem renders with role="menuitemradio"
     const options = comfyPage.page.getByRole('menuitemradio')
-    await expect(options.first()).toBeVisible({ timeout: 3000 })
-    await expect
-      .poll(() => options.count(), { timeout: 3000 })
-      .toBeGreaterThanOrEqual(2)
+    await expect(options.first()).toBeVisible()
+    await expect.poll(() => options.count()).toBeGreaterThanOrEqual(2)
   })
 })

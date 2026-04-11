@@ -47,11 +47,16 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     test('Should display "Show missing models" button for missing model errors', async ({
       comfyPage
     }) => {
-      const cleanupOk = await comfyPage.page.evaluate(async (url: string) => {
-        const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
-        return response.ok
-      }, comfyPage.url)
-      expect(cleanupOk).toBeTruthy()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(async (url: string) => {
+            const response = await fetch(
+              `${url}/api/devtools/cleanup_fake_model`
+            )
+            return response.ok
+          }, comfyPage.url)
+        )
+        .toBeTruthy()
 
       await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
@@ -95,7 +100,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await errorOverlay
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
-      await expect(errorOverlay).not.toBeVisible()
+      await expect(errorOverlay).toBeHidden()
 
       await comfyPage.canvas.click()
       await comfyPage.nextFrame()
@@ -107,10 +112,10 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await comfyPage.nextFrame()
 
       await comfyPage.keyboard.undo()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
+      await expect(errorOverlay).toBeHidden()
 
       await comfyPage.keyboard.redo()
-      await expect(errorOverlay).not.toBeVisible({ timeout: 5000 })
+      await expect(errorOverlay).toBeHidden()
     })
   })
 
@@ -151,6 +156,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
+      await expect(overlay).toBeHidden()
       await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
     })
 
@@ -162,7 +168,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
 
-      await expect(overlay).not.toBeVisible()
+      await expect(overlay).toBeHidden()
     })
 
     test('"Dismiss" closes overlay without opening panel', async ({
@@ -175,10 +181,8 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
 
-      await expect(overlay).not.toBeVisible()
-      await expect(
-        comfyPage.page.getByTestId('properties-panel')
-      ).not.toBeVisible()
+      await expect(overlay).toBeHidden()
+      await expect(comfyPage.page.getByTestId('properties-panel')).toBeHidden()
     })
 
     test('Close button (X) dismisses overlay', async ({ comfyPage }) => {
@@ -189,7 +193,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
 
       await overlay.getByRole('button', { name: /close/i }).click()
 
-      await expect(overlay).not.toBeVisible()
+      await expect(overlay).toBeHidden()
     })
   })
 })

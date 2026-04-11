@@ -26,11 +26,10 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
   static defaultSteps = 5
   static defaultOptions: DragOptions = { steps: ComfyMouse.defaultSteps }
 
-  constructor(readonly comfyPage: ComfyPage) {}
+  readonly mouse: Mouse
 
-  /** The normal Playwright {@link Mouse} property from {@link ComfyPage.page}. */
-  get mouse() {
-    return this.comfyPage.page.mouse
+  constructor(readonly comfyPage: ComfyPage) {
+    this.mouse = comfyPage.page.mouse
   }
 
   async nextFrame() {

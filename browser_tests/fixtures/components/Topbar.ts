@@ -5,10 +5,12 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
+  readonly newWorkflowButton: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
+    this.newWorkflowButton = page.locator('.new-blank-workflow-button')
   }
 
   async getTabNames(): Promise<string[]> {
@@ -48,10 +50,6 @@ export class Topbar {
     const checkmark = menuItem.locator('.pi-check')
     const classes = await checkmark.getAttribute('class')
     return classes ? !classes.includes('invisible') : false
-  }
-
-  get newWorkflowButton(): Locator {
-    return this.page.locator('.new-blank-workflow-button')
   }
 
   getWorkflowTab(tabName: string): Locator {
@@ -107,7 +105,7 @@ export class Topbar {
       { timeout: 3000 }
     )
     // Wait for the dialog to close.
-    await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
+    await this.getSaveDialog().waitFor({ state: 'hidden' })
 
     // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
     // If so, return early to let the test handle the confirmation

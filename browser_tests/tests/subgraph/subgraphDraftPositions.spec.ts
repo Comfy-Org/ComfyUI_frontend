@@ -34,17 +34,29 @@ test.describe(
         }))
       })
 
-      expect(positionsBefore.length).toBeGreaterThan(0)
+      await expect
+        .poll(async () => {
+          const positions = await comfyPage.page.evaluate(() => {
+            const sg = [...window.app!.rootGraph.subgraphs.values()][0]
+            return sg.nodes.map((n) => ({
+              id: n.id,
+              x: n.pos[0],
+              y: n.pos[1]
+            }))
+          })
+          return positions.length
+        })
+        .toBeGreaterThan(0)
 
       // Wait for the debounced draft persistence to flush to localStorage
       await comfyPage.workflow.waitForDraftPersisted()
 
       // Reload the page (draft auto-loads with hash preserved)
-      await comfyPage.page.reload({ waitUntil: 'networkidle' })
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.page.waitForFunction(
         () => window.app && window.app.extensionManager
       )
-      await comfyPage.page.waitForSelector('.p-blockui-mask', {
+      await comfyPage.page.locator('.p-blockui-mask').waitFor({
         state: 'hidden'
       })
       await comfyPage.nextFrame()
@@ -55,23 +67,25 @@ test.describe(
         .toBe(true)
 
       // Verify all internal node positions are preserved
-      const positionsAfter = await comfyPage.page.evaluate(() => {
-        const sg = [...window.app!.rootGraph.subgraphs.values()][0]
-        return sg.nodes.map((n) => ({
-          id: n.id,
-          x: n.pos[0],
-          y: n.pos[1]
-        }))
-      })
-
       for (const before of positionsBefore) {
-        const after = positionsAfter.find((n) => n.id === before.id)
-        expect(
-          after,
-          `Node ${before.id} should exist after reload`
-        ).toBeDefined()
-        expect(after!.x).toBeCloseTo(before.x, 0)
-        expect(after!.y).toBeCloseTo(before.y, 0)
+        await expect
+          .poll(async () => {
+            const positionsNow = await comfyPage.page.evaluate(() => {
+              const sg = [...window.app!.rootGraph.subgraphs.values()][0]
+              return sg.nodes.map((n) => ({
+                id: n.id,
+                x: n.pos[0],
+                y: n.pos[1]
+              }))
+            })
+            const after = positionsNow.find((n) => n.id === before.id)
+            if (!after) return null
+            return { x: after.x, y: after.y }
+          })
+          .toMatchObject({
+            x: expect.closeTo(before.x, 0),
+            y: expect.closeTo(before.y, 0)
+          })
       }
     })
   }

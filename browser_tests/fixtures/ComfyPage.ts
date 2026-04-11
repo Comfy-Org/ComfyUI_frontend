@@ -73,15 +73,13 @@ class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly modeToggleButton: Locator
+  public readonly buttons: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
-  }
-
-  get buttons() {
-    return this.sideToolbar.locator('.side-bar-button')
+    this.buttons = this.sideToolbar.locator('.side-bar-button')
   }
 
   get modelLibraryTab() {
@@ -183,6 +181,7 @@ export class ComfyPage {
   public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
+  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -225,6 +224,7 @@ export class ComfyPage {
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
+    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -235,10 +235,6 @@ export class ComfyPage {
     this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
-  }
-
-  get visibleToasts() {
-    return this.toast.visibleToasts
   }
 
   async setupUser(username: string) {
@@ -325,7 +321,7 @@ export class ComfyPage {
         // window.app.extensionManager => GraphView ready
         window.app && window.app.extensionManager
     )
-    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
+    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
   }
 
@@ -375,7 +371,7 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
+    await this.page.locator('button.comfy-close-menu-btn').click()
     await this.nextFrame()
   }
 
@@ -392,9 +388,8 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
   }
 
   async setFocusMode(focusMode: boolean) {

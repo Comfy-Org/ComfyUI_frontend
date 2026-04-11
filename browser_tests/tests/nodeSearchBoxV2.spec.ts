@@ -29,10 +29,11 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount + 1)
   })
 
   test('Can add first default result with Enter', async ({ comfyPage }) => {
@@ -47,10 +48,11 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
     // Enter should add the first (selected) result
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
-    const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(newCount).toBe(initialCount + 1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(initialCount + 1)
   })
 
   test.describe('Category navigation', () => {
@@ -81,8 +83,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await searchBoxV2.categoryButton('sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
-      const count = await searchBoxV2.results.count()
-      expect(count).toBeGreaterThan(0)
+      await expect.poll(() => searchBoxV2.results.count()).toBeGreaterThan(0)
     })
   })
 
@@ -140,10 +141,11 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
       // Enter selects and adds node
       await comfyPage.page.keyboard.press('Enter')
-      await expect(searchBoxV2.input).not.toBeVisible()
+      await expect(searchBoxV2.input).toBeHidden()
 
-      const newCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(newCount).toBe(initialCount + 1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
   })
 })

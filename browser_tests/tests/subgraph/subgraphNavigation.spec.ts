@@ -51,7 +51,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       const breadcrumb = comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
       await expect(breadcrumb).toBeVisible({ timeout: 20_000 })
-      const initialBreadcrumbText = await breadcrumb.textContent()
+      const initialBreadcrumbText = (await breadcrumb.textContent()) ?? ''
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
@@ -74,9 +74,8 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
       await expect(breadcrumb).toBeVisible()
 
-      const updatedBreadcrumbText = await breadcrumb.textContent()
-      expect(updatedBreadcrumbText).toContain(UPDATED_SUBGRAPH_TITLE)
-      expect(updatedBreadcrumbText).not.toBe(initialBreadcrumbText)
+      await expect(breadcrumb).toContainText(UPDATED_SUBGRAPH_TITLE)
+      await expect(breadcrumb).not.toHaveText(initialBreadcrumbText)
     })
 
     test('Switching workflows while inside subgraph returns to root graph context and hides the breadcrumb', async ({
@@ -156,10 +155,12 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.keyboard.press('Escape')
       await comfyPage.nextFrame()
-      expect(
-        await comfyPage.subgraph.isInSubgraph(),
-        'Escape should stay inside the subgraph after the default binding is unset'
-      ).toBe(true)
+      await expect
+        .poll(() => comfyPage.subgraph.isInSubgraph(), {
+          message:
+            'Escape should stay inside the subgraph after the default binding is unset'
+        })
+        .toBe(true)
 
       await comfyPage.page.keyboard.press('Alt+q')
       await comfyPage.nextFrame()
@@ -178,10 +179,12 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         comfyPage.page.getByTestId(TestIds.breadcrumb.subgraph)
       ).toBeVisible()
 
-      expect(
-        await comfyPage.subgraph.isInSubgraph(),
-        'Precondition failed: expected to be inside the subgraph before opening settings'
-      ).toBe(true)
+      await expect
+        .poll(() => comfyPage.subgraph.isInSubgraph(), {
+          message:
+            'Precondition failed: expected to be inside the subgraph before opening settings'
+        })
+        .toBe(true)
 
       await comfyPage.page.keyboard.press('Control+,')
       await expect(
@@ -216,9 +219,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
-          timeout: 2_000
-        })
+        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
         .toBe(true)
     })
 
@@ -234,9 +235,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.vueNodes.enterSubgraph('11')
 
       await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport), {
-          timeout: 2_000
-        })
+        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
         .toBe(true)
     })
 
@@ -260,13 +259,11 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const ds = window.app!.canvas.ds
-              return { scale: ds.scale, offset: [...ds.offset] }
-            }),
-          { timeout: 2_000 }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const ds = window.app!.canvas.ds
+            return { scale: ds.scale, offset: [...ds.offset] }
+          })
         )
         .toEqual({
           scale: expect.closeTo(rootViewport.scale, 2),
@@ -292,10 +289,14 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         node.progress = 0.5
       }, subgraphNodeId)
 
-      const progressBefore = await comfyPage.page.evaluate((nodeId) => {
-        return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-      }, subgraphNodeId)
-      expect(progressBefore).toBe(0.5)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            (nodeId) => window.app!.canvas.graph!.getNodeById(nodeId)!.progress,
+            subgraphNodeId
+          )
+        )
+        .toBe(0.5)
 
       const subgraphNode =
         await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
@@ -307,12 +308,10 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate((nodeId) => {
-              return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
-            }, subgraphNodeId),
-          { timeout: 2_000 }
+        .poll(() =>
+          comfyPage.page.evaluate((nodeId) => {
+            return window.app!.canvas.graph!.getNodeById(nodeId)!.progress
+          }, subgraphNodeId)
         )
         .toBeUndefined()
     })
@@ -343,20 +342,18 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const graph = window.app!.canvas.graph!
-              const subgraphNode = graph.nodes.find(
-                (node) =>
-                  typeof node.isSubgraphNode === 'function' &&
-                  node.isSubgraphNode()
-              )
-              if (!subgraphNode) return { exists: false, progress: null }
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            const subgraphNode = graph.nodes.find(
+              (node) =>
+                typeof node.isSubgraphNode === 'function' &&
+                node.isSubgraphNode()
+            )
+            if (!subgraphNode) return { exists: false, progress: null }
 
-              return { exists: true, progress: subgraphNode.progress }
-            }),
-          { timeout: 5_000 }
+            return { exists: true, progress: subgraphNode.progress }
+          })
         )
         .toEqual({ exists: true, progress: undefined })
     })

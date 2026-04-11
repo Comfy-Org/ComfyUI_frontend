@@ -2,18 +2,14 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ContextMenu {
-  constructor(public readonly page: Page) {}
+  public readonly primeVueMenu: Locator
+  public readonly litegraphMenu: Locator
+  public readonly menuItems: Locator
 
-  get primeVueMenu() {
-    return this.page.locator('.p-contextmenu, .p-menu')
-  }
-
-  get litegraphMenu() {
-    return this.page.locator('.litemenu')
-  }
-
-  get menuItems() {
-    return this.page.locator('.p-menuitem, .litemenu-entry')
+  constructor(public readonly page: Page) {
+    this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
+    this.litegraphMenu = page.locator('.litemenu')
+    this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
   }
 
   async clickMenuItem(name: string): Promise<void> {
@@ -65,21 +61,9 @@ export class ContextMenu {
   }
 
   async waitForHidden(): Promise<void> {
-    const waitIfExists = async (locator: Locator, menuName: string) => {
-      const count = await locator.count()
-      if (count > 0) {
-        await locator.waitFor({ state: 'hidden' }).catch((error: Error) => {
-          console.warn(
-            `[waitForHidden] ${menuName} waitFor failed:`,
-            error.message
-          )
-        })
-      }
-    }
-
     await Promise.all([
-      waitIfExists(this.primeVueMenu, 'primeVueMenu'),
-      waitIfExists(this.litegraphMenu, 'litegraphMenu')
+      this.primeVueMenu.waitFor({ state: 'hidden' }),
+      this.litegraphMenu.waitFor({ state: 'hidden' })
     ])
   }
 }

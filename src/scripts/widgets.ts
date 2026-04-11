@@ -20,6 +20,7 @@ import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/com
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { usePainterWidget } from '@/renderer/extensions/vueNodes/widgets/composables/usePainterWidget'
+import { useRangeWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRangeWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -310,6 +311,7 @@ export const ComfyWidgets = {
   PAINTER: transformWidgetConstructorV2ToV1(usePainterWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
+  RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
   ...dynamicWidgets
 } as const
 

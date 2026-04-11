@@ -1070,29 +1070,6 @@ export const zSystemStatsResponse = z.object({
   )
 })
 
-export const zLogsSubscribeRequest = z.object({
-  enabled: z.boolean()
-})
-
-/**
- * Raw logs response with entries and size
- */
-export const zRawLogsResponse = z.object({
-  entries: z
-    .array(
-      z.object({
-        m: z.string().optional()
-      })
-    )
-    .optional(),
-  size: z
-    .object({
-      cols: z.number().int().optional(),
-      rows: z.number().int().optional()
-    })
-    .optional()
-})
-
 /**
  * System logs response
  */
@@ -2248,30 +2225,6 @@ export const zGetLogsData = z.object({
  */
 export const zGetLogsResponse = zLogsResponse
 
-export const zGetRawLogsData = z.object({
-  body: z.never().optional(),
-  path: z.never().optional(),
-  query: z.never().optional()
-})
-
-/**
- * Success
- */
-export const zGetRawLogsResponse = zRawLogsResponse
-
-export const zSubscribeToLogsData = z.object({
-  body: zLogsSubscribeRequest,
-  path: z.never().optional(),
-  query: z.never().optional()
-})
-
-/**
- * Success
- */
-export const zSubscribeToLogsResponse = z.object({
-  enabled: z.boolean().optional()
-})
-
 export const zGetSystemStatsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -3031,3 +2984,153 @@ export const zGetPublishedWorkflowData = z.object({
  * Published workflow details with asset statuses
  */
 export const zGetPublishedWorkflowResponse = zPublishedWorkflowDetail
+
+export const zGetExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetVhsViewVideoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    type: z.string().optional(),
+    subfolder: z.string().optional()
+  })
+})
+
+export const zGetVhsViewAudioData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    type: z.string().optional(),
+    subfolder: z.string().optional()
+  })
+})
+
+export const zGetVhsQueryVideoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetUsersRawData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetApiViewVideoAliasData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetViewCompatAliasData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetWebsocketData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      clientId: z.string().optional()
+    })
+    .optional()
+})
+
+export const zGetTemplateProxyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetHealthData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetOpenapiSpecData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetMonitoringTasksData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zDeleteMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zPostMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetPprofData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetPprofProfileData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetPprofTraceData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zPostPprofSymbolData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetStaticExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
