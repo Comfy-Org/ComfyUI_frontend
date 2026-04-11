@@ -53,7 +53,7 @@ export class AppModeHelper {
     this.outputPlaceholder = this.page.getByTestId(
       TestIds.builder.outputPlaceholder
     )
-    this.linearWidgets = this.page.locator('[data-testid="linear-widgets"]')
+    this.linearWidgets = this.page.getByTestId('linear-widgets')
     this.imagePickerPopover = this.page
       .getByRole('dialog')
       .filter({ has: this.page.getByRole('button', { name: 'All' }) })

@@ -39,9 +39,7 @@ test.describe(
 
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      const moreOptionsBtn = comfyPage.page.locator(
-        '[data-testid="more-options-button"]'
-      )
+      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
       await expect(moreOptionsBtn).toBeVisible()
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()

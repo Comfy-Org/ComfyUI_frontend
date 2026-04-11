@@ -74,7 +74,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
       .click()
     await expect(
       missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Locate node button is visible for expanded pack nodes', async ({
