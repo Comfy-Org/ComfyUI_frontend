@@ -34,8 +34,7 @@
 <script setup lang="ts">
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
+
 import {
   computed,
   nextTick,
@@ -45,7 +44,6 @@ import {
   watch,
   watchEffect
 } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
@@ -58,6 +56,7 @@ import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
@@ -103,8 +102,6 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 
-const { t } = useI18n()
-const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
@@ -250,28 +247,7 @@ const onExecutionSuccess = async () => {
   }
 }
 
-const reconnectingMessage: ToastMessageOptions = {
-  severity: 'error',
-  summary: t('g.reconnecting')
-}
-
-const onReconnecting = () => {
-  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
-    toast.remove(reconnectingMessage)
-    toast.add(reconnectingMessage)
-  }
-}
-
-const onReconnected = () => {
-  if (!settingStore.get('Comfy.Toast.DisableReconnectingToast')) {
-    toast.remove(reconnectingMessage)
-    toast.add({
-      severity: 'success',
-      summary: t('g.reconnected'),
-      life: 2000
-    })
-  }
-}
+const { onReconnecting, onReconnected } = useReconnectingNotification()
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
