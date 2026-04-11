@@ -31,11 +31,11 @@ const ctaButtons = computed(() => [
       <div class="flex w-full items-center justify-center md:w-[55%]">
         <div class="relative -ml-12 -rotate-15 md:-ml-24" aria-hidden="true">
           <div
-            class="h-64 w-64 rounded-full border-[40px] border-brand-yellow md:h-[28rem] md:w-[28rem] md:border-[64px] lg:h-[36rem] lg:w-[36rem] lg:border-[80px]"
+            class="size-64 rounded-full border-40 border-brand-yellow md:h-112 md:w-md md:border-64 lg:h-144 lg:w-xl lg:border-80"
           >
             <!-- Gap on the right side to form "C" shape -->
             <div
-              class="absolute right-0 top-1/2 h-32 w-24 -translate-y-1/2 translate-x-1/2 bg-black md:h-48 md:w-36 lg:h-64 lg:w-48"
+              class="absolute top-1/2 right-0 h-32 w-24 translate-x-1/2 -translate-y-1/2 bg-black md:h-48 md:w-36 lg:h-64 lg:w-48"
             />
           </div>
         </div>
@@ -44,7 +44,7 @@ const ctaButtons = computed(() => [
       <!-- Right: Text content -->
       <div class="flex w-full flex-col items-start md:w-[45%]">
         <h1
-          class="text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl"
+          class="text-5xl/tight font-bold tracking-tight text-white md:text-6xl lg:text-7xl"
         >
           {{ t('hero.headline', locale) }}
         </h1>
