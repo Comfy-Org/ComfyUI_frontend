@@ -472,7 +472,6 @@ export class SubgraphHelper {
     const ksampler = await this.comfyPage.nodeOps.getNodeRefById('3')
     await ksampler.click('title')
     const subgraphNode = await ksampler.convertToSubgraph()
-    await this.comfyPage.nextFrame()
     return subgraphNode
   }
 

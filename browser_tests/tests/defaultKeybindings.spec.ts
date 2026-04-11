@@ -121,7 +121,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       const node = nodes[0]
 
       await node.click('title')
-      await comfyPage.nextFrame()
 
       await expect.poll(() => node.isCollapsed()).toBe(false)
 
@@ -140,7 +139,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       const node = nodes[0]
 
       await node.click('title')
-      await comfyPage.nextFrame()
 
       // Normal mode is ALWAYS (0)
       const getMode = () =>
