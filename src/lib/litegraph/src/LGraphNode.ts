@@ -422,6 +422,8 @@ export class LGraphNode
    * Updated by {@link LGraphCanvas.drawNode}
    */
   _collapsed_width?: number
+  /** Read cache for Vue collapsed size — avoids per-frame Y.Map lookups in measure() */
+  _cachedVueCollapsedSize?: { width: number; height: number }
   /**
    * Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}.
    * WARNING: Making changes to boundingRect via onBounding is poorly supported, and will likely result in strange behaviour.
@@ -2084,16 +2086,26 @@ export class LGraphNode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
       titleMode != TitleMode.NO_TITLE
+    // NODE_TITLE_HEIGHT (30) is used in both legacy and Vue modes.
+    // Vue headers may be taller in CSS (e.g. 36px), but the canvas
+    // coordinate system positions nodes at pos.y - 30 via CSS transform
+    // (see LGraphNode.vue), so the bounding rect must match.
     const titleHeight = renderTitle ? LiteGraph.NODE_TITLE_HEIGHT : 0
 
     out[0] = this.pos[0]
-    out[1] = this.pos[1] + -titleHeight
+    out[1] = this.pos[1] - titleHeight
     if (!this.flags?.collapsed) {
+      this._cachedVueCollapsedSize = undefined
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
-      const collapsedSize = LiteGraph.getCollapsedSize?.(this.id)
+      // Vue mode: read cached collapsed size to avoid per-frame Y.Map
+      // lookups. Cache is cleared in the expanded branch above.
+      const collapsedSize = LiteGraph.getCollapsedSize
+        ? (this._cachedVueCollapsedSize ?? LiteGraph.getCollapsedSize(this.id))
+        : undefined
       if (collapsedSize) {
+        this._cachedVueCollapsedSize = collapsedSize
         out[2] = collapsedSize.width
         out[3] = collapsedSize.height
       } else {

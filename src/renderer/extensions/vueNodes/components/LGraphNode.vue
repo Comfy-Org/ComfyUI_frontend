@@ -81,13 +81,9 @@
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
-          {
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
-              bypassed,
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
-              muted,
-            'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
-          }
+          bypassed && bypassOverlayClass,
+          muted && mutedOverlayClass,
+          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
         )
       "
       :style="{
@@ -632,14 +628,28 @@ const selectionShapeClass = computed(() => {
   }
 })
 
-const beforeShapeClass = computed(() => {
+const BEFORE_OVERLAY_BASE =
+  'before:pointer-events-none before:absolute before:inset-0'
+
+const bypassOverlayClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return ''
+      return `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
     case RenderShape.CARD:
-      return 'before:rounded-tl-2xl before:rounded-br-2xl'
+      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
     default:
-      return 'before:rounded-2xl'
+      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+  }
+})
+
+const mutedOverlayClass = computed(() => {
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return BEFORE_OVERLAY_BASE
+    case RenderShape.CARD:
+      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE}`
+    default:
+      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE}`
   }
 })
 

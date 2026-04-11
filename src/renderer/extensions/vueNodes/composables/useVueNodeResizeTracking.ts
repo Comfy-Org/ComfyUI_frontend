@@ -147,19 +147,17 @@ const resizeObserver = new ResizeObserver((entries) => {
         const collapsedWidth =
           body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
         const collapsedHeight = element.offsetHeight
+        const collapsedSize = { width: collapsedWidth, height: collapsedHeight }
         const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
         if (nodeLayout) {
-          layoutStore.updateNodeCollapsedSize(nodeId, {
-            width: collapsedWidth,
-            height: collapsedHeight
-          })
+          layoutStore.updateNodeCollapsedSize(nodeId, collapsedSize)
         }
         nodesNeedingSlotResync.add(nodeId)
       }
       continue
     }
 
-    // Clear stale collapsedSize when node is expanded
+    // Clear stale collapsedSize on collapse→expand transition only
     if (elementType === 'node' && nodeId) {
       layoutStore.clearNodeCollapsedSize(nodeId)
     }

@@ -7,6 +7,7 @@ import type {
   Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphNode,
   LiteGraph,
@@ -651,6 +652,67 @@ describe('LGraphNode', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
         false
       )
+    })
+  })
+
+  describe('measure() collapsed with getCollapsedSize', () => {
+    let out: Rect
+
+    beforeEach(() => {
+      out = [0, 0, 0, 0] as unknown as Rect
+      node.flags.collapsed = true
+    })
+
+    afterEach(() => {
+      LiteGraph.getCollapsedSize = undefined
+    })
+
+    test('uses getCollapsedSize when callback returns a value', () => {
+      LiteGraph.getCollapsedSize = () => ({ width: 200, height: 40 })
+      node.measure(out)
+
+      expect(out[2]).toBe(200)
+      expect(out[3]).toBe(40)
+    })
+
+    test('falls back to legacy when getCollapsedSize returns undefined', () => {
+      LiteGraph.getCollapsedSize = () => undefined
+      node.measure(out)
+
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('falls back to legacy when getCollapsedSize is not set', () => {
+      node.measure(out)
+
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('caches collapsed size and skips callback on subsequent calls', () => {
+      const spy = vi.fn(() => ({ width: 180, height: 36 }))
+      LiteGraph.getCollapsedSize = spy
+
+      node.measure(out)
+      expect(spy).toHaveBeenCalledTimes(1)
+
+      node.measure(out)
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(out[2]).toBe(180)
+    })
+
+    test('clears cache when node is expanded', () => {
+      const spy = vi.fn(() => ({ width: 180, height: 36 }))
+      LiteGraph.getCollapsedSize = spy
+
+      node.measure(out)
+      expect(spy).toHaveBeenCalledTimes(1)
+
+      node.flags.collapsed = false
+      node.measure(out)
+
+      node.flags.collapsed = true
+      node.measure(out)
+      expect(spy).toHaveBeenCalledTimes(2)
     })
   })
 })

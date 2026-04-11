@@ -222,14 +222,22 @@ const {
 } = defineProps<Props>()
 
 defineEmits<{
-  (e: 'enterSubgraph'): void
-  (e: 'openErrors'): void
-  (e: 'toggleAdvanced'): void
+  enterSubgraph: []
+  openErrors: []
+  toggleAdvanced: []
 }>()
+
+// Static lookup to keep class names scannable by Tailwind
+const RADIUS_CLASS = {
+  'rounded-b-17': 'rounded-b-[17px]',
+  'rounded-b-20': 'rounded-b-[20px]',
+  'rounded-br-17': 'rounded-br-[17px]',
+  'rounded-br-20': 'rounded-br-[20px]'
+} as const
 
 function getBottomRadius(
   nodeShape: RenderShape | undefined,
-  size: string,
+  size: '17px' | '20px',
   corners: 'both' | 'right' = 'both'
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
@@ -237,7 +245,9 @@ function getBottomRadius(
     nodeShape === RenderShape.CARD || corners === 'right'
       ? 'rounded-br'
       : 'rounded-b'
-  return `${prefix}-[${size}]`
+  const key =
+    `${prefix}-${size === '17px' ? '17' : '20'}` as keyof typeof RADIUS_CLASS
+  return RADIUS_CLASS[key]
 }
 
 const footerRadiusClass = computed(() =>

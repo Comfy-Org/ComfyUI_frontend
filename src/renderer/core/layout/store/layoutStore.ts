@@ -1557,7 +1557,11 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   getNodeCollapsedSize(nodeId: NodeId): Size | undefined {
-    return this.ynodes.get(nodeId)?.get('collapsedSize') as Size | undefined
+    const v = this.ynodes.get(nodeId)?.get('collapsedSize')
+    if (typeof v === 'object' && v !== null && 'width' in v && 'height' in v) {
+      return v as Size
+    }
+    return undefined
   }
 
   clearNodeCollapsedSize(nodeId: NodeId): void {

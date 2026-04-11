@@ -316,6 +316,11 @@ export interface LayoutStore {
   // Returns all slot layout keys currently tracked by the store
   getAllSlotKeys(): string[]
 
+  // Collapsed node size (Vue mode only)
+  updateNodeCollapsedSize(nodeId: NodeId, size: Size): void
+  getNodeCollapsedSize(nodeId: NodeId): Size | undefined
+  clearNodeCollapsedSize(nodeId: NodeId): void
+
   // Direct mutation API (CRDT-ready)
   applyOperation(operation: LayoutOperation): void
 
