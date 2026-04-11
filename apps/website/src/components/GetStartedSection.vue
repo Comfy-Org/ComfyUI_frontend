@@ -40,7 +40,7 @@ const steps = computed(() => [
           <!-- Connecting line between steps (desktop only) -->
           <div
             v-if="index < steps.length - 1"
-            class="absolute right-0 top-8 hidden w-full translate-x-1/2 border-t border-brand-yellow/20 md:block"
+            class="absolute top-8 right-0 hidden w-full translate-x-1/2 border-t border-brand-yellow/20 md:block"
           />
 
           <div class="relative">

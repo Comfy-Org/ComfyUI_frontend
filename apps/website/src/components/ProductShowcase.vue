@@ -33,11 +33,11 @@ const features = computed(() => [
         <div class="flex flex-col items-center gap-4">
           <!-- Play button triangle -->
           <div
-            class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20"
+            class="flex size-16 items-center justify-center rounded-full border-2 border-white/20"
             aria-hidden="true"
           >
             <div
-              class="ml-1 h-0 w-0 border-y-8 border-l-[14px] border-y-transparent border-l-white"
+              class="ml-1 size-0 border-y-8 border-l-14 border-y-transparent border-l-white"
             />
           </div>
           <p class="text-sm text-smoke-700">
@@ -54,7 +54,7 @@ const features = computed(() => [
           class="flex items-center gap-2"
         >
           <span
-            class="h-2 w-2 rounded-full bg-brand-yellow"
+            class="size-2 rounded-full bg-brand-yellow"
             aria-hidden="true"
           />
           <span class="text-sm text-smoke-700">{{ feature }}</span>

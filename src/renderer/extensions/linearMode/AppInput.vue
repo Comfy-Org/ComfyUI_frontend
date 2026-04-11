@@ -2,7 +2,7 @@
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -15,7 +15,7 @@ const { id, name } = defineProps<{
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
-function matchesThis([nodeId, widgetName]: [NodeId, string]) {
+function matchesThis([nodeId, widgetName]: LinearInput) {
   return id == nodeId && name === widgetName
 }
 function togglePromotion() {

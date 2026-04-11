@@ -3,6 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
+import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
 import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
 import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
@@ -14,14 +15,66 @@ export class AppModeHelper {
   readonly footer: BuilderFooterHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
+  readonly outputHistory: OutputHistoryComponent
   readonly widgets: AppModeWidgetHelper
+  /** The "Connect an output" popover shown when saving without outputs. */
+  public readonly connectOutputPopover: Locator
+  /** The empty-state placeholder shown when no outputs are selected. */
+  public readonly outputPlaceholder: Locator
+  /** The linear-mode widget list container (visible in app mode). */
+  public readonly linearWidgets: Locator
+  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
+  public readonly imagePickerPopover: Locator
+  /** The Run button in the app mode footer. */
+  public readonly runButton: Locator
+  /** The welcome screen shown when app mode has no outputs or no nodes. */
+  public readonly welcome: Locator
+  /** The empty workflow message shown when no nodes exist. */
+  public readonly emptyWorkflowText: Locator
+  /** The "Build app" button shown when nodes exist but no outputs. */
+  public readonly buildAppButton: Locator
+  /** The "Back to workflow" button on the welcome screen. */
+  public readonly backToWorkflowButton: Locator
+  /** The "Load template" button shown when no nodes exist. */
+  public readonly loadTemplateButton: Locator
+  /** The cancel button for an in-progress run in the output history. */
+  public readonly cancelRunButton: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.steps = new BuilderStepsHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
+    this.outputHistory = new OutputHistoryComponent(comfyPage.page)
     this.widgets = new AppModeWidgetHelper(comfyPage)
+    this.connectOutputPopover = this.page.getByTestId(
+      TestIds.builder.connectOutputPopover
+    )
+    this.outputPlaceholder = this.page.getByTestId(
+      TestIds.builder.outputPlaceholder
+    )
+    this.linearWidgets = this.page.locator('[data-testid="linear-widgets"]')
+    this.imagePickerPopover = this.page
+      .getByRole('dialog')
+      .filter({ has: this.page.getByRole('button', { name: 'All' }) })
+      .first()
+    this.runButton = this.page
+      .getByTestId('linear-run-button')
+      .getByRole('button', { name: /run/i })
+    this.welcome = this.page.getByTestId(TestIds.appMode.welcome)
+    this.emptyWorkflowText = this.page.getByTestId(
+      TestIds.appMode.emptyWorkflow
+    )
+    this.buildAppButton = this.page.getByTestId(TestIds.appMode.buildApp)
+    this.backToWorkflowButton = this.page.getByTestId(
+      TestIds.appMode.backToWorkflow
+    )
+    this.loadTemplateButton = this.page.getByTestId(
+      TestIds.appMode.loadTemplate
+    )
+    this.cancelRunButton = this.page.getByTestId(
+      TestIds.outputHistory.cancelRun
+    )
   }
 
   private get page(): Page {
@@ -91,61 +144,6 @@ export class AppModeHelper {
     }, inputs)
     await this.comfyPage.nextFrame()
     await this.toggleAppMode()
-  }
-
-  /** The "Connect an output" popover shown when saving without outputs. */
-  get connectOutputPopover(): Locator {
-    return this.page.getByTestId(TestIds.builder.connectOutputPopover)
-  }
-
-  /** The empty-state placeholder shown when no outputs are selected. */
-  get outputPlaceholder(): Locator {
-    return this.page.getByTestId(TestIds.builder.outputPlaceholder)
-  }
-
-  /** The linear-mode widget list container (visible in app mode). */
-  get linearWidgets(): Locator {
-    return this.page.locator('[data-testid="linear-widgets"]')
-  }
-
-  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
-  get imagePickerPopover(): Locator {
-    return this.page
-      .getByRole('dialog')
-      .filter({ has: this.page.getByRole('button', { name: 'All' }) })
-      .first()
-  }
-
-  /** The Run button in the app mode footer. */
-  get runButton(): Locator {
-    return this.page
-      .getByTestId('linear-run-button')
-      .getByRole('button', { name: /run/i })
-  }
-
-  /** The welcome screen shown when app mode has no outputs or no nodes. */
-  get welcome(): Locator {
-    return this.page.getByTestId(TestIds.appMode.welcome)
-  }
-
-  /** The empty workflow message shown when no nodes exist. */
-  get emptyWorkflowText(): Locator {
-    return this.page.getByTestId(TestIds.appMode.emptyWorkflow)
-  }
-
-  /** The "Build app" button shown when nodes exist but no outputs. */
-  get buildAppButton(): Locator {
-    return this.page.getByTestId(TestIds.appMode.buildApp)
-  }
-
-  /** The "Back to workflow" button on the welcome screen. */
-  get backToWorkflowButton(): Locator {
-    return this.page.getByTestId(TestIds.appMode.backToWorkflow)
-  }
-
-  /** The "Load template" button shown when no nodes exist. */
-  get loadTemplateButton(): Locator {
-    return this.page.getByTestId(TestIds.appMode.loadTemplate)
   }
 
   /**

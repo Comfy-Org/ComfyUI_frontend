@@ -17,7 +17,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         {{ t('manifesto.heading', locale) }}
       </h2>
 
-      <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-smoke-700">
+      <p class="mx-auto mt-6 max-w-2xl text-lg/relaxed text-smoke-700">
         {{ t('manifesto.body', locale) }}
       </p>
 
