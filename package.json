@@ -150,7 +150,6 @@
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "@vue/test-utils": "catalog:",
     "@webgpu/types": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",

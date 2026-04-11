@@ -432,6 +432,23 @@ export default defineConfig([
       ]
     }
   },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vue/test-utils',
+              message:
+                'Use @testing-library/vue with @testing-library/user-event instead.'
+            }
+          ]
+        }
+      ]
+    }
+  },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test
   {
     files: ['browser_tests/tests/**/*.spec.ts'],

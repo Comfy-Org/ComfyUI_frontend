@@ -58,7 +58,6 @@ catalog:
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
-  '@vue/test-utils': ^2.4.6
   '@vueuse/core': ^14.2.0
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
