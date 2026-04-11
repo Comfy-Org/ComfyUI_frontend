@@ -151,7 +151,8 @@ export class BuilderSelectHelper {
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
       .getByLabel(widgetName, { exact: true })
-    await widgetLocator.click()
+    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
+    await widgetLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
 
@@ -199,7 +200,8 @@ export class BuilderSelectHelper {
     const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
       String(nodeRef.id)
     )
-    await nodeLocator.click()
+    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
+    await nodeLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
 }

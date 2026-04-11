@@ -94,7 +94,8 @@ async function connectSlots(
   const fromLoc = slotLocator(page, from.nodeId, from.index, false)
   const toLoc = slotLocator(page, to.nodeId, to.index, true)
   await expectVisibleAll(fromLoc, toLoc)
-  await fromLoc.dragTo(toLoc)
+  // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
+  await fromLoc.dragTo(toLoc, { force: true })
   await nextFrame()
 }
 
@@ -192,7 +193,8 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     const inputSlot = slotLocator(comfyPage.page, clipNode.id, 0, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
@@ -218,7 +220,8 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     const inputSlot = slotLocator(comfyPage.page, samplerNode.id, 3, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
