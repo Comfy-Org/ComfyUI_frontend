@@ -1,44 +1,44 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
 
 import Badge from './Badge.vue'
 import { badgeVariants } from './badge.variants'
 
 describe('Badge', () => {
   it('renders label text', () => {
-    const wrapper = mount(Badge, { props: { label: 'NEW' } })
-    expect(wrapper.text()).toBe('NEW')
+    render(Badge, { props: { label: 'NEW' } })
+    expect(screen.getByText('NEW')).toBeInTheDocument()
   })
 
   it('renders numeric label', () => {
-    const wrapper = mount(Badge, { props: { label: 5 } })
-    expect(wrapper.text()).toBe('5')
+    render(Badge, { props: { label: 5 } })
+    expect(screen.getByText('5')).toBeInTheDocument()
   })
 
   it('defaults to dot variant when no label is provided', () => {
-    const wrapper = mount(Badge)
-    expect(wrapper.classes()).toContain('size-2')
+    const { container } = render(Badge)
+    // eslint-disable-next-line testing-library/no-node-access -- dot badge has no text/role to query
+    expect(container.firstElementChild).toHaveClass('size-2')
   })
 
   it('defaults to label variant when label is provided', () => {
-    const wrapper = mount(Badge, { props: { label: 'NEW' } })
-    expect(wrapper.classes()).toContain('font-semibold')
-    expect(wrapper.classes()).toContain('uppercase')
+    render(Badge, { props: { label: 'NEW' } })
+    const el = screen.getByText('NEW')
+    expect(el).toHaveClass('font-semibold')
+    expect(el).toHaveClass('uppercase')
   })
 
   it('applies circle variant', () => {
-    const wrapper = mount(Badge, {
-      props: { label: '3', variant: 'circle' }
-    })
-    expect(wrapper.classes()).toContain('size-3.5')
+    render(Badge, { props: { label: '3', variant: 'circle' } })
+    expect(screen.getByText('3')).toHaveClass('size-3.5')
   })
 
   it('merges custom class via cn()', () => {
-    const wrapper = mount(Badge, {
-      props: { label: 'Test', class: 'ml-2' }
-    })
-    expect(wrapper.classes()).toContain('ml-2')
-    expect(wrapper.classes()).toContain('rounded-full')
+    render(Badge, { props: { label: 'Test', class: 'ml-2' } })
+    const el = screen.getByText('Test')
+    expect(el).toHaveClass('ml-2')
+    expect(el).toHaveClass('rounded-full')
   })
 
   describe('twMerge preserves color alongside text-3xs font size', () => {
@@ -58,12 +58,10 @@ describe('Badge', () => {
     )
 
     it('cn() does not clobber text-white when merging with text-3xs', () => {
-      const wrapper = mount(Badge, {
-        props: { label: 'Test', severity: 'danger' }
-      })
-      const classList = wrapper.classes()
-      expect(classList).toContain('text-white')
-      expect(classList).toContain('text-3xs')
+      render(Badge, { props: { label: 'Test', severity: 'danger' } })
+      const el = screen.getByText('Test')
+      expect(el).toHaveClass('text-white')
+      expect(el).toHaveClass('text-3xs')
     })
   })
 })

@@ -15,6 +15,7 @@ const { output } = defineProps<{
 <template>
   <img
     v-if="getMediaType(output) === 'images'"
+    data-testid="linear-image-output"
     class="block size-10 rounded-sm bg-secondary-background object-cover"
     loading="lazy"
     width="40"
@@ -23,6 +24,7 @@ const { output } = defineProps<{
   />
   <template v-else-if="getMediaType(output) === 'video'">
     <video
+      data-testid="linear-video-output"
       class="pointer-events-none block size-10 rounded-sm bg-secondary-background object-cover"
       preload="metadata"
       width="40"

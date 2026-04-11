@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -60,7 +60,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
     })
 
     await dialog.getByRole('button', { name: 'Cancel' }).click()
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     expect(clearCalled).toBe(false)
 
     await comfyPage.page.unroute('**/api/history')
@@ -83,7 +83,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
     })
 
     await dialog.getByLabel('Close').click()
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     expect(clearCalled).toBe(false)
 
     await comfyPage.page.unroute('**/api/history')
@@ -106,7 +106,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
     const request = await clearPromise
     expect(request.postDataJSON()).toEqual({ clear: true })
 
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
   })
 
   test('Dialog state resets after close and reopen', async ({ comfyPage }) => {
@@ -114,7 +114,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Cancel' }).click()
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
 
     await comfyPage.queuePanel.openClearHistoryDialog()
     await expect(dialog).toBeVisible()

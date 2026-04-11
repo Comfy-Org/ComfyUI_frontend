@@ -2,7 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
-import { NodeBadgeMode } from '../../src/types/nodeSource'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
 import { ComfyTemplates } from '@e2e/helpers/templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -29,9 +29,12 @@ import {
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -43,7 +46,7 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
-import type { WorkspaceStore } from '../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
 
@@ -70,15 +73,13 @@ class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly modeToggleButton: Locator
+  public readonly buttons: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
-  }
-
-  get buttons() {
-    return this.sideToolbar.locator('.side-bar-button')
+    this.buttons = this.sideToolbar.locator('.side-bar-button')
   }
 
   get modelLibraryTab() {
@@ -177,7 +178,10 @@ export class ComfyPage {
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
+  public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
+  public readonly cloudAuth: CloudAuthHelper
+  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -220,6 +224,7 @@ export class ComfyPage {
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
+    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -227,11 +232,9 @@ export class ComfyPage {
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
+    this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
-  }
-
-  get visibleToasts() {
-    return this.toast.visibleToasts
+    this.cloudAuth = new CloudAuthHelper(page)
   }
 
   async setupUser(username: string) {
@@ -318,7 +321,7 @@ export class ComfyPage {
         // window.app.extensionManager => GraphView ready
         window.app && window.app.extensionManager
     )
-    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
+    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
   }
 
@@ -368,7 +371,7 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
+    await this.page.locator('button.comfy-close-menu-btn').click()
     await this.nextFrame()
   }
 
@@ -385,9 +388,8 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
   }
 
   async setFocusMode(focusMode: boolean) {
@@ -440,6 +442,10 @@ export const comfyPageFixture = base.extend<{
       console.error(e)
     }
 
+    if (testInfo.tags.includes('@cloud')) {
+      await comfyPage.cloudAuth.mockAuth()
+    }
+
     await comfyPage.setup()
 
     const needsPerf =
@@ -448,6 +454,7 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
+    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {

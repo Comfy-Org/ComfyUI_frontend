@@ -3,24 +3,21 @@ import type { Locator } from '@playwright/test'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
-import { TestIds } from '../../../../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
 async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
-  await comfyPage.page.getByRole('menuitem', { name, exact: true }).click()
-  await comfyPage.nextFrame()
+  await comfyPage.contextMenu.clickMenuItemExact(name)
+  await expect(comfyPage.contextMenu.primeVueMenu).toBeHidden()
 }
 
 async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
   const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
-  await fixture.header.click()
-  await fixture.header.click({ button: 'right' })
-  const menu = comfyPage.contextMenu.primeVueMenu
-  await menu.waitFor({ state: 'visible' })
-  return menu
+  await comfyPage.contextMenu.openForVueNode(fixture.header)
+  return comfyPage.contextMenu.primeVueMenu
 }
 
 async function openMultiNodeContextMenu(
@@ -100,9 +97,9 @@ test.describe('Vue Node Context Menu', () => {
       })
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
 
     test('should duplicate node via context menu', async ({ comfyPage }) => {
@@ -111,9 +108,9 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, 'Load Checkpoint')
       await clickExactMenuItem(comfyPage, 'Duplicate')
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + 1)
     })
 
     test('should pin and unpin node via context menu', async ({
@@ -128,7 +125,7 @@ test.describe('Vue Node Context Menu', () => {
 
       const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
       await expect(fixture.pinIndicator).toBeVisible()
-      expect(await nodeRef.isPinned()).toBe(true)
+      await expect.poll(() => nodeRef.isPinned()).toBe(true)
 
       // Verify drag blocked
       const header = fixture.header
@@ -138,15 +135,16 @@ test.describe('Vue Node Context Menu', () => {
         { x: posBeforeDrag.x + 10, y: posBeforeDrag.y + 10 },
         { x: posBeforeDrag.x + 256, y: posBeforeDrag.y + 256 }
       )
-      const posAfterDrag = await header.boundingBox()
-      expect(posAfterDrag).toEqual(posBeforeDrag)
+      await expect
+        .poll(async () => await header.boundingBox())
+        .toEqual(posBeforeDrag)
 
       // Unpin via context menu
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Unpin')
 
-      await expect(fixture.pinIndicator).not.toBeVisible()
-      expect(await nodeRef.isPinned()).toBe(false)
+      await expect(fixture.pinIndicator).toBeHidden()
+      await expect.poll(() => nodeRef.isPinned()).toBe(false)
     })
 
     test('should bypass node and remove bypass via context menu', async ({
@@ -158,7 +156,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Bypass')
 
-      expect(await nodeRef.isBypassed()).toBe(true)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
       await expect(getNodeWrapper(comfyPage, nodeTitle)).toHaveClass(
         BYPASS_CLASS
       )
@@ -166,7 +164,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Remove Bypass')
 
-      expect(await nodeRef.isBypassed()).toBe(false)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
       await expect(getNodeWrapper(comfyPage, nodeTitle)).not.toHaveClass(
         BYPASS_CLASS
       )
@@ -180,7 +178,7 @@ test.describe('Vue Node Context Menu', () => {
 
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Minimize Node')
-      await expect(fixture.body).not.toBeVisible()
+      await expect(fixture.body).toBeHidden()
 
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Expand Node')
@@ -196,9 +194,7 @@ test.describe('Vue Node Context Menu', () => {
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('KSampler')
-      ).not.toBeVisible()
+      await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeHidden()
     })
   })
 
@@ -209,6 +205,24 @@ test.describe('Vue Node Context Menu', () => {
         .grantPermissions(['clipboard-read', 'clipboard-write'])
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       await comfyPage.vueNodes.waitForNodes(1)
+      await comfyPage.page
+        .locator('[data-node-id] img')
+        .first()
+        .waitFor({ state: 'visible' })
+
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
+      if (!loadImageNode) throw new Error('Load Image node not found')
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            (nodeId) =>
+              window.app!.graph.getNodeById(nodeId)?.imgs?.length ?? 0,
+            loadImageNode.id
+          )
+        )
+        .toBeGreaterThan(0)
     })
 
     test('should copy image to clipboard via context menu', async ({
@@ -218,13 +232,16 @@ test.describe('Vue Node Context Menu', () => {
       await clickExactMenuItem(comfyPage, 'Copy Image')
 
       // Verify the clipboard contains an image
-      const hasImage = await comfyPage.page.evaluate(async () => {
-        const items = await navigator.clipboard.read()
-        return items.some((item) =>
-          item.types.some((t) => t.startsWith('image/'))
-        )
-      })
-      expect(hasImage).toBe(true)
+      await expect
+        .poll(async () => {
+          return comfyPage.page.evaluate(async () => {
+            const items = await navigator.clipboard.read()
+            return items.some((item) =>
+              item.types.some((t) => t.startsWith('image/'))
+            )
+          })
+        })
+        .toBe(true)
     })
 
     test('should paste image to LoadImage node via context menu', async ({
@@ -290,9 +307,7 @@ test.describe('Vue Node Context Menu', () => {
 
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('KSampler')
-      ).not.toBeVisible()
+      await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeHidden()
 
       // Unpack the subgraph
       await openContextMenu(comfyPage, 'New Subgraph')
@@ -301,7 +316,7 @@ test.describe('Vue Node Context Menu', () => {
       await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeVisible()
       await expect(
         comfyPage.vueNodes.getNodeByTitle('New Subgraph')
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
 
     test('should open properties panel via Edit Subgraph Widgets', async ({
@@ -310,7 +325,9 @@ test.describe('Vue Node Context Menu', () => {
       // Convert to subgraph first
       await openContextMenu(comfyPage, 'Empty Latent Image')
       await clickExactMenuItem(comfyPage, 'Convert to Subgraph')
-      await comfyPage.nextFrame()
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      ).toBeVisible()
 
       // Right-click subgraph and edit widgets
       await openContextMenu(comfyPage, 'New Subgraph')
@@ -325,7 +342,9 @@ test.describe('Vue Node Context Menu', () => {
       // Convert to subgraph first
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Convert to Subgraph')
-      await comfyPage.nextFrame()
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      ).toBeVisible()
 
       // Add to library
       await openContextMenu(comfyPage, 'New Subgraph')
@@ -342,7 +361,6 @@ test.describe('Vue Node Context Menu', () => {
       })
       await searchBox.waitFor({ state: 'visible' })
       await searchBox.fill('TestBlueprint')
-      await comfyPage.nextFrame()
 
       await expect(comfyPage.page.getByText('TestBlueprint')).toBeVisible()
     })
@@ -377,9 +395,9 @@ test.describe('Vue Node Context Menu', () => {
       })
       await comfyPage.nextFrame()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + nodeTitles.length
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + nodeTitles.length)
     })
 
     test('should duplicate selected nodes via context menu', async ({
@@ -390,9 +408,9 @@ test.describe('Vue Node Context Menu', () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Duplicate')
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount + nodeTitles.length
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount + nodeTitles.length)
     })
 
     test('should pin and unpin selected nodes via context menu', async ({
@@ -411,7 +429,7 @@ test.describe('Vue Node Context Menu', () => {
 
       for (const title of nodeTitles) {
         const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
-        await expect(fixture.pinIndicator).not.toBeVisible()
+        await expect(fixture.pinIndicator).toBeHidden()
       }
     })
 
@@ -423,7 +441,7 @@ test.describe('Vue Node Context Menu', () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        expect(await nodeRef.isBypassed()).toBe(true)
+        await expect.poll(() => nodeRef.isBypassed()).toBe(true)
         await expect(getNodeWrapper(comfyPage, title)).toHaveClass(BYPASS_CLASS)
       }
 
@@ -432,7 +450,7 @@ test.describe('Vue Node Context Menu', () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        expect(await nodeRef.isBypassed()).toBe(false)
+        await expect.poll(() => nodeRef.isBypassed()).toBe(false)
         await expect(getNodeWrapper(comfyPage, title)).not.toHaveClass(
           BYPASS_CLASS
         )
@@ -452,8 +470,8 @@ test.describe('Vue Node Context Menu', () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Minimize Node')
 
-      await expect(fixture1.body).not.toBeVisible()
-      await expect(fixture2.body).not.toBeVisible()
+      await expect(fixture1.body).toBeHidden()
+      await expect(fixture2.body).toBeHidden()
 
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Expand Node')
@@ -472,10 +490,11 @@ test.describe('Vue Node Context Menu', () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Frame Nodes')
 
-      const newGroupCount = await comfyPage.page.evaluate(
-        () => window.app!.graph.groups.length
-      )
-      expect(newGroupCount).toBe(initialGroupCount + 1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.graph.groups.length)
+        )
+        .toBe(initialGroupCount + 1)
     })
 
     test('should convert to group node via context menu', async ({
@@ -487,10 +506,14 @@ test.describe('Vue Node Context Menu', () => {
       await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'visible' })
       await comfyPage.nodeOps.fillPromptDialog('TestGroupNode')
 
-      const groupNodes = await comfyPage.nodeOps.getNodeRefsByType(
-        'workflow>TestGroupNode'
-      )
-      expect(groupNodes.length).toBe(1)
+      await expect
+        .poll(async () => {
+          const groupNodes = await comfyPage.nodeOps.getNodeRefsByType(
+            'workflow>TestGroupNode'
+          )
+          return groupNodes.length
+        })
+        .toBe(1)
     })
 
     test('should convert selected nodes to subgraph via context menu', async ({
@@ -504,9 +527,9 @@ test.describe('Vue Node Context Menu', () => {
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-        initialCount - nodeTitles.length + 1
-      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount - nodeTitles.length + 1)
     })
   })
 })

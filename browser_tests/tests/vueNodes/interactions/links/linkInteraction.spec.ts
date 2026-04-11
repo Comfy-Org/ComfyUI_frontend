@@ -1,13 +1,13 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '../../../../../src/platform/workflow/validation/schemas/workflowSchema'
-import { getSlotKey } from '../../../../../src/renderer/core/layout/slots/slotIdentifier'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import { getMiddlePoint } from '../../../../fixtures/utils/litegraphUtils'
-import { fitToViewInstant } from '../../../../helpers/fitToView'
+} from '@e2e/fixtures/ComfyPage'
+import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
+import { fitToViewInstant } from '@e2e/helpers/fitToView'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -94,6 +94,7 @@ async function connectSlots(
   const fromLoc = slotLocator(page, from.nodeId, from.index, false)
   const toLoc = slotLocator(page, to.nodeId, to.index, true)
   await expectVisibleAll(fromLoc, toLoc)
+  // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
   await fromLoc.dragTo(toLoc, { force: true })
   await nextFrame()
 }
@@ -161,17 +162,17 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       () => comfyPage.nextFrame()
     )
 
-    expect(await samplerOutput.getLinkCount()).toBe(1)
-    expect(await vaeInput.getLinkCount()).toBe(1)
+    await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
+    await expect.poll(() => vaeInput.getLinkCount()).toBe(1)
 
-    const linkDetails = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
-    expect(linkDetails).not.toBeNull()
-    expect(linkDetails).toMatchObject({
-      originId: samplerNode.id,
-      originSlot: 0,
-      targetId: vaeNode.id,
-      targetSlot: 0
-    })
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
+      .toMatchObject({
+        originId: samplerNode.id,
+        originSlot: 0,
+        targetId: vaeNode.id,
+        targetSlot: 0
+      })
   })
 
   test('should not create a link when slot types are incompatible', async ({
@@ -192,18 +193,16 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     const inputSlot = slotLocator(comfyPage.page, clipNode.id, 0, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
+    // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
     await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
-    expect(await samplerOutput.getLinkCount()).toBe(0)
-    expect(await clipInput.getLinkCount()).toBe(0)
+    await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
+    await expect.poll(() => clipInput.getLinkCount()).toBe(0)
 
-    const graphLinkDetails = await getInputLinkDetails(
-      comfyPage.page,
-      clipNode.id,
-      0
-    )
-    expect(graphLinkDetails).toBeNull()
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, clipNode.id, 0))
+      .toBeNull()
   })
 
   test('should not create a link when dropping onto a slot on the same node', async ({
@@ -221,11 +220,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     const inputSlot = slotLocator(comfyPage.page, samplerNode.id, 3, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
+    // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
     await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
-    expect(await samplerOutput.getLinkCount()).toBe(0)
-    expect(await samplerInput.getLinkCount()).toBe(0)
+    await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
+    await expect.poll(() => samplerInput.getLinkCount()).toBe(0)
   })
 
   test('should reuse the existing origin when dragging an input link', async ({
@@ -321,9 +321,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
     await comfyPage.nextFrame()
 
-    // Tcehnically intended to disconnect existing as well
-    expect(await vaeInput.getLinkCount()).toBe(0)
-    expect(await samplerOutput.getLinkCount()).toBe(0)
+    // Technically intended to disconnect existing as well
+    await expect.poll(() => vaeInput.getLinkCount()).toBe(0)
+    await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
   })
 
   test('dropping an input link back on its slot restores the original connection', async ({
@@ -359,14 +359,15 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       await comfyMouse.drop()
     }
 
-    await comfyPage.nextFrame()
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
+      .not.toBeNull()
 
     const originalLink = await getInputLinkDetails(
       comfyPage.page,
       vaeNode.id,
       0
     )
-    expect(originalLink).not.toBeNull()
 
     const dragTarget = {
       x: vaeInputCenter.x + 150,
@@ -375,40 +376,36 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
     // To prevent needing a screenshot expectation for whether the link's off
     const vaeInputLocator = slotLocator(comfyPage.page, vaeNode.id, 0, true)
-    const inputBox = await vaeInputLocator.boundingBox()
-    if (!inputBox) throw new Error('Input slot bounding box not available')
-    const isOutsideX =
-      dragTarget.x < inputBox.x || dragTarget.x > inputBox.x + inputBox.width
-    const isOutsideY =
-      dragTarget.y < inputBox.y || dragTarget.y > inputBox.y + inputBox.height
-    expect(isOutsideX || isOutsideY).toBe(true)
+    await expect
+      .poll(async () => {
+        const inputBox = await vaeInputLocator.boundingBox()
+        if (!inputBox) return false
+        const isOutsideX =
+          dragTarget.x < inputBox.x ||
+          dragTarget.x > inputBox.x + inputBox.width
+        const isOutsideY =
+          dragTarget.y < inputBox.y ||
+          dragTarget.y > inputBox.y + inputBox.height
+        return isOutsideX || isOutsideY
+      })
+      .toBe(true)
 
     await comfyMouse.move(vaeInputCenter)
     await comfyMouse.drag(dragTarget)
     await comfyMouse.move(vaeInputCenter)
     await comfyMouse.drop()
 
-    await comfyPage.nextFrame()
-
-    const restoredLink = await getInputLinkDetails(
-      comfyPage.page,
-      vaeNode.id,
-      0
-    )
-
-    expect(restoredLink).not.toBeNull()
-    if (!restoredLink || !originalLink) {
-      throw new Error('Expected both original and restored links to exist')
-    }
-    expect(restoredLink).toMatchObject({
-      originId: originalLink.originId,
-      originSlot: originalLink.originSlot,
-      targetId: originalLink.targetId,
-      targetSlot: originalLink.targetSlot,
-      parentId: originalLink.parentId
-    })
-    expect(await samplerOutput.getLinkCount()).toBe(1)
-    expect(await vaeInput.getLinkCount()).toBe(1)
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
+      .toMatchObject({
+        originId: originalLink!.originId,
+        originSlot: originalLink!.originSlot,
+        targetId: originalLink!.targetId,
+        targetSlot: originalLink!.targetSlot,
+        parentId: originalLink!.parentId
+      })
+    await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
+    await expect.poll(() => vaeInput.getLinkCount()).toBe(1)
   })
 
   test('rerouted input drag preview remains anchored to reroute', async ({
@@ -490,12 +487,17 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       }
     }
 
-    await comfyPage.nextFrame()
-
-    const linkDetails = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
-    expect(linkDetails).not.toBeNull()
-    expect(linkDetails?.originId).toBe(samplerNode.id)
-    expect(linkDetails?.parentId).not.toBeNull()
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
+      .toMatchObject({
+        originId: samplerNode.id
+      })
+    await expect
+      .poll(async () => {
+        const link = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
+        return link?.parentId
+      })
+      .not.toBeNull()
   })
 
   test('rerouted output shift-drag preview remains anchored to reroute', async ({
@@ -581,12 +583,17 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       if (shiftHeld) await comfyPage.page.keyboard.up('Shift').catch(() => {})
     }
 
-    await comfyPage.nextFrame()
-
-    const linkDetails = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
-    expect(linkDetails).not.toBeNull()
-    expect(linkDetails?.originId).toBe(samplerNode.id)
-    expect(linkDetails?.parentId).not.toBeNull()
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
+      .toMatchObject({
+        originId: samplerNode.id
+      })
+    await expect
+      .poll(async () => {
+        const link = await getInputLinkDetails(comfyPage.page, vaeNode.id, 0)
+        return link?.parentId
+      })
+      .not.toBeNull()
   })
 
   test('dragging input to input drags existing link', async ({
@@ -610,17 +617,13 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     )
 
     // Verify initial link exists between CLIP -> KSampler input[1]
-    const initialLink = await getInputLinkDetails(
-      comfyPage.page,
-      samplerNode.id,
-      1
-    )
-    expect(initialLink).not.toBeNull()
-    expect(initialLink).toMatchObject({
-      originId: clipNode.id,
-      targetId: samplerNode.id,
-      targetSlot: 1
-    })
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 1))
+      .toMatchObject({
+        originId: clipNode.id,
+        targetId: samplerNode.id,
+        targetSlot: 1
+      })
 
     // Step 2: Drag from KSampler's second input to its third input (index 2)
     const input2Center = await getSlotCenter(
@@ -639,28 +642,20 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     await comfyMouse.move(input2Center)
     await comfyMouse.drag(input3Center)
     await comfyMouse.drop()
-    await comfyPage.nextFrame()
 
     // Expect old link removed from input[1]
-    const afterSecondInput = await getInputLinkDetails(
-      comfyPage.page,
-      samplerNode.id,
-      1
-    )
-    expect(afterSecondInput).toBeNull()
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 1))
+      .toBeNull()
 
     // Expect new link exists at input[2] from CLIP
-    const afterThirdInput = await getInputLinkDetails(
-      comfyPage.page,
-      samplerNode.id,
-      2
-    )
-    expect(afterThirdInput).not.toBeNull()
-    expect(afterThirdInput).toMatchObject({
-      originId: clipNode.id,
-      targetId: samplerNode.id,
-      targetSlot: 2
-    })
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 2))
+      .toMatchObject({
+        originId: clipNode.id,
+        targetId: samplerNode.id,
+        targetSlot: 2
+      })
   })
 
   test('shift-dragging an output with multiple links should drag all links', async ({
@@ -691,7 +686,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       () => comfyPage.nextFrame()
     )
 
-    expect(await clipOutput.getLinkCount()).toBe(2)
+    await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
 
     const outputCenter = await getSlotCenter(
       comfyPage.page,
@@ -755,24 +750,26 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
     // Drop to create the link
     await comfyMouse.drop()
-    await comfyPage.nextFrame()
 
     // Validate a link was created to one of KSampler's compatible inputs (1 or 2)
-    const linkOnInput1 = await getInputLinkDetails(
-      comfyPage.page,
-      samplerNode.id,
-      1
-    )
-    const linkOnInput2 = await getInputLinkDetails(
-      comfyPage.page,
-      samplerNode.id,
-      2
-    )
-
-    const linked = linkOnInput1 ?? linkOnInput2
-    expect(linked).not.toBeNull()
-    expect(linked?.originId).toBe(clipNode.id)
-    expect(linked?.targetId).toBe(samplerNode.id)
+    await expect
+      .poll(async () => {
+        const link1 = await getInputLinkDetails(
+          comfyPage.page,
+          samplerNode.id,
+          1
+        )
+        const link2 = await getInputLinkDetails(
+          comfyPage.page,
+          samplerNode.id,
+          2
+        )
+        return link1 ?? link2
+      })
+      .toMatchObject({
+        originId: clipNode.id,
+        targetId: samplerNode.id
+      })
   })
 
   test('should snap to a specific compatible slot when targeting it', async ({
@@ -810,19 +807,14 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
     // Finish the connection
     await comfyMouse.drop()
-    await comfyPage.nextFrame()
 
-    const linkDetails = await getInputLinkDetails(
-      comfyPage.page,
-      samplerNode.id,
-      2
-    )
-    expect(linkDetails).not.toBeNull()
-    expect(linkDetails).toMatchObject({
-      originId: clipNode.id,
-      targetId: samplerNode.id,
-      targetSlot: 2
-    })
+    await expect
+      .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 2))
+      .toMatchObject({
+        originId: clipNode.id,
+        targetId: samplerNode.id,
+        targetSlot: 2
+      })
   })
 
   test('should batch disconnect all links with ctrl+alt+click on slot', async ({
@@ -850,7 +842,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     )
 
     const clipOutput = await clipNode.getOutput(0)
-    expect(await clipOutput.getLinkCount()).toBe(2)
+    await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
 
     const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
 
@@ -863,9 +855,8 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       bubbles: true,
       cancelable: true
     })
-    await comfyPage.nextFrame()
 
-    expect(await clipOutput.getLinkCount()).toBe(0)
+    await expect.poll(() => clipOutput.getLinkCount()).toBe(0)
   })
 
   test.describe('Release actions (Shift-drop)', () => {
@@ -906,19 +897,30 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       await expect(contextMenu).toBeVisible()
 
       // Pinned endpoint should not change with mouse movement while menu is open
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
+            return Array.isArray(snap) ? [snap[0], snap[1]] : null
+          })
+        )
+        .not.toBeNull()
+
       const before = await comfyPage.page.evaluate(() => {
         const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
         return Array.isArray(snap) ? [snap[0], snap[1]] : null
       })
-      expect(before).not.toBeNull()
 
       // Move mouse elsewhere and verify snap position is unchanged
       await comfyMouse.move({ x: dropPos.x + 160, y: dropPos.y + 100 })
-      const after = await comfyPage.page.evaluate(() => {
-        const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
-        return Array.isArray(snap) ? [snap[0], snap[1]] : null
-      })
-      expect(after).toEqual(before)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
+            return Array.isArray(snap) ? [snap[0], snap[1]] : null
+          })
+        )
+        .toEqual(before)
     })
 
     test('Context menu -> Search pre-filters by link type and connects after selection', async ({
@@ -964,30 +966,28 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       await expect(comfyPage.searchBox.input).toBeVisible()
       const chips = comfyPage.searchBox.filterChips
       // Ensure at least one filter chip exists and it matches the link type
-      const chipCount = await chips.count()
-      expect(chipCount).toBeGreaterThan(0)
+      await expect(chips.first()).toBeVisible()
       await expect(chips.first()).toContainText('LATENT')
 
       // Choose a compatible node and verify it auto-connects
       await comfyPage.searchBox.fillAndSelectFirstNode('VAEDecode')
-      await comfyPage.nextFrame()
 
       // KSampler output should now have an outgoing link
       const samplerOutput = await samplerNode.getOutput(0)
-      expect(await samplerOutput.getLinkCount()).toBe(1)
+      await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
 
       // One of the VAEDecode nodes should have an incoming link on input[0]
-      const vaeNodes = await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      let linked = false
-      for (const vae of vaeNodes) {
-        const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
-        if (details) {
-          expect(details.originId).toBe(samplerNode.id)
-          linked = true
-          break
-        }
-      }
-      expect(linked).toBe(true)
+      await expect
+        .poll(async () => {
+          const vaeNodes =
+            await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
+          for (const vae of vaeNodes) {
+            const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
+            if (details) return details.originId
+          }
+          return null
+        })
+        .toBe(samplerNode.id)
     })
 
     test('Search box opens on Shift-drop and connects after selection', async ({
@@ -1033,22 +1033,21 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
       // Select a compatible node and verify connection
       await comfyPage.searchBox.fillAndSelectFirstNode('VAEDecode')
-      await comfyPage.nextFrame()
 
       const samplerOutput = await samplerNode.getOutput(0)
-      expect(await samplerOutput.getLinkCount()).toBe(1)
+      await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
 
-      const vaeNodes = await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
-      let linked = false
-      for (const vae of vaeNodes) {
-        const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
-        if (details) {
-          expect(details.originId).toBe(samplerNode.id)
-          linked = true
-          break
-        }
-      }
-      expect(linked).toBe(true)
+      await expect
+        .poll(async () => {
+          const vaeNodes =
+            await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
+          for (const vae of vaeNodes) {
+            const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
+            if (details) return details.originId
+          }
+          return null
+        })
+        .toBe(samplerNode.id)
     })
   })
 
@@ -1102,9 +1101,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     await comfyMouse.drop()
 
     // Verify connection went to the correct slot
-    const positiveLinks = await positiveInput.getLinkCount()
-    const negativeLinks = await negativeInput.getLinkCount()
-    expect(positiveLinks).toBe(1)
-    expect(negativeLinks).toBe(0)
+    await expect.poll(() => positiveInput.getLinkCount()).toBe(1)
+    await expect.poll(() => negativeInput.getLinkCount()).toBe(0)
   })
 })

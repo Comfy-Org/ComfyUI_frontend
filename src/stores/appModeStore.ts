@@ -5,7 +5,11 @@ import { useEventListener } from '@vueuse/core'
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type {
+  InputWidgetConfig,
+  LinearData,
+  LinearInput
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -29,7 +33,7 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   const showVueNodeSwitchPopup = ref(false)
 
-  const selectedInputs = ref<[NodeId, string][]>([])
+  const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
@@ -132,6 +136,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       return
     }
 
+    // Prune stale references
+    resetSelectedToWorkflow()
+
     useSidebarTabStore().activeSidebarTabId = null
 
     setMode(
@@ -157,6 +164,18 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
+  function updateInputConfig(
+    nodeId: NodeId,
+    widgetName: string,
+    config: InputWidgetConfig
+  ) {
+    const entry = selectedInputs.value.find(
+      ([id, name]) => nodeId == id && widgetName === name
+    )
+    if (!entry) return
+    entry[2] = { ...entry[2], ...config }
+  }
+
   return {
     enterBuilder,
     exitBuilder,
@@ -168,6 +187,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     resetSelectedToWorkflow,
     selectedInputs,
     selectedOutputs,
+    updateInputConfig,
     showVueNodeSwitchPopup
   }
 })

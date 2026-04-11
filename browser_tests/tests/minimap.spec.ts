@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -53,13 +53,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
 
     await toggleButton.click()
-    await comfyPage.nextFrame()
-
-    await expect(minimapContainer).not.toBeVisible()
+    await expect(minimapContainer).toBeHidden()
 
     await toggleButton.click()
-    await comfyPage.nextFrame()
-
     await expect(minimapContainer).toBeVisible()
   })
 
@@ -69,13 +65,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await comfyPage.nextFrame()
-
-    await expect(minimapContainer).not.toBeVisible()
+    await expect(minimapContainer).toBeHidden()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await comfyPage.nextFrame()
-
     await expect(minimapContainer).toBeVisible()
   })
 
@@ -84,7 +76,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimap).toBeVisible()
 
     await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
-    await expect(minimap).not.toBeVisible()
+    await expect(minimap).toBeHidden()
 
     const toggleButton = comfyPage.page.getByTestId(
       TestIds.canvas.toggleMinimapButton
@@ -108,6 +100,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
+      await comfyPage.nextFrame()
       await expect(minimap).toHaveScreenshot('minimap-after-pan.png')
     }
   )
@@ -122,20 +115,18 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const viewport = minimap.locator('.minimap-viewport')
       await expect(viewport).toBeVisible()
 
-      const minimapBox = await minimap.boundingBox()
-      const viewportBox = await viewport.boundingBox()
-
-      expect(minimapBox).toBeTruthy()
-      expect(viewportBox).toBeTruthy()
-      expect(viewportBox!.width).toBeGreaterThan(0)
-      expect(viewportBox!.height).toBeGreaterThan(0)
-
-      expect(viewportBox!.x + viewportBox!.width).toBeGreaterThan(minimapBox!.x)
-      expect(viewportBox!.y + viewportBox!.height).toBeGreaterThan(
-        minimapBox!.y
-      )
-      expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
-      expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
+      await expect(async () => {
+        const vb = await viewport.boundingBox()
+        const mb = await minimap.boundingBox()
+        expect(vb).toBeTruthy()
+        expect(mb).toBeTruthy()
+        expect(vb!.width).toBeGreaterThan(0)
+        expect(vb!.height).toBeGreaterThan(0)
+        expect(vb!.x).toBeGreaterThanOrEqual(mb!.x)
+        expect(vb!.y).toBeGreaterThanOrEqual(mb!.y)
+        expect(vb!.x + vb!.width).toBeLessThanOrEqual(mb!.x + mb!.width)
+        expect(vb!.y + vb!.height).toBeLessThanOrEqual(mb!.y + mb!.height)
+      }).toPass({ timeout: 5000 })
 
       await expect(minimap).toHaveScreenshot('minimap-with-viewport.png')
     }
