@@ -46,22 +46,25 @@
       </div>
     </template>
     <template #body>
-      <JobAssetsList
-        :displayed-job-groups="displayedJobGroups"
-        @cancel-item="onCancelItem"
-        @delete-item="onDeleteItem"
-        @view-item="onViewItem"
-        @menu="onMenuItem"
-      />
-      <JobContextMenu
-        ref="jobContextMenuRef"
-        :entries="jobMenuEntries"
-        @action="onJobMenuAction"
-      />
-      <MediaLightbox
-        v-model:active-index="galleryActiveIndex"
-        :all-gallery-items="galleryItems"
-      />
+      <div class="flex h-full min-h-0 flex-col">
+        <JobAssetsList
+          class="min-h-0 flex-1"
+          :displayed-job-groups="displayedJobGroups"
+          @cancel-item="onCancelItem"
+          @delete-item="onDeleteItem"
+          @view-item="onViewItem"
+          @menu="onMenuItem"
+        />
+        <JobContextMenu
+          ref="jobContextMenuRef"
+          :entries="jobMenuEntries"
+          @action="onJobMenuAction"
+        />
+        <MediaLightbox
+          v-model:active-index="galleryActiveIndex"
+          :all-gallery-items="galleryItems"
+        />
+      </div>
     </template>
   </SidebarTabTemplate>
 </template>

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -53,13 +53,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
 
     await toggleButton.click()
-    await comfyPage.nextFrame()
-
-    await expect(minimapContainer).not.toBeVisible()
+    await expect(minimapContainer).toBeHidden()
 
     await toggleButton.click()
-    await comfyPage.nextFrame()
-
     await expect(minimapContainer).toBeVisible()
   })
 
@@ -69,13 +65,70 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await comfyPage.nextFrame()
-
-    await expect(minimapContainer).not.toBeVisible()
+    await expect(minimapContainer).toBeHidden()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await comfyPage.nextFrame()
-
     await expect(minimapContainer).toBeVisible()
   })
+
+  test('Close button hides minimap', async ({ comfyPage }) => {
+    const minimap = comfyPage.page.locator('.litegraph-minimap')
+    await expect(minimap).toBeVisible()
+
+    await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
+    await expect(minimap).toBeHidden()
+
+    const toggleButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
+    await expect(toggleButton).toBeVisible()
+  })
+
+  test(
+    'Panning canvas moves minimap viewport',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const minimap = comfyPage.page.locator('.litegraph-minimap')
+      await expect(minimap).toBeVisible()
+
+      await expect(minimap).toHaveScreenshot('minimap-before-pan.png')
+
+      await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        canvas.ds.scale = 3
+        canvas.ds.offset[0] = -800
+        canvas.ds.offset[1] = -600
+        canvas.setDirty(true, true)
+      })
+      await comfyPage.nextFrame()
+      await expect(minimap).toHaveScreenshot('minimap-after-pan.png')
+    }
+  )
+
+  test(
+    'Viewport rectangle is visible and positioned within minimap',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const minimap = comfyPage.page.locator('.litegraph-minimap')
+      await expect(minimap).toBeVisible()
+
+      const viewport = minimap.locator('.minimap-viewport')
+      await expect(viewport).toBeVisible()
+
+      await expect(async () => {
+        const vb = await viewport.boundingBox()
+        const mb = await minimap.boundingBox()
+        expect(vb).toBeTruthy()
+        expect(mb).toBeTruthy()
+        expect(vb!.width).toBeGreaterThan(0)
+        expect(vb!.height).toBeGreaterThan(0)
+        expect(vb!.x).toBeGreaterThanOrEqual(mb!.x)
+        expect(vb!.y).toBeGreaterThanOrEqual(mb!.y)
+        expect(vb!.x + vb!.width).toBeLessThanOrEqual(mb!.x + mb!.width)
+        expect(vb!.y + vb!.height).toBeLessThanOrEqual(mb!.y + mb!.height)
+      }).toPass({ timeout: 5000 })
+
+      await expect(minimap).toHaveScreenshot('minimap-with-viewport.png')
+    }
+  )
 })

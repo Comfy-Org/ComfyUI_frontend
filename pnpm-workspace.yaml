@@ -4,6 +4,7 @@ packages:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
+  '@astrojs/sitemap': ^3.7.1
   '@astrojs/vue': ^5.0.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^9.39.1
@@ -35,6 +36,7 @@ catalog:
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
   '@tailwindcss/vite': ^4.2.0
+  '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
   '@testing-library/vue': ^8.1.0
@@ -46,6 +48,7 @@ catalog:
   '@tiptap/extension-table-row': ^2.27.2
   '@tiptap/pm': 2.27.2
   '@tiptap/starter-kit': ^2.27.2
+  '@total-typescript/shoehorn': ^0.1.2
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
@@ -71,7 +74,8 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.1
-  eslint-plugin-oxlint: 1.55.0
+  eslint-plugin-oxlint: 1.59.0
+  eslint-plugin-playwright: ^2.10.1
   eslint-plugin-storybook: ^10.2.10
   eslint-plugin-testing-library: ^7.16.1
   eslint-plugin-unused-imports: ^4.3.0
@@ -86,14 +90,14 @@ catalog:
   jsdom: ^27.4.0
   jsonata: ^2.1.0
   jsondiffpatch: ^0.7.3
-  knip: ^6.0.1
+  knip: ^6.3.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   nx: 22.6.1
-  oxfmt: ^0.40.0
-  oxlint: ^1.55.0
-  oxlint-tsgolint: ^0.17.0
+  oxfmt: ^0.44.0
+  oxlint: ^1.59.0
+  oxlint-tsgolint: ^0.20.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0

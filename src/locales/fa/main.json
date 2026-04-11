@@ -347,9 +347,19 @@
     "share": "اشتراک‌گذاری",
     "workflowActions": "عملیات گردش‌کار"
   },
+  "builderFooter": {
+    "opensAsApp": "باز کردن به صورت {mode}",
+    "opensAsGraph": "باز کردن به صورت {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "ورود به حالت برنامه",
     "exitAppBuilder": "خروج از سازنده برنامه"
+  },
+  "builderSave": {
+    "successBody": "آیا مایل هستید اکنون آن را مشاهده کنید؟",
+    "successBodyApp": "این workflow از این پس به طور پیش‌فرض در حالت App Mode باز خواهد شد.\n\nآیا مایل هستید اکنون آن را مشاهده کنید؟",
+    "successBodyGraph": "این workflow به صورت یک گراف نود باز خواهد شد.",
+    "successTitle": "با موفقیت ذخیره شد"
   },
   "builderToolbar": {
     "app": "اپلیکیشن",
@@ -359,18 +369,10 @@
     "connectOutput": "اتصال خروجی",
     "connectOutputBody1": "اپلیکیشن شما باید حداقل یک خروجی متصل داشته باشد تا بتوان آن را ذخیره کرد.",
     "connectOutputBody2": "به مرحله «انتخاب» بروید و روی nodeهای خروجی کلیک کنید تا اینجا اضافه شوند.",
-    "defaultModeAppliedAppBody": "این ورک‌فلو از این پس به طور پیش‌فرض در حالت اپلیکیشن باز خواهد شد.",
-    "defaultModeAppliedAppPrompt": "آیا مایل هستید اکنون آن را مشاهده کنید؟",
-    "defaultModeAppliedGraphBody": "این ورک‌فلو از این پس به طور پیش‌فرض به صورت گراف node باز خواهد شد.",
-    "defaultModeAppliedGraphPrompt": "آیا همچنان مایل به مشاهده اپلیکیشن هستید؟",
-    "defaultModeAppliedTitle": "با موفقیت تنظیم شد",
-    "defaultView": "تنظیم نمای پیش‌فرض",
-    "defaultViewDescription": "انتخاب نحوه باز شدن",
     "defaultViewLabel": "به طور پیش‌فرض، این گردش‌کار به صورت زیر باز می‌شود:",
-    "defaultViewTitle": "تنظیم نمای پیش‌فرض برای این گردش‌کار",
     "emptyWorkflowPrompt": "آیا می‌خواهید با یک قالب شروع کنید؟",
     "emptyWorkflowTitle": "این ورک‌فلو هیچ node ندارد",
-    "exitToWorkflow": "بازگشت به workflow",
+    "filename": "نام فایل",
     "inputs": "ورودی‌ها",
     "inputsDescription": "انتخاب ورودی‌ها",
     "label": "سازنده اپلیکیشن",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "به طور پیش‌فرض به صورت گراف node باز می‌شود",
     "outputs": "خروجی‌ها",
     "outputsDescription": "انتخاب خروجی‌ها",
+    "saveAs": "ذخیره به عنوان",
     "switchToOutputs": "رفتن به خروجی‌ها",
     "viewApp": "مشاهده اپلیکیشن"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
-    "seeErrors": "مشاهده خطاها"
+    "missingMedia": "برخی از نودها ورودی‌های مورد نیاز را ندارند",
+    "missingModels": "{count} مدل مورد نیاز مفقود است | {count} مدل مورد نیاز مفقود هستند",
+    "missingNodes": "برخی از نودها مفقود هستند و باید نصب شوند",
+    "seeErrors": "مشاهده خطاها",
+    "showMissingMedia": "نمایش ورودی‌های مفقود",
+    "showMissingModels": "نمایش مدل‌های مفقود",
+    "showMissingNodes": "نمایش نودهای مفقود",
+    "showSwapNodes": "نمایش نودهای قابل جایگزینی",
+    "swapNodes": "برخی از نودها را می‌توان با گزینه‌های جایگزین تعویض کرد"
   },
   "essentials": {
     "batchImage": "پردازش دسته‌ای تصویر",
@@ -1320,6 +1331,7 @@
     "updating": "در حال به‌روزرسانی {id}",
     "upload": "بارگذاری",
     "uploadAlreadyInProgress": "بارگذاری در حال انجام است",
+    "uploadTimedOut": "زمان بارگذاری به پایان رسید. لطفاً دوباره تلاش کنید.",
     "usageHint": "راهنمای استفاده",
     "use": "استفاده",
     "user": "کاربر",
@@ -2247,6 +2259,7 @@
     "dataset": "داده‌نما",
     "debug": "اشکال‌زدایی",
     "deprecated": "منسوخ",
+    "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
     "flux": "flux",
     "gligen": "gligen",
@@ -2515,6 +2528,23 @@
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
+    "missingMedia": {
+      "audio": "صدا",
+      "cancelSelection": "لغو انتخاب",
+      "collapseNodes": "پنهان کردن nodeهای ارجاع‌دهنده",
+      "confirmSelection": "تأیید انتخاب",
+      "expandNodes": "نمایش nodeهای ارجاع‌دهنده",
+      "image": "تصاویر",
+      "locateNode": "یافتن node",
+      "missingMediaTitle": "ورودی‌های گمشده",
+      "or": "یا",
+      "selectedFromLibrary": "انتخاب شده از کتابخانه",
+      "uploadFile": "بارگذاری {type}",
+      "uploaded": "بارگذاری شد",
+      "uploading": "در حال بارگذاری...",
+      "useFromLibrary": "استفاده از کتابخانه",
+      "video": "ویدیوها"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "این مدل قبلاً در «{category}» وجود دارد",
       "assetLoadTimeout": "شناسایی مدل زمان‌بر شد. لطفاً workflow را مجدداً بارگذاری کنید.",
@@ -3240,6 +3270,7 @@
       "termsAgreement": "با ادامه، شما با {terms} و {privacy} Comfy Org موافقت می‌کنید.",
       "totalDueToday": "مبلغ قابل پرداخت امروز"
     },
+    "refreshCredits": "به‌روزرسانی اعتبارها",
     "renewsDate": "تمدید در {date}",
     "required": {
       "pollingFailed": "فعال‌سازی اشتراک ناموفق بود",

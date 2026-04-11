@@ -347,9 +347,19 @@
     "share": "مشاركة",
     "workflowActions": "إجراءات سير العمل"
   },
+  "builderFooter": {
+    "opensAsApp": "فتح كـ {mode}",
+    "opensAsGraph": "فتح كـ {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "الدخول إلى وضع التطبيق",
     "exitAppBuilder": "الخروج من مُنشئ التطبيق"
+  },
+  "builderSave": {
+    "successBody": "هل ترغب في عرضها الآن؟",
+    "successBodyApp": "سيتم فتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.\n\nهل ترغب في عرضه الآن؟",
+    "successBodyGraph": "سيتم فتح سير العمل هذا كـ رسم بياني للعقد.",
+    "successTitle": "تم الحفظ بنجاح"
   },
   "builderToolbar": {
     "app": "تطبيق",
@@ -359,18 +369,10 @@
     "connectOutput": "توصيل مخرج",
     "connectOutputBody1": "يجب توصيل مخرج واحد على الأقل قبل حفظ التطبيق.",
     "connectOutputBody2": "انتقل إلى خطوة 'تحديد' وانقر على عقد المخرجات لإضافتها هنا.",
-    "defaultModeAppliedAppBody": "سيفتح سير العمل هذا في وضع التطبيق بشكل افتراضي من الآن فصاعدًا.",
-    "defaultModeAppliedAppPrompt": "هل ترغب في عرضه الآن؟",
-    "defaultModeAppliedGraphBody": "سيفتح سير العمل هذا كـمخطط عقد بشكل افتراضي من الآن فصاعدًا.",
-    "defaultModeAppliedGraphPrompt": "هل ترغب في عرض التطبيق مع ذلك؟",
-    "defaultModeAppliedTitle": "تم التعيين بنجاح",
-    "defaultView": "تعيين العرض الافتراضي",
-    "defaultViewDescription": "اختر كيفية الفتح",
     "defaultViewLabel": "افتراضيًا، سيتم فتح سير العمل هذا كـ:",
-    "defaultViewTitle": "تعيين العرض الافتراضي لهذا سير العمل",
     "emptyWorkflowPrompt": "هل ترغب في البدء بقالب؟",
     "emptyWorkflowTitle": "لا يحتوي سير العمل هذا على أي عقد",
-    "exitToWorkflow": "الخروج إلى سير العمل",
+    "filename": "اسم الملف",
     "inputs": "المدخلات",
     "inputsDescription": "اختر المدخلات",
     "label": "منشئ التطبيقات",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "يفتح كرسم عقد بشكل افتراضي",
     "outputs": "المخرجات",
     "outputsDescription": "اختر المخرجات",
+    "saveAs": "حفظ باسم",
     "switchToOutputs": "الانتقال إلى المخرجات",
     "viewApp": "عرض التطبيق"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} خطأ | {count} أخطاء",
-    "seeErrors": "عرض الأخطاء"
+    "missingMedia": "بعض العقد تفتقد إلى مدخلات مطلوبة",
+    "missingModels": "{count} نموذج مطلوب مفقود | {count} نماذج مطلوبة مفقودة",
+    "missingNodes": "بعض العقد مفقودة وتحتاج إلى التثبيت",
+    "seeErrors": "عرض الأخطاء",
+    "showMissingMedia": "عرض المدخلات المفقودة",
+    "showMissingModels": "عرض النماذج المفقودة",
+    "showMissingNodes": "عرض العقد المفقودة",
+    "showSwapNodes": "عرض العقد البديلة",
+    "swapNodes": "يمكن استبدال بعض العقد ببدائل"
   },
   "essentials": {
     "batchImage": "معالجة صور دفعة واحدة",
@@ -1320,6 +1331,7 @@
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
+    "uploadTimedOut": "انتهت مهلة التحميل. يرجى المحاولة مرة أخرى.",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
@@ -2247,6 +2259,7 @@
     "dataset": "مجموعة بيانات",
     "debug": "تصحيح",
     "deprecated": "مهمل",
+    "detection": "الكشف",
     "edit_models": "تحرير النماذج",
     "flux": "تدفق",
     "gligen": "gligen",
@@ -2515,6 +2528,23 @@
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
+    "missingMedia": {
+      "audio": "الصوتيات",
+      "cancelSelection": "إلغاء الاختيار",
+      "collapseNodes": "إخفاء العقد المشار إليها",
+      "confirmSelection": "تأكيد الاختيار",
+      "expandNodes": "عرض العقد المشار إليها",
+      "image": "الصور",
+      "locateNode": "تحديد موقع العقدة",
+      "missingMediaTitle": "المدخلات المفقودة",
+      "or": "أو",
+      "selectedFromLibrary": "تم الاختيار من المكتبة",
+      "uploadFile": "رفع {type}",
+      "uploaded": "تم الرفع",
+      "uploading": "جاري الرفع...",
+      "useFromLibrary": "استخدام من المكتبة",
+      "video": "الفيديوهات"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "هذا النموذج موجود بالفعل في \"{category}\"",
       "assetLoadTimeout": "انتهت مهلة اكتشاف النموذج. حاول إعادة تحميل سير العمل.",
@@ -3228,6 +3258,7 @@
       "termsAgreement": "بالمتابعة، أنت توافق على {terms} و{privacy} الخاصة بـ Comfy Org.",
       "totalDueToday": "الإجمالي المستحق اليوم"
     },
+    "refreshCredits": "تحديث الرصيد",
     "renewsDate": "تجديد في {date}",
     "required": {
       "pollingFailed": "فشل تفعيل الاشتراك",

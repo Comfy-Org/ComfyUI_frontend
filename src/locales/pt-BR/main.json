@@ -347,9 +347,19 @@
     "share": "Compartilhar",
     "workflowActions": "Ações do fluxo de trabalho"
   },
+  "builderFooter": {
+    "opensAsApp": "Abrir como {mode}",
+    "opensAsGraph": "Abrir como {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Entrar no modo de aplicativo",
     "exitAppBuilder": "Sair do construtor de aplicativos"
+  },
+  "builderSave": {
+    "successBody": "Deseja visualizar agora?",
+    "successBodyApp": "Este fluxo de trabalho será aberto no Modo App por padrão a partir de agora.\n\nDeseja visualizar agora?",
+    "successBodyGraph": "Este fluxo de trabalho será aberto como um grafo de nós.",
+    "successTitle": "Salvo com sucesso"
   },
   "builderToolbar": {
     "app": "Aplicativo",
@@ -359,18 +369,10 @@
     "connectOutput": "Conectar uma saída",
     "connectOutputBody1": "Seu aplicativo precisa de pelo menos uma saída conectada antes de ser salvo.",
     "connectOutputBody2": "Altere para a etapa 'Selecionar' e clique nos nós de saída para adicioná-los aqui.",
-    "defaultModeAppliedAppBody": "Este fluxo de trabalho será aberto no Modo de Aplicativo por padrão a partir de agora.",
-    "defaultModeAppliedAppPrompt": "Gostaria de visualizá-lo agora?",
-    "defaultModeAppliedGraphBody": "Este fluxo de trabalho será aberto como um grafo de nós por padrão a partir de agora.",
-    "defaultModeAppliedGraphPrompt": "Ainda deseja visualizar o aplicativo?",
-    "defaultModeAppliedTitle": "Definido com sucesso",
-    "defaultView": "Definir visualização padrão",
-    "defaultViewDescription": "Escolha como isso será aberto",
     "defaultViewLabel": "Por padrão, este fluxo será aberto como:",
-    "defaultViewTitle": "Definir a visualização padrão para este fluxo",
     "emptyWorkflowPrompt": "Deseja começar com um modelo?",
     "emptyWorkflowTitle": "Este fluxo de trabalho não possui nós",
-    "exitToWorkflow": "Sair para o fluxo de trabalho",
+    "filename": "Nome do arquivo",
     "inputs": "Entradas",
     "inputsDescription": "Escolha as entradas",
     "label": "Construtor de aplicativos",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Abre como grafo de nós por padrão",
     "outputs": "Saídas",
     "outputsDescription": "Escolha as saídas",
+    "saveAs": "Salvar como",
     "switchToOutputs": "Ir para Saídas",
     "viewApp": "Visualizar aplicativo"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
-    "seeErrors": "Ver erros"
+    "missingMedia": "Alguns nós estão sem as entradas necessárias",
+    "missingModels": "{count} modelo necessário está ausente | {count} modelos necessários estão ausentes",
+    "missingNodes": "Alguns nós estão ausentes e precisam ser instalados",
+    "seeErrors": "Ver erros",
+    "showMissingMedia": "Mostrar entradas ausentes",
+    "showMissingModels": "Mostrar modelos ausentes",
+    "showMissingNodes": "Mostrar nós ausentes",
+    "showSwapNodes": "Mostrar nós alternativos",
+    "swapNodes": "Alguns nós podem ser substituídos por alternativas"
   },
   "essentials": {
     "batchImage": "Imagem em lote",
@@ -1320,6 +1331,7 @@
     "updating": "Atualizando {id}",
     "upload": "Enviar",
     "uploadAlreadyInProgress": "O upload já está em andamento",
+    "uploadTimedOut": "O envio excedeu o tempo limite. Por favor, tente novamente.",
     "usageHint": "Dica de uso",
     "use": "Usar",
     "user": "Usuário",
@@ -2247,6 +2259,7 @@
     "dataset": "conjunto_de_dados",
     "debug": "depuração",
     "deprecated": "obsoleto",
+    "detection": "detecção",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",
@@ -2515,6 +2528,23 @@
     "inputsNone": "SEM ENTRADAS",
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
+    "missingMedia": {
+      "audio": "Áudio",
+      "cancelSelection": "Cancelar seleção",
+      "collapseNodes": "Ocultar nós de referência",
+      "confirmSelection": "Confirmar seleção",
+      "expandNodes": "Mostrar nós de referência",
+      "image": "Imagens",
+      "locateNode": "Localizar nó",
+      "missingMediaTitle": "Entradas Ausentes",
+      "or": "OU",
+      "selectedFromLibrary": "Selecionado da biblioteca",
+      "uploadFile": "Enviar {type}",
+      "uploaded": "Enviado",
+      "uploading": "Enviando...",
+      "useFromLibrary": "Usar da Biblioteca",
+      "video": "Vídeos"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Este modelo já existe em \"{category}\"",
       "assetLoadTimeout": "Tempo esgotado na detecção do modelo. Tente recarregar o fluxo de trabalho.",
@@ -3240,6 +3270,7 @@
       "termsAgreement": "Ao continuar, você concorda com os {terms} e {privacy} da Comfy Org.",
       "totalDueToday": "Total devido hoje"
     },
+    "refreshCredits": "Atualizar créditos",
     "renewsDate": "Renova em {date}",
     "required": {
       "pollingFailed": "Falha ao ativar a assinatura",

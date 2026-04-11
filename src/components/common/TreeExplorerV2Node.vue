@@ -25,25 +25,23 @@
           {{ item.value.label }}
         </slot>
       </span>
-      <button
-        :class="
-          cn(
-            'hover:text-foreground flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-muted-foreground',
-            'opacity-0 group-hover/tree-node:opacity-100'
-          )
-        "
-        :aria-label="$t('icon.bookmark')"
-        @click.stop="toggleBookmark"
-      >
-        <i
-          :class="
-            cn(
-              isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
-              'text-xs'
-            )
-          "
-        />
-      </button>
+      <div class="flex shrink-0 items-center gap-0.5">
+        <button
+          v-if="isUserBlueprint"
+          :class="cn(ACTION_BTN_CLASS, 'text-destructive')"
+          :aria-label="$t('g.delete')"
+          @click.stop="deleteBlueprint"
+        >
+          <i class="icon-[lucide--trash-2]" />
+        </button>
+        <button
+          :class="cn(ACTION_BTN_CLASS, 'text-muted-foreground')"
+          :aria-label="$t('icon.bookmark')"
+          @click.stop="toggleBookmark"
+        >
+          <i :class="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'" />
+        </button>
+      </div>
     </div>
 
     <!-- Folder -->
@@ -53,6 +51,7 @@
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
       :style="rowStyle"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
+      @contextmenu="clearContextMenuNode"
     >
       <i
         v-if="item.hasChildren"
@@ -96,6 +95,7 @@ import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { cn } from '@/utils/tailwindUtil'
@@ -106,6 +106,9 @@ defineOptions({
 
 const ROW_CLASS =
   'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input rounded'
+
+const ACTION_BTN_CLASS =
+  'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-sm opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
@@ -120,6 +123,7 @@ const emit = defineEmits<{
 
 const contextMenuNode = inject(InjectKeyContextMenuNode)
 const nodeBookmarkStore = useNodeBookmarkStore()
+const subgraphStore = useSubgraphStore()
 
 const nodeDef = computed(() => item.value.data)
 
@@ -128,9 +132,19 @@ const isBookmarked = computed(() => {
   return nodeBookmarkStore.isBookmarked(nodeDef.value)
 })
 
+const isUserBlueprint = computed(() =>
+  subgraphStore.isUserBlueprint(nodeDef.value?.name)
+)
+
 function toggleBookmark() {
   if (nodeDef.value) {
     nodeBookmarkStore.toggleBookmark(nodeDef.value)
+  }
+}
+
+function deleteBlueprint() {
+  if (nodeDef.value) {
+    void subgraphStore.deleteBlueprint(nodeDef.value.name)
   }
 }
 
@@ -163,6 +177,12 @@ function handleClick(
 function handleContextMenu() {
   if (contextMenuNode) {
     contextMenuNode.value = item.value
+  }
+}
+
+function clearContextMenuNode() {
+  if (contextMenuNode) {
+    contextMenuNode.value = null
   }
 }
 

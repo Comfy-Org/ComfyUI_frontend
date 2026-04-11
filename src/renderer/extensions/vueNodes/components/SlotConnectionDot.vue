@@ -71,11 +71,13 @@ const slotClass = computed(() =>
       ref="slot-el"
       :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
       :class="slotClass"
+      data-testid="slot-dot"
     />
     <svg
       v-else
       ref="slot-el"
       :class="slotClass"
+      data-testid="slot-dot"
       viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
     >

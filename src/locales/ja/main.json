@@ -347,9 +347,19 @@
     "share": "共有",
     "workflowActions": "ワークフロー操作"
   },
+  "builderFooter": {
+    "opensAsApp": "{mode}として開く",
+    "opensAsGraph": "{mode}として開く"
+  },
   "builderMenu": {
     "enterAppMode": "アプリモードに入る",
     "exitAppBuilder": "アプリビルダーを終了"
+  },
+  "builderSave": {
+    "successBody": "今すぐ表示しますか？",
+    "successBodyApp": "このワークフローは今後デフォルトでアプリモードで開かれます。\n\n今すぐ表示しますか？",
+    "successBodyGraph": "このワークフローはノードグラフとして開かれます。",
+    "successTitle": "保存に成功しました"
   },
   "builderToolbar": {
     "app": "アプリ",
@@ -359,18 +369,10 @@
     "connectOutput": "出力を接続",
     "connectOutputBody1": "アプリを保存するには、少なくとも1つの出力を接続する必要があります。",
     "connectOutputBody2": "「選択」ステップに切り替えて、出力ノードをクリックしてここに追加してください。",
-    "defaultModeAppliedAppBody": "このワークフローは今後デフォルトでアプリモードで開きます。",
-    "defaultModeAppliedAppPrompt": "今すぐ表示しますか？",
-    "defaultModeAppliedGraphBody": "このワークフローは今後デフォルトでノードグラフとして開きます。",
-    "defaultModeAppliedGraphPrompt": "アプリを引き続き表示しますか？",
-    "defaultModeAppliedTitle": "正常に設定されました",
-    "defaultView": "デフォルトビューを設定",
-    "defaultViewDescription": "開き方を選択してください",
     "defaultViewLabel": "デフォルトでは、このワークフローは次のように開きます：",
-    "defaultViewTitle": "このワークフローのデフォルトビューを設定",
     "emptyWorkflowPrompt": "テンプレートから始めますか？",
     "emptyWorkflowTitle": "このワークフローにはノードがありません",
-    "exitToWorkflow": "ワークフローに戻る",
+    "filename": "ファイル名",
     "inputs": "入力",
     "inputsDescription": "入力を選択",
     "label": "アプリビルダー",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "デフォルトでノードグラフとして開きます",
     "outputs": "出力",
     "outputsDescription": "出力を選択",
+    "saveAs": "名前を付けて保存",
     "switchToOutputs": "出力に切り替え",
     "viewApp": "アプリを表示"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} 件のエラー",
-    "seeErrors": "エラーを表示"
+    "missingMedia": "いくつかのノードに必要な入力が不足しています",
+    "missingModels": "{count} 個の必要なモデルが不足しています",
+    "missingNodes": "いくつかのノードが不足しており、インストールが必要です",
+    "seeErrors": "エラーを表示",
+    "showMissingMedia": "不足している入力を表示",
+    "showMissingModels": "不足しているモデルを表示",
+    "showMissingNodes": "不足しているノードを表示",
+    "showSwapNodes": "代替可能なノードを表示",
+    "swapNodes": "いくつかのノードは代替可能です"
   },
   "essentials": {
     "batchImage": "バッチ画像処理",
@@ -1320,6 +1331,7 @@
     "updating": "更新中",
     "upload": "アップロード",
     "uploadAlreadyInProgress": "アップロードはすでに進行中です",
+    "uploadTimedOut": "アップロードがタイムアウトしました。もう一度お試しください。",
     "usageHint": "使用ヒント",
     "use": "使用",
     "user": "ユーザー",
@@ -2247,6 +2259,7 @@
     "dataset": "データセット",
     "debug": "デバッグ",
     "deprecated": "非推奨",
+    "detection": "検出",
     "edit_models": "モデル編集",
     "flux": "flux",
     "gligen": "グライジェン",
@@ -2515,6 +2528,23 @@
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
+    "missingMedia": {
+      "audio": "音声",
+      "cancelSelection": "選択をキャンセル",
+      "collapseNodes": "参照ノードを非表示",
+      "confirmSelection": "選択を確定",
+      "expandNodes": "参照ノードを表示",
+      "image": "画像",
+      "locateNode": "ノードを特定",
+      "missingMediaTitle": "入力がありません",
+      "or": "または",
+      "selectedFromLibrary": "ライブラリから選択済み",
+      "uploadFile": "{type}をアップロード",
+      "uploaded": "アップロード完了",
+      "uploading": "アップロード中...",
+      "useFromLibrary": "ライブラリから使用",
+      "video": "動画"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "このモデルはすでに「{category}」に存在します",
       "assetLoadTimeout": "モデルの検出がタイムアウトしました。ワークフローを再読み込みしてください。",
@@ -3228,6 +3258,7 @@
       "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
       "totalDueToday": "本日のお支払い合計"
     },
+    "refreshCredits": "クレジットを更新",
     "renewsDate": "{date} に更新",
     "required": {
       "pollingFailed": "サブスクリプションの有効化に失敗しました",

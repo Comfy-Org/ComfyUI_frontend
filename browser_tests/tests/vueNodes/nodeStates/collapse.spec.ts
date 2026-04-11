@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Node Collapse', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -30,11 +30,10 @@ test.describe('Vue Node Collapse', () => {
     await comfyPage.nextFrame()
 
     // Verify node content is hidden
-    await expect(body).not.toBeVisible()
-    const collapsedBoundingBox = await vueNode.boundingBox()
-    if (!collapsedBoundingBox)
-      throw new Error('Failed to get node bounding box after collapse')
-    expect(collapsedBoundingBox.height).toBeLessThan(expandedBoundingBox.height)
+    await expect(body).toBeHidden()
+    await expect
+      .poll(async () => (await vueNode.boundingBox())?.height)
+      .toBeLessThan(expandedBoundingBox.height)
 
     // Expand again
     await vueNode.toggleCollapse()
@@ -42,12 +41,9 @@ test.describe('Vue Node Collapse', () => {
     await expect(body).toBeVisible()
 
     // Size should be restored
-    const expandedBoundingBoxAfter = await vueNode.boundingBox()
-    if (!expandedBoundingBoxAfter)
-      throw new Error('Failed to get node bounding box after expand')
-    expect(expandedBoundingBoxAfter.height).toBeGreaterThanOrEqual(
-      collapsedBoundingBox.height
-    )
+    await expect
+      .poll(async () => (await vueNode.boundingBox())?.height)
+      .toBeGreaterThanOrEqual(expandedBoundingBox.height)
   })
 
   test('should show collapse/expand icon state', async ({ comfyPage }) => {
@@ -55,18 +51,15 @@ test.describe('Vue Node Collapse', () => {
     await expect(vueNode.root).toBeVisible()
 
     // Check initial expanded state icon
-    let iconClass = await vueNode.getCollapseIconClass()
-    expect(iconClass).not.toContain('-rotate-90')
+    await expect(vueNode.collapseIcon).not.toHaveClass(/-rotate-90/)
 
     // Collapse and check icon
     await vueNode.toggleCollapse()
-    iconClass = await vueNode.getCollapseIconClass()
-    expect(iconClass).toContain('-rotate-90')
+    await expect(vueNode.collapseIcon).toHaveClass(/-rotate-90/)
 
     // Expand and check icon
     await vueNode.toggleCollapse()
-    iconClass = await vueNode.getCollapseIconClass()
-    expect(iconClass).not.toContain('-rotate-90')
+    await expect(vueNode.collapseIcon).not.toHaveClass(/-rotate-90/)
   })
 
   test('should preserve title when collapsing/expanding', async ({
@@ -77,15 +70,15 @@ test.describe('Vue Node Collapse', () => {
 
     // Set custom title
     await vueNode.setTitle('Test Sampler')
-    expect(await vueNode.getTitle()).toBe('Test Sampler')
+    await expect(vueNode.title).toHaveText('Test Sampler')
 
     // Collapse
     await vueNode.toggleCollapse()
-    expect(await vueNode.getTitle()).toBe('Test Sampler')
+    await expect(vueNode.title).toHaveText('Test Sampler')
 
     // Expand
     await vueNode.toggleCollapse()
-    expect(await vueNode.getTitle()).toBe('Test Sampler')
+    await expect(vueNode.title).toHaveText('Test Sampler')
 
     // Verify title is still displayed
     await expect(vueNode.header).toContainText('Test Sampler')

@@ -347,9 +347,19 @@
     "share": "Partager",
     "workflowActions": "Actions du workflow"
   },
+  "builderFooter": {
+    "opensAsApp": "Ouvrir en tant que {mode}",
+    "opensAsGraph": "Ouvrir en tant que {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Entrer en mode application",
     "exitAppBuilder": "Quitter le constructeur d'application"
+  },
+  "builderSave": {
+    "successBody": "Voulez-vous le consulter maintenant ?",
+    "successBodyApp": "Ce workflow s’ouvrira désormais par défaut en mode Application.\n\nVoulez-vous le consulter maintenant ?",
+    "successBodyGraph": "Ce workflow s’ouvrira sous forme de graphe de nœuds.",
+    "successTitle": "Enregistré avec succès"
   },
   "builderToolbar": {
     "app": "Application",
@@ -359,18 +369,10 @@
     "connectOutput": "Connecter une sortie",
     "connectOutputBody1": "Votre application doit avoir au moins une sortie connectée avant de pouvoir être enregistrée.",
     "connectOutputBody2": "Passez à l'étape « Sélectionner » et cliquez sur les nœuds de sortie pour les ajouter ici.",
-    "defaultModeAppliedAppBody": "Ce workflow s’ouvrira désormais par défaut en mode Application.",
-    "defaultModeAppliedAppPrompt": "Voulez-vous le voir maintenant ?",
-    "defaultModeAppliedGraphBody": "Ce workflow s’ouvrira désormais par défaut sous forme de graphe de nœuds.",
-    "defaultModeAppliedGraphPrompt": "Voulez-vous tout de même voir l’application ?",
-    "defaultModeAppliedTitle": "Défini avec succès",
-    "defaultView": "Définir une vue par défaut",
-    "defaultViewDescription": "Choisissez comment cela s'ouvre",
     "defaultViewLabel": "Par défaut, ce workflow s'ouvrira comme :",
-    "defaultViewTitle": "Définir la vue par défaut pour ce workflow",
     "emptyWorkflowPrompt": "Voulez-vous commencer avec un modèle ?",
     "emptyWorkflowTitle": "Ce workflow ne contient aucun nœud",
-    "exitToWorkflow": "Quitter vers le workflow",
+    "filename": "Nom du fichier",
     "inputs": "Entrées",
     "inputsDescription": "Choisissez les entrées",
     "label": "Créateur d'applications",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "S'ouvre par défaut en tant que graphe de nœuds",
     "outputs": "Sorties",
     "outputsDescription": "Choisissez les sorties",
+    "saveAs": "Enregistrer sous",
     "switchToOutputs": "Passer aux sorties",
     "viewApp": "Voir l’application"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERREUR | {count} ERREURS",
-    "seeErrors": "Voir les erreurs"
+    "missingMedia": "Certains nœuds n'ont pas les entrées requises",
+    "missingModels": "{count} modèle requis est manquant | {count} modèles requis sont manquants",
+    "missingNodes": "Certains nœuds sont manquants et doivent être installés",
+    "seeErrors": "Voir les erreurs",
+    "showMissingMedia": "Afficher les entrées manquantes",
+    "showMissingModels": "Afficher les modèles manquants",
+    "showMissingNodes": "Afficher les nœuds manquants",
+    "showSwapNodes": "Afficher les nœuds de remplacement",
+    "swapNodes": "Certains nœuds peuvent être remplacés par des alternatives"
   },
   "essentials": {
     "batchImage": "Traitement par lot d'images",
@@ -1320,6 +1331,7 @@
     "updating": "Mise à jour",
     "upload": "Téléverser",
     "uploadAlreadyInProgress": "Téléversement déjà en cours",
+    "uploadTimedOut": "Le téléchargement a expiré. Veuillez réessayer.",
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
     "user": "Utilisateur",
@@ -2247,6 +2259,7 @@
     "dataset": "jeu de données",
     "debug": "débogage",
     "deprecated": "déprécié",
+    "detection": "détection",
     "edit_models": "edit_models",
     "flux": "flux",
     "gligen": "gligen",
@@ -2515,6 +2528,23 @@
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
+    "missingMedia": {
+      "audio": "Audio",
+      "cancelSelection": "Annuler la sélection",
+      "collapseNodes": "Masquer les nœuds de référence",
+      "confirmSelection": "Confirmer la sélection",
+      "expandNodes": "Afficher les nœuds de référence",
+      "image": "Images",
+      "locateNode": "Localiser le nœud",
+      "missingMediaTitle": "Entrées manquantes",
+      "or": "OU",
+      "selectedFromLibrary": "Sélectionné depuis la bibliothèque",
+      "uploadFile": "Téléverser {type}",
+      "uploaded": "Téléversé",
+      "uploading": "Téléversement en cours...",
+      "useFromLibrary": "Utiliser depuis la bibliothèque",
+      "video": "Vidéos"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Ce modèle existe déjà dans « {category} »",
       "assetLoadTimeout": "Le délai de détection du modèle est dépassé. Essayez de recharger le workflow.",
@@ -3228,6 +3258,7 @@
       "termsAgreement": "En continuant, vous acceptez les {terms} et la {privacy} de Comfy Org.",
       "totalDueToday": "Total dû aujourd'hui"
     },
+    "refreshCredits": "Actualiser les crédits",
     "renewsDate": "Renouvellement le {date}",
     "required": {
       "pollingFailed": "Échec de l'activation de l'abonnement",

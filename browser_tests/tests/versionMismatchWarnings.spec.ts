@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { SystemStats } from '../../src/schemas/apiSchema'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { SystemStats } from '@/schemas/apiSchema'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   const ALWAYS_AHEAD_OF_INSTALLED_VERSION = '100.100.100'
@@ -83,7 +83,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     // Expect no warning toast to be shown
     await expect(
       comfyPage.page.getByText('Version Compatibility Warning')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should persist dismissed state across sessions', async ({
@@ -121,6 +121,6 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     // The same warning from same versions should not be shown to the user again
     await expect(
       comfyPage.page.getByText('Version Compatibility Warning')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 })

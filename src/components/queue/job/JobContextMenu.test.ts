@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
@@ -28,7 +29,6 @@ const popoverStub = defineComponent({
         this.hide()
         return
       }
-
       this.show(event, target)
     },
     show(event: Event, target?: EventTarget | null) {
@@ -43,7 +43,7 @@ const popoverStub = defineComponent({
     }
   },
   template: `
-    <div v-if="visible" ref="container" class="popover-stub">
+    <div v-if="visible" ref="container" data-testid="popover">
       <slot />
     </div>
   `
@@ -51,20 +51,17 @@ const popoverStub = defineComponent({
 
 const buttonStub = {
   props: {
-    disabled: {
-      type: Boolean,
-      default: false
-    }
+    disabled: { type: Boolean, default: false },
+    ariaLabel: { type: String, default: undefined }
   },
   template: `
-    <div
-      class="button-stub"
-      :data-disabled="String(disabled)"
-    >
+    <button :disabled="disabled" :aria-label="ariaLabel">
       <slot />
-    </div>
+    </button>
   `
 }
+
+type MenuHandle = { open: (e: Event) => Promise<void>; hide: () => void }
 
 const createEntries = (): MenuEntry[] => [
   { key: 'enabled', label: 'Enabled action', onClick: vi.fn() },
@@ -77,17 +74,6 @@ const createEntries = (): MenuEntry[] => [
   { kind: 'divider', key: 'divider-1' }
 ]
 
-const mountComponent = (entries: MenuEntry[]) =>
-  mount(JobContextMenu, {
-    props: { entries },
-    global: {
-      stubs: {
-        Popover: popoverStub,
-        Button: buttonStub
-      }
-    }
-  })
-
 const createTriggerEvent = (type: string, currentTarget: EventTarget) =>
   ({
     type,
@@ -95,13 +81,37 @@ const createTriggerEvent = (type: string, currentTarget: EventTarget) =>
     target: currentTarget
   }) as Event
 
-const openMenu = async (
-  wrapper: ReturnType<typeof mountComponent>,
+function renderMenu(entries: MenuEntry[], onAction?: ReturnType<typeof vi.fn>) {
+  const menuRef = ref<MenuHandle | null>(null)
+
+  const Wrapper = {
+    components: { JobContextMenu },
+    setup() {
+      return { menuRef, entries }
+    },
+    template:
+      '<JobContextMenu ref="menuRef" :entries="entries" @action="$emit(\'action\', $event)" />'
+  }
+
+  const user = userEvent.setup()
+  const actionSpy = onAction ?? vi.fn()
+  const { unmount } = render(Wrapper, {
+    props: { onAction: actionSpy },
+    global: {
+      stubs: { Popover: popoverStub, Button: buttonStub }
+    }
+  })
+
+  return { user, menuRef, onAction: actionSpy, unmount }
+}
+
+async function openMenu(
+  menuRef: ReturnType<typeof ref<MenuHandle | null>>,
   type: string = 'click'
-) => {
+) {
   const trigger = document.createElement('button')
   document.body.append(trigger)
-  await wrapper.vm.open(createTriggerEvent(type, trigger))
+  await menuRef.value!.open(createTriggerEvent(type, trigger))
   await nextTick()
   return trigger
 }
@@ -112,31 +122,33 @@ afterEach(() => {
 
 describe('JobContextMenu', () => {
   it('passes disabled state to action buttons', async () => {
-    const wrapper = mountComponent(createEntries())
-    await openMenu(wrapper)
+    const { menuRef, unmount } = renderMenu(createEntries())
+    await openMenu(menuRef)
 
-    const buttons = wrapper.findAll('.button-stub')
-    expect(buttons).toHaveLength(2)
-    expect(buttons[0].attributes('data-disabled')).toBe('false')
-    expect(buttons[1].attributes('data-disabled')).toBe('true')
+    const enabledBtn = screen.getByRole('button', { name: 'Enabled action' })
+    const disabledBtn = screen.getByRole('button', {
+      name: 'Disabled action'
+    })
+    expect(enabledBtn).not.toBeDisabled()
+    expect(disabledBtn).toBeDisabled()
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('emits action for enabled entries', async () => {
     const entries = createEntries()
-    const wrapper = mountComponent(entries)
-    await openMenu(wrapper)
+    const { user, menuRef, onAction, unmount } = renderMenu(entries)
+    await openMenu(menuRef)
 
-    await wrapper.findAll('.button-stub')[0].trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Enabled action' }))
 
-    expect(wrapper.emitted('action')).toEqual([[entries[0]]])
+    expect(onAction).toHaveBeenCalledWith(entries[0])
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('does not emit action for disabled entries', async () => {
-    const wrapper = mountComponent([
+    const { user, menuRef, onAction, unmount } = renderMenu([
       {
         key: 'disabled',
         label: 'Disabled action',
@@ -144,52 +156,54 @@ describe('JobContextMenu', () => {
         onClick: vi.fn()
       }
     ])
-    await openMenu(wrapper)
+    await openMenu(menuRef)
 
-    await wrapper.get('.button-stub').trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Disabled action' }))
 
-    expect(wrapper.emitted('action')).toBeUndefined()
+    expect(onAction).not.toHaveBeenCalled()
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('hides on pointerdown outside the popover', async () => {
-    const wrapper = mountComponent(createEntries())
+    const { menuRef, unmount } = renderMenu(createEntries())
+
     const trigger = document.createElement('button')
     const outside = document.createElement('div')
     document.body.append(trigger, outside)
 
-    await wrapper.vm.open(createTriggerEvent('contextmenu', trigger))
+    await menuRef.value!.open(createTriggerEvent('contextmenu', trigger))
     await nextTick()
-    expect(wrapper.find('.popover-stub').exists()).toBe(true)
+    expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.pointerDown(outside)
     await nextTick()
 
-    expect(wrapper.find('.popover-stub').exists()).toBe(false)
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument()
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('keeps the menu open through trigger pointerdown and closes on same trigger click', async () => {
-    const wrapper = mountComponent(createEntries())
+    const { menuRef, unmount } = renderMenu(createEntries())
+
     const trigger = document.createElement('button')
     document.body.append(trigger)
 
-    await wrapper.vm.open(createTriggerEvent('click', trigger))
+    await menuRef.value!.open(createTriggerEvent('click', trigger))
     await nextTick()
-    expect(wrapper.find('.popover-stub').exists()).toBe(true)
+    expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    trigger.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.pointerDown(trigger)
     await nextTick()
+    expect(screen.getByTestId('popover')).toBeInTheDocument()
 
-    expect(wrapper.find('.popover-stub').exists()).toBe(true)
-
-    await wrapper.vm.open(createTriggerEvent('click', trigger))
+    await menuRef.value!.open(createTriggerEvent('click', trigger))
     await nextTick()
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument()
 
-    expect(wrapper.find('.popover-stub').exists()).toBe(false)
-
-    wrapper.unmount()
+    unmount()
   })
 })

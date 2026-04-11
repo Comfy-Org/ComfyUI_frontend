@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { NodeBadgeMode } from '../../src/types/nodeSource'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -16,10 +16,9 @@ test.describe(
       await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
       await comfyPage.page.getByText('Add Node').click()
-      await comfyPage.nextFrame()
       await comfyPage.page.getByText('loaders').click()
-      await comfyPage.nextFrame()
       await comfyPage.page.getByText('Load VAE').click()
+      await comfyPage.contextMenu.waitForHidden()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png')
     })
@@ -28,6 +27,7 @@ test.describe(
       await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
       await comfyPage.page.getByText('Add Group', { exact: true }).click()
+      await comfyPage.contextMenu.waitForHidden()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'add-group-group-added.png'
@@ -41,7 +41,7 @@ test.describe(
       await comfyPage.contextMenu.clickMenuItem(
         'Convert to Group Node (Deprecated)'
       )
-      await comfyPage.nextFrame()
+      await comfyPage.contextMenu.waitForHidden()
       await comfyPage.nodeOps.promptDialogInput.fill('GroupNode2CLIP')
       await comfyPage.page.keyboard.press('Enter')
       await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'hidden' })
@@ -63,6 +63,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.getByText('Properties Panel').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-node-properties-panel.png'
@@ -78,6 +79,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.getByText('Collapse').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-node-collapsed.png'
@@ -101,6 +103,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await comfyPage.page.getByText('Collapse').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-node-collapsed-badge.png'
@@ -116,6 +119,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.getByText('Bypass').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-node-bypassed.png'
@@ -131,7 +135,8 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
-    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
     // Get EmptyLatentImage node title position dynamically (for dragging)
@@ -148,8 +153,8 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-pinned-node.png'
     )
-    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
-    await comfyPage.nextFrame()
+    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
@@ -168,15 +173,16 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
-    await comfyPage.nextFrame()
+    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
     // Get EmptyLatentImage node title position dynamically (for dragging)
@@ -197,8 +203,9 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
     await comfyPage.page.keyboard.up('Control')
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('selected-nodes-pinned.png')
     await comfyPage.canvas.click({
@@ -207,7 +214,8 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
+    await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'selected-nodes-unpinned.png'
@@ -218,7 +226,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     await node.clickContextMenuOption('Pin')
-    await comfyPage.nextFrame()
+    await comfyPage.contextMenu.waitForHidden()
     await node.click('title', { button: 'right' })
     await expect(
       comfyPage.page.locator('.litemenu-entry:has-text("Unpin")')
@@ -227,8 +235,9 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
       '.litemenu-entry:has-text("Clone")'
     )
     await cloneItem.click()
-    await expect(cloneItem).toHaveCount(0)
-    await comfyPage.nextFrame()
-    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(nodeCount + 1)
+    await comfyPage.contextMenu.waitForHidden()
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(nodeCount + 1)
   })
 })

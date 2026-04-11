@@ -11,7 +11,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
@@ -140,7 +140,7 @@ if (isCloud) {
   }
   // Global authentication guard
   router.beforeEach(async (to, _from, next) => {
-    const authStore = useFirebaseAuthStore()
+    const authStore = useAuthStore()
 
     // Wait for Firebase auth to initialize
     // Timeout after 16 seconds

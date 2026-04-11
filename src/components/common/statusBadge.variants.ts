@@ -12,9 +12,9 @@ export const statusBadgeVariants = cva({
       contrast: 'bg-base-foreground text-base-background'
     },
     variant: {
-      label: 'h-3.5 px-1 text-xxxs font-semibold uppercase',
+      label: 'h-3.5 px-1 text-3xs font-semibold uppercase',
       dot: 'size-2',
-      circle: 'size-3.5 text-xxxs font-semibold'
+      circle: 'size-3.5 text-3xs font-semibold'
     }
   },
   defaultVariants: {

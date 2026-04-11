@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test'
 import type { PlaywrightTestConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
@@ -36,7 +36,7 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit/ // Run all tests except those tagged with @mobile, @perf, or @audit
+      grepInvert: /@mobile|@perf|@audit|@cloud/ // Run all tests except those tagged with @mobile, @perf, @audit, or @cloud
     },
 
     {
@@ -84,6 +84,14 @@ export default defineConfig({
     //   name: 'webkit',
     //   use: { ...devices['Desktop Safari'] },
     // },
+
+    {
+      name: 'cloud',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 15000,
+      grep: /@cloud/, // Run only tests tagged with @cloud
+      grepInvert: /@oss/ // Exclude tests tagged with @oss
+    },
 
     /* Test against mobile viewports. */
     {

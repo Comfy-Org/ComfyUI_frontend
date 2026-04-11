@@ -113,7 +113,10 @@ function composeStyle() {
     ...positionStyle.value,
     ...(enableDomClipping.value ? clippingStyle.value : {}),
     zIndex: widgetState.zIndex,
-    pointerEvents: widgetState.readonly || isDisabled ? 'none' : 'auto',
+    pointerEvents:
+      !widgetState.visible || widgetState.readonly || isDisabled
+        ? 'none'
+        : 'auto',
     opacity: isDisabled ? 0.5 : 1
   }
 }

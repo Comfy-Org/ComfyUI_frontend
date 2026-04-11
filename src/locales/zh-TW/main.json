@@ -347,9 +347,19 @@
     "share": "分享",
     "workflowActions": "工作流程操作"
   },
+  "builderFooter": {
+    "opensAsApp": "以 {mode} 模式開啟",
+    "opensAsGraph": "以 {mode} 節點圖開啟"
+  },
   "builderMenu": {
     "enterAppMode": "進入應用模式",
     "exitAppBuilder": "離開應用程式建構器"
+  },
+  "builderSave": {
+    "successBody": "現在要檢視嗎？",
+    "successBodyApp": "此工作流程將預設以應用程式模式開啟。\n\n現在要檢視嗎？",
+    "successBodyGraph": "此工作流程將以節點圖方式開啟。",
+    "successTitle": "儲存成功"
   },
   "builderToolbar": {
     "app": "應用",
@@ -359,18 +369,10 @@
     "connectOutput": "連接輸出",
     "connectOutputBody1": "您的應用必須至少連接一個輸出才能儲存。",
     "connectOutputBody2": "切換到「選擇」步驟，點擊輸出節點以新增到這裡。",
-    "defaultModeAppliedAppBody": "此工作流程將從現在起預設以應用程式模式開啟。",
-    "defaultModeAppliedAppPrompt": "您想現在查看嗎？",
-    "defaultModeAppliedGraphBody": "此工作流程將從現在起預設以節點圖形模式開啟。",
-    "defaultModeAppliedGraphPrompt": "您還想查看應用程式嗎？",
-    "defaultModeAppliedTitle": "設定成功",
-    "defaultView": "設定預設檢視",
-    "defaultViewDescription": "選擇開啟方式",
     "defaultViewLabel": "預設情況下，此工作流程將以以下方式開啟：",
-    "defaultViewTitle": "設定此工作流程的預設檢視",
     "emptyWorkflowPrompt": "您想從範本開始嗎？",
     "emptyWorkflowTitle": "此工作流程沒有節點",
-    "exitToWorkflow": "返回工作流程",
+    "filename": "檔案名稱",
     "inputs": "輸入",
     "inputsDescription": "選擇輸入",
     "label": "應用建立器",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "預設以節點圖開啟",
     "outputs": "輸出",
     "outputsDescription": "選擇輸出",
+    "saveAs": "另存新檔",
     "switchToOutputs": "切換到輸出",
     "viewApp": "查看應用程式"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
-    "seeErrors": "查看錯誤"
+    "missingMedia": "有些節點缺少必要的輸入",
+    "missingModels": "缺少 {count} 個必要模型",
+    "missingNodes": "有些節點缺失，需要安裝",
+    "seeErrors": "查看錯誤",
+    "showMissingMedia": "顯示缺少的輸入",
+    "showMissingModels": "顯示缺少的模型",
+    "showMissingNodes": "顯示缺少的節點",
+    "showSwapNodes": "顯示可替換的節點",
+    "swapNodes": "有些節點可以用其他選項替換"
   },
   "essentials": {
     "batchImage": "批次圖片",
@@ -1320,6 +1331,7 @@
     "updating": "更新中",
     "upload": "上傳",
     "uploadAlreadyInProgress": "上傳已在進行中",
+    "uploadTimedOut": "上傳逾時。請再試一次。",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "使用者",
@@ -2247,6 +2259,7 @@
     "dataset": "資料集",
     "debug": "除錯",
     "deprecated": "已棄用",
+    "detection": "偵測",
     "edit_models": "編輯模型",
     "flux": "Flux",
     "gligen": "GLIGEN",
@@ -2515,6 +2528,23 @@
     "inputsNone": "無輸入",
     "inputsNoneTooltip": "此節點沒有輸入",
     "locateNode": "在畫布上定位節點",
+    "missingMedia": {
+      "audio": "音訊",
+      "cancelSelection": "取消選取",
+      "collapseNodes": "隱藏引用節點",
+      "confirmSelection": "確認選取",
+      "expandNodes": "顯示引用節點",
+      "image": "影像",
+      "locateNode": "定位節點",
+      "missingMediaTitle": "缺少輸入",
+      "or": "或",
+      "selectedFromLibrary": "已從媒體庫選取",
+      "uploadFile": "上傳{type}",
+      "uploaded": "已上傳",
+      "uploading": "正在上傳...",
+      "useFromLibrary": "從媒體庫使用",
+      "video": "影片"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "此模型已存在於「{category}」中",
       "assetLoadTimeout": "模型偵測逾時。請嘗試重新載入工作流程。",
@@ -3228,6 +3258,7 @@
       "termsAgreement": "繼續即表示您同意 Comfy Org 的{terms}與{privacy}。",
       "totalDueToday": "今日應付總額"
     },
+    "refreshCredits": "刷新點數",
     "renewsDate": "將於 {date} 續訂",
     "required": {
       "pollingFailed": "訂閱啟用失敗",

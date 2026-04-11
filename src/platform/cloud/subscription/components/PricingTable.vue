@@ -30,7 +30,7 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-[11px] font-bold text-white"
+              class="flex items-center rounded-full bg-primary-background px-1 py-0.5 text-2xs font-bold text-white"
             >
               -20%
             </div>
@@ -58,7 +58,7 @@
             </span>
             <div
               v-if="tier.isPopular"
-              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-[11px] font-bold tracking-tight text-base-background uppercase"
+              class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
             >
               {{ t('subscription.mostPopular') }}
             </div>
@@ -262,7 +262,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
@@ -270,6 +270,7 @@ import {
   TIER_TO_KEY
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  SubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -279,10 +280,8 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import type { components } from '@/types/comfyRegistryTypes'
+import { useAuthStore } from '@/stores/authStore'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
@@ -365,8 +364,8 @@ const {
   isYearlySubscription
 } = useSubscription()
 const telemetry = useTelemetry()
-const { userId } = storeToRefs(useFirebaseAuthStore())
-const { accessBillingPortal, reportError } = useFirebaseAuthActions()
+const { userId } = storeToRefs(useAuthStore())
+const { accessBillingPortal, reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)

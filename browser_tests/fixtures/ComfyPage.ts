@@ -1,46 +1,52 @@
-import type {
-  APIRequestContext,
-  ExpectMatcherState,
-  Locator,
-  Page
-} from '@playwright/test'
-import { test as base, expect } from '@playwright/test'
+import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
-import { TestIds } from './selectors'
-import { NodeBadgeMode } from '../../src/types/nodeSource'
-import { ComfyActionbar } from '../helpers/actionbar'
-import { ComfyTemplates } from '../helpers/templates'
-import { ComfyMouse } from './ComfyMouse'
-import { VueNodeHelpers } from './VueNodeHelpers'
-import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
-import { ComfyNodeSearchBoxV2 } from './components/ComfyNodeSearchBoxV2'
-import { ContextMenu } from './components/ContextMenu'
-import { SettingDialog } from './components/SettingDialog'
-import { BottomPanel } from './components/BottomPanel'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { ComfyActionbar } from '@e2e/helpers/actionbar'
+import { ComfyTemplates } from '@e2e/helpers/templates'
+import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { sleep } from '@e2e/fixtures/utils/timing'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
+import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
+import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
+import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
+import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
+import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
+import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
+import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
 import {
   AssetsSidebarTab,
+  ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
+  NodeLibrarySidebarTabV2,
   WorkflowsSidebarTab
-} from './components/SidebarTab'
-import { Topbar } from './components/Topbar'
-import { AssetsHelper } from './helpers/AssetsHelper'
-import { CanvasHelper } from './helpers/CanvasHelper'
-import { PerformanceHelper } from './helpers/PerformanceHelper'
-import { QueueHelper } from './helpers/QueueHelper'
-import { ClipboardHelper } from './helpers/ClipboardHelper'
-import { CommandHelper } from './helpers/CommandHelper'
-import { DragDropHelper } from './helpers/DragDropHelper'
-import { FeatureFlagHelper } from './helpers/FeatureFlagHelper'
-import { KeyboardHelper } from './helpers/KeyboardHelper'
-import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
-import { SettingsHelper } from './helpers/SettingsHelper'
-import { AppModeHelper } from './helpers/AppModeHelper'
-import { SubgraphHelper } from './helpers/SubgraphHelper'
-import { ToastHelper } from './helpers/ToastHelper'
-import { WorkflowHelper } from './helpers/WorkflowHelper'
-import type { NodeReference } from './utils/litegraphUtils'
-import type { WorkspaceStore } from '../types/globals'
+} from '@e2e/fixtures/components/SidebarTab'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
+import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
+import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
+import { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
+import { PerformanceHelper } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
+import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
 
@@ -58,27 +64,37 @@ class ComfyPropertiesPanel {
 
 class ComfyMenu {
   private _assetsTab: AssetsSidebarTab | null = null
+  private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
+  private _nodeLibraryTabV2: NodeLibrarySidebarTabV2 | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly modeToggleButton: Locator
+  public readonly buttons: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
+    this.buttons = this.sideToolbar.locator('.side-bar-button')
   }
 
-  get buttons() {
-    return this.sideToolbar.locator('.side-bar-button')
+  get modelLibraryTab() {
+    this._modelLibraryTab ??= new ModelLibrarySidebarTab(this.page)
+    return this._modelLibraryTab
   }
 
   get nodeLibraryTab() {
     this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
     return this._nodeLibraryTab
+  }
+
+  get nodeLibraryTabV2() {
+    this._nodeLibraryTabV2 ??= new NodeLibrarySidebarTabV2(this.page)
+    return this._nodeLibraryTabV2
   }
 
   get assetsTab() {
@@ -119,48 +135,6 @@ class ComfyMenu {
   }
 }
 
-type KeysOfType<T, Match> = {
-  [K in keyof T]: T[K] extends Match ? K : never
-}[keyof T]
-
-class ConfirmDialog {
-  private readonly root: Locator
-  public readonly delete: Locator
-  public readonly overwrite: Locator
-  public readonly reject: Locator
-  public readonly confirm: Locator
-
-  constructor(public readonly page: Page) {
-    this.root = page.getByRole('dialog')
-    this.delete = this.root.getByRole('button', { name: 'Delete' })
-    this.overwrite = this.root.getByRole('button', { name: 'Overwrite' })
-    this.reject = this.root.getByRole('button', { name: 'Cancel' })
-    this.confirm = this.root.getByRole('button', { name: 'Confirm' })
-  }
-
-  async click(locator: KeysOfType<ConfirmDialog, Locator>) {
-    const loc = this[locator]
-    await loc.waitFor({ state: 'visible' })
-    await loc.click()
-
-    // Wait for the dialog mask to disappear after confirming
-    const mask = this.page.locator('.p-dialog-mask')
-    const count = await mask.count()
-    if (count > 0) {
-      await mask.first().waitFor({ state: 'hidden', timeout: 3000 })
-    }
-
-    // Wait for workflow service to finish if it's busy
-    await this.page.waitForFunction(
-      () =>
-        (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy === false,
-      undefined,
-      { timeout: 3000 }
-    )
-  }
-}
-
 export class ComfyPage {
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -184,6 +158,8 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
+  public readonly templatesDialog: TemplatesDialog
+  public readonly mediaLightbox: MediaLightbox
   public readonly vueNodes: VueNodeHelpers
   public readonly appMode: AppModeHelper
   public readonly subgraph: SubgraphHelper
@@ -199,9 +175,13 @@ export class ComfyPage {
   public readonly featureFlags: FeatureFlagHelper
   public readonly command: CommandHelper
   public readonly bottomPanel: BottomPanel
+  public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
   public readonly assets: AssetsHelper
-  public readonly queue: QueueHelper
+  public readonly assetApi: AssetHelper
+  public readonly modelLibrary: ModelLibraryHelper
+  public readonly cloudAuth: CloudAuthHelper
+  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -231,6 +211,8 @@ export class ComfyPage {
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
+    this.templatesDialog = new TemplatesDialog(page)
+    this.mediaLightbox = new MediaLightbox(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
@@ -242,17 +224,17 @@ export class ComfyPage {
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
-    this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.visibleToasts = this.toast.visibleToasts
+    this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
     this.bottomPanel = new BottomPanel(page)
+    this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
     this.assets = new AssetsHelper(page)
-    this.queue = new QueueHelper(page)
-  }
-
-  get visibleToasts() {
-    return this.toast.visibleToasts
+    this.assetApi = createAssetHelper(page)
+    this.modelLibrary = new ModelLibraryHelper(page)
+    this.cloudAuth = new CloudAuthHelper(page)
   }
 
   async setupUser(username: string) {
@@ -339,12 +321,13 @@ export class ComfyPage {
         // window.app.extensionManager => GraphView ready
         window.app && window.app.extensionManager
     )
-    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
+    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
   }
 
+  /** @deprecated Use standalone `assetPath` from `browser_tests/fixtures/utils/assetPath` directly. */
   public assetPath(fileName: string) {
-    return `./browser_tests/assets/${fileName}`
+    return assetPath(fileName)
   }
 
   async goto() {
@@ -358,7 +341,7 @@ export class ComfyPage {
   }
 
   async delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return sleep(ms)
   }
 
   /**
@@ -388,7 +371,7 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
+    await this.page.locator('button.comfy-close-menu-btn').click()
     await this.nextFrame()
   }
 
@@ -405,9 +388,8 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
   }
 
   async setFocusMode(focusMode: boolean) {
@@ -460,6 +442,10 @@ export const comfyPageFixture = base.extend<{
       console.error(e)
     }
 
+    if (testInfo.tags.includes('@cloud')) {
+      await comfyPage.cloudAuth.mockAuth()
+    }
+
     await comfyPage.setup()
 
     const needsPerf =
@@ -468,6 +454,7 @@ export const comfyPageFixture = base.extend<{
 
     await use(comfyPage)
 
+    await comfyPage.assetApi.clearMocks()
     if (needsPerf) await comfyPage.perf.dispose()
   },
   comfyMouse: async ({ comfyPage }, use) => {
@@ -476,49 +463,4 @@ export const comfyPageFixture = base.extend<{
   }
 })
 
-const makeMatcher = function <T>(
-  getValue: (node: NodeReference) => Promise<T> | T,
-  type: string
-) {
-  return async function (
-    this: ExpectMatcherState,
-    node: NodeReference,
-    options?: { timeout?: number; intervals?: number[] }
-  ) {
-    const value = await getValue(node)
-    let assertion = expect(
-      value,
-      'Node is ' + (this.isNot ? '' : 'not ') + type
-    )
-    if (this.isNot) {
-      assertion = assertion.not
-    }
-    await expect(async () => {
-      assertion.toBeTruthy()
-    }).toPass({ timeout: 250, ...options })
-    return {
-      pass: !this.isNot,
-      message: () => 'Node is ' + (this.isNot ? 'not ' : '') + type
-    }
-  }
-}
-
-export const comfyExpect = expect.extend({
-  toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
-  toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
-  toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed'),
-  async toHaveFocus(locator: Locator, options = { timeout: 256 }) {
-    const isFocused = await locator.evaluate(
-      (el) => el === document.activeElement
-    )
-
-    await expect(async () => {
-      expect(isFocused).toBe(!this.isNot)
-    }).toPass(options)
-
-    return {
-      pass: isFocused,
-      message: () => `Expected element to ${isFocused ? 'not ' : ''}be focused.`
-    }
-  }
-})
+export { comfyExpect }
