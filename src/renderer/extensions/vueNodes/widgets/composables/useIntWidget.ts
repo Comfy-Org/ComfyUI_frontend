@@ -67,9 +67,7 @@ export const useIntWidget = () => {
       }
     )
 
-    const controlAfterGenerate =
-      inputSpec.control_after_generate ??
-      ['seed', 'noise_seed'].includes(inputSpec.name)
+    const controlAfterGenerate = inputSpec.control_after_generate ?? false
 
     if (controlAfterGenerate) {
       const defaultType =
