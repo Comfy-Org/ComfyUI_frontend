@@ -148,6 +148,7 @@ const resizeObserver = new ResizeObserver((entries) => {
           body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
         const collapsedHeight = element.offsetHeight
         const collapsedSize = { width: collapsedWidth, height: collapsedHeight }
+        if (collapsedWidth === 0 && collapsedHeight === 0) continue
         const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
         if (nodeLayout) {
           layoutStore.updateNodeCollapsedSize(nodeId, collapsedSize)
@@ -318,6 +319,7 @@ export function useVueElementTracking(
     delete element.dataset[config.dataAttribute]
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
+    deferredElements.delete(element)
     resizeObserver.unobserve(element)
   })
 }

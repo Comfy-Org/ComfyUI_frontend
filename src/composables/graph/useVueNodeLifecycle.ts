@@ -78,7 +78,13 @@ function useVueNodeLifecycleIndividual() {
     shouldRenderVueNodes,
     () => {
       LiteGraph.getCollapsedSize = shouldRenderVueNodes.value
-        ? (nodeId) => layoutStore.getNodeCollapsedSize(String(nodeId))
+        ? (nodeId) => {
+            try {
+              return layoutStore.getNodeCollapsedSize(String(nodeId))
+            } catch {
+              return undefined
+            }
+          }
         : undefined
     },
     { immediate: true }

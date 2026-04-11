@@ -705,14 +705,20 @@ describe('LGraphNode', () => {
       LiteGraph.getCollapsedSize = spy
 
       node.measure(out)
-      expect(spy).toHaveBeenCalledTimes(1)
+      expect(out[2]).toBe(180)
+      expect(out[3]).toBe(36)
 
       node.flags.collapsed = false
       node.measure(out)
+      expect(out[2]).toBe(node.size[0])
 
       node.flags.collapsed = true
+      const newSize = { width: 200, height: 40 }
+      spy.mockReturnValue(newSize)
       node.measure(out)
       expect(spy).toHaveBeenCalledTimes(2)
+      expect(out[2]).toBe(200)
+      expect(out[3]).toBe(40)
     })
   })
 })

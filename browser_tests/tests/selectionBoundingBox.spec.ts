@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { measureSelectionBounds } from '../fixtures/helpers/boundsUtils'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { measureSelectionBounds } from '@e2e/fixtures/helpers/boundsUtils'
 
 const SUBGRAPH_ID = '2'
 const REGULAR_ID = '3'
@@ -87,6 +87,7 @@ test.describe(
               [refId]: REF_POS,
               [targetId]: TARGET_POSITIONS[pos]
             })
+            await comfyPage.nextFrame()
             await comfyPage.vueNodes.waitForNodes()
             await comfyPage.vueNodes.getNodeLocator(targetId).waitFor()
             await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
