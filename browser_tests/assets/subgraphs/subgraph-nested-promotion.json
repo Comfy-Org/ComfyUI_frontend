@@ -55,8 +55,7 @@
           ["3", "string_a"],
           ["4", "value"],
           ["6", "value"],
-          ["6", "value_1"],
-          ["6", "string_a"]
+          ["6", "value_1"]
         ]
       },
       "widgets_values": []
