@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -11,7 +11,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   test('should open bottom panel via toggle button', async ({ comfyPage }) => {
     const { bottomPanel } = comfyPage
 
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
     await bottomPanel.toggleButton.click()
     await expect(bottomPanel.root).toBeVisible()
   })
@@ -35,7 +35,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     await expect(bottomPanel.root).toBeVisible()
 
     await bottomPanel.toggleButton.click()
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
   })
 
   test('should switch between shortcuts and terminal panels', async ({
@@ -55,7 +55,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     await expect(logsTab).toBeVisible()
     await expect(
       comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('should persist Logs tab content in bottom panel', async ({

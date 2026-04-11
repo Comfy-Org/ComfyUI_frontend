@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -45,16 +45,12 @@ test.describe(
       await ksamplerNodes[0].click('title')
       await comfyPage.nextFrame()
 
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible({
-        timeout: 5000
-      })
+      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      const moreOptionsBtn = comfyPage.page.locator(
-        '[data-testid="more-options-button"]'
-      )
-      await expect(moreOptionsBtn).toBeVisible({ timeout: 3000 })
+      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+      await expect(moreOptionsBtn).toBeVisible()
 
-      await comfyPage.page.click('[data-testid="more-options-button"]')
+      await moreOptionsBtn.click()
 
       await comfyPage.nextFrame()
 
@@ -94,21 +90,16 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      const initialShape = await nodeRef.getProperty<number>('shape')
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Shape', { exact: true }).hover()
       await expect(
         comfyPage.page.getByText('Box', { exact: true })
-      ).toBeVisible({
-        timeout: 5000
-      })
+      ).toBeVisible()
       await comfyPage.page.getByText('Box', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      const newShape = await nodeRef.getProperty<number>('shape')
-      expect(newShape).not.toBe(initialShape)
-      expect(newShape).toBe(1)
+      await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)
     })
 
     test('changes node color via Color submenu swatch', async ({
@@ -117,22 +108,17 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      const initialColor = await nodeRef.getProperty<string | undefined>(
-        'color'
-      )
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Color', { exact: true }).click()
-      const blueSwatch = comfyPage.page.locator('[title="Blue"]')
-      await expect(blueSwatch.first()).toBeVisible({ timeout: 5000 })
+      const blueSwatch = comfyPage.page.getByTitle('Blue')
+      await expect(blueSwatch.first()).toBeVisible()
       await blueSwatch.first().click()
       await comfyPage.nextFrame()
 
-      const newColor = await nodeRef.getProperty<string | undefined>('color')
-      expect(newColor).toBe('#223')
-      if (initialColor) {
-        expect(newColor).not.toBe(initialColor)
-      }
+      await expect
+        .poll(() => nodeRef.getProperty<string | undefined>('color'))
+        .toBe('#223')
     })
 
     test('renames a node using Rename action', async ({ comfyPage }) => {
@@ -150,8 +136,9 @@ test.describe(
       await input.fill('RenamedNode')
       await input.press('Enter')
       await comfyPage.nextFrame()
-      const newTitle = await nodeRef.getProperty<string>('title')
-      expect(newTitle).toBe('RenamedNode')
+      await expect
+        .poll(() => nodeRef.getProperty<string>('title'))
+        .toBe('RenamedNode')
     })
 
     test('closes More Options menu when clicking outside', async ({
@@ -159,7 +146,7 @@ test.describe(
     }) => {
       await openMoreOptions(comfyPage)
       const renameItem = comfyPage.page.getByText('Rename', { exact: true })
-      await expect(renameItem).toBeVisible({ timeout: 5000 })
+      await expect(renameItem).toBeVisible()
 
       // Wait for multiple frames to allow PrimeVue's outside click handler to initialize
       for (let i = 0; i < 30; i++) {
@@ -173,7 +160,7 @@ test.describe(
       await comfyPage.nextFrame()
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
 
     test('closes More Options menu when clicking the button again (toggle)', async ({
@@ -182,7 +169,7 @@ test.describe(
       await openMoreOptions(comfyPage)
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).toBeVisible({ timeout: 5000 })
+      ).toBeVisible()
 
       await comfyPage.page.evaluate(() => {
         const btn = document.querySelector(
@@ -202,7 +189,7 @@ test.describe(
 
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
   }
 )

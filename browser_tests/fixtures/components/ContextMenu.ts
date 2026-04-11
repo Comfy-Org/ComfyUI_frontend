@@ -2,22 +2,22 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ContextMenu {
-  constructor(public readonly page: Page) {}
+  public readonly primeVueMenu: Locator
+  public readonly litegraphMenu: Locator
+  public readonly menuItems: Locator
 
-  get primeVueMenu() {
-    return this.page.locator('.p-contextmenu, .p-menu')
-  }
-
-  get litegraphMenu() {
-    return this.page.locator('.litemenu')
-  }
-
-  get menuItems() {
-    return this.page.locator('.p-menuitem, .litemenu-entry')
+  constructor(public readonly page: Page) {
+    this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
+    this.litegraphMenu = page.locator('.litemenu')
+    this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
   }
 
   async clickMenuItem(name: string): Promise<void> {
     await this.page.getByRole('menuitem', { name }).click()
+  }
+
+  async clickMenuItemExact(name: string): Promise<void> {
+    await this.page.getByRole('menuitem', { name, exact: true }).click()
   }
 
   async clickLitegraphMenuItem(name: string): Promise<void> {
@@ -48,22 +48,22 @@ export class ContextMenu {
     return this
   }
 
-  async waitForHidden(): Promise<void> {
-    const waitIfExists = async (locator: Locator, menuName: string) => {
-      const count = await locator.count()
-      if (count > 0) {
-        await locator.waitFor({ state: 'hidden' }).catch((error: Error) => {
-          console.warn(
-            `[waitForHidden] ${menuName} waitFor failed:`,
-            error.message
-          )
-        })
-      }
-    }
+  /**
+   * Select a Vue node by clicking its header, then right-click to open
+   * the context menu. Vue nodes require a selection click before the
+   * right-click so the correct per-node menu items appear.
+   */
+  async openForVueNode(header: Locator): Promise<this> {
+    await header.click()
+    await header.click({ button: 'right' })
+    await this.primeVueMenu.waitFor({ state: 'visible' })
+    return this
+  }
 
+  async waitForHidden(): Promise<void> {
     await Promise.all([
-      waitIfExists(this.primeVueMenu, 'primeVueMenu'),
-      waitIfExists(this.litegraphMenu, 'litegraphMenu')
+      this.primeVueMenu.waitFor({ state: 'hidden' }),
+      this.litegraphMenu.waitFor({ state: 'hidden' })
     ])
   }
 }

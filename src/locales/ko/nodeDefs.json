@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "이미지 히스토그램",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "휘도",
+        "tooltip": null
+      },
+      "2": {
+        "name": "레드",
+        "tooltip": null
+      },
+      "3": {
+        "name": "그린",
+        "tooltip": null
+      },
+      "4": {
+        "name": "블루",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "이미지 반전",
     "inputs": {

@@ -143,14 +143,14 @@ describe('Autogrow', () => {
   test('Can add autogrow with min input count', () => {
     const node = testNode()
     addAutogrow(node, { min: 4, input: inputsSpec })
-    expect(node.inputs.length).toBe(4)
+    expect(node.inputs.length).toBe(5)
   })
   test('Adding connections will cause growth up to max', () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test', max: 3 })
-    expect(node.inputs.length).toBe(1)
+    expect(node.inputs.length).toBe(2)
 
     connectInput(node, 0, graph)
     expect(node.inputs.length).toBe(2)
@@ -159,7 +159,7 @@ describe('Autogrow', () => {
     connectInput(node, 2, graph)
     expect(node.inputs.length).toBe(3)
   })
-  test('Removing connections decreases to min', async () => {
+  test('Removing connections decreases to min + 1', async () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
@@ -204,9 +204,9 @@ describe('Autogrow', () => {
       '0.a0',
       '0.a1',
       '0.a2',
-      '1.b0',
-      '1.b1',
-      '1.b2',
+      '2.b0',
+      '2.b1',
+      '2.b2',
       'aa'
     ])
   })

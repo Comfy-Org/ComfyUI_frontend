@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Image Compare', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -46,7 +46,7 @@ test.describe('Image Compare', () => {
 
       await expect(node).toContainText('No images to compare')
       await expect(node.locator('img')).toHaveCount(0)
-      await expect(node.locator('[role="presentation"]')).toHaveCount(0)
+      await expect(node.getByRole('presentation')).toHaveCount(0)
     }
   )
 
@@ -67,7 +67,7 @@ test.describe('Image Compare', () => {
       await expect(beforeImg).toBeVisible()
       await expect(afterImg).toBeVisible()
 
-      const handle = node.locator('[role="presentation"]')
+      const handle = node.getByRole('presentation')
       await expect(handle).toBeVisible()
 
       expect(

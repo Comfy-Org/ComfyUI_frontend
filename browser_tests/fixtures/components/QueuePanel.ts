@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { comfyExpect as expect } from '../ComfyPage'
-import { TestIds } from '../selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class QueuePanel {
   readonly overlayToggle: Locator

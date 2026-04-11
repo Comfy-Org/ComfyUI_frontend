@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -12,8 +12,9 @@ import {
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
 
-const { mockSetDirty } = vi.hoisted(() => ({
-  mockSetDirty: vi.fn()
+const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
+  mockSetDirty: vi.fn(),
+  mockFitView: vi.fn()
 }))
 
 vi.mock('@/scripts/app', () => {
@@ -24,8 +25,11 @@ vi.mock('@/scripts/app', () => {
       scale: 1,
       offset: [0, 0],
       state: { scale: 1, offset: [0, 0] },
-      fitToBounds: vi.fn()
+      fitToBounds: vi.fn(),
+      visible_area: [0, 0, 1000, 1000],
+      computeVisibleArea: vi.fn()
     },
+    viewport: [0, 0, 1000, 1000],
     setDirty: mockSetDirty,
     get empty() {
       return true
@@ -58,9 +62,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 }))
 vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
-const { mockFitView } = vi.hoisted(() => ({
-  mockFitView: vi.fn()
-}))
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
 }))
@@ -179,21 +180,41 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
     })
 
-    it('calls fitView on cache miss after rAF fires', () => {
+    it('calls fitView on cache miss when graph has nodes', () => {
       const store = useSubgraphNavigationStore()
-      // Ensure no cached entry
       store.viewportCache.delete(':root')
 
-      // Use the root graph ID so the stale-guard passes
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+
       store.restoreViewport('root')
 
       expect(mockFitView).not.toHaveBeenCalled()
       expect(rafCallbacks).toHaveLength(1)
 
-      // Simulate rAF firing — active graph still matches
       rafCallbacks[0](performance.now())
 
       expect(mockFitView).toHaveBeenCalledOnce()
+
+      mockGraph.nodes = []
+      mockGraph._nodes = []
+    })
+
+    it('does not call fitView on cache miss when graph has no nodes', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = []
+      mockGraph._nodes = []
+
+      store.restoreViewport('root')
+
+      expect(rafCallbacks).toHaveLength(1)
+      rafCallbacks[0](performance.now())
+
+      expect(mockFitView).not.toHaveBeenCalled()
     })
 
     it('skips fitView if active graph changed before rAF fires', () => {

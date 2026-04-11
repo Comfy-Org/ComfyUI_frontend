@@ -1,10 +1,10 @@
 import type { Locator } from '@playwright/test'
-import type { ComfyPage } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+} from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root
@@ -106,14 +106,17 @@ test.describe(
           'Input Test Subgraph'
         )
 
-        const allTexts = await collectWidgetLabels(shownSection)
-        expect(allTexts.length).toBeGreaterThan(0)
-
-        // The fixture has a widget with name="text" but
-        // label="renamed_from_sidepanel". The panel should show the
-        // renamed label, not the raw widget name.
-        expect(allTexts).toContain('renamed_from_sidepanel')
-        expect(allTexts).not.toContain('text')
+        await expect
+          .poll(() => collectWidgetLabels(shownSection))
+          .toEqual(
+            expect.arrayContaining([
+              expect.anything(),
+              'renamed_from_sidepanel'
+            ])
+          )
+        await expect
+          .poll(() => collectWidgetLabels(shownSection))
+          .not.toContain('text')
       })
     })
 

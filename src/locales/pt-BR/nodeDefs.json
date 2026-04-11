@@ -5006,6 +5006,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Histograma de Imagem",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminância",
+        "tooltip": null
+      },
+      "2": {
+        "name": "vermelho",
+        "tooltip": null
+      },
+      "3": {
+        "name": "verde",
+        "tooltip": null
+      },
+      "4": {
+        "name": "azul",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Inverter Imagem",
     "inputs": {
