@@ -224,8 +224,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
         await comfyPage.canvasOps.isReadOnly(),
         'Precondition: canvas starts unlocked'
       ).toBe(false)
-      await comfyPage.canvas.press('KeyH')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyH')
       expect(await comfyPage.canvasOps.isReadOnly()).toBe(true)
       const { trigger } = getLocators(comfyPage.page)
       const modeIcon = trigger.locator('i[aria-hidden="true"]').first()
@@ -240,8 +239,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
         await comfyPage.canvasOps.isReadOnly(),
         'Precondition: canvas starts locked'
       ).toBe(true)
-      await comfyPage.canvas.press('KeyV')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyV')
       expect(await comfyPage.canvasOps.isReadOnly()).toBe(false)
       const { trigger } = getLocators(comfyPage.page)
       const modeIcon = trigger.locator('i[aria-hidden="true"]').first()

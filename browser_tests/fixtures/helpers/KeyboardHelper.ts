@@ -10,6 +10,16 @@ export class KeyboardHelper {
     await this.page.evaluate(() => new Promise<number>(requestAnimationFrame))
   }
 
+  async press(key: string, locator?: Locator | null): Promise<void> {
+    const target = locator ?? this.canvas
+    await target.press(key)
+    await this.nextFrame()
+  }
+
+  async delete(locator?: Locator | null): Promise<void> {
+    await this.press('Delete', locator)
+  }
+
   async ctrlSend(
     keyToPress: string,
     locator: Locator | null = this.canvas

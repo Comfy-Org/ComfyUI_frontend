@@ -18,15 +18,13 @@ test.describe('@canvas Selection Rectangle', () => {
     const totalCount = await comfyPage.vueNodes.getNodeCount()
 
     // Use canvas press for keyboard shortcuts (doesn't need click target)
-    await comfyPage.canvas.press('Control+a')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Control+a')
 
     await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(totalCount)
   })
 
   test('Click empty space deselects all', async ({ comfyPage }) => {
-    await comfyPage.canvas.press('Control+a')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Control+a')
     await expect(comfyPage.vueNodes.selectedNodes).not.toHaveCount(0)
 
     // Deselect by Ctrl+clicking the already-selected node (reliable cross-env)
@@ -77,8 +75,7 @@ test.describe('@canvas Selection Rectangle', () => {
 
     // Use Ctrl+A to select all, which is functionally equivalent to
     // drag-selecting the entire canvas and more reliable in CI
-    await comfyPage.canvas.press('Control+a')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Control+a')
 
     await expect
       .poll(() => comfyPage.vueNodes.getNodeCount())

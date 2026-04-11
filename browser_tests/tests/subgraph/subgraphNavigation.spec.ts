@@ -53,8 +53,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       await expect(breadcrumb).toBeVisible({ timeout: 20_000 })
       const initialBreadcrumbText = (await breadcrumb.textContent()) ?? ''
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       await comfyPage.canvas.dblclick({
         position: {
@@ -68,8 +67,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.keyboard.press('Control+a')
       await comfyPage.page.keyboard.type(UPDATED_SUBGRAPH_TITLE)
-      await comfyPage.page.keyboard.press('Enter')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Enter')
 
       await subgraphNode.navigateIntoSubgraph()
       await expect(breadcrumb).toBeVisible()
@@ -153,8 +151,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
       await expect
         .poll(() => comfyPage.subgraph.isInSubgraph(), {
           message:
@@ -162,8 +159,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         })
         .toBe(true)
 
-      await comfyPage.page.keyboard.press('Alt+q')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+q')
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
 
@@ -191,8 +187,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         comfyPage.page.getByTestId(TestIds.dialogs.settings)
       ).toBeVisible()
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.settings)
@@ -200,8 +195,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
     })
   })
@@ -304,8 +298,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       await expect
         .poll(() =>

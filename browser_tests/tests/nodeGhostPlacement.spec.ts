@@ -108,8 +108,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(before).not.toBeNull()
       expect(before!.ghost).toBe(true)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()
@@ -122,8 +121,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(before).not.toBeNull()
       expect(before!.ghost).toBe(true)
 
-      await comfyPage.page.keyboard.press('Delete')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Delete')
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()
@@ -136,8 +134,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(before).not.toBeNull()
       expect(before!.ghost).toBe(true)
 
-      await comfyPage.page.keyboard.press('Backspace')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Backspace')
 
       const after = await getNodeById(comfyPage, nodeId)
       expect(after).toBeNull()

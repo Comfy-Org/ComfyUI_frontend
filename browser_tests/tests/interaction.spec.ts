@@ -31,11 +31,9 @@ test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
   test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
     await comfyPage.canvas.press('Control+a')
-    await comfyPage.canvas.press('KeyP')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('KeyP')
     await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
-    await comfyPage.canvas.press('KeyP')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('KeyP')
     await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
   })
 })
@@ -512,8 +510,7 @@ test.describe('Node Interaction', () => {
       await comfyPage.page.keyboard.up('Control')
       await comfyPage.nextFrame()
       // Confirm group title
-      await comfyPage.page.keyboard.press('Enter')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Enter')
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-selected-nodes.png'
       )

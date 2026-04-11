@@ -53,8 +53,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Alt+=' zooms in", async ({ comfyPage }) => {
       const initialScale = await comfyPage.canvasOps.getScale()
 
-      await comfyPage.canvas.press('Alt+Equal')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+Equal')
 
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
@@ -64,8 +63,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Alt+-' zooms out", async ({ comfyPage }) => {
       const initialScale = await comfyPage.canvasOps.getScale()
 
-      await comfyPage.canvas.press('Alt+Minus')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+Minus')
 
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
@@ -83,8 +81,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
       await comfyPage.nextFrame()
 
-      await comfyPage.canvas.press('Period')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Period')
 
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
@@ -94,8 +91,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'h' locks canvas", async ({ comfyPage }) => {
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
 
-      await comfyPage.canvas.press('KeyH')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyH')
 
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
     })
@@ -105,8 +101,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
 
-      await comfyPage.canvas.press('KeyV')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyV')
 
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
     })
@@ -124,12 +119,10 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       await expect.poll(() => node.isCollapsed()).toBe(false)
 
-      await comfyPage.canvas.press('Alt+KeyC')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+KeyC')
       await expect.poll(() => node.isCollapsed()).toBe(true)
 
-      await comfyPage.canvas.press('Alt+KeyC')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+KeyC')
       await expect.poll(() => node.isCollapsed()).toBe(false)
     })
 
@@ -148,13 +141,11 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       await expect.poll(() => getMode()).toBe(0)
 
-      await comfyPage.canvas.press('Control+KeyM')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+KeyM')
       // NEVER (2) = muted
       await expect.poll(() => getMode()).toBe(2)
 
-      await comfyPage.canvas.press('Control+KeyM')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+KeyM')
       await expect.poll(() => getMode()).toBe(0)
     })
   })
@@ -242,16 +233,14 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+s' triggers save workflow", async ({ comfyPage }) => {
       // On a new unsaved workflow, Ctrl+s triggers Save As dialog.
       // The dialog appearing proves the keybinding was intercepted by the app.
-      await comfyPage.page.keyboard.press('Control+s')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+s')
 
       // The Save As dialog should appear (p-dialog overlay)
       const dialogOverlay = comfyPage.page.locator('.p-dialog-mask')
       await expect(dialogOverlay).toBeVisible()
 
       // Dismiss the dialog
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
     })
 
     test("'Ctrl+o' triggers open workflow", async ({ comfyPage }) => {
@@ -268,8 +257,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         }
       })
 
-      await comfyPage.page.keyboard.press('Control+o')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+o')
 
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
@@ -291,11 +279,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       // Select all nodes
-      await comfyPage.canvas.press('Control+a')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+a')
 
-      await comfyPage.page.keyboard.press('Control+Shift+KeyE')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+Shift+KeyE')
 
       // After conversion, node count should decrease
       // (multiple nodes replaced by single subgraph node)

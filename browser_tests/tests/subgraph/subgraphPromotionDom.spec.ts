@@ -88,8 +88,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
 
       await expect(subgraphTextarea).toHaveValue(TEST_WIDGET_CONTENT)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       const backToParentTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(backToParentTextarea).toBeVisible()
