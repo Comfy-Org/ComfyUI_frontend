@@ -133,5 +133,27 @@ describe('useIntWidget', () => {
 
       expect(mockAddValueControlWidget).toHaveBeenCalled()
     })
+
+    it('should pass string control_after_generate as the default type', () => {
+      const node = createMockNode()
+      const inputSpec: InputSpec = {
+        type: 'INT',
+        name: 'seed',
+        default: 0,
+        control_after_generate: 'increment'
+      }
+
+      const constructor = useIntWidget()
+      constructor(node, inputSpec)
+
+      expect(mockAddValueControlWidget).toHaveBeenCalledWith(
+        node,
+        expect.anything(),
+        'increment',
+        undefined,
+        undefined,
+        expect.anything()
+      )
+    })
   })
 })

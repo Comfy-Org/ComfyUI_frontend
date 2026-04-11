@@ -37,6 +37,40 @@ describe('GroupNodeConfig.getInputConfig', () => {
     expect(result.config).toEqual(['INT', { min: 0 }])
   })
 
+  it('does not add control_prefix when there is no prefix', () => {
+    const groupNodeConfig = createGroupNodeConfig()
+    const node: Parameters<GroupNodeConfig['getInputConfig']>[0] = {
+      index: 0,
+      type: 'KSampler',
+      inputs: [{ name: 'seed' }]
+    }
+    const config: Parameters<GroupNodeConfig['getInputConfig']>[3] = [
+      'INT',
+      { control_after_generate: true, min: 0 }
+    ]
+
+    const result = groupNodeConfig.getInputConfig(node, 'seed', {}, config)
+
+    expect(result.config).toEqual([
+      'INT',
+      { control_after_generate: true, min: 0 }
+    ])
+  })
+
+  it('falls back to empty object when config[1] is not an object', () => {
+    const groupNodeConfig = createGroupNodeConfig()
+    const node: Parameters<GroupNodeConfig['getInputConfig']>[0] = {
+      index: 0,
+      type: 'KSampler'
+    }
+    const config: Parameters<GroupNodeConfig['getInputConfig']>[3] = ['INT']
+
+    const result = groupNodeConfig.getInputConfig(node, 'steps', {}, config)
+
+    expect(result.config).toEqual(['INT'])
+    expect(result.name).toBe('steps')
+  })
+
   it('preserves explicit control_after_generate modes for grouped inputs', () => {
     const groupNodeConfig = createGroupNodeConfig()
     const node: Parameters<GroupNodeConfig['getInputConfig']>[0] = {
