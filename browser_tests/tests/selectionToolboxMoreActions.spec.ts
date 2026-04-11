@@ -3,23 +3,6 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-
-async function panToNode(comfyPage: ComfyPage, nodeRef: NodeReference) {
-  const nodePos = await nodeRef.getPosition()
-  await comfyPage.page.evaluate((pos) => {
-    const canvas = window.app!.canvas
-    canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
-    canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
-    canvas.setDirty(true, true)
-  }, nodePos)
-  await comfyPage.nextFrame()
-}
-
-async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
-  await panToNode(comfyPage, nodeRef)
-  await nodeRef.click('title')
-}
 
 // force: true is needed because the canvas overlay (z-999) intercepts pointer events
 async function openMoreOptions(comfyPage: ComfyPage) {
@@ -32,10 +15,14 @@ async function openMoreOptions(comfyPage: ComfyPage) {
 
   // Wait for the context menu to appear by checking for 'Copy', which is
   // always present regardless of single or multi-node selection.
-  await expect(comfyPage.page.getByText('Copy', { exact: true })).toBeVisible()
+  const menu = comfyPage.page.locator('.p-popover')
+  await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
 }
 
 test.beforeEach(async ({ comfyPage }) => {
+  // 'Top' is required for the selection toolbox actions to render in
+  // the new menu bar; sibling specs that only test canvas-level toolbox
+  // visibility use 'Disabled'.
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 })
 
@@ -53,22 +40,18 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      await selectNodeWithPan(comfyPage, nodeRef)
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
-      expect(await nodeRef.isPinned()).toBe(false)
+      expect(await nodeRef.isPinned(), 'Node should start unpinned').toBe(false)
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Pin', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Pin', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.isPinned()).toBe(true)
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Unpin', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Unpin', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.isPinned()).toBe(false)
@@ -80,22 +63,20 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      await selectNodeWithPan(comfyPage, nodeRef)
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
-      expect(await nodeRef.isCollapsed()).toBe(false)
+      expect(await nodeRef.isCollapsed(), 'Node should start expanded').toBe(
+        false
+      )
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Minimize Node', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Minimize Node', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Expand Node', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Expand Node', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.isCollapsed()).toBe(false)
@@ -105,14 +86,12 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      await selectNodeWithPan(comfyPage, nodeRef)
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Copy', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Copy', { exact: true }).click()
       await comfyPage.nextFrame()
 
       // Paste the copied node
@@ -128,14 +107,12 @@ test.describe(
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      await selectNodeWithPan(comfyPage, nodeRef)
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Duplicate', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Duplicate', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect
@@ -143,39 +120,20 @@ test.describe(
         .toBe(initialCount + 1)
     })
 
-    test('refresh button visibility reflects node refreshable state', async ({
+    test('refresh button is visible for node with refreshable widgets', async ({
       comfyPage
     }) => {
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      await selectNodeWithPan(comfyPage, nodeRef)
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
-      // The toolbox should be visible after selecting a node
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      // The refresh button uses v-show, so it exists in the DOM but is
-      // only visible when the selected node has refreshable widgets.
+      // KSampler has combo widgets with a refresh method, so the
+      // refresh button should always be visible for this node.
       const refreshButton = comfyPage.page.getByTestId('refresh-button')
-      await expect(refreshButton).toBeAttached()
-
-      const hasRefreshableWidgets = await comfyPage.page.evaluate((nodeId) => {
-        const node = window.app!.graph.getNodeById(nodeId)
-        if (!node?.widgets) return false
-        return node.widgets.some(
-          (w: unknown) =>
-            w != null &&
-            typeof w === 'object' &&
-            'refresh' in w &&
-            typeof (w as { refresh: unknown }).refresh === 'function'
-        )
-      }, nodeRef.id)
-
-      if (hasRefreshableWidgets) {
-        await expect(refreshButton).toBeVisible()
-      } else {
-        await expect(refreshButton).not.toBeVisible()
-      }
+      await expect(refreshButton).toBeVisible()
     })
   }
 )
@@ -203,8 +161,14 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByTitle('Empty Latent Image')
       )[0]
 
-      expect(await ksampler.isBypassed()).toBe(false)
-      expect(await emptyLatent.isBypassed()).toBe(false)
+      expect(
+        await ksampler.isBypassed(),
+        'KSampler should start not bypassed'
+      ).toBe(false)
+      expect(
+        await emptyLatent.isBypassed(),
+        'Empty Latent should start not bypassed'
+      ).toBe(false)
 
       const bypassButton = comfyPage.page.getByTestId('bypass-button')
       await expect(bypassButton).toBeVisible()
