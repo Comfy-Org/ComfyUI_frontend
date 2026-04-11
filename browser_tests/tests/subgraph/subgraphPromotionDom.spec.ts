@@ -4,7 +4,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { getPromotedWidgetNames } from '@e2e/helpers/promotedWidgets'
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 const DOM_WIDGET_SELECTOR = '.comfy-multiline-input'
 const VISIBLE_DOM_WIDGET_SELECTOR = `${DOM_WIDGET_SELECTOR}:visible`
@@ -181,21 +180,13 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await expect(domWidgets).toHaveCount(1)
 
       // Switch to app mode (linear mode)
-      await comfyPage.page.evaluate(() => {
-        const store = window.app!.extensionManager as WorkspaceStore
-        store.workflow.activeWorkflow!.activeMode = 'app'
-      })
-      await comfyPage.nextFrame()
+      await comfyPage.appMode.toggleAppMode()
 
       const graphContainer = comfyPage.page.locator('#graph-canvas-container')
       await expect(graphContainer).toBeHidden()
 
       // Switch back to graph mode
-      await comfyPage.page.evaluate(() => {
-        const store = window.app!.extensionManager as WorkspaceStore
-        store.workflow.activeWorkflow!.activeMode = 'graph'
-      })
-      await comfyPage.nextFrame()
+      await comfyPage.appMode.toggleAppMode()
       await comfyPage.nextFrame()
 
       await expect(graphContainer).toBeVisible()
