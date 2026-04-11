@@ -347,7 +347,9 @@ describe('useCoreCommands', () => {
   }
 
   function findCommand(id: string) {
-    return useCoreCommands().find((cmd) => cmd.id === id)!
+    const cmd = useCoreCommands().find((c) => c.id === id)
+    if (!cmd) throw new Error(`Command '${id}' not found`)
+    return cmd
   }
 
   beforeEach(() => {
