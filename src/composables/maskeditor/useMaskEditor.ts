@@ -1,3 +1,5 @@
+import { createSharedComposable } from '@vueuse/core'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
@@ -11,10 +13,19 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useI18n } from 'vue-i18n'
 import { ref } from 'vue'
 
+const useSharedCanvasTools = createSharedComposable(useCanvasTools)
+
+const sharedIsClearingMask = ref(false)
+
 export function useMaskEditor() {
-  const isClearingMask = ref(false)
+  const isClearingMask = sharedIsClearingMask
   const toastStore = useToastStore()
   const { t } = useI18n()
+  const dataStore = useMaskEditorDataStore()
+  const editorStore = useMaskEditorStore()
+  const loader = useMaskEditorLoader()
+  const saver = useMaskEditorSaver()
+  const canvasTools = useSharedCanvasTools()
   const openMaskEditor = (node: LGraphNode) => {
     if (!node) {
       console.error('[MaskEditor] No node provided')
@@ -78,12 +89,6 @@ export function useMaskEditor() {
 
     isClearingMask.value = true
 
-    const dataStore = useMaskEditorDataStore()
-    const editorStore = useMaskEditorStore()
-    const loader = useMaskEditorLoader()
-    const saver = useMaskEditorSaver()
-    const canvasTools = useCanvasTools()
-
     try {
       await loader.loadFromNode(node)
 
@@ -114,18 +119,31 @@ export function useMaskEditor() {
         editorStore.imgCanvas = imgCanvas
         editorStore.maskCanvas = maskCanvas
         editorStore.rgbCanvas = rgbCanvas
+        const maskCtx = maskCanvas.getContext('2d', {
+          willReadFrequently: true
+        })
+        const rgbCtx = rgbCanvas.getContext('2d', {
+          willReadFrequently: true
+        })
+        if (!maskCtx || !rgbCtx) {
+          throw new Error('Failed to get mask or RGB canvas context')
+        }
+        editorStore.maskCtx = maskCtx
+        editorStore.rgbCtx = rgbCtx
+        editorStore.imgCtx = imgCtx
       }
 
       canvasTools.clearMask()
       await saver.save()
     } finally {
-      if (!dialogStore.isDialogOpen('global-mask-editor')) {
+      const dialogOpen = dialogStore.isDialogOpen('global-mask-editor')
+      if (!dialogOpen) {
         editorStore.imgCanvas = null
         editorStore.maskCanvas = null
         editorStore.rgbCanvas = null
+        dataStore.reset()
+        editorStore.resetState()
       }
-      dataStore.reset()
-      editorStore.resetState()
       isClearingMask.value = false
     }
   }

@@ -90,7 +90,7 @@
         </button>
 
         <button
-          v-if="!hasMultipleImages"
+          v-if="!hasMultipleImages && nodeId"
           :class="actionButtonClass"
           :title="$t('g.clearMask')"
           :aria-label="$t('g.clearMask')"

@@ -1,8 +1,8 @@
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useCommandStore } from '@/stores/commandStore'
 
 import type { MenuOption } from './useMoreOptionsMenu'
 
@@ -41,10 +41,10 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const maskEditor = useMaskEditor()
 
-  const openMaskEditor = () => {
-    const commandStore = useCommandStore()
-    void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+  const openMaskEditorForNode = (node: LGraphNode) => {
+    maskEditor.openMaskEditor(node)
   }
 
   const openImage = (node: LGraphNode) => {
@@ -118,7 +118,7 @@ export function useImageMenuOptions() {
       options.push(
         {
           label: t('contextMenu.Open in Mask Editor'),
-          action: () => openMaskEditor()
+          action: () => openMaskEditorForNode(node)
         },
         {
           label: t('contextMenu.Open Image'),
