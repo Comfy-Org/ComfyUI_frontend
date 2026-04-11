@@ -13,5 +13,5 @@ export async function openErrorsTabViaSeeErrors(
   await expect(errorOverlay).toBeVisible()
 
   await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
-  await expect(errorOverlay).not.toBeVisible()
+  await expect(errorOverlay).toBeHidden()
 }

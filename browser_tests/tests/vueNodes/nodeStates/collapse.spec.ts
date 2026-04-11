@@ -30,7 +30,7 @@ test.describe('Vue Node Collapse', () => {
     await comfyPage.nextFrame()
 
     // Verify node content is hidden
-    await expect(body).not.toBeVisible()
+    await expect(body).toBeHidden()
     await expect
       .poll(async () => (await vueNode.boundingBox())?.height)
       .toBeLessThan(expandedBoundingBox.height)

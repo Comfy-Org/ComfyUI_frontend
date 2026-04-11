@@ -74,7 +74,7 @@ test.describe('Error dialog', () => {
   }) => {
     const errorDialog = await triggerConfigureError(comfyPage)
     await expect(errorDialog).toBeVisible()
-    await expect(errorDialog.locator('pre')).not.toBeVisible()
+    await expect(errorDialog.locator('pre')).toBeHidden()
 
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
 
@@ -83,7 +83,7 @@ test.describe('Error dialog', () => {
     await expect(reportPre).toHaveText(/\S/)
     await expect(
       errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport)
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Should copy report to clipboard when "Copy to Clipboard" is clicked', async ({

@@ -301,7 +301,9 @@ export class AssetsSidebarTab extends SidebarTab {
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
-    this.assetCards = page.locator('[role="button"][data-selected]')
+    this.assetCards = page
+      .getByRole('button')
+      .and(page.locator('[data-selected]'))
     this.selectedCards = page.locator('[data-selected="true"]')
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'

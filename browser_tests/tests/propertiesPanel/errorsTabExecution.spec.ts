@@ -26,7 +26,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await errorOverlay
       .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
       .click()
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeHidden()
   }
 
   test('Should show Find on GitHub and Copy buttons in error card', async ({

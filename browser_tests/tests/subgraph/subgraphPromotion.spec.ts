@@ -131,7 +131,7 @@ test.describe(
         const enterButton = subgraphVueNode.getByTestId('subgraph-enter-button')
         await expect(enterButton).toBeVisible()
 
-        const nodeBody = subgraphVueNode.locator('[data-testid="node-body-11"]')
+        const nodeBody = subgraphVueNode.getByTestId('node-body-11')
         await expect(nodeBody).toBeVisible()
 
         const widgets = nodeBody.locator('.lg-node-widgets > div')
@@ -400,7 +400,7 @@ test.describe(
 
         await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-        const nodeBody = subgraphVueNode.locator('[data-testid="node-body-5"]')
+        const nodeBody = subgraphVueNode.getByTestId('node-body-5')
         await expect(nodeBody).toBeVisible()
         await expect(
           nodeBody.locator('.lg-node-widgets > div').first()

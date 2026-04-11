@@ -104,6 +104,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
       const optionCount = await comfyPage.page.getByRole('option').count()
       if (optionCount === 0) {
+        // oxlint-disable-next-line playwright/no-skipped-test -- no library options available in CI
         test.skip()
         return
       }
@@ -125,13 +126,13 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
       await uploadFileViaDropzone(comfyPage)
 
       await expect(getStatusCard(comfyPage)).toBeVisible()
-      await expect(getDropzone(comfyPage)).not.toBeVisible()
+      await expect(getDropzone(comfyPage)).toBeHidden()
 
       await comfyPage.page
         .getByTestId(TestIds.dialogs.missingMediaCancelButton)
         .click()
 
-      await expect(getStatusCard(comfyPage)).not.toBeVisible()
+      await expect(getStatusCard(comfyPage)).toBeHidden()
       await expect(getDropzone(comfyPage)).toBeVisible()
     })
   })
@@ -146,7 +147,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.missingMediaGroup)
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
   })
 
