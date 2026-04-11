@@ -13,8 +13,8 @@
       ref="topMenuRef"
       class="app-drag h-(--comfy-topbar-height) w-full"
     />
-    <div class="flex w-full grow justify-center overflow-auto">
-      <div class="m-auto py-8">
+    <div class="grid w-full grow place-items-center overflow-auto">
+      <div class="py-8">
         <slot />
       </div>
     </div>
