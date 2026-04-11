@@ -484,14 +484,9 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
     })
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
-    await node
-      .locator('[data-testid="before-batch"]')
-      .locator('[data-testid="batch-next"]')
-      .click()
+    await node.getByTestId('before-batch').getByTestId('batch-next').click()
     await expect(
-      node
-        .locator('[data-testid="before-batch"]')
-        .locator('[data-testid="batch-counter"]')
+      node.getByTestId('before-batch').getByTestId('batch-counter')
     ).toHaveText('2 / 2')
 
     await setImageCompareValue(comfyPage, {
@@ -527,7 +522,7 @@ test.describe('Image Compare', { tag: '@widget' }, () => {
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
     await expect(node.locator('img')).toHaveCount(1)
-    await expect(node.getByRole("presentation")).toBeHidden()
+    await expect(node.getByRole('presentation')).toBeHidden()
   })
 
   test('Custom beforeAlt and afterAlt are used as img alt text', async ({
