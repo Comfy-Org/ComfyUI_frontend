@@ -207,15 +207,12 @@ test.describe(
 
       // Drag mouse to force canvas to redraw
       await comfyPage.page.mouse.move(0, 0)
-      await comfyPage.nextFrame()
-
-      await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
+      await comfyPage.expectScreenshot(comfyPage.canvas, 'node-opacity-0.5.png')
 
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 1.0)
 
       await comfyPage.page.mouse.move(8, 8)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
+      await comfyPage.expectScreenshot(comfyPage.canvas, 'node-opacity-1.png')
     })
 
     test('should persist color adjustments when changing themes', async ({
@@ -224,8 +221,8 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.2)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'arc')
       await comfyPage.page.mouse.move(0, 0)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'node-opacity-0.2-arc-theme.png'
       )
     })

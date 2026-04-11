@@ -74,13 +74,11 @@ test.describe('Node Interaction', () => {
         await comfyPage.canvas.click({
           position: DefaultGraphPositions.textEncodeNode1
         })
-        await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png')
+        await comfyPage.expectScreenshot(comfyPage.canvas, 'selected-node1.png')
         await comfyPage.canvas.click({
           position: DefaultGraphPositions.textEncodeNode2
         })
-        await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png')
+        await comfyPage.expectScreenshot(comfyPage.canvas, 'selected-node2.png')
       }
     )
 
@@ -172,8 +170,7 @@ test.describe('Node Interaction', () => {
     await comfyPage.nodeOps.dragTextEncodeNode2()
     // Move mouse away to avoid hover highlight on the node at the drop position.
     await comfyPage.canvasOps.moveMouseToEmptyArea()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png', {
+    await comfyPage.expectScreenshot(comfyPage.canvas, 'dragged-node1.png', {
       maxDiffPixels: 50
     })
   })
@@ -355,8 +352,8 @@ test.describe('Node Interaction', () => {
         modifiers: ['Control', 'Alt'],
         position: loadCheckpointClipSlotPos
       })
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'batch-disconnect-links-disconnected.png'
       )
     }
@@ -406,8 +403,8 @@ test.describe('Node Interaction', () => {
       await expect.poll(() => targetNode.isCollapsed()).toBe(false)
       // Move mouse away to avoid hover highlight differences.
       await comfyPage.canvasOps.moveMouseToEmptyArea()
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'text-encode-toggled-back-open.png'
       )
     }
@@ -1171,8 +1168,8 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       await comfyPage.page.mouse.down({ button: 'middle' })
       await comfyPage.page.mouse.move(150, 150)
       await comfyPage.page.mouse.up({ button: 'middle' })
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'legacy-middle-drag-pan.png'
       )
     })
@@ -1180,14 +1177,14 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
     test('Mouse wheel should zoom in/out', async ({ comfyPage }) => {
       await comfyPage.page.mouse.move(400, 300)
       await comfyPage.page.mouse.wheel(0, -120)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'legacy-wheel-zoom-in.png'
       )
 
       await comfyPage.page.mouse.wheel(0, 240)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'legacy-wheel-zoom-out.png'
       )
     })
@@ -1247,8 +1244,8 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       await comfyPage.page.mouse.down({ button: 'middle' })
       await comfyPage.page.mouse.move(150, 150)
       await comfyPage.page.mouse.up({ button: 'middle' })
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'standard-middle-drag-pan.png'
       )
     })
@@ -1258,16 +1255,16 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       await comfyPage.page.keyboard.down('Control')
       await comfyPage.page.mouse.wheel(0, -120)
       await comfyPage.page.keyboard.up('Control')
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'standard-ctrl-wheel-zoom-in.png'
       )
 
       await comfyPage.page.keyboard.down('Control')
       await comfyPage.page.mouse.wheel(0, 240)
       await comfyPage.page.keyboard.up('Control')
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'standard-ctrl-wheel-zoom-out.png'
       )
     })
@@ -1359,33 +1356,31 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
     )
 
     await comfyPage.canvas.click()
-    await comfyPage.nextFrame()
-
-    await expect(comfyPage.canvas).toHaveScreenshot('standard-initial.png')
+    await comfyPage.expectScreenshot(comfyPage.canvas, 'standard-initial.png')
 
     await comfyPage.page.mouse.move(400, 300)
 
     await comfyPage.page.keyboard.down('Shift')
     await comfyPage.page.mouse.wheel(0, 120)
     await comfyPage.page.keyboard.up('Shift')
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await comfyPage.expectScreenshot(
+      comfyPage.canvas,
       'standard-shift-wheel-pan-right.png'
     )
 
     await comfyPage.page.keyboard.down('Shift')
     await comfyPage.page.mouse.wheel(0, -240)
     await comfyPage.page.keyboard.up('Shift')
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await comfyPage.expectScreenshot(
+      comfyPage.canvas,
       'standard-shift-wheel-pan-left.png'
     )
 
     await comfyPage.page.keyboard.down('Shift')
     await comfyPage.page.mouse.wheel(0, 120)
     await comfyPage.page.keyboard.up('Shift')
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await comfyPage.expectScreenshot(
+      comfyPage.canvas,
       'standard-shift-wheel-pan-center.png'
     )
   })

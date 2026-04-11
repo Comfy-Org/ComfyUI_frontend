@@ -123,8 +123,8 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await comfyPage.expectScreenshot(
+      comfyPage.canvas,
       'vue-groups-create-group.png'
     )
   })
