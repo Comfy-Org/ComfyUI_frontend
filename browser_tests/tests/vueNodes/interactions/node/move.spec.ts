@@ -108,7 +108,7 @@ test.describe('Vue Node Moving', () => {
     const clickNodeTitleWithMeta = async (title: string) => {
       await comfyPage.vueNodes
         .getNodeByTitle(title)
-        .locator('[data-testid="node-title"]')
+        .getByTestId('node-title')
         .first()
         .click({ modifiers: ['Meta'] })
     }
