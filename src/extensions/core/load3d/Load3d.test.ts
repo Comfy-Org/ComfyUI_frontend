@@ -361,7 +361,9 @@ describe('Load3d', () => {
   // Extra instances created in tests — tracked for cleanup
   const extraInstances: Load3d[] = []
 
-  function createInstance(options?: ConstructorParameters<typeof Load3d>[1]): Load3d {
+  function createInstance(
+    options?: ConstructorParameters<typeof Load3d>[1]
+  ): Load3d {
     const instance = new Load3d(container, options)
     vi.advanceTimersByTime(150)
     extraInstances.push(instance)
@@ -772,9 +774,10 @@ describe('Load3d', () => {
 
       await load3d.loadModel('http://example.com/model.glb', 'model.glb')
 
-      expect(
-        load3d.animationManager.setupModelAnimations
-      ).toHaveBeenCalledWith(mockModel, load3d.modelManager.originalModel)
+      expect(load3d.animationManager.setupModelAnimations).toHaveBeenCalledWith(
+        mockModel,
+        load3d.modelManager.originalModel
+      )
     })
 
     it('serializes concurrent loadModel calls', async () => {
@@ -892,9 +895,7 @@ describe('Load3d', () => {
 
   describe('handleResize with getDimensions callback', () => {
     it('uses getDimensions callback to update target size', () => {
-      const getDimensions = vi
-        .fn()
-        .mockReturnValue({ width: 400, height: 300 })
+      const getDimensions = vi.fn().mockReturnValue({ width: 400, height: 300 })
       const instance = createInstance({ getDimensions })
 
       instance.handleResize()
