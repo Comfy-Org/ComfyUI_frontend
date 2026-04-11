@@ -130,6 +130,24 @@ export const TestIds = {
     outputPlaceholder: 'builder-output-placeholder',
     connectOutputPopover: 'builder-connect-output-popover'
   },
+  outputHistory: {
+    outputs: 'linear-outputs',
+    welcome: 'linear-welcome',
+    outputInfo: 'linear-output-info',
+    activeQueue: 'linear-job',
+    queueBadge: 'linear-job-badge',
+    inProgressItem: 'linear-in-progress-item',
+    historyItem: 'linear-history-item',
+    skeleton: 'linear-skeleton',
+    latentPreview: 'linear-latent-preview',
+    imageOutput: 'linear-image-output',
+    videoOutput: 'linear-video-output',
+    cancelRun: 'linear-cancel-run',
+    headerProgressBar: 'linear-header-progress-bar',
+    itemProgressBar: 'linear-item-progress-bar',
+    progressOverall: 'linear-progress-overall',
+    progressNode: 'linear-progress-node'
+  },
   appMode: {
     widgetItem: 'app-mode-widget-item',
     welcome: 'linear-welcome',
@@ -180,6 +198,7 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
   | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<

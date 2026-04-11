@@ -31,7 +31,7 @@ async function dismissSuccessDialog(
 ) {
   const btn = button === 'close' ? saveAs.closeButton : saveAs.dismissButton
   await btn.click()
-  await expect(saveAs.successDialog).not.toBeVisible()
+  await expect(saveAs.successDialog).toBeHidden()
 }
 
 test.describe('Builder save flow', { tag: ['@ui'] }, () => {
@@ -113,7 +113,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.nextFrame()
 
-    await expect(comfyPage.appMode.steps.toolbar).not.toBeVisible()
+    await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })
 
   test('Exit builder button exits builder mode', async ({ comfyPage }) => {
@@ -121,7 +121,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(comfyPage.appMode.steps.toolbar).toBeVisible()
     await comfyPage.appMode.footer.exitBuilder()
-    await expect(comfyPage.appMode.steps.toolbar).not.toBeVisible()
+    await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })
 
   test('Save button directly saves for previously saved workflow', async ({
@@ -141,7 +141,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await footer.saveButton.click()
     await comfyPage.nextFrame()
 
-    await expect(saveAs.dialog).not.toBeVisible()
+    await expect(saveAs.dialog).toBeHidden()
     await expect(footer.saveButton).toBeDisabled()
   })
 
@@ -253,7 +253,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     await builderSaveAs(comfyPage.appMode, `${Date.now()} app-view`, 'App')
 
     await comfyPage.appMode.saveAs.viewAppButton.click()
-    await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
+    await expect(comfyPage.appMode.saveAs.successDialog).toBeHidden()
 
     await expect
       .poll(() => comfyPage.workflow.getActiveWorkflowActiveAppMode())
@@ -271,9 +271,9 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
     )
 
     await comfyPage.appMode.saveAs.exitBuilderButton.click()
-    await expect(comfyPage.appMode.saveAs.successDialog).not.toBeVisible()
+    await expect(comfyPage.appMode.saveAs.successDialog).toBeHidden()
 
-    await expect(comfyPage.appMode.steps.toolbar).not.toBeVisible()
+    await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })
 
   test('save as with different mode does not modify the original workflow', async ({
@@ -327,7 +327,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(appMode.saveAs.overwriteDialog).toBeVisible()
     await appMode.saveAs.overwriteButton.click()
-    await expect(appMode.saveAs.overwriteDialog).not.toBeVisible()
+    await expect(appMode.saveAs.overwriteDialog).toBeHidden()
 
     await expect(appMode.saveAs.successMessage).toBeVisible()
 

@@ -10,7 +10,7 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/collapsed_multiline')
     const textareaWidget = comfyPage.page.locator('.comfy-multiline-input')
-    await expect(textareaWidget).not.toBeVisible()
+    await expect(textareaWidget).toBeHidden()
   })
 
   test('Multiline textarea correctly collapses', async ({ comfyPage }) => {
@@ -25,8 +25,8 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     for (const node of nodes) {
       await node.click('collapse')
     }
-    await expect(firstMultiline).not.toBeVisible()
-    await expect(lastMultiline).not.toBeVisible()
+    await expect(firstMultiline).toBeHidden()
+    await expect(lastMultiline).toBeHidden()
   })
 
   test(
@@ -35,7 +35,7 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-      await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
+      await expect(comfyPage.menu.sideToolbar).toBeHidden()
       await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
     }
   )

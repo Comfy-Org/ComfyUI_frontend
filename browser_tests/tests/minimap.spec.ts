@@ -53,7 +53,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
 
     await toggleButton.click()
-    await expect(minimapContainer).not.toBeVisible()
+    await expect(minimapContainer).toBeHidden()
 
     await toggleButton.click()
     await expect(minimapContainer).toBeVisible()
@@ -65,7 +65,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
-    await expect(minimapContainer).not.toBeVisible()
+    await expect(minimapContainer).toBeHidden()
 
     await comfyPage.page.keyboard.press('Alt+KeyM')
     await expect(minimapContainer).toBeVisible()
@@ -76,7 +76,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimap).toBeVisible()
 
     await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
-    await expect(minimap).not.toBeVisible()
+    await expect(minimap).toBeHidden()
 
     const toggleButton = comfyPage.page.getByTestId(
       TestIds.canvas.toggleMinimapButton
