@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computedAsync, refDebounced } from '@vueuse/core'
-import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef } from 'vue'
+import {
+  PopoverAnchor,
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot
+} from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
@@ -51,7 +55,6 @@ interface Props {
 }
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 const {
   placeholder,
@@ -95,8 +98,6 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
-const popoverRef = ref<InstanceType<typeof Popover>>()
-const triggerRef = useTemplateRef('triggerRef')
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
@@ -142,19 +143,14 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (event: Event) => {
+function toggleDropdown(event: Event) {
   if (disabled) return
-  if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle?.(event, triggerRef.value)
-    isOpen.value = !isOpen.value
-  }
+  void event
+  isOpen.value = !isOpen.value
 }
 
-const closeDropdown = () => {
-  if (popoverRef.value) {
-    popoverRef.value.hide?.()
-    isOpen.value = false
-  }
+function closeDropdown() {
+  isOpen.value = false
 }
 
 function handleFileChange(event: Event) {
@@ -192,57 +188,56 @@ function handleSelection(item: FormDropdownItem, index: number) {
 </script>
 
 <template>
-  <div ref="triggerRef">
-    <FormDropdownInput
-      :files
-      :is-open
-      :placeholder="placeholderText"
-      :items
-      :display-items
-      :max-selectable
-      :selected
-      :uploadable
-      :disabled
-      :accept
-      @select-click="toggleDropdown"
-      @file-change="handleFileChange"
-    />
-    <Popover
-      ref="popoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isOpen = false"
-    >
-      <FormDropdownMenu
-        v-model:filter-selected="filterSelected"
-        v-model:layout-mode="layoutMode"
-        v-model:sort-selected="sortSelected"
-        v-model:search-query="searchQuery"
-        v-model:ownership-selected="ownershipSelected"
-        v-model:base-model-selected="baseModelSelected"
-        :filter-options
-        :sort-options
-        :show-ownership-filter
-        :ownership-options
-        :show-base-model-filter
-        :base-model-options
-        :disabled
-        :items="sortedItems"
-        :is-selected="internalIsSelected"
+  <PopoverRoot v-model:open="isOpen">
+    <PopoverAnchor as-child>
+      <FormDropdownInput
+        :files
+        :is-open
+        :placeholder="placeholderText"
+        :items
+        :display-items
         :max-selectable
-        @close="closeDropdown"
-        @item-click="handleSelection"
+        :selected
+        :uploadable
+        :disabled
+        :accept
+        @select-click="toggleDropdown"
+        @file-change="handleFileChange"
       />
-    </Popover>
-  </div>
+    </PopoverAnchor>
+    <PopoverPortal>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        :side-offset="8"
+        :collision-padding="8"
+        data-testid="form-dropdown-content"
+        class="z-50"
+        @escape-key-down="closeDropdown"
+        @pointer-down-outside="closeDropdown"
+        @focus-outside.prevent
+      >
+        <FormDropdownMenu
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          v-model:ownership-selected="ownershipSelected"
+          v-model:base-model-selected="baseModelSelected"
+          :filter-options
+          :sort-options
+          :show-ownership-filter
+          :ownership-options
+          :show-base-model-filter
+          :base-model-options
+          :disabled
+          :items="sortedItems"
+          :is-selected="internalIsSelected"
+          :max-selectable
+          @close="closeDropdown"
+          @item-click="handleSelection"
+        />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
 </template>

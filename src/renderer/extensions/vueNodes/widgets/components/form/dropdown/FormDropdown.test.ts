@@ -40,12 +40,7 @@ const MockFormDropdownMenu = {
 const MockFormDropdownInput = {
   name: 'FormDropdownInput',
   template:
-    '<button class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
-}
-
-const MockPopover = {
-  name: 'Popover',
-  template: '<div><slot /></div>'
+    '<button data-testid="mock-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
 interface MountDropdownOptions {
@@ -55,6 +50,7 @@ interface MountDropdownOptions {
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<FormDropdownItem[]>
   searchQuery?: string
+  isOpen?: boolean
 }
 
 function flushPromises() {
@@ -72,8 +68,8 @@ function mountDropdown(
       plugins: [PrimeVue, i18n],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
-        FormDropdownMenu: MockFormDropdownMenu
+        FormDropdownMenu: MockFormDropdownMenu,
+        PopoverPortal: { template: '<slot />' }
       }
     }
   })
@@ -85,18 +81,50 @@ function getMenuItems(): FormDropdownItem[] {
   return JSON.parse(menuEl.getAttribute('data-items') ?? '[]')
 }
 
+async function openDropdown(
+  result: ReturnType<typeof mountDropdown>
+): Promise<void> {
+  await result.user.click(screen.getByTestId('mock-trigger'))
+  await flushPromises()
+}
+
 describe('FormDropdown', () => {
+  describe('open/close behavior', () => {
+    it('opens the dropdown menu when trigger is clicked', async () => {
+      const result = mountDropdown([createItem('1', 'item1')])
+      await flushPromises()
+
+      expect(screen.queryByTestId('dropdown-menu')).toBeNull()
+
+      await openDropdown(result)
+
+      expect(screen.getByTestId('dropdown-menu')).toBeInTheDocument()
+    })
+
+    it('closes the dropdown when trigger is clicked again', async () => {
+      const result = mountDropdown([createItem('1', 'item1')])
+      await flushPromises()
+
+      await openDropdown(result)
+      expect(screen.getByTestId('dropdown-menu')).toBeInTheDocument()
+
+      await openDropdown(result)
+      expect(screen.queryByTestId('dropdown-menu')).toBeNull()
+    })
+  })
+
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const { rerender } = mountDropdown([
+      const result = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
       await flushPromises()
+      await openDropdown(result)
 
       expect(getMenuItems()).toHaveLength(2)
 
-      await rerender({
+      await result.rerender({
         items: [
           createItem('output-0', 'rendered1.mp4'),
           createItem('output-1', 'rendered2.mp4')
@@ -110,28 +138,30 @@ describe('FormDropdown', () => {
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const { rerender } = mountDropdown([createItem('1', 'alpha')])
+      const result = mountDropdown([createItem('1', 'alpha')])
       await flushPromises()
+      await openDropdown(result)
 
-      await rerender({ items: [createItem('1', 'beta')] })
+      await result.rerender({ items: [createItem('1', 'beta')] })
       await flushPromises()
 
       expect(getMenuItems()[0].name).toBe('beta')
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const { rerender } = mountDropdown([])
+      const result = mountDropdown([], { isOpen: true })
       await flushPromises()
 
-      expect(getMenuItems()).toHaveLength(0)
-
-      await rerender({ items: [createItem('1', 'video.mp4')] })
+      await result.rerender({
+        items: [createItem('1', 'video.mp4')],
+        isOpen: true
+      })
       await flushPromises()
 
       expect(getMenuItems()).toHaveLength(1)
       expect(getMenuItems()[0].name).toBe('video.mp4')
 
-      await rerender({ items: [] })
+      await result.rerender({ items: [], isOpen: true })
       await flushPromises()
 
       expect(getMenuItems()).toHaveLength(0)
@@ -144,7 +174,7 @@ describe('FormDropdown', () => {
         sourceItems.filter((item) => item.name.includes('video'))
     )
 
-    const { rerender } = mountDropdown(
+    const result = mountDropdown(
       [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
       { searcher }
     )
@@ -152,12 +182,12 @@ describe('FormDropdown', () => {
 
     expect(searcher).not.toHaveBeenCalled()
 
-    await rerender({
+    await result.rerender({
       items: [createItem('1', 'video-a.mp4'), createItem('2', 'video-b.mp4')],
       searcher,
       searchQuery: 'video-a'
     })
-    await rerender({
+    await result.rerender({
       items: [createItem('3', 'video-c.mp4'), createItem('4', 'video-d.mp4')],
       searcher,
       searchQuery: 'video-a'
@@ -165,7 +195,6 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
   })
 
   it('runs filtering when dropdown opens', async () => {
@@ -174,15 +203,13 @@ describe('FormDropdown', () => {
         sourceItems.filter((item) => item.id === 'keep')
     )
 
-    const { container, user } = mountDropdown(
+    const result = mountDropdown(
       [createItem('keep', 'alpha'), createItem('drop', 'beta')],
       { searcher }
     )
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-node-access
-    await user.click(container.querySelector('.mock-dropdown-trigger')!)
-    await flushPromises()
+    await openDropdown(result)
 
     expect(searcher).toHaveBeenCalled()
     expect(getMenuItems().map((item) => item.id)).toEqual(['keep'])

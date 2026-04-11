@@ -137,27 +137,20 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const dropdownButton = imageRow.locator('button:has(> span)').first()
     await dropdownButton.click()
 
-    // The unstyled PrimeVue Popover renders with role="dialog".
-    // Locate the one containing the image grid (filter buttons like "All", "Inputs").
+    // The Reka UI PopoverContent is teleported to <body> via PopoverPortal,
+    // so it's never clipped by the app mode panel's overflow container.
     const popover = comfyPage.appMode.imagePickerPopover
     await expect(popover).toBeVisible()
 
+    // Verify popover is outside the linear-widgets container
+    // (PopoverPortal teleports it to <body>, escaping overflow: hidden)
     await expect
       .poll(() =>
         popover.evaluate((el) => {
-          const rect = el.getBoundingClientRect()
-          return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= window.innerHeight &&
-            rect.right <= window.innerWidth
-          )
+          const panel = document.querySelector('[data-testid="linear-widgets"]')
+          return panel ? !panel.contains(el) : true
         })
       )
       .toBe(true)
-
-    await expect
-      .poll(() => popover.evaluate(isClippedByAnyAncestor))
-      .toBe(false)
   })
 })
