@@ -24,7 +24,6 @@ test.describe(
 
     test('@mobile graph canvas toolbar visible', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
-      await comfyPage.nextFrame()
 
       const minimapButton = comfyPage.page.getByTestId(
         TestIds.canvas.toggleMinimapButton

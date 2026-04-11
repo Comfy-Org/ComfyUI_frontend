@@ -289,10 +289,8 @@ test.describe('Workflow Persistence', () => {
     const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.nextFrame()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'en')
-    await comfyPage.nextFrame()
 
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())

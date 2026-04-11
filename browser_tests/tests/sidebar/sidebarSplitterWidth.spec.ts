@@ -40,7 +40,6 @@ test.describe('Sidebar splitter width independence', () => {
     location: 'left' | 'right'
   ) {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', location)
-    await comfyPage.nextFrame()
     await dismissToasts(comfyPage)
     await comfyPage.menu.nodeLibraryTab.open()
   }

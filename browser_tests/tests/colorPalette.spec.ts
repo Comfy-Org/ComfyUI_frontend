@@ -157,18 +157,15 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
     )
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-light-red.png'
     )
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
 
@@ -181,7 +178,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
@@ -190,7 +186,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       'Comfy.ColorPalette',
       'custom_obsidian_dark'
     )
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
@@ -240,7 +235,6 @@ test.describe(
     }) => {
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.nextFrame()
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
@@ -279,7 +273,6 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-lightened-colors.png'
       )

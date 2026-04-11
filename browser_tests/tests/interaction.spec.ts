@@ -185,7 +185,6 @@ test.describe('Node Interaction', () => {
       // Pin this suite to the legacy canvas path so Alt+drag exercises
       // LGraphCanvas, not the Vue node drag handler.
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.nextFrame()
     })
 
     test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
@@ -285,7 +284,6 @@ test.describe('Node Interaction', () => {
     }) => {
       await comfyPage.settings.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
       await comfyPage.settings.setSetting('Comfy.Node.SnapHighlightsNode', true)
-      await comfyPage.nextFrame()
 
       await comfyMouse.move(DefaultGraphPositions.clipTextEncodeNode1InputSlot)
       await comfyMouse.drag(DefaultGraphPositions.clipTextEncodeNode2InputSlot)
