@@ -272,6 +272,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     // Expect the filename combo value to be updated
     await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
+
   test('Displays buttons when viewing single image of batch', async ({
     comfyPage
   }) => {

@@ -219,6 +219,9 @@ catalogs:
     eslint-plugin-oxlint:
       specifier: 1.59.0
       version: 1.59.0
+    eslint-plugin-playwright:
+      specifier: ^2.10.1
+      version: 2.10.1
     eslint-plugin-storybook:
       specifier: ^10.2.10
       version: 10.2.10
@@ -711,6 +714,9 @@ importers:
       eslint-plugin-oxlint:
         specifier: 'catalog:'
         version: 1.59.0(oxlint@1.59.0(oxlint-tsgolint@0.20.0))
+      eslint-plugin-playwright:
+        specifier: 'catalog:'
+        version: 2.10.1(eslint@9.39.1(jiti@2.6.1))
       eslint-plugin-storybook:
         specifier: 'catalog:'
         version: 10.2.10(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
@@ -6138,6 +6144,12 @@ packages:
     peerDependencies:
       oxlint: ~1.59.0
 
+  eslint-plugin-playwright@2.10.1:
+    resolution: {integrity: sha512-qea3UxBOb8fTwJ77FMApZKvRye5DOluDHcev0LDJwID3RELeun0JlqzrNIXAB/SXCyB/AesCW/6sZfcT9q3Edg==}
+    engines: {node: '>=16.9.0'}
+    peerDependencies:
+      eslint: '>=8.40.0'
+
   eslint-plugin-storybook@10.2.10:
     resolution: {integrity: sha512-aWkoh2rhTaEsMA4yB1iVIcISM5wb0uffp09ZqhwpoD4GAngCs131uq6un+QdnOMc7vXyAnBBfsuhtOj8WwCUgw==}
     peerDependencies:
@@ -6555,6 +6567,10 @@ packages:
 
   globals@16.5.0:
     resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
+    engines: {node: '>=18'}
+
+  globals@17.4.0:
+    resolution: {integrity: sha512-hjrNztw/VajQwOLsMNT1cbJiH2muO3OROCHnbehc8eY5JyD2gqz4AcMHPqgaOR59DjgUjYAYLeH699g/eWi2jw==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -15575,6 +15591,11 @@ snapshots:
       jsonc-parser: 3.3.1
       oxlint: 1.59.0(oxlint-tsgolint@0.20.0)
 
+  eslint-plugin-playwright@2.10.1(eslint@9.39.1(jiti@2.6.1)):
+    dependencies:
+      eslint: 9.39.1(jiti@2.6.1)
+      globals: 17.4.0
+
   eslint-plugin-storybook@10.2.10(eslint@9.39.1(jiti@2.6.1))(storybook@10.2.10(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3):
     dependencies:
       '@typescript-eslint/utils': 8.56.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
@@ -16085,6 +16106,8 @@ snapshots:
   globals@14.0.0: {}
 
   globals@16.5.0: {}
+
+  globals@17.4.0: {}
 
   globalthis@1.0.4:
     dependencies:

@@ -83,7 +83,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       1,
       'Unsaved Workflow (2)'
     )
-    await expect(thumbnailImg).not.toBeVisible()
+    await expect(thumbnailImg).toBeHidden()
   })
 
   async function addNode(comfyPage: ComfyPage, category: string, node: string) {
