@@ -17,7 +17,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import * as PromotionEntryResolver from '@/lib/litegraph/src/subgraph/PromotionEntryResolver'
+import * as PromotionEntryResolver from '@/core/graph/subgraph/PromotionEntryResolver'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -1072,6 +1072,51 @@ describe('SubgraphNode.widgets getter', () => {
       { sourceNodeId: String(indepB.id), sourceWidgetName: 'indep_b' },
       { sourceNodeId: String(linkedNode.id), sourceWidgetName: 'slot_a' },
       { sourceNodeId: String(indepA.id), sourceWidgetName: 'indep_a' }
+    ])
+  })
+
+  test('promotedWidgets returns views in user-reordered store order', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'slot_a', type: '*' },
+        { name: 'slot_b', type: '*' }
+      ]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 102 })
+    subgraphNode.graph?.add(subgraphNode)
+
+    const linkedA = new LGraphNode('LinkedA')
+    const inputA = linkedA.addInput('slot_a', '*')
+    linkedA.addWidget('text', 'slot_a', 'a', () => {})
+    inputA.widget = { name: 'slot_a' }
+    subgraph.add(linkedA)
+    subgraph.inputNode.slots[0].connect(inputA, linkedA)
+
+    const linkedB = new LGraphNode('LinkedB')
+    const inputB = linkedB.addInput('slot_b', '*')
+    linkedB.addWidget('text', 'slot_b', 'b', () => {})
+    inputB.widget = { name: 'slot_b' }
+    subgraph.add(linkedB)
+    subgraph.inputNode.slots[1].connect(inputB, linkedB)
+
+    const independentNode = new LGraphNode('IndependentNode')
+    independentNode.addWidget('text', 'indep', 'c', () => {})
+    subgraph.add(independentNode)
+
+    // User reorders: independent between the two linked
+    setPromotions(subgraphNode, [
+      [String(linkedA.id), 'slot_a'],
+      [String(independentNode.id), 'indep'],
+      [String(linkedB.id), 'slot_b']
+    ])
+
+    callSyncPromotions(subgraphNode)
+
+    const widgets = promotedWidgets(subgraphNode)
+    expect(widgets.map((w) => w.sourceWidgetName)).toStrictEqual([
+      'slot_a',
+      'indep',
+      'slot_b'
     ])
   })
 

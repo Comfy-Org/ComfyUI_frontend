@@ -1,4 +1,5 @@
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -225,4 +226,62 @@ export function makePromotionViewKey(
         disambiguatingSourceNodeId
       ])
     : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
+}
+
+export function orderPreservingMerge(
+  currentEntries: PromotedWidgetSource[],
+  desiredEntries: PromotedWidgetSource[]
+): PromotedWidgetSource[] {
+  const desiredByKey = new Map(
+    desiredEntries.map((e) => [makePromotionEntryKey(e), e])
+  )
+  const currentKeys = new Set(currentEntries.map(makePromotionEntryKey))
+
+  const preserved = currentEntries
+    .filter((e) => desiredByKey.has(makePromotionEntryKey(e)))
+    .map((e) => desiredByKey.get(makePromotionEntryKey(e))!)
+
+  const added = desiredEntries.filter(
+    (e) => !currentKeys.has(makePromotionEntryKey(e))
+  )
+
+  return [...preserved, ...added]
+}
+
+export function reorderViewsByStoreEntries(
+  views: PromotedWidgetView[],
+  storeEntries: PromotedWidgetSource[]
+): PromotedWidgetView[] {
+  if (views.length <= 1 || storeEntries.length === 0) return views
+
+  const storeKeys = new Set(storeEntries.map(makePromotionEntryKey))
+  const viewKeys = new Set(views.map(makePromotionEntryKey))
+
+  if (storeKeys.size !== viewKeys.size) return views
+  for (const key of viewKeys) {
+    if (!storeKeys.has(key)) return views
+  }
+
+  const viewsByKey = new Map<string, PromotedWidgetView[]>()
+  for (const v of views) {
+    const key = makePromotionEntryKey(v)
+    const group = viewsByKey.get(key)
+    if (group) group.push(v)
+    else viewsByKey.set(key, [v])
+  }
+
+  const emittedKeys = new Set<string>()
+  const ordered: PromotedWidgetView[] = []
+
+  for (const entry of storeEntries) {
+    const key = makePromotionEntryKey(entry)
+    if (emittedKeys.has(key)) continue
+    const group = viewsByKey.get(key)
+    if (group) {
+      ordered.push(...group)
+      emittedKeys.add(key)
+    }
+  }
+
+  return ordered
 }

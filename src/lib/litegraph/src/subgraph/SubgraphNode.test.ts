@@ -9,7 +9,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { makePromotionViewKey } from './PromotionEntryResolver'
+import { makePromotionViewKey } from '@/core/graph/subgraph/PromotionEntryResolver'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {

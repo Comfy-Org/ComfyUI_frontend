@@ -57,9 +57,11 @@ import {
   buildDisplayNameByViewKey,
   buildLinkedReconcileEntries,
   makePromotionViewKey,
+  orderPreservingMerge,
+  reorderViewsByStoreEntries,
   resolvePromotionEntries
-} from './PromotionEntryResolver'
-import type { LinkedPromotionEntry } from './PromotionEntryResolver'
+} from '@/core/graph/subgraph/PromotionEntryResolver'
+import type { LinkedPromotionEntry } from '@/core/graph/subgraph/PromotionEntryResolver'
 import { PromotedWidgetViewManager } from './PromotedWidgetViewManager'
 import type { SubgraphInput } from './SubgraphInput'
 import { createBitmapCache } from './svgBitmapCache'
@@ -273,19 +275,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const linkedEntries = this._getLinkedPromotionEntries()
 
     const connectedEntryKeys = this._getConnectedPromotionEntryKeys()
-    const {
-      linkedPromotionEntries,
-      fallbackStoredEntries,
-      shouldPersistLinkedOnly
-    } = resolvePromotionEntries(
-      entries,
-      linkedEntries,
-      connectedEntryKeys,
-      this.inputs.length,
-      this.subgraph,
-      this
-    )
-    void linkedPromotionEntries
+    const { fallbackStoredEntries, shouldPersistLinkedOnly } =
+      resolvePromotionEntries(
+        entries,
+        linkedEntries,
+        connectedEntryKeys,
+        this.inputs.length,
+        this.subgraph,
+        this
+      )
 
     const linkedReconcileEntries = buildLinkedReconcileEntries(linkedEntries)
     const fallbackReconcileEntries: Array<{
@@ -323,7 +321,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         )
     )
 
-    const views = this._reorderViewsByStoreEntries(reconciledViews, entries)
+    const views = reorderViewsByStoreEntries(reconciledViews, entries)
 
     this._promotedViewsCache = {
       version: this._cacheVersion,
@@ -363,7 +361,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ? linkedPromotionEntries
       : [...linkedPromotionEntries, ...fallbackStoredEntries]
 
-    const mergedEntries = this._orderPreservingMerge(entries, desiredEntries)
+    const mergedEntries = orderPreservingMerge(entries, desiredEntries)
 
     const hasChanged =
       mergedEntries.length !== entries.length ||
@@ -378,70 +376,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (!hasChanged) return
 
     store.setPromotions(this.rootGraph.id, this.id, mergedEntries)
-  }
-
-  private _orderPreservingMerge(
-    currentEntries: PromotedWidgetSource[],
-    desiredEntries: PromotedWidgetSource[]
-  ): PromotedWidgetSource[] {
-    const makeKey = (e: PromotedWidgetSource) => makePromotionEntryKey(e)
-
-    const desiredByKey = new Map(desiredEntries.map((e) => [makeKey(e), e]))
-    const currentKeys = new Set(currentEntries.map(makeKey))
-
-    const preserved = currentEntries
-      .filter((e) => desiredByKey.has(makeKey(e)))
-      .map((e) => desiredByKey.get(makeKey(e))!)
-
-    const added = desiredEntries.filter((e) => !currentKeys.has(makeKey(e)))
-
-    return [...preserved, ...added]
-  }
-
-  /**
-   * Reorders reconciled views to follow the current store entry order,
-   * but only when the view set exactly matches the store entries (pure
-   * reorder). When entries were added or removed (e.g. connection change),
-   * the reconcile order is preserved.
-   */
-  private _reorderViewsByStoreEntries(
-    views: PromotedWidgetView[],
-    storeEntries: PromotedWidgetSource[]
-  ): PromotedWidgetView[] {
-    if (views.length <= 1 || storeEntries.length === 0) return views
-
-    const makeKey = (e: PromotedWidgetSource) => makePromotionEntryKey(e)
-
-    const storeKeys = new Set(storeEntries.map(makeKey))
-    const viewKeys = new Set(views.map(makeKey))
-
-    if (storeKeys.size !== viewKeys.size) return views
-    for (const key of viewKeys) {
-      if (!storeKeys.has(key)) return views
-    }
-
-    const viewsByKey = new Map<string, PromotedWidgetView[]>()
-    for (const v of views) {
-      const key = makeKey(v)
-      const group = viewsByKey.get(key)
-      if (group) group.push(v)
-      else viewsByKey.set(key, [v])
-    }
-
-    const emittedKeys = new Set<string>()
-    const ordered: PromotedWidgetView[] = []
-
-    for (const entry of storeEntries) {
-      const key = makeKey(entry)
-      if (emittedKeys.has(key)) continue
-      const group = viewsByKey.get(key)
-      if (group) {
-        ordered.push(...group)
-        emittedKeys.add(key)
-      }
-    }
-
-    return ordered
   }
 
   private _getConnectedPromotionEntryKeys(): Set<string> {
