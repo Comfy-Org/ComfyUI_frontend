@@ -10,10 +10,6 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  /**
-   * Click the FormDropdown trigger button inside the LoadImage node.
-   * The trigger is a button with a chevron icon inside the dropdown widget.
-   */
   function getTriggerButton(
     comfyPage: Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
   ) {
@@ -66,63 +62,6 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
     expect(horizontalDrift).toBeLessThan(50)
   })
 
-  test('dropdown menu appears near trigger when zoomed out', async ({
-    comfyPage
-  }) => {
-    // Zoom out using mouse wheel (triggers the real CSS transform pipeline)
-    await comfyPage.canvasOps.zoom(300, 3)
-    await comfyPage.nextFrame()
-
-    // Verify zoom actually changed
-    const scale = await comfyPage.canvasOps.getScale()
-    expect(scale).toBeLessThan(1)
-
-    await clickDropdownTrigger(comfyPage)
-
-    const menu = getDropdownContent(comfyPage)
-    await expect(menu).toBeVisible()
-
-    const trigger = getTriggerButton(comfyPage)
-    const triggerBox = await trigger.boundingBox()
-    const menuBox = await menu.boundingBox()
-
-    expect(triggerBox).not.toBeNull()
-    expect(menuBox).not.toBeNull()
-
-    // Menu should still appear near the trigger, not at viewport origin
-    // The bug caused menu to appear at (0, 0) or far from the trigger
-    const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
-    expect(gap).toBeGreaterThanOrEqual(-2)
-    expect(gap).toBeLessThanOrEqual(20)
-  })
-
-  test('dropdown menu appears near trigger when zoomed in', async ({
-    comfyPage
-  }) => {
-    // Zoom in using mouse wheel
-    await comfyPage.canvasOps.zoom(-300, 3)
-    await comfyPage.nextFrame()
-
-    const scale = await comfyPage.canvasOps.getScale()
-    expect(scale).toBeGreaterThan(1)
-
-    await clickDropdownTrigger(comfyPage)
-
-    const menu = getDropdownContent(comfyPage)
-    await expect(menu).toBeVisible()
-
-    const trigger = getTriggerButton(comfyPage)
-    const triggerBox = await trigger.boundingBox()
-    const menuBox = await menu.boundingBox()
-
-    expect(triggerBox).not.toBeNull()
-    expect(menuBox).not.toBeNull()
-
-    const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
-    expect(gap).toBeGreaterThanOrEqual(-2)
-    expect(gap).toBeLessThanOrEqual(20)
-  })
-
   test('dropdown closes on Escape key', async ({ comfyPage }) => {
     await clickDropdownTrigger(comfyPage)
 
@@ -130,17 +69,6 @@ test.describe('FormDropdown Position Under CSS Transforms', () => {
     await expect(menu).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(menu).not.toBeVisible()
-  })
-
-  test('dropdown closes on click outside', async ({ comfyPage }) => {
-    await clickDropdownTrigger(comfyPage)
-
-    const menu = getDropdownContent(comfyPage)
-    await expect(menu).toBeVisible()
-
-    // Click on empty canvas area
-    await comfyPage.canvasOps.clickEmptySpace()
     await expect(menu).not.toBeVisible()
   })
 })

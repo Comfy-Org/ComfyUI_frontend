@@ -142,12 +142,16 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const popover = comfyPage.appMode.imagePickerPopover
     await expect(popover).toBeVisible()
 
-    // Verify popover is a direct child of <body> (not inside the panel)
+    // Verify popover is outside the linear-widgets container
+    // (PopoverPortal teleports it to <body>, escaping overflow: hidden)
     await expect
       .poll(() =>
-        popover.evaluate(
-          (el) => el.parentElement?.tagName.toLowerCase() === 'body'
-        )
+        popover.evaluate((el) => {
+          const panel = document.querySelector(
+            '[data-testid="linear-widgets"]'
+          )
+          return panel ? !panel.contains(el) : true
+        })
       )
       .toBe(true)
 
