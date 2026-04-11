@@ -87,7 +87,26 @@ h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em
 </style></head><body><div class=container>
 <header><div class=header-icon><svg width=20 height=20 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round><polygon points="23 7 16 12 23 17 23 7"/><rect x=1 y=5 width=15 height=14 rx=2 ry=2/></svg></div><div><h1>QA Session Recordings</h1><div class=meta>ComfyUI Frontend &middot; Automated QA{{COMMIT_HTML}}{{RUN_LINK}}{{TIMING_HTML}}</div>{{BADGE_HTML}}</div></header>
 {{PURPOSE_HTML}}<div class=grid>{{CARDS}}</div>
+<div id=research-section style="margin-top:2rem"></div>
 </div><script>
+// Load research-log.json and reproduce.spec.ts if available
+(async()=>{
+  const sec=document.getElementById('research-section');
+  try{
+    const [logRes,testRes]=await Promise.allSettled([fetch('research-log.json'),fetch('reproduce.spec.ts')]);
+    let html='';
+    if(logRes.status==='fulfilled'&&logRes.value.ok){
+      const log=await logRes.value.json();
+      html+=`<details style="margin-bottom:1.5rem"><summary style="cursor:pointer;font-weight:600;font-size:1rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)">Research Log &mdash; ${log.verdict||'?'} (${log.toolCalls||'?'} tool calls, ${((log.elapsedMs||0)/1000).toFixed(1)}s)</summary><div style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);overflow:auto;max-height:600px"><pre style="font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap">${JSON.stringify(log,null,2)}</pre></div></details>`;
+    }
+    if(testRes.status==='fulfilled'&&testRes.value.ok){
+      const code=await testRes.value.text();
+      html+=`<details><summary style="cursor:pointer;font-weight:600;font-size:1rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)">E2E Test Code (reproduce.spec.ts)</summary><div style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);overflow:auto;max-height:600px"><pre style="font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap">${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></div></details>`;
+    }
+    if(html)sec.innerHTML=html;
+  }catch(e){console.warn('research load failed',e)}
+})();
+</script><script>
 function copyBadge(){const u=location.href.replace(/\/[^/]*$/,'/');const b=u+'badge.svg';const md='[![QA Badge]('+b+')]('+u+')';navigator.clipboard.writeText(md).then(()=>{const btn=document.querySelector('.copy-badge');btn.classList.add('copied');btn.innerHTML='<svg width=14 height=14 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2><polyline points="20 6 9 17 4 12"/></svg>';setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML='<svg width=14 height=14 viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2><rect x=9 y=9 width=13 height=13 rx=2/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'},2000)})}
 document.querySelectorAll('[data-md]').forEach(el=>{const t=el.textContent;el.removeAttribute('data-md');el.innerHTML=marked.parse(t)});
 const FPS=30,FT=1/FPS,SPEEDS=[0.1,0.25,0.5,1,1.5,2];

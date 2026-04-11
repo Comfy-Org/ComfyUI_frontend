@@ -1995,22 +1995,19 @@ async function main() {
             testCode =
               testCode.slice(0, pos) + introInject + testCode.slice(pos)
           }
-          // Inject step-by-step annotate() calls wrapping each code block
-          // annotate(page, text, callback) shows subtitle + speaks TTS + runs action in parallel
-          // This way narration explains what's happening AS it happens
-          //
-          // Pattern: find "// Step N: description" followed by code lines until next comment or }
-          // Wrap the code block in: annotate(page, "Step N: description", async () => { ...code... })
+          // Inject step-by-step narrate() calls BEFORE each step comment
+          // narrate(page, text) speaks TTS + shows subtitle, then code runs normally
+          // This is safer than wrapping code in annotate() callbacks which can break syntax
           testCode = testCode.replace(
-            /(\n\s*)(\/\/\s*(?:Step \d+|── Step \d+)[^\n]*)\n([\s\S]*?)(?=\n\s*\/\/\s*(?:Step \d+|── Step \d+|BUG)|$)/g,
-            (fullMatch, indent, comment, codeBlock) => {
+            /(\n\s*)(\/\/\s*(?:Step \d+|── Step \d+)[^\n]*)/g,
+            (_match, indent, comment) => {
               const stepText = comment
                 .replace(/^\/\/\s*(?:──\s*)?/, '')
                 .replace(/\s*──+\s*$/, '')
                 .replace(/'/g, "\\'")
                 .trim()
-              if (!codeBlock.trim()) return fullMatch
-              return `${indent}${comment}\n${indent}try { const { annotate: _a } = await import('demowright/helpers'); await _a(comfyPage.page, '${stepText}', async () => {${codeBlock}}); } catch(e) { console.warn('[qa-annotate]', e);${codeBlock}}\n`
+              if (!stepText) return `${indent}${comment}`
+              return `${indent}try { const { annotate: _a } = await import('demowright/helpers'); await _a(comfyPage.page, '${stepText}', async () => { await comfyPage.page.waitForTimeout(2000) }); } catch(e) { console.warn('[qa-narrate]', e); }\n${indent}${comment}`
             }
           )
 
