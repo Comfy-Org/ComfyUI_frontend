@@ -180,6 +180,48 @@ test.describe('Node Interaction', () => {
     })
   })
 
+  test.describe('Node Duplication', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      // Pin this suite to the legacy canvas path so Alt+drag exercises
+      // LGraphCanvas, not the Vue node drag handler.
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.nextFrame()
+    })
+
+    test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
+      const before = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      expect(
+        before,
+        'Expected exactly 2 CLIPTextEncode nodes in default graph'
+      ).toHaveLength(2)
+
+      const target = before[0]
+      const pos = await target.getPosition()
+      const src = { x: pos.x + 16, y: pos.y + 16 }
+
+      await comfyPage.page.mouse.move(src.x, src.y)
+      await comfyPage.page.keyboard.down('Alt')
+      try {
+        await comfyPage.page.mouse.down()
+        await comfyPage.nextFrame()
+        await comfyPage.page.mouse.move(src.x + 120, src.y + 80, { steps: 20 })
+        await comfyPage.page.mouse.up()
+        await comfyPage.nextFrame()
+      } finally {
+        await comfyPage.page.keyboard.up('Alt')
+      }
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+
+      await expect
+        .poll(
+          async () =>
+            (await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')).length
+        )
+        .toBe(3)
+      expect(await target.exists()).toBe(true)
+    })
+  })
+
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
@@ -1252,7 +1294,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
 
     test('Space + left-click drag should pan canvas', async ({ comfyPage }) => {
       // Click canvas to focus it
-      await comfyPage.page.click('canvas')
+      await comfyPage.canvas.click()
       await comfyPage.nextFrame()
 
       await comfyPage.page.keyboard.down('Space')
@@ -1321,7 +1363,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       'panning'
     )
 
-    await comfyPage.page.click('canvas')
+    await comfyPage.canvas.click()
     await comfyPage.nextFrame()
 
     await expect(comfyPage.canvas).toHaveScreenshot('standard-initial.png')

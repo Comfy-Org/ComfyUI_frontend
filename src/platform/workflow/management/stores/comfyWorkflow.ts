@@ -9,8 +9,14 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
+export interface InputWidgetConfig {
+  height?: number
+}
+
+export type LinearInput = [NodeId, string, InputWidgetConfig?]
+
 export interface LinearData {
-  inputs: [NodeId, string][]
+  inputs: LinearInput[]
   outputs: NodeId[]
 }
 

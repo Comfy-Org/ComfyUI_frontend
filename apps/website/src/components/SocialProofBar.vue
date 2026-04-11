@@ -32,7 +32,7 @@ const metrics = computed(() => [
     <div class="mx-auto max-w-7xl px-6">
       <!-- Heading -->
       <p
-        class="text-center text-xs font-medium uppercase tracking-widest text-smoke-700"
+        class="text-center text-xs font-medium tracking-widest text-smoke-700 uppercase"
       >
         {{ t('social.heading', locale) }}
       </p>

@@ -24,12 +24,12 @@ const activeCategory = ref(0)
         <!-- Left placeholder image (desktop only) -->
         <div class="hidden flex-1 lg:block">
           <div
-            class="aspect-[2/3] rounded-full border border-white/10 bg-charcoal-600"
+            class="aspect-2/3 rounded-full border border-white/10 bg-charcoal-600"
           />
         </div>
 
         <!-- Center content -->
-        <div class="flex flex-col items-center text-center lg:flex-[2]">
+        <div class="flex flex-col items-center text-center lg:flex-2">
           <h2 class="text-3xl font-bold text-white">
             {{ t('useCase.heading', locale) }}
           </h2>
@@ -70,7 +70,7 @@ const activeCategory = ref(0)
         <!-- Right placeholder image (desktop only) -->
         <div class="hidden flex-1 lg:block">
           <div
-            class="aspect-[2/3] rounded-3xl border border-white/10 bg-charcoal-600"
+            class="aspect-2/3 rounded-3xl border border-white/10 bg-charcoal-600"
           />
         </div>
       </div>

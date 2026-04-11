@@ -265,7 +265,7 @@ test.describe('Workflows sidebar', () => {
 
     // Dismiss the error overlay
     await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeHidden()
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
@@ -316,7 +316,7 @@ test.describe('Workflows sidebar', () => {
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
     await comfyPage.contextMenu.clickMenuItem('Delete')
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    await expect(workflowsTab.getOpenedItem(filename)).toBeHidden()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
@@ -337,7 +337,7 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.confirmDialog.click('delete')
 
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    await expect(workflowsTab.getOpenedItem(filename)).toBeHidden()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])

@@ -192,6 +192,7 @@ test.describe('Assets sidebar - grid view display', () => {
     // Imported tab should show the mocked files
     await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
+
   test('Displays svg outputs', async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory([
       createMockJob({
@@ -745,7 +746,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.delete.click()
 
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
@@ -767,7 +768,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.reject.click()
 
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
   })
 })

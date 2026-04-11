@@ -61,7 +61,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     await expect(dialog.root).toBeVisible()
 
     await dialog.close()
-    await expect(dialog.root).not.toBeVisible()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('Escape key closes dialog', async ({ comfyPage }) => {
@@ -70,7 +70,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     await expect(dialog.root).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(dialog.root).not.toBeVisible()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('Search filters settings list', async ({ comfyPage }) => {

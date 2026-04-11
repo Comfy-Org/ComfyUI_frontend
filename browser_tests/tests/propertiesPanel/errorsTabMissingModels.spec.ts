@@ -57,7 +57,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     const locateButton = comfyPage.page.getByTestId(
       TestIds.dialogs.missingModelLocate
     )
-    await expect(locateButton.first()).not.toBeVisible()
+    await expect(locateButton.first()).toBeHidden()
 
     const expandButton = comfyPage.page.getByTestId(
       TestIds.dialogs.missingModelExpand
