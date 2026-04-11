@@ -209,6 +209,7 @@ jobs:
           git clone --depth 1 https://github.com/snomiao/demowright.git /tmp/demowright
           cd /tmp/demowright && npm install && npm install typescript && npm run build
           sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'fs';const p=JSON.parse(readFileSync('package.json','utf8'));p.exports['./video-script']={import:'./dist/video-script.mjs',types:'./dist/video-script.d.mts'};p.exports['./setup']={import:'./dist/setup.mjs',types:'./dist/setup.d.mts'};writeFileSync('package.json',JSON.stringify(p,null,2))"
           cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
 
       - name: Cache main branch dist
@@ -394,6 +395,7 @@ jobs:
           git clone --depth 1 https://github.com/snomiao/demowright.git /tmp/demowright
           cd /tmp/demowright && npm install && npm install typescript && npm run build
           sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'fs';const p=JSON.parse(readFileSync('package.json','utf8'));p.exports['./video-script']={import:'./dist/video-script.mjs',types:'./dist/video-script.d.mts'};p.exports['./setup']={import:'./dist/setup.mjs',types:'./dist/setup.d.mts'};writeFileSync('package.json',JSON.stringify(p,null,2))"
           cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
 
       - name: Setup ComfyUI server (no launch)
