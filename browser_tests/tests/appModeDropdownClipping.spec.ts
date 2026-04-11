@@ -137,18 +137,21 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const dropdownButton = imageRow.locator('button:has(> span)').first()
     await dropdownButton.click()
 
-    // The Reka UI PopoverContent renders with role="dialog" and is
-    // teleported to <body> via PopoverPortal.
+    // The Reka UI PopoverContent is teleported to <body> via PopoverPortal,
+    // so it's never clipped by the app mode panel's overflow container.
     const popover = comfyPage.appMode.imagePickerPopover
     await expect(popover).toBeVisible()
 
-    // Primary assertion: portal teleportation means no ancestor clips
+    // Verify popover is a direct child of <body> (not inside the panel)
     await expect
-      .poll(() => popover.evaluate(isClippedByAnyAncestor))
-      .toBe(false)
+      .poll(() =>
+        popover.evaluate(
+          (el) => el.parentElement?.tagName.toLowerCase() === 'body'
+        )
+      )
+      .toBe(true)
 
-    // Secondary: popover top-left should be within the viewport
-    // (full containment may fail for tall content that gets constrained)
+    // Verify popover top-left is within the viewport
     await expect
       .poll(() =>
         popover.evaluate((el) => {
