@@ -84,6 +84,7 @@
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/no-unused-vars": "off",
     "unicorn/no-empty-file": "off",
+    "vitest/require-mock-type-parameters": "off",
     "unicorn/no-new-array": "off",
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",

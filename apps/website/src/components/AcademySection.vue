@@ -17,7 +17,7 @@ const features = computed(() => [
     <div class="mx-auto max-w-3xl px-6 text-center">
       <!-- Badge -->
       <span
-        class="inline-block rounded-full bg-brand-yellow/10 px-4 py-1.5 text-xs uppercase tracking-widest text-brand-yellow"
+        class="inline-block rounded-full bg-brand-yellow/10 px-4 py-1.5 text-xs tracking-widest text-brand-yellow uppercase"
       >
         {{ t('academy.badge', locale) }}
       </span>
