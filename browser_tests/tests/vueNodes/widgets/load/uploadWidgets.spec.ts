@@ -17,7 +17,7 @@ test.describe('Vue Upload Widgets', () => {
 
     await expect(
       comfyPage.page.getByText('choose file to upload', { exact: true })
-    ).not.toBeVisible()
+    ).toBeHidden()
 
     await expect
       .poll(() =>

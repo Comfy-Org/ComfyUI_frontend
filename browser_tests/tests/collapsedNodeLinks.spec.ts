@@ -35,8 +35,8 @@ test.describe(
       await node.toggleCollapse()
       await comfyPage.nextFrame()
 
+      await expect.poll(async () => await node.boundingBox()).not.toBeNull()
       const box = await node.boundingBox()
-      expect(box).not.toBeNull()
       await comfyPage.page.mouse.move(
         box!.x + box!.width / 2,
         box!.y + box!.height / 2

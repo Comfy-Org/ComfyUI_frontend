@@ -25,10 +25,7 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
     await expect
       .poll(
         async () =>
-          (await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')).length,
-        {
-          timeout: 5000
-        }
+          (await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')).length
       )
       .toBe(1)
 

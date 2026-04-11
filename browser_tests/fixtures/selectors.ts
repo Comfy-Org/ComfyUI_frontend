@@ -63,7 +63,8 @@ export const TestIds = {
     missingMediaStatusCard: 'missing-media-status-card',
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
-    missingMediaLocateButton: 'missing-media-locate-button'
+    missingMediaLocateButton: 'missing-media-locate-button',
+    publishTabPanel: 'publish-tab-panel'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -129,6 +130,24 @@ export const TestIds = {
     outputPlaceholder: 'builder-output-placeholder',
     connectOutputPopover: 'builder-connect-output-popover'
   },
+  outputHistory: {
+    outputs: 'linear-outputs',
+    welcome: 'linear-welcome',
+    outputInfo: 'linear-output-info',
+    activeQueue: 'linear-job',
+    queueBadge: 'linear-job-badge',
+    inProgressItem: 'linear-in-progress-item',
+    historyItem: 'linear-history-item',
+    skeleton: 'linear-skeleton',
+    latentPreview: 'linear-latent-preview',
+    imageOutput: 'linear-image-output',
+    videoOutput: 'linear-video-output',
+    cancelRun: 'linear-cancel-run',
+    headerProgressBar: 'linear-header-progress-bar',
+    itemProgressBar: 'linear-item-progress-bar',
+    progressOverall: 'linear-progress-overall',
+    progressNode: 'linear-progress-node'
+  },
   appMode: {
     widgetItem: 'app-mode-widget-item',
     welcome: 'linear-welcome',
@@ -154,6 +173,12 @@ export const TestIds = {
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
+  },
+  loading: {
+    overlay: 'loading-overlay'
+  },
+  load3dViewer: {
+    sidebar: 'load3d-viewer-sidebar'
   }
 } as const
 
@@ -173,6 +198,7 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
   | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<
@@ -184,3 +210,5 @@ export type TestIdValue =
   | (typeof TestIds.subgraphEditor)[keyof typeof TestIds.subgraphEditor]
   | (typeof TestIds.queue)[keyof typeof TestIds.queue]
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
+  | (typeof TestIds.loading)[keyof typeof TestIds.loading]
+  | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]

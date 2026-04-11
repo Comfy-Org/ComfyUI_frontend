@@ -7,13 +7,20 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
-  constructor(private page: Page) {}
-
   /**
    * Get locator for all Vue node components in the DOM
    */
-  get nodes(): Locator {
-    return this.page.locator('[data-node-id]')
+  public readonly nodes: Locator
+  /**
+   * Get locator for selected Vue node components (using visual selection indicators)
+   */
+  public readonly selectedNodes: Locator
+
+  constructor(private page: Page) {
+    this.nodes = page.locator('[data-node-id]')
+    this.selectedNodes = page.locator(
+      '[data-node-id].outline-node-component-outline'
+    )
   }
 
   /**
@@ -24,20 +31,13 @@ export class VueNodeHelpers {
   }
 
   /**
-   * Get locator for selected Vue node components (using visual selection indicators)
-   */
-  get selectedNodes(): Locator {
-    return this.page.locator('[data-node-id].outline-node-component-outline')
-  }
-
-  /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
   getNodeByTitle(title: string): Locator {
     return this.page.locator('[data-node-id]').filter({
-      has: this.page.locator('[data-testid="node-title"]', { hasText: title })
+      has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
   }
 
@@ -46,13 +46,6 @@ export class VueNodeHelpers {
    */
   async getNodeCount(): Promise<number> {
     return await this.nodes.count()
-  }
-
-  /**
-   * Get count of selected Vue nodes
-   */
-  async getSelectedNodeCount(): Promise<number> {
-    return await this.selectedNodes.count()
   }
 
   /**
@@ -153,7 +146,7 @@ export class VueNodeHelpers {
         expectedCount
       )
     } else {
-      await this.page.waitForSelector('[data-node-id]')
+      await this.page.locator('[data-node-id]').first().waitFor()
     }
   }
 
