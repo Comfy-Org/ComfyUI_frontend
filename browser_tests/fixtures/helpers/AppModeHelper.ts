@@ -94,6 +94,8 @@ export class AppModeHelper {
 
   /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
+    await this.page.keyboard.press('Escape')
+    await this.comfyPage.nextFrame()
     await this.page
       .getByRole('button', { name: 'Workflow actions' })
       .first()

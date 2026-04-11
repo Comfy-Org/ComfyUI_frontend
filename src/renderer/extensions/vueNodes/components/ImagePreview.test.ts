@@ -1,6 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
-import type { VueWrapper } from '@vue/test-utils'
-import { flushPromises, mount } from '@vue/test-utils'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -28,7 +34,6 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { resolveNode } from '@/utils/litegraphUtil'
 
-// Mock downloadFile to avoid DOM errors
 vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: vi.fn()
 }))
@@ -54,7 +59,8 @@ const i18n = createI18n({
         loading: 'Loading',
         viewGrid: 'Grid view',
         galleryThumbnail: 'Gallery thumbnail',
-        clearMask: 'Clear mask'
+        clearMask: 'Clear mask',
+        imageGallery: 'image gallery'
       },
       maskEditor: {
         clearMaskError: 'Clear Mask Error',
@@ -64,114 +70,109 @@ const i18n = createI18n({
   }
 })
 
-describe('ImagePreview', () => {
-  const defaultProps = {
-    imageUrls: [
-      '/api/view?filename=test1.png&type=output',
-      '/api/view?filename=test2.png&type=output'
-    ]
-  }
-  const wrapperRegistry = new Set<VueWrapper>()
+const defaultProps = {
+  imageUrls: [
+    '/api/view?filename=test1.png&type=output',
+    '/api/view?filename=test2.png&type=output'
+  ]
+}
 
-  const mountImagePreview = (props = {}) => {
-    const wrapper = mount(ImagePreview, {
-      props: { ...defaultProps, ...props },
-      global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
-        stubs: {
-          'i-lucide:venetian-mask': true,
-          'i-lucide:download': true,
-          'i-lucide:x': true,
-          'i-lucide:image-off': true,
-          Skeleton: true
-        }
+function renderImagePreview(props: Record<string, unknown> = {}) {
+  return render(ImagePreview, {
+    props: { ...defaultProps, ...props },
+    global: {
+      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      stubs: {
+        'i-comfy:mask': true,
+        'i-lucide:venetian-mask': true,
+        'i-lucide:download': true,
+        'i-lucide:x': true,
+        'i-lucide:image-off': true,
+        Skeleton: true
       }
-    })
-    wrapperRegistry.add(wrapper)
-    return wrapper
-  }
+    }
+  })
+}
 
-  async function switchToGallery(wrapper: VueWrapper) {
-    const thumbnails = wrapper.findAll('button[aria-label^="View image"]')
-    await thumbnails[0].trigger('click')
-    await nextTick()
-  }
+async function switchToGallery(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'View image 1 of 2' }))
+  await nextTick()
+}
+
+function viewImageNavButtons() {
+  return screen.getAllByRole('button', {
+    name: /View image \d+ of \d+/
+  })
+}
+
+describe('ImagePreview', () => {
+  afterEach(() => {
+    cleanup()
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(resolveNode).mockReturnValue(undefined)
   })
 
-  afterEach(() => {
-    wrapperRegistry.forEach((wrapper) => {
-      wrapper.unmount()
-    })
-    wrapperRegistry.clear()
-  })
-
   it('does not render when no imageUrls provided', () => {
-    const wrapper = mountImagePreview({ imageUrls: [] })
+    renderImagePreview({ imageUrls: [] })
 
-    expect(wrapper.find('.image-preview').exists()).toBe(false)
+    expect(screen.queryByTestId('image-preview-root')).not.toBeInTheDocument()
   })
 
   it('displays calculating dimensions text in gallery mode', async () => {
-    const wrapper = mountImagePreview({
+    renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    expect(wrapper.text()).toContain('Calculating dimensions')
+    expect(screen.getByText('Calculating dimensions')).toBeInTheDocument()
   })
 
   it('shows navigation dots for multiple images in gallery mode', async () => {
-    const wrapper = mountImagePreview()
-    await switchToGallery(wrapper)
+    const user = userEvent.setup()
+    renderImagePreview()
+    await switchToGallery(user)
 
-    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
-    expect(navigationDots).toHaveLength(2)
+    expect(viewImageNavButtons()).toHaveLength(2)
   })
 
   it('does not show navigation dots for single image', () => {
-    const wrapper = mountImagePreview({
+    renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
-    expect(navigationDots).toHaveLength(0)
+    expect(
+      screen.queryByRole('button', { name: /View image \d+ of \d+/ })
+    ).not.toBeInTheDocument()
   })
 
   it('shows mask/edit button only for single images', async () => {
-    // Multiple images in gallery mode - should not show mask button
-    const multipleImagesWrapper = mountImagePreview()
-    await switchToGallery(multipleImagesWrapper)
+    const user = userEvent.setup()
+    renderImagePreview()
+    await switchToGallery(user)
 
     expect(
-      multipleImagesWrapper.find('[aria-label="Edit or mask image"]').exists()
-    ).toBe(false)
+      screen.queryByRole('button', { name: 'Edit or mask image' })
+    ).not.toBeInTheDocument()
 
-    // Single image - should show mask button
-    const singleImageWrapper = mountImagePreview({
+    cleanup()
+    renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
     expect(
-      singleImageWrapper.find('[aria-label="Edit or mask image"]').exists()
-    ).toBe(true)
+      screen.getByRole('button', { name: 'Edit or mask image' })
+    ).toBeInTheDocument()
   })
 
   it('handles download button click', async () => {
-    const wrapper = mountImagePreview({
+    const user = userEvent.setup()
+    renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    const downloadButton = wrapper.find('[aria-label="Download image"]')
-    expect(downloadButton.exists()).toBe(true)
-    await downloadButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Download image' }))
 
     expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
   })
@@ -180,263 +181,286 @@ describe('ImagePreview', () => {
     const stubNode = { id: 99, imgs: [] } as unknown as LGraphNode
     vi.mocked(resolveNode).mockReturnValue(stubNode)
 
-    const wrapper = mountImagePreview({
+    const user = userEvent.setup()
+    renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]],
       nodeId: '99'
     })
 
-    const clearButton = wrapper.find('[aria-label="Clear mask"]')
-    expect(clearButton.exists()).toBe(true)
-    await clearButton.trigger('click')
-    await flushPromises()
+    await user.click(screen.getByRole('button', { name: 'Clear mask' }))
 
-    expect(mockClearMask).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(mockClearMask).toHaveBeenCalledTimes(1)
+    })
     expect(mockClearMask).toHaveBeenCalledWith(stubNode)
   })
 
   it('switches images when navigation dots are clicked', async () => {
-    const wrapper = mountImagePreview()
-    await switchToGallery(wrapper)
+    const user = userEvent.setup()
+    renderImagePreview()
+    await switchToGallery(user)
 
-    // Initially shows first image
-    expect(wrapper.find('img').attributes('src')).toBe(
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
       defaultProps.imageUrls[0]
     )
 
-    // Click second navigation dot
-    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
-    await navigationDots[1].trigger('click')
+    const navigationDots = viewImageNavButtons()
+    await user.click(navigationDots[1])
     await nextTick()
 
-    expect(wrapper.find('img').attributes('src')).toBe(
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
       defaultProps.imageUrls[1]
     )
   })
 
   it('marks active navigation dot with aria-current', async () => {
-    const wrapper = mountImagePreview()
-    await switchToGallery(wrapper)
+    const user = userEvent.setup()
+    renderImagePreview()
+    await switchToGallery(user)
 
-    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
+    const navigationDots = viewImageNavButtons()
 
-    // First dot should be active
-    expect(navigationDots[0].attributes('aria-current')).toBe('true')
-    expect(navigationDots[1].attributes('aria-current')).toBeUndefined()
+    expect(navigationDots[0]).toHaveAttribute('aria-current', 'true')
+    expect(navigationDots[1]).not.toHaveAttribute('aria-current')
 
-    await navigationDots[1].trigger('click')
+    await user.click(navigationDots[1])
     await nextTick()
 
-    // Second dot should now be active
-    expect(navigationDots[0].attributes('aria-current')).toBeUndefined()
-    expect(navigationDots[1].attributes('aria-current')).toBe('true')
+    expect(navigationDots[0]).not.toHaveAttribute('aria-current')
+    expect(navigationDots[1]).toHaveAttribute('aria-current', 'true')
   })
 
   it('has proper accessibility attributes', () => {
-    const wrapper = mountImagePreview({
+    renderImagePreview({
       imageUrls: [defaultProps.imageUrls[0]]
     })
 
-    const img = wrapper.find('img')
-    expect(img.attributes('alt')).toBe('View image 1 of 1')
+    expect(screen.getByRole('img', { name: 'View image 1 of 1' })).toBeTruthy()
   })
 
   it('updates alt text when switching images', async () => {
-    const wrapper = mountImagePreview()
-    await switchToGallery(wrapper)
+    const user = userEvent.setup()
+    renderImagePreview()
+    await switchToGallery(user)
 
-    expect(wrapper.find('img').attributes('alt')).toBe('View image 1 of 2')
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'alt',
+      'View image 1 of 2'
+    )
 
-    // Switch to second image
-    const navigationDots = wrapper.findAll('[aria-label*="View image"]')
-    await navigationDots[1].trigger('click')
+    const navigationDots = viewImageNavButtons()
+    await user.click(navigationDots[1])
     await nextTick()
 
-    expect(wrapper.find('img').attributes('alt')).toBe('View image 2 of 2')
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'alt',
+      'View image 2 of 2'
+    )
   })
 
   describe('keyboard navigation', () => {
     it('navigates to next image with ArrowRight', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
-      expect(wrapper.find('[data-testid="main-image"]').attributes('src')).toBe(
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
         defaultProps.imageUrls[1]
       )
     })
 
     it('navigates to previous image with ArrowLeft', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      await user.keyboard('{ArrowRight}')
+      await nextTick()
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowLeft' })
-      await nextTick()
-
-      expect(wrapper.find('[data-testid="main-image"]').attributes('src')).toBe(
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
         defaultProps.imageUrls[0]
       )
     })
 
     it('wraps around from last to first with ArrowRight', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
-      expect(wrapper.find('[data-testid="main-image"]').attributes('src')).toBe(
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
         defaultProps.imageUrls[0]
       )
     })
 
     it('wraps around from first to last with ArrowLeft', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowLeft' })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
-      expect(wrapper.find('[data-testid="main-image"]').attributes('src')).toBe(
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
         defaultProps.imageUrls[1]
       )
     })
 
     it('navigates to first image with Home', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      await user.keyboard('{ArrowRight}')
+      await nextTick()
+      await user.keyboard('{Home}')
       await nextTick()
 
-      await wrapper.find('.image-preview').trigger('keydown', { key: 'Home' })
-      await nextTick()
-
-      expect(wrapper.find('[data-testid="main-image"]').attributes('src')).toBe(
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
         defaultProps.imageUrls[0]
       )
     })
 
     it('navigates to last image with End', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      await wrapper.find('.image-preview').trigger('keydown', { key: 'End' })
+      await user.keyboard('{End}')
       await nextTick()
 
-      expect(wrapper.find('[data-testid="main-image"]').attributes('src')).toBe(
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
         defaultProps.imageUrls[1]
       )
     })
 
     it('ignores arrow keys in grid mode', async () => {
-      const wrapper = mountImagePreview()
+      renderImagePreview()
 
-      const gridThumbnails = wrapper.findAll('button[aria-label^="View image"]')
-      expect(gridThumbnails).toHaveLength(2)
+      expect(
+        screen.getAllByRole('button', { name: /View image \d+ of 2/ })
+      ).toHaveLength(2)
 
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      const root = screen.getByTestId('image-preview-root')
+      // Thumbnail click opens gallery; grid-mode arrows are a no-op on the shell without moving focus into it.
+      // eslint-disable-next-line testing-library/prefer-user-event -- need keydown on root while view stays grid
+      void fireEvent.keyDown(root, { key: 'ArrowRight' })
       await nextTick()
 
-      expect(wrapper.find('[role="region"]').exists()).toBe(false)
+      expect(screen.queryByRole('region')).not.toBeInTheDocument()
     })
 
     it('ignores arrow keys for single image', async () => {
-      const wrapper = mountImagePreview({
+      const user = userEvent.setup()
+      renderImagePreview({
         imageUrls: [defaultProps.imageUrls[0]]
       })
 
-      const initialSrc = wrapper.find('img').attributes('src')
-      await wrapper
-        .find('.image-preview')
-        .trigger('keydown', { key: 'ArrowRight' })
+      const img = screen.getByRole('img')
+      const initialSrc = img.getAttribute('src')
+      await user.click(
+        screen.getByRole('region', {
+          name: 'Image preview - Use arrow keys to navigate between images'
+        })
+      )
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
-      expect(wrapper.find('img').attributes('src')).toBe(initialSrc)
+      expect(screen.getByRole('img').getAttribute('src')).toBe(initialSrc)
     })
   })
 
   describe('grid view', () => {
     it('defaults to grid mode for multiple images', () => {
-      const wrapper = mountImagePreview()
+      renderImagePreview()
 
-      const gridThumbnails = wrapper.findAll('button[aria-label^="View image"]')
-      expect(gridThumbnails).toHaveLength(2)
+      expect(
+        screen.getAllByRole('button', { name: /View image \d+ of 2/ })
+      ).toHaveLength(2)
     })
 
     it('defaults to gallery mode for single image', () => {
-      const wrapper = mountImagePreview({
+      renderImagePreview({
         imageUrls: [defaultProps.imageUrls[0]]
       })
 
-      expect(wrapper.find('[role="region"]').exists()).toBe(true)
-      const gridThumbnails = wrapper.findAll('button[aria-label^="View image"]')
-      expect(gridThumbnails).toHaveLength(0)
+      expect(
+        screen.getByRole('region', {
+          name: 'Image preview - Use arrow keys to navigate between images'
+        })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /View image \d+ of 1/ })
+      ).not.toBeInTheDocument()
     })
 
     it('switches to gallery mode when grid thumbnail is clicked', async () => {
-      const wrapper = mountImagePreview()
+      const user = userEvent.setup()
+      renderImagePreview()
 
-      const thumbnails = wrapper.findAll('button[aria-label^="View image"]')
-      await thumbnails[1].trigger('click')
+      const thumbnails = screen.getAllByRole('button', {
+        name: /View image \d+ of 2/
+      })
+      await user.click(thumbnails[1])
       await nextTick()
 
-      const mainImg = wrapper.find('[data-testid="main-image"]')
-      expect(mainImg.exists()).toBe(true)
-      expect(mainImg.attributes('src')).toBe(defaultProps.imageUrls[1])
+      const mainImg = screen.getByTestId('main-image')
+      expect(mainImg).toBeInTheDocument()
+      expect(mainImg).toHaveAttribute('src', defaultProps.imageUrls[1])
     })
 
     it('shows back-to-grid button next to navigation dots', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      const gridButton = wrapper.find('[aria-label="Grid view"]')
-      expect(gridButton.exists()).toBe(true)
+      expect(
+        screen.getAllByRole('button', { name: 'Grid view' })[0]
+      ).toBeInTheDocument()
     })
 
     it('switches back to grid mode via back-to-grid button', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      renderImagePreview()
+      await switchToGallery(user)
 
-      const gridButton = wrapper.find('[aria-label="Grid view"]')
-      await gridButton.trigger('click')
+      await user.click(screen.getAllByRole('button', { name: 'Grid view' })[0])
       await nextTick()
 
-      const gridThumbnails = wrapper.findAll('button[aria-label^="View image"]')
-      expect(gridThumbnails).toHaveLength(2)
+      expect(
+        screen.getAllByRole('button', { name: /View image \d+ of 2/ })
+      ).toHaveLength(2)
     })
 
     it('resets to grid mode when URLs change to multiple images', async () => {
-      const wrapper = mountImagePreview()
-      await switchToGallery(wrapper)
+      const user = userEvent.setup()
+      const { rerender } = renderImagePreview()
+      await switchToGallery(user)
 
-      // Verify we're in gallery mode
-      expect(wrapper.find('[role="region"]').exists()).toBe(true)
+      expect(
+        screen.getByRole('region', {
+          name: 'Image preview - Use arrow keys to navigate between images'
+        })
+      ).toBeInTheDocument()
 
-      // Change URLs
-      await wrapper.setProps({
+      await rerender({
         imageUrls: [
           '/api/view?filename=new1.png&type=output',
           '/api/view?filename=new2.png&type=output',
@@ -445,9 +469,9 @@ describe('ImagePreview', () => {
       })
       await nextTick()
 
-      // Should be back in grid mode
-      const gridThumbnails = wrapper.findAll('button[aria-label^="View image"]')
-      expect(gridThumbnails).toHaveLength(3)
+      expect(
+        screen.getAllByRole('button', { name: /View image \d+ of 3/ })
+      ).toHaveLength(3)
     })
   })
 
@@ -455,28 +479,40 @@ describe('ImagePreview', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
       vi.useFakeTimers()
       try {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
         const sameUrl = '/api/view?filename=test.png&type=output'
-        const wrapper = mountImagePreview({
+        renderImagePreview({
           imageUrls: [sameUrl, sameUrl, sameUrl]
         })
-        await switchToGallery(wrapper)
-
-        // Simulate initial image load
-        await wrapper.find('img').trigger('load')
-        await nextTick()
-        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
-
-        // Click second navigation dot to cycle
-        const dots = wrapper.findAll('[aria-label*="View image"]')
-        await dots[1].trigger('click')
+        await user.click(
+          screen.getByRole('button', { name: 'View image 1 of 3' })
+        )
         await nextTick()
 
-        // Advance past the delayed loader timeout
+        void fireEvent.load(screen.getByTestId('main-image'))
+        await nextTick()
+        expect(
+          screen
+            .getByRole('region', {
+              name: 'Image preview - Use arrow keys to navigate between images'
+            })
+            .getAttribute('aria-busy')
+        ).not.toBe('true')
+
+        const dots = viewImageNavButtons()
+        await user.click(dots[1])
+        await nextTick()
+
         await vi.advanceTimersByTimeAsync(300)
         await nextTick()
 
-        // Should NOT be in loading state since URL didn't change
-        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+        expect(
+          screen
+            .getByRole('region', {
+              name: 'Image preview - Use arrow keys to navigate between images'
+            })
+            .getAttribute('aria-busy')
+        ).not.toBe('true')
       } finally {
         vi.useRealTimers()
       }
@@ -488,26 +524,29 @@ describe('ImagePreview', () => {
       vi.useFakeTimers()
       try {
         const urls = ['/api/view?filename=test.png&type=output']
-        const wrapper = mountImagePreview({ imageUrls: urls })
+        const { rerender } = renderImagePreview({ imageUrls: urls })
 
-        // Simulate image load completing
-        const img = wrapper.find('img')
-        await img.trigger('load')
+        void fireEvent.load(screen.getByTestId('main-image'))
         await nextTick()
 
-        // Verify loader is hidden after load
-        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+        const region = screen.getByRole('region', {
+          name: 'Image preview - Use arrow keys to navigate between images'
+        })
+        expect(region.getAttribute('aria-busy')).not.toBe('true')
 
-        // Reassign with new array reference but same content
-        await wrapper.setProps({ imageUrls: [...urls] })
+        await rerender({ imageUrls: [...urls] })
         await nextTick()
 
-        // Advance past the 250ms delayed loader timeout
         await vi.advanceTimersByTimeAsync(300)
         await nextTick()
 
-        // Loading state should NOT have been reset
-        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+        expect(
+          screen
+            .getByRole('region', {
+              name: 'Image preview - Use arrow keys to navigate between images'
+            })
+            .getAttribute('aria-busy')
+        ).not.toBe('true')
       } finally {
         vi.useRealTimers()
       }
@@ -517,44 +556,46 @@ describe('ImagePreview', () => {
       vi.useFakeTimers()
       try {
         const urls = ['/api/view?filename=test.png&type=output']
-        const wrapper = mountImagePreview({ imageUrls: urls })
+        const { rerender } = renderImagePreview({ imageUrls: urls })
 
-        // Simulate image load completing
-        const img = wrapper.find('img')
-        await img.trigger('load')
+        void fireEvent.load(screen.getByTestId('main-image'))
         await nextTick()
 
-        // Verify loader is hidden
-        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+        const region = screen.getByRole('region', {
+          name: 'Image preview - Use arrow keys to navigate between images'
+        })
+        expect(region.getAttribute('aria-busy')).not.toBe('true')
 
-        // Change to different URL
-        await wrapper.setProps({
+        await rerender({
           imageUrls: ['/api/view?filename=different.png&type=output']
         })
         await nextTick()
 
-        // Advance past the 250ms delayed loader timeout
         await vi.advanceTimersByTimeAsync(300)
         await nextTick()
 
-        expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true)
+        expect(
+          screen.getByRole('region', {
+            name: 'Image preview - Use arrow keys to navigate between images'
+          })
+        ).toHaveAttribute('aria-busy', 'true')
       } finally {
         vi.useRealTimers()
       }
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {
-      const wrapper = mountImagePreview({ imageUrls: [] })
+      const { rerender } = renderImagePreview({ imageUrls: [] })
 
-      expect(wrapper.find('.image-preview').exists()).toBe(false)
+      expect(screen.queryByTestId('image-preview-root')).not.toBeInTheDocument()
 
-      await wrapper.setProps({
+      await rerender({
         imageUrls: ['/api/view?filename=test.png&type=output']
       })
       await nextTick()
 
-      expect(wrapper.find('.image-preview').exists()).toBe(true)
-      expect(wrapper.find('img').exists()).toBe(true)
+      expect(screen.getByTestId('image-preview-root')).toBeInTheDocument()
+      expect(screen.getByRole('img')).toBeInTheDocument()
     })
   })
 })
