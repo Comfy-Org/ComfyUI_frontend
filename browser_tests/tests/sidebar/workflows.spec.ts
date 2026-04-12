@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { openErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -276,10 +277,12 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
     await expect(errorOverlay).toBeHidden()
-    const errorsTab = comfyPage.page.getByTestId(
-      TestIds.propertiesPanel.errorsTab
-    )
-    await expect(errorsTab).toBeVisible()
+
+    // Errors tab should still show missing nodes after silent restore
+    await openErrorsTab(comfyPage)
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
+    ).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({

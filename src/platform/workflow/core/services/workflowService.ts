@@ -256,10 +256,12 @@ export const useWorkflowService = () => {
       {
         checkForRerouteMigration: false,
         deferWarnings: true,
-        skipAssetScans: !loadFromRemote
+        skipAssetScans: !loadFromRemote && !options.force
       }
     )
-    showPendingWarnings(undefined, { silent: !loadFromRemote })
+    showPendingWarnings(undefined, {
+      silent: !loadFromRemote && !options.force
+    })
   }
 
   /**
