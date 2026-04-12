@@ -247,6 +247,46 @@ describe('computeProcessedWidgets borderStyle', () => {
     ).toBe(true)
   })
 
+  it('uses slotName when ancestor promotion keeps the host widget alias', () => {
+    const promotedWidget = createMockWidget({
+      name: 'string_a',
+      type: 'combo',
+      nodeId: 'inner-subgraph:10',
+      storeNodeId: 'inner-subgraph:10',
+      storeName: 'string_a',
+      slotName: 'value_1'
+    })
+
+    usePromotionStore().promote('graph-test', '5', {
+      sourceNodeId: '6',
+      sourceWidgetName: 'value_1',
+      disambiguatingSourceNodeId: '10'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '6',
+        type: 'SubgraphNode',
+        widgets: [promotedWidget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(
+      result.some((w) => w.simplified.borderStyle?.includes('promoted'))
+    ).toBe(true)
+  })
+
   it('does not apply promoted border styling to outermost widgets', () => {
     const promotedWidget = createMockWidget({
       name: 'text',

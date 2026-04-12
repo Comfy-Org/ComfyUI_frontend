@@ -270,7 +270,7 @@ export function computeProcessedWidgets({
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
-    const sourceWidgetName = widget.storeName ?? widget.name
+    const sourceWidgetName = widget.slotName ?? widget.name
     const isPromoted =
       graphId &&
       promotionStore.isWidgetPromoted(
