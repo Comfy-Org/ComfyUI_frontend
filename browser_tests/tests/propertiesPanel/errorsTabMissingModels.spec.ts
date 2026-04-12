@@ -72,7 +72,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       TestIds.dialogs.missingModelCopyName
     )
     await expect(copyButton.first()).toBeVisible()
-    await copyButton.first().click({ force: true })
+    await copyButton.first().dispatchEvent('click')
 
     const copiedText = await getClipboardText(comfyPage.page)
     expect(copiedText).toContain('fake_model.safetensors')
