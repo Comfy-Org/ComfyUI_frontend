@@ -29,13 +29,17 @@ const isFileProtocol = window.location.protocol === 'file:'
  * Determine base path for the router.
  * - Electron: always root
  * - Cloud: use Vite's BASE_URL (configured at build time)
- * - Standard web (including reverse proxy subpaths): use window.location.pathname
- *   to support deployments like http://mysite.com/ComfyUI/
+ * - Standard web: a deploy directory pathname ends with `/`
+ *   (e.g. `/ComfyUI/`) — use it as base to support reverse-proxy subpaths.
+ *   A SPA route pathname does not end with `/` (e.g. `/connect`) — fall back
+ *   to BASE_URL so the route doesn't get appended to itself.
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
   if (isCloud) return import.meta.env?.BASE_URL || '/'
-  return window.location.pathname
+  const pathname = window.location.pathname
+  if (pathname.endsWith('/')) return pathname
+  return import.meta.env?.BASE_URL || '/'
 }
 
 const basePath = getBasePath()
