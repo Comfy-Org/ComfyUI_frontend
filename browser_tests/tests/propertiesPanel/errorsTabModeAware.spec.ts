@@ -24,7 +24,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
       const missingNodeGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingNodePacksGroup
+        TestIds.dialogs.missingNodePacksGroup
       )
       await expect(missingNodeGroup).toBeVisible()
 
@@ -40,7 +40,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
       const missingNodeGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingNodePacksGroup
+        TestIds.dialogs.missingNodePacksGroup
       )
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -96,7 +96,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
 
@@ -119,7 +119,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
       await expect(missingModelGroup).toContainText(
@@ -145,7 +145,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
@@ -167,7 +167,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
 
@@ -183,7 +183,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -216,7 +216,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toContainText(/\(2\)/)
 
@@ -255,7 +255,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
 
       const missingMediaGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingMediaGroup
+        TestIds.dialogs.missingMediaGroup
       )
       await expect(missingMediaGroup).toBeVisible()
 
@@ -281,7 +281,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
 
       const missingMediaGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingMediaGroup
+        TestIds.dialogs.missingMediaGroup
       )
 
       const node = await comfyPage.nodeOps.getNodeRefById('10')
@@ -311,7 +311,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const mediaRows = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingMediaRow
+        TestIds.dialogs.missingMediaRow
       )
 
       await openErrorsTab(comfyPage)
@@ -351,7 +351,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
@@ -389,7 +389,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const missingModelGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelsGroup
+        TestIds.dialogs.missingModelsGroup
       )
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
@@ -434,7 +434,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         .click()
 
       const missingNodeGroup = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingNodePacksGroup
+        TestIds.dialogs.missingNodePacksGroup
       )
 
       await openErrorsTab(comfyPage)

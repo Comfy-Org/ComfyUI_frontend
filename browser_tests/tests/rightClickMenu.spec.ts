@@ -135,7 +135,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
-    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
@@ -153,7 +153,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-pinned-node.png'
     )
-    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
@@ -173,7 +173,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.canvas.click({
       position: DefaultGraphPositions.emptyLatentWidgetClick,
@@ -181,7 +181,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
@@ -203,7 +203,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Pin")').click()
     await comfyPage.page.keyboard.up('Control')
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
@@ -214,7 +214,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
-    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.page.locator('.litemenu-entry:has-text("Unpin")').click()
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(

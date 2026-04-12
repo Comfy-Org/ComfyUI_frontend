@@ -38,13 +38,13 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
           `.${tabId}-tab-button.side-bar-button-selected`
         )
 
-        await expect(selectedButton).not.toBeVisible()
+        await expect(selectedButton).toBeHidden()
 
         await comfyPage.canvas.press(key)
         await expect(selectedButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).not.toBeVisible()
+        await expect(selectedButton).toBeHidden()
       })
     }
   })
@@ -172,7 +172,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       // Toggle off with Alt+m
       await comfyPage.page.keyboard.press('Alt+KeyM')
-      await expect(comfyPage.appMode.linearWidgets).not.toBeVisible()
+      await expect(comfyPage.appMode.linearWidgets).toBeHidden()
 
       // Toggle on again
       await comfyPage.page.keyboard.press('Alt+KeyM')
@@ -189,7 +189,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await expect(minimap).toBeVisible()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
-      await expect(minimap).not.toBeVisible()
+      await expect(minimap).toBeHidden()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
       await expect(minimap).toBeVisible()
@@ -198,13 +198,13 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+`' toggles terminal/logs panel", async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 
-      await expect(comfyPage.bottomPanel.root).not.toBeVisible()
+      await expect(comfyPage.bottomPanel.root).toBeHidden()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
       await expect(comfyPage.bottomPanel.root).toBeVisible()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
-      await expect(comfyPage.bottomPanel.root).not.toBeVisible()
+      await expect(comfyPage.bottomPanel.root).toBeHidden()
     })
   })
 
@@ -250,7 +250,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       // The Save As dialog should appear (p-dialog overlay)
       const dialogOverlay = comfyPage.page.locator('.p-dialog-mask')
-      await expect(dialogOverlay).toBeVisible({ timeout: 3000 })
+      await expect(dialogOverlay).toBeVisible()
 
       // Dismiss the dialog
       await comfyPage.page.keyboard.press('Escape')
@@ -303,9 +303,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       // After conversion, node count should decrease
       // (multiple nodes replaced by single subgraph node)
       await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5000
-        })
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBeLessThan(initialCount)
     })
 

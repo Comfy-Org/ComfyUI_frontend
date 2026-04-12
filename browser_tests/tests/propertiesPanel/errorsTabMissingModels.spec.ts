@@ -27,7 +27,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
     await expect(
-      comfyPage.page.getByTestId(TestIds.errorsTab.missingModelsGroup)
+      comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
     ).toBeVisible()
   })
 
@@ -37,7 +37,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
     const modelsGroup = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingModelsGroup
+      TestIds.dialogs.missingModelsGroup
     )
     await expect(modelsGroup).toContainText(/fake_model\.safetensors\s*\(\d+\)/)
   })
@@ -51,12 +51,12 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     )
 
     const locateButton = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingModelLocate
+      TestIds.dialogs.missingModelLocate
     )
-    await expect(locateButton.first()).not.toBeVisible()
+    await expect(locateButton.first()).toBeHidden()
 
     const expandButton = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingModelExpand
+      TestIds.dialogs.missingModelExpand
     )
     await expect(expandButton.first()).toBeVisible()
     await expandButton.first().click()
@@ -69,7 +69,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     await interceptClipboardWrite(comfyPage.page)
 
     const copyButton = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingModelCopyName
+      TestIds.dialogs.missingModelCopyName
     )
     await expect(copyButton.first()).toBeVisible()
     await copyButton.first().click({ force: true })
@@ -85,7 +85,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const copyUrlButton = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelCopyUrl
+        TestIds.dialogs.missingModelCopyUrl
       )
       await expect(copyUrlButton.first()).toBeVisible()
     })
@@ -96,7 +96,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const downloadButton = comfyPage.page.getByTestId(
-        TestIds.errorsTab.missingModelDownload
+        TestIds.dialogs.missingModelDownload
       )
       await expect(downloadButton.first()).toBeVisible()
     })

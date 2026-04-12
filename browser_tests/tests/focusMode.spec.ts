@@ -14,12 +14,12 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
 
     await comfyPage.setFocusMode(true)
 
-    await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
+    await expect(comfyPage.menu.sideToolbar).toBeHidden()
   })
 
   test('Focus mode restores UI chrome', async ({ comfyPage }) => {
     await comfyPage.setFocusMode(true)
-    await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
+    await expect(comfyPage.menu.sideToolbar).toBeHidden()
 
     await comfyPage.setFocusMode(false)
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
@@ -29,7 +29,7 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
 
     await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
-    await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
+    await expect(comfyPage.menu.sideToolbar).toBeHidden()
 
     await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
@@ -41,7 +41,7 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
 
     await comfyPage.setFocusMode(true)
 
-    await expect(topMenu).not.toBeVisible()
+    await expect(topMenu).toBeHidden()
   })
 
   test('Canvas remains visible in focus mode', async ({ comfyPage }) => {
@@ -52,12 +52,12 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
 
   test('Focus mode can be toggled multiple times', async ({ comfyPage }) => {
     await comfyPage.setFocusMode(true)
-    await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
+    await expect(comfyPage.menu.sideToolbar).toBeHidden()
 
     await comfyPage.setFocusMode(false)
     await expect(comfyPage.menu.sideToolbar).toBeVisible()
 
     await comfyPage.setFocusMode(true)
-    await expect(comfyPage.menu.sideToolbar).not.toBeVisible()
+    await expect(comfyPage.menu.sideToolbar).toBeHidden()
   })
 })

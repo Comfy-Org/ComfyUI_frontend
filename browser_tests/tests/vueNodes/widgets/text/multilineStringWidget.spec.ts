@@ -46,13 +46,14 @@ test.describe('Vue Multiline String Widget', () => {
 
     await expect(textarea).toHaveValue('Keep me around')
   })
+
   test('should use native context menu when focused', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
     const vueContextMenu = comfyPage.page.locator('.p-contextmenu')
 
     await textarea.focus()
     await textarea.click({ button: 'right' })
-    await expect(vueContextMenu).not.toBeVisible()
+    await expect(vueContextMenu).toBeHidden()
     await textarea.blur()
 
     await textarea.click({ button: 'right' })

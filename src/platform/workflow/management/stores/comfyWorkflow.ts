@@ -10,8 +10,14 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
 
+export interface InputWidgetConfig {
+  height?: number
+}
+
+export type LinearInput = [NodeId, string, InputWidgetConfig?]
+
 export interface LinearData {
-  inputs: [NodeId, string][]
+  inputs: LinearInput[]
   outputs: NodeId[]
 }
 

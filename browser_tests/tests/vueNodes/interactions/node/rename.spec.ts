@@ -50,6 +50,6 @@ test.describe('Vue Nodes Renaming', () => {
     const editingTitleInput = comfyPage.page.getByTestId(
       TestIds.node.titleInput
     )
-    await expect(editingTitleInput).not.toBeVisible()
+    await expect(editingTitleInput).toBeHidden()
   })
 })

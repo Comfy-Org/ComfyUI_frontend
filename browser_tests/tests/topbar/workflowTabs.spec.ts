@@ -64,10 +64,10 @@ test.describe('Workflow tabs', () => {
     await topbar.getTab(0).click({ button: 'right' })
 
     // Reka UI ContextMenuContent gets data-state="open" when active
-    const contextMenu = comfyPage.page.locator(
-      '[role="menu"][data-state="open"]'
-    )
-    await expect(contextMenu).toBeVisible({ timeout: 5000 })
+    const contextMenu = comfyPage.page
+      .getByRole('menu')
+      .and(comfyPage.page.locator('[data-state="open"]'))
+    await expect(contextMenu).toBeVisible()
 
     await expect(
       contextMenu.getByRole('menuitem', { name: /Close Tab/i }).first()
@@ -86,10 +86,10 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
     await topbar.getTab(1).click({ button: 'right' })
-    const contextMenu = comfyPage.page.locator(
-      '[role="menu"][data-state="open"]'
-    )
-    await expect(contextMenu).toBeVisible({ timeout: 5000 })
+    const contextMenu = comfyPage.page
+      .getByRole('menu')
+      .and(comfyPage.page.locator('[data-state="open"]'))
+    await expect(contextMenu).toBeVisible()
 
     await contextMenu
       .getByRole('menuitem', { name: /Close Tab/i })
@@ -123,7 +123,7 @@ test.describe('Workflow tabs', () => {
 
     // WorkflowTab renders "•" when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
-    await expect(activeTab.locator('text=•')).toBeVisible({ timeout: 5000 })
+    await expect(activeTab.locator('text=•')).toBeVisible()
   })
 
   test('Multiple tabs can be created, switched, and closed', async ({

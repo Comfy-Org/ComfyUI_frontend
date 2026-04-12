@@ -26,7 +26,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await errorOverlay
       .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
       .click()
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeHidden()
   }
 
   test('Should show Find on GitHub and Copy buttons in error card', async ({
@@ -35,10 +35,10 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await openExecutionErrorTab(comfyPage)
 
     await expect(
-      comfyPage.page.getByTestId(TestIds.errorsTab.errorCardFindOnGithub)
+      comfyPage.page.getByTestId(TestIds.dialogs.errorCardFindOnGithub)
     ).toBeVisible()
     await expect(
-      comfyPage.page.getByTestId(TestIds.errorsTab.errorCardCopy)
+      comfyPage.page.getByTestId(TestIds.dialogs.errorCardCopy)
     ).toBeVisible()
   })
 
@@ -48,7 +48,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await openExecutionErrorTab(comfyPage)
 
     const runtimePanel = comfyPage.page.getByTestId(
-      TestIds.errorsTab.runtimeErrorPanel
+      TestIds.dialogs.runtimeErrorPanel
     )
     await expect(runtimePanel).toBeVisible()
     await expect(runtimePanel).toContainText(/\S/)

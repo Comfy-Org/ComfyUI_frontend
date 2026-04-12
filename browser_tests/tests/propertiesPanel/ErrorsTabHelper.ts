@@ -14,7 +14,7 @@ export async function loadWorkflowAndOpenErrorsTab(
   await expect(errorOverlay).toBeVisible()
 
   await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
-  await expect(errorOverlay).not.toBeVisible()
+  await expect(errorOverlay).toBeHidden()
 }
 
 export async function openErrorsTab(comfyPage: ComfyPage) {

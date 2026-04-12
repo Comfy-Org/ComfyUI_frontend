@@ -318,6 +318,9 @@ When referencing Comfy-Org repos:
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
+- NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
+  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
+  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
 
 ## Agent-only rules
 

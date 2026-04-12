@@ -17,7 +17,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
     await expect(
-      comfyPage.page.getByTestId(TestIds.errorsTab.missingNodeCard)
+      comfyPage.page.getByTestId(TestIds.dialogs.missingNodeCard)
     ).toBeVisible()
   })
 
@@ -25,7 +25,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
     await expect(
-      comfyPage.page.getByTestId(TestIds.errorsTab.missingNodePacksGroup)
+      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
     ).toBeVisible()
   })
 
@@ -38,7 +38,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     )
 
     const missingNodeCard = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingNodeCard
+      TestIds.dialogs.missingNodeCard
     )
     await expect(missingNodeCard).toBeVisible()
 
@@ -58,7 +58,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     )
 
     const missingNodeCard = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingNodeCard
+      TestIds.dialogs.missingNodeCard
     )
     await missingNodeCard
       .getByRole('button', { name: /expand/i })
@@ -74,7 +74,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
       .click()
     await expect(
       missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Locate node button is visible for expanded pack nodes', async ({
@@ -86,7 +86,7 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     )
 
     const missingNodeCard = comfyPage.page.getByTestId(
-      TestIds.errorsTab.missingNodeCard
+      TestIds.dialogs.missingNodeCard
     )
     await missingNodeCard
       .getByRole('button', { name: /expand/i })

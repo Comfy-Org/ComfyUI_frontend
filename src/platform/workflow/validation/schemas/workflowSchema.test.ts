@@ -67,6 +67,69 @@ describe('parseComfyWorkflow', () => {
     await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
+  describe('linearData.inputs schema', () => {
+    it('validates 2-tuple format (legacy)', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt']], outputs: [1] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([[1, 'prompt']])
+    })
+
+    it('validates 3-tuple format with config', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', { height: 200 }]], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs![0]).toEqual([
+        1,
+        'prompt',
+        { height: 200 }
+      ])
+    })
+
+    it('validates 3-tuple format with empty config', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', {}]], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+    })
+
+    it('validates mixed 2-tuple and 3-tuple entries', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [
+            [1, 'prompt'],
+            [2, 'seed', { height: 100 }]
+          ],
+          outputs: []
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [1, 'prompt'],
+        [2, 'seed', { height: 100 }]
+      ])
+    })
+
+    it('rejects invalid config shape', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', 'invalid']], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).toBeNull()
+    })
+  })
+
   it('workflow.nodes.pos', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.nodes[0].pos = [1, 2, 3]
