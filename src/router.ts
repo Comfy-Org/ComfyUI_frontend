@@ -8,6 +8,7 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isBackendReachable } from '@/platform/connectionPanel/backendReachable'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -70,21 +71,9 @@ const router = createRouter({
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
-            // Check if backend is reachable before loading the graph view
-            const backendUrl =
-              localStorage.getItem('comfyui-preview-backend-url') || ''
-            const apiBase = backendUrl ? backendUrl.replace(/\/+$/, '') : ''
-            try {
-              const controller = new AbortController()
-              const timeout = setTimeout(() => controller.abort(), 3000)
-              const res = await fetch(`${apiBase}/api/system_stats`, {
-                signal: controller.signal
-              })
-              clearTimeout(timeout)
-              if (!res.ok || !(await res.json()).system) {
-                return next('/connect')
-              }
-            } catch {
+            // Redirect to /connect when no ComfyUI backend is reachable
+            // (e.g. static deployments like Cloudflare Pages preview)
+            if (!(await isBackendReachable())) {
               return next('/connect')
             }
 
