@@ -33,9 +33,7 @@ function getStatusCard(comfyPage: ComfyPage) {
 }
 
 function getDropzone(comfyPage: ComfyPage) {
-  return comfyPage.page.getByTestId(
-    TestIds.dialogs.missingMediaUploadDropzone
-  )
+  return comfyPage.page.getByTestId(TestIds.dialogs.missingMediaUploadDropzone)
 }
 
 test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {

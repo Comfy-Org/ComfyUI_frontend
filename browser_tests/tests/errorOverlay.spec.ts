@@ -127,14 +127,14 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await errorOverlay
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
-      await expect(errorOverlay).not.toBeVisible()
+      await expect(errorOverlay).toBeHidden()
 
       await comfyPage.menu.workflowsTab.open()
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
       await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
-      await expect(errorOverlay).not.toBeVisible()
+      await expect(errorOverlay).toBeHidden()
     })
   })
 
