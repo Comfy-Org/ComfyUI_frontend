@@ -128,4 +128,68 @@ describe('ConnectionPanelView', () => {
       )
     })
   })
+
+  it('shows red HTTP indicator when fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
+    // Stub WebSocket to never open so wsStatus also resolves to false
+    class StubWS {
+      addEventListener(type: string, cb: () => void) {
+        if (type === 'error') setTimeout(cb, 0)
+      }
+      close() {}
+    }
+    vi.stubGlobal('WebSocket', StubWS as unknown as typeof WebSocket)
+
+    renderPanel()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /test/i }))
+
+    await vi.waitFor(() => {
+      // i18n in tests is empty so the status text falls back to the key
+      expect(screen.getByText(/connectionPanel\.error/)).toBeTruthy()
+    })
+  })
+
+  it('normalizes a URL without protocol by prepending http://', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
+
+    renderPanel()
+    const user = userEvent.setup()
+    const input = screen.getByDisplayValue(
+      'http://127.0.0.1:8188'
+    ) as HTMLInputElement
+    await user.clear(input)
+    await user.type(input, '192.168.1.50:8188')
+    await user.click(screen.getByRole('button', { name: /test/i }))
+
+    await vi.waitFor(() => {
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'comfyui-preview-backend-url',
+        'http://192.168.1.50:8188'
+      )
+    })
+  })
+
+  it('reveals Connect & Open ComfyUI button after a successful HTTP test', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true } as Response))
+    )
+    class StubWS {
+      addEventListener(type: string, cb: () => void) {
+        if (type === 'open') setTimeout(cb, 0)
+      }
+      close() {}
+    }
+    vi.stubGlobal('WebSocket', StubWS as unknown as typeof WebSocket)
+
+    renderPanel()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /test/i }))
+
+    await vi.waitFor(() => {
+      // i18n in tests is empty so the button label falls back to the key
+      expect(screen.getByText('connectionPanel.connectAndGo')).toBeTruthy()
+    })
+  })
 })
