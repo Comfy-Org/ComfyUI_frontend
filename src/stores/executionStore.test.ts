@@ -1,6 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -10,6 +11,7 @@ import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 const mockNodeExecutionIdToNodeLocatorId = vi.fn()
 const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
+const mockShowTextPreview = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
@@ -38,7 +40,7 @@ declare global {
 
 vi.mock('@/composables/node/useNodeProgressText', () => ({
   useNodeProgressText: () => ({
-    showTextPreview: vi.fn()
+    showTextPreview: mockShowTextPreview
   })
 }))
 
@@ -428,6 +430,40 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
     store.reconcileInitializingJobs(new Set())
 
     expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
+describe('useExecutionStore - progress_text startup guard', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function fireProgressText(detail: {
+    nodeId: string
+    text: string
+    prompt_id?: string
+  }) {
+    const handler = apiEventHandlers.get('progress_text')
+    if (!handler) throw new Error('progress_text handler not bound')
+    handler(new CustomEvent('progress_text', { detail }))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+    useCanvasStore().canvas = null
+  })
+
+  it('should ignore progress_text before the canvas is initialized', () => {
+    expect(() =>
+      fireProgressText({
+        nodeId: '1',
+        text: 'warming up'
+      })
+    ).not.toThrow()
+
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })
 
