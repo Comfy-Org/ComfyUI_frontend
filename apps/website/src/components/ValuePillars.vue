@@ -53,7 +53,7 @@ const pillars = computed(() => [
           class="rounded-xl border border-white/10 bg-charcoal-600 p-6 transition-colors hover:border-brand-yellow"
         >
           <div
-            class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-yellow text-xl"
+            class="flex size-12 items-center justify-center rounded-full bg-brand-yellow text-xl"
           >
             {{ pillar.icon }}
           </div>

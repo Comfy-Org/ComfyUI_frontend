@@ -15,9 +15,7 @@ async function expectPromotedWidgetNamesToContain(
   widgetName: string
 ) {
   await expect
-    .poll(() => getPromotedWidgetNames(comfyPage, nodeId), {
-      timeout: 5000
-    })
+    .poll(() => getPromotedWidgetNames(comfyPage, nodeId))
     .toContain(widgetName)
 }
 
@@ -27,9 +25,7 @@ async function expectPromotedWidgetCountToBeGreaterThan(
   count: number
 ) {
   await expect
-    .poll(() => getPromotedWidgetCount(comfyPage, nodeId), {
-      timeout: 5000
-    })
+    .poll(() => getPromotedWidgetCount(comfyPage, nodeId))
     .toBeGreaterThan(count)
 }
 
@@ -135,7 +131,7 @@ test.describe(
         const enterButton = subgraphVueNode.getByTestId('subgraph-enter-button')
         await expect(enterButton).toBeVisible()
 
-        const nodeBody = subgraphVueNode.locator('[data-testid="node-body-11"]')
+        const nodeBody = subgraphVueNode.getByTestId('node-body-11')
         await expect(nodeBody).toBeVisible()
 
         const widgets = nodeBody.locator('.lg-node-widgets > div')
@@ -203,12 +199,7 @@ test.describe(
 
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos, { button: 'right' })
 
         // Look for the Promote Widget menu entry
         const promoteEntry = comfyPage.page
@@ -239,12 +230,7 @@ test.describe(
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
 
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos, { button: 'right' })
 
         const promoteEntry = comfyPage.page
           .locator('.litemenu-entry')
@@ -270,12 +256,7 @@ test.describe(
         const stepsWidget2 = await ksampler2.getWidget(2)
         const widgetPos2 = await stepsWidget2.getPosition()
 
-        await comfyPage.canvas.click({
-          position: widgetPos2,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos2, { button: 'right' })
 
         const unpromoteEntry = comfyPage.page
           .locator('.litemenu-entry')
@@ -288,9 +269,7 @@ test.describe(
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '2'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '2'))
           .toBeLessThan(initialWidgetCount)
       })
     })
@@ -332,7 +311,7 @@ test.describe(
           .locator('.p-contextmenu')
           .locator('text=Promote Widget')
 
-        await expect(promoteEntry.first()).toBeVisible({ timeout: 5000 })
+        await expect(promoteEntry.first()).toBeVisible()
       })
     })
 
@@ -406,7 +385,7 @@ test.describe(
 
         await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-        const nodeBody = subgraphVueNode.locator('[data-testid="node-body-5"]')
+        const nodeBody = subgraphVueNode.getByTestId('node-body-5')
         await expect(nodeBody).toBeVisible()
         await expect(
           nodeBody.locator('.lg-node-widgets > div').first()
@@ -536,9 +515,7 @@ test.describe(
         expectedNames.splice(removedIndex, 1)
 
         await expect
-          .poll(() => getPromotedWidgetNames(comfyPage, '5'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
           .toEqual(expectedNames)
       })
 
@@ -553,9 +530,7 @@ test.describe(
 
         let initialWidgetCount = 0
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeGreaterThan(0)
         initialWidgetCount = await getPromotedWidgetCount(comfyPage, '11')
 
@@ -571,9 +546,7 @@ test.describe(
 
         // Widget count should be reduced
         await expect
-          .poll(() => getPromotedWidgetCount(comfyPage, '11'), {
-            timeout: 5000
-          })
+          .poll(() => getPromotedWidgetCount(comfyPage, '11'))
           .toBeLessThan(initialWidgetCount)
       })
     })

@@ -265,7 +265,7 @@ test.describe('Workflows sidebar', () => {
 
     // Dismiss the error overlay
     await errorOverlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
-    await expect(errorOverlay).not.toBeVisible()
+    await expect(errorOverlay).toBeHidden()
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
@@ -289,9 +289,7 @@ test.describe('Workflows sidebar', () => {
     )
     await closeButton.click()
     await expect
-      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames(), {
-        timeout: 5000
-      })
+      .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
   })
 
@@ -318,7 +316,7 @@ test.describe('Workflows sidebar', () => {
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
     await comfyPage.contextMenu.clickMenuItem('Delete')
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    await expect(workflowsTab.getOpenedItem(filename)).toBeHidden()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
@@ -339,7 +337,7 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.confirmDialog.click('delete')
 
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    await expect(workflowsTab.getOpenedItem(filename)).toBeHidden()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(['*Unsaved Workflow'])
@@ -370,7 +368,7 @@ test.describe('Workflows sidebar', () => {
     // Wait for workflow to appear in Browse section after sync
     const workflowItem =
       comfyPage.menu.workflowsTab.getPersistedItem('workflow1')
-    await expect(workflowItem).toBeVisible({ timeout: 3000 })
+    await expect(workflowItem).toBeVisible()
 
     const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 

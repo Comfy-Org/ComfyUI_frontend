@@ -31,7 +31,7 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
 
     // Wait for any asset card to appear (may contain img or video)
     const assetCard = comfyPage.page
-      .locator('[role="button"]')
+      .getByRole('button')
       .filter({ has: comfyPage.page.locator('img, video') })
       .first()
 
@@ -56,13 +56,13 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
     await runAndOpenGallery(comfyPage)
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
   })
 
   test('closes gallery when clicking close button', async ({ comfyPage }) => {
     await runAndOpenGallery(comfyPage)
 
     await comfyPage.mediaLightbox.closeButton.click()
-    await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
   })
 })

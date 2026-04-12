@@ -90,7 +90,7 @@ const filteredTestimonials = computed(() => {
           :key="testimonial.name"
           class="rounded-xl border border-white/10 bg-charcoal-600 p-6"
         >
-          <blockquote class="text-base italic text-white">
+          <blockquote class="text-base text-white italic">
             &ldquo;{{ testimonial.quote }}&rdquo;
           </blockquote>
 

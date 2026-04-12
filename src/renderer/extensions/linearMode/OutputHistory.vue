@@ -327,6 +327,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
         :key="`${item.id}-${item.state}`"
         :ref="selectedRef(`slot:${item.id}`)"
         v-bind="itemAttrs(`slot:${item.id}`)"
+        data-testid="linear-in-progress-item"
         :class="itemClass"
         @click="store.select(`slot:${item.id}`)"
       >
@@ -359,6 +360,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             :key
             :ref="selectedRef(`history:${asset.id}:${key}`)"
             v-bind="itemAttrs(`history:${asset.id}:${key}`)"
+            data-testid="linear-history-item"
             :class="itemClass"
             @click="store.select(`history:${asset.id}:${key}`)"
           >

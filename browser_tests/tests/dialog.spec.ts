@@ -11,9 +11,7 @@ test.beforeEach(async ({ comfyPage }) => {
 test.describe('Settings', () => {
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId('settings-dialog')
     await expect(settingsDialog).toBeVisible()
     const contentArea = settingsDialog.locator('main')
     await expect(contentArea).toBeVisible()
@@ -26,17 +24,16 @@ test.describe('Settings', () => {
     await comfyPage.page.keyboard.down('ControlOrMeta')
     await comfyPage.page.keyboard.press(',')
     await comfyPage.page.keyboard.up('ControlOrMeta')
-    const settingsLocator = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsLocator = comfyPage.page.getByTestId('settings-dialog')
     await expect(settingsLocator).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
-    await expect(settingsLocator).not.toBeVisible()
+    await expect(settingsLocator).toBeHidden()
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
     const maxSpeed = 2.5
     await comfyPage.settings.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
+
     await test.step('Setting should persist', async () => {
       await expect
         .poll(() => comfyPage.settings.getSetting('Comfy.Graph.ZoomSpeed'))
@@ -49,9 +46,7 @@ test.describe('Settings', () => {
     await comfyPage.page.keyboard.press('Control+,')
 
     // Open the keybinding tab
-    const settingsDialog = comfyPage.page.locator(
-      '[data-testid="settings-dialog"]'
-    )
+    const settingsDialog = comfyPage.page.getByTestId('settings-dialog')
     await expect(settingsDialog).toBeVisible()
     await settingsDialog
       .locator('nav [role="button"]', { hasText: 'Keybinding' })

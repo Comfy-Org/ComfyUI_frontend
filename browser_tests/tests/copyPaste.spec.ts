@@ -149,11 +149,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       await comfyPage.canvas.click({ position: { x: 50, y: 500 } })
       await comfyPage.nextFrame()
       await comfyPage.clipboard.paste()
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5_000
-        })
-        .toBe(3)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
 
       // Step 2: Paste image onto selected LoadImage node
       const loadImageNodes =
@@ -171,13 +167,10 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       await uploadPromise
 
       await expect
-        .poll(
-          async () => {
-            const fileWidget = await loadImageNodes[0].getWidget(0)
-            return fileWidget.getValue()
-          },
-          { timeout: 5_000 }
-        )
+        .poll(async () => {
+          const fileWidget = await loadImageNodes[0].getWidget(0)
+          return fileWidget.getValue()
+        })
         .toContain('image32x32')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
 
@@ -194,11 +187,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       )
       await uploadPromise2
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-          timeout: 5_000
-        })
-        .toBe(4)
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
       const allLoadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       expect(allLoadImageNodes).toHaveLength(2)

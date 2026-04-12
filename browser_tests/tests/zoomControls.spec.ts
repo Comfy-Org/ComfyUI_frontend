@@ -135,6 +135,6 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await zoomButton.click()
     await comfyPage.nextFrame()
 
-    await expect(zoomToFit).not.toBeVisible()
+    await expect(zoomToFit).toBeHidden()
   })
 })

@@ -3,14 +3,14 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export class BuilderStepsHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly toolbar: Locator
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.toolbar = this.page.getByRole('navigation', { name: 'App Builder' })
+  }
 
   private get page(): Page {
     return this.comfyPage.page
-  }
-
-  get toolbar(): Locator {
-    return this.page.getByRole('navigation', { name: 'App Builder' })
   }
 
   async goToInputs() {
