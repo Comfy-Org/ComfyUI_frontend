@@ -71,7 +71,10 @@ describe('HDRIManager', () => {
     scene = new THREE.Scene()
     eventManager = makeMockEventManager()
 
-    mockFromEquirectangular.mockReturnValue({ texture: new THREE.Texture() })
+    mockFromEquirectangular.mockReturnValue({
+      texture: new THREE.Texture(),
+      dispose: vi.fn()
+    })
 
     manager = new HDRIManager(scene, {} as THREE.WebGLRenderer, eventManager)
   })

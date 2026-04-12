@@ -44,22 +44,6 @@
         </div>
       </div>
     </div>
-    <div v-if="activeCategory === 'light'" class="mt-2 flex flex-col">
-      <Button
-        variant="textonly"
-        size="icon"
-        :class="
-          cn(
-            'flex items-center justify-center rounded-full',
-            'bg-button-active-surface'
-          )
-        "
-        @click="selectCategory('light')"
-      >
-        <i :class="getCategoryIcon('light')" />
-      </Button>
-    </div>
-
     <div v-show="activeCategory" class="rounded-lg bg-smoke-700/30">
       <SceneControls
         v-if="showSceneControls"
@@ -68,6 +52,9 @@
         v-model:background-image="sceneConfig!.backgroundImage"
         v-model:background-render-mode="sceneConfig!.backgroundRenderMode"
         v-model:fov="cameraConfig!.fov"
+        :hdri-active="
+          !!lightConfig?.hdri?.hdriPath && !!lightConfig?.hdri?.enabled
+        "
         @update-background-image="handleBackgroundImageUpdate"
       />
 
@@ -87,21 +74,16 @@
         v-model:fov="cameraConfig!.fov"
       />
 
-      <div
-        v-if="showLightControls"
-        class="flex max-h-[min(70vh,520px)] w-[216px] flex-col gap-3 overflow-y-auto p-2"
-      >
+      <div v-if="showLightControls" class="flex flex-col">
         <LightControls
           v-model:light-intensity="lightConfig!.intensity"
           v-model:material-mode="modelConfig!.materialMode"
           v-model:hdri-config="lightConfig!.hdri"
-          embedded
         />
 
         <HDRIControls
           v-model:hdri-config="lightConfig!.hdri"
-          embedded
-          :hdri-supported="hdriSupported"
+          :has-background-image="!!sceneConfig?.backgroundImage"
           @update-hdri-file="handleHDRIFileUpdate"
         />
       </div>
@@ -136,13 +118,11 @@ import { cn } from '@/utils/tailwindUtil'
 const {
   isSplatModel = false,
   isPlyModel = false,
-  hasSkeleton = false,
-  hdriSupported = false
+  hasSkeleton = false
 } = defineProps<{
   isSplatModel?: boolean
   isPlyModel?: boolean
   hasSkeleton?: boolean
-  hdriSupported?: boolean
 }>()
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')
@@ -201,11 +181,7 @@ const toggleMenu = () => {
 }
 
 const selectCategory = (category: string) => {
-  if (category === 'light') {
-    activeCategory.value = activeCategory.value === 'light' ? '' : 'light'
-  } else {
-    activeCategory.value = category
-  }
+  activeCategory.value = category
   isMenuOpen.value = false
 }
 

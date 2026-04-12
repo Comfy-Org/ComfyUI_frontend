@@ -138,7 +138,6 @@ describe('useLoad3d', () => {
       isPlyModel: vi.fn().mockReturnValue(false),
       hasSkeleton: vi.fn().mockReturnValue(false),
       setShowSkeleton: vi.fn(),
-      supportsHDRI: vi.fn().mockReturnValue(false),
       loadHDRI: vi.fn().mockResolvedValue(undefined),
       setHDRIEnabled: vi.fn(),
       setHDRIAsBackground: vi.fn(),
@@ -941,53 +940,6 @@ describe('useLoad3d', () => {
   })
 
   describe('hdri controls', () => {
-    it('should update hdriSupported on modelLoadingEnd', async () => {
-      let modelLoadingEndHandler: (() => void) | undefined
-
-      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
-        (event: string, handler: unknown) => {
-          if (event === 'modelLoadingEnd') {
-            modelLoadingEndHandler = handler as () => void
-          }
-        }
-      )
-      vi.mocked(mockLoad3d.supportsHDRI!).mockReturnValue(true)
-
-      const composable = useLoad3d(mockNode)
-      const containerRef = document.createElement('div')
-      await composable.initializeLoad3d(containerRef)
-
-      modelLoadingEndHandler?.()
-
-      expect(composable.hdriSupported.value).toBe(true)
-    })
-
-    it('should disable hdri when model does not support it', async () => {
-      let modelLoadingEndHandler: (() => void) | undefined
-
-      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
-        (event: string, handler: unknown) => {
-          if (event === 'modelLoadingEnd') {
-            modelLoadingEndHandler = handler as () => void
-          }
-        }
-      )
-      vi.mocked(mockLoad3d.supportsHDRI!).mockReturnValue(false)
-
-      const composable = useLoad3d(mockNode)
-      const containerRef = document.createElement('div')
-      await composable.initializeLoad3d(containerRef)
-
-      composable.lightConfig.value = {
-        ...composable.lightConfig.value,
-        hdri: { ...composable.lightConfig.value.hdri!, enabled: true }
-      }
-      modelLoadingEndHandler?.()
-
-      expect(composable.hdriSupported.value).toBe(false)
-      expect(composable.lightConfig.value.hdri!.enabled).toBe(false)
-    })
-
     it('should call setHDRIEnabled when hdriConfig.enabled changes', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1043,8 +995,6 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
-
-      composable.hdriSupported.value = true
 
       const file = new File([''], 'env.hdr', { type: 'image/x-hdr' })
       await composable.handleHDRIFileUpdate(file)

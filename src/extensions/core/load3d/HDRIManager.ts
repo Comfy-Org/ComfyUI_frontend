@@ -7,11 +7,12 @@ import type { EventManagerInterface } from './interfaces'
 
 export class HDRIManager {
   private scene: THREE.Scene
+  private renderer: THREE.WebGLRenderer
   private pmremGenerator: THREE.PMREMGenerator
   private eventManager: EventManagerInterface
 
   private hdriTexture: THREE.Texture | null = null
-  private envMap: THREE.Texture | null = null
+  private envMapTarget: THREE.WebGLRenderTarget | null = null
 
   private _isEnabled: boolean = false
   private _showAsBackground: boolean = false
@@ -35,6 +36,7 @@ export class HDRIManager {
     eventManager: EventManagerInterface
   ) {
     this.scene = scene
+    this.renderer = renderer
     this.pmremGenerator = new THREE.PMREMGenerator(renderer)
     this.pmremGenerator.compileEquirectangularShader()
     this.eventManager = eventManager
@@ -55,14 +57,13 @@ export class HDRIManager {
     }
 
     newTexture.mapping = THREE.EquirectangularReflectionMapping
-    const newEnvMap =
-      this.pmremGenerator.fromEquirectangular(newTexture).texture
+    const newEnvMapTarget = this.pmremGenerator.fromEquirectangular(newTexture)
 
-    // Dispose old textures only after the new one is ready
+    // Dispose old resources only after the new one is ready
     this.hdriTexture?.dispose()
-    this.envMap?.dispose()
+    this.envMapTarget?.dispose()
     this.hdriTexture = newTexture
-    this.envMap = newEnvMap
+    this.envMapTarget = newEnvMapTarget
 
     if (this._isEnabled) {
       this.applyToScene()
@@ -72,7 +73,7 @@ export class HDRIManager {
   setEnabled(enabled: boolean): void {
     this._isEnabled = enabled
     if (enabled) {
-      if (this.envMap) {
+      if (this.envMapTarget) {
         this.applyToScene()
       }
     } else {
@@ -82,7 +83,7 @@ export class HDRIManager {
 
   setShowAsBackground(show: boolean): void {
     this._showAsBackground = show
-    if (this._isEnabled && this.envMap) {
+    if (this._isEnabled && this.envMapTarget) {
       this.applyToScene()
     }
   }
@@ -95,10 +96,13 @@ export class HDRIManager {
   }
 
   private applyToScene(): void {
-    if (!this.envMap) return
-    this.scene.environment = this.envMap
+    const envMap = this.envMapTarget?.texture
+    if (!envMap) return
+    this.scene.environment = envMap
     this.scene.environmentIntensity = this._intensity
     this.scene.background = this._showAsBackground ? this.hdriTexture : null
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1.0
     this.eventManager.emitEvent('hdriChange', {
       enabled: this._isEnabled,
       showAsBackground: this._showAsBackground
@@ -110,27 +114,29 @@ export class HDRIManager {
     if (this.scene.background === this.hdriTexture) {
       this.scene.background = null
     }
+    this.renderer.toneMapping = THREE.NoToneMapping
+    this.renderer.toneMappingExposure = 1.0
     this.eventManager.emitEvent('hdriChange', {
       enabled: false,
       showAsBackground: this._showAsBackground
     })
   }
 
-  private clearTextures(): void {
+  private clearResources(): void {
     this.removeFromScene()
     this.hdriTexture?.dispose()
-    this.envMap?.dispose()
+    this.envMapTarget?.dispose()
     this.hdriTexture = null
-    this.envMap = null
+    this.envMapTarget = null
   }
 
   clear(): void {
-    this.clearTextures()
+    this.clearResources()
     this._isEnabled = false
   }
 
   dispose(): void {
-    this.clearTextures()
+    this.clearResources()
     this.pmremGenerator.dispose()
   }
 }

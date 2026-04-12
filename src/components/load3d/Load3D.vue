@@ -25,7 +25,6 @@
         :is-splat-model="isSplatModel"
         :is-ply-model="isPlyModel"
         :has-skeleton="hasSkeleton"
-        :hdri-supported="hdriSupported"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
         @update-hdri-file="handleHDRIFileUpdate"
@@ -115,7 +114,6 @@ const {
   lightConfig,
 
   // other state
-  hdriSupported,
   isRecording,
   isPreview,
   isSplatModel,

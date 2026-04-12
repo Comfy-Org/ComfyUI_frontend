@@ -14,8 +14,6 @@ import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
-import { HDRI_COMPATIBLE_MODEL_EXTENSIONS } from './constants'
-import Load3dUtils from './Load3dUtils'
 import {
   type CameraState,
   type CaptureResult,
@@ -97,8 +95,6 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.0
     this.renderer.domElement.classList.add(
       'absolute',
       'inset-0',
@@ -645,13 +641,6 @@ class Load3d {
   setLightIntensity(intensity: number): void {
     this.lightingManager.setLightIntensity(intensity)
     this.forceRender()
-  }
-
-  supportsHDRI(): boolean {
-    const url = this.modelManager.originalURL
-    if (!url) return false
-    const ext = Load3dUtils.getFilenameExtension(url)
-    return ext ? HDRI_COMPATIBLE_MODEL_EXTENSIONS.has(`.${ext}`) : false
   }
 
   async loadHDRI(url: string): Promise<void> {

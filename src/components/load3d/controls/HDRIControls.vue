@@ -1,9 +1,27 @@
 <template>
-  <div class="flex flex-col">
-    <div :class="embedded ? undefined : 'relative'">
+  <div v-if="!hasBackgroundImage || hdriConfig?.hdriPath" class="flex flex-col">
+    <Button
+      v-tooltip.right="{
+        value: hdriConfig?.hdriPath
+          ? $t('load3d.hdri.changeFile')
+          : $t('load3d.hdri.uploadFile'),
+        showDelay: 300
+      }"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="
+        hdriConfig?.hdriPath
+          ? $t('load3d.hdri.changeFile')
+          : $t('load3d.hdri.uploadFile')
+      "
+      @click="triggerFileInput"
+    >
+      <i class="icon-[lucide--upload] text-lg text-base-foreground" />
+    </Button>
+
+    <template v-if="hdriConfig?.hdriPath">
       <Button
-        v-if="!embedded"
-        ref="triggerRef"
         v-tooltip.right="{
           value: $t('load3d.hdri.label'),
           showDelay: 300
@@ -11,86 +29,47 @@
         size="icon"
         variant="textonly"
         :class="
-          cn(
-            'rounded-full',
-            hdriConfig?.enabled && 'bg-button-active-surface text-highlight'
-          )
+          cn('rounded-full', hdriConfig?.enabled && 'ring-2 ring-white/50')
         "
         :aria-label="$t('load3d.hdri.label')"
-        :disabled="!hdriSupported"
-        @click="toggleHDRIPanel"
+        @click="toggleEnabled"
       >
         <i class="icon-[lucide--globe] text-lg text-base-foreground" />
       </Button>
 
-      <div
-        v-show="embedded || showPanel"
-        ref="panelRef"
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.hdri.showAsBackground'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
         :class="
           cn(
-            'flex w-[200px] flex-col gap-3 rounded-lg bg-black/50 p-3 shadow-lg',
-            !embedded && 'absolute top-0 left-12 z-30'
+            'rounded-full',
+            hdriConfig?.showAsBackground && 'ring-2 ring-white/50'
           )
         "
+        :aria-label="$t('load3d.hdri.showAsBackground')"
+        @click="toggleShowAsBackground"
       >
-        <div class="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            class="w-full truncate text-xs"
-            :disabled="!hdriSupported"
-            @click="triggerFileInput"
-          >
-            {{
-              hdriConfig?.hdriPath
-                ? $t('load3d.hdri.changeFile')
-                : $t('load3d.hdri.uploadFile')
-            }}
-          </Button>
-          <Button
-            v-if="hdriConfig?.hdriPath"
-            size="icon"
-            variant="textonly"
-            :aria-label="$t('load3d.hdri.removeFile')"
-            @click="onRemoveHDRI"
-          >
-            <i class="icon-[lucide--x] text-sm text-base-foreground" />
-          </Button>
-        </div>
+        <i class="icon-[lucide--image] text-lg text-base-foreground" />
+      </Button>
 
-        <template v-if="hdriConfig?.hdriPath">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm text-base-foreground">{{
-              $t('load3d.hdri.label')
-            }}</span>
-            <SwitchRoot
-              :model-value="hdriConfig?.enabled ?? false"
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors data-[state=checked]:bg-primary-background data-[state=unchecked]:bg-node-stroke"
-              @update:model-value="onEnabledChange"
-            >
-              <SwitchThumb
-                class="pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-              />
-            </SwitchRoot>
-          </div>
-
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm text-base-foreground">{{
-              $t('load3d.hdri.showAsBackground')
-            }}</span>
-            <SwitchRoot
-              :model-value="hdriConfig?.showAsBackground ?? false"
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors data-[state=checked]:bg-primary-background data-[state=unchecked]:bg-node-stroke"
-              @update:model-value="onShowAsBackgroundChange"
-            >
-              <SwitchThumb
-                class="pointer-events-none block size-4 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
-              />
-            </SwitchRoot>
-          </div>
-        </template>
-      </div>
-    </div>
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.hdri.removeFile'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.hdri.removeFile')"
+        @click="onRemoveHDRI"
+      >
+        <i class="icon-[lucide--x] text-lg text-base-foreground" />
+      </Button>
+    </template>
 
     <input
       ref="fileInputRef"
@@ -103,12 +82,10 @@
 </template>
 
 <script setup lang="ts">
-import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
@@ -119,9 +96,8 @@ import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
-const { hdriSupported = false, embedded = false } = defineProps<{
-  hdriSupported?: boolean
-  embedded?: boolean
+const { hasBackgroundImage = false } = defineProps<{
+  hasBackgroundImage?: boolean
 }>()
 
 const hdriConfig = defineModel<HDRIConfig>('hdriConfig')
@@ -130,24 +106,7 @@ const emit = defineEmits<{
   (e: 'updateHdriFile', file: File | null): void
 }>()
 
-const showPanel = ref(false)
-const panelRef = ref<HTMLElement | null>(null)
-const triggerRef = ref<InstanceType<typeof Button> | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
-
-useDismissableOverlay({
-  isOpen: showPanel,
-  getOverlayEl: () => panelRef.value,
-  getTriggerEl: () => triggerRef.value?.$el ?? null,
-  onDismiss: () => {
-    showPanel.value = false
-  }
-})
-
-function toggleHDRIPanel() {
-  if (embedded || !hdriSupported) return
-  showPanel.value = !showPanel.value
-}
 
 function triggerFileInput() {
   fileInputRef.value?.click()
@@ -167,18 +126,23 @@ function onFileChange(event: Event) {
   emit('updateHdriFile', file)
 }
 
-function onEnabledChange(value: boolean) {
+function toggleEnabled() {
   if (!hdriConfig.value) return
-  hdriConfig.value = { ...hdriConfig.value, enabled: value }
+  hdriConfig.value = {
+    ...hdriConfig.value,
+    enabled: !hdriConfig.value.enabled
+  }
 }
 
-function onShowAsBackgroundChange(value: boolean) {
+function toggleShowAsBackground() {
   if (!hdriConfig.value) return
-  hdriConfig.value = { ...hdriConfig.value, showAsBackground: value }
+  hdriConfig.value = {
+    ...hdriConfig.value,
+    showAsBackground: !hdriConfig.value.showAsBackground
+  }
 }
 
 function onRemoveHDRI() {
   emit('updateHdriFile', null)
-  showPanel.value = false
 }
 </script>

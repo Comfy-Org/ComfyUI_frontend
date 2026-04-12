@@ -114,7 +114,7 @@ class Load3DConfiguration {
 
     const lightConfig = this.loadLightConfig()
     this.applyLightConfig(lightConfig)
-    if (lightConfig.hdri) void this.applyHDRI(lightConfig.hdri)
+    if (lightConfig.hdri) this.applyHDRISettings(lightConfig.hdri)
   }
 
   private loadSceneConfig(): SceneConfig {
@@ -206,23 +206,12 @@ class Load3DConfiguration {
     this.load3d.setLightIntensity(config.intensity)
   }
 
-  private async applyHDRI(config: HDRIConfig): Promise<void> {
+  private applyHDRISettings(config: HDRIConfig) {
     if (!config.hdriPath) return
-    try {
-      const hdriUrl = api.apiURL(
-        Load3dUtils.getResourceURL(
-          ...Load3dUtils.splitFilePath(config.hdriPath),
-          'input'
-        )
-      )
-      await this.load3d.loadHDRI(hdriUrl)
-      this.load3d.setHDRIIntensity(config.intensity)
-      this.load3d.setHDRIAsBackground(config.showAsBackground)
-      if (config.enabled) {
-        this.load3d.setHDRIEnabled(true)
-      }
-    } catch (error) {
-      console.warn('Failed to restore HDRI:', error)
+    this.load3d.setHDRIIntensity(config.intensity)
+    this.load3d.setHDRIAsBackground(config.showAsBackground)
+    if (config.enabled) {
+      this.load3d.setHDRIEnabled(true)
     }
   }
 
