@@ -32,42 +32,56 @@ interface MissingNodesError {
   nodeTypes: MissingNodeType[]
 }
 
-function clearAllNodeErrorFlags(rootGraph: LGraph): void {
-  forEachNode(rootGraph, (node) => {
-    node.has_errors = false
-    if (node.inputs) {
-      for (const slot of node.inputs) {
-        slot.hasErrors = false
-      }
-    }
+function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
+  if (node.has_errors === hasErrors) return
+  const oldValue = node.has_errors
+  node.has_errors = hasErrors
+  node.graph?.trigger('node:property:changed', {
+    type: 'node:property:changed',
+    nodeId: node.id,
+    property: 'has_errors',
+    oldValue,
+    newValue: hasErrors
   })
 }
 
-function markNodeSlotErrors(node: LGraphNode, nodeError: NodeError): void {
-  if (!node.inputs) return
-  for (const error of nodeError.errors) {
-    const slotName = error.extra_info?.input_name
-    if (!slotName) continue
-    const slot = node.inputs.find((s) => s.name === slotName)
-    if (slot) slot.hasErrors = true
-  }
-}
-
-function applyNodeError(
+function reconcileNodeErrorFlags(
   rootGraph: LGraph,
-  executionId: NodeExecutionId,
-  nodeError: NodeError
+  nodeErrors: Record<string, NodeError> | null
 ): void {
-  const node = getNodeByExecutionId(rootGraph, executionId)
-  if (!node) return
+  const flaggedNodes = new Set<LGraphNode>()
+  const errorSlots = new Map<LGraphNode, Set<string>>()
 
-  node.has_errors = true
-  markNodeSlotErrors(node, nodeError)
+  if (nodeErrors) {
+    for (const [executionId, nodeError] of Object.entries(nodeErrors)) {
+      const node = getNodeByExecutionId(rootGraph, executionId)
+      if (!node) continue
 
-  for (const parentId of getParentExecutionIds(executionId)) {
-    const parentNode = getNodeByExecutionId(rootGraph, parentId)
-    if (parentNode) parentNode.has_errors = true
+      flaggedNodes.add(node)
+      const slotNames = new Set<string>()
+      for (const error of nodeError.errors) {
+        const name = error.extra_info?.input_name
+        if (name) slotNames.add(name)
+      }
+      if (slotNames.size > 0) errorSlots.set(node, slotNames)
+
+      for (const parentId of getParentExecutionIds(executionId)) {
+        const parentNode = getNodeByExecutionId(rootGraph, parentId)
+        if (parentNode) flaggedNodes.add(parentNode)
+      }
+    }
   }
+
+  forEachNode(rootGraph, (node) => {
+    setNodeHasErrors(node, flaggedNodes.has(node))
+
+    if (node.inputs) {
+      const nodeSlotNames = errorSlots.get(node)
+      for (const slot of node.inputs) {
+        slot.hasErrors = !!nodeSlotNames?.has(slot.name)
+      }
+    }
+  })
 }
 
 /** Execution error state: node errors, runtime errors, prompt errors, and missing nodes. */
@@ -371,20 +385,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return missingAncestorExecutionIds.value.has(execId)
   }
 
-  watch(lastNodeErrors, () => {
-    if (!app.isGraphReady) return
-    const rootGraph = app.rootGraph
-
-    clearAllNodeErrorFlags(rootGraph)
-
-    if (!lastNodeErrors.value) return
-
-    for (const [executionId, nodeError] of Object.entries(
-      lastNodeErrors.value
-    )) {
-      applyNodeError(rootGraph, executionId, nodeError)
-    }
-  })
+  watch(
+    lastNodeErrors,
+    () => {
+      if (!app.isGraphReady) return
+      reconcileNodeErrorFlags(app.rootGraph, lastNodeErrors.value)
+    },
+    { flush: 'post' }
+  )
 
   return {
     // Raw state
