@@ -817,7 +817,7 @@ describe(usePromotionStore, () => {
       ).toBe(true)
     })
 
-    it('isPromotedByAny with disambiguatingSourceNodeId only matches keyed entries', () => {
+    it('isPromotedByAny with disambiguatingSourceNodeId matches exact key and base key', () => {
       store.promote(graphA, nodeId, {
         sourceNodeId: '3',
         sourceWidgetName: 'text',
@@ -837,12 +837,14 @@ describe(usePromotionStore, () => {
           disambiguatingSourceNodeId: '2'
         })
       ).toBe(false)
+      // Base-key lookup succeeds because dual-indexing keeps a ref count
+      // on the base key for callers that lack a disambiguator.
       expect(
         store.isPromotedByAny(graphA, {
           sourceNodeId: '3',
           sourceWidgetName: 'text'
         })
-      ).toBe(false)
+      ).toBe(true)
     })
 
     it('setPromotions with disambiguatingSourceNodeId entries maintains correct ref-counts', () => {

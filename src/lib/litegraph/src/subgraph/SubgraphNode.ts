@@ -1089,6 +1089,26 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       })
       .filter((e): e is NonNullable<typeof e> => e !== null)
 
+    // Infer disambiguatingSourceNodeId for entries whose source node is a
+    // SubgraphNode.  The renderer computes a promotionSourceNodeId from the
+    // concrete (leaf) node deep in the promotion chain; the store key must
+    // carry the same value so that exact-match lookups succeed (#10612).
+    for (const entry of entries) {
+      if (entry.disambiguatingSourceNodeId) continue
+
+      const sourceNode = this.subgraph.getNodeById(entry.sourceNodeId)
+      if (!sourceNode?.isSubgraphNode()) continue
+
+      const result = resolveConcretePromotedWidget(
+        this,
+        entry.sourceNodeId,
+        entry.sourceWidgetName
+      )
+      if (result.status === 'resolved') {
+        entry.disambiguatingSourceNodeId = String(result.resolved.node.id)
+      }
+    }
+
     store.setPromotions(this.rootGraph.id, this.id, entries)
 
     // Write back resolved entries so legacy or stale entries don't persist

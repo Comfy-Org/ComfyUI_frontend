@@ -95,16 +95,12 @@ function renderComponent(nodeData: VueNodeData, setupStores?: () => void) {
 }
 
 describe('promoted widget indicator on nested subgraphs', () => {
-  test('shows promoted ring when promotion was stored without disambiguatingSourceNodeId', async () => {
+  test('shows promoted ring when promotion includes disambiguatingSourceNodeId', async () => {
     // Scenario: SubBNode (id=3) inside SubA promotes a widget from
-    // ConcreteNode (id=1). The promotion at the SubA level is stored
-    // WITHOUT disambiguatingSourceNodeId because ConcreteNode is not
-    // itself a SubgraphNode.
-    //
-    // The widget rendered on SubBNode has storeName and storeNodeId set
-    // (because it's a promoted widget), so NodeWidgets.vue would normally
-    // compute a disambiguatingSourceNodeId from the storeNodeId.
-    // This causes a key mismatch: lookup key "3:text:1" vs stored "3:text".
+    // ConcreteNode (id=1). During hydration, SubgraphNode.configure
+    // resolves the concrete node and stores the promotion WITH
+    // disambiguatingSourceNodeId so that the exact key matches the
+    // renderer's lookup.
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
@@ -115,12 +111,35 @@ describe('promoted widget indicator on nested subgraphs', () => {
     })
     const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '3')
     renderComponent(nodeData, () => {
-      // Store promotion WITHOUT disambiguatingSourceNodeId, as would
-      // happen for a first-level nested promotion where the inner node
-      // is not itself a SubgraphNode.
       usePromotionStore().promote('graph-test', '4', {
         sourceNodeId: '3',
-        sourceWidgetName: 'text'
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+    })
+
+    const widgets = screen.getAllByTestId('widget-stub')
+    const hasPromotedRing = widgets.some((el) =>
+      el.classList.contains(PROMOTED_CLASS)
+    )
+    expect(hasPromotedRing).toBe(true)
+  })
+
+  test('shows promoted ring via base-key lookup when disambiguator is unknown', async () => {
+    // Legacy callers (e.g. BaseWidget) may not have the disambiguator.
+    // The dual-indexed base key ensures the ring still shows.
+    const promotedWidget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: 'test_node',
+      isDOMWidget: false
+    })
+    const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '3')
+    renderComponent(nodeData, () => {
+      usePromotionStore().promote('graph-test', '4', {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
       })
     })
 
