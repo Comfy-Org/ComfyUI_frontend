@@ -672,6 +672,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 title: String(propertyEvent.newValue)
               })
               break
+            case 'has_errors':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                hasErrors: Boolean(propertyEvent.newValue)
+              })
+              break
             case 'flags.collapsed':
               vueNodeData.set(nodeId, {
                 ...currentData,
