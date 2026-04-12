@@ -2087,10 +2087,22 @@ export default withDemowright(baseConfig, {
           }
 
           if (demowrightMp4) {
-            execSync(`cp "${demowrightMp4}" "${opts.outputDir}/qa-session.mp4"`)
-            console.warn(
-              `Phase 2: Narrated video → ${opts.outputDir}/qa-session.mp4`
-            )
+            // Trim first 7s (ComfyUI loading screen) from the video
+            try {
+              execSync(
+                `ffmpeg -y -i "${demowrightMp4}" -ss 7 -c copy -avoid_negative_ts 1 "${opts.outputDir}/qa-session.mp4" 2>/dev/null`
+              )
+              console.warn(
+                `Phase 2: Trimmed video → ${opts.outputDir}/qa-session.mp4`
+              )
+            } catch {
+              execSync(
+                `cp "${demowrightMp4}" "${opts.outputDir}/qa-session.mp4"`
+              )
+              console.warn(
+                `Phase 2: Narrated video → ${opts.outputDir}/qa-session.mp4`
+              )
+            }
           }
 
           // Also copy raw webm as fallback

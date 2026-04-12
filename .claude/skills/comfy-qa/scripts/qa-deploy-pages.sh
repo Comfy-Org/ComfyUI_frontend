@@ -232,6 +232,15 @@ for tfile in qa-artifacts/*/research/reproduce.spec.ts qa-artifacts/*/*/research
   fi
 done
 
+# Copy video script if available
+for vsfile in qa-artifacts/*/video-script.spec.ts qa-artifacts/*/*/video-script.spec.ts qa-artifacts/before/*/video-script.spec.ts; do
+  if [ -f "$vsfile" ]; then
+    cp "$vsfile" "$DEPLOY_DIR/video-script.spec.ts"
+    echo "Found video script: $vsfile"
+    break
+  fi
+done
+
 # Generate badge SVGs into deploy dir
 # Priority: research-log.json verdict (a11y-verified) > video review verdict (AI interpretation)
 REPRO_COUNT=0 INCONC_COUNT=0 NOT_REPRO_COUNT=0 TOTAL_REPORTS=0
@@ -298,6 +307,15 @@ fi
 FAIL_COUNT=$((TOTAL_REPORTS - REPRO_COUNT - NOT_REPRO_COUNT))
 [ "$FAIL_COUNT" -lt 0 ] && FAIL_COUNT=0
 echo "DEBUG verdict: repro=${REPRO_COUNT} not_repro=${NOT_REPRO_COUNT} inconc=${INCONC_COUNT} fail=${FAIL_COUNT} total=${TOTAL_REPORTS}"
+
+# Warn on verdict mismatch between E2E and video review
+if [ -n "$RESEARCH_VERDICT" ]; then
+  VIDEO_VERDICT=$(grep -oP '"verdict":\s*"[A-Z_]+' video-reviews/*-qa-video-report.md 2>/dev/null | tail -1 | grep -oP '[A-Z_]+$' || true)
+  if [ -n "$VIDEO_VERDICT" ] && [ "$RESEARCH_VERDICT" != "$VIDEO_VERDICT" ]; then
+    echo "⚠ Verdict mismatch: E2E=$RESEARCH_VERDICT vs Video=$VIDEO_VERDICT (E2E takes priority)"
+  fi
+fi
+
 echo "Verdict: ${REPRO_COUNT}✓ ${NOT_REPRO_COUNT}✗ ${FAIL_COUNT}⚠ / ${TOTAL_REPORTS}"
 
 # Badge text:

@@ -345,7 +345,7 @@ export async function runResearchPhase(
         .string()
         .optional()
         .describe(
-          'Optional demowright video script code for Phase 2 demo recording. A separate test file that imports createVideoScript from demowright/video-script and renders a narrated demo. Do NOT include demowright imports in testCode — put them here instead.'
+          'Demowright video script for Phase 2 demo recording. REQUIRED when verdict is REPRODUCED. A separate test file using createVideoScript with title, segments, and outro. Do NOT include demowright imports in testCode.'
         )
     },
     async (args: {
@@ -569,11 +569,12 @@ to happen before it happens. Pattern:
 \`\`\`
 
 IMPORTANT RULES for videoScript:
-1. ALL setup code (setSetting, setupWorkflowsDirectory) goes BEFORE createVideoScript() — title card must be first thing in video
-2. Call \`await pace()\` FIRST in each segment callback, BEFORE actions
-3. Add \`waitForTimeout(2000)\` after each action so viewers can see the result
-4. Final evidence segment: hold for 5+ seconds
-5. Reproduce the same steps as testCode but slower with clear narration
+1. You MUST provide videoScript when verdict is REPRODUCED — every reproduced bug needs a narrated demo
+2. ALL setup code (setSetting, setupWorkflowsDirectory) goes BEFORE createVideoScript() — title card must be first thing in video
+3. Call \`await pace()\` FIRST in each segment callback, BEFORE actions
+4. Add \`waitForTimeout(2000)\` after each action so viewers can see the result
+5. Final evidence segment: hold for 5+ seconds
+6. Reproduce the same steps as testCode but slower with clear narration
 
 ## Current UI state (accessibility tree)
 ${initialA11y}

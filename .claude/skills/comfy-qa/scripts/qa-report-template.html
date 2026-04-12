@@ -93,7 +93,7 @@ h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em
 (async()=>{
   const sec=document.getElementById('research-section');
   try{
-    const [logRes,testRes]=await Promise.allSettled([fetch('research-log.json'),fetch('reproduce.spec.ts')]);
+    const [logRes,testRes,vsRes]=await Promise.allSettled([fetch('research-log.json'),fetch('reproduce.spec.ts'),fetch('video-script.spec.ts')]);
     let html='';
     if(logRes.status==='fulfilled'&&logRes.value.ok){
       const log=await logRes.value.json();
@@ -102,6 +102,10 @@ h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em
     if(testRes.status==='fulfilled'&&testRes.value.ok){
       const code=await testRes.value.text();
       html+=`<details><summary style="cursor:pointer;font-weight:600;font-size:1rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)">E2E Test Code (reproduce.spec.ts)</summary><div style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);overflow:auto;max-height:600px"><pre style="font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap">${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></div></details>`;
+    }
+    if(vsRes.status==='fulfilled'&&vsRes.value.ok){
+      const vsCode=await vsRes.value.text();
+      html+=`<details style="margin-top:1rem"><summary style="cursor:pointer;font-weight:600;font-size:1rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)">Video Script (video-script.spec.ts)</summary><div style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);overflow:auto;max-height:600px"><pre style="font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap">${vsCode.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></div></details>`;
     }
     if(html)sec.innerHTML=html;
   }catch(e){console.warn('research load failed',e)}
