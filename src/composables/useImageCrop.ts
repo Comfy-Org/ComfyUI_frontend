@@ -22,6 +22,19 @@ const CORNER_SIZE = 10
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 2
 
+/**
+ * Next `isLoading` when `imageUrl` transitions. `null` means do not change
+ * `isLoading` (e.g. same URL).
+ */
+export function imageCropLoadingAfterUrlChange(
+  url: string | null,
+  previous: string | null | undefined
+): boolean | null {
+  if (url == null) return false
+  if (url !== previous) return true
+  return null
+}
+
 export const ASPECT_RATIOS = {
   '1:1': 1,
   '3:4': 3 / 4,
@@ -178,6 +191,13 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const updateImageUrl = () => {
     imageUrl.value = getInputImageUrl()
   }
+
+  watch(imageUrl, (url, previous) => {
+    const next = imageCropLoadingAfterUrlChange(url, previous)
+    if (next !== null) {
+      isLoading.value = next
+    }
+  })
 
   const updateDisplayedDimensions = () => {
     if (!imageEl.value || !containerEl.value) return
