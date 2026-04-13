@@ -178,7 +178,7 @@ test.describe('Painter', { tag: '@widget' }, () => {
         .getNodeLocator('1')
         .locator('.widget-expands')
       const sizeRow = painterWidget.getByTestId('painter-size-row')
-      const sizeSlider = sizeRow.getByRole("slider")
+      const sizeSlider = sizeRow.getByRole('slider')
       const sizeDisplay = sizeRow.getByTestId('painter-size-value')
 
       await expect(sizeDisplay).toHaveText('20')
@@ -234,7 +234,7 @@ test.describe('Painter', { tag: '@widget' }, () => {
       const canvas = painterWidget.locator('canvas')
       const widthSlider = painterWidget
         .getByTestId('painter-width-row')
-        .getByRole("slider")
+        .getByRole('slider')
 
       const initialWidth = await canvas.evaluate(
         (el: HTMLCanvasElement) => el.width
@@ -258,7 +258,7 @@ test.describe('Painter', { tag: '@widget' }, () => {
         const canvas = painterWidget.locator('canvas')
         const widthSlider = painterWidget
           .getByTestId('painter-width-row')
-          .getByRole("slider")
+          .getByRole('slider')
 
         await drawStroke(comfyPage.page, canvas)
         await expect
