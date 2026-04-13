@@ -423,6 +423,8 @@ export async function runResearchPhase(
 - Use \`comfyPage.nextFrame()\` after interactions that trigger UI updates
 - NEVER use \`page.waitForTimeout()\` — use Locator actions and retrying assertions instead
 - ALWAYS call done() when finished, even if the test passed — do not keep iterating after a passing test
+- CRITICAL: If your test FAILS 3 times in a row with the same or similar error, call done(NOT_REPRODUCIBLE) immediately. Do NOT keep retrying the same approach — try a completely different strategy or give up. Spending 20+ tool calls on failing tests is wasteful.
+- Budget your turns: spend at most 3 turns on inspect/readFixture, 2 turns writing the first test, then max 3 fix attempts. If still failing after ~10 tool calls, call done().
 - Use \`expect.poll()\` for async assertions: \`await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(8)\`
 - CRITICAL: Your assertions must be SPECIFIC TO THE BUG. A test that asserts \`expect(count).toBeGreaterThan(0)\` proves nothing — it would pass even without the bug. Instead assert the exact broken state, e.g. \`expect(clonedWidgets).toHaveLength(0)\` (missing widgets) or \`expect(zIndex).toBeLessThan(parentZIndex)\` (wrong z-order). If a test passes trivially, it's a false positive.
 - NEVER write "debug", "discovery", or "inspect node types" tests. These waste turns and produce false REPRODUCED verdicts. If you need to discover node type names, use inspect() or readFixture() — not a passing test.
