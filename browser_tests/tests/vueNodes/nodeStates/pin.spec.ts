@@ -6,12 +6,7 @@ import {
 const PIN_HOTKEY = 'p'
 const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
-test.describe('Vue Node Pin', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Pin', { tag: '@vue-nodes' }, () => {
   test('should allow toggling pin on a selected node with hotkey', async ({
     comfyPage
   }) => {

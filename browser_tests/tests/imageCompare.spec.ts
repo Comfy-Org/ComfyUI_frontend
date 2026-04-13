@@ -4,9 +4,8 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Image Compare', { tag: '@widget' }, () => {
+test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('widgets/image_compare_widget')
     await comfyPage.vueNodes.waitForNodes()
   })

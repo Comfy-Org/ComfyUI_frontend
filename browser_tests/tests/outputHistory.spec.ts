@@ -43,7 +43,6 @@ function imageOutput(...filenames: string[]) {
 
 test.describe('Output History', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()
     await comfyPage.nextFrame()
