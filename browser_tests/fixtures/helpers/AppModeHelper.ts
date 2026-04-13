@@ -94,6 +94,13 @@ export class AppModeHelper {
 
   /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
+    // Wait for any workflow-tab popover to dismiss before clicking —
+    // the popover overlay can intercept the "Workflow actions" click.
+    await this.page
+      .locator('.workflow-popover-fade')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {})
+
     await this.page
       .getByRole('button', { name: 'Workflow actions' })
       .first()

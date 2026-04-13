@@ -74,6 +74,22 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
       return node!.id
     })
 
+    // Wait for the asset widget to be created on the new node before
+    // checking its value — widget mounting is async and may lag behind
+    // node creation.
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate((id) => {
+            const node = window.app!.graph.getNodeById(id)
+            return node?.widgets?.find(
+              (w: { name: string }) => w.name === 'ckpt_name'
+            )?.type
+          }, nodeId),
+        { timeout: 10_000 }
+      )
+      .toBe('asset')
+
     await expect
       .poll(
         async () => {
