@@ -7,13 +7,21 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 // Create mock functions that will be shared
-const mockNodeExecutionIdToNodeLocatorId = vi.fn()
-const mockNodeIdToNodeLocatorId = vi.fn()
-const mockNodeLocatorIdToNodeExecutionId = vi.fn()
-const mockShowTextPreview = vi.fn()
+const {
+  mockNodeExecutionIdToNodeLocatorId,
+  mockNodeIdToNodeLocatorId,
+  mockNodeLocatorIdToNodeExecutionId,
+  mockShowTextPreview
+} = vi.hoisted(() => ({
+  mockNodeExecutionIdToNodeLocatorId: vi.fn(),
+  mockNodeIdToNodeLocatorId: vi.fn(),
+  mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+  mockShowTextPreview: vi.fn()
+}))
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -466,6 +474,19 @@ describe('useExecutionStore - progress_text startup guard', () => {
     ).not.toThrow()
 
     expect(mockShowTextPreview).not.toHaveBeenCalled()
+  })
+
+  it('should call showTextPreview when canvas is available', async () => {
+    const mockNode = createMockLGraphNode({ id: 1 })
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn(() => mockNode) }
+    } as unknown as LGraphCanvas
+
+    fireProgressText({ nodeId: '1', text: 'warming up' })
+
+    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
   })
 })
 
