@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
 // Fixture factory for JobListItem
@@ -675,6 +676,36 @@ describe('useQueueStore', () => {
       expect(store.historyTasks[0]).toBe(initialTask)
       // Should preserve array identity when history is unchanged
       expect(store.historyTasks).toBe(initialHistoryTasks)
+    })
+
+    it('clears stale execution tracking when the active job appears in history', async () => {
+      const executionStore = useExecutionStore()
+      const clearTrackedJobSpy = vi.spyOn(executionStore, 'clearTrackedJob')
+
+      executionStore.activeJobId = 'job-1'
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([createHistoryJob(10, 'job-1')])
+
+      await store.update()
+
+      expect(clearTrackedJobSpy).toHaveBeenCalledWith('job-1')
+      expect(executionStore.activeJobId).toBeNull()
+    })
+
+    it('does not clear execution tracking when the active job is missing from history', async () => {
+      const executionStore = useExecutionStore()
+      const clearTrackedJobSpy = vi.spyOn(executionStore, 'clearTrackedJob')
+
+      executionStore.activeJobId = 'job-1'
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(clearTrackedJobSpy).not.toHaveBeenCalled()
+      expect(executionStore.activeJobId).toBe('job-1')
     })
   })
 

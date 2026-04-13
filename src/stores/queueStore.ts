@@ -546,15 +546,16 @@ export const useQueueStore = defineStore('queue', () => {
         }
       })
 
+      const activeJobIds = new Set([
+        ...queue.Running.map((job) => String(job.id)),
+        ...queue.Pending.map((job) => String(job.id))
+      ])
+
       // Only reconcile when the queue fetch returned data. api.getQueue()
       // returns empty Running/Pending on transient errors, which would
       // incorrectly clear all initializing prompts.
       const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
       if (queueHasData) {
-        const activeJobIds = new Set([
-          ...queue.Running.map((j) => j.id),
-          ...queue.Pending.map((j) => j.id)
-        ])
         executionStore.reconcileInitializingJobs(activeJobIds)
       }
 
@@ -586,6 +587,17 @@ export const useQueueStore = defineStore('queue', () => {
       if (!isHistoryUnchanged) {
         historyTasks.value = nextHistoryTasks
       }
+
+      const activeJobId = executionStore.activeJobId
+      const missedTerminalExecution =
+        activeJobId !== null &&
+        !activeJobIds.has(activeJobId) &&
+        nextHistoryTasks.some((task) => task.jobId === activeJobId)
+
+      if (missedTerminalExecution) {
+        executionStore.clearTrackedJob(activeJobId)
+      }
+
       hasFetchedHistorySnapshot.value = true
     } finally {
       isLoading.value = false
