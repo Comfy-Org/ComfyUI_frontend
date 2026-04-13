@@ -8,10 +8,6 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Actionbar', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   /**
    * This test ensures that the autoqueue change mode can only queue one change at a time
    */

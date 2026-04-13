@@ -9,10 +9,9 @@ import {
   triggerSerialization
 } from '@e2e/helpers/painter'
 
-test.describe('Painter', { tag: '@widget' }, () => {
+test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => window.app?.graph?.clear())
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
     await comfyPage.vueNodes.waitForNodes()
   })
