@@ -28,7 +28,8 @@ import {
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
   visitGraphNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getExecutionIdForNodeInGraph
 } from '@/utils/graphTraversalUtil'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
@@ -639,6 +640,86 @@ describe('graphTraversalUtil', () => {
 
         const execId = getExecutionIdByNode(rootGraph, targetNode)
         expect(execId).toBe('123:456:999')
+      })
+    })
+
+    describe('getExecutionIdForNodeInGraph', () => {
+      it('returns local id when graph is rootGraph', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+        expect(getExecutionIdForNodeInGraph(rootGraph, rootGraph, '42')).toBe(
+          '42'
+        )
+      })
+
+      it('returns local id when graph.isRootGraph is true', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+        const otherRoot = createMockGraph([])
+        expect(getExecutionIdForNodeInGraph(otherRoot, rootGraph, '42')).toBe(
+          '42'
+        )
+      })
+
+      it('builds parentPath:nodeId for a single-level subgraph', () => {
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub-uuid', [interior])
+        const subgraphNode = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([subgraphNode])
+
+        expect(getExecutionIdForNodeInGraph(rootGraph, subgraph, '63')).toBe(
+          '65:63'
+        )
+      })
+
+      it('builds nested parentPath:nodeId for deeply-nested subgraph', () => {
+        const interior = createMockNode('999')
+        const deep = createMockSubgraph('deep', [interior])
+        const midNode = createMockNode('456', {
+          isSubgraph: true,
+          subgraph: deep
+        })
+        const mid = createMockSubgraph('mid', [midNode])
+        const topNode = createMockNode('123', {
+          isSubgraph: true,
+          subgraph: mid
+        })
+        const rootGraph = createMockGraph([topNode])
+
+        expect(getExecutionIdForNodeInGraph(rootGraph, deep, '999')).toBe(
+          '123:456:999'
+        )
+      })
+
+      it('works when node is detached (node.graph = null)', () => {
+        // This is the primary use case — onNodeRemoved fires after
+        // LiteGraph nulls node.graph, but the hook closure still has
+        // the local graph instance, which is enough.
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub-uuid', [interior])
+        const subgraphNode = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([subgraphNode])
+        interior.graph = null as unknown as LGraph
+
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, subgraph, interior.id)
+        ).toBe('65:63')
+      })
+
+      it('falls back to local id when graph is not reachable from root', () => {
+        const interior = createMockNode('63')
+        const orphanSubgraph = createMockSubgraph('orphan', [interior])
+        const rootGraph = createMockGraph([])
+
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, orphanSubgraph, '63')
+        ).toBe('63')
       })
     })
 
