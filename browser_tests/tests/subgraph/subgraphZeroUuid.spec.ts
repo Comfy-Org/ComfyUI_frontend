@@ -6,12 +6,6 @@ test.describe(
   'Zero UUID workflow: subgraph undo rendering',
   { tag: ['@workflow', '@subgraph', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      test.setTimeout(30000) // Extend timeout as we need to reload the page an additional time
-      await comfyPage.page.reload() // Reload page to ensure Vue mode is active
-      await comfyPage.page.waitForFunction(() => !!window.app?.graph)
-    })
-
     test('Undo after subgraph enter/exit renders all nodes when workflow starts with zero UUID', async ({
       comfyPage
     }) => {
