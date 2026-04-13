@@ -257,7 +257,9 @@ test.describe('Painter', () => {
     await expect(sizeValue).toHaveText('20')
   })
 
-  test('Canvas dimensions are displayed', async ({ comfyPage }) => {
+  test('Width and height controls visible without image input', async ({
+    comfyPage
+  }) => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const painterWidget = node.locator('.widget-expands')
 
@@ -265,10 +267,10 @@ test.describe('Painter', () => {
     await expect(painterWidget.getByTestId('painter-width-row')).toBeVisible()
     await expect(painterWidget.getByTestId('painter-height-row')).toBeVisible()
 
-    // Default canvas size is 512x512 shown in the dimension text
+    // Dimension text is only shown when image input IS connected
     await expect(
       painterWidget.getByTestId('painter-dimension-text')
-    ).toContainText('512')
+    ).toBeHidden()
   })
 
   test('Color inputs are visible when no image input is connected', async ({
@@ -444,6 +446,12 @@ test.describe('Painter', () => {
           body: JSON.stringify(mockResponse)
         })
       })
+
+      // Wait for the painter canvas to be fully mounted before serializing
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator('1')
+        .locator('.widget-expands canvas')
+      await expect(canvas).toBeVisible()
 
       await triggerSerialization(comfyPage.page)
 
