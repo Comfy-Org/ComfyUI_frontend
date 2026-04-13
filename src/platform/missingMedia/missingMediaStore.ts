@@ -153,6 +153,13 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     const removedNames = new Set<string>()
     const remaining: MissingMediaCandidate[] = []
     for (const m of missingMediaCandidates.value) {
+      // Preserve candidates without a nodeId; they cannot belong to any
+      // subgraph scope. The type marks nodeId as required, but defensive
+      // handling matches the rest of the missing-media code.
+      if (m.nodeId == null) {
+        remaining.push(m)
+        continue
+      }
       if (String(m.nodeId).startsWith(prefix)) {
         removedNames.add(m.name)
       } else {

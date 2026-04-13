@@ -172,6 +172,12 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     const removedNames = new Set<string>()
     const remaining: MissingModelCandidate[] = []
     for (const m of missingModelCandidates.value) {
+      // Preserve workflow-level candidates with no nodeId; they are not
+      // tied to any subgraph scope and should never be matched by prefix.
+      if (m.nodeId == null) {
+        remaining.push(m)
+        continue
+      }
       if (String(m.nodeId).startsWith(prefix)) {
         removedNames.add(m.name)
       } else {

@@ -380,6 +380,24 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
 
+    it('preserves candidates with a nullish nodeId (defensive)', () => {
+      const store = useMissingMediaStore()
+      const orphan = {
+        nodeId: undefined as unknown as string,
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image' as const,
+        name: 'orphan.png',
+        isMissing: true
+      }
+      store.setMissingMedia([makeCandidate('65:70:63', 'a.png'), orphan])
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('orphan.png')
+    })
+
     it('clears interaction state for removed names not used elsewhere', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([

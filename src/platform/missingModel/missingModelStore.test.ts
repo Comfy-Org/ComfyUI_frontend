@@ -415,6 +415,28 @@ describe('missingModelStore', () => {
       expect(store.missingModelCandidates).toBeNull()
     })
 
+    it('preserves workflow-level candidates without a nodeId', () => {
+      const store = useMissingModelStore()
+      const workflowLevel: MissingModelCandidate = {
+        name: 'workflow-level.safetensors',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        isMissing: true
+      }
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
+        workflowLevel
+      ])
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].name).toBe(
+        'workflow-level.safetensors'
+      )
+    })
+
     it('clears interaction state for removed names not used elsewhere', () => {
       const store = useMissingModelStore()
       store.setMissingModels([
