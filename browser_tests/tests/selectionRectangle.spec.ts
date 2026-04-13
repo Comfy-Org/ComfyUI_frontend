@@ -4,11 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('@canvas Selection Rectangle', { tag: '@vue-nodes' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
   test('Ctrl+A selects all nodes', async ({ comfyPage }) => {
     await expect
       .poll(() => comfyPage.vueNodes.getNodeCount())

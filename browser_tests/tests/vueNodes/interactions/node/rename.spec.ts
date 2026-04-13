@@ -5,12 +5,6 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
   test('should display node title', async ({ comfyPage }) => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await expect(vueNode.header).toContainText('KSampler')
