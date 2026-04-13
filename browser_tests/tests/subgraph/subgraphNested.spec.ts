@@ -225,8 +225,15 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
         await comfyExpect(outerRings).toHaveCount(0)
 
-        // Enter Sub 0 (node 5) to see its inner nodes.
-        await comfyPage.vueNodes.enterSubgraph('5')
+        // Navigate programmatically — the enter-subgraph button on
+        // node 5 is obscured by the canvas z-999 overlay at root level.
+        await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph!.getNodeById('5')
+          if (node?.isSubgraphNode()) {
+            window.app!.canvas.setGraph(node.subgraph)
+          }
+        })
+        await comfyPage.nextFrame()
         await comfyPage.vueNodes.waitForNodes()
 
         // Node 6 (Sub 1) has proxyWidgets promoted up to Sub 0
