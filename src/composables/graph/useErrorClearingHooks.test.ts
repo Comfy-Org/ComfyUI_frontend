@@ -9,8 +9,13 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LGraphEventMode,
+  NodeSlotType
+} from '@/lib/litegraph/src/types/globalEnums'
+import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
@@ -478,6 +483,145 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(mediaStore.missingMediaCandidates).toBeNull()
     expect(nodesStore.missingNodesError).toBeNull()
+  })
+})
+
+describe('realtime scan verifies pending cloud candidates', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('un-bypass path surfaces pending model candidates after verification', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    // Cloud mode returns candidates with isMissing: undefined until
+    // verifyAssetSupportedCandidates resolves them against the assets store.
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: true,
+        name: 'cloud_model.safetensors',
+        isMissing: undefined
+      }
+    ])
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async (candidates) => {
+        for (const c of candidates) c.isMissing = true
+      })
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graph)
+
+    // Simulate un-bypass (BYPASS → NEVER_BY_USER is not active; use 0 = active)
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    await vi.waitFor(() => {
+      expect(verifySpy).toHaveBeenCalledOnce()
+    })
+    await vi.waitFor(() => {
+      const store = useMissingModelStore()
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].name).toBe(
+        'cloud_model.safetensors'
+      )
+    })
+  })
+
+  it('un-bypass path surfaces pending media candidates after verification', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'cloud_image.png',
+        isMissing: undefined
+      }
+    ])
+    const verifySpy = vi
+      .spyOn(missingMediaScan, 'verifyCloudMediaCandidates')
+      .mockImplementation(async (candidates) => {
+        for (const c of candidates) c.isMissing = true
+      })
+
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    await vi.waitFor(() => {
+      expect(verifySpy).toHaveBeenCalledOnce()
+    })
+    await vi.waitFor(() => {
+      const store = useMissingMediaStore()
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('cloud_image.png')
+    })
+  })
+
+  it('does not add candidates that remain confirmed-present after verification', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: true,
+        name: 'present.safetensors',
+        isMissing: undefined
+      }
+    ])
+    vi.spyOn(
+      missingModelScan,
+      'verifyAssetSupportedCandidates'
+    ).mockImplementation(async (candidates) => {
+      for (const c of candidates) c.isMissing = false
+    })
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+
+    await new Promise((r) => setTimeout(r, 0))
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
   })
 })
 

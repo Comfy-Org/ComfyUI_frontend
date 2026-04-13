@@ -1147,6 +1147,10 @@ export class ComfyApp {
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
       // so cached results restored by showPendingWarnings still display sizes.
+      // Abort any in-flight verification from the outgoing workflow so a late
+      // result cannot repopulate the store after we've switched workflows.
+      useMissingModelStore().createVerificationAbortController().abort()
+      useMissingMediaStore().createVerificationAbortController().abort()
       useMissingModelStore().setMissingModels([])
       useMissingMediaStore().setMissingMedia([])
     } else {

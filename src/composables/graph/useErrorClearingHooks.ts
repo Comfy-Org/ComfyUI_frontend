@@ -19,9 +19,17 @@ import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isCloud } from '@/platform/distribution/types'
 import { assetService } from '@/platform/assets/services/assetService'
-import { scanNodeModelCandidates } from '@/platform/missingModel/missingModelScan'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import {
+  scanNodeModelCandidates,
+  verifyAssetSupportedCandidates
+} from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import {
+  scanNodeMediaCandidates,
+  verifyCloudMediaCandidates
+} from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
@@ -177,11 +185,24 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   if (confirmedModels.length) {
     useMissingModelStore().addMissingModels(confirmedModels)
   }
+  // Cloud scans return isMissing: undefined for asset-browser-supported
+  // widgets until async verification resolves. Without this, realtime
+  // add/un-bypass paths would silently drop those candidates.
+  const pendingModels = modelCandidates.filter((c) => c.isMissing === undefined)
+  if (pendingModels.length) {
+    void verifyAndAddPendingModels(pendingModels)
+  }
 
   const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)
+  }
+  // Cloud media scans always return isMissing: undefined pending
+  // verification against the input-assets list.
+  const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
+  if (pendingMedia.length) {
+    void verifyAndAddPendingMedia(pendingMedia)
   }
 
   // Check for missing node type
@@ -204,6 +225,30 @@ function scanSingleNodeErrors(node: LGraphNode): void {
         }
       ])
     }
+  }
+}
+
+async function verifyAndAddPendingModels(
+  pending: MissingModelCandidate[]
+): Promise<void> {
+  try {
+    await verifyAssetSupportedCandidates(pending)
+    const verified = pending.filter((c) => c.isMissing === true)
+    if (verified.length) useMissingModelStore().addMissingModels(verified)
+  } catch (error: unknown) {
+    console.warn('[useErrorClearingHooks] model verification failed:', error)
+  }
+}
+
+async function verifyAndAddPendingMedia(
+  pending: MissingMediaCandidate[]
+): Promise<void> {
+  try {
+    await verifyCloudMediaCandidates(pending)
+    const verified = pending.filter((c) => c.isMissing === true)
+    if (verified.length) useMissingMediaStore().addMissingMedia(verified)
+  } catch (error: unknown) {
+    console.warn('[useErrorClearingHooks] media verification failed:', error)
   }
 }
 
