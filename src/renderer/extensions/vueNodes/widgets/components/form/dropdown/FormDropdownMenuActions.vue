@@ -4,7 +4,6 @@ import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type {
   FilterOption,
   OwnershipFilterOption,
@@ -16,7 +15,6 @@ import FormSearchInput from '../FormSearchInput.vue'
 import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 defineProps<{
   sortOptions: SortOption[]
@@ -135,7 +133,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="sortPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
+
       unstyled
       :pt="{
         root: {
@@ -198,7 +196,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="ownershipPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
+
       unstyled
       :pt="{
         root: {
@@ -261,7 +259,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="baseModelPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
+
       unstyled
       :pt="{
         root: {
