@@ -191,7 +191,6 @@ export const useSubgraphNavigationStore = defineStore(
       { flush: 'sync' }
     )
 
-
     /** Save the current viewport for the active graph/workflow. Called by
      *  workflowService.beforeLoadNewGraph() before the canvas is overwritten. */
     function saveCurrentViewport(): void {
@@ -201,7 +200,6 @@ export const useSubgraphNavigationStore = defineStore(
         isWorkflowSwitching = false
       }, 0)
     }
-
 
     return {
       activeSubgraph,
