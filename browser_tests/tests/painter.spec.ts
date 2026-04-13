@@ -1,7 +1,9 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { triggerSerialization } from '@e2e/helpers/painter'
 
 /**
  * Draw a horizontal stroke across the painter canvas.
@@ -526,5 +528,69 @@ test.describe('Painter', () => {
       expect(remaining).toBeGreaterThan(0)
       expect(remaining).toBeLessThan(pixelsBeforeErase)
     }).toPass({ timeout: 5000 })
+  })
+
+  test.describe('Serialization', () => {
+    test('Drawing triggers upload on serialization', async ({ comfyPage }) => {
+      const mockUploadResponse: UploadImageResponse = {
+        name: 'painter-test.png'
+      }
+      let uploadCount = 0
+
+      await comfyPage.page.route('**/upload/image', async (route) => {
+        uploadCount++
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockUploadResponse)
+        })
+      })
+
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator('1')
+        .locator('.widget-expands canvas')
+
+      await drawStroke(comfyPage.page, canvas)
+
+      await triggerSerialization(comfyPage.page)
+
+      expect(uploadCount, 'should upload exactly once').toBe(1)
+    })
+
+    test('Empty canvas does not upload on serialization', async ({
+      comfyPage
+    }) => {
+      let uploadCount = 0
+
+      await comfyPage.page.route('**/upload/image', async (route) => {
+        uploadCount++
+        const mockResponse: UploadImageResponse = { name: 'painter-test.png' }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockResponse)
+        })
+      })
+
+      await triggerSerialization(comfyPage.page)
+
+      expect(uploadCount, 'empty canvas should not upload').toBe(0)
+    })
+
+    test('Upload failure shows error toast', async ({ comfyPage }) => {
+      await comfyPage.page.route('**/upload/image', async (route) => {
+        await route.fulfill({ status: 500 })
+      })
+
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator('1')
+        .locator('.widget-expands canvas')
+
+      await drawStroke(comfyPage.page, canvas)
+
+      await expect(triggerSerialization(comfyPage.page)).rejects.toThrow()
+
+      await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
+    })
   })
 })

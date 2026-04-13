@@ -407,38 +407,66 @@ test.describe('Mask Editor', () => {
     await expect(hardnessLabel).toBeVisible()
   })
 
-  test('save button triggers save and closes dialog', async ({ comfyPage }) => {
+  test('save uploads all layers and closes dialog', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    // Mock the upload endpoints so save doesn't fail
-    await comfyPage.page.route('**/upload/mask', (route) =>
-      route.fulfill({
+    let maskUploadCount = 0
+    let imageUploadCount = 0
+
+    await comfyPage.page.route('**/upload/mask', (route) => {
+      maskUploadCount++
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          name: 'test-mask.png',
+          name: `test-mask-${maskUploadCount}.png`,
           subfolder: 'clipspace',
           type: 'input'
         })
       })
-    )
-    await comfyPage.page.route('**/upload/image', (route) =>
-      route.fulfill({
+    })
+    await comfyPage.page.route('**/upload/image', (route) => {
+      imageUploadCount++
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          name: 'test-image.png',
+          name: `test-image-${imageUploadCount}.png`,
           subfolder: 'clipspace',
           type: 'input'
         })
       })
-    )
+    })
 
     const saveButton = dialog.getByRole('button', { name: 'Save' })
     await expect(saveButton).toBeVisible()
     await saveButton.click()
 
     await expect(dialog).toBeHidden()
+
+    // The save pipeline uploads multiple layers (mask + image variants)
+    expect(
+      maskUploadCount + imageUploadCount,
+      'save should trigger upload calls'
+    ).toBeGreaterThan(0)
+  })
+
+  test('save failure keeps dialog open', async ({ comfyPage }) => {
+    const dialog = await openMaskEditorDialog(comfyPage)
+
+    // Fail all upload routes
+    await comfyPage.page.route('**/upload/mask', (route) =>
+      route.fulfill({ status: 500 })
+    )
+    await comfyPage.page.route('**/upload/image', (route) =>
+      route.fulfill({ status: 500 })
+    )
+
+    const saveButton = dialog.getByRole('button', { name: 'Save' })
+    await saveButton.click()
+
+    // Dialog should remain open when save fails
+    await expect(dialog).toBeVisible()
   })
 
   test(

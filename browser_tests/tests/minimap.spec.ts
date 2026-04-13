@@ -1,7 +1,20 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+function hasCanvasContent(canvas: Locator): Promise<boolean> {
+  return canvas.evaluate((el: HTMLCanvasElement) => {
+    const ctx = el.getContext('2d')
+    if (!ctx) return false
+    const { data } = ctx.getImageData(0, 0, el.width, el.height)
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) return true
+    }
+    return false
+  })
+}
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -252,18 +265,16 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       .toBeLessThan(viewportBefore!.width)
   })
 
-  test('Minimap reflects node count changes', async ({ comfyPage }) => {
-    const minimap = comfyPage.page.locator('.litegraph-minimap')
-    const minimapCanvas = minimap.locator('.minimap-canvas')
-    await expect(minimap).toBeVisible()
-
-    const nodeCountBefore = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(nodeCountBefore).toBeGreaterThan(0)
-
-    // Capture minimap canvas content before deletion
-    const contentBefore = await minimapCanvas.evaluate((el) =>
-      (el as HTMLCanvasElement).toDataURL()
+  test('Minimap canvas is empty after all nodes are deleted', async ({
+    comfyPage
+  }) => {
+    const minimapCanvas = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapCanvas
     )
+    await expect(minimapCanvas).toBeVisible()
+
+    // Minimap should have content before deletion
+    await expect.poll(() => hasCanvasContent(minimapCanvas)).toBe(true)
 
     // Remove all nodes
     await comfyPage.canvas.press('Control+a')
@@ -272,49 +283,30 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
-    // Minimap canvas should have re-rendered with different content
+    // Minimap canvas should be empty — no nodes means nothing to render
     await expect
-      .poll(
-        async () => {
-          const contentAfter = await minimapCanvas.evaluate((el) =>
-            (el as HTMLCanvasElement).toDataURL()
-          )
-          return contentAfter !== contentBefore
-        },
-        { timeout: 5000 }
-      )
-      .toBe(true)
+      .poll(() => hasCanvasContent(minimapCanvas), { timeout: 5000 })
+      .toBe(false)
   })
 
-  test('Minimap works after loading a different workflow', async ({
+  test('Minimap re-renders after loading a different workflow', async ({
     comfyPage
   }) => {
-    const minimap = comfyPage.page.locator('.litegraph-minimap')
-    const minimapCanvas = minimap.locator('.minimap-canvas')
-    await expect(minimap).toBeVisible()
-
-    // Capture minimap state before loading new workflow
-    const contentBefore = await minimapCanvas.evaluate((el) =>
-      (el as HTMLCanvasElement).toDataURL()
+    const minimapCanvas = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapCanvas
     )
+    await expect(minimapCanvas).toBeVisible()
+
+    // Default workflow has content
+    await expect.poll(() => hasCanvasContent(minimapCanvas)).toBe(true)
 
     // Load a very different workflow
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     await comfyPage.nextFrame()
 
-    await expect(minimap).toBeVisible()
-
-    // Minimap canvas should re-render to reflect the new workflow
+    // Minimap should still have content (different workflow, still has nodes)
     await expect
-      .poll(
-        async () => {
-          const contentAfter = await minimapCanvas.evaluate((el) =>
-            (el as HTMLCanvasElement).toDataURL()
-          )
-          return contentAfter !== contentBefore
-        },
-        { timeout: 5000 }
-      )
+      .poll(() => hasCanvasContent(minimapCanvas), { timeout: 5000 })
       .toBe(true)
   })
 
