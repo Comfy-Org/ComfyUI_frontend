@@ -10,6 +10,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
@@ -354,6 +357,127 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Install again on the same graph — should be a no-op for existing nodes
     installErrorClearingHooks(graph)
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
+  })
+})
+
+describe('onNodeRemoved clears missing asset errors by execution ID', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('removes root-level node missing model error using its local id', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([
+      fromAny<
+        Parameters<typeof modelStore.setMissingModels>[0][number],
+        unknown
+      >({
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'model.safetensors',
+        isMissing: true
+      })
+    ])
+
+    graph.remove(node)
+
+    expect(modelStore.missingModelCandidates).toBeNull()
+  })
+
+  it('removes subgraph interior node missing model error using parentId:nodeId', () => {
+    // Regression: node.graph is nulled before onNodeRemoved fires, so
+    // getExecutionIdByNode returned null and removal fell back to the
+    // local node id. Errors stored under "parentId:nodeId" were never
+    // removed for subgraph interior nodes.
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    // Hooks are installed on whichever graph is currently active in
+    // the canvas; when the user is inside the subgraph, that is the
+    // graph whose onNodeRemoved fires for interior deletions.
+    installErrorClearingHooks(subgraph)
+
+    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([
+      fromAny<
+        Parameters<typeof modelStore.setMissingModels>[0][number],
+        unknown
+      >({
+        nodeId: interiorExecId,
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'model.safetensors',
+        isMissing: true
+      })
+    ])
+
+    subgraph.remove(interiorNode)
+
+    expect(modelStore.missingModelCandidates).toBeNull()
+  })
+
+  it('removes subgraph interior node missing media and missing node errors', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('LoadImage')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(subgraph)
+
+    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      fromAny<
+        Parameters<typeof mediaStore.setMissingMedia>[0][number],
+        unknown
+      >({
+        nodeId: interiorExecId,
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'cat.png',
+        isMissing: true
+      })
+    ])
+
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.surfaceMissingNodes([
+      {
+        type: 'LoadImage',
+        nodeId: interiorExecId,
+        cnrId: undefined,
+        isReplaceable: false,
+        replacement: undefined
+      }
+    ])
+
+    subgraph.remove(interiorNode)
+
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+    expect(nodesStore.missingNodesError).toBeNull()
   })
 })
 

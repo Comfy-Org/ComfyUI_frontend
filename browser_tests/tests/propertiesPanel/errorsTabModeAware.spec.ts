@@ -373,6 +373,73 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingModelGroup).toBeVisible()
     })
 
+    test('Deleting a node inside a subgraph removes its missing model error', async ({
+      comfyPage
+    }) => {
+      // Regression: before the execId fix, onNodeRemoved fell back to the
+      // interior node's local id (e.g. "1") when node.graph was already
+      // null, so the error keyed under "2:1" was never removed.
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_in_subgraph'
+      )
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+
+      const missingModelGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await openErrorsTab(comfyPage)
+      await expect(missingModelGroup).toBeVisible()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      // Select-all + Delete: interior node IDs may be reassigned during
+      // subgraph configure when they collide with root-graph IDs, so
+      // looking up by static id can fail.
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press('Delete')
+
+      await expect(missingModelGroup).toBeHidden()
+    })
+
+    test('Deleting a node inside a subgraph removes its missing node-type error', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_nodes_in_subgraph')
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+
+      const missingNodeGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingNodePacksGroup
+      )
+      await openErrorsTab(comfyPage)
+      await expect(missingNodeGroup).toBeVisible()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      // Select-all + Delete: interior node IDs may be reassigned during
+      // subgraph configure when they collide with root-graph IDs, so
+      // looking up by static id can fail.
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press('Delete')
+
+      await expect(missingNodeGroup).toBeHidden()
+    })
+
     test('Bypassing a node inside a subgraph hides its error, un-bypassing restores it', async ({
       comfyPage
     }) => {

@@ -31,7 +31,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getExecutionIdForNodeInGraph
 } from '@/utils/graphTraversalUtil'
 
 function resolvePromotedExecId(
@@ -303,15 +304,15 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
 
   const originalOnNodeRemoved = graph.onNodeRemoved
   graph.onNodeRemoved = function (node: LGraphNode) {
-    // node.graph is already null by the time onNodeRemoved fires,
-    // so use the graph that this hook is installed on to build the
-    // execution ID. Root-level nodes use their ID directly; subgraph
-    // interior nodes are handled by LGraph's recursive removal which
-    // calls onNodeRemoved on the subgraph's graph instance.
-    const execId =
-      graph === app.rootGraph
-        ? String(node.id)
-        : (getExecutionIdByNode(app.rootGraph, node) ?? String(node.id))
+    // node.graph is already null by the time onNodeRemoved fires, so
+    // derive the execution ID from the graph the hook is installed on
+    // plus node.id. For subgraph interior nodes this yields the full
+    // "parentId:...:nodeId" path that matches how missing asset errors
+    // are keyed; without this, removal falls back to the local ID and
+    // misses subgraph entries.
+    const execId = app.rootGraph
+      ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
+      : String(node.id)
     removeNodeErrors(node, execId)
     restoreNodeHooksRecursive(node)
     originalOnNodeRemoved?.call(this, node)
