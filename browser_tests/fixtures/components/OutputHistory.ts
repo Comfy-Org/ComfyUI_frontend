@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from '../selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const ids = TestIds.outputHistory
 
