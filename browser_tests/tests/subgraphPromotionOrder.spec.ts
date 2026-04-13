@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
-import { getPromotedWidgetNames } from '../helpers/promotedWidgets'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { getPromotedWidgetNames } from '@e2e/helpers/promotedWidgets'
 
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root
@@ -41,13 +41,16 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.vueNodes.waitForNodes()
 
-      // Create a subgraph from KSampler (multiple auto-promoted widgets)
+      // Create a subgraph from KSampler + one CLIPTextEncode so we get at
+      // least 2 auto-promoted widgets: KSampler's "seed" (in recommendedWidgetNames)
+      // and CLIPTextEncode's "text" (CLIPTextEncode is in recommendedNodes).
       const nodeId = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
         const ksampler = graph._nodes.find((n) => n.type === 'KSampler')
+        const clipEncode = graph._nodes.find((n) => n.type === 'CLIPTextEncode')
         if (!ksampler) throw new Error('KSampler not found')
-        window.app!.canvas.selectNode(ksampler)
-        const result = graph.convertToSubgraph(new Set([ksampler]))
+        if (!clipEncode) throw new Error('CLIPTextEncode not found')
+        const result = graph.convertToSubgraph(new Set([ksampler, clipEncode]))
         if (!result) throw new Error('convertToSubgraph failed')
         return String(result.node.id)
       })
@@ -58,7 +61,7 @@ test.describe(
       await expect(subgraphVueNode).toBeVisible()
 
       // Select the subgraph node and open SubgraphEditor sidebar
-      await subgraphVueNode.click()
+      await comfyPage.vueNodes.selectNode(nodeId)
       const shownSection = await openSubgraphEditor(comfyPage)
 
       // Capture initial widget order from the sidebar labels
@@ -90,8 +93,7 @@ test.describe(
       await hiddenToggle.first().click()
 
       // Verify the shown section order is restored
-      const restoredLabels = await labels.allTextContents()
-      expect(restoredLabels).toEqual(initialLabels)
+      await expect(labels).toHaveText(initialLabels)
 
       // Also verify the promotion store order matches
       const finalOrder = await getPromotedWidgetNames(comfyPage, nodeId)
