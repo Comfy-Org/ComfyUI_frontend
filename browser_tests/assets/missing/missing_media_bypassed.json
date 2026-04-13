@@ -9,19 +9,11 @@
       "size": [315, 314],
       "flags": {},
       "order": 0,
-      "mode": 0,
+      "mode": 4,
       "inputs": [],
       "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": null
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null
-        }
+        { "name": "IMAGE", "type": "IMAGE", "links": null },
+        { "name": "MASK", "type": "MASK", "links": null }
       ],
       "properties": {
         "Node name for S&R": "LoadImage"

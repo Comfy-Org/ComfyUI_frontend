@@ -5,6 +5,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { cleanupFakeModel } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -47,16 +48,7 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     test('Should display "Show missing models" button for missing model errors', async ({
       comfyPage
     }) => {
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(async (url: string) => {
-            const response = await fetch(
-              `${url}/api/devtools/cleanup_fake_model`
-            )
-            return response.ok
-          }, comfyPage.url)
-        )
-        .toBeTruthy()
+      await cleanupFakeModel(comfyPage)
 
       await comfyPage.workflow.loadWorkflow('missing/missing_models')
 
@@ -115,6 +107,33 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await expect(errorOverlay).toBeHidden()
 
       await comfyPage.keyboard.redo()
+      await expect(errorOverlay).toBeHidden()
+    })
+
+    test('Does not resurface error overlay when switching back to workflow with missing nodes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+      await comfyPage.menu.workflowsTab.open()
+
+      await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+      const errorOverlay = getOverlay(comfyPage.page)
+      await expect(errorOverlay).toBeVisible()
+
+      await errorOverlay
+        .getByTestId(TestIds.dialogs.errorOverlayDismiss)
+        .click()
+      await expect(errorOverlay).toBeHidden()
+
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+
       await expect(errorOverlay).toBeHidden()
     })
   })
