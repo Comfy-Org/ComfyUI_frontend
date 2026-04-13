@@ -400,7 +400,7 @@ test.describe('Mask Editor', () => {
     const thicknessLabel = dialog.getByText('Thickness')
     await expect(thicknessLabel).toBeVisible()
 
-    const opacityLabel = dialog.getByText('Opacity')
+    const opacityLabel = dialog.getByText('Opacity').first()
     await expect(opacityLabel).toBeVisible()
 
     const hardnessLabel = dialog.getByText('Hardness')

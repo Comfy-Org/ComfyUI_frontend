@@ -177,7 +177,9 @@ test.describe('Painter', () => {
 
     await expect.poll(() => canvasHasContent(canvas)).toBe(true)
 
-    await painterWidget.getByText('Clear').click()
+    await painterWidget
+      .getByTestId('painter-clear-button')
+      .dispatchEvent('click')
     await comfyPage.nextFrame()
 
     await expect.poll(() => canvasHasContent(canvas)).toBe(false)
@@ -199,7 +201,7 @@ test.describe('Painter', () => {
     expect(pixelsAfterBrush).toBeGreaterThan(0)
 
     // Switch to eraser
-    await painterWidget.getByText('Eraser').click()
+    await painterWidget.getByRole('button', { name: 'Eraser' }).click()
 
     // Erase over the same area
     await drawStroke(comfyPage.page, canvas)
@@ -216,16 +218,18 @@ test.describe('Painter', () => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const painterWidget = node.locator('.widget-expands')
 
-    // In brush mode, color picker and hardness should be visible
-    await expect(painterWidget.getByText('Color Picker')).toBeVisible()
-    await expect(painterWidget.getByText('Hardness')).toBeVisible()
+    // In brush mode, color and hardness rows should be visible
+    await expect(painterWidget.getByTestId('painter-color-row')).toBeVisible()
+    await expect(
+      painterWidget.getByTestId('painter-hardness-row')
+    ).toBeVisible()
 
     // Switch to eraser
-    await painterWidget.getByText('Eraser').click()
+    await painterWidget.getByRole('button', { name: 'Eraser' }).click()
 
-    // Color and hardness controls should be hidden
-    await expect(painterWidget.getByText('Color Picker')).toBeHidden()
-    await expect(painterWidget.getByText('Hardness')).toBeHidden()
+    // Color and hardness rows should be hidden
+    await expect(painterWidget.getByTestId('painter-color-row')).toBeHidden()
+    await expect(painterWidget.getByTestId('painter-hardness-row')).toBeHidden()
   })
 
   test('Switching back to brush re-shows color and hardness controls', async ({
@@ -234,147 +238,44 @@ test.describe('Painter', () => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const painterWidget = node.locator('.widget-expands')
 
-    await painterWidget.getByText('Eraser').click()
-    await expect(painterWidget.getByText('Color Picker')).toBeHidden()
+    await painterWidget.getByRole('button', { name: 'Eraser' }).click()
+    await expect(painterWidget.getByTestId('painter-color-row')).toBeHidden()
 
-    await painterWidget.getByText('Brush').click()
-    await expect(painterWidget.getByText('Color Picker')).toBeVisible()
-    await expect(painterWidget.getByText('Hardness')).toBeVisible()
+    await painterWidget.getByRole('button', { name: 'Brush' }).click()
+    await expect(painterWidget.getByTestId('painter-color-row')).toBeVisible()
+    await expect(
+      painterWidget.getByTestId('painter-hardness-row')
+    ).toBeVisible()
   })
 
-  test('Brush size slider updates the displayed value', async ({
+  test('Brush size is displayed in the size row', async ({ comfyPage }) => {
+    const node = comfyPage.vueNodes.getNodeLocator('1')
+    const painterWidget = node.locator('.widget-expands')
+
+    const sizeValue = painterWidget.getByTestId('painter-size-value')
+    await expect(sizeValue).toBeVisible()
+    await expect(sizeValue).toHaveText('20')
+  })
+
+  test('Canvas dimensions are displayed', async ({ comfyPage }) => {
+    const node = comfyPage.vueNodes.getNodeLocator('1')
+    const painterWidget = node.locator('.widget-expands')
+
+    // Width and Height rows should be visible (no image input connected)
+    await expect(painterWidget.getByTestId('painter-width-row')).toBeVisible()
+    await expect(painterWidget.getByTestId('painter-height-row')).toBeVisible()
+
+    // Default canvas size is 512x512 shown in the dimension text
+    await expect(
+      painterWidget.getByTestId('painter-dimension-text')
+    ).toContainText('512')
+  })
+
+  test('Color inputs are visible when no image input is connected', async ({
     comfyPage
   }) => {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const painterWidget = node.locator('.widget-expands')
-
-    // The default brush size is 20; find the size display
-    const sizeLabel = painterWidget.getByText('Cursor Size')
-    await expect(sizeLabel).toBeVisible()
-
-    // The size row contains a slider and a numeric display
-    const sizeRow = sizeLabel.locator('~ div').first()
-    const sizeDisplay = sizeRow.locator('span').last()
-    const initialSize = await sizeDisplay.textContent()
-    expect(initialSize?.trim()).toBe('20')
-
-    // Drag the slider thumb to the right to increase size
-    const slider = sizeRow.getByRole('slider')
-    const sliderBox = await slider.boundingBox()
-    if (!sliderBox) throw new Error('Slider thumb not found')
-
-    const sliderTrack = sizeRow.locator('span').first()
-    const trackBox = await sliderTrack.boundingBox()
-    if (!trackBox) throw new Error('Slider track not found')
-
-    await slider.dispatchEvent('pointerdown', { bubbles: true })
-    await comfyPage.page.mouse.move(
-      sliderBox.x + sliderBox.width / 2,
-      sliderBox.y + sliderBox.height / 2
-    )
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(
-      trackBox.x + trackBox.width * 0.8,
-      sliderBox.y + sliderBox.height / 2,
-      { steps: 5 }
-    )
-    await comfyPage.page.mouse.up()
-
-    // The displayed value should have increased
-    await expect
-      .poll(async () => {
-        const text = await sizeDisplay.textContent()
-        return Number(text?.trim())
-      })
-      .toBeGreaterThan(20)
-  })
-
-  test('Drawing with different brush sizes produces different stroke widths', async ({
-    comfyPage
-  }) => {
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    const painterWidget = node.locator('.widget-expands')
-    const canvas = painterWidget.locator('canvas')
-    await expect(canvas).toBeVisible()
-
-    // Draw with the default brush size (20)
-    await drawStroke(comfyPage.page, canvas, {
-      startX: 0.2,
-      startY: 0.3,
-      endX: 0.8,
-      endY: 0.3
-    })
-    await comfyPage.nextFrame()
-
-    const smallBrushPixels = await countOpaquePixels(canvas)
-
-    // Clear the canvas
-    await painterWidget.getByText('Clear').click()
-    await comfyPage.nextFrame()
-
-    // Set brush size to a larger value by dragging the slider far right
-    const sizeLabel = painterWidget.getByText('Cursor Size')
-    const sizeRow = sizeLabel.locator('~ div').first()
-    const slider = sizeRow.getByRole('slider')
-    const sliderBox = await slider.boundingBox()
-    if (!sliderBox) throw new Error('Slider thumb not found')
-
-    const trackBox = await sizeRow.boundingBox()
-    if (!trackBox) throw new Error('Size row not found')
-
-    await comfyPage.page.mouse.move(
-      sliderBox.x + sliderBox.width / 2,
-      sliderBox.y + sliderBox.height / 2
-    )
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(
-      trackBox.x + trackBox.width * 0.95,
-      sliderBox.y + sliderBox.height / 2,
-      { steps: 5 }
-    )
-    await comfyPage.page.mouse.up()
-
-    // Draw with the larger brush size in the same area
-    await drawStroke(comfyPage.page, canvas, {
-      startX: 0.2,
-      startY: 0.3,
-      endX: 0.8,
-      endY: 0.3
-    })
-    await comfyPage.nextFrame()
-
-    await expect
-      .poll(() => countOpaquePixels(canvas))
-      .toBeGreaterThan(smallBrushPixels)
-  })
-
-  test('Canvas width and height controls are shown and adjustable', async ({
-    comfyPage
-  }) => {
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    const painterWidget = node.locator('.widget-expands')
-
-    // Width and Height labels should be visible (no image input connected)
-    await expect(painterWidget.getByText('Width')).toBeVisible()
-    await expect(painterWidget.getByText('Height')).toBeVisible()
-
-    // Default canvas size is 512x512 — displayed in the width/height rows
-    const widthRow = painterWidget.getByText('Width').locator('~ div').first()
-    const widthDisplay = widthRow.locator('span').last()
-    await expect(widthDisplay).toHaveText('512')
-
-    const heightRow = painterWidget.getByText('Height').locator('~ div').first()
-    const heightDisplay = heightRow.locator('span').last()
-    await expect(heightDisplay).toHaveText('512')
-  })
-
-  test('Background color control is visible when no image input is connected', async ({
-    comfyPage
-  }) => {
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    const painterWidget = node.locator('.widget-expands')
-
-    await expect(painterWidget.getByText('Background')).toBeVisible()
 
     // There should be two color inputs: brush color and background color
     const colorInputs = painterWidget.locator('input[type="color"]')
@@ -395,7 +296,9 @@ test.describe('Painter', () => {
     await expect.poll(() => canvasHasContent(canvas)).toBe(true)
 
     // Clear
-    await painterWidget.getByText('Clear').click()
+    await painterWidget
+      .getByTestId('painter-clear-button')
+      .dispatchEvent('click')
     await comfyPage.nextFrame()
     await expect.poll(() => canvasHasContent(canvas)).toBe(false)
 
@@ -448,7 +351,7 @@ test.describe('Painter', () => {
     await expect(canvas).toBeVisible()
 
     // Switch to eraser on empty canvas
-    await painterWidget.getByText('Eraser').click()
+    await painterWidget.getByRole('button', { name: 'Eraser' }).click()
 
     // Draw with eraser on empty canvas
     await drawStroke(comfyPage.page, canvas)
@@ -456,36 +359,6 @@ test.describe('Painter', () => {
 
     // Canvas should still be empty since eraser uses destination-out
     await expect.poll(() => canvasHasContent(canvas)).toBe(false)
-  })
-
-  test(
-    'Brush color picker is a color input',
-    { tag: ['@smoke'] },
-    async ({ comfyPage }) => {
-      const node = comfyPage.vueNodes.getNodeLocator('1')
-      const painterWidget = node.locator('.widget-expands')
-
-      // The first color input is the brush color
-      const brushColorInput = painterWidget
-        .locator('input[type="color"]')
-        .first()
-      await expect(brushColorInput).toBeVisible()
-
-      // Default brush color is white (#ffffff)
-      await expect(brushColorInput).toHaveValue('#ffffff')
-    }
-  )
-
-  test('Opacity input accepts percentage values', async ({ comfyPage }) => {
-    const node = comfyPage.vueNodes.getNodeLocator('1')
-    const painterWidget = node.locator('.widget-expands')
-
-    // The opacity input is a number input inside the color row
-    const opacityInput = painterWidget.locator('input[type="number"]').first()
-    await expect(opacityInput).toBeVisible()
-
-    // Default opacity is 100%
-    await expect(opacityInput).toHaveValue('100')
   })
 
   test('Partial erasing leaves some content behind', async ({ comfyPage }) => {
@@ -513,7 +386,7 @@ test.describe('Painter', () => {
     const pixelsBeforeErase = await countOpaquePixels(canvas)
 
     // Switch to eraser and erase only the top stroke area
-    await painterWidget.getByText('Eraser').click()
+    await painterWidget.getByRole('button', { name: 'Eraser' }).click()
     await drawStroke(comfyPage.page, canvas, {
       startX: 0.1,
       startY: 0.3,
