@@ -24,7 +24,7 @@ type SourceNode = Pick<LGraphNode, 'graph' | 'outputs' | 'widgets'>
 
 function createWidget(
   name: string,
-  value: unknown,
+  value: IBaseWidget['value'],
   callback = vi.fn()
 ): IBaseWidget {
   return fromPartial<IBaseWidget>({
