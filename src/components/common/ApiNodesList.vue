@@ -11,9 +11,7 @@
           class="flex items-center justify-between rounded-md bg-(--p-content-border-color) px-3 py-2"
         >
           <div class="flex items-center gap-2">
-            <span class="text-base/tight font-medium">{{
-              nodeName
-            }}</span>
+            <span class="text-base/tight font-medium">{{ nodeName }}</span>
           </div>
         </div>
       </div>

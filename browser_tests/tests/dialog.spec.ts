@@ -5,6 +5,9 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
+type AugmentedWindow = Window &
+  typeof globalThis & { signInPromise?: Promise<boolean> }
+
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
@@ -156,8 +159,6 @@ test.describe('Signin dialog', () => {
   test('Sign-in dialog resolves false when closed without sign-in', async ({
     comfyPage
   }) => {
-    type AugmentedWindow = Window &
-      typeof globalThis & { signInPromise?: Promise<boolean> }
     await comfyPage.page.evaluate(async () => {
       ;(window as AugmentedWindow).signInPromise =
         window.app!.extensionManager.dialog.showSignInDialog()
@@ -167,13 +168,12 @@ test.describe('Signin dialog', () => {
     await dialog.waitForVisible()
 
     await dialog.close()
-    await expect(dialog.root).not.toBeVisible()
-
     expect(
       await comfyPage.page.evaluate(
         () => (window as AugmentedWindow).signInPromise
       )
     ).toBe(false)
+    await expect(dialog.root).not.toBeVisible()
   })
 
   test('Sign-in dialog shows sign-in form and can fill credentials', async ({
@@ -196,40 +196,31 @@ test.describe('Signin dialog', () => {
   })
 })
 
-test.describe('API Nodes sign-in dialog', () => {
-  test('Should display dialog with node names and resolve false on cancel', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(() => {
-      void window
-        .app!.extensionManager.dialog.showApiNodesSignInDialog([
-          'FluxProGenerate',
-          'StableDiffusion3Generate'
-        ])
-        .then((result: boolean) => {
-          ;(window as unknown as Record<string, unknown>)['apiSignInResult'] =
-            result
-        })
-    })
-
-    const dialog = comfyPage.page.locator('.p-dialog')
-    await expect(dialog).toBeVisible()
-
-    await expect(
-      dialog.getByText('Sign In Required to Use API Nodes')
-    ).toBeVisible()
-    await expect(dialog.getByText('FluxProGenerate')).toBeVisible()
-    await expect(dialog.getByText('StableDiffusion3Generate')).toBeVisible()
-
-    await dialog.getByRole('button', { name: 'Cancel' }).click()
-    await expect(dialog).not.toBeVisible()
-
-    expect(
-      await comfyPage.page.evaluate(
-        () => (window as unknown as Record<string, unknown>)['apiSignInResult']
-      )
-    ).toBe(false)
+test('API Nodes sign-in dialog', async ({ comfyPage }) => {
+  await comfyPage.page.evaluate(() => {
+    ;(window as AugmentedWindow).signInPromise =
+      window.app!.extensionManager.dialog.showApiNodesSignInDialog([
+        'FluxProGenerate',
+        'StableDiffusion3Generate'
+      ])
   })
+
+  const dialog = comfyPage.page.locator('.p-dialog')
+  await expect(dialog).toBeVisible()
+
+  await expect(
+    dialog.getByText('Sign In Required to Use API Nodes')
+  ).toBeVisible()
+  await expect(dialog.getByText('FluxProGenerate')).toBeVisible()
+  await expect(dialog.getByText('StableDiffusion3Generate')).toBeVisible()
+
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  expect(
+    await comfyPage.page.evaluate(
+      () => (window as AugmentedWindow).signInPromise
+    )
+  ).toBe(false)
+  await expect(dialog).not.toBeVisible()
 })
 
 test.describe('Update password dialog', () => {
