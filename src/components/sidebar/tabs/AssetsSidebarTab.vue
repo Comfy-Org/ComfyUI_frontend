@@ -3,6 +3,17 @@
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     v-bind="$attrs"
   >
+    <template #tool-buttons>
+      <Button
+        v-tooltip.bottom="$t('sideToolbar.mediaAssets.openBrowser')"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.mediaAssets.openBrowser')"
+        @click="openMediaBrowser"
+      >
+        <i class="icon-[lucide--maximize-2] size-4" />
+      </Button>
+    </template>
     <template #alt-title>
       <div
         v-if="isInFolderView"
@@ -236,6 +247,7 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import { useMediaAssetBrowserDialog } from '@/platform/assets/composables/useMediaAssetBrowserDialog'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
@@ -265,6 +277,12 @@ const Load3dViewerContent = defineAsyncComponent(
 const { t } = useI18n()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
+
+const { show: showMediaBrowser } = useMediaAssetBrowserDialog()
+
+function openMediaBrowser() {
+  showMediaBrowser({ initialTab: activeTab.value })
+}
 
 const activeTab = ref<'input' | 'output'>('output')
 const folderJobId = ref<string | null>(null)

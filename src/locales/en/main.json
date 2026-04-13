@@ -834,7 +834,18 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
-      "viewSettings": "View settings"
+      "viewSettings": "View settings",
+      "openBrowser": "Open media browser",
+      "assetInfo": "Asset Info",
+      "selectAssetPrompt": "Select an asset to view details",
+      "infoPanel": {
+        "preview": "Preview",
+        "mediaType": "Type",
+        "fileSize": "File Size",
+        "generationTime": "Generation Time",
+        "tagging": "Tagging",
+        "description": "Description"
+      }
     },
     "backToAssets": "Back to all assets",
     "folderView": {
