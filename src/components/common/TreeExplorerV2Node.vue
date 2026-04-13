@@ -32,21 +32,14 @@
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2] text-xs" />
+          <i class="icon-[lucide--trash-2]" />
         </button>
         <button
           :class="cn(ACTION_BTN_CLASS, 'text-muted-foreground')"
           :aria-label="$t('icon.bookmark')"
           @click.stop="toggleBookmark"
         >
-          <i
-            :class="
-              cn(
-                isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
-                'text-xs'
-              )
-            "
-          />
+          <i :class="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'" />
         </button>
       </div>
     </div>
@@ -115,7 +108,7 @@ const ROW_CLASS =
   'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input rounded'
 
 const ACTION_BTN_CLASS =
-  'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
+  'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-sm opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
