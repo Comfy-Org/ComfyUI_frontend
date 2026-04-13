@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ConnectionPanelView from './ConnectionPanelView.vue'
 
@@ -61,6 +61,11 @@ describe('ConnectionPanelView', () => {
   beforeEach(() => {
     mockLocalStorage.clear()
     vi.restoreAllMocks()
+    vi.stubGlobal('localStorage', mockLocalStorage)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('renders the backend URL input with default value', () => {
