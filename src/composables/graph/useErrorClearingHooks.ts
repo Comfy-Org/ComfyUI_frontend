@@ -40,7 +40,8 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
   getExecutionIdByNode,
-  getExecutionIdForNodeInGraph
+  getExecutionIdForNodeInGraph,
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 
 function resolvePromotedExecId(
@@ -228,12 +229,27 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   }
 }
 
+/**
+ * True when the candidate's node still exists in the current root graph
+ * and is active. Filters out late verification results for nodes that
+ * have been bypassed, deleted, or belong to a workflow that is no
+ * longer current — any of which would reintroduce stale errors.
+ */
+function isCandidateStillActive(nodeId: unknown): boolean {
+  if (!app.rootGraph || nodeId == null) return false
+  const node = getNodeByExecutionId(app.rootGraph, String(nodeId))
+  if (!node) return false
+  return !isNodeInactive(node.mode)
+}
+
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
   try {
     await verifyAssetSupportedCandidates(pending)
-    const verified = pending.filter((c) => c.isMissing === true)
+    const verified = pending.filter(
+      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+    )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
     console.warn('[useErrorClearingHooks] model verification failed:', error)
@@ -245,7 +261,9 @@ async function verifyAndAddPendingMedia(
 ): Promise<void> {
   try {
     await verifyCloudMediaCandidates(pending)
-    const verified = pending.filter((c) => c.isMissing === true)
+    const verified = pending.filter(
+      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+    )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
     console.warn('[useErrorClearingHooks] media verification failed:', error)

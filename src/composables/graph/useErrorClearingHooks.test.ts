@@ -625,6 +625,111 @@ describe('realtime scan verifies pending cloud candidates', () => {
   })
 })
 
+describe('realtime verification staleness guards', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('skips adding verified model when node was bypassed before verification resolved', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: true,
+        name: 'stale_model.safetensors',
+        isMissing: undefined
+      }
+    ])
+    let resolveVerify: (() => void) | undefined
+    const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async (candidates) => {
+        await verifyPromise
+        for (const c of candidates) c.isMissing = true
+      })
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graph)
+
+    // Un-bypass: kicks off verification (still pending)
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    // Bypass again before verification resolves
+    node.mode = LGraphEventMode.BYPASS
+
+    // Verification now resolves with isMissing: true, but staleness
+    // check must drop the add because node is currently bypassed.
+    resolveVerify!()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+
+  it('skips adding verified media when node is deleted before verification resolved', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    graph.add(node)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'deleted_image.png',
+        isMissing: undefined
+      }
+    ])
+    let resolveVerify: (() => void) | undefined
+    const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
+    const verifySpy = vi
+      .spyOn(missingMediaScan, 'verifyCloudMediaCandidates')
+      .mockImplementation(async (candidates) => {
+        await verifyPromise
+        for (const c of candidates) c.isMissing = true
+      })
+
+    installErrorClearingHooks(graph)
+
+    node.mode = LGraphEventMode.ALWAYS
+    graph.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    // Delete the node before verification completes
+    graph.remove(node)
+
+    resolveVerify!()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+})
+
 describe('clearWidgetRelatedErrors parameter routing', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
