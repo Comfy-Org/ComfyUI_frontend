@@ -101,7 +101,9 @@ describe('ConnectionPanelView', () => {
   it('displays the comfy launch command', () => {
     renderPanel()
     expect(
-      screen.getByText('comfy launch -- --enable-cors-header="*"')
+      screen.getByText(
+        `comfy launch -- --enable-cors-header="${window.location.origin}"`
+      )
     ).toBeTruthy()
   })
 

@@ -160,7 +160,7 @@
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
             >
-              comfy launch -- --enable-cors-header="*"
+              comfy launch -- --enable-cors-header="{{ corsOrigin }}"
             </code>
           </div>
         </div>
@@ -198,7 +198,7 @@
             <code
               class="block rounded-md bg-neutral-800 p-3 text-xs text-neutral-200 select-all"
             >
-              python main.py --enable-cors-header="*"
+              python main.py --enable-cors-header="{{ corsOrigin }}"
             </code>
           </div>
         </div>
@@ -248,6 +248,7 @@ const { t } = useI18n()
 const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8188'
 const STORAGE_KEY = 'comfyui-preview-backend-url'
 const REPO = 'https://github.com/Comfy-Org/ComfyUI_frontend'
+const corsOrigin = window.location.origin
 
 const backendUrl = ref(localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL)
 
