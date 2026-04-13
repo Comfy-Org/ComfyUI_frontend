@@ -414,6 +414,8 @@ export const comfyPageFixture = base.extend<{
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
+    const isVueNodes = testInfo.tags.includes('@vue-nodes')
+
     try {
       await comfyPage.setupSettings({
         'Comfy.UseNewMenu': 'Top',
@@ -436,7 +438,8 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VersionCompatibility.DisableWarnings': true,
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false
+        'Comfy.RightSidePanel.ShowErrorsTab': false,
+        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true })
       })
     } catch (e) {
       console.error(e)
@@ -447,6 +450,10 @@ export const comfyPageFixture = base.extend<{
     }
 
     await comfyPage.setup()
+
+    if (isVueNodes) {
+      await comfyPage.vueNodes.waitForNodes()
+    }
 
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')

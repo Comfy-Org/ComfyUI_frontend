@@ -8,10 +8,6 @@ const domPreviewSelector = '.image-preview'
 
 test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
   test.describe('Cleanup Behavior After Promoted Source Removal', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Deleting the promoted source removes the exterior DOM widget', async ({
       comfyPage
     }) => {
