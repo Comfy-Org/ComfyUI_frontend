@@ -8,6 +8,7 @@ on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
     paths-ignore: ['**/*.md']
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,4 +32,5 @@ jobs:
         uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         with:
           files: coverage/lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false

@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
-import type { Position } from '../types'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { Position } from '@e2e/fixtures/types'
 
 export class CanvasHelper {
   constructor(
@@ -71,6 +71,51 @@ export class CanvasHelper {
 
   async click(position: Position): Promise<void> {
     await this.canvas.click({ position })
+    await this.nextFrame()
+  }
+
+  /**
+   * Convert a canvas-element-relative position to absolute page coordinates.
+   * Use with `page.mouse` APIs when Vue DOM overlays above the canvas would
+   * cause Playwright's actionability check to fail on the canvas locator.
+   */
+  private async toAbsolute(position: Position): Promise<Position> {
+    const box = await this.canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+    return { x: box.x + position.x, y: box.y + position.y }
+  }
+
+  /**
+   * Click at canvas-element-relative coordinates using `page.mouse.click()`.
+   * Bypasses Playwright's actionability checks on the canvas locator, which
+   * can fail when Vue-rendered DOM nodes overlay the `<canvas>` element.
+   */
+  async mouseClickAt(
+    position: Position,
+    options?: {
+      button?: 'left' | 'right' | 'middle'
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+    }
+  ): Promise<void> {
+    const abs = await this.toAbsolute(position)
+    const modifiers = options?.modifiers ?? []
+    for (const mod of modifiers) await this.page.keyboard.down(mod)
+    try {
+      await this.page.mouse.click(abs.x, abs.y, {
+        button: options?.button
+      })
+    } finally {
+      for (const mod of modifiers) await this.page.keyboard.up(mod)
+    }
+    await this.nextFrame()
+  }
+
+  /**
+   * Double-click at canvas-element-relative coordinates using `page.mouse`.
+   */
+  async mouseDblclickAt(position: Position): Promise<void> {
+    const abs = await this.toAbsolute(position)
+    await this.page.mouse.dblclick(abs.x, abs.y)
     await this.nextFrame()
   }
 

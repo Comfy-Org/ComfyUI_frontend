@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -34,9 +35,11 @@ describe(NodeSearchFilterBar, () => {
     ])
   })
 
-  async function createWrapper(props = {}) {
-    const wrapper = mount(NodeSearchFilterBar, {
-      props,
+  async function createRender(props = {}) {
+    const user = userEvent.setup()
+    const onSelectCategory = vi.fn()
+    render(NodeSearchFilterBar, {
+      props: { onSelectCategory, ...props },
       global: {
         plugins: [testI18n],
         stubs: {
@@ -48,33 +51,33 @@ describe(NodeSearchFilterBar, () => {
       }
     })
     await nextTick()
-    return wrapper
+    return { user, onSelectCategory }
   }
 
   it('should render Extensions button and Input/Output popover triggers', async () => {
-    const wrapper = await createWrapper({ hasCustomNodes: true })
+    await createRender({ hasCustomNodes: true })
 
-    const buttons = wrapper.findAll('button')
-    const texts = buttons.map((b) => b.text())
+    const buttons = screen.getAllByRole('button')
+    const texts = buttons.map((b) => b.textContent?.trim())
     expect(texts).toContain('Extensions')
     expect(texts).toContain('Input')
     expect(texts).toContain('Output')
   })
 
   it('should always render Comfy button', async () => {
-    const wrapper = await createWrapper()
-    const texts = wrapper.findAll('button').map((b) => b.text())
+    await createRender()
+    const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
     expect(texts).toContain('Comfy')
   })
 
   it('should render conditional category buttons when matching nodes exist', async () => {
-    const wrapper = await createWrapper({
+    await createRender({
       hasFavorites: true,
       hasEssentialNodes: true,
       hasBlueprintNodes: true,
       hasPartnerNodes: true
     })
-    const texts = wrapper.findAll('button').map((b) => b.text())
+    const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
     expect(texts).toContain('Bookmarked')
     expect(texts).toContain('Blueprints')
     expect(texts).toContain('Partner')
@@ -82,34 +85,27 @@ describe(NodeSearchFilterBar, () => {
   })
 
   it('should not render Extensions button when no custom nodes exist', async () => {
-    const wrapper = await createWrapper()
-
-    const buttons = wrapper.findAll('button')
-    const texts = buttons.map((b) => b.text())
+    await createRender()
+    const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
     expect(texts).not.toContain('Extensions')
   })
 
   it('should emit selectCategory when category button is clicked', async () => {
-    const wrapper = await createWrapper({ hasCustomNodes: true })
-
-    const extensionsBtn = wrapper
-      .findAll('button')
-      .find((b) => b.text() === 'Extensions')!
-    await extensionsBtn.trigger('click')
-
-    expect(wrapper.emitted('selectCategory')![0]).toEqual(['custom'])
-  })
-
-  it('should apply active styling when activeCategory matches', async () => {
-    const wrapper = await createWrapper({
-      activeCategory: 'custom',
+    const { user, onSelectCategory } = await createRender({
       hasCustomNodes: true
     })
 
-    const extensionsBtn = wrapper
-      .findAll('button')
-      .find((b) => b.text() === 'Extensions')!
+    await user.click(screen.getByRole('button', { name: 'Extensions' }))
 
-    expect(extensionsBtn.attributes('aria-pressed')).toBe('true')
+    expect(onSelectCategory).toHaveBeenCalledWith('custom')
+  })
+
+  it('should apply active styling when activeCategory matches', async () => {
+    await createRender({ activeCategory: 'custom', hasCustomNodes: true })
+
+    expect(screen.getByRole('button', { name: 'Extensions' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   })
 })

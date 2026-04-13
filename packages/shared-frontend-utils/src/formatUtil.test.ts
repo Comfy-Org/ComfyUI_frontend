@@ -62,7 +62,8 @@ describe('formatUtil', () => {
         { filename: 'animation.gif', expected: 'image' },
         { filename: 'web.webp', expected: 'image' },
         { filename: 'bitmap.bmp', expected: 'image' },
-        { filename: 'modern.avif', expected: 'image' }
+        { filename: 'modern.avif', expected: 'image' },
+        { filename: 'logo.svg', expected: 'image' }
       ]
 
       it.for(imageTestCases)(

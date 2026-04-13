@@ -1,34 +1,37 @@
 <script setup lang="ts">
-const pillars = [
+import { computed } from 'vue'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const pillars = computed(() => [
   {
     icon: '⚡',
-    title: 'Build',
-    description:
-      'Design complex AI workflows visually with our node-based editor'
+    title: t('pillars.buildTitle', locale),
+    description: t('pillars.buildDesc', locale)
   },
   {
     icon: '🎨',
-    title: 'Customize',
-    description: 'Fine-tune every parameter across any model architecture'
+    title: t('pillars.customizeTitle', locale),
+    description: t('pillars.customizeDesc', locale)
   },
   {
     icon: '🔧',
-    title: 'Refine',
-    description:
-      'Iterate on outputs with precision controls and real-time preview'
+    title: t('pillars.refineTitle', locale),
+    description: t('pillars.refineDesc', locale)
   },
   {
     icon: '⚙️',
-    title: 'Automate',
-    description:
-      'Scale your workflows with batch processing and API integration'
+    title: t('pillars.automateTitle', locale),
+    description: t('pillars.automateDesc', locale)
   },
   {
     icon: '🚀',
-    title: 'Run',
-    description: 'Deploy locally or in the cloud with identical results'
+    title: t('pillars.runTitle', locale),
+    description: t('pillars.runDesc', locale)
   }
-]
+])
 </script>
 
 <template>
@@ -36,10 +39,10 @@ const pillars = [
     <div class="mx-auto max-w-7xl">
       <header class="mb-16 text-center">
         <h2 class="text-3xl font-bold text-white md:text-4xl">
-          The Building Blocks of AI Production
+          {{ t('pillars.heading', locale) }}
         </h2>
         <p class="mt-4 text-smoke-700">
-          Five powerful capabilities that give you complete control
+          {{ t('pillars.subheading', locale) }}
         </p>
       </header>
 
@@ -50,7 +53,7 @@ const pillars = [
           class="rounded-xl border border-white/10 bg-charcoal-600 p-6 transition-colors hover:border-brand-yellow"
         >
           <div
-            class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-yellow text-xl"
+            class="flex size-12 items-center justify-center rounded-full bg-brand-yellow text-xl"
           >
             {{ pillar.icon }}
           </div>

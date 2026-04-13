@@ -1331,6 +1331,7 @@
     "updating": "Atualizando {id}",
     "upload": "Enviar",
     "uploadAlreadyInProgress": "O upload já está em andamento",
+    "uploadTimedOut": "O envio excedeu o tempo limite. Por favor, tente novamente.",
     "usageHint": "Dica de uso",
     "use": "Usar",
     "user": "Usuário",

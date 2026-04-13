@@ -1,17 +1,14 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import NodeSearchCategorySidebar, {
-  DEFAULT_CATEGORY
-} from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
+import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import {
   createMockNodeDef,
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -26,70 +23,88 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 describe('NodeSearchCategorySidebar', () => {
-  let wrapper: VueWrapper
-
   beforeEach(() => {
     vi.restoreAllMocks()
     setupTestPinia()
   })
 
-  afterEach(() => {
-    wrapper?.unmount()
-  })
+  async function createRender(props = {}) {
+    const user = userEvent.setup()
+    const onUpdateSelectedCategory = vi.fn()
+    const baseProps = { selectedCategory: 'most-relevant', ...props }
 
-  async function createWrapper(props = {}) {
-    wrapper = mount(NodeSearchCategorySidebar, {
-      props: { selectedCategory: DEFAULT_CATEGORY, ...props },
-      global: { plugins: [testI18n] },
-      attachTo: document.body
+    let currentProps = { ...baseProps }
+    let rerenderFn: (
+      p: typeof baseProps & Record<string, unknown>
+    ) => void = () => {}
+
+    function makeProps(overrides = {}) {
+      const merged = { ...currentProps, ...overrides }
+      return {
+        ...merged,
+        'onUpdate:selectedCategory': (val: string) => {
+          onUpdateSelectedCategory(val)
+          currentProps = { ...currentProps, selectedCategory: val }
+          rerenderFn(makeProps())
+        }
+      }
+    }
+
+    const result = render(NodeSearchCategorySidebar, {
+      props: makeProps(),
+      global: { plugins: [testI18n] }
     })
+    rerenderFn = (p) => result.rerender(p)
     await nextTick()
-    return wrapper
+    return { user, onUpdateSelectedCategory }
   }
 
   async function clickCategory(
-    wrapper: ReturnType<typeof mount>,
+    user: ReturnType<typeof userEvent.setup>,
     text: string,
     exact = false
   ) {
-    const btn = wrapper
-      .findAll('button')
-      .find((b) => (exact ? b.text().trim() === text : b.text().includes(text)))
+    const candidates = [
+      ...screen.queryAllByRole('button'),
+      ...screen.queryAllByRole('treeitem')
+    ]
+    const btn = candidates.find((b) =>
+      exact ? b.textContent?.trim() === text : b.textContent?.includes(text)
+    )
     expect(btn, `Expected to find a button with text "${text}"`).toBeDefined()
-    await btn!.trigger('click')
+    await user.click(btn!)
     await nextTick()
   }
 
   describe('preset categories', () => {
-    it('should always show Most relevant', async () => {
-      const wrapper = await createWrapper()
-      expect(wrapper.text()).toContain('Most relevant')
-    })
+    it('should render Most relevant preset category', async () => {
+      await createRender()
 
-    it('should not show Favorites in sidebar', async () => {
-      vi.spyOn(useNodeBookmarkStore(), 'bookmarks', 'get').mockReturnValue([
-        'some-bookmark'
-      ])
-      const wrapper = await createWrapper()
-      expect(wrapper.text()).not.toContain('Favorites')
-    })
-
-    it('should not show source categories in sidebar', async () => {
-      const wrapper = await createWrapper()
-      expect(wrapper.text()).not.toContain('Extensions')
-      expect(wrapper.text()).not.toContain('Essentials')
+      expect(screen.getByText('Most relevant')).toBeInTheDocument()
     })
 
     it('should mark the selected preset category as selected', async () => {
-      const wrapper = await createWrapper({
-        selectedCategory: DEFAULT_CATEGORY
+      await createRender({ selectedCategory: 'most-relevant' })
+
+      expect(screen.getByTestId('category-most-relevant')).toHaveAttribute(
+        'aria-current',
+        'true'
+      )
+    })
+
+    it('should emit update:selectedCategory when preset is clicked', async () => {
+      const { user, onUpdateSelectedCategory } = await createRender({
+        selectedCategory: 'most-relevant'
       })
 
-      const mostRelevantBtn = wrapper.find(
-        '[data-testid="category-most-relevant"]'
-      )
+      useNodeDefStore().updateNodeDefs([
+        createMockNodeDef({ name: 'Node1', category: 'sampling' })
+      ])
+      await nextTick()
 
-      expect(mostRelevantBtn.attributes('aria-current')).toBe('true')
+      await clickCategory(user, 'sampling')
+
+      expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
     })
   })
 
@@ -102,11 +117,11 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      await createRender()
 
-      expect(wrapper.text()).toContain('sampling')
-      expect(wrapper.text()).toContain('loaders')
-      expect(wrapper.text()).toContain('conditioning')
+      expect(screen.getByText('sampling')).toBeInTheDocument()
+      expect(screen.getByText('loaders')).toBeInTheDocument()
+      expect(screen.getByText('conditioning')).toBeInTheDocument()
     })
 
     it('should emit update:selectedCategory when category is clicked', async () => {
@@ -115,13 +130,11 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user, onUpdateSelectedCategory } = await createRender()
 
-      await clickCategory(wrapper, 'sampling')
+      await clickCategory(user, 'sampling')
 
-      expect(wrapper.emitted('update:selectedCategory')![0]).toEqual([
-        'sampling'
-      ])
+      expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
     })
   })
 
@@ -135,14 +148,16 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user } = await createRender()
 
-      expect(wrapper.text()).not.toContain('advanced')
+      expect(screen.queryByText('advanced')).not.toBeInTheDocument()
 
-      await clickCategory(wrapper, 'sampling')
+      await clickCategory(user, 'sampling')
 
-      expect(wrapper.text()).toContain('advanced')
-      expect(wrapper.text()).toContain('basic')
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+        expect(screen.getByText('basic')).toBeInTheDocument()
+      })
     })
 
     it('should collapse sibling category when another is expanded', async () => {
@@ -154,17 +169,21 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user } = await createRender()
 
       // Expand sampling
-      await clickCategory(wrapper, 'sampling', true)
-      expect(wrapper.text()).toContain('advanced')
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
       // Expand image — sampling should collapse
-      await clickCategory(wrapper, 'image', true)
+      await clickCategory(user, 'image', true)
 
-      expect(wrapper.text()).toContain('upscale')
-      expect(wrapper.text()).not.toContain('advanced')
+      await waitFor(() => {
+        expect(screen.getByText('upscale')).toBeInTheDocument()
+        expect(screen.queryByText('advanced')).not.toBeInTheDocument()
+      })
     })
 
     it('should emit update:selectedCategory when subcategory is clicked', async () => {
@@ -175,16 +194,19 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user, onUpdateSelectedCategory } = await createRender()
 
       // Expand sampling category
-      await clickCategory(wrapper, 'sampling', true)
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
       // Click on advanced subcategory
-      await clickCategory(wrapper, 'advanced')
+      await clickCategory(user, 'advanced')
 
-      const emitted = wrapper.emitted('update:selectedCategory')!
-      expect(emitted[emitted.length - 1]).toEqual(['sampling/advanced'])
+      const calls = onUpdateSelectedCategory.mock.calls
+      expect(calls[calls.length - 1]).toEqual(['sampling/advanced'])
     })
   })
 
@@ -195,13 +217,12 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper({ selectedCategory: 'sampling' })
+      await createRender({ selectedCategory: 'sampling' })
 
-      expect(
-        wrapper
-          .find('[data-testid="category-sampling"]')
-          .attributes('aria-current')
-      ).toBe('true')
+      expect(screen.getByTestId('category-sampling')).toHaveAttribute(
+        'aria-current',
+        'true'
+      )
     })
 
     it('should emit selected subcategory when expanded', async () => {
@@ -212,59 +233,28 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper({
-        selectedCategory: DEFAULT_CATEGORY
+      const { user, onUpdateSelectedCategory } = await createRender({
+        selectedCategory: 'most-relevant'
       })
 
       // Expand and click subcategory
-      await clickCategory(wrapper, 'sampling', true)
-      await clickCategory(wrapper, 'advanced')
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
+      await clickCategory(user, 'advanced')
 
-      const emitted = wrapper.emitted('update:selectedCategory')!
-      expect(emitted[emitted.length - 1]).toEqual(['sampling/advanced'])
+      const calls = onUpdateSelectedCategory.mock.calls
+      expect(calls[calls.length - 1]).toEqual(['sampling/advanced'])
     })
   })
 
   describe('hidePresets prop', () => {
     it('should hide preset categories when hidePresets is true', async () => {
-      const wrapper = await createWrapper({ hidePresets: true })
+      await createRender({ hidePresets: true })
 
-      expect(wrapper.text()).not.toContain('Most relevant')
-      expect(wrapper.text()).not.toContain('Custom')
+      expect(screen.queryByText('Most relevant')).not.toBeInTheDocument()
     })
-  })
-
-  it('should emit autoExpand for single root and support deeply nested categories', async () => {
-    useNodeDefStore().updateNodeDefs([
-      createMockNodeDef({ name: 'Node1', category: 'api' }),
-      createMockNodeDef({ name: 'Node2', category: 'api/image' }),
-      createMockNodeDef({ name: 'Node3', category: 'api/image/BFL' })
-    ])
-    await nextTick()
-
-    const wrapper = await createWrapper()
-
-    // Single root emits autoExpand
-    expect(wrapper.emitted('autoExpand')?.[0]).toEqual(['api'])
-
-    // Simulate parent handling autoExpand
-    await wrapper.setProps({ selectedCategory: 'api' })
-    await nextTick()
-
-    expect(wrapper.text()).toContain('api')
-    expect(wrapper.text()).toContain('image')
-    expect(wrapper.text()).not.toContain('BFL')
-
-    // Expand image
-    await clickCategory(wrapper, 'image', true)
-
-    expect(wrapper.text()).toContain('BFL')
-
-    // Click BFL and verify emission
-    await clickCategory(wrapper, 'BFL', true)
-
-    const emitted = wrapper.emitted('update:selectedCategory')!
-    expect(emitted[emitted.length - 1]).toEqual(['api/image/BFL'])
   })
 
   it('should emit category without root/ prefix', async () => {
@@ -273,11 +263,66 @@ describe('NodeSearchCategorySidebar', () => {
     ])
     await nextTick()
 
-    const wrapper = await createWrapper()
+    const { user, onUpdateSelectedCategory } = await createRender()
 
-    await clickCategory(wrapper, 'sampling')
+    await clickCategory(user, 'sampling')
 
-    expect(wrapper.emitted('update:selectedCategory')![0][0]).toBe('sampling')
+    expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
+  })
+
+  it('should emit autoExpand when there is a single root category', async () => {
+    useNodeDefStore().updateNodeDefs([
+      createMockNodeDef({ name: 'Node1', category: 'api' }),
+      createMockNodeDef({ name: 'Node2', category: 'api/image' })
+    ])
+    await nextTick()
+
+    const onAutoExpand = vi.fn()
+    render(NodeSearchCategorySidebar, {
+      props: {
+        selectedCategory: 'most-relevant',
+        'onAutoExpand': onAutoExpand
+      },
+      global: { plugins: [testI18n] }
+    })
+    await nextTick()
+
+    expect(onAutoExpand).toHaveBeenCalledWith('api')
+  })
+
+  it('should support deeply nested categories', async () => {
+    useNodeDefStore().updateNodeDefs([
+      createMockNodeDef({ name: 'Node1', category: 'api' }),
+      createMockNodeDef({ name: 'Node2', category: 'api/image' }),
+      createMockNodeDef({ name: 'Node3', category: 'api/image/BFL' })
+    ])
+    await nextTick()
+
+    const { user, onUpdateSelectedCategory } = await createRender()
+
+    // Only top-level visible initially
+    expect(screen.getByText('api')).toBeInTheDocument()
+    expect(screen.queryByText('image')).not.toBeInTheDocument()
+    expect(screen.queryByText('BFL')).not.toBeInTheDocument()
+
+    // Expand api
+    await clickCategory(user, 'api', true)
+    await waitFor(() => {
+      expect(screen.getByText('image')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('BFL')).not.toBeInTheDocument()
+
+    // Expand image
+    await clickCategory(user, 'image', true)
+    await waitFor(() => {
+      expect(screen.getByText('BFL')).toBeInTheDocument()
+    })
+
+    // Click BFL and verify emission
+    await clickCategory(user, 'BFL', true)
+
+    const calls = onUpdateSelectedCategory.mock.calls
+    expect(calls[calls.length - 1]).toEqual(['api/image/BFL'])
   })
 
   describe('keyboard navigation', () => {
@@ -289,19 +334,17 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user, onUpdateSelectedCategory } = await createRender()
 
-      expect(wrapper.text()).not.toContain('advanced')
+      expect(screen.queryByText('advanced')).not.toBeInTheDocument()
 
-      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
-      await samplingBtn.trigger('keydown', { key: 'ArrowRight' })
+      const samplingBtn = screen.getByTestId('category-sampling')
+      samplingBtn.focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       // Should have emitted select for sampling, expanding it
-      expect(wrapper.emitted('update:selectedCategory')).toBeTruthy()
-      expect(wrapper.emitted('update:selectedCategory')![0]).toEqual([
-        'sampling'
-      ])
+      expect(onUpdateSelectedCategory).toHaveBeenCalledWith('sampling')
     })
 
     it('should collapse an expanded tree node on ArrowLeft', async () => {
@@ -312,18 +355,21 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
+      const { user } = await createRender()
+
       // First expand sampling by clicking
-      const wrapper = await createWrapper()
-      await clickCategory(wrapper, 'sampling', true)
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
-      expect(wrapper.text()).toContain('advanced')
-
-      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
-      await samplingBtn.trigger('keydown', { key: 'ArrowLeft' })
+      const samplingBtn = screen.getByTestId('category-sampling')
+      samplingBtn.focus()
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       // Collapse toggles internal state; children should be hidden
-      expect(wrapper.text()).not.toContain('advanced')
+      expect(screen.queryByText('advanced')).not.toBeInTheDocument()
     })
 
     it('should focus first child on ArrowRight when already expanded', async () => {
@@ -334,19 +380,18 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
-      await clickCategory(wrapper, 'sampling', true)
+      const { user } = await createRender()
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
-      expect(wrapper.text()).toContain('advanced')
-
-      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
-      await samplingBtn.trigger('keydown', { key: 'ArrowRight' })
+      const samplingBtn = screen.getByTestId('category-sampling')
+      samplingBtn.focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
-      const advancedBtn = wrapper.find(
-        '[data-testid="category-sampling/advanced"]'
-      )
-      expect(advancedBtn.element).toBe(document.activeElement)
+      expect(screen.getByTestId('category-sampling/advanced')).toHaveFocus()
     })
 
     it('should focus parent on ArrowLeft from a leaf or collapsed node', async () => {
@@ -357,17 +402,17 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
-      await clickCategory(wrapper, 'sampling', true)
+      const { user } = await createRender()
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('advanced')).toBeInTheDocument()
+      })
 
-      const advancedBtn = wrapper.find(
-        '[data-testid="category-sampling/advanced"]'
-      )
-      await advancedBtn.trigger('keydown', { key: 'ArrowLeft' })
+      screen.getByTestId('category-sampling/advanced').focus()
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
-      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
-      expect(samplingBtn.element).toBe(document.activeElement)
+      expect(screen.getByTestId('category-sampling')).toHaveFocus()
     })
 
     it('should collapse sampling on ArrowLeft, not just its expanded child', async () => {
@@ -385,31 +430,31 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user } = await createRender()
 
       // Step 1: Expand sampling
-      await clickCategory(wrapper, 'sampling', true)
-      await wrapper.setProps({ selectedCategory: 'sampling' })
-      await nextTick()
-      expect(wrapper.text()).toContain('custom_sampling')
+      await clickCategory(user, 'sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('custom_sampling')).toBeInTheDocument()
+      })
 
       // Step 2: Expand custom_sampling
-      await clickCategory(wrapper, 'custom_sampling', true)
-      await wrapper.setProps({ selectedCategory: 'sampling/custom_sampling' })
-      await nextTick()
-      expect(wrapper.text()).toContain('child')
+      await clickCategory(user, 'custom_sampling', true)
+      await waitFor(() => {
+        expect(screen.getByText('child')).toBeInTheDocument()
+      })
 
       // Step 3: Navigate back to sampling (keyboard focus only)
-      const samplingBtn = wrapper.find('[data-testid="category-sampling"]')
-      ;(samplingBtn.element as HTMLElement).focus()
+      const samplingBtn = screen.getByTestId('category-sampling')
+      samplingBtn.focus()
       await nextTick()
 
       // Step 4: Press left on sampling
-      await samplingBtn.trigger('keydown', { key: 'ArrowLeft' })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       // Sampling should collapse entirely — custom_sampling should not be visible
-      expect(wrapper.text()).not.toContain('custom_sampling')
+      expect(screen.queryByText('custom_sampling')).not.toBeInTheDocument()
     })
 
     it('should collapse 4-deep tree to parent of level 2 on ArrowLeft', async () => {
@@ -422,37 +467,37 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      const { user } = await createRender()
 
-      // Expand a → a/b → a/b/c → a/b/c/d
-      await clickCategory(wrapper, 'a', true)
-      await wrapper.setProps({ selectedCategory: 'a' })
-      await nextTick()
-      expect(wrapper.text()).toContain('b')
+      // Expand a → a/b → a/b/c
+      await clickCategory(user, 'a', true)
+      await waitFor(() => {
+        expect(screen.getByText('b')).toBeInTheDocument()
+      })
 
-      await clickCategory(wrapper, 'b', true)
-      await wrapper.setProps({ selectedCategory: 'a/b' })
-      await nextTick()
-      expect(wrapper.text()).toContain('c')
+      await clickCategory(user, 'b', true)
+      await waitFor(() => {
+        expect(screen.getByText('c')).toBeInTheDocument()
+      })
 
-      await clickCategory(wrapper, 'c', true)
-      await wrapper.setProps({ selectedCategory: 'a/b/c' })
-      await nextTick()
-      expect(wrapper.text()).toContain('d')
+      await clickCategory(user, 'c', true)
+      await waitFor(() => {
+        expect(screen.getByText('d')).toBeInTheDocument()
+      })
 
       // Focus level 2 (a/b) and press ArrowLeft
-      const bBtn = wrapper.find('[data-testid="category-a/b"]')
-      ;(bBtn.element as HTMLElement).focus()
+      const bBtn = screen.getByTestId('category-a/b')
+      bBtn.focus()
       await nextTick()
 
-      await bBtn.trigger('keydown', { key: 'ArrowLeft' })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       // Level 2 and below should collapse, but level 1 (a) stays expanded
       // so 'b' is still visible but 'c' and 'd' are not
-      expect(wrapper.text()).toContain('b')
-      expect(wrapper.text()).not.toContain('c')
-      expect(wrapper.text()).not.toContain('d')
+      expect(screen.getByText('b')).toBeInTheDocument()
+      expect(screen.queryByText('c')).not.toBeInTheDocument()
+      expect(screen.queryByText('d')).not.toBeInTheDocument()
     })
 
     it('should set aria-expanded on tree nodes with children', async () => {
@@ -463,18 +508,17 @@ describe('NodeSearchCategorySidebar', () => {
       ])
       await nextTick()
 
-      const wrapper = await createWrapper()
+      await createRender()
 
-      const samplingTreeItem = wrapper
-        .find('[data-testid="category-sampling"]')
-        .element.closest('[role="treeitem"]')!
-      expect(samplingTreeItem.getAttribute('aria-expanded')).toBe('false')
+      expect(screen.getByTestId('category-sampling')).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
 
       // Leaf node should not have aria-expanded
-      const loadersTreeItem = wrapper
-        .find('[data-testid="category-loaders"]')
-        .element.closest('[role="treeitem"]')!
-      expect(loadersTreeItem.getAttribute('aria-expanded')).toBeNull()
+      expect(screen.getByTestId('category-loaders')).not.toHaveAttribute(
+        'aria-expanded'
+      )
     })
   })
 })

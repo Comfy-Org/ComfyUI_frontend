@@ -1,7 +1,7 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 type ComfyPage = Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
 

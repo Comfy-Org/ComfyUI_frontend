@@ -1331,6 +1331,7 @@
     "updating": "Mise à jour",
     "upload": "Téléverser",
     "uploadAlreadyInProgress": "Téléversement déjà en cours",
+    "uploadTimedOut": "Le téléchargement a expiré. Veuillez réessayer.",
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
     "user": "Utilisateur",

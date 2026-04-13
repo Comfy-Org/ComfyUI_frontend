@@ -36,6 +36,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   const isUploading = ref(false)
   const uploadStatus = ref<'processing' | 'success' | 'error'>()
   const uploadError = ref('')
+  let stopAsyncWatch: (() => void) | undefined
 
   const wizardData = ref<WizardData>({
     url: '',
@@ -203,6 +204,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   async function uploadModel(): Promise<boolean> {
+    if (isUploading.value) return false
     if (!canUploadModel.value) {
       return false
     }
@@ -247,6 +249,44 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           )
         }
         uploadStatus.value = 'processing'
+
+        stopAsyncWatch?.()
+        let resolved = false
+        const stop = watch(
+          () =>
+            assetDownloadStore.downloadList.find(
+              (d) => d.taskId === result.task.task_id
+            )?.status,
+          async (status) => {
+            if (status === 'completed') {
+              resolved = true
+              uploadStatus.value = 'success'
+              await refreshModelCaches()
+              stopAsyncWatch?.()
+              stopAsyncWatch = undefined
+            } else if (status === 'failed') {
+              resolved = true
+              const download = assetDownloadStore.downloadList.find(
+                (d) => d.taskId === result.task.task_id
+              )
+              uploadStatus.value = 'error'
+              uploadError.value =
+                download?.error ||
+                t('assetBrowser.downloadFailed', {
+                  name: download?.assetName || ''
+                })
+              stopAsyncWatch?.()
+              stopAsyncWatch = undefined
+            }
+          },
+          { immediate: true }
+        )
+        if (resolved) {
+          stop()
+          stopAsyncWatch = undefined
+        } else {
+          stopAsyncWatch = stop
+        }
       } else {
         uploadStatus.value = 'success'
         await refreshModelCaches()
@@ -271,6 +311,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   function resetWizard() {
+    stopAsyncWatch?.()
+    stopAsyncWatch = undefined
     currentStep.value = 1
     isFetchingMetadata.value = false
     isUploading.value = false
