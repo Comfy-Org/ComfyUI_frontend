@@ -51,7 +51,7 @@ if ! command -v wrangler > /dev/null 2>&1; then
     npm install -g wrangler@^4.0.0 >&2 || {
         echo "Failed to install wrangler" >&2
         echo "failed"
-        return
+        exit 1
     }
 fi
 
