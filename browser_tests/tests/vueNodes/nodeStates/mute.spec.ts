@@ -22,9 +22,7 @@ test.describe('Vue Node Mute', () => {
       const checkpointNode =
         comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-muted-state.png'
-      )
+      await expect(checkpointNode).toHaveScreenshot('vue-node-muted-state.png')
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).not.toHaveCSS('opacity', MUTE_OPACITY)

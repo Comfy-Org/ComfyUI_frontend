@@ -28,9 +28,9 @@ test.describe('Vue Node Bypass', () => {
         .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
       await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-bypassed-state.png'
-      )
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+      ).toHaveScreenshot('vue-node-bypassed-state.png')
 
       await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
       await expect(checkpointNode).not.toHaveClass(BYPASS_CLASS)

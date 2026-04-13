@@ -32,7 +32,7 @@ test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
       .getByTestId(TestIds.selectionToolbox.colorBlue)
       .click()
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expect(loadCheckpointNode).toHaveScreenshot(
       'vue-node-custom-color-blue.png'
     )
   })
