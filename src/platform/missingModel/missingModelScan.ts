@@ -226,15 +226,14 @@ export async function enrichWithEmbeddedMetadata(
     }
   }
 
-  // Workflow-level models (sourceNodeType === '') that are unmatched
-  // should only create candidates when at least one active (non-muted,
-  // non-bypassed) node exists in the graph. When every node is muted or
-  // bypassed, no model is needed for execution.
-  const hasActiveNodes = allNodes.some(
-    (n) => n.mode !== LGraphEventMode.NEVER && n.mode !== LGraphEventMode.BYPASS
-  )
+  // Workflow-level entries (sourceNodeType === '') survive only when
+  // some active (non-muted, non-bypassed) node actually references the
+  // model — not merely because any unrelated active node exists. A
+  // reference is any widget value (or node.properties.models entry)
+  // that matches the model name on an active node.
   const activeUnmatched = unmatched.filter(
-    (m) => m.sourceNodeType !== '' || hasActiveNodes
+    (m) =>
+      m.sourceNodeType !== '' || isModelReferencedByActiveNode(m.name, allNodes)
   )
 
   const settled = await Promise.allSettled(
@@ -273,6 +272,32 @@ export async function enrichWithEmbeddedMetadata(
   }
 
   return enriched
+}
+
+function isModelReferencedByActiveNode(
+  modelName: string,
+  allNodes: ReturnType<typeof flattenWorkflowNodes>
+): boolean {
+  for (const node of allNodes) {
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
+
+    const embeddedModels = (
+      node.properties as { models?: Array<{ name: string }> } | undefined
+    )?.models
+    if (embeddedModels?.some((m) => m.name === modelName)) return true
+
+    const values = node.widgets_values
+    if (!values) continue
+    const valueArray = Array.isArray(values) ? values : Object.values(values)
+    for (const v of valueArray) {
+      if (typeof v === 'string' && v === modelName) return true
+    }
+  }
+  return false
 }
 
 function collectEmbeddedModelsWithSource(

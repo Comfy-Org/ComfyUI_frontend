@@ -779,6 +779,112 @@ describe('enrichWithEmbeddedMetadata', () => {
     expect(result).toHaveLength(0)
   })
 
+  it('drops workflow-level model entries when only referencing nodes are bypassed (other active nodes present)', async () => {
+    // Regression: a previous `hasActiveNodes` check kept workflow-level
+    // models in a mixed graph if ANY active node existed, even when every
+    // node that actually referenced the model was bypassed. The correct
+    // check drops unmatched workflow-level entries since candidates are
+    // derived from active-node widgets.
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 2,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4, // BYPASS — only node referencing the model
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        },
+        {
+          id: 2,
+          type: 'KSampler',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0, // ALWAYS — unrelated active node
+          properties: {},
+          widgets_values: {}
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('keeps unmatched node-sourced entries in a mixed graph', async () => {
+    // A node-sourced unmatched entry (sourceNodeType !== '') must survive
+    // the workflow-level filter. This ensures the simplification does not
+    // over-filter legitimate per-node missing models.
+    const candidates = [
+      makeCandidate('node_model.safetensors', { nodeId: '1' })
+    ]
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {
+            models: [
+              {
+                name: 'node_model.safetensors',
+                url: 'https://example.com/node_model',
+                directory: 'checkpoints'
+              }
+            ]
+          },
+          widgets_values: { ckpt_name: 'node_model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: []
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('node_model.safetensors')
+  })
+
   it('skips embedded models from bypassed nodes', async () => {
     const candidates: MissingModelCandidate[] = []
     const graphData = fromPartial<ComfyWorkflowJSON>({
