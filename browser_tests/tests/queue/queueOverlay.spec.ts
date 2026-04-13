@@ -94,7 +94,7 @@ test.describe('Queue overlay', () => {
     ).toBeVisible()
     await expect(
       comfyPage.page.locator('[data-job-id="job-failed-1"]')
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Toggling overlay again closes it', async ({ comfyPage }) => {
@@ -105,8 +105,6 @@ test.describe('Queue overlay', () => {
 
     await toggle.click()
 
-    await expect(
-      comfyPage.page.locator('[data-job-id]').first()
-    ).not.toBeVisible()
+    await expect(comfyPage.page.locator('[data-job-id]').first()).toBeHidden()
   })
 })

@@ -5,10 +5,12 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
+  readonly newWorkflowButton: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
+    this.newWorkflowButton = page.locator('.new-blank-workflow-button')
   }
 
   async getTabNames(): Promise<string[]> {
@@ -50,10 +52,6 @@ export class Topbar {
     return classes ? !classes.includes('invisible') : false
   }
 
-  get newWorkflowButton(): Locator {
-    return this.page.locator('.new-blank-workflow-button')
-  }
-
   getWorkflowTab(tabName: string): Locator {
     return this.page
       .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
@@ -73,7 +71,7 @@ export class Topbar {
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    await tab.locator('.close-button').click({ force: true })
+    await tab.locator('.close-button').click()
   }
 
   getSaveDialog(): Locator {

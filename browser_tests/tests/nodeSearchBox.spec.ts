@@ -203,7 +203,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.page.keyboard.press('Escape')
 
       // Verify the filter selection panel is hidden
-      await expect(panel.header).not.toBeVisible()
+      await expect(panel.header).toBeHidden()
 
       // Verify the node search dialog is still visible
       await expect(comfyPage.searchBox.input).toBeVisible()

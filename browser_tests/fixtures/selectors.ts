@@ -21,6 +21,10 @@ export const TestIds = {
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
     closeMinimapButton: 'close-minimap-button',
+    minimapContainer: 'minimap-container',
+    minimapCanvas: 'minimap-canvas',
+    minimapViewport: 'minimap-viewport',
+    minimapInteractionOverlay: 'minimap-interaction-overlay',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',
@@ -79,7 +83,8 @@ export const TestIds = {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
-    root: 'properties-panel'
+    root: 'properties-panel',
+    errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
     toggle: 'subgraph-editor-toggle',
@@ -129,6 +134,24 @@ export const TestIds = {
     widgetLabel: 'builder-widget-label',
     outputPlaceholder: 'builder-output-placeholder',
     connectOutputPopover: 'builder-connect-output-popover'
+  },
+  outputHistory: {
+    outputs: 'linear-outputs',
+    welcome: 'linear-welcome',
+    outputInfo: 'linear-output-info',
+    activeQueue: 'linear-job',
+    queueBadge: 'linear-job-badge',
+    inProgressItem: 'linear-in-progress-item',
+    historyItem: 'linear-history-item',
+    skeleton: 'linear-skeleton',
+    latentPreview: 'linear-latent-preview',
+    imageOutput: 'linear-image-output',
+    videoOutput: 'linear-video-output',
+    cancelRun: 'linear-cancel-run',
+    headerProgressBar: 'linear-header-progress-bar',
+    itemProgressBar: 'linear-item-progress-bar',
+    progressOverall: 'linear-progress-overall',
+    progressNode: 'linear-progress-node'
   },
   appMode: {
     widgetItem: 'app-mode-widget-item',
@@ -180,6 +203,7 @@ export type TestIdValue =
   | (typeof TestIds.selectionToolbox)[keyof typeof TestIds.selectionToolbox]
   | (typeof TestIds.widgets)[keyof typeof TestIds.widgets]
   | (typeof TestIds.builder)[keyof typeof TestIds.builder]
+  | (typeof TestIds.outputHistory)[keyof typeof TestIds.outputHistory]
   | (typeof TestIds.appMode)[keyof typeof TestIds.appMode]
   | (typeof TestIds.breadcrumb)[keyof typeof TestIds.breadcrumb]
   | Exclude<

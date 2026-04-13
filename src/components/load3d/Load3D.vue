@@ -27,6 +27,7 @@
         :has-skeleton="hasSkeleton"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
+        @update-hdri-file="handleHDRIFileUpdate"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -139,6 +140,7 @@ const {
   handleClearRecording,
   handleSeek,
   handleBackgroundImageUpdate,
+  handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
   cleanup

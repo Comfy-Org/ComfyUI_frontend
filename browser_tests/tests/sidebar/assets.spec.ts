@@ -163,6 +163,7 @@ test.describe('Assets sidebar - grid view display', () => {
     // Imported tab should show the mocked files
     await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
+
   test('Displays svg outputs', async ({ comfyPage, assetScenario }) => {
     await assetScenario.seedGeneratedHistory([
       createMockJob({
@@ -203,7 +204,7 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
 
-    // List view items should now be visible
+    await expect(tab.assetCards).toHaveCount(0)
     await expect(tab.listViewItems.first()).toBeVisible()
   })
 
@@ -577,7 +578,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.click('delete')
 
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
@@ -599,6 +600,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await comfyPage.confirmDialog.click('reject')
 
+    await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
   })
 })

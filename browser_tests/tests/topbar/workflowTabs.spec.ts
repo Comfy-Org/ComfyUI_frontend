@@ -64,9 +64,9 @@ test.describe('Workflow tabs', () => {
     await topbar.getTab(0).click({ button: 'right' })
 
     // Reka UI ContextMenuContent gets data-state="open" when active
-    const contextMenu = comfyPage.page.locator(
-      '[role="menu"][data-state="open"]'
-    )
+    const contextMenu = comfyPage.page
+      .getByRole('menu')
+      .and(comfyPage.page.locator('[data-state="open"]'))
     await expect(contextMenu).toBeVisible()
 
     await expect(
@@ -86,9 +86,9 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
 
     await topbar.getTab(1).click({ button: 'right' })
-    const contextMenu = comfyPage.page.locator(
-      '[role="menu"][data-state="open"]'
-    )
+    const contextMenu = comfyPage.page
+      .getByRole('menu')
+      .and(comfyPage.page.locator('[data-state="open"]'))
     await expect(contextMenu).toBeVisible()
 
     await contextMenu

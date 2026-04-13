@@ -1988,7 +1988,16 @@
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
-    "uploadingModel": "Uploading 3D model..."
+    "uploadingModel": "Uploading 3D model...",
+    "loadingHDRI": "Loading HDRI...",
+    "hdri": {
+      "label": "HDRI Environment",
+      "uploadFile": "Upload HDRI (.hdr, .exr)",
+      "changeFile": "Change HDRI",
+      "removeFile": "Remove HDRI",
+      "showAsBackground": "Show as Background",
+      "intensity": "Intensity"
+    }
   },
   "imageCrop": {
     "loading": "Loading...",
@@ -2083,7 +2092,9 @@
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
     "failedToUploadBackgroundImage": "Failed to upload background image",
-    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
+    "failedToLoadHDRI": "Failed to load HDRI file",
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file."
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -3404,6 +3415,8 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
+    "editTitle": "Edit title",
+    "editSubgraph": "Edit subgraph",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
     "title": "No item(s) selected | 1 item selected | {count} items selected",

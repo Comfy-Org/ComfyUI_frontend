@@ -118,7 +118,7 @@ test.describe('Model library sidebar - search', () => {
     await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
 
     // Other models should not be visible
-    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).not.toBeVisible()
+    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeHidden()
   })
 
   test('Clearing search restores folder view', async ({ comfyPage }) => {

@@ -5,18 +5,16 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 class SidebarTab {
+  public readonly tabButton: Locator
+  public readonly selectedTabButton: Locator
+
   constructor(
     public readonly page: Page,
     public readonly tabId: string
-  ) {}
-
-  get tabButton() {
-    return this.page.locator(`.${this.tabId}-tab-button`)
-  }
-
-  get selectedTabButton() {
-    return this.page.locator(
-      `.${this.tabId}-tab-button.side-bar-button-selected`
+  ) {
+    this.tabButton = page.locator(`.${tabId}-tab-button`)
+    this.selectedTabButton = page.locator(
+      `.${tabId}-tab-button.side-bar-button-selected`
     )
   }
 
@@ -35,28 +33,19 @@ class SidebarTab {
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
+  public readonly nodeLibrarySearchBoxInput: Locator
+  public readonly nodeLibraryTree: Locator
+  public readonly nodePreview: Locator
+  public readonly tabContainer: Locator
+  public readonly newFolderButton: Locator
+
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-  }
-
-  get nodeLibrarySearchBoxInput() {
-    return this.page.getByPlaceholder('Search Nodes...')
-  }
-
-  get nodeLibraryTree() {
-    return this.page.getByTestId(TestIds.sidebar.nodeLibrary)
-  }
-
-  get nodePreview() {
-    return this.page.locator('.node-lib-node-preview')
-  }
-
-  get tabContainer() {
-    return this.page.locator('.sidebar-content-container')
-  }
-
-  get newFolderButton() {
-    return this.tabContainer.locator('.new-folder-button')
+    this.nodeLibrarySearchBoxInput = page.getByPlaceholder('Search Nodes...')
+    this.nodeLibraryTree = page.getByTestId(TestIds.sidebar.nodeLibrary)
+    this.nodePreview = page.locator('.node-lib-node-preview')
+    this.tabContainer = page.locator('.sidebar-content-container')
+    this.newFolderButton = this.tabContainer.locator('.new-folder-button')
   }
 
   override async open() {
@@ -101,32 +90,23 @@ export class NodeLibrarySidebarTab extends SidebarTab {
 }
 
 export class NodeLibrarySidebarTabV2 extends SidebarTab {
+  public readonly searchInput: Locator
+  public readonly sidebarContent: Locator
+  public readonly allTab: Locator
+  public readonly blueprintsTab: Locator
+  public readonly sortButton: Locator
+
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
-  }
-
-  get searchInput() {
-    return this.page.getByPlaceholder('Search...')
-  }
-
-  get sidebarContent() {
-    return this.page.locator('.sidebar-content-container')
+    this.searchInput = page.getByPlaceholder('Search...')
+    this.sidebarContent = page.locator('.sidebar-content-container')
+    this.allTab = this.getTab('All')
+    this.blueprintsTab = this.getTab('Blueprints')
+    this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
   }
 
   getTab(name: string) {
     return this.sidebarContent.getByRole('tab', { name, exact: true })
-  }
-
-  get allTab() {
-    return this.getTab('All')
-  }
-
-  get blueprintsTab() {
-    return this.getTab('Blueprints')
-  }
-
-  get sortButton() {
-    return this.sidebarContent.getByRole('button', { name: 'Sort' })
   }
 
   getFolder(folderName: string) {
@@ -154,24 +134,21 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
+  public readonly root: Locator
+  public readonly activeWorkflowLabel: Locator
+
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
-  }
-
-  get root() {
-    return this.page.getByTestId(TestIds.sidebar.workflows)
+    this.root = page.getByTestId(TestIds.sidebar.workflows)
+    this.activeWorkflowLabel = this.root.locator(
+      '.comfyui-workflows-open .p-tree-node-selected .node-label'
+    )
   }
 
   async getOpenedWorkflowNames() {
     return await this.root
       .locator('.comfyui-workflows-open .node-label')
       .allInnerTexts()
-  }
-
-  get activeWorkflowLabel(): Locator {
-    return this.root.locator(
-      '.comfyui-workflows-open .p-tree-node-selected .node-label'
-    )
   }
 
   async getActiveWorkflowName() {
@@ -228,36 +205,27 @@ export class WorkflowsSidebarTab extends SidebarTab {
 }
 
 export class ModelLibrarySidebarTab extends SidebarTab {
+  public readonly searchInput: Locator
+  public readonly modelTree: Locator
+  public readonly refreshButton: Locator
+  public readonly loadAllFoldersButton: Locator
+  public readonly folderNodes: Locator
+  public readonly leafNodes: Locator
+  public readonly modelPreview: Locator
+
   constructor(public override readonly page: Page) {
     super(page, 'model-library')
-  }
-
-  get searchInput() {
-    return this.page.getByPlaceholder('Search Models...')
-  }
-
-  get modelTree() {
-    return this.page.locator('.model-lib-tree-explorer')
-  }
-
-  get refreshButton() {
-    return this.page.getByRole('button', { name: 'Refresh' })
-  }
-
-  get loadAllFoldersButton() {
-    return this.page.getByRole('button', { name: 'Load All Folders' })
-  }
-
-  get folderNodes() {
-    return this.modelTree.locator('.p-tree-node:not(.p-tree-node-leaf)')
-  }
-
-  get leafNodes() {
-    return this.modelTree.locator('.p-tree-node-leaf')
-  }
-
-  get modelPreview() {
-    return this.page.locator('.model-lib-model-preview')
+    this.searchInput = page.getByPlaceholder('Search Models...')
+    this.modelTree = page.locator('.model-lib-tree-explorer')
+    this.refreshButton = page.getByRole('button', { name: 'Refresh' })
+    this.loadAllFoldersButton = page.getByRole('button', {
+      name: 'Load All Folders'
+    })
+    this.folderNodes = this.modelTree.locator(
+      '.p-tree-node:not(.p-tree-node-leaf)'
+    )
+    this.leafNodes = this.modelTree.locator('.p-tree-node-leaf')
+    this.modelPreview = page.locator('.model-lib-model-preview')
   }
 
   override async open() {
@@ -306,43 +274,45 @@ export class AssetsSidebarTab extends SidebarTab {
 
   constructor(public override readonly page: Page) {
     super(page, 'assets')
-    this.root = this.page.locator('.sidebar-content-container')
-    this.generatedTab = this.page.getByRole('tab', { name: 'Generated' })
-    this.importedTab = this.page.getByRole('tab', { name: 'Imported' })
-    this.emptyStateMessage = this.page.getByText(
+    this.root = page.locator('.sidebar-content-container')
+    this.generatedTab = page.getByRole('tab', { name: 'Generated' })
+    this.importedTab = page.getByRole('tab', { name: 'Imported' })
+    this.emptyStateMessage = page.getByText(
       'Upload files or generate content to see them here'
     )
     this.searchInput = this.root.getByPlaceholder(/Search Assets/i)
     this.settingsButton = this.root.getByLabel('View settings')
-    this.listViewOption = this.page.getByText('List view')
-    this.gridViewOption = this.page.getByText('Grid view')
-    this.backToAssetsButton = this.page.getByRole('button', {
+    this.listViewOption = page.getByText('List view')
+    this.gridViewOption = page.getByText('Grid view')
+    this.backToAssetsButton = page.getByRole('button', {
       name: 'Back to all assets'
     })
-    this.copyJobIdButton = this.page.getByRole('button', {
+    this.copyJobIdButton = page.getByRole('button', {
       name: 'Copy job ID'
     })
-    this.previewDialog = this.page.getByRole('dialog', { name: 'Gallery' })
-    this.sortNewestFirst = this.page.getByText('Newest first')
-    this.sortOldestFirst = this.page.getByText('Oldest first')
-    this.assetCards = this.root.locator('[role="button"][data-selected]')
+    this.previewDialog = page.getByRole('dialog', { name: 'Gallery' })
+    this.sortNewestFirst = page.getByText('Newest first')
+    this.sortOldestFirst = page.getByText('Oldest first')
+    this.assetCards = this.root
+      .getByRole('button')
+      .and(this.root.locator('[data-selected]'))
     this.selectedCards = this.root.locator('[data-selected="true"]')
-    this.listViewItems = this.root.locator('[role="button"][tabindex="0"]')
+    this.listViewItems = this.root.getByRole('button', { name: /asset$/i })
     this.selectionFooter = this.root.locator('..').getByRole('toolbar', {
       name: 'Selected asset actions'
     })
     this.selectionCountButton = this.root
       .getByRole('button', { name: /Assets Selected:/ })
-      .or(this.page.getByText(/Assets Selected: \d+/))
+      .or(page.getByText(/Assets Selected: \d+/))
       .first()
-    this.deselectAllButton = this.page.getByText('Deselect all')
-    this.deleteSelectedButton = this.page
+    this.deselectAllButton = page.getByText('Deselect all')
+    this.deleteSelectedButton = page
       .getByTestId('assets-delete-selected')
-      .or(this.page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
+      .or(page.locator('button:has(.icon-\\[lucide--trash-2\\])').last())
       .first()
-    this.downloadSelectedButton = this.page
+    this.downloadSelectedButton = page
       .getByTestId('assets-download-selected')
-      .or(this.page.locator('button:has(.icon-\\[lucide--download\\])').last())
+      .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
       .first()
     this.skeletonLoaders = this.root.locator('.animate-pulse')
   }
@@ -362,8 +332,6 @@ export class AssetsSidebarTab extends SidebarTab {
   getAssetCardByName(name: string) {
     return this.assetCards.filter({ hasText: name }).first()
   }
-
-  // --- Context menu ---
 
   contextMenuItem(label: string) {
     return this.page.locator('.p-contextmenu').getByText(label)
@@ -460,7 +428,7 @@ export class AssetsSidebarTab extends SidebarTab {
   async dismissToasts() {
     const closeButtons = this.page.locator('.p-toast-close-button')
     for (const btn of await closeButtons.all()) {
-      await btn.click({ force: true }).catch(() => {})
+      await btn.click().catch(() => {})
     }
     // Wait for all toast elements to fully animate out and detach from DOM
     await expect(this.page.locator('.p-toast-message'))
