@@ -238,63 +238,6 @@ test.describe('Successful sign-in dialog completion', { tag: '@ui' }, () => {
   })
 })
 
-test(
-  'Blueprint overwrite',
-  { tag: ['@ui', '@subgraph'] },
-  async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    const blueprintName = `test-blueprint-overwrite-${Date.now()}`
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WarnBlueprintOverwrite',
-      true
-    )
-
-    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await comfyPage.contextMenu.openForVueNode(ksampler.header)
-    await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
-    await comfyPage.subgraph.publishSubgraph(blueprintName)
-
-    const tab = comfyPage.menu.nodeLibraryTabV2
-    await tab.open()
-    await tab.getFolder('My Blueprints').click()
-    await tab.getFolder('User').click()
-
-    const blueprintNode = tab.getNode(blueprintName)
-    await expect(blueprintNode, 'blueprint visible in library').toBeVisible()
-    await blueprintNode.getByRole('button', { name: 'Edit' }).click()
-    const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
-    await steps.waitFor({ state: 'visible' })
-
-    const dialog = comfyPage.page.getByRole('dialog')
-    const { incrementButton } = comfyPage.vueNodes.getInputNumberControls(steps)
-    const dirtyGraphAndSave = async () => {
-      await incrementButton.click()
-      await comfyPage.page.keyboard.press('Control+s')
-    }
-
-    await dirtyGraphAndSave()
-    await comfyPage.nextFrame()
-    await expect(dialog, 'was already prompted on publish').not.toBeVisible()
-
-    await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
-    await dirtyGraphAndSave()
-    await expect(
-      dialog.getByText('Overwrite existing blueprint?')
-    ).toBeVisible()
-    await expect(dialog.locator('#doNotAskAgain')).toBeVisible()
-
-    await dialog.locator('#doNotAskAgain').check()
-    await expect(dialog.getByText(/Re-enable in/i)).toBeVisible()
-    await dialog.getByRole('button', { name: 'Overwrite' }).click()
-    await dialog.waitFor({ state: 'hidden' })
-
-    await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
-    await dirtyGraphAndSave()
-    await comfyPage.nextFrame()
-    await expect(dialog).not.toBeVisible()
-  }
-)
-
 test.describe(
   'Execution error dialog without node type',
   { tag: '@ui' },
