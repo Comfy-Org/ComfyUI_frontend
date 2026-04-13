@@ -20,7 +20,7 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     ).toBeVisible()
 
     await bottomPanel.closeButton.click()
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
   })
 
   test('should display resize gutter when panel is open', async ({
@@ -41,7 +41,7 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
     await expect(bottomPanel.resizeGutter).toBeHidden()
   })
 
@@ -80,7 +80,7 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     if (await bottomPanel.root.isVisible()) {
       await bottomPanel.closeButton.click()
     }
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
 
     await comfyPage.canvas.click({
       position: { x: 100, y: 100 }
@@ -100,6 +100,6 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
     ).toBeVisible()
 
     await bottomPanel.closeButton.click()
-    await expect(bottomPanel.root).not.toBeVisible()
+    await expect(bottomPanel.root).toBeHidden()
   })
 })
