@@ -278,9 +278,12 @@ async function testHttp(base: string): Promise<boolean> {
 
 function testWs(base: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const protocol = base.startsWith('https') ? 'wss' : 'ws'
-    const host = base.replace(/^https?:\/\//, '')
-    const ws = new WebSocket(`${protocol}://${host}/ws`)
+    const wsUrl = new URL(base)
+    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+    wsUrl.pathname = '/ws'
+    wsUrl.search = ''
+    wsUrl.hash = ''
+    const ws = new WebSocket(wsUrl.toString())
     const timeout = setTimeout(() => {
       ws.close()
       resolve(false)
