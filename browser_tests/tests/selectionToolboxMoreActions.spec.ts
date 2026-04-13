@@ -4,13 +4,12 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-// force: true is needed because the canvas overlay (z-999) intercepts pointer events
 async function openMoreOptions(comfyPage: ComfyPage) {
-  await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+  await expect(comfyPage.selectionToolbox).toBeVisible()
 
   const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
   await expect(moreOptionsBtn).toBeVisible()
-  await moreOptionsBtn.click({ force: true })
+  await moreOptionsBtn.click()
   await comfyPage.nextFrame()
 
   // Wait for the context menu to appear by checking for 'Copy', which is
@@ -19,17 +18,8 @@ async function openMoreOptions(comfyPage: ComfyPage) {
   await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  // 'Top' is required for the selection toolbox actions to render in
-  // the new menu bar; sibling specs that only test canvas-level toolbox
-  // visibility use 'Disabled'.
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-})
-
-test.describe(
-  'Selection Toolbox - Pin, Collapse, Adjust Size',
-  { tag: '@ui' },
-  () => {
+test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
+  test.describe('Single node actions', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
@@ -42,19 +32,19 @@ test.describe(
       )[0]
       await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
-      expect(await nodeRef.isPinned(), 'Node should start unpinned').toBe(false)
+      await expect(nodeRef).not.toBePinned()
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Pin', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect.poll(() => nodeRef.isPinned()).toBe(true)
+      await expect(nodeRef).toBePinned()
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Unpin', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect.poll(() => nodeRef.isPinned()).toBe(false)
+      await expect(nodeRef).not.toBePinned()
     })
 
     test('minimize and expand node via More Options menu', async ({
@@ -65,21 +55,19 @@ test.describe(
       )[0]
       await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
-      expect(await nodeRef.isCollapsed(), 'Node should start expanded').toBe(
-        false
-      )
+      await expect(nodeRef).not.toBeCollapsed()
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Minimize Node', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
+      await expect(nodeRef).toBeCollapsed()
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Expand Node', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect.poll(() => nodeRef.isCollapsed()).toBe(false)
+      await expect(nodeRef).not.toBeCollapsed()
     })
 
     test('copy via More Options menu', async ({ comfyPage }) => {
@@ -128,7 +116,7 @@ test.describe(
       )[0]
       await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
-      await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
+      await expect(comfyPage.selectionToolbox).toBeVisible()
 
       // The refresh button uses v-show so it's always in the DOM;
       // actual visibility depends on backend-provided widget refresh
@@ -136,13 +124,9 @@ test.describe(
       const refreshButton = comfyPage.page.getByTestId('refresh-button')
       await expect(refreshButton).toBeAttached()
     })
-  }
-)
+  })
 
-test.describe(
-  'Selection Toolbox - Bypass with Multiple Nodes',
-  { tag: '@ui' },
-  () => {
+  test.describe('Multiple node actions', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('default')
@@ -162,29 +146,23 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByTitle('Empty Latent Image')
       )[0]
 
-      expect(
-        await ksampler.isBypassed(),
-        'KSampler should start not bypassed'
-      ).toBe(false)
-      expect(
-        await emptyLatent.isBypassed(),
-        'Empty Latent should start not bypassed'
-      ).toBe(false)
+      await expect(ksampler).not.toBeBypassed()
+      await expect(emptyLatent).not.toBeBypassed()
 
       const bypassButton = comfyPage.page.getByTestId('bypass-button')
       await expect(bypassButton).toBeVisible()
-      await bypassButton.click({ force: true })
+      await bypassButton.click()
       await comfyPage.nextFrame()
 
-      await expect.poll(() => ksampler.isBypassed()).toBe(true)
-      await expect.poll(() => emptyLatent.isBypassed()).toBe(true)
+      await expect(ksampler).toBeBypassed()
+      await expect(emptyLatent).toBeBypassed()
 
       // Toggle back
-      await bypassButton.click({ force: true })
+      await bypassButton.click()
       await comfyPage.nextFrame()
 
-      await expect.poll(() => ksampler.isBypassed()).toBe(false)
-      await expect.poll(() => emptyLatent.isBypassed()).toBe(false)
+      await expect(ksampler).not.toBeBypassed()
+      await expect(emptyLatent).not.toBeBypassed()
     })
-  }
-)
+  })
+})

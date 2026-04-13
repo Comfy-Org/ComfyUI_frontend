@@ -103,6 +103,7 @@ export const TestIds = {
     mainImage: 'main-image'
   },
   selectionToolbox: {
+    root: 'selection-toolbox',
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
