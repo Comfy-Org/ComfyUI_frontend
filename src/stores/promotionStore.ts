@@ -20,7 +20,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   )
   const graphRefCounts = ref(new Map<UUID, Map<string, number>>())
   // Non-reactive: ephemeral position cache consumed only by promote/demote
-  const lastDemotedIndices = new Map<string, number>()
+  const lastDemotedIndices = new Map<UUID, Map<string, number>>()
 
   function _getPromotionsForGraph(
     graphId: UUID
@@ -125,12 +125,19 @@ export const usePromotionStore = defineStore('promotion', () => {
     triggerRef(graphPromotions)
   }
 
-  function makePositionKey(
-    graphId: UUID,
+  function _positionKey(
     subgraphNodeId: NodeId,
     source: PromotedWidgetSource
   ): string {
-    return `${graphId}:${subgraphNodeId}:${makePromotionEntryKey(source)}`
+    return `${subgraphNodeId}:${makePromotionEntryKey(source)}`
+  }
+
+  function _getLastDemotedForGraph(graphId: UUID): Map<string, number> {
+    const existing = lastDemotedIndices.get(graphId)
+    if (existing) return existing
+    const next = new Map<string, number>()
+    lastDemotedIndices.set(graphId, next)
+    return next
   }
 
   function promote(
@@ -148,9 +155,10 @@ export const usePromotionStore = defineStore('promotion', () => {
     if (source.disambiguatingSourceNodeId)
       entry.disambiguatingSourceNodeId = source.disambiguatingSourceNodeId
 
-    const positionKey = makePositionKey(graphId, subgraphNodeId, source)
-    const lastIndex = lastDemotedIndices.get(positionKey)
-    lastDemotedIndices.delete(positionKey)
+    const positionKey = _positionKey(subgraphNodeId, source)
+    const graphCache = lastDemotedIndices.get(graphId)
+    const lastIndex = graphCache?.get(positionKey)
+    graphCache?.delete(positionKey)
 
     const nextEntries = [...entries]
     if (lastIndex !== undefined) {
@@ -176,8 +184,10 @@ export const usePromotionStore = defineStore('promotion', () => {
     )
     if (index === -1) return
 
-    const positionKey = makePositionKey(graphId, subgraphNodeId, source)
-    lastDemotedIndices.set(positionKey, index)
+    _getLastDemotedForGraph(graphId).set(
+      _positionKey(subgraphNodeId, source),
+      index
+    )
     setPromotions(
       graphId,
       subgraphNodeId,
@@ -214,9 +224,7 @@ export const usePromotionStore = defineStore('promotion', () => {
   function clearGraph(graphId: UUID): void {
     graphPromotions.value.delete(graphId)
     graphRefCounts.value.delete(graphId)
-    for (const key of Array.from(lastDemotedIndices.keys())) {
-      if (key.startsWith(`${graphId}:`)) lastDemotedIndices.delete(key)
-    }
+    lastDemotedIndices.delete(graphId)
   }
 
   return {
