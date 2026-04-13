@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -7,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -25,33 +27,33 @@ function createWidget(
   value: unknown,
   callback = vi.fn()
 ): IBaseWidget {
-  return {
+  return fromPartial<IBaseWidget>({
     name,
     value,
     callback
-  } as unknown as IBaseWidget
+  })
 }
 
 function createTargetNode(
   widget: IBaseWidget,
   id = 7
 ): Pick<LGraphNode, 'id' | 'inputs' | 'widgets'> {
-  return {
+  return fromPartial<Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>>({
     id,
     inputs: [
-      {
+      fromPartial<INodeInputSlot>({
         widget: { name: widget.name }
-      } as unknown as INodeInputSlot
+      })
     ],
     widgets: [widget]
-  }
+  })
 }
 
 function createLink(targetId: LLink['target_id'], targetSlot = 0): LLink {
-  return {
+  return createMockLLink({
     target_id: targetId,
     target_slot: targetSlot
-  } as LLink
+  })
 }
 
 function createSourceNode(options: {

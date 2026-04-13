@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -185,19 +185,44 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
-  test('Removing a connection ignores stale autogrow callbacks after group removal', async () => {
+  test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()
-    const node = testNode()
+    const node = testNode() as TestAutogrowNode
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
 
-    connectInput(node, 0, graph)
-    expect(node.inputs.length).toBe(2)
+    const rafCallbacks: FrameRequestCallback[] = []
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        rafCallbacks.push(callback)
+        return rafCallbacks.length
+      })
 
-    node.disconnectInput(0)
-    delete (node as TestAutogrowNode).comfyDynamic.autogrow['0']
+    try {
+      connectInput(node, 0, graph)
+      expect(node.inputs.length).toBe(2)
 
-    await expect(nextTick()).resolves.toBeUndefined()
+      rafCallbacks.shift()?.(0)
+
+      node.disconnectInput(0)
+
+      const staleDisconnectCallback = rafCallbacks.shift()
+      expect(staleDisconnectCallback).toBeDefined()
+
+      delete node.comfyDynamic.autogrow['0']
+
+      const callbackCountBeforeFlush = onConnectionsChange.mock.calls.length
+      staleDisconnectCallback?.(0)
+
+      expect(onConnectionsChange).toHaveBeenCalledTimes(
+        callbackCountBeforeFlush
+      )
+    } finally {
+      requestAnimationFrameSpy.mockRestore()
+    }
   })
   test('Can deserialize a complex node', async () => {
     const graph = new LGraph()
