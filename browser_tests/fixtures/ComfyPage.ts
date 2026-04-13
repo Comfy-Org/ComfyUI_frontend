@@ -372,8 +372,8 @@ export class ComfyPage {
 
   async closeMenu() {
     const btn = this.page.locator('button.comfy-close-menu-btn')
-    if ((await btn.count()) > 0) {
-      await btn.click()
+    if (await btn.isVisible()) {
+      await btn.click({ timeout: 2000 }).catch(() => {})
       await this.nextFrame()
     }
   }
