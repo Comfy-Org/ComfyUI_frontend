@@ -115,7 +115,6 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
     test('DOM elements are cleaned up when widget is disconnected from I/O', async ({
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
