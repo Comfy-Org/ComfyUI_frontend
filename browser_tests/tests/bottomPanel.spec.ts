@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
