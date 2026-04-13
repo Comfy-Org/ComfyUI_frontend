@@ -528,10 +528,28 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { createVideoScript } from 'demowright/video-script'
 
 test('Demo: Bug Title', async ({ comfyPage }) => {
-  // IMPORTANT: ALL setup code MUST go here BEFORE createVideoScript()
-  // so the title card is the FIRST thing viewers see in the video
+  // Show title card IMMEDIATELY — it covers the screen while setup runs behind it
+  await comfyPage.page.evaluate(([title, sub]: [string, string]) => {
+    const o = document.createElement('div')
+    o.id = 'qa-early-title'
+    o.style.cssText = 'position:fixed;inset:0;background:radial-gradient(ellipse at center,#1a1a3e,#0a0a1a);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2147483647'
+    const h = document.createElement('div')
+    h.textContent = title
+    h.style.cssText = "font-family:'Segoe UI',system-ui,sans-serif;font-size:48px;font-weight:800;color:#fff;text-align:center;max-width:80vw;line-height:1.2;text-shadow:0 2px 20px rgba(0,0,0,0.5)"
+    o.appendChild(h)
+    const s = document.createElement('div')
+    s.textContent = sub
+    s.style.cssText = "font-family:'Segoe UI',system-ui,sans-serif;font-size:22px;color:rgba(255,255,255,0.7);margin-top:16px;text-align:center"
+    o.appendChild(s)
+    document.body.appendChild(o)
+  }, ['Bug Title Here', 'Issue #NNNN'])
+
+  // Setup runs while title card is visible
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   await comfyPage.workflow.setupWorkflowsDirectory({})
+
+  // Remove early title card before script starts (script will show its own)
+  await comfyPage.page.evaluate(() => document.getElementById('qa-early-title')?.remove())
 
   const script = createVideoScript()
     .title('Bug Title Here', { subtitle: 'Issue #NNNN', durationMs: 4000 })
@@ -570,7 +588,7 @@ to happen before it happens. Pattern:
 
 IMPORTANT RULES for videoScript:
 1. You MUST provide videoScript when verdict is REPRODUCED — every reproduced bug needs a narrated demo
-2. ALL setup code (setSetting, setupWorkflowsDirectory) goes BEFORE createVideoScript() — title card must be first thing in video
+2. Show an early title card via page.evaluate() BEFORE setup, then run setup behind it, remove it before createVideoScript() — see example
 3. Call \`await pace()\` FIRST in each segment callback, BEFORE actions
 4. Add \`waitForTimeout(2000)\` after each action so viewers can see the result
 5. Final evidence segment: hold for 5+ seconds
