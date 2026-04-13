@@ -594,3 +594,91 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
     expect(load3d.setLightIntensity).toHaveBeenCalledWith(9)
   })
 })
+
+describe('Load3DConfiguration "none" model handling', () => {
+  let load3d: Load3d
+  let loadModelSpy: ReturnType<typeof vi.fn>
+  let clearModelSpy: ReturnType<typeof vi.fn>
+
+  function makeLoad3dMock(): Load3d {
+    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    clearModelSpy = vi.fn()
+    return {
+      loadModel: loadModelSpy,
+      clearModel: clearModelSpy,
+      setUpDirection: vi.fn(),
+      setMaterialMode: vi.fn(),
+      setTargetSize: vi.fn(),
+      setCameraState: vi.fn(),
+      toggleGrid: vi.fn(),
+      setBackgroundColor: vi.fn(),
+      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
+      toggleCamera: vi.fn(),
+      setFOV: vi.fn(),
+      setLightIntensity: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
+    } as unknown as Load3d
+  }
+
+  async function flush() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+
+  beforeEach(() => {
+    load3d = makeLoad3dMock()
+    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
+    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not load or clear a model when the initial widget value is "none"', async () => {
+    const config = new Load3DConfiguration(load3d)
+    config.configure({
+      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      loadFolder: 'input'
+    })
+    await flush()
+
+    expect(loadModelSpy).not.toHaveBeenCalled()
+    expect(clearModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('clears the model (and skips loadModel) when the widget value changes to "none"', async () => {
+    const config = new Load3DConfiguration(load3d)
+    const widget = { value: 'model.glb' } as unknown as IBaseWidget
+    config.configure({ modelWidget: widget, loadFolder: 'input' })
+    await flush()
+
+    loadModelSpy.mockClear()
+    clearModelSpy.mockClear()
+
+    widget.value = 'none'
+    await flush()
+
+    expect(clearModelSpy).toHaveBeenCalledTimes(1)
+    expect(loadModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('loads a model when the widget value transitions from "none" to a real path', async () => {
+    const config = new Load3DConfiguration(load3d)
+    const widget = { value: 'none' } as unknown as IBaseWidget
+    config.configure({ modelWidget: widget, loadFolder: 'input' })
+    await flush()
+
+    expect(loadModelSpy).not.toHaveBeenCalled()
+
+    widget.value = 'model.glb'
+    await flush()
+
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: false
+    })
+  })
+})
