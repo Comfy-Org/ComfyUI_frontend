@@ -150,7 +150,7 @@ test.describe('Image Crop', { tag: '@widget' }, () => {
             expect(valueAfter?.y).toBeGreaterThan(valueBefore.y)
             expect(valueAfter?.width).toBe(valueBefore.width)
             expect(valueAfter?.height).toBe(valueBefore.height)
-          }).toPass()
+          }).toPass({ timeout: 5000 })
 
           await expect(node).toHaveScreenshot('image-crop-after-drag.png', {
             maxDiffPixelRatio: 0.05
