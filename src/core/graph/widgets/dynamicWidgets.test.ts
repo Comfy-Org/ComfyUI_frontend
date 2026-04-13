@@ -9,6 +9,9 @@ import type { HasInitialMinSize } from '@/services/litegraphService'
 
 setActivePinia(createTestingPinia())
 type DynamicInputs = ('INT' | 'STRING' | 'IMAGE' | DynamicInputs)[][]
+type TestAutogrowNode = LGraphNode & {
+  comfyDynamic: { autogrow: Record<string, unknown> }
+}
 
 const { addNodeInput } = useLitegraphService()
 
@@ -192,7 +195,7 @@ describe('Autogrow', () => {
     expect(node.inputs.length).toBe(2)
 
     node.disconnectInput(0)
-    delete node.comfyDynamic.autogrow['0']
+    delete (node as TestAutogrowNode).comfyDynamic.autogrow['0']
 
     await expect(nextTick()).resolves.toBeUndefined()
   })
