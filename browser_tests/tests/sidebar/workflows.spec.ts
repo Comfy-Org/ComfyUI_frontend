@@ -6,7 +6,6 @@ import { openErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'

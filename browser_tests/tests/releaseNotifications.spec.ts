@@ -19,10 +19,6 @@ function createMockRelease(overrides?: Partial<ReleaseNote>): ReleaseNote {
 }
 
 test.describe('Release Notifications', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('should show help center with release information', async ({
     comfyPage
   }) => {

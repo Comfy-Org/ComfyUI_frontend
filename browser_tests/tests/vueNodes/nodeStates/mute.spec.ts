@@ -6,12 +6,7 @@ import {
 const MUTE_HOTKEY = 'Control+m'
 const MUTE_OPACITY = '0.5'
 
-test.describe('Vue Node Mute', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
   test(
     'should allow toggling mute on a selected node with hotkey',
     { tag: '@screenshot' },

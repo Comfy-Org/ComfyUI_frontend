@@ -4,12 +4,11 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Zero UUID workflow: subgraph undo rendering',
-  { tag: ['@workflow', '@subgraph'] },
+  { tag: ['@workflow', '@subgraph', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       test.setTimeout(30000) // Extend timeout as we need to reload the page an additional time
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.page.reload() // Reload page as we need to enter in Vue mode
+      await comfyPage.page.reload() // Reload page to ensure Vue mode is active
       await comfyPage.page.waitForFunction(() => !!window.app?.graph)
     })
 

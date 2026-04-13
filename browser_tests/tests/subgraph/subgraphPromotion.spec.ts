@@ -478,7 +478,6 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
@@ -523,7 +522,6 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
