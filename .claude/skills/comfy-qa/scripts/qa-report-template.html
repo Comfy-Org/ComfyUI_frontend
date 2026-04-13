@@ -97,7 +97,13 @@ h1{font-size:clamp(1.25rem,2.5vw,1.625rem);font-weight:700;letter-spacing:-.03em
     let html='';
     if(logRes.status==='fulfilled'&&logRes.value.ok){
       const log=await logRes.value.json();
-      html+=`<details style="margin-bottom:1.5rem"><summary style="cursor:pointer;font-weight:600;font-size:1rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)">Research Log &mdash; ${log.verdict||'?'} (${log.toolCalls||'?'} tool calls, ${((log.elapsedMs||0)/1000).toFixed(1)}s)</summary><div style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);overflow:auto;max-height:600px"><pre style="font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap">${JSON.stringify(log,null,2)}</pre></div></details>`;
+      // Show verdict banner for non-reproduced results
+      if(log.verdict&&log.verdict!=='REPRODUCED'){
+        const colors={NOT_REPRODUCIBLE:{bg:'oklch(25% 0.08 25)',border:'oklch(40% 0.15 25)',icon:'✗'},INCONCLUSIVE:{bg:'oklch(25% 0.06 80)',border:'oklch(40% 0.12 80)',icon:'⚠'}};
+        const c=colors[log.verdict]||colors.INCONCLUSIVE;
+        html+=`<div style="margin-bottom:1.5rem;padding:1.25rem;background:${c.bg};border:1px solid ${c.border};border-radius:var(--r-lg)"><div style="font-size:1.25rem;font-weight:700;margin-bottom:.5rem">${c.icon} ${log.verdict.replace(/_/g,' ')}</div><div style="font-size:.9rem;line-height:1.6;opacity:.9">${(log.summary||'No details available.').replace(/</g,'&lt;')}</div>${log.evidence?`<div style="margin-top:.75rem;padding:.75rem;background:oklch(0% 0 0/.2);border-radius:var(--r);font-family:var(--font-mono);font-size:.8rem;white-space:pre-wrap;max-height:200px;overflow:auto">${log.evidence.replace(/</g,'&lt;')}</div>`:''}</div>`;
+      }
+      html+=`<details style="margin-bottom:1.5rem"><summary style="cursor:pointer;font-weight:600;font-size:1rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg)">Research Log &mdash; ${log.verdict||'?'} (${(log.log||[]).length||'?'} tool calls, ${((log.elapsedMs||0)/1000).toFixed(1)}s)</summary><div style="padding:1rem;background:var(--surface);border:1px solid var(--border);border-top:0;border-radius:0 0 var(--r-lg) var(--r-lg);overflow:auto;max-height:600px"><pre style="font-family:var(--font-mono);font-size:.8rem;line-height:1.6;white-space:pre-wrap">${JSON.stringify(log,null,2)}</pre></div></details>`;
     }
     if(testRes.status==='fulfilled'&&testRes.value.ok){
       const code=await testRes.value.text();
