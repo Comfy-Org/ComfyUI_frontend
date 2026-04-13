@@ -75,7 +75,7 @@ class Load3DConfiguration {
       loadFolder,
       cameraState
     )
-    if (modelWidget.value) {
+    if (modelWidget.value && modelWidget.value !== 'none') {
       onModelWidgetUpdate(modelWidget.value)
     }
 
@@ -226,7 +226,10 @@ class Load3DConfiguration {
   ) {
     let isFirstLoad = true
     return async (value: string | number | boolean | object) => {
-      if (!value) return
+      if (!value || value === 'none') {
+        this.load3d.clearModel()
+        return
+      }
 
       const filename = value as string
 
