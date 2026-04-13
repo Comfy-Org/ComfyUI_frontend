@@ -36,6 +36,39 @@ function createMockAssets(count: number): AssetItem[] {
   }))
 }
 
+type OutputStub = {
+  filename: string
+  nodeId: string
+  subfolder: string
+  url: string
+}
+
+function createOutputAsset(
+  id: string,
+  name: string,
+  metadata: Record<string, unknown>
+): AssetItem {
+  return {
+    id,
+    name,
+    tags: ['output'],
+    user_metadata: metadata
+  }
+}
+
+function createOutput(
+  filename: string,
+  nodeId: string,
+  subfolder: string
+): OutputStub {
+  return {
+    filename,
+    nodeId,
+    subfolder,
+    url: `https://example.com/${filename}`
+  }
+}
+
 describe('useAssetSelection', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -270,6 +303,82 @@ describe('useAssetSelection', () => {
 
       expect(selected).toHaveLength(1)
       expect(selected[0].id).toBe('asset-1')
+    })
+  })
+
+  describe('getTotalOutputCount', () => {
+    it('deduplicates overlapping parent stack and selected children with partial parent outputs', () => {
+      const { getTotalOutputCount } = useAssetSelection()
+      const outputs = [createOutput('parent.png', '1', 'outputs')]
+
+      const parent = createOutputAsset('parent', 'parent.png', {
+        promptId: 'prompt-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4,
+        allOutputs: outputs
+      })
+
+      const child1 = createOutputAsset('child-1', 'child-1.png', {
+        promptId: 'prompt-1',
+        nodeId: '2',
+        subfolder: 'outputs'
+      })
+      const child2 = createOutputAsset('child-2', 'child-2.png', {
+        promptId: 'prompt-1',
+        nodeId: '3',
+        subfolder: 'outputs'
+      })
+      const child3 = createOutputAsset('child-3', 'child-3.png', {
+        promptId: 'prompt-1',
+        nodeId: '4',
+        subfolder: 'outputs'
+      })
+
+      expect(getTotalOutputCount([parent, child1, child2, child3])).toBe(4)
+    })
+
+    it('deduplicates when parent includes full output list', () => {
+      const { getTotalOutputCount } = useAssetSelection()
+      const parent = createOutputAsset('parent', 'parent.png', {
+        promptId: 'prompt-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4,
+        allOutputs: [
+          createOutput('parent.png', '1', 'outputs'),
+          createOutput('child-1.png', '2', 'outputs'),
+          createOutput('child-2.png', '3', 'outputs'),
+          createOutput('child-3.png', '4', 'outputs')
+        ]
+      })
+      const child = createOutputAsset('child-1', 'child-1.png', {
+        promptId: 'prompt-1',
+        nodeId: '2',
+        subfolder: 'outputs'
+      })
+
+      expect(getTotalOutputCount([parent, child])).toBe(4)
+    })
+
+    it('falls back to outputCount when only unresolved stack count exists', () => {
+      const { getTotalOutputCount } = useAssetSelection()
+      const parent = createOutputAsset('parent', 'parent.png', {
+        promptId: 'prompt-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4
+      })
+
+      expect(getTotalOutputCount([parent])).toBe(4)
+    })
+
+    it('counts non-output metadata assets as one each', () => {
+      const { getTotalOutputCount } = useAssetSelection()
+      const assetA: AssetItem = { id: 'a', name: 'a.png', tags: ['input'] }
+      const assetB: AssetItem = { id: 'b', name: 'b.png', tags: ['input'] }
+
+      expect(getTotalOutputCount([assetA, assetB])).toBe(2)
     })
   })
 })
