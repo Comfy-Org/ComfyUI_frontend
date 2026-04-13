@@ -206,14 +206,10 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
    */
   test.describe(
     'Promoted indicator on 3-level nested subgraphs (#10612)',
-    { tag: ['@widget'] },
+    { tag: ['@widget', '@vue-nodes'] },
     () => {
       const WORKFLOW = 'subgraphs/subgraph-nested-promotion'
       const PROMOTED_BORDER_CLASS = 'ring-component-node-widget-promoted'
-
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      })
 
       test('Intermediate SubgraphNode shows promoted ring inside parent subgraph', async ({
         comfyPage
@@ -229,15 +225,8 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
         await comfyExpect(outerRings).toHaveCount(0)
 
-        // Navigate programmatically — the enter-subgraph button on
-        // node 5 is obscured by the canvas z-999 overlay at root level.
-        await comfyPage.page.evaluate(() => {
-          const node = window.app!.graph!.getNodeById('5')
-          if (node?.isSubgraphNode()) {
-            window.app!.canvas.setGraph(node.subgraph)
-          }
-        })
-        await comfyPage.nextFrame()
+        // Enter Sub 0 (node 5) to see its inner nodes.
+        await comfyPage.vueNodes.enterSubgraph('5')
         await comfyPage.vueNodes.waitForNodes()
 
         // Node 6 (Sub 1) has proxyWidgets promoted up to Sub 0
@@ -248,13 +237,9 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const intermediateRings = intermediateNode.locator(
           `.${PROMOTED_BORDER_CLASS}`
         )
-        await expect
-          .poll(() => intermediateRings.count(), {
-            timeout: 5000,
-            message:
-              'Node 6 (Sub 1) should show promoted rings for promoted widgets'
-          })
-          .toBeGreaterThan(0)
+        await comfyExpect(intermediateRings).not.toHaveCount(0, {
+          timeout: 5000
+        })
       })
     }
   )
