@@ -248,11 +248,18 @@ const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
 onMounted(() => {
   const url = model.representative.url
   if (url && !store.fileSizes[url]) {
-    fetchModelMetadata(url).then((metadata) => {
-      if (metadata.fileSize !== null) {
-        store.setFileSize(url, metadata.fileSize)
-      }
-    })
+    fetchModelMetadata(url)
+      .then((metadata) => {
+        if (metadata.fileSize !== null) {
+          store.setFileSize(url, metadata.fileSize)
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn(
+          `[MissingModelRow] Failed to fetch metadata for ${url}:`,
+          error
+        )
+      })
   }
 })
 

@@ -337,4 +337,103 @@ describe('missingModelStore', () => {
       expect(store.missingModelCandidates).toBeNull()
     })
   })
+
+  describe('removeMissingModelsByPrefix', () => {
+    it('removes all candidates whose nodeId starts with the prefix', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
+        makeModelCandidate('b.safetensors', { nodeId: '65:70:64' }),
+        makeModelCandidate('c.safetensors', { nodeId: '65:80:5' })
+      ])
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].nodeId).toBe('65:80:5')
+    })
+
+    it('removes deeply nested interior nodes under the container', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
+        makeModelCandidate('b.safetensors', { nodeId: '65:70:80:5' }),
+        makeModelCandidate('c.safetensors', { nodeId: '65:71:63' })
+      ])
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].nodeId).toBe('65:71:63')
+    })
+
+    it('does not match siblings that share a numeric prefix (trailing colon)', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65:70:1' }),
+        makeModelCandidate('b.safetensors', { nodeId: '65:705:1' }),
+        makeModelCandidate('c.safetensors', { nodeId: '65:70' })
+      ])
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      expect(store.missingModelCandidates).toHaveLength(2)
+      const remainingIds = store.missingModelCandidates!.map((m) =>
+        String(m.nodeId)
+      )
+      expect(remainingIds).toContain('65:705:1')
+      expect(remainingIds).toContain('65:70')
+    })
+
+    it('sets candidates to null when all are removed', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65:70:63' }),
+        makeModelCandidate('b.safetensors', { nodeId: '65:70:64' })
+      ])
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      expect(store.missingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+    })
+
+    it('does nothing when no candidates match', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65:71:1' })
+      ])
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+    })
+
+    it('does nothing when candidates are null', () => {
+      const store = useMissingModelStore()
+      store.removeMissingModelsByPrefix('65:70:')
+      expect(store.missingModelCandidates).toBeNull()
+    })
+
+    it('clears interaction state for removed names not used elsewhere', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('shared.safetensors', { nodeId: '65:70:63' }),
+        makeModelCandidate('shared.safetensors', { nodeId: '65:80:5' }),
+        makeModelCandidate('only-interior.safetensors', { nodeId: '65:70:64' })
+      ])
+      store.urlInputs['shared.safetensors'] = 'https://example.com/shared'
+      store.urlInputs['only-interior.safetensors'] =
+        'https://example.com/interior'
+
+      store.removeMissingModelsByPrefix('65:70:')
+
+      // 'only-interior' fully removed → interaction state cleared.
+      // 'shared' still referenced by 65:80:5 → interaction state preserved.
+      expect(store.urlInputs['only-interior.safetensors']).toBeUndefined()
+      expect(store.urlInputs['shared.safetensors']).toBe(
+        'https://example.com/shared'
+      )
+    })
+  })
 })

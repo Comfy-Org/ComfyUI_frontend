@@ -304,4 +304,96 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
   })
+
+  describe('removeMissingMediaByPrefix', () => {
+    it('removes all candidates whose nodeId starts with the prefix', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65:70:63', 'a.png'),
+        makeCandidate('65:70:64', 'b.png'),
+        makeCandidate('65:80:5', 'c.png')
+      ])
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].nodeId).toBe('65:80:5')
+    })
+
+    it('removes deeply nested interior nodes under the container', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65:70:63', 'a.png'),
+        makeCandidate('65:70:80:5', 'b.png'),
+        makeCandidate('65:71:63', 'c.png')
+      ])
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].nodeId).toBe('65:71:63')
+    })
+
+    it('does not match siblings that share a numeric prefix (trailing colon)', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65:70:1', 'a.png'),
+        makeCandidate('65:705:1', 'b.png'),
+        makeCandidate('65:70', 'c.png')
+      ])
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.missingMediaCandidates).toHaveLength(2)
+      const remainingIds = store.missingMediaCandidates!.map((m) =>
+        String(m.nodeId)
+      )
+      expect(remainingIds).toContain('65:705:1')
+      expect(remainingIds).toContain('65:70')
+    })
+
+    it('sets candidates to null when all are removed', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65:70:63', 'a.png'),
+        makeCandidate('65:70:64', 'b.png')
+      ])
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.missingMediaCandidates).toBeNull()
+      expect(store.hasMissingMedia).toBe(false)
+    })
+
+    it('does nothing when no candidates match', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([makeCandidate('65:71:1', 'a.png')])
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+    })
+
+    it('does nothing when candidates are null', () => {
+      const store = useMissingMediaStore()
+      store.removeMissingMediaByPrefix('65:70:')
+      expect(store.missingMediaCandidates).toBeNull()
+    })
+
+    it('clears interaction state for removed names not used elsewhere', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65:70:63', 'shared.png'),
+        makeCandidate('65:80:5', 'shared.png'),
+        makeCandidate('65:70:64', 'only-interior.png')
+      ])
+      store.pendingSelection['shared.png'] = 'library/shared.png'
+      store.pendingSelection['only-interior.png'] = 'library/interior.png'
+
+      store.removeMissingMediaByPrefix('65:70:')
+
+      expect(store.pendingSelection['only-interior.png']).toBeUndefined()
+      expect(store.pendingSelection['shared.png']).toBe('library/shared.png')
+    })
+  })
 })

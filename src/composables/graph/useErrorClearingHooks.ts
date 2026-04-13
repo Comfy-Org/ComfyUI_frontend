@@ -259,25 +259,14 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   mediaStore.removeMissingMediaByNodeId(execId)
   nodesStore.removeMissingNodesByNodeId(execId)
 
-  // For subgraph containers, also remove errors from interior nodes
+  // For subgraph containers, also remove errors from interior nodes.
+  // The trailing colon in the prefix is load-bearing: it prevents sibling
+  // IDs sharing a numeric prefix (e.g. "705" vs "70") from being matched.
   if (node.isSubgraphNode?.() && node.subgraph) {
     const prefix = `${execId}:`
-    for (const candidate of modelStore.missingModelCandidates ?? []) {
-      if (String(candidate.nodeId).startsWith(prefix)) {
-        modelStore.removeMissingModelsByNodeId(String(candidate.nodeId))
-      }
-    }
-    for (const candidate of mediaStore.missingMediaCandidates ?? []) {
-      if (String(candidate.nodeId).startsWith(prefix)) {
-        mediaStore.removeMissingMediaByNodeId(String(candidate.nodeId))
-      }
-    }
-    const nodeTypes = nodesStore.missingNodesError?.nodeTypes ?? []
-    for (const nt of nodeTypes) {
-      if (typeof nt !== 'string' && String(nt.nodeId).startsWith(prefix)) {
-        nodesStore.removeMissingNodesByNodeId(String(nt.nodeId))
-      }
-    }
+    modelStore.removeMissingModelsByPrefix(prefix)
+    mediaStore.removeMissingMediaByPrefix(prefix)
+    nodesStore.removeMissingNodesByPrefix(prefix)
   }
 }
 

@@ -159,6 +159,34 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       missingModelCandidates.value = null
   }
 
+  /**
+   * Remove all candidates whose nodeId starts with `prefix`.
+   *
+   * Intended for clearing all interior errors when a subgraph container is
+   * removed. Callers are expected to pass `${execId}:` (with trailing
+   * colon) so that sibling IDs sharing a numeric prefix (e.g. `"705"` vs
+   * `"70"`) are not matched.
+   */
+  function removeMissingModelsByPrefix(prefix: string) {
+    if (!missingModelCandidates.value) return
+    const removedNames = new Set<string>()
+    const remaining: MissingModelCandidate[] = []
+    for (const m of missingModelCandidates.value) {
+      if (String(m.nodeId).startsWith(prefix)) {
+        removedNames.add(m.name)
+      } else {
+        remaining.push(m)
+      }
+    }
+    if (removedNames.size === 0) return
+    missingModelCandidates.value = remaining.length ? remaining : null
+    for (const name of removedNames) {
+      if (!remaining.some((m) => m.name === name)) {
+        clearInteractionStateForName(name)
+      }
+    }
+  }
+
   function addMissingModels(models: MissingModelCandidate[]) {
     if (!models.length) return
     const existing = missingModelCandidates.value ?? []
@@ -249,6 +277,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     removeMissingModelByNameOnNodes,
     removeMissingModelByWidget,
     removeMissingModelsByNodeId,
+    removeMissingModelsByPrefix,
     clearMissingModels,
     createVerificationAbortController,
 

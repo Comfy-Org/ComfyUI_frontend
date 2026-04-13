@@ -73,6 +73,24 @@ export const useMissingNodesErrorStore = defineStore(
       setMissingNodeTypes(remaining)
     }
 
+    /**
+     * Remove all object-type entries whose nodeId starts with `prefix`.
+     * String entries (group nodes) have no nodeId and are preserved.
+     *
+     * Intended for clearing all interior errors when a subgraph container
+     * is removed. Callers are expected to pass `${execId}:` (with trailing
+     * colon) so that sibling IDs sharing a numeric prefix are not matched.
+     */
+    function removeMissingNodesByPrefix(prefix: string) {
+      if (!missingNodesError.value) return
+      const remaining = missingNodesError.value.nodeTypes.filter((node) => {
+        if (typeof node === 'string') return true
+        if (node.nodeId == null) return true
+        return !String(node.nodeId).startsWith(prefix)
+      })
+      setMissingNodeTypes(remaining)
+    }
+
     /** Remove specific node types from the missing nodes list (e.g. after replacement). */
     function removeMissingNodesByType(typesToRemove: string[]) {
       if (!missingNodesError.value) return
@@ -125,6 +143,7 @@ export const useMissingNodesErrorStore = defineStore(
       setMissingNodeTypes,
       surfaceMissingNodes,
       removeMissingNodesByNodeId,
+      removeMissingNodesByPrefix,
       removeMissingNodesByType,
       hasMissingNodes,
       missingNodeCount,
