@@ -158,7 +158,10 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
 
   test('Reordering inputs in one app does not corrupt another app', async ({
     comfyPage
-  }) => {
+  }, testInfo) => {
+    // This test creates 2 apps, switches tabs 3 times, and enters builder 3
+    // times — the default 15s timeout is insufficient in CI.
+    testInfo.setTimeout(45_000)
     const { appMode } = comfyPage
     const suffix = String(Date.now())
     const app1Name = `app1-${suffix}`
@@ -176,6 +179,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
 
     // Switch to app1 tab and enter builder
     await comfyPage.menu.topbar.getWorkflowTab(app1Name).click()
+    await comfyPage.workflow.waitForActiveWorkflow()
     await appMode.enterBuilder()
     await appMode.steps.goToInputs()
     await expect(appMode.select.inputItemTitles).toHaveText(WIDGETS)
@@ -188,6 +192,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     // Switch to app2 tab and enter builder
     await appMode.footer.exitBuilder()
     await comfyPage.menu.topbar.getWorkflowTab(app2Name).click()
+    await comfyPage.workflow.waitForActiveWorkflow()
     await appMode.enterBuilder()
     await appMode.steps.goToInputs()
 
@@ -197,6 +202,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     // Switch back to app1 and verify reorder persisted
     await appMode.footer.exitBuilder()
     await comfyPage.menu.topbar.getWorkflowTab(app1Name).click()
+    await comfyPage.workflow.waitForActiveWorkflow()
     await appMode.enterBuilder()
     await appMode.steps.goToInputs()
 
