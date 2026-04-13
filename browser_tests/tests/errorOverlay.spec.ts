@@ -8,7 +8,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true

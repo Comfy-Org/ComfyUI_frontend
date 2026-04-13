@@ -9,7 +9,6 @@ test.beforeEach(async ({ comfyPage }) => {
 
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true

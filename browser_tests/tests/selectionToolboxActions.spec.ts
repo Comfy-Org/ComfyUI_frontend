@@ -28,10 +28,6 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-})
-
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)

@@ -5,12 +5,7 @@ import {
 
 const ERROR_CLASS = /ring-destructive-background/
 
-test.describe('Vue Node Error', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
     comfyPage
   }) => {

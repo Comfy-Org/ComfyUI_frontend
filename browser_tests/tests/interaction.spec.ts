@@ -894,8 +894,6 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -969,8 +967,6 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -1060,10 +1056,6 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
 })
 
 test.describe('Load duplicate workflow', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('A workflow can be loaded multiple times in a row', async ({
     comfyPage
   }) => {
@@ -1077,7 +1069,6 @@ test.describe('Load duplicate workflow', () => {
 
 test.describe('Viewport settings', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'

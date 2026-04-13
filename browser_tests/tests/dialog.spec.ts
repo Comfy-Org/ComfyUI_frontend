@@ -102,8 +102,6 @@ test.describe('Support', () => {
   test('Should open external zendesk link with OSS tag', async ({
     comfyPage
   }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Prevent loading the external page
     await comfyPage.page
       .context()
