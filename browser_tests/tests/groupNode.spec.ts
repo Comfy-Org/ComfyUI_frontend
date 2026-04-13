@@ -24,6 +24,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     let libraryTab: NodeLibrarySidebarTab
 
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       libraryTab = comfyPage.menu.nodeLibraryTab
       await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
@@ -281,6 +282,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     }
 
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.workflow.loadWorkflow(WORKFLOW_NAME)
       groupNode = await comfyPage.nodeOps.getFirstNodeRef()
       if (!groupNode)

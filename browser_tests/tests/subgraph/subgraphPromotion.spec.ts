@@ -182,6 +182,10 @@ test.describe(
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      })
+
       test('Can promote and un-promote a widget from inside a subgraph', async ({
         comfyPage
       }) => {
@@ -272,6 +276,7 @@ test.describe(
 
     test.describe('Textarea Widget Context Menu in Subgraph (Vue Mode)', () => {
       test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       })
 
@@ -472,6 +477,7 @@ test.describe(
       test('Nested promoted widget entries reflect interior changes after slot removal', async ({
         comfyPage
       }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
@@ -515,6 +521,7 @@ test.describe(
       test('Removing I/O slot removes associated promoted widget', async ({
         comfyPage
       }) => {
+        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )

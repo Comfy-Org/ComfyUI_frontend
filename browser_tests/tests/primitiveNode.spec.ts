@@ -62,6 +62,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Report missing nodes when connect to missing node', async ({
     comfyPage
   }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
