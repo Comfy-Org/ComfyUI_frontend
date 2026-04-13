@@ -18,8 +18,9 @@ test.describe('Sidebar tab switching', { tag: '@ui' }, () => {
   })
 
   test('Clicking node library tab opens it', async ({ comfyPage }) => {
-    await comfyPage.menu.nodeLibraryTab.open()
-    await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeVisible()
+    const tab = comfyPage.menu.nodeLibraryTabV2
+    await tab.open()
+    await expect(tab.selectedTabButton).toBeVisible()
   })
 
   test('Clicking workflows tab opens it', async ({ comfyPage }) => {
@@ -30,32 +31,35 @@ test.describe('Sidebar tab switching', { tag: '@ui' }, () => {
   test('Switching from one tab to another deselects the first', async ({
     comfyPage
   }) => {
-    await comfyPage.menu.nodeLibraryTab.open()
-    await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeVisible()
+    const nodeTab = comfyPage.menu.nodeLibraryTabV2
+    await nodeTab.open()
+    await expect(nodeTab.selectedTabButton).toBeVisible()
 
     await comfyPage.menu.workflowsTab.open()
     await expect(comfyPage.menu.workflowsTab.selectedTabButton).toBeVisible()
-    await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeHidden()
+    await expect(nodeTab.selectedTabButton).toBeHidden()
   })
 
   test('Clicking active tab closes the sidebar panel', async ({
     comfyPage
   }) => {
-    await comfyPage.menu.nodeLibraryTab.open()
-    await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeVisible()
+    const tab = comfyPage.menu.nodeLibraryTabV2
+    await tab.open()
+    await expect(tab.selectedTabButton).toBeVisible()
 
-    await comfyPage.menu.nodeLibraryTab.close()
-    await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeHidden()
+    await tab.close()
+    await expect(tab.selectedTabButton).toBeHidden()
   })
 
   test('Sidebar content area updates when switching tabs', async ({
     comfyPage
   }) => {
-    await comfyPage.menu.nodeLibraryTab.open()
-    await expect(comfyPage.menu.nodeLibraryTab.nodeLibraryTree).toBeVisible()
+    const nodeTab = comfyPage.menu.nodeLibraryTabV2
+    await nodeTab.open()
+    await expect(nodeTab.searchInput).toBeVisible()
 
     await comfyPage.menu.workflowsTab.open()
     await expect(comfyPage.menu.workflowsTab.root).toBeVisible()
-    await expect(comfyPage.menu.nodeLibraryTab.nodeLibraryTree).toBeHidden()
+    await expect(nodeTab.searchInput).toBeHidden()
   })
 })
