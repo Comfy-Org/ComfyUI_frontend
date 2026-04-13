@@ -133,7 +133,6 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="sortPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-
       unstyled
       :pt="{
         root: {
@@ -196,7 +195,6 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="ownershipPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-
       unstyled
       :pt="{
         root: {
@@ -259,7 +257,6 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="baseModelPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-
       unstyled
       :pt="{
         root: {
