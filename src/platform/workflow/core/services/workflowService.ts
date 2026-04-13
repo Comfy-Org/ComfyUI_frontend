@@ -25,6 +25,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -44,7 +46,6 @@ export const useWorkflowService = () => {
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
-  const executionErrorStore = useExecutionErrorStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStore()
 
@@ -253,13 +254,14 @@ export const useWorkflowService = () => {
       /* restore_view=*/ true,
       workflow,
       {
-        showMissingModels: loadFromRemote,
-        showMissingNodes: true,
         checkForRerouteMigration: false,
-        deferWarnings: true
+        deferWarnings: true,
+        skipAssetScans: !loadFromRemote && !options.force
       }
     )
-    showPendingWarnings()
+    showPendingWarnings(undefined, {
+      silent: !loadFromRemote && !options.force
+    })
   }
 
   /**
@@ -389,6 +391,29 @@ export const useWorkflowService = () => {
           }
         }
       }
+      // Cache missing model/media/node state for restore on tab switch.
+      // Always overwrite to reflect the current store state (e.g. after
+      // muting a node cleared its errors).
+      const modelCandidates = useMissingModelStore().missingModelCandidates
+      const mediaCandidates = useMissingMediaStore().missingMediaCandidates
+      const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
+      activeWorkflow.pendingWarnings = {
+        missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
+        missingModelCandidates: modelCandidates?.length
+          ? modelCandidates
+          : undefined,
+        missingMediaCandidates: mediaCandidates?.length
+          ? mediaCandidates
+          : undefined
+      }
+      if (
+        !activeWorkflow.pendingWarnings.missingNodeTypes &&
+        !activeWorkflow.pendingWarnings.missingModelCandidates &&
+        !activeWorkflow.pendingWarnings.missingMediaCandidates
+      ) {
+        activeWorkflow.pendingWarnings = null
+      }
+
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
@@ -550,17 +575,43 @@ export const useWorkflowService = () => {
    * active workflow. Called after a workflow becomes visible so dialogs don't
    * overlap with subsequent loads.
    */
-  function showPendingWarnings(workflow?: ComfyWorkflow | null) {
+  function showPendingWarnings(
+    workflow?: ComfyWorkflow | null,
+    options?: { silent?: boolean }
+  ) {
     const wf = workflow ?? workflowStore.activeWorkflow
-    if (!wf?.pendingWarnings) return
+    if (!wf) return
 
-    const { missingNodeTypes } = wf.pendingWarnings
-    wf.pendingWarnings = null
+    const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
+      wf.pendingWarnings ?? {}
 
-    if (missingNodeTypes?.length) {
-      if (missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes)) {
-        executionErrorStore.showErrorOverlay()
+    // Always sync missing nodes store (clear when empty).
+    if (
+      missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
+      !options?.silent
+    ) {
+      useExecutionErrorStore().showErrorOverlay()
+    }
+    if (missingModelCandidates?.length) {
+      useMissingModelStore().setMissingModels(missingModelCandidates)
+    }
+    if (missingMediaCandidates?.length) {
+      useMissingMediaStore().setMissingMedia(missingMediaCandidates)
+    }
+
+    // Keep cache for future tab switches
+    if (
+      missingNodeTypes?.length ||
+      missingModelCandidates?.length ||
+      missingMediaCandidates?.length
+    ) {
+      wf.pendingWarnings = {
+        missingNodeTypes,
+        missingModelCandidates,
+        missingMediaCandidates
       }
+    } else {
+      wf.pendingWarnings = null
     }
   }
 

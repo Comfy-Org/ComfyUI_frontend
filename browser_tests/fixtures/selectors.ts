@@ -21,6 +21,10 @@ export const TestIds = {
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
     closeMinimapButton: 'close-minimap-button',
+    minimapContainer: 'minimap-container',
+    minimapCanvas: 'minimap-canvas',
+    minimapViewport: 'minimap-viewport',
+    minimapInteractionOverlay: 'minimap-interaction-overlay',
     toggleLinkVisibilityButton: 'toggle-link-visibility-button',
     zoomControlsButton: 'zoom-controls-button',
     zoomInAction: 'zoom-in-action',
@@ -79,7 +83,8 @@ export const TestIds = {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
-    root: 'properties-panel'
+    root: 'properties-panel',
+    errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
     toggle: 'subgraph-editor-toggle',

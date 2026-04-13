@@ -199,12 +199,7 @@ test.describe(
 
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos, { button: 'right' })
 
         // Look for the Promote Widget menu entry
         const promoteEntry = comfyPage.page
@@ -235,12 +230,7 @@ test.describe(
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
 
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos, { button: 'right' })
 
         const promoteEntry = comfyPage.page
           .locator('.litemenu-entry')
@@ -266,12 +256,7 @@ test.describe(
         const stepsWidget2 = await ksampler2.getWidget(2)
         const widgetPos2 = await stepsWidget2.getPosition()
 
-        await comfyPage.canvas.click({
-          position: widgetPos2,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos2, { button: 'right' })
 
         const unpromoteEntry = comfyPage.page
           .locator('.litemenu-entry')
@@ -493,7 +478,6 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
@@ -538,7 +522,6 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
