@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
  * Cloud distribution E2E tests.
