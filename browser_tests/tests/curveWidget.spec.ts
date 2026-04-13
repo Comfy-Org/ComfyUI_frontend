@@ -13,7 +13,7 @@ test.describe('Curve Widget', () => {
   function getCurveWidgetLocators(comfyPage: ComfyPage) {
     const node = comfyPage.vueNodes.getNodeLocator('1')
     const svg = node.locator('svg')
-    const curvePath = node.getByTestId("curve-path")
+    const curvePath = node.getByTestId('curve-path')
     const controlPoints = svg.locator('circle')
     return { node, svg, curvePath, controlPoints }
   }
@@ -137,7 +137,7 @@ test.describe('Curve Widget', () => {
       const pathBefore = await curvePath.getAttribute('d')
 
       const node = comfyPage.vueNodes.getNodeLocator('1')
-      const select = node.getByRole("combobox")
+      const select = node.getByRole('combobox')
       await select.click()
       await comfyPage.page.getByRole('option', { name: /linear/i }).click()
       await comfyPage.nextFrame()

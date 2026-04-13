@@ -257,7 +257,7 @@ test.describe('Painter', () => {
     expect(initialSize?.trim()).toBe('20')
 
     // Drag the slider thumb to the right to increase size
-    const slider = sizeRow.getByRole("slider")
+    const slider = sizeRow.getByRole('slider')
     const sliderBox = await slider.boundingBox()
     if (!sliderBox) throw new Error('Slider thumb not found')
 
@@ -313,7 +313,7 @@ test.describe('Painter', () => {
     // Set brush size to a larger value by dragging the slider far right
     const sizeLabel = painterWidget.getByText('Cursor Size')
     const sizeRow = sizeLabel.locator('~ div').first()
-    const slider = sizeRow.getByRole("slider")
+    const slider = sizeRow.getByRole('slider')
     const sliderBox = await slider.boundingBox()
     if (!sliderBox) throw new Error('Slider thumb not found')
 

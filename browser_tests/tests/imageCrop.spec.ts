@@ -76,7 +76,7 @@ test.describe('Image Crop', () => {
     async ({ comfyPage }) => {
       const node = comfyPage.vueNodes.getNodeLocator('1')
 
-      const trigger = node.getByRole("combobox")
+      const trigger = node.getByRole('combobox')
       await trigger.click()
 
       const expectedRatios = ['1:1', '3:4', '4:3', '16:9', '9:16', 'Custom']
