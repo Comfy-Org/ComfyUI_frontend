@@ -349,17 +349,20 @@ const runId = __CI_RUN_ID__
 const jobId = __CI_JOB_ID__
 
 const buildLabel = computed(() => {
-  if (prNumber) return `PR #${prNumber}`
+  if (prNumber) return t('connectionPanel.buildPr', { prNumber })
   if (branch) return branch
-  return `v${version}`
+  return t('connectionPanel.buildVersion', { version })
 })
 
 const buildTooltip = computed(() => {
-  const parts = [`Version: ${version}`]
-  if (commit) parts.push(`Commit: ${commit.slice(0, 8)}`)
-  if (branch) parts.push(`Branch: ${branch}`)
-  if (runId) parts.push(`Run ID: ${runId}`)
-  if (jobId) parts.push(`Job ID: ${jobId}`)
+  const parts = [t('connectionPanel.tooltipVersion', { version })]
+  if (commit)
+    parts.push(
+      t('connectionPanel.tooltipCommit', { commit: commit.slice(0, 8) })
+    )
+  if (branch) parts.push(t('connectionPanel.tooltipBranch', { branch }))
+  if (runId) parts.push(t('connectionPanel.tooltipRunId', { runId }))
+  if (jobId) parts.push(t('connectionPanel.tooltipJobId', { jobId }))
   return parts.join('\n')
 })
 

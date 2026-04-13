@@ -3826,6 +3826,13 @@
     "source": "Source",
     "errorUnreachable": "Backend is unreachable. Ensure ComfyUI is running with CORS enabled.",
     "errorHttpFailed": "HTTP connection failed. Check the URL and CORS settings.",
-    "errorWsFailed": "WebSocket connection failed. HTTP works — check firewall or proxy settings."
+    "errorWsFailed": "WebSocket connection failed. HTTP works — check firewall or proxy settings.",
+    "buildPr": "PR #{prNumber}",
+    "buildVersion": "v{version}",
+    "tooltipVersion": "Version: {version}",
+    "tooltipCommit": "Commit: {commit}",
+    "tooltipBranch": "Branch: {branch}",
+    "tooltipRunId": "Run ID: {runId}",
+    "tooltipJobId": "Job ID: {jobId}"
   }
 }
