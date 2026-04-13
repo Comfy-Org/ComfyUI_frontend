@@ -460,7 +460,10 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const autogrowGroup = node.comfyDynamic.autogrow[groupName]
+  if (!autogrowGroup) return
+
+  const { min = 1, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 

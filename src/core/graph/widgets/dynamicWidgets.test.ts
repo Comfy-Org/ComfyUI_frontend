@@ -182,6 +182,20 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
+  test('Removing a connection ignores stale autogrow callbacks after group removal', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+
+    connectInput(node, 0, graph)
+    expect(node.inputs.length).toBe(2)
+
+    node.disconnectInput(0)
+    delete node.comfyDynamic.autogrow['0']
+
+    await expect(nextTick()).resolves.toBeUndefined()
+  })
   test('Can deserialize a complex node', async () => {
     const graph = new LGraph()
     const node = testNode()

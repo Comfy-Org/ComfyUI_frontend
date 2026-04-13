@@ -29,8 +29,10 @@ function isResultItem(item: unknown): item is ResultItem {
 
 export function parseNodeOutput(
   nodeId: string | number,
-  nodeOutput: NodeExecutionOutput
+  nodeOutput: NodeExecutionOutput | null | undefined
 ): ResultItemImpl[] {
+  if (!nodeOutput) return []
+
   return Object.entries(nodeOutput)
     .filter(([key, value]) => !METADATA_KEYS.has(key) && Array.isArray(value))
     .flatMap(([mediaType, items]) =>
@@ -41,7 +43,7 @@ export function parseNodeOutput(
 }
 
 export function parseTaskOutput(
-  taskOutput: Record<string, NodeExecutionOutput>
+  taskOutput: Record<string, NodeExecutionOutput | null | undefined>
 ): ResultItemImpl[] {
   return Object.entries(taskOutput).flatMap(([nodeId, nodeOutput]) =>
     parseNodeOutput(nodeId, nodeOutput)

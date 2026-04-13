@@ -4,7 +4,7 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 
 export function flattenNodeOutput([nodeId, nodeOutput]: [
   string | number,
-  NodeExecutionOutput
+  NodeExecutionOutput | null | undefined
 ]): ResultItemImpl[] {
   return parseNodeOutput(nodeId, nodeOutput)
 }
