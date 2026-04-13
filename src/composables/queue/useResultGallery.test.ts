@@ -8,7 +8,13 @@ import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 const createResultItem = (
   url: string,
-  supportsPreview = true
+  {
+    supportsPreview = true,
+    supportsInspection = supportsPreview
+  }: {
+    supportsPreview?: boolean
+    supportsInspection?: boolean
+  } = {}
 ): ResultItemImpl => {
   const item = new ResultItemImpl({
     filename: url,
@@ -20,6 +26,9 @@ const createResultItem = (
   // Override url getter for test matching
   Object.defineProperty(item, 'url', { get: () => url })
   Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
+  Object.defineProperty(item, 'supportsInspection', {
+    get: () => supportsInspection
+  })
   return item
 }
 
@@ -63,12 +72,15 @@ describe('useResultGallery', () => {
     setActivePinia(createPinia())
   })
 
-  it('collects only previewable outputs and preserves their order', async () => {
+  it('collects only inspectable outputs and preserves their order', async () => {
     const previewable = [createResultItem('p-1'), createResultItem('p-2')]
-    const nonPreviewable = createResultItem('skip-me', false)
+    const nonInspectable = createResultItem('skip-me', {
+      supportsPreview: true,
+      supportsInspection: false
+    })
     const tasks = [
       createTask(previewable[0]),
-      createTask(nonPreviewable),
+      createTask(nonInspectable),
       createTask(previewable[1]),
       createTask()
     ]
@@ -83,7 +95,7 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
-  it('does not change state when there are no previewable tasks', async () => {
+  it('does not change state when there are no inspectable tasks', async () => {
     const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
       () => []
     )

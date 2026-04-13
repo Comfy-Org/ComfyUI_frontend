@@ -160,21 +160,25 @@ const {
 } = useResultGallery(() => filteredTasks.value)
 
 const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
-  const previewOutput = item.taskRef?.previewOutput
+  const inspectableOutput = item.taskRef?.inspectableOutput
 
-  if (previewOutput?.is3D) {
+  if (inspectableOutput?.is3D) {
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
       title: item.title,
       component: Load3dViewerContent,
       props: {
-        modelUrl: previewOutput.url || ''
+        modelUrl: inspectableOutput.url || ''
       },
       dialogComponentProps: {
         style: 'width: 80vw; height: 80vh;',
         maximizable: true
       }
     })
+    return
+  }
+
+  if (!inspectableOutput) {
     return
   }
 

@@ -725,7 +725,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'completed',
-        taskRef: { previewOutput: {} }
+        taskRef: { previewOutput: {}, inspectableOutput: {} }
       })
     )
 
@@ -763,7 +763,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'completed',
-        taskRef: { previewOutput: {} }
+        taskRef: { previewOutput: {}, inspectableOutput: {} }
       })
     )
 
@@ -789,6 +789,35 @@ describe('useJobMenu', () => {
     )
     expect(jobMenuEntries.value.some((entry) => entry.key === 'delete')).toBe(
       false
+    )
+  })
+
+  it('disables inspect when asset is surfaced but not inspectable', async () => {
+    const { jobMenuEntries } = mountJobMenu(vi.fn())
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: {
+          previewOutput: {
+            filename: 'mesh.usdz',
+            subfolder: 'models',
+            type: 'output',
+            url: 'https://asset'
+          }
+        }
+      })
+    )
+
+    await nextTick()
+
+    expect(
+      findActionEntry(jobMenuEntries.value, 'inspect-asset')?.disabled
+    ).toBe(true)
+    expect(findActionEntry(jobMenuEntries.value, 'download')?.disabled).toBe(
+      false
+    )
+    expect(jobMenuEntries.value.some((entry) => entry.key === 'delete')).toBe(
+      true
     )
   })
 

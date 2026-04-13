@@ -21,7 +21,7 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
 }))
 
 vi.mock('@/utils/formatUtil', () => ({
-  isPreviewableMediaType: () => true
+  isPreviewableMediaFilename: () => true
 }))
 
 vi.mock('@/utils/loaderNodeUtil', () => ({

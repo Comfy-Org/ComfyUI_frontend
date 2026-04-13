@@ -74,11 +74,13 @@ type TestPreviewOutput = {
   url: string
   isImage: boolean
   isVideo: boolean
+  is3D: boolean
 }
 
 type TestTaskRef = {
   workflowId?: string
   previewOutput?: TestPreviewOutput
+  inspectableOutput?: TestPreviewOutput
 }
 
 type TestJobListItem = Omit<JobListItem, 'taskRef'> & {
@@ -97,14 +99,24 @@ const createPreviewOutput = (
   return {
     url,
     isImage: mediaType === 'images',
-    isVideo: mediaType === 'video'
+    isVideo: mediaType === 'video',
+    is3D: mediaType === 'model'
   }
 }
 
-const createTaskRef = (preview?: TestPreviewOutput): TestTaskRef => ({
-  workflowId: 'workflow-1',
-  ...(preview && { previewOutput: preview })
-})
+const createTaskRef = (
+  preview?: TestPreviewOutput,
+  inspectable?: TestPreviewOutput | null
+): TestTaskRef => {
+  const resolvedInspectable =
+    inspectable === undefined ? preview : (inspectable ?? undefined)
+
+  return {
+    workflowId: 'workflow-1',
+    ...(preview && { previewOutput: preview }),
+    ...(resolvedInspectable && { inspectableOutput: resolvedInspectable })
+  }
+}
 
 const buildJob = (
   overrides: Partial<TestJobListItem> = {}
@@ -284,6 +296,36 @@ describe('JobAssetsList', () => {
     expect(onViewItem).toHaveBeenCalledWith(job)
   })
 
+  it('emits viewItem on icon click for completed PLY jobs without preview tile', async () => {
+    const previewOutput = createPreviewOutput('job-1.ply', 'model')
+    const job = buildJob({
+      iconImageUrl: undefined,
+      taskRef: createTaskRef(previewOutput)
+    })
+    const onViewItem = vi.fn()
+    const { container, user } = renderJobAssetsList({ jobs: [job], onViewItem })
+
+    const icon = container.querySelector('.assets-list-item-stub i')!
+    await user.click(icon)
+
+    expect(onViewItem).toHaveBeenCalledWith(job)
+  })
+
+  it('does not emit viewItem on icon click for completed USDZ jobs without inspectable output', async () => {
+    const previewOutput = createPreviewOutput('job-1.usdz', 'model')
+    const job = buildJob({
+      iconImageUrl: undefined,
+      taskRef: createTaskRef(previewOutput, null)
+    })
+    const onViewItem = vi.fn()
+    const { container, user } = renderJobAssetsList({ jobs: [job], onViewItem })
+
+    const icon = container.querySelector('.assets-list-item-stub i')!
+    await user.click(icon)
+
+    expect(onViewItem).not.toHaveBeenCalled()
+  })
+
   it('does not emit viewItem on double-click for non-completed jobs', async () => {
     const job = buildJob({
       state: 'running',
@@ -298,21 +340,18 @@ describe('JobAssetsList', () => {
     expect(onViewItem).not.toHaveBeenCalled()
   })
 
-  it('emits viewItem from the View button for completed jobs without preview output', async () => {
+  it('does not show the View button for completed jobs without inspectable output', async () => {
     const job = buildJob({
       iconImageUrl: undefined,
-      taskRef: createTaskRef()
+      taskRef: createTaskRef(undefined, null)
     })
-    const onViewItem = vi.fn()
-    const { container } = renderJobAssetsList({ jobs: [job], onViewItem })
+    const { container } = renderJobAssetsList({ jobs: [job] })
 
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
     await fireEvent.mouseEnter(jobRow)
-
-    await fireEvent.click(screen.getByText('menuLabels.View'))
     await nextTick()
 
-    expect(onViewItem).toHaveBeenCalledWith(job)
+    expect(screen.queryByText('menuLabels.View')).toBeNull()
   })
 
   it('shows and hides the job details popover with hover delays', async () => {

@@ -22,7 +22,10 @@ import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getMediaTypeFromFilename,
+  isPreviewableMediaFilename
+} from '@/utils/formatUtil'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -222,8 +225,18 @@ export class ResultItemImpl {
   get is3D(): boolean {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
+
   get isText(): boolean {
     return this.mediaType === 'text'
+  }
+
+  get supportsInspection(): boolean {
+    return (
+      this.isImage ||
+      this.isVideo ||
+      this.isAudio ||
+      (this.is3D && isPreviewableMediaFilename(this.filename))
+    )
   }
 
   get supportsPreview(): boolean {
@@ -236,6 +249,12 @@ export class ResultItemImpl {
     outputs: readonly ResultItemImpl[]
   ): ResultItemImpl[] {
     return outputs.filter((o) => o.supportsPreview)
+  }
+
+  static filterInspectable(
+    outputs: readonly ResultItemImpl[]
+  ): ResultItemImpl[] {
+    return outputs.filter((o) => o.supportsInspection)
   }
 
   static findByUrl(items: readonly ResultItemImpl[], url?: string): number {
@@ -278,9 +297,14 @@ export class TaskItemImpl {
     return parseTaskOutput(this.outputs)
   }
 
-  /** All outputs that support preview (images, videos, audio, 3D, text) */
+  /** All surfaced outputs (images, videos, audio, 3D, text) */
   get previewableOutputs(): readonly ResultItemImpl[] {
     return ResultItemImpl.filterPreviewable(this.flatOutputs)
+  }
+
+  /** Outputs the UI can inspect directly in the viewer/lightbox. */
+  get inspectableOutputs(): readonly ResultItemImpl[] {
+    return ResultItemImpl.filterInspectable(this.flatOutputs)
   }
 
   get previewOutput(): ResultItemImpl | undefined {
@@ -289,6 +313,14 @@ export class TaskItemImpl {
     return (
       previewable.findLast((output) => output.type === 'output') ??
       previewable.at(-1)
+    )
+  }
+
+  get inspectableOutput(): ResultItemImpl | undefined {
+    const inspectable = this.inspectableOutputs
+    return (
+      inspectable.findLast((output) => output.type === 'output') ??
+      inspectable.at(-1)
     )
   }
 

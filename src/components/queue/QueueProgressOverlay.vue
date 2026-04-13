@@ -257,6 +257,10 @@ const focusAssetInSidebar = async (item: JobListItem) => {
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    if (!item.taskRef?.inspectableOutput) {
+      return
+    }
+
     await openResultGallery(item)
     await focusAssetInSidebar(item)
   }

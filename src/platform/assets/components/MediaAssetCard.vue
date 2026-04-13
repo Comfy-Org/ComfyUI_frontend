@@ -148,7 +148,7 @@ import {
   formatSize,
   getFilenameDetails,
   getMediaTypeFromFilename,
-  isPreviewableMediaType
+  isPreviewableMediaFilename
 } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -226,7 +226,7 @@ const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const canInspect = computed(() => isPreviewableMediaFilename(asset?.name))
 
 // Get filename without extension
 const fileName = computed(() => {

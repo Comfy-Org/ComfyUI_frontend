@@ -67,7 +67,7 @@
                   <i class="icon-[lucide--trash-2] size-4" />
                 </Button>
                 <Button
-                  v-else-if="row.job.state === 'completed'"
+                  v-else-if="hasInspectableCompletedAsset(row.job)"
                   variant="textonly"
                   size="sm"
                   @click.stop="emitCompletedViewItem(row.job)"
@@ -284,6 +284,10 @@ function getPreviewOutput(job: JobListItem) {
   return job.taskRef?.previewOutput
 }
 
+function getInspectableOutput(job: JobListItem) {
+  return job.taskRef?.inspectableOutput
+}
+
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
   if (preview?.isImage || preview?.isVideo) {
@@ -296,12 +300,12 @@ function isVideoPreviewJob(job: JobListItem) {
   return job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
 }
 
-function isPreviewableCompletedJob(job: JobListItem) {
-  return job.state === 'completed' && !!getPreviewOutput(job)
+function hasInspectableCompletedAsset(job: JobListItem) {
+  return job.state === 'completed' && !!getInspectableOutput(job)
 }
 
 function emitViewItem(job: JobListItem) {
-  if (isPreviewableCompletedJob(job)) {
+  if (hasInspectableCompletedAsset(job)) {
     resetActiveDetails()
     emit('viewItem', job)
   }

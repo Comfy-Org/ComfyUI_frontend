@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  getFileExtension,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
-  isPreviewableMediaType,
+  isPreviewableMediaFilename,
   truncateFilename
 } from './formatUtil'
 
@@ -104,6 +105,11 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
+        expect(getMediaTypeFromFilename('mesh.ply')).toBe('3D')
+        expect(getMediaTypeFromFilename('print.stl')).toBe('3D')
+        expect(getMediaTypeFromFilename('point-cloud.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('gaussian.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
       })
     })
 
@@ -162,6 +168,21 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('video.Mp4')).toBe('video')
         expect(getMediaTypeFromFilename('audio.WaV')).toBe('audio')
       })
+    })
+  })
+
+  describe('getFileExtension', () => {
+    it('returns a normalized lowercase extension when present', () => {
+      expect(getFileExtension('mesh.PLY')).toBe('ply')
+      expect(getFileExtension('/path/to/file.glb')).toBe('glb')
+      expect(getFileExtension('C:\\path.with.dot\\file.OBJ')).toBe('obj')
+    })
+
+    it('returns null when no extension is present', () => {
+      expect(getFileExtension('README')).toBe(null)
+      expect(getFileExtension('')).toBe(null)
+      expect(getFileExtension(undefined)).toBe(null)
+      expect(getFileExtension('C:\\path.with.dot\\README')).toBe(null)
     })
   })
 
@@ -344,17 +365,27 @@ describe('formatUtil', () => {
     })
   })
 
-  describe('isPreviewableMediaType', () => {
-    it('returns true for image/video/audio/3D', () => {
-      expect(isPreviewableMediaType('image')).toBe(true)
-      expect(isPreviewableMediaType('video')).toBe(true)
-      expect(isPreviewableMediaType('audio')).toBe(true)
-      expect(isPreviewableMediaType('3D')).toBe(true)
+  describe('isPreviewableMediaFilename', () => {
+    it('returns true for browser-previewable core media', () => {
+      expect(isPreviewableMediaFilename('image.png')).toBe(true)
+      expect(isPreviewableMediaFilename('clip.mp4')).toBe(true)
+      expect(isPreviewableMediaFilename('sound.wav')).toBe(true)
     })
 
-    it('returns false for text/other', () => {
-      expect(isPreviewableMediaType('text')).toBe(false)
-      expect(isPreviewableMediaType('other')).toBe(false)
+    it('returns true for loadable 3D formats', () => {
+      expect(isPreviewableMediaFilename('mesh.ply')).toBe(true)
+      expect(isPreviewableMediaFilename('scene.glb')).toBe(true)
+      expect(isPreviewableMediaFilename('print.stl')).toBe(true)
+      expect(isPreviewableMediaFilename('points.ksplat')).toBe(true)
+    })
+
+    it('returns false for 3D media without a browser loader', () => {
+      expect(isPreviewableMediaFilename('apple.usdz')).toBe(false)
+    })
+
+    it('returns false for non-previewable file types', () => {
+      expect(isPreviewableMediaFilename('notes.txt')).toBe(false)
+      expect(isPreviewableMediaFilename('archive.bin')).toBe(false)
     })
   })
 })
