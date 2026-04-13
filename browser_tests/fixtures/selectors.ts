@@ -133,7 +133,11 @@ export const TestIds = {
     widgetItem: 'builder-widget-item',
     widgetLabel: 'builder-widget-label',
     outputPlaceholder: 'builder-output-placeholder',
-    connectOutputPopover: 'builder-connect-output-popover'
+    connectOutputPopover: 'builder-connect-output-popover',
+    connectOutputSwitch: 'builder-connect-output-switch',
+    emptyWorkflowDialog: 'builder-empty-workflow-dialog',
+    emptyWorkflowBack: 'builder-empty-workflow-back',
+    emptyWorkflowLoadTemplate: 'builder-empty-workflow-load-template'
   },
   outputHistory: {
     outputs: 'linear-outputs',
@@ -159,7 +163,13 @@ export const TestIds = {
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',
     backToWorkflow: 'linear-welcome-back-to-workflow',
-    loadTemplate: 'linear-welcome-load-template'
+    loadTemplate: 'linear-welcome-load-template',
+    arrangePreview: 'linear-arrange-preview',
+    arrangeNoOutputs: 'linear-arrange-no-outputs',
+    arrangeSwitchToOutputs: 'linear-arrange-switch-to-outputs',
+    vueNodeSwitchPopup: 'linear-vue-node-switch-popup',
+    vueNodeSwitchDismiss: 'linear-vue-node-switch-dismiss',
+    vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
     subgraph: 'subgraph-breadcrumb'
