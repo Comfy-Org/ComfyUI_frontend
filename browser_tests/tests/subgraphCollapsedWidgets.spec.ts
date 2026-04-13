@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { getPromotedWidgetCount } from '../helpers/promotedWidgets'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getPromotedWidgetCount } from '@e2e/helpers/promotedWidgets'
 
 /**
  * Navigate out of the current subgraph to its parent graph.
@@ -63,23 +63,34 @@ test.describe(
       const widgetCountAfter = await getPromotedWidgetCount(comfyPage, nodeId)
       expect(widgetCountAfter).toBe(widgetCountBefore)
 
-      // DOM widget overlays should be visible on the host node
-      // (v-show bound to widgetState.visible in DomWidget.vue)
+      // DOM widget overlays should be visible on the host node.
+      // DOM elements live on the inner nodes (PromotedWidgetView proxies on
+      // the host have no .element); check via the subgraph's inner nodes and
+      // the .dom-widget container's v-show state.
       await expect
         .poll(() =>
           comfyPage.page.evaluate((id) => {
-            const node = window.app!.canvas.graph!.getNodeById(Number(id))
-            if (!node?.widgets) return 0
-            return node.widgets.filter((w) => {
-              const element = (w as { element?: HTMLElement }).element
-              if (!(element instanceof HTMLElement)) return false
-              const style = window.getComputedStyle(element)
-              return (
-                element.isConnected &&
-                style.display !== 'none' &&
-                style.visibility !== 'hidden'
-              )
-            }).length
+            const hostNode = window.app!.canvas.graph!.getNodeById(Number(id))
+            const innerGraph = (
+              hostNode as unknown as {
+                subgraph?: { _nodes: Array<{ widgets?: unknown[] }> }
+              }
+            )?.subgraph
+            if (!innerGraph) return 0
+            let count = 0
+            for (const node of innerGraph._nodes) {
+              for (const w of node.widgets ?? []) {
+                const element = (w as { element?: HTMLElement }).element
+                if (!(element instanceof HTMLElement) || !element.isConnected)
+                  continue
+                const container = element.closest('.dom-widget')
+                if (!container) continue
+                const style = window.getComputedStyle(container)
+                if (style.display !== 'none' && style.visibility !== 'hidden')
+                  count++
+              }
+            }
+            return count
           }, nodeId)
         )
         .toBeGreaterThan(0)
