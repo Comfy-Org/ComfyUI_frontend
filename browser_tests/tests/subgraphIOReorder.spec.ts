@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
   test('reorderInput updates inner slot order and outer SubgraphNode pins', async ({
@@ -66,6 +66,7 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
         | {
             subgraph?: {
               outputs: Array<{ name: string }>
+              addOutput: (name: string, type: string) => void
               reorderOutput: (from: number, to: number) => void
             }
             outputs: Array<{ name: string }>
@@ -73,8 +74,14 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
         | undefined
 
       if (!sgNode?.subgraph) return { error: 'No subgraph node' }
-      if (sgNode.subgraph.outputs.length < 2)
-        return { error: 'Need 2+ outputs to test reorder' }
+
+      // Ensure at least two outputs exist so the reorder can be exercised
+      while (sgNode.subgraph.outputs.length < 2) {
+        sgNode.subgraph.addOutput(
+          `output_${sgNode.subgraph.outputs.length}`,
+          '*'
+        )
+      }
 
       const innerBefore = sgNode.subgraph.outputs.map((o) => o.name)
       const outerBefore = sgNode.outputs.map((o) => o.name)
@@ -87,11 +94,7 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
       return { innerBefore, outerBefore, innerAfter, outerAfter }
     })
 
-    if ('error' in result) {
-      test.skip(true, result.error as string)
-      return
-    }
-
+    expect(result).not.toHaveProperty('error')
     expect(result.innerAfter).toEqual(result.outerAfter)
     expect(result.innerAfter).not.toEqual(result.innerBefore)
   })
