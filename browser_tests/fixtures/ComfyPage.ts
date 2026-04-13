@@ -371,8 +371,11 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.locator('button.comfy-close-menu-btn').click()
-    await this.nextFrame()
+    const btn = this.page.locator('button.comfy-close-menu-btn')
+    if ((await btn.count()) > 0) {
+      await btn.click()
+      await this.nextFrame()
+    }
   }
 
   async clickDialogButton(prompt: string, buttonText: string = 'Yes') {
