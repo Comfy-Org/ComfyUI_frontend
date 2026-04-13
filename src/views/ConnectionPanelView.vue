@@ -41,6 +41,8 @@
       <!-- Connection status -->
       <section
         v-if="httpStatus !== null || wsStatus !== null"
+        role="status"
+        aria-live="polite"
         class="flex flex-col gap-2 rounded-md bg-neutral-800/50 p-3"
       >
         <h2
