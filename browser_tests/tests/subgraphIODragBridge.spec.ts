@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 const WORKFLOW = 'subgraphs/test-values-input-subgraph'
 
@@ -87,8 +87,8 @@ test.describe(
       const snapTargets = page.locator('.lg-slot--snap-target')
       await expect(snapTargets).toHaveCount(0)
 
-      // Start drag, simulate pointer move over a compatible input slot,
-      // and verify the snap-target class appears.
+      // Start drag without any pointer movement and confirm no snap-target
+      // is applied spuriously (the class only appears on actual hover).
       const hasSnapTarget = await page.evaluate(async () => {
         const canvas = window.app!.canvas!
         const graph = canvas.graph as {
