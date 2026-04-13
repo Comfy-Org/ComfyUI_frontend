@@ -33,10 +33,6 @@ function hasVisibleNodeInViewport() {
 
 test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
   test.describe('Subgraph Navigation and UI', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Breadcrumb updates when subgraph node title is changed', async ({
       comfyPage
     }) => {
@@ -106,10 +102,6 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
   })
 
   test.describe('Navigation Hotkeys', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Navigation hotkey can be customized', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()

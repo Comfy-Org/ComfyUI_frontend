@@ -3,10 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('@canvas Selection Rectangle', () => {
+test.describe('@canvas Selection Rectangle', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
     await comfyPage.vueNodes.waitForNodes()
   })

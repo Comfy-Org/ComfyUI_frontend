@@ -112,11 +112,9 @@ async function getNodeGroupCenteringErrors(
   })
 }
 
-test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
+test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {

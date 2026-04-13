@@ -20,7 +20,6 @@ async function pressKeyAndExpectRequest(
 test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
   test.describe('Sidebar Toggle Shortcuts', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
       await comfyPage.nextFrame()
     })
@@ -152,8 +151,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
   test.describe('Mode and Panel Toggles', () => {
     test("'Alt+m' toggles app mode", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       // Set up linearData so app mode has something to show
       await comfyPage.appMode.enterAppModeWithInputs([])
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
@@ -168,7 +165,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     })
 
     test("'Alt+Shift+m' toggles minimap", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
       await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
       await comfyPage.workflow.loadWorkflow('default')
@@ -184,8 +180,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     })
 
     test("'Ctrl+`' toggles terminal/logs panel", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       await expect(comfyPage.bottomPanel.root).toBeHidden()
 
       await comfyPage.page.keyboard.press('Control+Backquote')

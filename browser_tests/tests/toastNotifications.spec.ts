@@ -5,7 +5,6 @@ import {
 
 test.describe('Toast Notifications', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
   })
 

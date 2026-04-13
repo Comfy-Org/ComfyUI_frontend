@@ -35,7 +35,6 @@ async function clickMinimapAt(
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
