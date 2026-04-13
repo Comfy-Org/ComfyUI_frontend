@@ -20,7 +20,7 @@ export class ConfirmDialog {
     this.overwrite = this.root.getByRole('button', { name: 'Overwrite' })
     this.reject = this.root.getByRole('button', { name: 'Cancel' })
     this.confirm = this.root.getByRole('button', { name: 'Confirm' })
-    this.save = this.root.getByRole('button', { name: 'Save' })
+    this.save = this.root.getByRole('button', { name: 'Save', exact: true })
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {

@@ -9,6 +9,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -60,7 +61,16 @@ export const useAuthActions = () => {
         message: t('auth.signOut.unsavedChangesMessage'),
         type: 'dirtyClose'
       })
-      if (!confirmed) return
+
+      if (confirmed === null) return
+
+      if (confirmed === true) {
+        const workflowService = useWorkflowService()
+        const toSave = [...workflowStore.modifiedWorkflows]
+        for (const workflow of toSave) {
+          await workflowService.saveWorkflow(workflow)
+        }
+      }
     }
 
     await authStore.logout()
