@@ -133,9 +133,8 @@ if [ "$STATUS" = "starting" ]; then
     
 elif [ "$STATUS" = "completed" ]; then
     # Deploy and post completion comment
-    # Convert branch name to Cloudflare-compatible format (lowercase, only alphanumeric and dashes)
-    cloudflare_branch=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | \
-        sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+    # Use PR-scoped alias to avoid branch-name collisions
+    cloudflare_branch="pr-$PR_NUMBER"
     
     echo "Looking for frontend build in: $(pwd)/dist"
     
