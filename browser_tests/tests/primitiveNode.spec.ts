@@ -7,7 +7,6 @@ import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
 })
 
 test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {

@@ -12,7 +12,6 @@ import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
   await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
 })
