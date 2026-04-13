@@ -259,10 +259,10 @@ test.describe('Workflows sidebar', () => {
       .poll(() => comfyPage.menu.workflowsTab.getActiveWorkflowName())
       .toEqual('workflow2')
 
-    // Save As overwriting workflow1 (which is still on disk but no longer open)
-    // rebinds the current tab from workflow2 → workflow1
+    // Save As workflow1 — workflow1 exists on disk but is no longer in memory
+    // (the rebind removed it from the store), so no overwrite dialog appears;
+    // the current tab is silently rebound from workflow2 → workflow1
     await topbar.saveWorkflowAs('workflow1')
-    await comfyPage.confirmDialog.click('overwrite')
     await expect
       .poll(() => comfyPage.menu.workflowsTab.getOpenedWorkflowNames())
       .toEqual(['workflow1'])
