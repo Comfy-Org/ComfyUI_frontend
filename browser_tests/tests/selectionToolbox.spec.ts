@@ -8,6 +8,7 @@ const test = comfyPageFixture
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.closeMenu()
 })
 
 const BLUE_COLOR = 'rgb(51, 51, 85)'

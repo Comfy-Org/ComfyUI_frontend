@@ -6,6 +6,7 @@ import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPosit
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.closeMenu()
 })
 
 test.describe(

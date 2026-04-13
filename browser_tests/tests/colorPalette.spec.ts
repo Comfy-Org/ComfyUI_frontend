@@ -5,6 +5,7 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.closeMenu()
 })
 
 const customColorPalettes = {

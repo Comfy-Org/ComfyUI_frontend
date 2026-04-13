@@ -16,6 +16,7 @@ async function waitForSearchInsertion(
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.closeMenu()
 })
 
 test.describe('Node search box', { tag: '@node' }, () => {
