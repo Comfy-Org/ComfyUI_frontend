@@ -86,13 +86,17 @@ export class Topbar {
     return this._saveWorkflow(workflowName, 'Save As')
   }
 
+  saveWorkflowCopy(workflowName: string): Promise<void> {
+    return this._saveWorkflow(workflowName, 'Save a Copy')
+  }
+
   exportWorkflow(workflowName: string): Promise<void> {
     return this._saveWorkflow(workflowName, 'Export')
   }
 
   async _saveWorkflow(
     workflowName: string,
-    command: 'Save' | 'Save As' | 'Export'
+    command: 'Save' | 'Save As' | 'Save a Copy' | 'Export'
   ) {
     await this.triggerTopbarCommand(['File', command])
     await this.getSaveDialog().fill(workflowName)

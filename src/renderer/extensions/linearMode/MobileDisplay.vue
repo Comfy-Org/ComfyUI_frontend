@@ -106,6 +106,7 @@ const menuEntries = computed<MenuItem[]>(() => [
       { separator: true },
       commandIdToMenuItem('Comfy.SaveWorkflow'),
       commandIdToMenuItem('Comfy.SaveWorkflowAs'),
+      commandIdToMenuItem('Comfy.SaveWorkflowCopy'),
       { separator: true },
       commandIdToMenuItem('Comfy.ExportWorkflow'),
       commandIdToMenuItem('Comfy.ExportWorkflowAPI')
