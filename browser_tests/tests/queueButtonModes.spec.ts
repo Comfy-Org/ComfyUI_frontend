@@ -39,7 +39,7 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
     const menu = comfyPage.page.getByRole('menu')
     await expect(menu).toBeVisible()
 
-    await expect(menu.getByRole('menuitemradio').first()).toBeVisible()
+    await expect(menu.getByRole('menuitem').first()).toBeVisible()
   })
 
   test('Queue mode menu closes after selecting a mode', async ({
@@ -53,7 +53,7 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
     const menu = comfyPage.page.getByRole('menu')
     await expect(menu).toBeVisible()
 
-    const firstItem = menu.getByRole('menuitemradio').first()
+    const firstItem = menu.getByRole('menuitem').first()
     await firstItem.click()
 
     await expect(menu).toBeHidden()
