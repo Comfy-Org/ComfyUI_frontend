@@ -1,7 +1,22 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+
+async function enterBuilderExpectVueNodeSwitchPopup(comfyPage: ComfyPage) {
+  const { appMode } = comfyPage
+  await appMode.enterBuilder()
+  await expect(appMode.vueNodeSwitchPopup).toBeVisible()
+}
+
+async function expectVueNodesEnabled(comfyPage: ComfyPage) {
+  await expect
+    .poll(() =>
+      comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
+    )
+    .toBe(true)
+}
 
 test.describe('Vue node switch notification popup', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -9,13 +24,12 @@ test.describe('Vue node switch notification popup', { tag: '@ui' }, () => {
     await comfyPage.appMode.allowVueNodeSwitchPopup()
   })
 
-  test('Popup appears when entering builder; dismiss closes without persisting', async ({
+  test('Popup appears when entering builder; dismiss closes without persisting and shows again on a later entry', async ({
     comfyPage
   }) => {
     const { appMode } = comfyPage
 
-    await appMode.enterBuilder()
-    await expect(appMode.vueNodeSwitchPopup).toBeVisible()
+    await enterBuilderExpectVueNodeSwitchPopup(comfyPage)
 
     await appMode.vueNodeSwitchDismissButton.click()
     await expect(appMode.vueNodeSwitchPopup).toBeHidden()
@@ -28,6 +42,14 @@ test.describe('Vue node switch notification popup', { tag: '@ui' }, () => {
         )
       )
       .toBe(false)
+
+    // Disable vue nodes and re-enter builder
+    await appMode.footer.exitBuilder()
+    await comfyPage.menu.topbar.setVueNodesEnabled(false)
+    await appMode.enterBuilder()
+
+    await expectVueNodesEnabled(comfyPage)
+    await expect(appMode.vueNodeSwitchPopup).toBeVisible()
   })
 
   test('"Don\'t show again" persists the dismissal and suppresses future popups', async ({
@@ -35,18 +57,10 @@ test.describe('Vue node switch notification popup', { tag: '@ui' }, () => {
   }) => {
     const { appMode } = comfyPage
 
-    await appMode.enterBuilder()
-    await expect(appMode.vueNodeSwitchPopup).toBeVisible()
+    await enterBuilderExpectVueNodeSwitchPopup(comfyPage)
+    await expectVueNodesEnabled(comfyPage)
 
-    // The auto-enable side effect should have flipped Comfy.VueNodes.Enabled
-    // to true on entry — sanity-check the precondition for the suppression
-    // assertion below.
-    await expect
-      .poll(() =>
-        comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
-      )
-      .toBe(true)
-
+    // Dismiss with dont show again checked
     await appMode.vueNodeSwitchDontShowAgainCheckbox.check()
     await appMode.vueNodeSwitchDismissButton.click()
     await expect(appMode.vueNodeSwitchPopup).toBeHidden()
@@ -59,21 +73,12 @@ test.describe('Vue node switch notification popup', { tag: '@ui' }, () => {
       )
       .toBe(true)
 
-    // Re-trigger the auto-enable path: exit, then disable VueNodes again so
-    // the next enterBuilder() runs autoEnableVueNodes from a clean state.
-    // Order matters: setting VueNodes.Enabled=false while still in builder
-    // could fire watchers mid-state.
+    // Disable vue nodes and re-enter builder
     await appMode.footer.exitBuilder()
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.menu.topbar.setVueNodesEnabled(false)
     await appMode.enterBuilder()
 
-    // Auto-enable ran again (proves the suppression path was actually
-    // exercised — otherwise the next assertion would pass vacuously).
-    await expect
-      .poll(() =>
-        comfyPage.settings.getSetting<boolean>('Comfy.VueNodes.Enabled')
-      )
-      .toBe(true)
+    await expectVueNodesEnabled(comfyPage)
     await expect(appMode.vueNodeSwitchPopup).toBeHidden()
   })
 })
