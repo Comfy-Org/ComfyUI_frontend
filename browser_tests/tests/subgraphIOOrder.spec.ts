@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Subgraph IO canonical order', { tag: '@subgraph' }, () => {
   test('SubgraphNode input order matches canonical subgraph definition after load', async ({
