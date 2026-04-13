@@ -6,7 +6,6 @@ import { loadWorkflowAndOpenErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsT
 
 test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true

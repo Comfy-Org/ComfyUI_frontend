@@ -4,10 +4,9 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-test.describe('Vue Nodes Renaming', () => {
+test.describe('Vue Nodes Renaming', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
     await comfyPage.vueNodes.waitForNodes()
   })
