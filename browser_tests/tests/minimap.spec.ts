@@ -155,21 +155,23 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const minimapBox = await minimap.boundingBox()
     expect(minimapBox).toBeTruthy()
 
-    // Click the top-left quadrant of the minimap to pan canvas
+    // Click the top-left quadrant — canvas should pan so that region
+    // becomes centered, meaning offset increases (moves right/down)
     await comfyPage.page.mouse.click(
       minimapBox!.x + minimapBox!.width * 0.2,
       minimapBox!.y + minimapBox!.height * 0.2
     )
     await comfyPage.nextFrame()
 
-    const offsetAfter = await comfyPage.page.evaluate(() => {
-      const ds = window.app!.canvas.ds
-      return [ds.offset[0], ds.offset[1]]
-    })
-
-    expect(
-      offsetAfter[0] !== offsetBefore[0] || offsetAfter[1] !== offsetBefore[1]
-    ).toBe(true)
+    await expect
+      .poll(async () => {
+        const ds = await comfyPage.page.evaluate(() => {
+          const d = window.app!.canvas.ds
+          return [d.offset[0], d.offset[1]]
+        })
+        return ds
+      })
+      .not.toEqual(offsetBefore)
   })
 
   test('Dragging on minimap continuously pans the canvas', async ({
@@ -186,27 +188,39 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const endX = minimapBox!.x + minimapBox!.width * 0.7
     const endY = minimapBox!.y + minimapBox!.height * 0.7
 
-    // Record offset before drag
     const offsetBefore = await comfyPage.page.evaluate(() => {
       const ds = window.app!.canvas.ds
       return [ds.offset[0], ds.offset[1]]
     })
 
-    // Drag across the minimap
+    // Drag from top-left toward bottom-right on the minimap
     await comfyPage.page.mouse.move(startX, startY)
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(endX, endY, { steps: 10 })
-    await comfyPage.page.mouse.up()
-    await comfyPage.nextFrame()
 
-    const offsetAfter = await comfyPage.page.evaluate(() => {
+    // Mid-drag: offset should already differ from initial state
+    const offsetMidDrag = await comfyPage.page.evaluate(() => {
       const ds = window.app!.canvas.ds
       return [ds.offset[0], ds.offset[1]]
     })
-
     expect(
-      offsetAfter[0] !== offsetBefore[0] || offsetAfter[1] !== offsetBefore[1]
+      offsetMidDrag[0] !== offsetBefore[0] ||
+        offsetMidDrag[1] !== offsetBefore[1]
     ).toBe(true)
+
+    await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
+
+    // Final offset should also differ (drag was not discarded on mouseup)
+    await expect
+      .poll(async () => {
+        const ds = await comfyPage.page.evaluate(() => {
+          const d = window.app!.canvas.ds
+          return [d.offset[0], d.offset[1]]
+        })
+        return ds
+      })
+      .not.toEqual(offsetBefore)
   })
 
   test('Minimap viewport updates when canvas is zoomed', async ({
@@ -240,10 +254,16 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 
   test('Minimap reflects node count changes', async ({ comfyPage }) => {
     const minimap = comfyPage.page.locator('.litegraph-minimap')
+    const minimapCanvas = minimap.locator('.minimap-canvas')
     await expect(minimap).toBeVisible()
 
     const nodeCountBefore = await comfyPage.nodeOps.getGraphNodesCount()
     expect(nodeCountBefore).toBeGreaterThan(0)
+
+    // Capture minimap canvas content before deletion
+    const contentBefore = await minimapCanvas.evaluate((el) =>
+      (el as HTMLCanvasElement).toDataURL()
+    )
 
     // Remove all nodes
     await comfyPage.canvas.press('Control+a')
@@ -252,35 +272,50 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
-    // Minimap should still be visible and functional with no nodes
-    await expect(minimap).toBeVisible()
-    const viewport = minimap.locator('.minimap-viewport')
-    await expect(viewport).toBeVisible()
+    // Minimap canvas should have re-rendered with different content
+    await expect
+      .poll(
+        async () => {
+          const contentAfter = await minimapCanvas.evaluate((el) =>
+            (el as HTMLCanvasElement).toDataURL()
+          )
+          return contentAfter !== contentBefore
+        },
+        { timeout: 5000 }
+      )
+      .toBe(true)
   })
 
   test('Minimap works after loading a different workflow', async ({
     comfyPage
   }) => {
     const minimap = comfyPage.page.locator('.litegraph-minimap')
+    const minimapCanvas = minimap.locator('.minimap-canvas')
     await expect(minimap).toBeVisible()
 
-    // Load the large graph workflow
+    // Capture minimap state before loading new workflow
+    const contentBefore = await minimapCanvas.evaluate((el) =>
+      (el as HTMLCanvasElement).toDataURL()
+    )
+
+    // Load a very different workflow
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     await comfyPage.nextFrame()
 
     await expect(minimap).toBeVisible()
-    const viewport = minimap.locator('.minimap-viewport')
-    await expect(viewport).toBeVisible()
 
-    // The viewport should have changed after loading a very different workflow
+    // Minimap canvas should re-render to reflect the new workflow
     await expect
-      .poll(async () => {
-        const box = await viewport.boundingBox()
-        return box
-          ? { w: Math.round(box.width), h: Math.round(box.height) }
-          : null
-      })
-      .not.toBeNull()
+      .poll(
+        async () => {
+          const contentAfter = await minimapCanvas.evaluate((el) =>
+            (el as HTMLCanvasElement).toDataURL()
+          )
+          return contentAfter !== contentBefore
+        },
+        { timeout: 5000 }
+      )
+      .toBe(true)
   })
 
   test('Minimap viewport position reflects canvas pan state', async ({
