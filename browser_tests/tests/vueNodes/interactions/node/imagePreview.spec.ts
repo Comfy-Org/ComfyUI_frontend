@@ -7,11 +7,7 @@ import {
   getPromotedWidgetCountByName
 } from '@e2e/helpers/promotedWidgets'
 
-test.describe('Vue Nodes Image Preview', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
+test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     await comfyPage.vueNodes.waitForNodes()

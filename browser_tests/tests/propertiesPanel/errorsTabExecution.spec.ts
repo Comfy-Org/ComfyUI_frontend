@@ -7,7 +7,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true

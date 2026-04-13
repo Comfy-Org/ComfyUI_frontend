@@ -38,7 +38,6 @@ function getDropzone(comfyPage: ComfyPage) {
 
 test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true

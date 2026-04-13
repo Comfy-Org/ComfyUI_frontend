@@ -103,7 +103,6 @@ test.describe('Support', () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     // Prevent loading the external page
     await comfyPage.page
       .context()

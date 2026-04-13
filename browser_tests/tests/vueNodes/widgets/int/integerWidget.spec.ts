@@ -3,12 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Integer Widget', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-  })
-
+test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
   test('should be disabled and not allow changing value when link connected to slot', async ({
     comfyPage
   }) => {

@@ -5,7 +5,6 @@ import {
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
   })
 
