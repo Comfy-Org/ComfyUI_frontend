@@ -13,6 +13,9 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
@@ -115,6 +118,12 @@ vi.mock('@/stores/domWidgetStore', () => ({
   })
 }))
 
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    saveCurrentViewport: vi.fn()
+  })
+}))
+
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({
     get workflow() {
@@ -159,16 +168,16 @@ describe('useWorkflowService', () => {
       enableWarningSettings()
     })
 
-    it('should do nothing when workflow has no pending warnings', () => {
+    it('should clear missing nodes when workflow has no pending warnings', () => {
       const workflow = createWorkflow(null)
       useWorkflowService().showPendingWarnings(workflow)
 
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).not.toHaveBeenCalled()
+      ).toHaveBeenCalledWith([])
     })
 
-    it('should surface missing nodes and clear warnings', () => {
+    it('should surface missing nodes and cache warnings', () => {
       const missingNodeTypes = ['CustomNode1', 'CustomNode2']
       const workflow = createWorkflow({ missingNodeTypes })
 
@@ -177,7 +186,11 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(missingNodeTypes)
-      expect(workflow.pendingWarnings).toBeNull()
+      expect(workflow.pendingWarnings).toEqual({
+        missingNodeTypes,
+        missingModelCandidates: undefined,
+        missingMediaCandidates: undefined
+      })
     })
 
     it('should always surface missing nodes regardless of settings', () => {
@@ -192,10 +205,10 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['CustomNode1'])
-      expect(workflow.pendingWarnings).toBeNull()
+      expect(workflow.pendingWarnings).not.toBeNull()
     })
 
-    it('should only show warnings once across multiple calls', () => {
+    it('should restore cached warnings on repeated calls', () => {
       const workflow = createWorkflow({
         missingNodeTypes: ['CustomNode1']
       })
@@ -206,7 +219,96 @@ describe('useWorkflowService', () => {
 
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledTimes(1)
+      ).toHaveBeenCalledTimes(2)
+    })
+
+    it('should NOT call showErrorOverlay when silent is true even with missing nodes', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string): boolean => {
+          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+          return false
+        }
+      )
+      const workflow = createWorkflow({
+        missingNodeTypes: ['CustomNode1']
+      })
+
+      useWorkflowService().showPendingWarnings(workflow, { silent: true })
+
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
+      expect(useExecutionErrorStore().showErrorOverlay).not.toHaveBeenCalled()
+    })
+
+    it('should call showErrorOverlay when silent is false and missing nodes exist', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string): boolean => {
+          if (key === 'Comfy.Workflow.ShowMissingModelsWarning') return true
+          if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
+          return false
+        }
+      )
+      const workflow = createWorkflow({
+        missingNodeTypes: ['CustomNode1']
+      })
+
+      useWorkflowService().showPendingWarnings(workflow)
+
+      expect(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).toHaveBeenCalledWith(['CustomNode1'])
+      expect(useExecutionErrorStore().showErrorOverlay).toHaveBeenCalled()
+    })
+  })
+
+  describe('beforeLoadNewGraph', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+
+    beforeEach(() => {
+      enableWarningSettings()
+      workflowStore = useWorkflowStore()
+    })
+
+    it('should cache missingModelCandidates and missingMediaCandidates to activeWorkflow.pendingWarnings', () => {
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      const modelCandidates = [
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          isAssetSupported: false,
+          name: 'missing.safetensors',
+          isMissing: true
+        }
+      ]
+      const mediaCandidates = [
+        {
+          nodeId: '2',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image' as const,
+          name: 'photo.png',
+          isMissing: true
+        }
+      ]
+
+      useMissingModelStore().missingModelCandidates = modelCandidates as never
+      useMissingMediaStore().missingMediaCandidates = mediaCandidates as never
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(activeWorkflow.pendingWarnings).toEqual(
+        expect.objectContaining({
+          missingModelCandidates: modelCandidates,
+          missingMediaCandidates: mediaCandidates
+        })
+      )
     })
   })
 
@@ -245,7 +347,7 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['CustomNode1'])
-      expect(workflow.pendingWarnings).toBeNull()
+      expect(workflow.pendingWarnings).not.toBeNull()
     })
 
     it('should show each workflow warnings only when that tab is focused', async () => {
@@ -267,7 +369,7 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['MissingNodeA'])
-      expect(workflow1.pendingWarnings).toBeNull()
+      expect(workflow1.pendingWarnings).not.toBeNull()
       expect(workflow2.pendingWarnings).not.toBeNull()
 
       await service.openWorkflow(workflow2)
@@ -277,10 +379,10 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenLastCalledWith(['MissingNodeB'])
-      expect(workflow2.pendingWarnings).toBeNull()
+      expect(workflow2.pendingWarnings).not.toBeNull()
     })
 
-    it('should not show warnings when refocusing a cleared tab', async () => {
+    it('should restore cached warnings silently when refocusing a tab', async () => {
       const workflow = createWorkflow(
         { missingNodeTypes: ['CustomNode1'] },
         { loadable: true }
@@ -294,9 +396,10 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledTimes(1)
 
       await service.openWorkflow(workflow, { force: true })
+      // Cached warnings are restored on refocus
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
-      ).toHaveBeenCalledTimes(1)
+      ).toHaveBeenCalledTimes(2)
     })
   })
 

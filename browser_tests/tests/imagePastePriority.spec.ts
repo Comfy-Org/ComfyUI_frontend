@@ -11,8 +11,8 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
 
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(initialCount).toBe(2)
 
       // Copy the KSampler node (puts data-metadata in clipboard)
       const ksamplerNodes =
@@ -51,8 +51,9 @@ test.describe(
 
       // Node count should remain the same — stale node metadata should NOT
       // be deserialized when a media node is selected.
-      const finalCount = await comfyPage.nodeOps.getGraphNodesCount()
-      expect(finalCount).toBe(initialCount)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount)
     })
   }
 )

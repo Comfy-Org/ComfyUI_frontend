@@ -11,14 +11,8 @@ async function openVueNodeContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
 
 test.describe(
   'Subgraph Duplicate Independent Values',
-  { tag: ['@slow', '@subgraph'] },
+  { tag: ['@slow', '@subgraph', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
     test('Duplicated subgraphs maintain independent widget values', async ({
       comfyPage
     }) => {
@@ -27,14 +21,14 @@ test.describe(
       // Convert first CLIP Text Encode node to subgraph
       await openVueNodeContextMenu(comfyPage, clipNodeTitle)
       await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
-      await comfyPage.nextFrame()
+      await comfyPage.contextMenu.waitForHidden()
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
       // Duplicate the subgraph
       await openVueNodeContextMenu(comfyPage, 'New Subgraph')
       await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
-      await comfyPage.nextFrame()
+      await comfyPage.contextMenu.waitForHidden()
 
       // Capture both subgraph node IDs
       const subgraphNodes = comfyPage.vueNodes.getNodeByTitle('New Subgraph')

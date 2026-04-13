@@ -74,7 +74,7 @@ test.describe('Error dialog', () => {
   }) => {
     const errorDialog = await triggerConfigureError(comfyPage)
     await expect(errorDialog).toBeVisible()
-    await expect(errorDialog.locator('pre')).not.toBeVisible()
+    await expect(errorDialog.locator('pre')).toBeHidden()
 
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
 
@@ -83,7 +83,7 @@ test.describe('Error dialog', () => {
     await expect(reportPre).toHaveText(/\S/)
     await expect(
       errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport)
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Should copy report to clipboard when "Copy to Clipboard" is clicked', async ({
@@ -100,8 +100,9 @@ test.describe('Error dialog', () => {
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport).click()
 
     const reportText = await errorDialog.locator('pre').textContent()
-    const copiedText = await getClipboardText(comfyPage.page)
-    expect(copiedText).toBe(reportText)
+    await expect
+      .poll(async () => await getClipboardText(comfyPage.page))
+      .toBe(reportText)
   })
 
   test('Should open GitHub issues search when "Find Issues" is clicked', async ({
