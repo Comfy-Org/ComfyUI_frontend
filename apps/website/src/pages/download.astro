@@ -1,8 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import ComingSoon from '../components/common/ComingSoon.astro'
+import HeroSection from '../components/product/local/HeroSection.vue'
+import CloudBannerSection from '../components/product/local/CloudBannerSection.vue'
+import ReasonSection from '../components/product/local/ReasonSection.vue'
+import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
+import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
+import FAQSection from '../components/product/local/FAQSection.vue'
 ---
 
 <BaseLayout title="Download Comfy — Run AI Locally">
-  <ComingSoon />
+  <CloudBannerSection />
+  <HeroSection client:load />
+  <ReasonSection />
+  <EcoSystemSection client:visible />
+  <ProductCardsSection />
+  <FAQSection client:visible />
 </BaseLayout>

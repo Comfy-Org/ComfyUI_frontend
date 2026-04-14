@@ -113,3 +113,16 @@
     scroll-behavior: auto !important;
   }
 }
+
+@utility icon-mask {
+  background-color: currentColor;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+:root {
+  --site-bg: #211927;
+  --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
+  --site-border-subtle: rgb(255 255 255 / 0.1);
+}
