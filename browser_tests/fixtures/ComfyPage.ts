@@ -393,10 +393,18 @@ export class ComfyPage {
   async expectScreenshot(
     locator: Locator,
     name: string | string[],
-    options?: Parameters<Locator['screenshot']>[0] & {
+    options?: {
+      animations?: 'disabled' | 'allow'
+      caret?: 'hide' | 'initial'
+      mask?: Array<Locator>
+      maskColor?: string
       maxDiffPixelRatio?: number
       maxDiffPixels?: number
+      omitBackground?: boolean
+      scale?: 'css' | 'device'
+      stylePath?: string | Array<string>
       threshold?: number
+      timeout?: number
     }
   ): Promise<void> {
     await this.nextFrame()
