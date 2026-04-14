@@ -8,6 +8,7 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import { mapHubWorkflowIndexToCategories } from '../adapters/hubWorkflowIndexMapper'
 import { zLogoIndex } from '../schemas/templateSchema'
 import type { LogoIndex } from '../schemas/templateSchema'
 import type {
@@ -39,6 +40,14 @@ export const useWorkflowTemplatesStore = defineStore(
 
     const getTemplateByName = (name: string): EnhancedTemplate | undefined => {
       return enhancedTemplates.value.find((template) => template.name === name)
+    }
+
+    const getTemplateByShareId = (
+      shareId: string
+    ): EnhancedTemplate | undefined => {
+      return enhancedTemplates.value.find(
+        (template) => template.shareId === shareId
+      )
     }
 
     // Store filter mappings for dynamic categories
@@ -204,7 +213,7 @@ export const useWorkflowTemplatesStore = defineStore(
             category: category.title,
             categoryType: category.type,
             categoryGroup: category.category,
-            isEssential: category.isEssential,
+            isEssential: template.isEssential ?? category.isEssential,
             isPartnerNode: template.openSource === false,
             searchableText: [
               template.title || template.name,
@@ -261,12 +270,16 @@ export const useWorkflowTemplatesStore = defineStore(
       }
 
       if (categoryId.startsWith('basics-')) {
+        const basicsCategory = categoryId.replace('basics-', '')
+
         // Filter for templates from categories marked as essential
         return enhancedTemplates.value.filter(
           (t) =>
             t.isEssential &&
-            t.category?.toLowerCase().replace(/\s+/g, '-') ===
-              categoryId.replace('basics-', '')
+            (t.category?.toLowerCase().replace(/\s+/g, '-') ===
+              basicsCategory ||
+              (basicsCategory === 'getting-started' &&
+                (!t.category || t.sourceModule === 'default')))
         )
       }
 
@@ -354,6 +367,17 @@ export const useWorkflowTemplatesStore = defineStore(
               categoryIcon ||
               getCategoryIcon(essentialCat.type || 'getting-started')
           })
+        })
+      } else if (
+        enhancedTemplates.value.some((template) => template.isEssential)
+      ) {
+        items.push({
+          id: generateCategoryId('basics', 'Getting Started'),
+          label: st(
+            'templateWorkflows.category.Getting Started',
+            'Getting Started'
+          ),
+          icon: getCategoryIcon('getting-started')
         })
       }
 
@@ -473,10 +497,31 @@ export const useWorkflowTemplatesStore = defineStore(
     })
 
     async function fetchCoreTemplates() {
+      if (isCloud) {
+        const [hubIndexResult, logoIndexResult] = await Promise.all([
+          api.getHubWorkflowTemplateIndex(),
+          fetchLogoIndex()
+        ])
+
+        coreTemplates.value = mapHubWorkflowIndexToCategories(
+          hubIndexResult,
+          st('templateWorkflows.category.All', 'All')
+        )
+        englishTemplates.value = []
+        logoIndex.value = logoIndexResult
+
+        const coreNames = coreTemplates.value.flatMap((category) =>
+          category.templates.map((template) => template.name)
+        )
+        const customNames = Object.values(customTemplates.value).flat()
+        knownTemplateNames.value = new Set([...coreNames, ...customNames])
+        return
+      }
+
       const locale = i18n.global.locale.value
       const [coreResult, englishResult, logoIndexResult] = await Promise.all([
         api.getCoreWorkflowTemplates(locale),
-        isCloud && locale !== 'en'
+        locale !== 'en'
           ? api.getCoreWorkflowTemplates('en')
           : Promise.resolve([]),
         fetchLogoIndex()
@@ -583,6 +628,7 @@ export const useWorkflowTemplatesStore = defineStore(
       loadWorkflowTemplates,
       knownTemplateNames,
       getTemplateByName,
+      getTemplateByShareId,
       getEnglishMetadata,
       getLogoUrl
     }

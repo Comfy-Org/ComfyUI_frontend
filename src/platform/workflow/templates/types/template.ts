@@ -26,6 +26,7 @@ export interface TemplateInfo {
   localizedDescription?: string
   isEssential?: boolean
   sourceModule?: string
+  shareId?: string
   tags?: string[]
   models?: string[]
   date?: string
@@ -40,6 +41,8 @@ export interface TemplateInfo {
    * Whether this template uses open source models. When false, indicates partner/API node templates.
    */
   openSource?: boolean
+  thumbnailUrl?: string
+  thumbnailComparisonUrl?: string
   /**
    * Array of custom node package IDs required for this template (from Custom Node Registry).
    * Templates with this field will be hidden on local installations temporarily.

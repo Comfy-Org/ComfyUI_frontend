@@ -17,6 +17,15 @@ const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn()
 }))
 
+const distributionState = vi.hoisted(() => ({
+  isCloud: false
+}))
+
+const workflowTemplateStoreMocks = vi.hoisted(() => ({
+  getTemplateByName: vi.fn(),
+  getTemplateByShareId: vi.fn()
+}))
+
 // Mock vue-router
 let mockQueryParams: Record<string, string | string[] | undefined> = {}
 const mockRouterReplace = vi.fn()
@@ -33,6 +42,19 @@ vi.mock('vue-router', () => ({
 vi.mock(
   '@/platform/navigation/preservedQueryManager',
   () => preservedQueryMocks
+)
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distributionState.isCloud
+  }
+}))
+
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: () => workflowTemplateStoreMocks
+  })
 )
 
 // Mock template workflows composable
@@ -85,6 +107,7 @@ describe('useTemplateUrlLoader', () => {
     vi.clearAllMocks()
     mockQueryParams = {}
     mockCanvasStore.linearMode = false
+    distributionState.isCloud = false
   })
 
   it('does not load template when no query param present', () => {
@@ -240,6 +263,21 @@ describe('useTemplateUrlLoader', () => {
       summary: 'Error',
       detail: 'Failed to load template'
     })
+  })
+
+  it('resolves cloud template URLs by share id before loading', async () => {
+    distributionState.isCloud = true
+    mockQueryParams = { template: 'share-123' }
+    workflowTemplateStoreMocks.getTemplateByName.mockReturnValue(undefined)
+    workflowTemplateStoreMocks.getTemplateByShareId.mockReturnValue({
+      name: 'sdxl_simple',
+      sourceModule: 'hub'
+    })
+
+    const { loadTemplateFromUrl } = useTemplateUrlLoader()
+    await loadTemplateFromUrl()
+
+    expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith('sdxl_simple', 'hub')
   })
 
   it('removes template params from URL after successful load', async () => {

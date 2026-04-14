@@ -9,6 +9,7 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -16,6 +17,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
+  const workflowShareService = useWorkflowShareService()
   const dialogStore = useDialogStore()
 
   // State
@@ -64,6 +66,14 @@ export function useTemplateWorkflows() {
     sourceModule: string,
     index = '1'
   ) => {
+    if (template.thumbnailUrl) {
+      if (index === '2' && template.thumbnailComparisonUrl) {
+        return template.thumbnailComparisonUrl
+      }
+
+      return template.thumbnailUrl
+    }
+
     const basePath =
       sourceModule === 'default'
         ? api.fileURL(`/templates/${template.name}`)
@@ -157,6 +167,15 @@ export function useTemplateWorkflows() {
    * Fetches template JSON from the appropriate endpoint
    */
   const fetchTemplateJson = async (id: string, sourceModule: string) => {
+    const template = workflowTemplatesStore.getTemplateByName(id)
+
+    if (isCloud && template?.shareId) {
+      const workflow = await workflowShareService.getSharedWorkflow(
+        template.shareId
+      )
+      return workflow.workflowJson
+    }
+
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())

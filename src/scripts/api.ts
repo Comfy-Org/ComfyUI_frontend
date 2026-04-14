@@ -21,6 +21,8 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { zHubWorkflowIndexResponse } from '@/platform/workflow/templates/schemas/hubWorkflowIndexSchema'
+import type { HubWorkflowIndexEntry } from '@/platform/workflow/templates/schemas/hubWorkflowIndexSchema'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
@@ -825,6 +827,21 @@ export class ComfyApi extends EventTarget {
       console.error('Error loading core workflow templates:', error)
       return []
     }
+  }
+
+  async getHubWorkflowTemplateIndex(): Promise<HubWorkflowIndexEntry[]> {
+    const res = await this.fetchApi('/hub/workflows/index')
+    if (!res.ok) {
+      throw new Error(`Failed to load hub workflow index: ${res.status}`)
+    }
+
+    const data = await res.json()
+    const parsed = zHubWorkflowIndexResponse.safeParse(data)
+    if (!parsed.success) {
+      throw new Error('Invalid hub workflow index response')
+    }
+
+    return parsed.data
   }
 
   /**
