@@ -158,7 +158,7 @@ test.describe('Signin dialog', () => {
 
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
     const dialog = new SignInDialog(comfyPage.page)
-    const { result: dialogResult } = await dialog.open()
+    const { result: dialogResult } = await dialog.openWithResult()
 
     await dialog.emailInput.fill('test@example.com')
     await dialog.passwordInput.fill('TestPassword123!')
@@ -173,7 +173,7 @@ test.describe('Signin dialog', () => {
     comfyPage
   }) => {
     const dialog = new SignInDialog(comfyPage.page)
-    const { result: dialogResult } = await dialog.open()
+    const { result: dialogResult } = await dialog.openWithResult()
 
     await dialog.close()
     await expect(dialog.root).toBeHidden()

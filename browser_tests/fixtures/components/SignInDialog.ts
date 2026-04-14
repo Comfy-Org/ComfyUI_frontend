@@ -51,7 +51,14 @@ export class SignInDialog extends BaseDialog {
     this.dividerText = this.root.getByText('Or continue with')
   }
 
-  async open(): Promise<{ result: Promise<boolean> }> {
+  async open() {
+    await this.page.evaluate(() => {
+      void window.app!.extensionManager.dialog.showSignInDialog()
+    })
+    await this.waitForVisible()
+  }
+
+  async openWithResult(): Promise<{ result: Promise<boolean> }> {
     const result = this.page.evaluate(() =>
       window.app!.extensionManager.dialog.showSignInDialog()
     )
