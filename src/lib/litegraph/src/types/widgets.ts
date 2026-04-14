@@ -449,6 +449,7 @@ export interface IBaseWidget<
   hidden?: boolean
   advanced?: boolean
   tooltip?: string
+  hasDynamicChildren?: boolean
 
   // TODO: Confirm this format
   callback?(

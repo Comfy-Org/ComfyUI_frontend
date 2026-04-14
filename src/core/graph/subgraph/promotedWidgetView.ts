@@ -1,3 +1,7 @@
+import { intersectionWith, differenceWith } from 'es-toolkit'
+import { watch } from 'vue'
+
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
@@ -9,6 +13,7 @@ import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { usePromotionStore } from '@/stores/promotionStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -106,6 +111,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.sourceNodeId = nodeId
     this.sourceWidgetName = widgetName
     this.graphId = subgraphNode.rootGraph.id
+
+    if (this.resolveDeepest()?.widget?.hasDynamicChildren) {
+      watch(
+        () => this.value,
+        () => this.updateDependents()
+      )
+      this.updateDependents(true)
+    }
   }
 
   get node(): SubgraphNode {
@@ -540,6 +553,49 @@ class PromotedWidgetView implements IPromotedWidgetView {
       widget: this
     })
   }
+
+  private updateDependents(skipExisting?: boolean) {
+    const parent = this.node
+    const { demote, promote } = usePromotionStore()
+    const child = this.node.subgraph.getNodeById(this.sourceNodeId)
+    if (!child) return
+
+    const key = this.sourceWidgetName + '.'
+    const existing = skipExisting
+      ? []
+      : parent.widgets
+          .filter((w) => w.name.startsWith(key))
+          .map((w) => getSource(parent, w))
+    const candidate =
+      child.widgets
+        ?.filter((w) => w.name.startsWith(key))
+        .map((w) => getSource(child, w)) ?? []
+
+    const overlap = intersectionWith(existing, candidate, sourcesEqual)
+    const toPrune = differenceWith(existing, overlap, sourcesEqual)
+    const toAdd = differenceWith(candidate, overlap, sourcesEqual)
+
+    for (const source of toPrune) demote(parent.rootGraph.id, parent.id, source)
+    for (const source of toAdd) promote(parent.rootGraph.id, parent.id, source)
+  }
+}
+
+function getSource(node: LGraphNode, wid: IBaseWidget): PromotedWidgetSource {
+  return isPromotedWidgetView(wid)
+    ? {
+        sourceNodeId: wid.sourceNodeId,
+        sourceWidgetName: wid.sourceWidgetName,
+        disambiguatingSourceNodeId: wid.disambiguatingSourceNodeId
+      }
+    : { sourceNodeId: String(node.id), sourceWidgetName: wid.name }
+}
+
+function sourcesEqual(a: PromotedWidgetSource, b: PromotedWidgetSource) {
+  return (
+    a.sourceWidgetName === b.sourceWidgetName &&
+    (a.disambiguatingSourceNodeId ?? a.sourceNodeId) ===
+      (b.disambiguatingSourceNodeId ?? b.sourceNodeId)
+  )
 }
 
 /** Checks if a widget is a BaseDOMWidget (DOMWidget or ComponentWidget). */
