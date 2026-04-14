@@ -170,6 +170,20 @@ function focus() {
 
 defineExpose({ focus })
 
+// Sync parent filterTags → chips (e.g. when nav tree sets a tag filter)
+watch(filterTags, (tags) => {
+  const currentTagChips = selectedChips.value
+    .filter((c) => c.startsWith('tag:'))
+    .map((c) => c.slice(4))
+  const tagsMatch =
+    tags.length === currentTagChips.length &&
+    tags.every((t) => currentTagChips.includes(t))
+  if (!tagsMatch) {
+    const typeChips = selectedChips.value.filter((c) => c.startsWith('type:'))
+    selectedChips.value = [...tags.map((t) => `tag:${t}`), ...typeChips]
+  }
+})
+
 // Derived: raw tag names from selected chips (for filter menu)
 const activeTagFilters = computed(() =>
   selectedChips.value.filter((c) => c.startsWith('tag:')).map((c) => c.slice(4))

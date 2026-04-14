@@ -15,7 +15,7 @@
       </h2>
     </template>
     <template #leftPanel>
-      <LeftSidePanel v-model="activeTab" :nav-items />
+      <LeftSidePanel v-model="activeNav" :nav-items />
     </template>
 
     <template #header>
@@ -130,7 +130,7 @@
       <MediaAssetInfoPanel
         v-if="focusedAsset"
         :asset="focusedAsset"
-        :assets="selectedAssets.length > 1 ? selectedAssets : undefined"
+        :assets="infoPanelAssets"
         :tag-suggestions="availableTags"
         @zoom="handleZoomClick"
       />
@@ -188,6 +188,7 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
+import { getAssetAdditionalTags } from '@/platform/assets/utils/assetMetadataUtils'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -197,7 +198,7 @@ import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { ResultItemImpl } from '@/stores/queueStore'
-import type { NavItemData } from '@/types/navTypes'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import {
   getMediaTypeFromFilename,
@@ -213,20 +214,21 @@ const { initialTab, onClose } = defineProps<{
 
 provide(OnCloseKey, onClose ?? (() => {}))
 
-const activeTab = ref<string>(initialTab ?? 'output')
+// Navigation: activeNav drives both the data source (tab) and tag filter
+const activeNav = ref<string>(initialTab ?? 'output')
 
-const navItems = computed<NavItemData[]>(() => [
-  {
-    id: 'output',
-    label: t('sideToolbar.labels.generated'),
-    icon: 'icon-[lucide--image]'
-  },
-  {
-    id: 'input',
-    label: t('sideToolbar.labels.imported'),
-    icon: 'icon-[lucide--folder-input]'
-  }
-])
+// Derive tab and tag filter from nav selection
+// Format: "output" | "input" | "output:tag:landscape" | "input:tag:reference"
+const activeTab = computed(() => {
+  const nav = activeNav.value
+  if (nav.startsWith('input')) return 'input'
+  return 'output'
+})
+
+const navTagFilter = computed(() => {
+  const match = activeNav.value.match(/^(?:output|input):tag:(.+)$/)
+  return match ? match[1] : null
+})
 
 // Data layer — same providers used by the sidebar
 const inputAssets = useMediaAssets('input')
@@ -235,6 +237,70 @@ const outputAssets = useMediaAssets('output')
 const currentAssets = computed(() =>
   activeTab.value === 'input' ? inputAssets : outputAssets
 )
+
+// Per-category tag counts for nav tree
+function getTagCounts(assets: AssetItem[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const a of assets) {
+    for (const tag of getAssetAdditionalTags(a)) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1)
+    }
+  }
+  return counts
+}
+
+const outputTagCounts = computed(() => getTagCounts(outputAssets.media.value))
+const inputTagCounts = computed(() => getTagCounts(inputAssets.media.value))
+
+function tagNavItems(
+  prefix: string,
+  counts: Map<string, number>
+): NavItemData[] {
+  return [...counts.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .map(([tag, count]) => ({
+      id: `${prefix}:tag:${tag}`,
+      label: tag,
+      icon: 'icon-[lucide--tag]',
+      badge: count
+    }))
+}
+
+const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
+  const items: (NavItemData | NavGroupData)[] = [
+    {
+      id: 'output',
+      label: t('sideToolbar.labels.generated'),
+      icon: 'icon-[lucide--image]'
+    }
+  ]
+
+  const outputTags = tagNavItems('output', outputTagCounts.value)
+  if (outputTags.length > 0) {
+    items.push({
+      title: t('sideToolbar.mediaAssets.infoPanel.tagging'),
+      items: outputTags,
+      collapsible: true
+    })
+  }
+
+  items.push({
+    id: 'input',
+    label: t('sideToolbar.labels.imported'),
+    icon: 'icon-[lucide--folder-input]'
+  })
+
+  const inputTags = tagNavItems('input', inputTagCounts.value)
+  if (inputTags.length > 0) {
+    items.push({
+      title: t('sideToolbar.mediaAssets.infoPanel.tagging'),
+      items: inputTags,
+      collapsible: true
+    })
+  }
+
+  return items
+})
 const loading = computed(() => currentAssets.value.loading.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
 
@@ -242,10 +308,7 @@ const mediaAssets = computed(() => currentAssets.value.media.value)
 const folderJobId = ref<string | null>(null)
 const isInFolderView = computed(() => folderJobId.value !== null)
 
-const {
-  state: folderAssets,
-  execute: loadFolderAssets
-} = useAsyncState(
+const { state: folderAssets, execute: loadFolderAssets } = useAsyncState(
   (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
     resolveOutputAssetItems(metadata, options),
   [] as AssetItem[],
@@ -328,6 +391,33 @@ function exitFolderView() {
 // Right panel
 const isRightPanelOpen = ref(false)
 const focusedAsset = ref<AssetItem | null>(null)
+const expandedFocusedAssets = ref<AssetItem[]>([])
+
+// When an image set is focused, resolve its sub-images for the info panel
+watch(focusedAsset, async (asset) => {
+  if (!asset) {
+    expandedFocusedAssets.value = []
+    return
+  }
+  const count = getOutputCount(asset)
+  if (count > 1) {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (metadata) {
+      expandedFocusedAssets.value = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      return
+    }
+  }
+  expandedFocusedAssets.value = []
+})
+
+// Assets to pass to the info panel: expanded sub-images, multi-selection, or single
+const infoPanelAssets = computed(() => {
+  if (selectedAssets.value.length > 1) return selectedAssets.value
+  if (expandedFocusedAssets.value.length > 1) return expandedFocusedAssets.value
+  return undefined
+})
 
 const shouldShowDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
@@ -408,12 +498,12 @@ const handleApproachEnd = useDebounceFn(async () => {
   }
 }, 300)
 
-// Refresh on tab change — same pattern as the sidebar
+// Sync nav selection → filter tags + data refresh
 watch(
-  activeTab,
+  activeNav,
   () => {
     searchQuery.value = ''
-    filterTags.value = []
+    filterTags.value = navTagFilter.value ? [navTagFilter.value] : []
     focusedAsset.value = null
     clearSelection()
     exitFolderView()
