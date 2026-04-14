@@ -44,7 +44,16 @@ function enrichCandidateFromNodeProperties(
   embeddedModels: readonly ModelFile[] | undefined
 ): MissingModelCandidate {
   if (!embeddedModels?.length) return candidate
-  const match = embeddedModels.find((m) => m.name === candidate.name)
+  // Require directory agreement when the candidate already has one —
+  // a single node can reference two models with the same name under
+  // different directories (e.g. a LoRA present in multiple folders);
+  // name-only matching would stamp the wrong url/hash onto the
+  // candidate. Mirrors the directory check in enrichWithEmbeddedMetadata.
+  const match = embeddedModels.find(
+    (m) =>
+      m.name === candidate.name &&
+      (!candidate.directory || candidate.directory === m.directory)
+  )
   if (!match) return candidate
   return {
     ...candidate,

@@ -204,7 +204,7 @@ describe('scanNodeModelCandidates', () => {
           {
             name: 'missing_model.safetensors',
             url: 'https://example.com/new_url',
-            directory: 'new_dir'
+            directory: 'checkpoints'
           }
         ]
       }
@@ -214,15 +214,52 @@ describe('scanNodeModelCandidates', () => {
       graph,
       node,
       noAssetSupport,
-      () => 'existing_dir'
+      () => 'checkpoints'
     )
 
     expect(result).toHaveLength(1)
     // scanComboWidget already sets directory via getDirectory; enrichment
     // does not overwrite it.
-    expect(result[0].directory).toBe('existing_dir')
+    expect(result[0].directory).toBe('checkpoints')
     // url was not set by scan, so enrichment fills it in.
     expect(result[0].url).toBe('https://example.com/new_url')
+  })
+
+  it('skips enrichment when candidate and embedded model directories differ', () => {
+    // A node can list the same model name under multiple directories
+    // (e.g. a LoRA present in both `loras` and `loras/subdir`). Name-only
+    // matching would stamp the wrong url/hash onto the candidate, so
+    // enrichment must agree on directory when the candidate already has
+    // one.
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'collision_model.safetensors', [])
+      ],
+      properties: {
+        models: [
+          {
+            name: 'collision_model.safetensors',
+            url: 'https://example.com/wrong_dir_url',
+            directory: 'wrong_dir'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(
+      graph,
+      node,
+      noAssetSupport,
+      () => 'checkpoints'
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].directory).toBe('checkpoints')
+    // Directory mismatch — enrichment should not stamp the wrong url.
+    expect(result[0].url).toBeUndefined()
   })
 
   it('does not enrich candidates with mismatched model names', () => {

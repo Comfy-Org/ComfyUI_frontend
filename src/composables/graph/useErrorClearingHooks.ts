@@ -176,9 +176,11 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
   // verify each node's own mode; entering a bypassed subgraph (via
   // useGraphNodeManager replaying onNodeAdded for existing interior
-  // nodes) reaches this point without the ancestor check.
+  // nodes) reaches this point without the ancestor check. A null
+  // execId means the node has no current graph (e.g. detached mid
+  // lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
-  if (execId && !isAncestorPathActive(app.rootGraph, execId)) return
+  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return
 
   const modelCandidates = scanNodeModelCandidates(
     app.rootGraph,
@@ -244,9 +246,15 @@ function scanSingleNodeErrors(node: LGraphNode): void {
  */
 function isCandidateStillActive(nodeId: unknown): boolean {
   if (!app.rootGraph || nodeId == null) return false
-  const node = getNodeByExecutionId(app.rootGraph, String(nodeId))
+  const execId = String(nodeId)
+  const node = getNodeByExecutionId(app.rootGraph, execId)
   if (!node) return false
-  return !isNodeInactive(node.mode)
+  if (isNodeInactive(node.mode)) return false
+  // Also reject if any enclosing subgraph was bypassed between scan
+  // kick-off and verification resolving — mirrors the pipeline-level
+  // ancestor post-filter so realtime and initial-load paths stay
+  // symmetric.
+  return isAncestorPathActive(app.rootGraph, execId)
 }
 
 async function verifyAndAddPendingModels(
