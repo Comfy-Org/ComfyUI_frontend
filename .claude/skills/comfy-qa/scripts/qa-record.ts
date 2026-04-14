@@ -1952,7 +1952,7 @@ async function main() {
             // QA guide not available
           }
         }
-        const research = await runResearchPhase({
+        let research = await runResearchPhase({
           page,
           issueContext: issueCtx,
           qaGuide: qaGuideText,
@@ -1963,6 +1963,28 @@ async function main() {
         console.warn(
           `Research complete: ${research.verdict} — ${research.summary.slice(0, 100)}`
         )
+
+        // Opus escalation: if Sonnet couldn't reproduce, try Opus
+        if (
+          research.verdict === 'INCONCLUSIVE' &&
+          anthropicKey &&
+          process.env.QA_OPUS_ESCALATION !== '0'
+        ) {
+          console.warn('Escalating to claude-opus-4-6 for complex issue...')
+          research = await runResearchPhase({
+            page,
+            issueContext: issueCtx,
+            qaGuide: qaGuideText,
+            outputDir: opts.outputDir,
+            serverUrl: opts.serverUrl,
+            anthropicApiKey: anthropicKey,
+            model: 'claude-opus-4-6',
+            maxTurns: 30
+          })
+          console.warn(
+            `Opus result: ${research.verdict} — ${research.summary.slice(0, 100)}`
+          )
+        }
         console.warn(`Evidence: ${research.evidence.slice(0, 200)}`)
 
         // ═══ Phase 2: Record demo video with demowright ═══
