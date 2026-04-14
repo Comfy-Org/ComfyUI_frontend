@@ -80,9 +80,12 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   ]
 }
 
-const contactSection = {
+const contactColumn = {
   title: t('footer.contact', locale),
-  emails: ['hello@comfy.org', 'press@comfy.org']
+  links: ['hello@comfy.org', 'press@comfy.org'].map((email) => ({
+    label: email,
+    href: `mailto:${email}`
+  }))
 }
 </script>
 
@@ -119,42 +122,20 @@ const contactSection = {
               :title="companyColumn.title"
               :links="companyColumn.links"
             />
-            <div class="flex flex-col gap-4">
-              <h3 class="text-sm font-bold">{{ contactSection.title }}</h3>
-              <div class="flex flex-col">
-                <a
-                  v-for="email in contactSection.emails"
-                  :key="email"
-                  :href="`mailto:${email}`"
-                  class="hover:text-primary-warm-white text-sm transition-colors"
-                >
-                  {{ email }}
-                </a>
-              </div>
-            </div>
+            <FooterLinkColumn
+              :title="contactColumn.title"
+              :links="contactColumn.links"
+            />
           </div>
 
           <!-- Desktop: all columns in a row -->
-          <div class="hidden grid-cols-3 gap-12 lg:grid">
+          <div class="hidden grid-cols-4 gap-12 lg:grid">
             <FooterLinkColumn
-              v-for="column in [...topColumns, companyColumn]"
+              v-for="column in [...topColumns, companyColumn, contactColumn]"
               :key="column.title"
               :title="column.title"
               :links="column.links"
             />
-            <div class="col-start-3 flex flex-col gap-4">
-              <h3 class="text-sm font-bold">{{ contactSection.title }}</h3>
-              <div class="flex flex-col">
-                <a
-                  v-for="email in contactSection.emails"
-                  :key="email"
-                  :href="`mailto:${email}`"
-                  class="hover:text-primary-warm-white text-sm transition-colors"
-                >
-                  {{ email }}
-                </a>
-              </div>
-            </div>
           </div>
         </div>
       </div>
