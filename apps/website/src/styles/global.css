@@ -67,15 +67,9 @@
   --radius-5xl: 2.5rem;
 }
 
-@property --border-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
 @keyframes border-spin {
   to {
-    --border-angle: 360deg;
+    transform: rotate(360deg);
   }
 }
 
