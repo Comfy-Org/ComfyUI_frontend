@@ -564,9 +564,13 @@ export async function runResearchPhase(
    - **Inline JSON code block**: call loadWorkflow(jsonString) with the raw JSON text from the issue body.
    - downloadAttachment(url) is only needed when you specifically want to inspect a non-workflow file.
    Skip this step only if the issue clearly does not involve a pre-existing workflow (e.g. pure menu/settings bugs).
-3. Use inspect() to understand the current UI state and discover element selectors
-4. If unsure about the fixture API, use readFixture() to read the relevant helper source code
-5. If unsure about test patterns, use readTest() to read an existing test for reference
+3. FIRST: Use readTest() to read 1-2 existing tests similar to the bug you're reproducing:
+   - For menu/workflow bugs: readTest("workflow.spec.ts") or readTest("topbarMenu.spec.ts")
+   - For node/canvas bugs: readTest("nodeInteraction.spec.ts") or readTest("copyPaste.spec.ts")
+   - For settings bugs: readTest("settingDialogSearch.spec.ts")
+   - For subgraph bugs: readTest("subgraph.spec.ts")
+4. Use inspect() to understand the current UI state and discover element selectors
+5. If unsure about the fixture API, use readFixture("ComfyPage.ts") or relevant helper
 6. Write a Playwright test that:
    - Performs the exact reproduction steps from the issue
    - Asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists

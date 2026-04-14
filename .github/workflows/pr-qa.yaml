@@ -55,7 +55,7 @@ jobs:
 
           # Only run on label events if it's one of our labels
           if [ "$EVENT_ACTION" = "labeled" ] && \
-             [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ] && [ "$LABEL" != "qa-issue" ]; then
+             [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ] && [ "$LABEL" != "qa-issue" ] && [ "$LABEL" != "Potential Bug" ] && [ "$LABEL" != "verified bug" ]; then
              echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
