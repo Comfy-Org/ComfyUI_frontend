@@ -66,8 +66,4 @@ export class BottomPanel {
   async open() {
     await this.toggleButton.click()
   }
-
-  async openLogsTab() {
-    await this.open()
-  }
 }

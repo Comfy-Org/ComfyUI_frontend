@@ -3,13 +3,8 @@ import type { Page, Route } from '@playwright/test'
 
 import type { LogsRawResponse } from '@/schemas/apiSchema'
 
-import type { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
-
 export class LogsTerminalHelper {
-  constructor(
-    private readonly page: Page,
-    readonly bottomPanel: BottomPanel
-  ) {}
+  constructor(private readonly page: Page) {}
 
   async mockRawLogs(messages: string[]) {
     await this.page.route('**/internal/logs/raw**', (route: Route) =>
@@ -49,10 +44,6 @@ export class LogsTerminalHelper {
     )
   }
 
-  async openLogsTab() {
-    await this.bottomPanel.openLogsTab()
-  }
-
   static buildWsLogFrame(messages: string[]): string {
     return JSON.stringify({
       type: 'logs',
@@ -74,10 +65,6 @@ export const logsTerminalFixture = base.extend<{
   logsTerminal: LogsTerminalHelper
 }>({
   logsTerminal: async ({ page, context: _ }, use) => {
-    // BottomPanel is instantiated fresh here; the fixture is self-contained.
-    // We import lazily to avoid a circular dep on ComfyPage.
-    const { BottomPanel } = await import('@e2e/fixtures/components/BottomPanel')
-    const helper = new LogsTerminalHelper(page, new BottomPanel(page))
-    await use(helper)
+    await use(new LogsTerminalHelper(page))
   }
 })

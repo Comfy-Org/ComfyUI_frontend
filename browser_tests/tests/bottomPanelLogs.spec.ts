@@ -54,7 +54,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     }) => {
       const resolveRaw = await logsTerminal.mockRawLogsPending()
 
-      await logsTerminal.openLogsTab()
+      await comfyPage.bottomPanel.open()
       await expect(comfyPage.bottomPanel.logs.loadingSpinner).toBeVisible()
 
       resolveRaw()
@@ -68,7 +68,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       const logLine = 'Hello from ComfyUI backend!'
       await logsTerminal.mockRawLogs([logLine])
 
-      await logsTerminal.openLogsTab()
+      await comfyPage.bottomPanel.open()
 
       await expect(comfyPage.bottomPanel.logs.xtermScreen).toBeVisible()
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
@@ -78,10 +78,9 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
 
     test('appends log entries received via WebSocket', async ({
       comfyPage,
-      logsTerminal,
       getWebSocket
     }) => {
-      await logsTerminal.openLogsTab()
+      await comfyPage.bottomPanel.open()
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeVisible()
 
       const ws = await getWebSocket()
@@ -109,7 +108,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       const logLine = 'Copy me to the clipboard'
       await logsTerminal.mockRawLogs([logLine])
 
-      await logsTerminal.openLogsTab()
+      await comfyPage.bottomPanel.open()
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
         logLine
       )
@@ -131,7 +130,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     }) => {
       await logsTerminal.mockRawLogsError()
 
-      await logsTerminal.openLogsTab()
+      await comfyPage.bottomPanel.open()
 
       await expect(comfyPage.bottomPanel.logs.errorMessage).toBeVisible()
       await expect(comfyPage.bottomPanel.logs.errorMessage).toContainText(
