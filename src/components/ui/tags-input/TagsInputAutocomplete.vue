@@ -1,0 +1,205 @@
+<template>
+  <ComboboxRoot
+    v-model="modelValue"
+    v-model:open="isOpen"
+    multiple
+    ignore-filter
+    :disabled
+  >
+    <ComboboxAnchor as-child>
+      <TagsInputRoot
+        v-model="modelValue"
+        delimiter=""
+        :disabled
+        :class="
+          cn(
+            'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
+            !disabled &&
+              'focus-within:bg-modal-card-background-hovered hover:bg-modal-card-background-hovered',
+            className
+          )
+        "
+      >
+        <TagsInputItem v-for="tag in modelValue" :key="tag" :value="tag">
+          <TagsInputItemText />
+          <TagsInputItemDelete />
+        </TagsInputItem>
+
+        <ComboboxInput v-model="query" as-child>
+          <TagsInputInput
+            :placeholder
+            :is-empty="modelValue.length === 0"
+            @keydown.enter.prevent
+          />
+        </ComboboxInput>
+      </TagsInputRoot>
+    </ComboboxAnchor>
+
+    <ComboboxContent
+      v-if="showDropdown"
+      position="popper"
+      :side-offset="4"
+      :class="
+        cn(
+          'z-50 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
+          'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
+        )
+      "
+    >
+      <ComboboxViewport>
+        <ComboboxItem
+          v-for="suggestion in filteredSuggestions"
+          :key="suggestion"
+          :value="suggestion"
+          :class="
+            cn(
+              'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
+              'data-highlighted:bg-secondary-background-hover'
+            )
+          "
+        >
+          {{ suggestion }}
+        </ComboboxItem>
+
+        <ComboboxItem
+          v-if="showCreateOption"
+          :value="createTagValue"
+          :class="
+            cn(
+              'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
+              'data-highlighted:bg-secondary-background-hover',
+              'text-muted-foreground'
+            )
+          "
+        >
+          {{ $t('g.createTag', { tag: createTagValue }) }}
+        </ComboboxItem>
+      </ComboboxViewport>
+    </ComboboxContent>
+  </ComboboxRoot>
+</template>
+
+<script setup lang="ts">
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxRoot,
+  ComboboxViewport,
+  TagsInputRoot,
+  useFilter
+} from 'reka-ui'
+import { computed, ref, watch } from 'vue'
+import type { HTMLAttributes } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
+
+import TagsInputInput from './TagsInputInput.vue'
+import TagsInputItem from './TagsInputItem.vue'
+import TagsInputItemDelete from './TagsInputItemDelete.vue'
+import TagsInputItemText from './TagsInputItemText.vue'
+
+const {
+  suggestions = [],
+  placeholder,
+  disabled = false,
+  caseSensitive = false,
+  aliasChars = '-_',
+  class: className
+} = defineProps<{
+  /** Available tag suggestions for the autocomplete dropdown */
+  suggestions?: string[]
+  placeholder?: string
+  disabled?: boolean
+  /** When false (default), typed text matches suggestions case-insensitively */
+  caseSensitive?: boolean
+  /** Characters treated as equivalent when matching against suggestions (e.g. '-' matches '_'). Default: '-_' */
+  aliasChars?: string
+  class?: HTMLAttributes['class']
+}>()
+
+const emit = defineEmits<{
+  'tag-added': [tag: string, isKnown: boolean]
+}>()
+
+const modelValue = defineModel<string[]>({ required: true })
+
+const query = ref('')
+const isOpen = ref(false)
+
+const filterSensitivity = computed(() =>
+  caseSensitive ? 'variant' : ('base' as const)
+)
+const { contains } = useFilter(
+  computed(() => ({ sensitivity: filterSensitivity.value }))
+)
+
+/** Normalize a string for matching: collapse alias chars and optionally lowercase */
+function normalizeForMatch(value: string): string {
+  let result = value
+  if (!caseSensitive) {
+    result = result.toLowerCase()
+  }
+  if (aliasChars) {
+    const pattern = new RegExp(
+      `[${aliasChars.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&')}]`,
+      'g'
+    )
+    result = result.replace(pattern, '')
+  }
+  return result
+}
+
+/** Find the canonical suggestion that matches typed input, or return input as-is */
+function resolveTag(typed: string): string {
+  const trimmed = typed.trim()
+  if (!trimmed) return trimmed
+  const normalizedTyped = normalizeForMatch(trimmed)
+  return (
+    suggestions.find((s) => normalizeForMatch(s) === normalizedTyped) ?? trimmed
+  )
+}
+
+/** Suggestions filtered by current query, excluding already-selected tags */
+const filteredSuggestions = computed(() =>
+  suggestions.filter(
+    (s) => contains(s, query.value) && !modelValue.value.includes(s)
+  )
+)
+
+/** The resolved value for the "Create custom tag" option */
+const createTagValue = computed(() => resolveTag(query.value))
+
+/** Show "Create custom tag" when there's typed text that doesn't exactly match any visible suggestion */
+const showCreateOption = computed(() => {
+  const trimmed = query.value.trim()
+  if (!trimmed) return false
+  // Don't show if the resolved tag is already selected
+  if (modelValue.value.includes(createTagValue.value)) return false
+  // Don't show if there's an exact match in the filtered suggestions
+  return !filteredSuggestions.value.some(
+    (s) => normalizeForMatch(s) === normalizeForMatch(trimmed)
+  )
+})
+
+/** Show dropdown when there are suggestions or a create option */
+const showDropdown = computed(
+  () => filteredSuggestions.value.length > 0 || showCreateOption.value
+)
+
+/** Watch for tags added via any path (dropdown select, create option) */
+watch(
+  modelValue,
+  (newVal, oldVal) => {
+    if (!oldVal) return
+    const added = newVal.filter((t) => !oldVal.includes(t))
+    for (const tag of added) {
+      emit('tag-added', tag, suggestions.includes(tag))
+    }
+    query.value = ''
+    isOpen.value = false
+  },
+  { deep: true }
+)
+</script>
