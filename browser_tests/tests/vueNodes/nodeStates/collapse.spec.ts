@@ -5,10 +5,7 @@ import {
 
 test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('should allow collapsing node with collapse icon', async ({
