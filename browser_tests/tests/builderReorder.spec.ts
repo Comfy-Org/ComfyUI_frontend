@@ -160,42 +160,37 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
   }) => {
     const { appMode } = comfyPage
     const app2Widgets = ['seed', 'steps']
-
-    // Load app1 with [seed, steps, cfg]
-    await comfyPage.workflow.loadWorkflow('linear-basic-app-1')
-    // Load app2 with [seed, steps]
-    await comfyPage.workflow.loadWorkflow('linear-basic-app-2')
-
-    const switchToWorkflow = async (name: string) => {
-      await comfyPage.menu.topbar.getWorkflowTab(name).click()
-      await comfyPage.workflow.waitForWorkflowIdle()
-    }
-
-    // Switch to app1 tab and enter builder
-    await switchToWorkflow('linear-basic-app-1')
-    await appMode.enterBuilder()
-    await appMode.steps.goToInputs()
-    await expect(appMode.select.inputItemTitles).toHaveText(WIDGETS)
-
-    // Reorder app1 inputs: drag 'seed' from first to last
-    await appMode.select.dragInputItem(0, 2)
     const app1Reordered = ['steps', 'cfg', 'seed']
-    await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
 
-    // Switch to app2 tab and enter builder
-    await appMode.footer.exitBuilder()
-    await switchToWorkflow('linear-basic-app-2')
-    await appMode.enterBuilder()
-    await appMode.steps.goToInputs()
+    await test.step('Load both apps', async () => {
+      await comfyPage.workflow.loadWorkflow('linear-basic-app-1')
+      await comfyPage.workflow.loadWorkflow('linear-basic-app-2')
+    })
 
-    // Verify app2 inputs are not corrupted — still [seed, steps]
-    await expect(appMode.select.inputItemTitles).toHaveText(app2Widgets)
+    await test.step('Reorder app1 inputs', async () => {
+      await comfyPage.workflow.switchToTab('linear-basic-app-1')
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await expect(appMode.select.inputItemTitles).toHaveText(WIDGETS)
 
-    // Switch back to app1 and verify reorder persisted
-    await appMode.footer.exitBuilder()
-    await switchToWorkflow('linear-basic-app-1')
-    await appMode.enterBuilder()
-    await appMode.steps.goToInputs()
-    await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
+      await appMode.select.dragInputItem(0, 2)
+      await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
+    })
+
+    await test.step('Verify app2 inputs are not corrupted', async () => {
+      await appMode.footer.exitBuilder()
+      await comfyPage.workflow.switchToTab('linear-basic-app-2')
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await expect(appMode.select.inputItemTitles).toHaveText(app2Widgets)
+    })
+
+    await test.step('Verify app1 reorder persisted', async () => {
+      await appMode.footer.exitBuilder()
+      await comfyPage.workflow.switchToTab('linear-basic-app-1')
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
+    })
   })
 })

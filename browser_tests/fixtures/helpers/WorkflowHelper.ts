@@ -175,6 +175,11 @@ export class WorkflowHelper {
     )
   }
 
+  async switchToTab(tabName: string): Promise<void> {
+    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    await this.waitForWorkflowIdle()
+  }
+
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>
   async getExportedWorkflow(options?: {
     api?: false
