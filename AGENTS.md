@@ -22,7 +22,8 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - Entry Point: `src/main.ts`.
 - Tests:
   - unit/component in `src/**/*.test.ts`
-  - E2E (Playwright) in `browser_tests/**/*.spec.ts`
+  - browser helper/unit tests in `browser_tests/**/*.test.ts`
+  - E2E (Playwright) in `browser_tests/tests/**/*.spec.ts`
 - Public assets: `public/`
 - Build output: `dist/`
 - Configs
