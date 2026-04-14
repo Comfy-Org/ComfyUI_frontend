@@ -5,5 +5,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "e2e/**/*", "astro.config.ts"]
+  "include": ["src/**/*", "e2e/**/*", "astro.config.ts"],
+  "exclude": ["src/**/*.stories.ts"]
 }
