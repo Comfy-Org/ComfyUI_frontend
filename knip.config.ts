@@ -33,7 +33,6 @@ const config: KnipConfig = {
       entry: ['src/scripts/**/*.ts']
     },
     'tools/test-recorder': {
-      entry: ['src/index.ts'],
       project: ['src/**/*.ts']
     }
   },
