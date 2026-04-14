@@ -2,11 +2,10 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   builderSaveAs,
-  createAndSaveApp,
   openWorkflowFromSidebar,
   setupBuilder
 } from '@e2e/helpers/builderTestUtils'
@@ -160,22 +159,20 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     const { appMode } = comfyPage
-    const suffix = String(Date.now())
-    const app1Name = `app1-${suffix}`
-    const app2Name = `app2-${suffix}`
     const app2Widgets = ['seed', 'steps']
 
-    // Create and save app1 with [seed, steps, cfg]
-    await createAndSaveApp(comfyPage, app1Name, WIDGETS)
-    await appMode.footer.exitBuilder()
+    // Load app1 with [seed, steps, cfg]
+    await comfyPage.workflow.loadWorkflow('linear-basic-app-1')
+    // Load app2 with [seed, steps]
+    await comfyPage.workflow.loadWorkflow('linear-basic-app-2')
 
-    // Create app2 in a new tab so both apps are open simultaneously
-    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-    await createAndSaveApp(comfyPage, app2Name, app2Widgets)
-    await appMode.footer.exitBuilder()
+    const switchToWorkflow = async (name: string) => {
+      await comfyPage.menu.topbar.getWorkflowTab(name).click()
+      await comfyPage.workflow.waitForWorkflowIdle()
+    }
 
     // Switch to app1 tab and enter builder
-    await comfyPage.menu.topbar.getWorkflowTab(app1Name).click()
+    await switchToWorkflow('linear-basic-app-1')
     await appMode.enterBuilder()
     await appMode.steps.goToInputs()
     await expect(appMode.select.inputItemTitles).toHaveText(WIDGETS)
@@ -187,7 +184,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
 
     // Switch to app2 tab and enter builder
     await appMode.footer.exitBuilder()
-    await comfyPage.menu.topbar.getWorkflowTab(app2Name).click()
+    await switchToWorkflow('linear-basic-app-2')
     await appMode.enterBuilder()
     await appMode.steps.goToInputs()
 
@@ -196,10 +193,9 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
 
     // Switch back to app1 and verify reorder persisted
     await appMode.footer.exitBuilder()
-    await comfyPage.menu.topbar.getWorkflowTab(app1Name).click()
+    await switchToWorkflow('linear-basic-app-1')
     await appMode.enterBuilder()
     await appMode.steps.goToInputs()
-
     await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
   })
 })
