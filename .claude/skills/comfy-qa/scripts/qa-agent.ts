@@ -60,6 +60,7 @@ interface ResearchOptions {
   anthropicApiKey?: string
   maxTurns?: number
   timeBudgetMs?: number
+  model?: string
 }
 
 export type ReproMethod = 'e2e_test' | 'video' | 'both' | 'none'
@@ -776,7 +777,7 @@ ${issueContext}`
       prompt:
         'Write a Playwright E2E test that reproduces the reported bug. Use inspect() to discover selectors, readFixture() or readTest() if you need to understand the fixture API or see existing test patterns, writeTest() to write the test, runTest() to execute it. Iterate until it works or you determine the bug cannot be reproduced.',
       options: {
-        model: 'claude-sonnet-4-6',
+        model: opts.model ?? 'claude-sonnet-4-6',
         systemPrompt,
         ...(anthropicApiKey ? { apiKey: anthropicApiKey } : {}),
         maxTurns,
