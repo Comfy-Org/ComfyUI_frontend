@@ -66,7 +66,9 @@ describe(NodeSearchFilterBar, () => {
 
   it('should always render Comfy button', async () => {
     await createRender()
-    const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
+    const texts = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent?.trim())
     expect(texts).toContain('Comfy')
   })
 
@@ -77,7 +79,9 @@ describe(NodeSearchFilterBar, () => {
       hasBlueprintNodes: true,
       hasPartnerNodes: true
     })
-    const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
+    const texts = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent?.trim())
     expect(texts).toContain('Bookmarked')
     expect(texts).toContain('Blueprints')
     expect(texts).toContain('Partner')
@@ -86,7 +90,9 @@ describe(NodeSearchFilterBar, () => {
 
   it('should not render Extensions button when no custom nodes exist', async () => {
     await createRender()
-    const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
+    const texts = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent?.trim())
     expect(texts).not.toContain('Extensions')
   })
 

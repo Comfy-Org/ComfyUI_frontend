@@ -107,7 +107,9 @@ describe(NodeSearchTypeFilterPopover, () => {
     await openPopover(user)
 
     expect(
-      screen.getAllByRole('button').find((b) => b.textContent?.includes('Clear all'))
+      screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Clear all'))
     ).toBeTruthy()
   })
 

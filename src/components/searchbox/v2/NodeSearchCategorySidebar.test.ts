@@ -281,7 +281,7 @@ describe('NodeSearchCategorySidebar', () => {
     render(NodeSearchCategorySidebar, {
       props: {
         selectedCategory: 'most-relevant',
-        'onAutoExpand': onAutoExpand
+        onAutoExpand: onAutoExpand
       },
       global: { plugins: [testI18n] }
     })

@@ -80,8 +80,13 @@ describe('NodeSearchContent', () => {
     vi.spyOn(bookmarkStore, 'bookmarks', 'get').mockReturnValue(bookmarkList)
   }
 
-  function clickFilterBarButton(user: ReturnType<typeof userEvent.setup>, text: string) {
-    const btn = screen.getAllByRole('button').find((b) => b.textContent?.trim() === text)
+  function clickFilterBarButton(
+    user: ReturnType<typeof userEvent.setup>,
+    text: string
+  ) {
+    const btn = screen
+      .getAllByRole('button')
+      .find((b) => b.textContent?.trim() === text)
     expect(btn, `Expected filter button "${text}"`).toBeDefined()
     return user.click(btn!)
   }
@@ -196,7 +201,9 @@ describe('NodeSearchContent', () => {
       ])
 
       await renderComponent()
-      const texts = screen.getAllByRole('button').map((b) => b.textContent?.trim())
+      const texts = screen
+        .getAllByRole('button')
+        .map((b) => b.textContent?.trim())
       expect(texts).not.toContain('Essentials')
     })
 
@@ -331,7 +338,9 @@ describe('NodeSearchContent', () => {
       await user.type(input, 'Load')
       await nextTick()
 
-      const texts = screen.queryAllByTestId('node-item').map((i) => i.textContent)
+      const texts = screen
+        .queryAllByTestId('node-item')
+        .map((i) => i.textContent)
       expect(texts.some((t) => t?.includes('Load Checkpoint'))).toBe(false)
     })
 
