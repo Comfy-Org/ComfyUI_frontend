@@ -845,6 +845,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   test('Restore workflow on reload (switch workflow)', async ({
     comfyPage
   }) => {
+    await comfyPage.closeMenu()
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
     await comfyPage.setup({ clearStorage: false })
@@ -855,6 +856,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   test('Restore workflow on reload (modify workflow)', async ({
     comfyPage
   }) => {
+    await comfyPage.closeMenu()
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     await node.click('collapse')
