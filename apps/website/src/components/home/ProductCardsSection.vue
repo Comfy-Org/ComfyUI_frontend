@@ -41,7 +41,7 @@ const cards = [
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-40 lg:px-20">
+  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
     <!-- Header -->
     <div class="flex flex-col items-center text-center">
       <p

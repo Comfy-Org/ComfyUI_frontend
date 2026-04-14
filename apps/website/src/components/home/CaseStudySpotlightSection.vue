@@ -10,7 +10,7 @@ const routes = getRoutes(locale)
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-40 lg:px-20">
+  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
     <div
       class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-12 p-2 lg:flex-row lg:items-stretch lg:gap-8"
     >

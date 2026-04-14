@@ -37,7 +37,7 @@ const activeIndex = ref(0)
 </script>
 
 <template>
-  <section class="px-4 py-40 lg:px-20">
+  <section class="px-4 py-20 lg:px-20 lg:py-24">
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />

@@ -35,7 +35,7 @@ useParallax([leftImgRef, rightImgRef], { trigger: sectionRef })
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative flex flex-col items-center overflow-hidden px-8 py-24 lg:h-screen lg:px-0 lg:py-40"
+    class="bg-primary-comfy-ink relative flex flex-col items-center overflow-hidden px-8 py-20 lg:h-screen lg:px-0 lg:py-24"
   >
     <!-- Left image -->
     <div
@@ -59,7 +59,7 @@ useParallax([leftImgRef, rightImgRef], { trigger: sectionRef })
 
       <nav
         ref="navRef"
-        class="mt-24 flex max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-40 lg:gap-20"
+        class="mt-16 flex max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:gap-20"
         aria-label="Industry categories"
       >
         <button
@@ -77,7 +77,7 @@ useParallax([leftImgRef, rightImgRef], { trigger: sectionRef })
         </button>
       </nav>
 
-      <p class="text-primary-warm-gray mt-40 max-w-md text-center text-base">
+      <p class="text-primary-warm-gray mt-20 max-w-md text-center text-base">
         {{ t('useCase.body', locale) }}
       </p>
 
