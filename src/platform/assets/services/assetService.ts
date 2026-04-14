@@ -754,6 +754,26 @@ function createAssetService() {
     return await res.json()
   }
 
+  /**
+   * List all tags with usage counts
+   * Only available in cloud environment
+   *
+   * @param options.limit - Maximum number of tags to return (default 200)
+   * @returns Promise<Array<{ name: string; count: number }>>
+   */
+  async function listAllTags(
+    options?: { limit?: number }
+  ): Promise<{ name: string; count: number }[]> {
+    const params = new URLSearchParams({
+      limit: String(options?.limit ?? 200),
+      order: 'count_desc'
+    })
+    const res = await api.fetchApi(`/tags?${params}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.tags ?? []
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -772,7 +792,8 @@ function createAssetService() {
     uploadAssetFromBase64,
     uploadAssetAsync,
     createAssetExport,
-    getExportDownloadUrl
+    getExportDownloadUrl,
+    listAllTags
   }
 }
 

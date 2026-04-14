@@ -36,14 +36,16 @@
     </div>
     <template #actions>
       <MediaAssetFilterButton
-        v-if="isCloud"
+        v-if="isCloud || (suggestions && suggestions.length > 0)"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
       >
-        <template #default="{ close }">
+        <template #default>
           <MediaAssetFilterMenu
             :media-type-filters
-            :close
+            :tag-suggestions="suggestions ?? []"
+            :selected-tags="activeTagFilters"
             @update:media-type-filters="handleMediaTypeFiltersChange"
+            @update:selected-tags="handleTagFiltersChange"
           />
         </template>
       </MediaAssetFilterButton>
@@ -168,10 +170,22 @@ function focus() {
 
 defineExpose({ focus })
 
+// Derived: raw tag names from selected chips (for filter menu)
+const activeTagFilters = computed(() =>
+  selectedChips.value.filter((c) => c.startsWith('tag:')).map((c) => c.slice(4))
+)
+
 const handleMediaTypeFiltersChange = (value: string[]) => {
   // Sync checkbox filter → chips (rebuild type chips, keep tag chips)
   const tagChips = selectedChips.value.filter((c) => c.startsWith('tag:'))
   const typeChips = value.map((t) => `type:${t}`)
+  selectedChips.value = [...tagChips, ...typeChips]
+}
+
+function handleTagFiltersChange(value: string[]) {
+  // Sync tag checkboxes → chips (rebuild tag chips, keep type chips)
+  const typeChips = selectedChips.value.filter((c) => c.startsWith('type:'))
+  const tagChips = value.map((t) => `tag:${t}`)
   selectedChips.value = [...tagChips, ...typeChips]
 }
 </script>

@@ -21,12 +21,25 @@
     <template #header>
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
+        v-model:filter-tags="filterTags"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
         :show-generation-time-sort="activeTab === 'output'"
         :suggestions="availableTags"
       />
+    </template>
+
+    <template v-if="isInFolderView" #contentFilter>
+      <div class="flex items-center gap-2 px-6 py-2">
+        <Button variant="secondary" size="sm" @click="exitFolderView">
+          <i class="icon-[lucide--arrow-left] size-4" />
+          {{ $t('sideToolbar.backToAssets') }}
+        </Button>
+        <span class="text-sm text-muted-foreground">
+          {{ $t('assetBrowser.jobId') }}: {{ folderJobId?.substring(0, 8) }}
+        </span>
+      </div>
     </template>
 
     <template #content>
@@ -75,12 +88,13 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :show-output-count="() => false"
-          :get-output-count="() => 0"
+          :show-output-count="shouldShowOutputCount"
+          :get-output-count="getOutputCount"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
           @zoom="handleZoomClick"
+          @output-count-click="enterFolderView"
         />
         <!-- Selection action bar -->
         <div
@@ -116,6 +130,8 @@
       <MediaAssetInfoPanel
         v-if="focusedAsset"
         :asset="focusedAsset"
+        :assets="selectedAssets.length > 1 ? selectedAssets : undefined"
+        :tag-suggestions="availableTags"
         @zoom="handleZoomClick"
       />
       <div
@@ -144,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useStorage } from '@vueuse/core'
+import { useAsyncState, useDebounceFn, useStorage } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -172,10 +188,13 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { ResultItemImpl } from '@/stores/queueStore'
 import type { NavItemData } from '@/types/navTypes'
@@ -218,7 +237,26 @@ const currentAssets = computed(() =>
 )
 const loading = computed(() => currentAssets.value.loading.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
-const availableTags = useAvailableMediaTags(mediaAssets)
+
+// Folder view — drill into a job's outputs
+const folderJobId = ref<string | null>(null)
+const isInFolderView = computed(() => folderJobId.value !== null)
+
+const {
+  state: folderAssets,
+  execute: loadFolderAssets
+} = useAsyncState(
+  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
+    resolveOutputAssetItems(metadata, options),
+  [] as AssetItem[],
+  { immediate: false, resetOnExecute: true }
+)
+
+const baseAssets = computed(() =>
+  isInFolderView.value ? folderAssets.value : mediaAssets.value
+)
+
+const availableTags = useAvailableMediaTags(baseAssets)
 
 // Filtering — reuses the same composable as the sidebar
 const viewMode = useStorage<'list' | 'grid'>(
@@ -226,8 +264,8 @@ const viewMode = useStorage<'list' | 'grid'>(
   'grid'
 )
 
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
-  useMediaAssetFiltering(mediaAssets)
+const { searchQuery, filterTags, sortBy, mediaTypeFilters, filteredAssets } =
+  useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => filteredAssets.value)
 
@@ -249,6 +287,7 @@ const {
   clearSelection,
   getSelectedAssets,
   reconcileSelection,
+  getOutputCount,
   getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
@@ -266,6 +305,25 @@ watch(displayAssets, (assets) => reconcileSelection(assets))
 
 onMounted(() => activateSelection())
 onUnmounted(() => deactivateSelection())
+
+// Folder view handlers
+function shouldShowOutputCount(item: AssetItem): boolean {
+  if (activeTab.value !== 'output' || isInFolderView.value) return false
+  return getOutputCount(item) > 1
+}
+
+async function enterFolderView(asset: AssetItem) {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (!metadata?.jobId) return
+
+  folderJobId.value = metadata.jobId
+  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+}
+
+function exitFolderView() {
+  folderJobId.value = null
+  searchQuery.value = ''
+}
 
 // Right panel
 const isRightPanelOpen = ref(false)
@@ -355,8 +413,10 @@ watch(
   activeTab,
   () => {
     searchQuery.value = ''
+    filterTags.value = []
     focusedAsset.value = null
     clearSelection()
+    exitFolderView()
     void currentAssets.value.fetchMediaList()
   },
   { immediate: true }

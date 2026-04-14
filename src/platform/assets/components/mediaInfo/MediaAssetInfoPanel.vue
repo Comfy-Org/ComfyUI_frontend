@@ -10,13 +10,30 @@
         </span>
       </template>
       <div class="px-4">
-        <div class="overflow-hidden rounded-lg">
-          <MediaAssetCard :asset @zoom="emit('zoom', asset)" />
+        <!-- Multi-select: image stack -->
+        <ImageStack
+          v-if="isMulti"
+          :images="previewUrls"
+          :count="allAssets.length"
+        />
+        <!-- Single: asset card -->
+        <div v-else class="overflow-hidden rounded-lg">
+          <MediaAssetCard :asset="primaryAsset" @zoom="emit('zoom', primaryAsset)" />
+        </div>
+        <!-- Multi-select: compact summary below preview -->
+        <div v-if="isMulti" class="mt-2 text-center text-sm">
+          <span class="text-muted-foreground">
+            {{ t('mediaAsset.selection.selectedCount', { count: allAssets.length }) }}
+          </span>
+          <span v-if="mediaTypeSummary" class="text-muted-foreground">
+            — {{ mediaTypeSummary }}
+          </span>
         </div>
       </div>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :collapse="true" :class="accordionClass">
+    <!-- Single asset: basic info -->
+    <PropertiesAccordionItem v-if="!isMulti" :collapse="true" :class="accordionClass">
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
@@ -46,7 +63,7 @@
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
         <span class="break-all text-muted-foreground">
-          {{ getAssetFilename(asset) }}
+          {{ getAssetFilename(primaryAsset) }}
         </span>
       </ModelInfoField>
       <ModelInfoField
@@ -56,11 +73,11 @@
         <span class="text-muted-foreground capitalize">{{ mediaType }}</span>
       </ModelInfoField>
       <ModelInfoField
-        v-if="asset.size"
+        v-if="primaryAsset.size"
         :label="t('sideToolbar.mediaAssets.infoPanel.fileSize')"
       >
         <span class="text-muted-foreground">
-          {{ formatFileSize(asset.size) }}
+          {{ formatFileSize(primaryAsset.size) }}
         </span>
       </ModelInfoField>
       <ModelInfoField
@@ -96,20 +113,30 @@
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
-        <TagsInput v-slot="{ isEmpty }" v-model="additionalTags">
-          <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
+        <TagsInputAutocomplete
+          v-if="isMulti"
+          v-model="multiTags"
+          :suggestions="tagSuggestions"
+          :tag-class="multiTagClass"
+          :placeholder="t('assetBrowser.modelInfo.addTag')"
+        >
+          <template #tag="{ tag }">
             <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="t('assetBrowser.modelInfo.addTag')"
-          />
-        </TagsInput>
+            <span class="text-2xs text-muted-foreground">
+              {{ multiTagCounts.get(tag) ?? 0 }}/{{ allAssets.length }}
+            </span>
+          </template>
+        </TagsInputAutocomplete>
+        <TagsInputAutocomplete
+          v-else
+          v-model="additionalTags"
+          :suggestions="tagSuggestions"
+          :placeholder="t('assetBrowser.modelInfo.addTag')"
+        />
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem v-if="!isMulti" :class="accordionClass">
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('sideToolbar.mediaAssets.infoPanel.description') }}
@@ -142,11 +169,9 @@ import EditableText from '@/components/common/EditableText.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
+import TagsInputAutocomplete from '@/components/ui/tags-input/TagsInputAutocomplete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import ImageStack from '@/platform/assets/components/mediaInfo/ImageStack.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type {
@@ -176,27 +201,63 @@ const accordionClass = cn(
   'border-t border-border-default bg-modal-panel-background'
 )
 
-const { asset } = defineProps<{
+const { asset, assets, tagSuggestions = [] } = defineProps<{
+  /** Single asset (used when no multi-selection) */
   asset: AssetItem
+  /** Multiple selected assets (when provided, shows multi-select UI) */
+  assets?: AssetItem[]
+  /** Tag suggestions for autocomplete */
+  tagSuggestions?: string[]
 }>()
 
 const emit = defineEmits<{
   zoom: [asset: AssetItem]
 }>()
 
-const assetsStore = useAssetsStore()
+const isMulti = computed(() => (assets?.length ?? 0) > 1)
+const allAssets = computed(() => (isMulti.value ? assets! : [asset]))
+const primaryAsset = computed(() => asset)
 
-const pendingUpdates = ref<AssetUserMetadata>({})
-const isEditingDisplayName = ref(false)
-
-const displayName = computed(
-  () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
+// Preview URLs for ImageStack
+const previewUrls = computed(() =>
+  allAssets.value
+    .map((a) => a.preview_url ?? '')
+    .filter((url) => url.length > 0)
+    .slice(0, 3)
 )
 
-const mediaType = computed(() => getMediaTypeFromFilename(asset.name))
+// Media type summary for multi-select (e.g. "5 images, 2 videos")
+const mediaTypeSummary = computed(() => {
+  const counts = new Map<string, number>()
+  for (const a of allAssets.value) {
+    const type = getMediaTypeFromFilename(a.name)
+    counts.set(type, (counts.get(type) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([type, count]) => `${count} ${type}`)
+    .join(', ')
+})
+
+const assetsStore = useAssetsStore()
+
+// Pending updates keyed by asset ID — prevents cross-asset contamination
+const pendingByAsset = ref<Record<string, AssetUserMetadata>>({})
+const isEditingDisplayName = ref(false)
+
+const pendingUpdates = computed(
+  () => pendingByAsset.value[primaryAsset.value.id] ?? {}
+)
+
+const displayName = computed(
+  () => pendingUpdates.value.name ?? getAssetDisplayName(primaryAsset.value)
+)
+
+const mediaType = computed(() =>
+  getMediaTypeFromFilename(primaryAsset.value.name)
+)
 
 const outputMetadata = computed(() =>
-  getOutputAssetMetadata(asset.user_metadata)
+  getOutputAssetMetadata(primaryAsset.value.user_metadata)
 )
 
 const executionTime = computed(
@@ -205,22 +266,37 @@ const executionTime = computed(
 
 const jobId = computed(() => outputMetadata.value?.jobId)
 
+// When the store confirms a write (user_metadata changes), clear pending for that asset
 watch(
-  () => asset.user_metadata,
+  () => primaryAsset.value.user_metadata,
   () => {
-    pendingUpdates.value = {}
+    delete pendingByAsset.value[primaryAsset.value.id]
   }
 )
 
-const debouncedFlushMetadata = useDebounceFn(() => {
-  assetsStore.updateAssetMetadata(asset, {
-    ...(asset.user_metadata ?? {}),
-    ...pendingUpdates.value
+watch(
+  () => primaryAsset.value.id,
+  () => {
+    isEditingDisplayName.value = false
+  }
+)
+
+function flushMetadata(targetAsset: AssetItem) {
+  const pending = pendingByAsset.value[targetAsset.id]
+  if (!pending || Object.keys(pending).length === 0) return
+  assetsStore.updateAssetMetadata(targetAsset, {
+    ...(targetAsset.user_metadata ?? {}),
+    ...pending
   })
+}
+
+const debouncedFlushMetadata = useDebounceFn(() => {
+  flushMetadata(primaryAsset.value)
 }, 500)
 
 function queueMetadataUpdate(updates: AssetUserMetadata) {
-  pendingUpdates.value = { ...pendingUpdates.value, ...updates }
+  const id = primaryAsset.value.id
+  pendingByAsset.value[id] = { ...(pendingByAsset.value[id] ?? {}), ...updates }
   debouncedFlushMetadata()
 }
 
@@ -233,13 +309,92 @@ function handleDisplayNameEdit(newName: string) {
 
 const additionalTags = computed({
   get: () =>
-    pendingUpdates.value.additional_tags ?? getAssetAdditionalTags(asset),
+    pendingUpdates.value.additional_tags ??
+    getAssetAdditionalTags(primaryAsset.value),
   set: (value: string[]) => queueMetadataUpdate({ additional_tags: value })
 })
 
+// --- Multi-select tag logic ---
+
+/** Tag counts across all selected assets */
+const multiTagCounts = computed(() => {
+  const counts = new Map<string, number>()
+  for (const a of allAssets.value) {
+    const pending = pendingByAsset.value[a.id]
+    const tags = pending?.additional_tags ?? getAssetAdditionalTags(a)
+    for (const tag of tags) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1)
+    }
+  }
+  return counts
+})
+
+/** Union of all tags across selected assets */
+const multiTags = computed({
+  get: () =>
+    [...multiTagCounts.value.entries()]
+      .sort(([a, countA], [b, countB]) => countB - countA || a.localeCompare(b))
+      .map(([tag]) => tag),
+  set: (newTags: string[]) => {
+    const oldTags = [...multiTagCounts.value.keys()]
+    const added = newTags.filter((t) => !oldTags.includes(t))
+    const removed = oldTags.filter((t) => !newTags.includes(t))
+
+    for (const a of allAssets.value) {
+      const pending = pendingByAsset.value[a.id]
+      const current = pending?.additional_tags ?? getAssetAdditionalTags(a)
+      let updated = [...current]
+      let changed = false
+
+      // Add new tags to all assets
+      for (const tag of added) {
+        if (!updated.includes(tag)) {
+          updated.push(tag)
+          changed = true
+        }
+      }
+
+      // Remove tags from assets that have them
+      for (const tag of removed) {
+        const idx = updated.indexOf(tag)
+        if (idx !== -1) {
+          updated.splice(idx, 1)
+          changed = true
+        }
+      }
+
+      if (changed) {
+        pendingByAsset.value[a.id] = {
+          ...(pendingByAsset.value[a.id] ?? {}),
+          additional_tags: updated
+        }
+      }
+    }
+
+    debouncedFlushAllSelected()
+  }
+})
+
+function multiTagClass(tag: string): string | undefined {
+  const count = multiTagCounts.value.get(tag) ?? 0
+  const total = allAssets.value.length
+  if (count >= total) return 'font-semibold'
+  const ratio = count / total
+  if (ratio > 0.66) return 'opacity-75'
+  if (ratio > 0.33) return 'opacity-55'
+  return 'opacity-40'
+}
+
+const debouncedFlushAllSelected = useDebounceFn(() => {
+  for (const a of allAssets.value) {
+    flushMetadata(a)
+  }
+}, 500)
+
 const userDescription = computed({
   get: () =>
-    pendingUpdates.value.user_description ?? getAssetUserDescription(asset),
+    pendingUpdates.value.user_description ??
+    getAssetUserDescription(primaryAsset.value),
   set: (value: string) => queueMetadataUpdate({ user_description: value })
 })
 

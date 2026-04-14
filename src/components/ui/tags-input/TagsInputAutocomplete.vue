@@ -20,8 +20,15 @@
           )
         "
       >
-        <TagsInputItem v-for="tag in modelValue" :key="tag" :value="tag">
-          <TagsInputItemText />
+        <TagsInputItem
+          v-for="tag in modelValue"
+          :key="tag"
+          :value="tag"
+          :class="tagClass?.(tag)"
+        >
+          <slot name="tag" :tag="tag">
+            <TagsInputItemText />
+          </slot>
           <TagsInputItemDelete />
         </TagsInputItem>
 
@@ -136,6 +143,8 @@ const {
   aliasChars?: string
   /** When true (default), shows "Create new tag" option for unmatched text. Set false for search mode. */
   allowCreate?: boolean
+  /** Optional function returning extra CSS classes per tag chip */
+  tagClass?: (tag: string) => string | undefined
   class?: HTMLAttributes['class']
 }>()
 
