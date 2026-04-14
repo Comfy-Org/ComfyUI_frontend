@@ -153,7 +153,21 @@ test.describe('Signin dialog', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
   })
 
-  //FIXME: neither of these tests are useful both need rewrites
+  test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    const dialogPromise = comfyPage.page.evaluate(() =>
+      window.app!.extensionManager.dialog.showSignInDialog()
+    )
+
+    const dialog = new SignInDialog(comfyPage.page)
+    await dialog.emailInput.fill('test@example.com')
+    await dialog.passwordInput.fill('TestPassword123!')
+    await expect(dialog.root).toBeVisible()
+
+    await dialog.signInButton.click()
+    await expect(dialog.root).toBeHidden()
+    expect(await dialogPromise).toBe(true)
+  })
+
   test('Sign-in dialog resolves false when closed without sign-in', async ({
     comfyPage
   }) => {
@@ -167,25 +181,6 @@ test.describe('Signin dialog', () => {
     await dialog.close()
     expect(await dialogPromise).toBe(false)
     await expect(dialog.root).toBeHidden()
-  })
-
-  test('Sign-in dialog shows sign-in form and can fill credentials', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(() => {
-      void window.app!.extensionManager.dialog.showSignInDialog()
-    })
-
-    const dialog = new SignInDialog(comfyPage.page)
-    await dialog.waitForVisible()
-
-    await dialog.emailInput.fill('test@example.com')
-    await expect(dialog.emailInput).toHaveValue('test@example.com')
-
-    await dialog.passwordInput.fill('TestPassword123!')
-    await expect(dialog.passwordInput).toHaveValue('TestPassword123!')
-
-    await expect(dialog.signInButton).toBeEnabled()
   })
 })
 
