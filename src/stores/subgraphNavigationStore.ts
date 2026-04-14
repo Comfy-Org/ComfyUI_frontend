@@ -147,6 +147,7 @@ export const useSubgraphNavigationStore = defineStore(
         // fitView changes scale/offset, so re-sync slot positions for
         // collapsed nodes whose DOM-relative measurement is now stale.
         requestAnimationFrame(() => {
+          if (getActiveGraphId() !== graphId) return
           requestSlotLayoutSyncForAllNodes()
         })
       })
