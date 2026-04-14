@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.42.10",
+  "version": "1.42.11",
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "description": "Official front-end implementation of ComfyUI",
