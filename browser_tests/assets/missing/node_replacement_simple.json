@@ -1,0 +1,59 @@
+{
+  "last_node_id": 3,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "E2E_OldSampler",
+      "pos": [100, 100],
+      "size": [300, 262],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        { "name": "model", "type": "MODEL", "link": null },
+        { "name": "positive", "type": "CONDITIONING", "link": null },
+        { "name": "negative", "type": "CONDITIONING", "link": null },
+        { "name": "latent_image", "type": "LATENT", "link": null }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [1],
+          "slot_index": 0
+        }
+      ],
+      "properties": { "Node name for S&R": "E2E_OldSampler" },
+      "widgets_values": [42, 20, 7, "euler", "normal"]
+    },
+    {
+      "id": 2,
+      "type": "VAEDecode",
+      "pos": [500, 100],
+      "size": [210, 46],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "samples", "type": "LATENT", "link": 1 },
+        { "name": "vae", "type": "VAE", "link": null }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        }
+      ],
+      "properties": { "Node name for S&R": "VAEDecode" },
+      "widgets_values": []
+    }
+  ],
+  "links": [[1, 1, 0, 2, 0, "LATENT"]],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "scale": 1, "offset": [0, 0] } },
+  "version": 0.4
+}
