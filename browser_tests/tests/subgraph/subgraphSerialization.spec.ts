@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getPromotedWidgets } from '@e2e/helpers/promotedWidgets'
 
@@ -8,6 +9,31 @@ const LEGACY_PREFIXED_WORKFLOW =
   'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
 
 test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
+  const getPromotedHostWidgetValues = async (
+    comfyPage: ComfyPage,
+    nodeIds: string[]
+  ) => {
+    return comfyPage.page.evaluate((ids) => {
+      const graph = window.app!.canvas.graph!
+
+      return ids.map((id) => {
+        const node = graph.getNodeById(id)
+        if (
+          !node ||
+          typeof node.isSubgraphNode !== 'function' ||
+          !node.isSubgraphNode()
+        ) {
+          return { id, values: [] as unknown[] }
+        }
+
+        return {
+          id,
+          values: (node.widgets ?? []).map((widget) => widget.value)
+        }
+      })
+    }, nodeIds)
+  }
+
   test('Promoted widget remains usable after serialize and reload', async ({
     comfyPage
   }) => {
@@ -82,6 +108,36 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         .first()
       await expect(textarea).toBeVisible()
       await expect(textarea).toBeDisabled()
+    })
+
+    test('Multiple instances of the same subgraph keep distinct promoted widget values after load and reload', async ({
+      comfyPage
+    }) => {
+      const workflowName =
+        'subgraphs/subgraph-multi-instance-promoted-text-values'
+      const hostNodeIds = ['11', '12', '13']
+      const expectedValues = ['Alpha\n', 'Beta\n', 'Gamma\n']
+
+      await comfyPage.workflow.loadWorkflow(workflowName)
+      await comfyPage.nextFrame()
+
+      const initialValues = await getPromotedHostWidgetValues(
+        comfyPage,
+        hostNodeIds
+      )
+      expect(initialValues.map(({ values }) => values[0])).toEqual(
+        expectedValues
+      )
+
+      await comfyPage.subgraph.serializeAndReload()
+
+      const reloadedValues = await getPromotedHostWidgetValues(
+        comfyPage,
+        hostNodeIds
+      )
+      expect(reloadedValues.map(({ values }) => values[0])).toEqual(
+        expectedValues
+      )
     })
   })
 })
