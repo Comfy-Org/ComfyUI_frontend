@@ -402,9 +402,13 @@ export async function runResearchPhase(
 
 ## Workflow
 1. Read the issue description carefully
-2. Use inspect() to understand the current UI state and discover element selectors
-3. If unsure about the fixture API, use readFixture() to read the relevant helper source code
-4. If unsure about test patterns, use readTest() to read an existing test for reference
+2. FIRST: Use readTest() to read 1-2 existing tests similar to the bug you're reproducing:
+   - For menu/workflow bugs: readTest("workflow.spec.ts") or readTest("topbarMenu.spec.ts")
+   - For node/canvas bugs: readTest("nodeInteraction.spec.ts") or readTest("copyPaste.spec.ts")
+   - For settings bugs: readTest("settingDialogSearch.spec.ts")
+   - For subgraph bugs: readTest("subgraph.spec.ts")
+3. Use inspect() to understand the current UI state and discover element selectors
+4. If unsure about the fixture API, use readFixture("ComfyPage.ts") or relevant helper
 5. Write a Playwright test that:
    - Performs the exact reproduction steps from the issue
    - Asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
