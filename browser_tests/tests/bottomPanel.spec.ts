@@ -77,9 +77,6 @@ test.describe('Bottom Panel', { tag: '@ui' }, () => {
   }) => {
     const { bottomPanel } = comfyPage
 
-    if (await bottomPanel.root.isVisible()) {
-      await bottomPanel.closeButton.click()
-    }
     await expect(bottomPanel.root).toBeHidden()
 
     await comfyPage.canvas.click({
