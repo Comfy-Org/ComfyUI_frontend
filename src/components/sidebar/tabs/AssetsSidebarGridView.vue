@@ -2,6 +2,7 @@
   <div class="flex h-full flex-col">
     <!-- Assets Grid -->
     <VirtualGrid
+      ref="virtualGridRef"
       class="flex-1"
       :items="assetItems"
       :grid-style="gridStyle"
@@ -19,14 +20,24 @@
           @output-count-click="emit('output-count-click', item.asset)"
         />
       </template>
+      <template #overlay>
+        <div
+          v-if="marqueeActive"
+          class="pointer-events-none absolute z-50 border border-blue-400 bg-blue-500/20"
+          :style="marqueeRectStyle"
+        />
+      </template>
     </VirtualGrid>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import { useMarqueeSelection } from '@/composables/useMarqueeSelection'
+import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
@@ -60,4 +71,20 @@ const gridStyle = {
   padding: '0 0.5rem',
   gap: '0.5rem'
 }
+
+// Marquee drag-to-select
+const virtualGridRef = ref<{ container: HTMLElement | null } | null>(null)
+const gridContainer = computed(() => virtualGridRef.value?.container ?? null)
+
+const { shiftKey, cmdOrCtrlKey } = useAssetSelection()
+const selectionStore = useAssetSelectionStore()
+
+const { isActive: marqueeActive, rectStyle: marqueeRectStyle } =
+  useMarqueeSelection({
+    container: gridContainer,
+    shiftKey,
+    cmdOrCtrlKey,
+    getCurrentSelection: () => new Set(selectionStore.selectedAssetIds),
+    onSelectionChange: (ids) => selectionStore.setSelection(ids)
+  })
 </script>

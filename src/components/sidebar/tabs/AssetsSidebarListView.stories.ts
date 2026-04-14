@@ -3,6 +3,7 @@ import { toRef } from 'vue'
 
 import type { JobAction } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { setMockJobActions } from '@/storybook/mocks/useJobActions'
@@ -170,9 +171,12 @@ function renderAssetsSidebarListView(args: StoryArgs) {
         useOutputStacks({
           assets: toRef(args, 'assets')
         })
-      const selectedIds = new Set(args.selectedAssetIds ?? [])
-      function isSelected(assetId: string) {
-        return selectedIds.has(assetId)
+      const { isSelected, handleAssetClick } = useAssetSelection()
+
+      function onSelectAsset(asset: AssetItem, assets?: AssetItem[]) {
+        const list = assets ?? selectableAssets.value
+        const index = list.findIndex((a) => a.id === asset.id)
+        handleAssetClick(asset, index, list)
       }
 
       return {
@@ -180,6 +184,7 @@ function renderAssetsSidebarListView(args: StoryArgs) {
         assetItems,
         selectableAssets,
         isSelected,
+        onSelectAsset,
         isStackExpanded,
         toggleStack
       }
@@ -192,6 +197,7 @@ function renderAssetsSidebarListView(args: StoryArgs) {
           :is-selected="isSelected"
           :is-stack-expanded="isStackExpanded"
           :toggle-stack="toggleStack"
+          @select-asset="onSelectAsset"
         />
       </div>
     `

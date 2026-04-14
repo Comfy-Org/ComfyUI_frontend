@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface) h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable]"
+    class="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface) relative h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable]"
   >
     <div :style="topSpacerStyle" />
     <div :style="mergedGridStyle">
@@ -14,6 +14,7 @@
       </div>
     </div>
     <div :style="bottomSpacerStyle" />
+    <slot name="overlay" />
   </div>
 </template>
 
@@ -139,4 +140,6 @@ whenever(() => items, updateItemSize, { flush: 'post' })
 onBeforeUnmount(() => {
   onResize.cancel()
 })
+
+defineExpose({ container })
 </script>

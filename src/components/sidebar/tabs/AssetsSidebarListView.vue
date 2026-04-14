@@ -1,6 +1,7 @@
 <template>
   <div class="flex h-full flex-col">
     <VirtualGrid
+      ref="virtualGridRef"
       class="flex-1"
       :items="assetItems"
       :grid-style="listGridStyle"
@@ -9,7 +10,7 @@
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
-        <div class="relative">
+        <div class="relative" :data-asset-id="item.asset.id">
           <LoadingOverlay
             :loading="assetsStore.isAssetDeleting(item.asset.id)"
             size="sm"
@@ -61,18 +62,28 @@
           </AssetsListItem>
         </div>
       </template>
+      <template #overlay>
+        <div
+          v-if="marqueeActive"
+          class="pointer-events-none absolute z-50 border border-blue-400 bg-blue-500/20"
+          :style="marqueeRectStyle"
+        />
+      </template>
     </VirtualGrid>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import { useMarqueeSelection } from '@/composables/useMarqueeSelection'
 import Button from '@/components/ui/button/Button.vue'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -189,4 +200,20 @@ function onAssetLeave(assetId: string) {
     hoveredAssetId.value = null
   }
 }
+
+// Marquee drag-to-select
+const virtualGridRef = ref<{ container: HTMLElement | null } | null>(null)
+const gridContainer = computed(() => virtualGridRef.value?.container ?? null)
+
+const { shiftKey, cmdOrCtrlKey } = useAssetSelection()
+const selectionStore = useAssetSelectionStore()
+
+const { isActive: marqueeActive, rectStyle: marqueeRectStyle } =
+  useMarqueeSelection({
+    container: gridContainer,
+    shiftKey,
+    cmdOrCtrlKey,
+    getCurrentSelection: () => new Set(selectionStore.selectedAssetIds),
+    onSelectionChange: (ids) => selectionStore.setSelection(ids)
+  })
 </script>

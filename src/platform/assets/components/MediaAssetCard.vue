@@ -20,6 +20,7 @@
           : 'hover:bg-modal-card-background-hovered/20'
       )
     "
+    :data-asset-id="asset?.id"
     :data-selected="selected"
     :draggable="true"
     @click.stop="$emit('click')"
