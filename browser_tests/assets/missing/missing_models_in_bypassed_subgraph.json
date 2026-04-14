@@ -1,0 +1,141 @@
+{
+  "id": "test-missing-models-in-bypassed-subgraph",
+  "revision": 0,
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "KSampler",
+      "pos": [100, 100],
+      "size": [270, 262],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "model", "type": "MODEL", "link": null },
+        { "name": "positive", "type": "CONDITIONING", "link": null },
+        { "name": "negative", "type": "CONDITIONING", "link": null },
+        { "name": "latent_image", "type": "LATENT", "link": null }
+      ],
+      "outputs": [{ "name": "LATENT", "type": "LATENT", "links": [] }],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [0, "randomize", 20, 8, "euler", "simple", 1]
+    },
+    {
+      "id": 2,
+      "type": "subgraph-with-missing-model",
+      "pos": [450, 100],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 4,
+      "inputs": [{ "name": "model", "type": "MODEL", "link": null }],
+      "outputs": [{ "name": "MODEL", "type": "MODEL", "links": null }],
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "subgraph-with-missing-model",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 1,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Subgraph with Missing Model",
+        "inputNode": {
+          "id": -10,
+          "bounding": [100, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [500, 200, 120, 60]
+        },
+        "inputs": [
+          {
+            "id": "input1-id",
+            "name": "model",
+            "type": "MODEL",
+            "linkIds": [1],
+            "pos": { "0": 150, "1": 220 }
+          }
+        ],
+        "outputs": [
+          {
+            "id": "output1-id",
+            "name": "MODEL",
+            "type": "MODEL",
+            "linkIds": [2],
+            "pos": { "0": 520, "1": 220 }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "CheckpointLoaderSimple",
+            "pos": [250, 180],
+            "size": [315, 98],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              { "name": "MODEL", "type": "MODEL", "links": [2] },
+              { "name": "CLIP", "type": "CLIP", "links": null },
+              { "name": "VAE", "type": "VAE", "links": null }
+            ],
+            "properties": {
+              "Node name for S&R": "CheckpointLoaderSimple"
+            },
+            "widgets_values": ["fake_model.safetensors"]
+          }
+        ],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 2,
+            "origin_id": 1,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "MODEL"
+          }
+        ]
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "models": [
+    {
+      "name": "fake_model.safetensors",
+      "url": "http://localhost:8188/api/devtools/fake_model.safetensors",
+      "directory": "checkpoints"
+    }
+  ],
+  "version": 0.4
+}
