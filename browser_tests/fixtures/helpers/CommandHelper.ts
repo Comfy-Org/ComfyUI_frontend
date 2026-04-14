@@ -1,13 +1,10 @@
 import type { Page } from '@playwright/test'
 
 import type { KeyCombo } from '@/platform/keybindings/types'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class CommandHelper {
   constructor(private readonly page: Page) {}
-
-  private async nextFrame(): Promise<void> {
-    await this.page.evaluate(() => new Promise<number>(requestAnimationFrame))
-  }
 
   async executeCommand(
     commandId: string,
@@ -24,7 +21,7 @@ export class CommandHelper {
       },
       { commandId, metadata }
     )
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async registerCommand(
