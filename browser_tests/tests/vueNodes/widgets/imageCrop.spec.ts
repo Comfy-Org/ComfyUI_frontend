@@ -1,7 +1,5 @@
 import type { Locator } from '@playwright/test'
 
-import { MIN_CROP_SIZE } from '@/composables/useImageCrop'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -11,6 +9,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 type CropValue = { x: number; y: number; width: number; height: number } | null
 
 const POINTER_OPTS = { bubbles: true, cancelable: true, pointerId: 1 } as const
+const MIN_CROP_SIZE = 16
 
 async function getCropValue(
   comfyPage: ComfyPage,
