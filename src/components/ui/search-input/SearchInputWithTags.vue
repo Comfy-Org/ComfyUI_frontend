@@ -8,6 +8,7 @@
     :class="className"
   >
     <ComboboxAnchor
+      ref="anchorRef"
       :class="
         cn(
           searchInputVariants({ size }),
@@ -232,13 +233,16 @@ const placeholderText = computed(
   () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
 )
 
+const anchorRef = ref()
+
 const hasTags = computed(() => tags.value.length > 0)
 const hasContent = computed(() => hasTags.value || query.value.length > 0)
 
 function focus() {
-  const root = document.querySelector('[data-reka-combobox-root]')
-  const input = root?.querySelector('input') as HTMLInputElement | null
-  input?.focus()
+  const el = anchorRef.value?.$el ?? anchorRef.value
+  if (el instanceof HTMLElement) {
+    el.querySelector('input')?.focus()
+  }
 }
 
 defineExpose({ focus })

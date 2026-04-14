@@ -80,7 +80,7 @@
             <div class="max-h-[70vh] w-72 overflow-y-auto">
               <MediaAssetInfoPanel
                 :asset="selectedAssets[0]"
-                :assets="selectedAssets.length > 1 ? selectedAssets : undefined"
+                :assets="infoPanelAssets"
                 :tag-suggestions="availableTags"
                 compact
                 @zoom="handleZoomClick"
@@ -476,6 +476,34 @@ const previewableVisibleAssets = computed(() =>
 
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
+// Expand image sets (outputCount > 1) into sub-images for the info panel
+const expandedSelectedAssets = ref<AssetItem[]>([])
+
+watch(selectedAssets, async (assets) => {
+  if (assets.length !== 1) {
+    expandedSelectedAssets.value = []
+    return
+  }
+  const asset = assets[0]
+  if (getOutputCount(asset) > 1) {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (metadata) {
+      expandedSelectedAssets.value = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      return
+    }
+  }
+  expandedSelectedAssets.value = []
+})
+
+const infoPanelAssets = computed(() => {
+  if (selectedAssets.value.length > 1) return selectedAssets.value
+  if (expandedSelectedAssets.value.length > 1)
+    return expandedSelectedAssets.value
+  return undefined
+})
+
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
 )
@@ -550,6 +578,8 @@ watch(
     filterTags.value = []
     // Reset pagination state when tab changes
     void refreshAssets()
+    // Refocus search bar after tab switch
+    void nextTick(() => filterBarRef.value?.focus())
   },
   { immediate: true }
 )
