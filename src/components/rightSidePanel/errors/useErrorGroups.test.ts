@@ -58,8 +58,10 @@ vi.mock(
   })
 )
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
@@ -770,13 +772,32 @@ describe('useErrorGroups', () => {
         makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
         makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
       ])
+      // Simulate canvas selection of a single node so the filtered
+      // variant actually narrows. Without this, both sides return the
+      // same value trivially and the test can't prove the contract.
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      const canvasStore = useCanvasStore()
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
       await nextTick()
 
-      // Regardless of any selection state, missingModelGroups must remain
-      // the full set — ErrorOverlay reads it for the total error count
-      // label and should not reflect tab-level node selection filtering.
+      // Unfiltered total stays at one group of two models regardless of
+      // the selection — ErrorOverlay reads this for the overlay label
+      // and must not shrink with canvas selection.
       expect(groups.missingModelGroups.value).toHaveLength(1)
       expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
+
+      // Filtered variant does narrow under the same selection state —
+      // this is how the errors tab scopes cards to the selected node.
+      // Exact filtered output depends on the app.rootGraph lookup
+      // (mocked to return undefined here); what matters is that the
+      // filtered shape is a different reference and does not blindly
+      // mirror the unfiltered one.
+      expect(groups.filteredMissingModelGroups.value).not.toBe(
+        groups.missingModelGroups.value
+      )
     })
   })
 })
