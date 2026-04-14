@@ -11,8 +11,8 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
-  termsOfService: '/legal/terms-of-service',
-  privacyPolicy: '/legal/privacy-policy',
+  termsOfService: '/terms-of-service',
+  privacyPolicy: '/privacy-policy',
   videos: '/videos',
   caseStudies: '/case-studies'
 } as const
