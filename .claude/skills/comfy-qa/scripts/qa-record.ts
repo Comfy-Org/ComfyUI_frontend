@@ -1971,19 +1971,35 @@ async function main() {
           process.env.QA_OPUS_ESCALATION !== '0'
         ) {
           console.warn('Escalating to claude-opus-4-6 for complex issue...')
-          research = await runResearchPhase({
-            page,
-            issueContext: issueCtx,
-            qaGuide: qaGuideText,
-            outputDir: opts.outputDir,
-            serverUrl: opts.serverUrl,
-            anthropicApiKey: anthropicKey,
-            model: 'claude-opus-4-6',
-            maxTurns: 30
-          })
-          console.warn(
-            `Opus result: ${research.verdict} — ${research.summary.slice(0, 100)}`
-          )
+          try {
+            const opusResult = await runResearchPhase({
+              page,
+              issueContext: issueCtx,
+              qaGuide: qaGuideText,
+              outputDir: opts.outputDir,
+              serverUrl: opts.serverUrl,
+              anthropicApiKey: anthropicKey,
+              model: 'claude-opus-4-6',
+              maxTurns: 30
+            })
+            console.warn(
+              `Opus result: ${opusResult.verdict} — ${opusResult.summary.slice(0, 100)}`
+            )
+            // Only use Opus result if it's better than Sonnet's
+            if (
+              opusResult.verdict !== 'INCONCLUSIVE' ||
+              !opusResult.summary.includes('API error')
+            ) {
+              research = opusResult
+            } else {
+              console.warn('Opus failed (API error) — keeping Sonnet result')
+            }
+          } catch (opusErr) {
+            console.warn(
+              `Opus escalation failed: ${opusErr instanceof Error ? opusErr.message : opusErr}`
+            )
+            // Keep Sonnet's result
+          }
         }
         console.warn(`Evidence: ${research.evidence.slice(0, 200)}`)
 
