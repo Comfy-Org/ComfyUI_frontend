@@ -156,6 +156,97 @@ describe('scanNodeModelCandidates', () => {
 
     expect(result).toEqual([])
   })
+
+  it('enriches candidates with url/hash/directory from node.properties.models', () => {
+    // Regression: bypass/un-bypass cycle previously lost url metadata
+    // because realtime scan only reads widget values. Per-node embedded
+    // metadata in `properties.models` persists across mode toggles, so
+    // the scan now enriches candidates from that source.
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'missing_model.safetensors', [
+          'other_model.safetensors'
+        ])
+      ],
+      properties: {
+        models: [
+          {
+            name: 'missing_model.safetensors',
+            url: 'https://example.com/missing_model',
+            directory: 'checkpoints',
+            hash: 'abc123',
+            hash_type: 'sha256'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].url).toBe('https://example.com/missing_model')
+    expect(result[0].directory).toBe('checkpoints')
+    expect(result[0].hash).toBe('abc123')
+    expect(result[0].hashType).toBe('sha256')
+  })
+
+  it('preserves existing candidate fields when enriching (no overwrite)', () => {
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [makeComboWidget('ckpt_name', 'missing_model.safetensors', [])],
+      properties: {
+        models: [
+          {
+            name: 'missing_model.safetensors',
+            url: 'https://example.com/new_url',
+            directory: 'new_dir'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(
+      graph,
+      node,
+      noAssetSupport,
+      () => 'existing_dir'
+    )
+
+    expect(result).toHaveLength(1)
+    // scanComboWidget already sets directory via getDirectory; enrichment
+    // does not overwrite it.
+    expect(result[0].directory).toBe('existing_dir')
+    // url was not set by scan, so enrichment fills it in.
+    expect(result[0].url).toBe('https://example.com/new_url')
+  })
+
+  it('does not enrich candidates with mismatched model names', () => {
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [makeComboWidget('ckpt_name', 'missing_model.safetensors', [])],
+      properties: {
+        models: [
+          {
+            name: 'different_model.safetensors',
+            url: 'https://example.com/different',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].url).toBeUndefined()
+  })
 })
 
 describe('scanAllModelCandidates', () => {

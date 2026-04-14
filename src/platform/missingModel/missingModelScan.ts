@@ -1,5 +1,6 @@
 import type {
   ComfyWorkflowJSON,
+  ModelFile,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { flattenWorkflowNodes } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -28,6 +29,30 @@ import { resolveComboValues } from '@/utils/litegraphUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
+}
+
+/**
+ * Fills url/hash/directory onto a candidate from the node's embedded
+ * `properties.models` metadata when the names match. The full pipeline
+ * does this via enrichWithEmbeddedMetadata + graphData.models, but the
+ * realtime single-node scan (paste, un-bypass) otherwise loses these
+ * fields — making the Missing Model row's download/copy-url buttons
+ * disappear after a bypass/un-bypass cycle.
+ */
+function enrichCandidateFromNodeProperties(
+  candidate: MissingModelCandidate,
+  embeddedModels: readonly ModelFile[] | undefined
+): MissingModelCandidate {
+  if (!embeddedModels?.length) return candidate
+  const match = embeddedModels.find((m) => m.name === candidate.name)
+  if (!match) return candidate
+  return {
+    ...candidate,
+    directory: candidate.directory ?? match.directory,
+    url: candidate.url ?? match.url,
+    hash: candidate.hash ?? match.hash,
+    hashType: candidate.hashType ?? match.hash_type
+  }
 }
 
 function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
@@ -107,6 +132,8 @@ export function scanNodeModelCandidates(
   if (!executionId) return []
 
   const candidates: MissingModelCandidate[] = []
+  const embeddedModels = (node as { properties?: { models?: ModelFile[] } })
+    .properties?.models
   for (const widget of node.widgets) {
     let candidate: MissingModelCandidate | null = null
 
@@ -122,7 +149,11 @@ export function scanNodeModelCandidates(
       )
     }
 
-    if (candidate) candidates.push(candidate)
+    if (candidate) {
+      candidates.push(
+        enrichCandidateFromNodeProperties(candidate, embeddedModels)
+      )
+    }
   }
 
   return candidates

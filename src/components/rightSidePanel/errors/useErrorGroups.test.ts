@@ -754,4 +754,29 @@ describe('useErrorGroups', () => {
       ).toBe(true)
     })
   })
+
+  describe('unfiltered vs selection-filtered model/media groups', () => {
+    it('exposes both unfiltered (missingModelGroups) and filtered (filteredMissingModelGroups)', () => {
+      const { groups } = createErrorGroups()
+      expect(groups.missingModelGroups).toBeDefined()
+      expect(groups.filteredMissingModelGroups).toBeDefined()
+      expect(groups.missingMediaGroups).toBeDefined()
+      expect(groups.filteredMissingMediaGroups).toBeDefined()
+    })
+
+    it('missingModelGroups returns total candidates regardless of selection (ErrorOverlay contract)', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
+        makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
+      ])
+      await nextTick()
+
+      // Regardless of any selection state, missingModelGroups must remain
+      // the full set — ErrorOverlay reads it for the total error count
+      // label and should not reflect tab-level node selection filtering.
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+      expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
+    })
+  })
 })

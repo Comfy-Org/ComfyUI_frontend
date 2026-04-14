@@ -29,8 +29,10 @@ import {
   triggerCallbackOnAllNodes,
   visitGraphNodes,
   getExecutionIdByNode,
-  getExecutionIdForNodeInGraph
+  getExecutionIdForNodeInGraph,
+  isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -720,6 +722,75 @@ describe('graphTraversalUtil', () => {
         expect(
           getExecutionIdForNodeInGraph(rootGraph, orphanSubgraph, '63')
         ).toBe('63')
+      })
+    })
+
+    describe('isAncestorPathActive', () => {
+      function makeActiveSubgraph(id: string, nodes: LGraphNode[]) {
+        return createMockSubgraph(id, nodes)
+      }
+
+      it('returns true for root-level nodes (no ancestors)', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+        expect(isAncestorPathActive(rootGraph, '42')).toBe(true)
+      })
+
+      it('returns true when all ancestor containers are active', () => {
+        const interior = createMockNode('63')
+        const subgraph = makeActiveSubgraph('sub', [interior])
+        const container = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        // container mode defaults to ALWAYS (active)
+        const rootGraph = createMockGraph([container])
+
+        expect(isAncestorPathActive(rootGraph, '65:63')).toBe(true)
+      })
+
+      it('returns false when the immediate parent container is bypassed', () => {
+        const interior = createMockNode('63')
+        const subgraph = makeActiveSubgraph('sub', [interior])
+        const container = createMockLGraphNode({
+          id: 65,
+          isSubgraphNode: () => true,
+          subgraph,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([container])
+
+        expect(isAncestorPathActive(rootGraph, '65:63')).toBe(false)
+      })
+
+      it('returns false when an outer ancestor is muted (deeply nested)', () => {
+        const interior = createMockNode('999')
+        const deep = makeActiveSubgraph('deep', [interior])
+        const midNode = createMockNode('456', {
+          isSubgraph: true,
+          subgraph: deep
+        })
+        const mid = makeActiveSubgraph('mid', [midNode])
+        const topNode = createMockLGraphNode({
+          id: 123,
+          isSubgraphNode: () => true,
+          subgraph: mid,
+          mode: LGraphEventMode.NEVER
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([topNode])
+
+        expect(isAncestorPathActive(rootGraph, '123:456:999')).toBe(false)
+      })
+
+      it('returns true when ancestor node cannot be resolved (defensive)', () => {
+        const rootGraph = createMockGraph([])
+        // Unknown ancestor ID "99" — not found, treated as active.
+        expect(isAncestorPathActive(rootGraph, '99:63')).toBe(true)
+      })
+
+      it('returns true when rootGraph is null/undefined', () => {
+        expect(isAncestorPathActive(null, '65:63')).toBe(true)
+        expect(isAncestorPathActive(undefined, '65:63')).toBe(true)
       })
     })
 

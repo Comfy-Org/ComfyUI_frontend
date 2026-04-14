@@ -108,6 +108,7 @@ import {
   collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
+  isAncestorPathActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -1436,10 +1437,21 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
+      // Drop missing-node entries whose enclosing subgraph is
+      // muted/bypassed. The initial JSON scan only checks each node's
+      // own mode; the cascade from an inactive container is applied here
+      // using the now-configured live graph.
+      const activeMissingNodeTypes = missingNodeTypes.filter(
+        (n) =>
+          typeof n === 'string' ||
+          n.nodeId == null ||
+          isAncestorPathActive(this.rootGraph, String(n.nodeId))
+      )
+
       if (!skipAssetScans) {
         await this.runMissingModelPipeline(
           graphData,
-          missingNodeTypes,
+          activeMissingNodeTypes,
           silentAssetErrors
         )
 
@@ -1482,7 +1494,7 @@ export class ComfyApp {
 
     const modelStore = useModelStore()
     await modelStore.loadModelFolders()
-    const enrichedCandidates = await enrichWithEmbeddedMetadata(
+    const enrichedAll = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       async (name, directory) => {
@@ -1496,6 +1508,15 @@ export class ComfyApp {
         ? (nodeType, widgetName) =>
             assetService.shouldUseAssetBrowser(nodeType, widgetName)
         : undefined
+    )
+
+    // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
+    // scans only checked each node's own mode; the cascade from an
+    // inactive container to its interior happens here.
+    const enrichedCandidates = enrichedAll.filter(
+      (c) =>
+        c.nodeId == null ||
+        isAncestorPathActive(this.rootGraph, String(c.nodeId))
     )
 
     const missingModels: ModelFile[] = enrichedCandidates
@@ -1643,7 +1664,11 @@ export class ComfyApp {
   ): Promise<void> {
     const missingMediaStore = useMissingMediaStore()
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+    // Drop candidates whose enclosing subgraph is muted/bypassed.
+    const candidates = allCandidates.filter((c) =>
+      isAncestorPathActive(this.rootGraph, String(c.nodeId))
+    )
 
     if (!candidates.length) {
       this.cacheMediaCandidates(activeWf, [])
