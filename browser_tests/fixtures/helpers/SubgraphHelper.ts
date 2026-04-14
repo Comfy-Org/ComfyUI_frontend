@@ -5,6 +5,7 @@ import type {
   CanvasPointerEvent,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -507,6 +508,23 @@ export class SubgraphHelper {
       button: 0
     })
     await this.comfyPage.nextFrame()
+  }
+  async publishSubgraph(name: string = 'test blueprint') {
+    await this.comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
+      name
+    })
+  }
+
+  //Blueprints will show an overwrite confirmation dialogue if they have not
+  //already been saved during the active session.
+  //Forcibly reset this flag without an expensive reload operation.
+  async setSaveUnpromptedOnActiveBlueprint() {
+    await this.page.evaluate(() => {
+      const { activeWorkflow } = window.app!.extensionManager.workflow
+      ;(
+        activeWorkflow as ComfyWorkflow & { hasPromptedSave: boolean }
+      ).hasPromptedSave = false
+    })
   }
 
   static getTextSlotPosition(page: Page, nodeId: string) {

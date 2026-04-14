@@ -106,7 +106,6 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
-      await comfyPage.vueNodes.waitForNodes()
       await fitToViewInstant(comfyPage)
     })
 

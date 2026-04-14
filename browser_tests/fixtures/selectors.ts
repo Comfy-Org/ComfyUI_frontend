@@ -68,7 +68,10 @@ export const TestIds = {
     missingMediaConfirmButton: 'missing-media-confirm-button',
     missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
-    publishTabPanel: 'publish-tab-panel'
+    publishTabPanel: 'publish-tab-panel',
+    apiSignin: 'api-signin-dialog',
+    updatePassword: 'update-password-dialog',
+    cloudNotification: 'cloud-notification-dialog'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'

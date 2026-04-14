@@ -7,7 +7,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/image_compare_widget')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   function createTestImageDataUrl(label: string, color: string): string {
