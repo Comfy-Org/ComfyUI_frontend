@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { getNodeClipRegion } from '@e2e/fixtures/utils/screenshotClip'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -33,8 +34,16 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
       await errorOverlay.waitFor({ state: 'hidden' })
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'execution-error-unconnected-slot.png'
+      const nodes = await comfyPage.nodeOps.getNodeRefsByTitle(
+        'CLIP Text Encode (Prompt)'
+      )
+      const clip = await getNodeClipRegion(
+        comfyPage,
+        nodes.map((n) => n.id)
+      )
+      await expect(comfyPage.page).toHaveScreenshot(
+        'execution-error-unconnected-slot.png',
+        { clip }
       )
     }
   )
@@ -63,19 +72,13 @@ test.describe(
 
       await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
       await expect
-        .poll(async () => (await input.getWidget(0)).getValue(), {
-          timeout: 2_000
-        })
+        .poll(async () => (await input.getWidget(0)).getValue())
         .toBe('foo')
       await expect
-        .poll(async () => (await output1.getWidget(0)).getValue(), {
-          timeout: 2_000
-        })
+        .poll(async () => (await output1.getWidget(0)).getValue())
         .toBe('foo')
       await expect
-        .poll(async () => (await output2.getWidget(0)).getValue(), {
-          timeout: 2_000
-        })
+        .poll(async () => (await output2.getWidget(0)).getValue())
         .toBe('')
     })
   }

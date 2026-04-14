@@ -7,6 +7,7 @@ import type {
   MediaType
 } from './types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IBaseWidget,
   IComboWidget
@@ -15,6 +16,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 
 /** Map of node types to their media widget name and media type. */
@@ -49,38 +51,56 @@ export function scanAllMediaCandidates(
   for (const node of allNodes) {
     if (!node.widgets?.length) continue
     if (node.isSubgraphNode?.()) continue
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
 
-    const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
-    if (!mediaInfo) continue
+    candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
+  }
 
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    if (!executionId) continue
+  return candidates
+}
 
-    for (const widget of node.widgets) {
-      if (!isComboWidget(widget)) continue
-      if (widget.name !== mediaInfo.widgetName) continue
+/** Scan a single node for missing media candidates (OSS immediate resolution). */
+export function scanNodeMediaCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isCloud: boolean
+): MissingMediaCandidate[] {
+  if (!node.widgets?.length) return []
 
-      const value = widget.value
-      if (typeof value !== 'string' || !value.trim()) continue
+  const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
+  if (!mediaInfo) return []
 
-      let isMissing: boolean | undefined
-      if (isCloud) {
-        // Cloud: options may be empty initially; defer to async verification
-        isMissing = undefined
-      } else {
-        const options = resolveComboValues(widget)
-        isMissing = !options.includes(value)
-      }
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
 
-      candidates.push({
-        nodeId: executionId as NodeId,
-        nodeType: node.type,
-        widgetName: widget.name,
-        mediaType: mediaInfo.mediaType,
-        name: value,
-        isMissing
-      })
+  const candidates: MissingMediaCandidate[] = []
+  for (const widget of node.widgets) {
+    if (!isComboWidget(widget)) continue
+    if (widget.name !== mediaInfo.widgetName) continue
+
+    const value = widget.value
+    if (typeof value !== 'string' || !value.trim()) continue
+
+    let isMissing: boolean | undefined
+    if (isCloud) {
+      isMissing = undefined
+    } else {
+      const options = resolveComboValues(widget)
+      isMissing = !options.includes(value)
     }
+
+    candidates.push({
+      nodeId: executionId as NodeId,
+      nodeType: node.type,
+      widgetName: widget.name,
+      mediaType: mediaInfo.mediaType,
+      name: value,
+      isMissing
+    })
   }
 
   return candidates

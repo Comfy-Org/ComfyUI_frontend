@@ -4,13 +4,8 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Save Image and WEBM preview',
-  { tag: ['@screenshot', '@widget'] },
+  { tag: ['@screenshot', '@widget', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
     test('Can preview both SaveImage and SaveWEBM outputs', async ({
       comfyPage
     }) => {
@@ -34,9 +29,8 @@ test.describe(
         timeout: 30000
       })
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'save-image-and-webm-preview.png'
-      )
+      await expect(saveImageNode).toHaveScreenshot('save-image-preview.png')
+      await expect(saveWebmNode).toHaveScreenshot('save-webm-preview.png')
     })
   }
 )

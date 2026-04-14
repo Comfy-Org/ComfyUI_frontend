@@ -7,7 +7,6 @@ import {
 
 test.describe('Job History Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setup()
 
     // Expand the queue overlay so the JobHistoryActionsMenu is visible
@@ -25,7 +24,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     await openMoreOptionsPopover(comfyPage)
 
     await expect(
-      comfyPage.page.locator('[data-testid="docked-job-history-action"]')
+      comfyPage.page.getByTestId('docked-job-history-action')
     ).toBeVisible()
   })
 
@@ -34,9 +33,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
   }) => {
     await openMoreOptionsPopover(comfyPage)
 
-    const action = comfyPage.page.locator(
-      '[data-testid="docked-job-history-action"]'
-    )
+    const action = comfyPage.page.getByTestId('docked-job-history-action')
     await expect(action).toBeVisible()
     await expect(action).not.toBeEmpty()
   })
@@ -45,7 +42,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     await openMoreOptionsPopover(comfyPage)
 
     await expect(
-      comfyPage.page.locator('[data-testid="show-run-progress-bar-action"]')
+      comfyPage.page.getByTestId('show-run-progress-bar-action')
     ).toBeVisible()
   })
 
@@ -53,20 +50,18 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
     await openMoreOptionsPopover(comfyPage)
 
     await expect(
-      comfyPage.page.locator('[data-testid="clear-history-action"]')
+      comfyPage.page.getByTestId('clear-history-action')
     ).toBeVisible()
   })
 
   test('Clicking docked job history closes popover', async ({ comfyPage }) => {
     await openMoreOptionsPopover(comfyPage)
 
-    const action = comfyPage.page.locator(
-      '[data-testid="docked-job-history-action"]'
-    )
+    const action = comfyPage.page.getByTestId('docked-job-history-action')
     await expect(action).toBeVisible()
     await action.click()
 
-    await expect(action).not.toBeVisible()
+    await expect(action).toBeHidden()
   })
 
   test('Clicking show run progress bar toggles setting', async ({
@@ -78,9 +73,7 @@ test.describe('Job History Actions', { tag: '@ui' }, () => {
 
     await openMoreOptionsPopover(comfyPage)
 
-    const action = comfyPage.page.locator(
-      '[data-testid="show-run-progress-bar-action"]'
-    )
+    const action = comfyPage.page.getByTestId('show-run-progress-bar-action')
     await action.click()
 
     await expect

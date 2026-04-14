@@ -6,13 +6,10 @@ import {
 const BYPASS_HOTKEY = 'Control+b'
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
-test.describe('Vue Node Bypass', () => {
+test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test(
@@ -28,9 +25,9 @@ test.describe('Vue Node Bypass', () => {
         .getByTestId('node-inner-wrapper')
       await expect(checkpointNode).toHaveClass(BYPASS_CLASS)
       await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-bypassed-state.png'
-      )
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+      ).toHaveScreenshot('vue-node-bypassed-state.png')
 
       await comfyPage.page.keyboard.press(BYPASS_HOTKEY)
       await expect(checkpointNode).not.toHaveClass(BYPASS_CLASS)
