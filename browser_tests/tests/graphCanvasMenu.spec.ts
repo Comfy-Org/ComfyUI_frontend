@@ -5,7 +5,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
 })
 
 test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {

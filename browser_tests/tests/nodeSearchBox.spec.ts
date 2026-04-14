@@ -16,7 +16,6 @@ async function waitForSearchInsertion(
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
 })
 
 test.describe('Node search box', { tag: '@node' }, () => {
@@ -151,7 +150,6 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
-    await comfyPage.closeMenu()
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const screenCenter = {
       x: 200,

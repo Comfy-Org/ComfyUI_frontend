@@ -5,7 +5,6 @@ import { getNodeClipRegion } from '@e2e/fixtures/utils/screenshotClip'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
 })
 

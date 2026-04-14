@@ -6,7 +6,6 @@ import { getNodeClipRegion } from '@e2e/fixtures/utils/screenshotClip'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
 })
 
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {

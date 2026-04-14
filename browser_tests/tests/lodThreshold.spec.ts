@@ -4,7 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
 })
 
 test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {

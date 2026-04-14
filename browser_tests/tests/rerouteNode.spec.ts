@@ -44,7 +44,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.closeMenu()
       await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
     })
 

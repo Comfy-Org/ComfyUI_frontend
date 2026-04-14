@@ -322,6 +322,9 @@ export class ComfyPage {
         window.app && window.app.extensionManager
     )
     await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    await this.page.addStyleTag({
+      content: '.comfy-menu.no-drag.comfy-menu-manual-pos { display: none; }'
+    })
     await this.nextFrame()
   }
 

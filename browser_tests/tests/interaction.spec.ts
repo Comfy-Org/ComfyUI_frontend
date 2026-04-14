@@ -781,7 +781,6 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
   })
 
   test('@mobile Can pan with touch', async ({ comfyPage }) => {
-    await comfyPage.closeMenu()
     await comfyPage.canvasOps.panWithTouch({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned-touch.png')
   })
@@ -845,18 +844,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   test('Restore workflow on reload (switch workflow)', async ({
     comfyPage
   }) => {
-    await comfyPage.closeMenu()
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
     await comfyPage.setup({ clearStorage: false })
-    await comfyPage.closeMenu()
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
   })
 
   test('Restore workflow on reload (modify workflow)', async ({
     comfyPage
   }) => {
-    await comfyPage.closeMenu()
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     await node.click('collapse')
@@ -884,7 +880,6 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       return false
     }, start)
     await comfyPage.setup({ clearStorage: false })
-    await comfyPage.closeMenu()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )

@@ -5,7 +5,6 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  await comfyPage.closeMenu()
 })
 
 const customColorPalettes = {
@@ -155,7 +154,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
     await comfyPage.setup()
-    await comfyPage.closeMenu()
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
