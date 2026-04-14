@@ -46,6 +46,7 @@
 
       <!-- Filter Bar -->
       <MediaAssetFilterBar
+        ref="filterBarRef"
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
@@ -657,8 +658,11 @@ const exitFolderView = () => {
   searchQuery.value = ''
 }
 
+const filterBarRef = ref<InstanceType<typeof MediaAssetFilterBar>>()
+
 onMounted(() => {
   activateSelection()
+  filterBarRef.value?.focus()
 })
 
 onUnmounted(() => {

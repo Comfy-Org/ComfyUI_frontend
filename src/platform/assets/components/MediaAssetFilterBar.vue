@@ -1,6 +1,7 @@
 <template>
   <SidebarTopArea :bottom-divider>
     <SearchInput
+      ref="searchInputRef"
       :model-value="searchQuery"
       :placeholder="
         $t('g.searchPlaceholder', { subject: $t('sideToolbar.labels.assets') })
@@ -37,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -61,6 +64,14 @@ const emit = defineEmits<{
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+
+const searchInputRef = ref<InstanceType<typeof SearchInput>>()
+
+function focus() {
+  searchInputRef.value?.focus()
+}
+
+defineExpose({ focus })
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')
