@@ -1,5 +1,7 @@
 import { readFileSync } from 'fs'
 
+import { test } from '@playwright/test'
+
 import type { AppMode } from '@/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
@@ -73,6 +75,9 @@ export class WorkflowHelper {
       assetPath(`${workflowName}.json`)
     )
     await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async deleteWorkflow(
