@@ -23,20 +23,20 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   <div
     role="article"
     data-testid="linear-welcome"
-    class="mx-auto flex h-full max-w-lg flex-col items-center justify-center gap-6 p-8 text-center"
+    class="mx-auto flex h-full max-w-xl flex-col items-center justify-start gap-4 p-6 text-center"
   >
     <div class="flex flex-col gap-2">
-      <h2 class="text-3xl font-semibold text-muted-foreground">
+      <h2 class="text-5xl font-semibold text-muted-foreground">
         {{ t('linearMode.welcome.title') }}
       </h2>
     </div>
 
-    <div class="flex max-w-md flex-col gap-3 text-[14px] text-muted-foreground">
+    <div class="flex max-w-xl flex-col gap-3 text-xl text-muted-foreground">
       <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div v-if="hasOutputs" class="flex flex-row gap-2 text-[14px]">
+    <div v-if="hasOutputs" class="flex flex-row gap-2 text-xl">
       <p class="mt-0 text-base-foreground">
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>

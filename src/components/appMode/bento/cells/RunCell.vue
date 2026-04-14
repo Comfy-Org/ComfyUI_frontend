@@ -55,7 +55,7 @@ async function handleClick(e: Event) {
   /* GitHub Primer success-button green */
   background-color: #2da44e;
   color: #ffffff;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 150ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -70,7 +70,7 @@ async function handleClick(e: Event) {
 }
 
 .run-cell__icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 </style>

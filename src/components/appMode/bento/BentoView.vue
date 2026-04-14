@@ -15,7 +15,8 @@
  * Stub input/output cells are visible boxes for now; real widget/output
  * rendering swaps in next.
  */
-import { computed } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
@@ -25,7 +26,8 @@ import IconCell from './cells/IconCell.vue'
 import RunCell from './cells/RunCell.vue'
 import FeedbackCell from './cells/FeedbackCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
-import InputsCell from './cells/InputsCell.vue'
+import InputCell from './cells/InputCell.vue'
+import type { InputCellEntry } from './cells/InputCell.vue'
 import OutputsCell from './cells/OutputsCell.vue'
 import BatchCountCell from './cells/BatchCountCell.vue'
 
@@ -40,6 +42,12 @@ import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
+import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { app } from '@/scripts/app'
+import { resolveNodeWidget } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const { enableAppBuilder } = useAppMode()
@@ -69,6 +77,81 @@ function showApps() {
 function openShare() {
   openShareDialog().catch(toastErrorHandler)
 }
+
+// --- Per-input cell data ------------------------------------------------
+// Replicates the filtered-nodeData pattern from AppModeWidgetList so that
+// each selected input can be rendered in its own bento cell with just its
+// own widget inside, not the full node's widget list.
+
+const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
+useEventListener(
+  app.rootGraph.events,
+  'configured',
+  () => (graphNodes.value = app.rootGraph.nodes)
+)
+
+interface InputEntryWithConfig extends InputCellEntry {
+  config: { col?: number; row?: number; colSpan?: number; rowSpan?: number }
+  isMultiline: boolean
+}
+
+const inputEntries = computed<InputEntryWithConfig[]>(() => {
+  // Read graphNodes so we recompute when nodes are added/removed
+  void graphNodes.value
+  const nodeDataByNode = new Map<
+    LGraphNode,
+    ReturnType<typeof extractVueNodeData>
+  >()
+
+  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName, config]) => {
+    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+    if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
+
+    if (!nodeDataByNode.has(node)) {
+      nodeDataByNode.set(node, extractVueNodeData(node))
+    }
+    const fullNodeData = nodeDataByNode.get(node)!
+
+    const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
+      if (vueWidget.slotMetadata?.linked) return false
+      if (!node.isSubgraphNode()) return vueWidget.name === widget.name
+      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
+      return (
+        isPromotedWidgetView(widget) &&
+        widget.sourceNodeId == storeNodeId &&
+        widget.sourceWidgetName === vueWidget.storeName
+      )
+    })
+    if (!matchingWidget) return []
+
+    matchingWidget.slotMetadata = undefined
+    matchingWidget.nodeId = String(node.id)
+
+    const isMultiline =
+      Boolean(
+        (widget.options as { multiline?: boolean } | undefined)?.multiline
+      ) || String(widget.type).toLowerCase() === 'customtext'
+
+    return [
+      {
+        key: `${nodeId}:${widgetName}`,
+        nodeData: {
+          ...fullNodeData,
+          widgets: [matchingWidget]
+        },
+        widget,
+        node,
+        config: config ?? {},
+        isMultiline
+      }
+    ]
+  })
+})
+
+// Map input-cell id → entry so the template can look up by cell id.
+const inputEntryMap = computed(
+  () => new Map(inputEntries.value.map((e) => [`input-${e.key}`, e]))
+)
 
 // Layout matches design/mockups/grid-system-001.png:
 // - Col 1 holds a vertical stack of utility icon cells
@@ -106,7 +189,7 @@ const cells = computed<BentoCellPlacement[]>(() => {
     id: 'feedback',
     col: 1,
     row: -2,
-    colSpan: 3,
+    colSpan: 4,
     kind: 'system-feedback'
   })
 
@@ -123,35 +206,42 @@ const cells = computed<BentoCellPlacement[]>(() => {
     kind: 'system-batch-count'
   })
 
-  // Phase 1 default layout: single hero output cell on the left,
-  // single inputs column cell on the right. Stretched large so both
-  // breathe. These are container cells that host the existing
-  // LinearPreview / AppModeWidgetList components for now.
-  //
-  // Col indices assume a typical ~20-col grid at desktop width. At
-  // narrower viewports the grid has fewer columns and these cells
-  // still occupy most of the available space via negative-index
-  // right anchoring.
-  //
-  // Outputs hero: col 4 .. col -8 (stops 7 cols before right edge),
-  //               rows 1 .. -3 (stops before the bottom system row)
+  // Outputs hero. Ends a few cols before the right edge so the wider
+  // per-input cells (col -11, colSpan 10) sit cleanly beside it.
+  // Phase 2b will split this into per-output cells.
   out.push({
     id: 'outputs',
     col: 4,
     row: 1,
-    colSpan: 14,
+    colSpan: 10,
     rowSpan: 10,
     kind: 'outputs'
   })
-  // Inputs column: 6 cols wide on the right, stops before Run row
-  out.push({
-    id: 'inputs',
-    col: -7,
-    row: 1,
-    colSpan: 6,
-    rowSpan: 10,
-    kind: 'inputs'
-  })
+
+  // Phase 2a: per-input cells. Each selected input becomes its own cell,
+  // auto-stacked in a right-side column wide enough for the NodeWidgets
+  // 3-column grid to breathe. Heuristic: textareas / multiline widgets
+  // take 4 rows; everything else takes 2 rows.
+  //
+  // NOTE: stored per-widget layout config (colSpan/col/row in linearData)
+  // is intentionally ignored here. Earlier experiments wrote colSpan
+  // values into some workflows that now fight the heuristic. Phase 3
+  // will reintroduce stored-config support once drag/resize is wired.
+  const INPUT_COL = -11
+  const INPUT_COL_SPAN = 10
+  let nextInputRow = 1
+  for (const entry of inputEntries.value) {
+    const rowSpan = entry.isMultiline ? 4 : 2
+    out.push({
+      id: `input-${entry.key}`,
+      col: INPUT_COL,
+      row: nextInputRow,
+      colSpan: INPUT_COL_SPAN,
+      rowSpan,
+      kind: 'input'
+    })
+    nextInputRow += rowSpan
+  }
 
   return out
 })
@@ -193,7 +283,10 @@ const cells = computed<BentoCellPlacement[]>(() => {
         <FeedbackCell v-else-if="cell.kind === 'system-feedback'" />
         <RunCell v-else-if="cell.kind === 'system-run'" />
         <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
-        <InputsCell v-else-if="cell.kind === 'inputs'" />
+        <InputCell
+          v-else-if="cell.kind === 'input' && inputEntryMap.get(cell.id)"
+          :entry="inputEntryMap.get(cell.id)!"
+        />
         <OutputsCell v-else-if="cell.kind === 'outputs'" />
         <div v-else class="bento-stub" :data-stub-kind="cell.kind" />
       </template>

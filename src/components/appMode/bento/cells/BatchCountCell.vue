@@ -47,7 +47,7 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 
 .batch-count-cell__label {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--p-text-muted-color, #a1a1a1);
   white-space: nowrap;
 }
@@ -55,5 +55,11 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 .batch-count-cell__input {
   min-width: 0;
   flex: 1;
+}
+
+/* Center the number value inside ScrubableNumberInput so it sits
+   between the − and + controls rather than biased to one side. */
+.batch-count-cell :deep(input) {
+  text-align: center;
 }
 </style>
