@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -28,6 +28,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const menuRef = ref<HTMLElement | undefined>()
 const activeSection = ref<string | null>(null)
 
 const activeSectionItems = computed(
@@ -39,15 +40,64 @@ function onNavigate() {
   emit('close')
 }
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+function trapFocus(e: KeyboardEvent) {
+  if (e.key !== 'Tab') return
+  const menu = menuRef.value
+  if (!menu) return
+  const focusable = [...menu.querySelectorAll<HTMLElement>(FOCUSABLE)]
+  if (!focusable.length) return
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+let savedScrollY = 0
+
+function lockScroll() {
+  savedScrollY = window.scrollY
+  document.body.style.position = 'fixed'
+  document.body.style.top = `-${savedScrollY}px`
+  document.body.style.left = '0'
+  document.body.style.right = '0'
+}
+
+function unlockScroll() {
+  document.body.style.position = ''
+  document.body.style.top = ''
+  document.body.style.left = ''
+  document.body.style.right = ''
+  window.scrollTo(0, savedScrollY)
+}
+
 watch(
   () => open,
-  (isOpen) => {
-    document.body.style.overflow = isOpen ? 'hidden' : ''
+  async (isOpen) => {
+    if (isOpen) {
+      lockScroll()
+      await nextTick()
+      const menu = menuRef.value
+      const firstFocusable = menu?.querySelector<HTMLElement>(FOCUSABLE)
+      firstFocusable?.focus()
+      menu?.addEventListener('keydown', trapFocus)
+    } else {
+      menuRef.value?.removeEventListener('keydown', trapFocus)
+      unlockScroll()
+    }
   }
 )
 
 onUnmounted(() => {
-  document.body.style.overflow = ''
+  menuRef.value?.removeEventListener('keydown', trapFocus)
+  unlockScroll()
 })
 </script>
 
@@ -55,6 +105,10 @@ onUnmounted(() => {
   <div
     v-show="open"
     id="site-mobile-menu"
+    ref="menuRef"
+    role="dialog"
+    aria-modal="true"
+    :aria-label="t('nav.menu', locale)"
     class="bg-primary-comfy-ink fixed inset-0 z-40 flex flex-col px-6 pt-24 pb-8 md:hidden"
   >
     <!-- Main list -->

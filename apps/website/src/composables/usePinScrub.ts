@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { gsap } from '../scripts/gsapSetup'
+import { prefersReducedMotion } from './useReducedMotion'
 
 interface PinScrubRefs {
   section: Ref<HTMLElement | undefined>
@@ -41,7 +42,13 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   const vhPerItem = options.vhPerItem ?? 100
 
   onMounted(() => {
-    if (!refs.section.value || !refs.content.value || !refs.nav.value) return
+    if (
+      !refs.section.value ||
+      !refs.content.value ||
+      !refs.nav.value ||
+      prefersReducedMotion()
+    )
+      return
     const section: HTMLElement = refs.section.value
     const content: HTMLElement = refs.content.value
     const nav: HTMLElement = refs.nav.value

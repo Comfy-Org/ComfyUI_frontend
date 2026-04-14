@@ -19,7 +19,7 @@ const { title, links } = defineProps<{
         v-for="link in links"
         :key="link.href"
         :href="link.href"
-        class="hover:text-primary-warm-white text-sm transition-colors"
+        class="hover:text-primary-warm-white block py-1.5 text-sm transition-colors"
       >
         {{ link.label }}
         <img

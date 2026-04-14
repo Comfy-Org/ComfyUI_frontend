@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
 import { gsap, ScrollTrigger } from '../scripts/gsapSetup'
+import { prefersReducedMotion } from './useReducedMotion'
 
 interface FrameScrubOptions {
   frameCount: number
@@ -16,7 +17,7 @@ export function useFrameScrub(
   const images: HTMLImageElement[] = []
 
   onMounted(() => {
-    if (!canvasRef.value) return
+    if (!canvasRef.value || prefersReducedMotion()) return
     const canvas: HTMLCanvasElement = canvasRef.value
 
     const draw = canvas.getContext('2d')

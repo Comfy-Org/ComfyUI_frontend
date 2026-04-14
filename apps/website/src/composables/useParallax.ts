@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
 import { gsap } from '../scripts/gsapSetup'
+import { prefersReducedMotion } from './useReducedMotion'
 
 interface ParallaxOptions {
   /** Vertical offset in pixels (default: 200) */
@@ -18,7 +19,7 @@ export function useParallax(
   onMounted(() => {
     const trigger = options.trigger?.value
     const els = elements.map((r) => r.value).filter(Boolean) as HTMLElement[]
-    if (!els.length) return
+    if (!els.length || prefersReducedMotion()) return
 
     ctx = gsap.context(() => {
       els.forEach((el) => {

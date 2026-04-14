@@ -94,9 +94,11 @@ const ctaButtons = [
 const currentPath = ref('')
 const openDesktopDropdown = ref<string | null>(null)
 const mobileMenuOpen = ref(false)
+const hamburgerRef = ref<HTMLButtonElement | undefined>()
 
 function closeMobileMenu() {
   mobileMenuOpen.value = false
+  hamburgerRef.value?.focus()
 }
 
 function toggleDesktopDropdown(label: string) {
@@ -152,10 +154,10 @@ onUnmounted(() => {
   >
     <a :href="routes.home" aria-label="Comfy home">
       <img src="/icons/logomark.svg" alt="Comfy" class="h-8 md:hidden" />
-      <span
-        class="hidden h-10 w-36 bg-contain bg-left bg-no-repeat md:block"
-        style="background-image: url('/icons/logo.svg')"
-        aria-hidden="true"
+      <img
+        src="/icons/logo.svg"
+        alt="Comfy"
+        class="hidden h-10 w-36 object-contain object-left md:block"
       />
     </a>
 
@@ -193,6 +195,7 @@ onUnmounted(() => {
 
     <!-- Mobile hamburger -->
     <button
+      ref="hamburgerRef"
       class="flex size-10 items-center justify-center rounded-xl md:hidden"
       :class="
         mobileMenuOpen

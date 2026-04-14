@@ -66,7 +66,6 @@ const emit = defineEmits<{
     <div
       v-if="link.items?.length"
       v-show="isOpen"
-      role="menu"
       data-testid="nav-dropdown"
       class="bg-transparency-white-t4 absolute top-full left-0 w-max rounded-xl p-2 shadow-lg backdrop-blur-md"
     >
@@ -74,7 +73,6 @@ const emit = defineEmits<{
         v-for="item in link.items"
         :key="item.href"
         :href="item.href"
-        role="menuitem"
         class="text-primary-comfy-canvas hover:bg-transparency-white-t4 flex items-center gap-2 rounded-sm p-2 text-xs font-medium tracking-wide transition-colors hover:text-white"
         @click="emit('close')"
       >
