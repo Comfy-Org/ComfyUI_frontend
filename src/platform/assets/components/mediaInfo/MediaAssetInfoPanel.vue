@@ -75,7 +75,10 @@
           </Button>
         </div>
       </ModelInfoField>
-      <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
+      <ModelInfoField
+        v-if="displayName !== getAssetFilename(primaryAsset)"
+        :label="t('assetBrowser.modelInfo.fileName')"
+      >
         <span class="break-all text-muted-foreground">
           {{ getAssetFilename(primaryAsset) }}
         </span>
@@ -84,7 +87,11 @@
         v-if="mediaType"
         :label="t('sideToolbar.mediaAssets.infoPanel.mediaType')"
       >
-        <span class="text-muted-foreground capitalize">{{ mediaType }}</span>
+        <span
+          class="w-fit rounded-sm border border-primary/30 bg-primary/15 px-2 py-0.5 text-xs text-primary capitalize"
+        >
+          {{ mediaType }}
+        </span>
       </ModelInfoField>
       <ModelInfoField
         v-if="primaryAsset.size"
