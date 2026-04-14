@@ -29,6 +29,7 @@ import ModeToggleCell from './cells/ModeToggleCell.vue'
 import InputCell from './cells/InputCell.vue'
 import type { InputCellEntry } from './cells/InputCell.vue'
 import OutputsCell from './cells/OutputsCell.vue'
+import OutputCell from './cells/OutputCell.vue'
 import BatchCountCell from './cells/BatchCountCell.vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -153,6 +154,15 @@ const inputEntryMap = computed(
   () => new Map(inputEntries.value.map((e) => [`input-${e.key}`, e]))
 )
 
+// Map output-cell id → nodeId so the OutputCell can receive it as a prop.
+const outputNodeMap = computed(() => {
+  const m = new Map<string, (typeof appModeStore.selectedOutputs)[number]>()
+  for (const nodeId of appModeStore.selectedOutputs) {
+    m.set(`output-${nodeId}`, nodeId)
+  }
+  return m
+})
+
 // Layout matches design/mockups/grid-system-001.png:
 // - Col 1 holds a vertical stack of utility icon cells
 // - Col 2-3 row 1 hosts the App↔Graph mode toggle
@@ -206,17 +216,48 @@ const cells = computed<BentoCellPlacement[]>(() => {
     kind: 'system-batch-count'
   })
 
-  // Outputs hero. Ends a few cols before the right edge so the wider
-  // per-input cells (col -11, colSpan 10) sit cleanly beside it.
-  // Phase 2b will split this into per-output cells.
-  out.push({
-    id: 'outputs',
-    col: 4,
-    row: 1,
-    colSpan: 10,
-    rowSpan: 10,
-    kind: 'outputs'
-  })
+  // Phase 2b: the first selected output stays in the hero cell (wraps
+  // LinearPreview so output history, latent previews, progress, and
+  // the welcome state all keep working). Additional outputs (when the
+  // workflow has 2+) render as individual OutputCells stacked below
+  // the hero — plain MediaOutputPreview for each specific node.
+  const outputNodeIds = appModeStore.selectedOutputs
+  const [heroOutputId, ...extraOutputIds] = outputNodeIds
+  const hasExtraOutputs = extraOutputIds.length > 0
+
+  if (heroOutputId !== undefined) {
+    out.push({
+      id: 'outputs',
+      col: 4,
+      row: 1,
+      // If there are extra outputs, hero gets narrower to make room
+      // for them on the right side of the outputs region.
+      colSpan: hasExtraOutputs ? 7 : 10,
+      rowSpan: 10,
+      kind: 'outputs'
+    })
+  }
+
+  // Extra output cells: stack vertically in a narrow column to the
+  // right of the hero. Each takes 3 cols and a few rows — enough to
+  // show the media at a reasonable size without dominating.
+  let extraRow = 1
+  const EXTRA_COL = 11
+  const EXTRA_COL_SPAN = 3
+  const EXTRA_ROW_SPAN = 4
+  for (const nodeId of extraOutputIds) {
+    out.push({
+      id: `output-${nodeId}`,
+      col: EXTRA_COL,
+      row: extraRow,
+      colSpan: EXTRA_COL_SPAN,
+      rowSpan: EXTRA_ROW_SPAN,
+      kind: 'output'
+      // Stash the nodeId on the placement so the template can read it;
+      // BentoCellPlacement allows arbitrary `kind` + the id encodes it.
+    } as BentoCellPlacement)
+    extraRow += EXTRA_ROW_SPAN
+  }
 
   // Phase 2a: per-input cells. Each selected input becomes its own cell,
   // auto-stacked in a right-side column wide enough for the NodeWidgets
@@ -288,11 +329,19 @@ const cells = computed<BentoCellPlacement[]>(() => {
           :entry="inputEntryMap.get(cell.id)!"
         />
         <OutputsCell v-else-if="cell.kind === 'outputs'" />
+        <OutputCell
+          v-else-if="cell.kind === 'output' && outputNodeMap.get(cell.id)"
+          :node-id="outputNodeMap.get(cell.id)!"
+        />
         <div v-else class="bento-stub" :data-stub-kind="cell.kind" />
       </template>
     </BentoGrid>
   </div>
 </template>
+
+<!-- Import design tokens (cascades via CSS custom properties on .bento-view)
+     — must stay imported here so every cell inherits the --bento-* vars. -->
+<style src="./design-tokens.css"></style>
 
 <style scoped>
 .bento-view {
@@ -301,7 +350,7 @@ const cells = computed<BentoCellPlacement[]>(() => {
      BentoGrid inside. */
   position: absolute;
   inset: 0;
-  background-color: var(--p-content-background, #1a1a1a);
+  background-color: var(--bento-color-canvas);
 }
 
 .bento-stub {

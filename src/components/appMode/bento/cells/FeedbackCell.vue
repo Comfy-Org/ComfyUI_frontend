@@ -44,9 +44,9 @@ const { t } = useI18n()
 .feedback-cell__text {
   display: flex;
   flex-direction: column;
-  font-size: 14px;
+  font-size: var(--bento-font-md);
   line-height: 1.3;
-  color: var(--p-text-muted-color, #a1a1a1);
+  color: var(--bento-color-text-muted);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -57,12 +57,12 @@ const { t } = useI18n()
 .feedback-cell :deep(button),
 .feedback-cell :deep(a) {
   background-color: transparent !important;
-  color: var(--p-text-muted-color, #a1a1a1) !important;
+  color: var(--bento-color-text-muted) !important;
 }
 
 .feedback-cell :deep(button:hover),
 .feedback-cell :deep(a:hover) {
-  background-color: var(--p-surface-700, #3a3a3a) !important;
-  color: var(--p-text-color, #fafafa) !important;
+  background-color: var(--bento-color-cell-hover) !important;
+  color: var(--bento-color-text) !important;
 }
 </style>

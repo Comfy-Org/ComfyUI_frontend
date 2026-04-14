@@ -77,8 +77,8 @@ provide(HideLayoutFieldKey, true)
 }
 
 .input-cell__label {
-  font-size: 13px;
-  color: var(--p-text-muted-color, #a1a1a1);
+  font-size: var(--bento-font-md);
+  color: var(--bento-color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -88,6 +88,14 @@ provide(HideLayoutFieldKey, true)
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Widget content (textareas, inputs, dropdowns) normally renders at
+   text-xs via WidgetTextarea/WidgetInputNumber. Override to the
+   default bento scale. */
+.input-cell__body :deep(textarea),
+.input-cell__body :deep(input) {
+  font-size: var(--bento-font-md) !important;
 }
 
 /* Let multiline textareas fill the cell body. */

@@ -177,7 +177,7 @@ function cellStyle(cell: BentoCellPlacement) {
   inset: 0;
   display: grid;
   box-sizing: border-box;
-  background-color: var(--p-content-background, #1a1a1a);
+  background-color: var(--bento-color-canvas);
   overflow: hidden;
 }
 
@@ -193,15 +193,15 @@ function cellStyle(cell: BentoCellPlacement) {
    Truly empty cells (no slot content) have no children → no background,
    keeping the runtime canvas composed rather than gridded. */
 .bento-cell:has(> *) {
-  background-color: var(--p-surface-800, #2a2a2a);
-  border-radius: 4px;
+  background-color: var(--bento-color-cell-fill);
+  border-radius: var(--bento-cell-radius);
 }
 
 /* Ghost cells (fillEmpty prototype) always show the fill so the
    grid structure is visible regardless of slot content. */
 .bento-cell--ghost {
-  background-color: var(--p-surface-800, #2a2a2a);
-  border-radius: 4px;
+  background-color: var(--bento-color-cell-fill);
+  border-radius: var(--bento-cell-radius);
   opacity: 0.6;
 }
 </style>

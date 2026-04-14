@@ -43,13 +43,14 @@ defineProps<{
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--p-text-color, #fafafa);
+  color: var(--bento-color-text);
   cursor: pointer;
-  transition: background-color 150ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background-color var(--bento-transition-duration)
+    var(--bento-transition-easing);
 }
 
 .icon-cell:hover:not(:disabled) {
-  background-color: var(--p-surface-700, #3a3a3a);
+  background-color: var(--bento-color-cell-hover);
 }
 
 .icon-cell:disabled {
@@ -58,7 +59,7 @@ defineProps<{
 }
 
 .icon-cell--active {
-  background-color: var(--p-surface-700, #3a3a3a);
+  background-color: var(--bento-color-cell-hover);
 }
 
 .icon-cell__icon {

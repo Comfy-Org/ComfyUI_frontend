@@ -31,12 +31,12 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
       </h2>
     </div>
 
-    <div class="flex max-w-xl flex-col gap-3 text-xl text-muted-foreground">
+    <div class="flex max-w-xl flex-col gap-3 text-lg text-muted-foreground">
       <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div v-if="hasOutputs" class="flex flex-row gap-2 text-xl">
+    <div v-if="hasOutputs" class="flex flex-row gap-2 text-lg">
       <p class="mt-0 text-base-foreground">
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>

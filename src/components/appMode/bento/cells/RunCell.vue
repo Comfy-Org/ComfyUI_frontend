@@ -51,26 +51,26 @@ async function handleClick(e: Event) {
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: 4px;
-  /* GitHub Primer success-button green */
-  background-color: #2da44e;
-  color: #ffffff;
-  font-size: 22px;
+  border-radius: var(--bento-cell-radius);
+  background-color: var(--bento-color-accent);
+  color: var(--bento-color-accent-foreground);
+  font-size: var(--bento-font-xl);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 150ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background-color var(--bento-transition-duration)
+    var(--bento-transition-easing);
 }
 
 .run-cell:hover {
-  background-color: #2c974b;
+  background-color: var(--bento-color-accent-hover);
 }
 
 .run-cell:active {
-  background-color: #298e46;
+  background-color: var(--bento-color-accent-active);
 }
 
 .run-cell__icon {
-  width: 22px;
-  height: 22px;
+  width: var(--bento-font-xl);
+  height: var(--bento-font-xl);
 }
 </style>
