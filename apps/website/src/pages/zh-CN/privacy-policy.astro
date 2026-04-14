@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import SiteNav from '../../components/common/SiteNav.vue'
-import SiteFooter from '../../components/common/SiteFooter.vue'
 ---
 
 <BaseLayout
@@ -9,8 +7,7 @@ import SiteFooter from '../../components/common/SiteFooter.vue'
   description="Comfy 隐私政策。了解我们如何收集、使用和保护您的个人信息。"
   noindex
 >
-  <SiteNav locale="zh-CN" client:load />
-  <main class="mx-auto max-w-3xl px-6 py-24">
+  <div class="mx-auto max-w-3xl px-6 py-24">
     <h1 class="text-3xl font-bold text-white">隐私政策</h1>
     <p class="mt-2 text-sm text-smoke-500">生效日期：2025年4月18日</p>
 
@@ -228,6 +225,5 @@ import SiteFooter from '../../components/common/SiteFooter.vue'
         </a>
       </p>
     </section>
-  </main>
-  <SiteFooter locale="zh-CN" />
+  </div>
 </BaseLayout>

@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import SiteNav from '../../components/common/SiteNav.vue'
-import SiteFooter from '../../components/common/SiteFooter.vue'
 
 const departments = [
   {
@@ -78,8 +76,7 @@ const questions = [
   title="招聘 — Comfy"
   description="加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。"
 >
-  <SiteNav locale="zh-CN" client:load />
-  <main>
+  <div>
     <!-- Hero -->
     <section class="px-6 pb-24 pt-40">
       <div class="mx-auto max-w-4xl text-center">
@@ -195,6 +192,5 @@ const questions = [
         </a>
       </div>
     </section>
-  </main>
-  <SiteFooter locale="zh-CN" />
+  </div>
 </BaseLayout>

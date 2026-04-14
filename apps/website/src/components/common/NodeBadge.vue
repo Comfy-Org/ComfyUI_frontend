@@ -16,7 +16,10 @@ const { segments, segmentClass = 'px-6' } = defineProps<{
       aria-hidden="true"
     />
 
-    <template v-for="(segment, i) in segments" :key="i">
+    <template
+      v-for="(segment, i) in segments"
+      :key="segment.text || segment.logoSrc || i"
+    >
       <img
         v-if="i > 0"
         src="/icons/node-union.svg"

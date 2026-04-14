@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import SiteNav from '../components/common/SiteNav.vue'
-import SiteFooter from '../components/common/SiteFooter.vue'
 ---
 
 <BaseLayout
@@ -9,8 +7,7 @@ import SiteFooter from '../components/common/SiteFooter.vue'
   description="Comfy privacy policy. Learn how we collect, use, and protect your personal information."
   noindex
 >
-  <SiteNav client:load />
-  <main class="mx-auto max-w-3xl px-6 py-24">
+  <div class="mx-auto max-w-3xl px-6 py-24">
     <h1 class="text-3xl font-bold text-white">Privacy Policy</h1>
     <p class="mt-2 text-sm text-smoke-500">Effective date: April 18, 2025</p>
 
@@ -268,6 +265,5 @@ import SiteFooter from '../components/common/SiteFooter.vue'
         </a>
       </p>
     </section>
-  </main>
-  <SiteFooter />
+  </div>
 </BaseLayout>

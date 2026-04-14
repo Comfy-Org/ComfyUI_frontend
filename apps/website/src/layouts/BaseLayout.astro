@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
+import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import SiteNav from '../components/common/SiteNav.vue'
 
@@ -22,7 +23,8 @@ const {
 const siteBase = Astro.site ?? 'https://comfy.org'
 const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
-const locale = Astro.currentLocale ?? 'en'
+const rawLocale = Astro.currentLocale ?? 'en'
+const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
 

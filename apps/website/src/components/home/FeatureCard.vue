@@ -11,6 +11,7 @@ const emit = defineEmits<{
 
 <template>
   <button
+    type="button"
     class="rounded-5xl bg-primary-comfy-yellow text-primary-comfy-ink w-full cursor-pointer p-8 text-left transition-all"
     @click="emit('click')"
   >
