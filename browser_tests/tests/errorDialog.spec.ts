@@ -149,7 +149,7 @@ test.describe('Error dialog', () => {
       window.app!.extensionManager.dialog.showErrorDialog(error)
     })
 
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
     await expect(errorDialog).toBeVisible()
 
     await expect(
@@ -170,7 +170,7 @@ test.describe('Error dialog', () => {
       )
     })
 
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
     await expect(errorDialog).toBeVisible()
 
     await expect(errorDialog.getByText('Custom Error Title')).toBeVisible()
@@ -186,7 +186,7 @@ test.describe('Error dialog', () => {
       )
     })
 
-    const errorDialog = comfyPage.page.locator('.comfy-error-report')
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
     await expect(errorDialog).toBeVisible()
 
     await expect(errorDialog.getByText('Unknown Error')).toBeVisible()

@@ -3,6 +3,9 @@ import { expect } from '@playwright/test'
 import type { Keybinding } from '@/platform/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
+import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
+import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
+import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -154,79 +157,64 @@ test.describe('Signin dialog', () => {
   })
 
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
-    const dialogPromise = comfyPage.page.evaluate(() =>
-      window.app!.extensionManager.dialog.showSignInDialog()
-    )
-
     const dialog = new SignInDialog(comfyPage.page)
+    const { result: dialogResult } = await dialog.open()
+
     await dialog.emailInput.fill('test@example.com')
     await dialog.passwordInput.fill('TestPassword123!')
     await expect(dialog.root).toBeVisible()
 
     await dialog.signInButton.click()
     await expect(dialog.root).toBeHidden()
-    expect(await dialogPromise).toBe(true)
+    expect(await dialogResult).toBe(true)
   })
 
   test('Sign-in dialog resolves false when closed without sign-in', async ({
     comfyPage
   }) => {
-    const dialogPromise = comfyPage.page.evaluate(() =>
-      window.app!.extensionManager.dialog.showSignInDialog()
-    )
-
     const dialog = new SignInDialog(comfyPage.page)
-    await dialog.waitForVisible()
+    const { result: dialogResult } = await dialog.open()
 
     await dialog.close()
-    expect(await dialogPromise).toBe(false)
     await expect(dialog.root).toBeHidden()
+    expect(await dialogResult).toBe(false)
   })
 })
 
 test('API Nodes sign-in dialog', async ({ comfyPage }) => {
-  const dialogPromise = comfyPage.page.evaluate(() =>
-    window.app!.extensionManager.dialog.showApiNodesSignInDialog([
-      'FluxProGenerate',
-      'StableDiffusion3Generate'
-    ])
-  )
+  const dialog = new ApiSignin(comfyPage.page)
+  const { result: dialogResult } = await dialog.open([
+    'FluxProGenerate',
+    'StableDiffusion3Generate'
+  ])
 
-  const dialog = comfyPage.page.locator('.p-dialog')
-  await expect(dialog).toBeVisible()
+  await expect(dialog.root.getByText('FluxProGenerate')).toBeVisible()
+  await expect(dialog.root.getByText('StableDiffusion3Generate')).toBeVisible()
 
-  await expect(
-    dialog.getByText('Sign In Required to Use API Nodes')
-  ).toBeVisible()
-  await expect(dialog.getByText('FluxProGenerate')).toBeVisible()
-  await expect(dialog.getByText('StableDiffusion3Generate')).toBeVisible()
-
-  await dialog.getByRole('button', { name: 'Cancel' }).click()
-  expect(await dialogPromise).toBe(false)
-  await expect(dialog).toBeHidden()
+  await dialog.cancel.click()
+  await expect(dialog.root).toBeHidden()
+  expect(await dialogResult).toBe(false)
 })
 
 test.describe('Update password dialog', () => {
   test('Should only allow submission when inputs are valid', async ({
     comfyPage
   }) => {
-    await comfyPage.page.evaluate(() => {
-      void window.app!.extensionManager.dialog.showUpdatePasswordDialog()
-    })
-    const dialog = comfyPage.page.locator('.p-dialog')
+    const dialog = new UpdatePassword(comfyPage.page)
+    await dialog.open()
 
-    await dialog.getByRole('button', { name: 'Update Password' }).click()
-    await expect(dialog, 'Will not accept when input is invalid').toBeVisible()
+    await dialog.confirm.click()
+    await expect(dialog.root, 'Check that password exists').toBeVisible()
 
     const testPassword = 'Unguessable Password #2'
-    await dialog.getByLabel('Password', { exact: true }).fill(testPassword)
+    await dialog.password.fill(testPassword)
 
-    await dialog.getByRole('button', { name: 'Update Password' }).click()
-    await expect(dialog, 'Will not accept when fields mismatch').toBeVisible()
+    await dialog.confirm.click()
+    await expect(dialog.root, 'Check that inputs match').toBeVisible()
 
-    await dialog.getByLabel('Confirm Password').fill(testPassword)
-    await dialog.getByRole('button', { name: 'Update Password' }).click()
-    await expect(dialog, 'Dialog closes after submission').toBeHidden()
+    await dialog.confirmPassword.fill(testPassword)
+    await dialog.confirm.click()
+    await expect(dialog.root, 'Dialog closes after submission').toBeHidden()
   })
 })
 
@@ -234,39 +222,30 @@ test.describe('Cloud notification dialog', () => {
   test('Should display cloud notification and navigate to comfy.org on Explore', async ({
     comfyPage
   }) => {
-    await comfyPage.page.evaluate(() => {
-      void window.app!.extensionManager.dialog.showCloudNotification()
-    })
+    const dialog = new CloudNotification(comfyPage.page)
+    await dialog.open()
 
-    const dialog = comfyPage.page.locator('.p-dialog')
-    await expect(dialog).toBeVisible()
-
-    await expect(dialog.getByText('Run ComfyUI in the Cloud')).toBeVisible()
     await expect(
-      dialog.getByRole('button', { name: 'Continue Locally' })
+      dialog.root.getByText('Run ComfyUI in the Cloud')
     ).toBeVisible()
 
     const popupPromise = comfyPage.page.waitForEvent('popup')
-    await dialog.getByRole('button', { name: 'Try Cloud for Free' }).click()
+    await dialog.toCloud.click()
     const popup = await popupPromise
 
     expect(new URL(popup.url()).hostname).toContain('comfy.org')
     await popup.close()
-    await expect(dialog).toBeHidden()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('Should close when Continue Locally is clicked', async ({
     comfyPage
   }) => {
-    await comfyPage.page.evaluate(() => {
-      void window.app!.extensionManager.dialog.showCloudNotification()
-    })
+    const dialog = new CloudNotification(comfyPage.page)
+    await dialog.open()
 
-    const dialog = comfyPage.page.locator('.p-dialog')
-    await expect(dialog).toBeVisible()
-
-    await dialog.getByRole('button', { name: 'Continue Locally' }).click()
-    await expect(dialog).toBeHidden()
+    await dialog.back.click()
+    await expect(dialog.root).toBeHidden()
   })
 })
 
