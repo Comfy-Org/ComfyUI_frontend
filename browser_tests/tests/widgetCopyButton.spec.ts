@@ -5,8 +5,6 @@ import {
 
 test.describe('Widget copy button', { tag: ['@ui', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-
     // Add a PreviewAny node which has a read-only textarea with a copy button
     await comfyPage.page.evaluate(() => {
       const node = window.LiteGraph!.createNode('PreviewAny')

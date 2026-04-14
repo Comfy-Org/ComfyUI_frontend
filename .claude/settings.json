@@ -1,9 +1,86 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(pnpx vitest run --testPathPattern=\"draftCacheV2.property\")",
-      "Bash(pnpx vitest run \"draftCacheV2.property\")",
-      "Bash(node -e \"const fc = require\\(''fast-check''\\); console.log\\(Object.keys\\(fc\\).filter\\(k => k.includes\\(''string''\\)\\).join\\('', ''\\)\\)\")"
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(tsc *)",
+            "command": "echo 'Use `pnpm typecheck` instead of running tsc directly.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(vue-tsc *)",
+            "command": "echo 'Use `pnpm typecheck` instead of running vue-tsc directly.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx tsc *)",
+            "command": "echo 'Use `pnpm typecheck` instead of running tsc via npx.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpx tsc *)",
+            "command": "echo 'Use `pnpm typecheck` instead of running tsc via pnpx.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpm exec tsc *)",
+            "command": "echo 'Use `pnpm typecheck` instead of `pnpm exec tsc`.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx vitest *)",
+            "command": "echo 'Use `pnpm test:unit` (or `pnpm test:unit -- <path>`) instead of npx vitest.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpx vitest *)",
+            "command": "echo 'Use `pnpm test:unit` (or `pnpm test:unit -- <path>`) instead of pnpx vitest.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx eslint *)",
+            "command": "echo 'Use `pnpm lint` or `pnpm lint:fix` instead of npx eslint.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpx eslint *)",
+            "command": "echo 'Use `pnpm lint` or `pnpm lint:fix` instead of pnpx eslint.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx prettier *)",
+            "command": "echo 'This project uses oxfmt, not prettier. Use `pnpm format` or `pnpm format:check`.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpx prettier *)",
+            "command": "echo 'This project uses oxfmt, not prettier. Use `pnpm format` or `pnpm format:check`.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx oxlint *)",
+            "command": "echo 'Use `pnpm oxlint` instead of npx oxlint.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx stylelint *)",
+            "command": "echo 'Use `pnpm stylelint` instead of npx stylelint.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx knip *)",
+            "command": "echo 'Use `pnpm knip` instead of npx knip.' >&2 && exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpx knip *)",
+            "command": "echo 'Use `pnpm knip` instead of pnpx knip.' >&2 && exit 2"
+          }
+        ]
+      }
     ]
   }
 }

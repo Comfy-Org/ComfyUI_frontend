@@ -10,7 +10,6 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.describe('without source image', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test(
@@ -72,7 +71,6 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.workflow.loadWorkflow('widgets/image_crop_with_source')
-        await comfyPage.vueNodes.waitForNodes()
         await comfyPage.runButton.click()
         await expect(
           comfyPage.vueNodes.getNodeLocator('2').locator('img')
