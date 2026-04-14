@@ -272,29 +272,24 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
       id: 'output',
       label: t('sideToolbar.labels.generated'),
       icon: 'icon-[lucide--image]'
+    },
+    {
+      id: 'input',
+      label: t('sideToolbar.labels.imported'),
+      icon: 'icon-[lucide--folder-input]'
     }
   ]
 
-  const outputTags = tagNavItems('output', outputTagCounts.value)
-  if (outputTags.length > 0) {
+  // Show tags only for the active category
+  const activeTags =
+    activeTab.value === 'input'
+      ? tagNavItems('input', inputTagCounts.value)
+      : tagNavItems('output', outputTagCounts.value)
+
+  if (activeTags.length > 0) {
     items.push({
       title: t('sideToolbar.mediaAssets.infoPanel.tagging'),
-      items: outputTags,
-      collapsible: true
-    })
-  }
-
-  items.push({
-    id: 'input',
-    label: t('sideToolbar.labels.imported'),
-    icon: 'icon-[lucide--folder-input]'
-  })
-
-  const inputTags = tagNavItems('input', inputTagCounts.value)
-  if (inputTags.length > 0) {
-    items.push({
-      title: t('sideToolbar.mediaAssets.infoPanel.tagging'),
-      items: inputTags,
+      items: activeTags,
       collapsible: true
     })
   }
