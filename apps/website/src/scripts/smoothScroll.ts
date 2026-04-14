@@ -18,5 +18,3 @@ export async function initSmoothScroll() {
   gsap.ticker.add((time) => lenis.raf(time * 1000))
   gsap.ticker.lagSmoothing(0)
 }
-
-export { gsap, ScrollTrigger }
