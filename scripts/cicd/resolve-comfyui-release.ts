@@ -140,7 +140,8 @@ function resolveRelease(
   // Determine target branch based on release type:
   //   'patch' → target current minor (hotfix for production version)
   //   'minor' → try next minor, fall back to current minor (bi-weekly cadence)
-  const releaseTypeInput = process.env.RELEASE_TYPE?.trim().toLowerCase() || 'minor'
+  const releaseTypeInput =
+    process.env.RELEASE_TYPE?.trim().toLowerCase() || 'minor'
   if (releaseTypeInput !== 'minor' && releaseTypeInput !== 'patch') {
     console.error(
       `Invalid RELEASE_TYPE: "${releaseTypeInput}". Expected "minor" or "patch"`
