@@ -21,11 +21,11 @@
   "devDependencies": {
     "@astrojs/check": "catalog:",
     "@astrojs/vue": "catalog:",
+    "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "astro": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:",
-    "@playwright/test": "catalog:"
+    "typescript": "catalog:"
   },
   "nx": {
     "tags": [
@@ -84,7 +84,9 @@
       },
       "test:e2e": {
         "executor": "nx:run-commands",
-        "dependsOn": ["build"],
+        "dependsOn": [
+          "build"
+        ],
         "options": {
           "cwd": "apps/website",
           "command": "playwright test"

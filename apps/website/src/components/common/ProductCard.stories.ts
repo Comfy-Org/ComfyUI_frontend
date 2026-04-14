@@ -8,8 +8,7 @@ const meta: Meta<typeof ProductCard> = {
   tags: ['autodocs'],
   decorators: [
     () => ({
-      template:
-        '<div class="bg-primary-comfy-ink p-8"><story /></div>'
+      template: '<div class="bg-primary-comfy-ink p-8"><story /></div>'
     })
   ],
   args: {
