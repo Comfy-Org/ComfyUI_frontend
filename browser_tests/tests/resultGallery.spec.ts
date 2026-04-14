@@ -4,10 +4,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
-
   async function runAndOpenGallery(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow(
       'widgets/save_image_and_animated_webp'

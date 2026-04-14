@@ -4,10 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Toast Notifications', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
-
   async function triggerErrorToast(comfyPage: {
     page: { evaluate: (fn: () => void) => Promise<void> }
     nextFrame: () => Promise<void>
