@@ -299,7 +299,7 @@ if (!releaseInfo) {
 }
 
 // Output as JSON for GitHub Actions
-
+// oxlint-disable-next-line no-console -- stdout is captured by the workflow
 console.log(JSON.stringify(releaseInfo, null, 2))
 
 export { resolveRelease }
