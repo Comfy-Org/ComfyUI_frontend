@@ -30,16 +30,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      entry: [
-        'src/pages/**/*.astro',
-        'src/layouts/**/*.astro',
-        'src/components/**/*.vue',
-        'src/scripts/**/*.ts',
-        'src/i18n/**/*.ts',
-        'src/styles/global.css'
-      ],
-      project: ['src/**/*.{astro,vue,ts}', '*.{js,ts,mjs}'],
-      ignoreDependencies: ['@astrojs/check']
+      entry: ['src/scripts/**/*.ts']
     }
   },
   ignoreBinaries: ['python3'],

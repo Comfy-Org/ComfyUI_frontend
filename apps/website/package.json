@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "typecheck": "astro check",
     "test:e2e": "playwright test",
     "test:e2e:local": "PLAYWRIGHT_LOCAL=1 playwright test"
   },
