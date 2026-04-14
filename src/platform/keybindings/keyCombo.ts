@@ -84,7 +84,7 @@ export class KeyComboImpl implements KeyCombo {
     if (this.shift) {
       sequences.push('Shift')
     }
-    sequences.push(this.key)
+    sequences.push(this.key.length === 1 ? this.key.toUpperCase() : this.key)
     return sequences
   }
 }

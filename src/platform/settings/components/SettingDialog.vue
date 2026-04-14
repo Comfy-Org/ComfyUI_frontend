@@ -57,26 +57,37 @@
     </template>
 
     <template #content>
-      <template v-if="activePanel">
-        <Suspense>
-          <component :is="activePanel.component" v-bind="activePanel.props" />
-          <template #fallback>
-            <div>
-              {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
-            </div>
-          </template>
-        </Suspense>
-      </template>
-      <template v-else-if="inSearch">
-        <SettingsPanel :setting-groups="searchResults" />
-      </template>
-      <template v-else-if="activeSettingCategory">
-        <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
-        <ColorPaletteMessage
-          v-if="activeSettingCategory.label === 'Appearance'"
-        />
-        <SettingsPanel :setting-groups="sortedGroups(activeSettingCategory)" />
-      </template>
+      <div
+        :class="
+          cn(
+            'mx-auto w-full text-sm',
+            activeCategoryKey !== 'keybinding' && 'max-w-3xl'
+          )
+        "
+      >
+        <template v-if="activePanel">
+          <Suspense>
+            <component :is="activePanel.component" v-bind="activePanel.props" />
+            <template #fallback>
+              <div>
+                {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
+              </div>
+            </template>
+          </Suspense>
+        </template>
+        <template v-else-if="inSearch">
+          <SettingsPanel :setting-groups="searchResults" />
+        </template>
+        <template v-else-if="activeSettingCategory">
+          <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
+          <ColorPaletteMessage
+            v-if="activeSettingCategory.label === 'Appearance'"
+          />
+          <SettingsPanel
+            :setting-groups="sortedGroups(activeSettingCategory)"
+          />
+        </template>
+      </div>
     </template>
   </BaseModalLayout>
 </template>
@@ -101,6 +112,7 @@ import type {
   SettingParams
 } from '@/platform/settings/types'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { cn } from '@/utils/tailwindUtil'
 import { flattenTree } from '@/utils/treeUtil'
 
 const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
