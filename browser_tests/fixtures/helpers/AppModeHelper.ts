@@ -9,6 +9,7 @@ import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
+import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
   readonly footer: BuilderFooterHelper
@@ -150,20 +151,6 @@ export class AppModeHelper {
 
   get centerPanel(): Locator {
     return this.page.getByTestId(TestIds.linear.centerPanel)
-  }
-
-  get mobileWorkflows() {
-    return this.mobileView.getByTestId(TestIds.linear.mobileWorkflows)
-  }
-  get mobileActionmenu() {
-    return this.mobileView.getByTestId(TestIds.linear.mobileActionMenu)
-  }
-  async switchMobileWorkflow(workflowName: string) {
-    await this.mobileWorkflows.click()
-    await this.page.getByRole('menu').getByText(workflowName).click()
-  }
-  async mobileNavigateTab(name: 'run' | 'outputs' | 'assets') {
-    await this.mobileNavigation.getByRole('tab', { name }).click()
   }
 
   /**

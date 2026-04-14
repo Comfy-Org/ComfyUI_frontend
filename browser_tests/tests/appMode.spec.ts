@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('App mode usage', () => {
   test('Drag and Drop', async ({ comfyPage }) => {
@@ -11,7 +11,7 @@ test.describe('App mode usage', () => {
     await expect(centerPanel).toBeVisible()
     //an app without an image input will load the workflow
     await comfyPage.dragDrop.dragAndDropFile('workflowInMedia/workflow.webp')
-    await expect(centerPanel).not.toBeVisible()
+    await expect(centerPanel).toBeHidden()
 
     //prep a load image
     await comfyPage.workflow.loadWorkflow('default')
@@ -28,6 +28,7 @@ test.describe('App mode usage', () => {
     await comfyPage.dragDrop.dragAndDropURL('/assets/images/og-image.png')
     await expect(centerPanel).toBeVisible()
   })
+
   test('Widet Interaction', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([
       ['3', 'seed'],
@@ -43,11 +44,11 @@ test.describe('App mode usage', () => {
 
     await seed.dragTo(incrementButton, { steps: 5 })
     const intermediateValue = Number(await input.inputValue())
-    await expect(intermediateValue).toBeGreaterThan(initialValue)
+    expect(intermediateValue).toBeGreaterThan(initialValue)
 
     await seed.dragTo(decrementButton, { steps: 5 })
     const endValue = Number(await input.inputValue())
-    await expect(endValue).toBeLessThan(intermediateValue)
+    expect(endValue).toBeLessThan(intermediateValue)
 
     const sampler = comfyPage.appMode.linearWidgets.getByLabel('sampler_name', {
       exact: true
@@ -61,6 +62,7 @@ test.describe('App mode usage', () => {
 
     //verify values are consistent with litegraph
   })
+
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode
