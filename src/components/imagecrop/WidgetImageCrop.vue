@@ -36,6 +36,7 @@
 
         <div
           v-if="isLoading"
+          aria-live="polite"
           class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node-component-surface/90"
         >
           <span class="text-sm">{{ $t('imageCrop.loading') }}</span>

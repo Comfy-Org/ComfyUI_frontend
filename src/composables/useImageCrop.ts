@@ -19,7 +19,8 @@ type ResizeDirection =
 
 const HANDLE_SIZE = 8
 const CORNER_SIZE = 10
-const MIN_CROP_SIZE = 16
+/** Minimum crop width/height in source image pixel space. */
+export const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 2
 
 /**

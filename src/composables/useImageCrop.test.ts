@@ -7,6 +7,10 @@ describe('imageCropLoadingAfterUrlChange', () => {
     expect(imageCropLoadingAfterUrlChange(null, 'https://a/b.png')).toBe(false)
   })
 
+  it('keeps loading off when url stays null', () => {
+    expect(imageCropLoadingAfterUrlChange(null, null)).toBe(false)
+  })
+
   it('starts loading when url changes to a new string', () => {
     expect(imageCropLoadingAfterUrlChange('https://b', 'https://a')).toBe(true)
   })
