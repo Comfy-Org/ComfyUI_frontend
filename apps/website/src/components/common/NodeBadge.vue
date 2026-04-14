@@ -39,7 +39,7 @@ const { segments, segmentClass = 'px-6' } = defineProps<{
         />
         <span
           v-else
-          class="inline-block translate-y-0.5 text-xl font-bold lg:translate-y-1 lg:text-5xl"
+          class="inline-block translate-y-0.5 text-xl font-bold whitespace-nowrap lg:translate-y-1 lg:text-5xl"
         >
           {{ segment.text }}
         </span>
