@@ -2,12 +2,11 @@
   <SidebarTopArea :bottom-divider>
     <div class="flex items-center gap-2">
       <slot name="prefix" />
-      <TagsInputAutocomplete
-        v-if="suggestions && suggestions.length > 0"
-        ref="tagSearchRef"
+      <SearchInputWithTags
+        ref="searchRef"
         v-model="filterTags"
         v-model:query="searchModel"
-        :suggestions
+        :suggestions="suggestions ?? []"
         :allow-create="false"
         :placeholder="
           $t('g.searchPlaceholder', {
@@ -26,19 +25,7 @@
             {{ suggestion }}
           </span>
         </template>
-      </TagsInputAutocomplete>
-      <SearchInput
-        v-else
-        ref="searchInputRef"
-        :model-value="searchQuery"
-        :placeholder="
-          $t('g.searchPlaceholder', {
-            subject: $t('sideToolbar.labels.assets')
-          })
-        "
-        class="min-w-0 flex-1"
-        @update:model-value="handleSearchChange"
-      />
+      </SearchInputWithTags>
     </div>
     <template #actions>
       <MediaAssetFilterButton
@@ -73,8 +60,7 @@
 import { computed, ref } from 'vue'
 
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import TagsInputAutocomplete from '@/components/ui/tags-input/TagsInputAutocomplete.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SearchInputWithTags from '@/components/ui/search-input/SearchInputWithTags.vue'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
@@ -93,7 +79,6 @@ const {
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
   bottomDivider?: boolean
-  /** When provided, search field shows tag autocomplete with chip filters */
   suggestions?: string[]
 }>()
 
@@ -107,25 +92,18 @@ const filterTags = defineModel<string[]>('filterTags', { default: () => [] })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 
-const searchInputRef = ref()
-const tagSearchRef = ref()
+const searchRef = ref<InstanceType<typeof SearchInputWithTags>>()
 
-// Two-way binding for TagsInputAutocomplete query
 const searchModel = computed({
   get: () => searchQuery,
   set: (value: string) => emit('update:searchQuery', value)
 })
 
 function focus() {
-  searchInputRef.value?.focus()
-  tagSearchRef.value?.$el?.querySelector('input')?.focus()
+  searchRef.value?.focus()
 }
 
 defineExpose({ focus })
-
-const handleSearchChange = (value: string | undefined) => {
-  emit('update:searchQuery', value ?? '')
-}
 
 const handleMediaTypeFiltersChange = (value: string[]) => {
   emit('update:mediaTypeFilters', value)

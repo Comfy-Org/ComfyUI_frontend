@@ -48,11 +48,13 @@
       <MediaAssetFilterBar
         ref="filterBarRef"
         v-model:search-query="searchQuery"
+        v-model:filter-tags="filterTags"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
+        :suggestions="availableTags"
       />
       <!-- Tab list -->
       <div
@@ -253,6 +255,7 @@ import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -386,6 +389,7 @@ const currentAssets = computed(() =>
 const loading = computed(() => currentAssets.value.loading.value)
 const error = computed(() => currentAssets.value.error.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
+const availableTags = useAvailableMediaTags(mediaAssets)
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -418,7 +422,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
+const { searchQuery, filterTags, sortBy, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
@@ -518,6 +522,7 @@ watch(
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
+    filterTags.value = []
     // Reset pagination state when tab changes
     void refreshAssets()
   },
