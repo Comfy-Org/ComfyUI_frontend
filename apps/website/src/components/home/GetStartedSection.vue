@@ -40,7 +40,9 @@ const steps = [
   <section class="bg-primary-comfy-ink px-4 py-40 lg:px-20">
     <div class="flex flex-col gap-12 lg:flex-row lg:gap-8">
       <!-- Left heading -->
-      <div class="shrink-0 lg:w-115">
+      <div
+        class="bg-primary-comfy-ink sticky top-20 shrink-0 py-2 lg:top-28 lg:w-115 lg:self-start"
+      >
         <h2 class="text-primary-comfy-canvas text-5xl font-light">
           {{ t('getStarted.heading', locale) }}
         </h2>

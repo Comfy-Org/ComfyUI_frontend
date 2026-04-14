@@ -19,18 +19,18 @@ export function useFrameScrub(
     if (!canvasRef.value) return
     const canvas: HTMLCanvasElement = canvasRef.value
 
-    const context = canvas.getContext('2d')
-    if (!context) return
+    const draw = canvas.getContext('2d')
+    if (!draw) return
     let loadedCount = 0
     const resolvedTrigger = options.scrollTrigger(canvas)
 
     function drawFrame(frame: number) {
       const index = Math.round(frame)
       const img = images[index]
-      if (!img) return
+      if (!img || !draw) return
       canvas.width = img.width
       canvas.height = img.height
-      context.drawImage(img, 0, 0)
+      draw.drawImage(img, 0, 0)
     }
 
     function onFrameReady() {
