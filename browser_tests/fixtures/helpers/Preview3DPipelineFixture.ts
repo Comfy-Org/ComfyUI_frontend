@@ -43,22 +43,6 @@ async function orbitDragFromCanvasCenter(
   await page.mouse.up()
 }
 
-export async function backendHasPreview3DNodes(
-  comfyPage: ComfyPage
-): Promise<boolean> {
-  const resp = await comfyPage.request.get(`${comfyPage.url}/object_info`, {
-    failOnStatusCode: false
-  })
-  if (!resp.ok()) return false
-  const data: unknown = await resp.json()
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'Load3D' in data &&
-    'Preview3D' in data
-  )
-}
-
 export class Preview3DPipelineContext {
   /** Matches node ids in `browser_tests/assets/3d/preview3d_pipeline.json`. */
   static readonly loadNodeId = '1'
@@ -271,7 +255,7 @@ export class Preview3DPipelineContext {
           ),
         {
           timeout: 15_000,
-          message: `Preview3D camera after reload should match saved state (axis max delta ≤ ${PREVIEW3D_CAMERA_AXIS_RESTORE_EPS}, zoom delta ≤ ${PREVIEW3D_CAMERA_ZOOM_RESTORE_EPS}; see src/utils/preview3dCameraState.test.ts)`
+          message: `Preview3D camera after reload should match saved state (axis max delta ≤ ${PREVIEW3D_CAMERA_AXIS_RESTORE_EPS}, zoom delta ≤ ${PREVIEW3D_CAMERA_ZOOM_RESTORE_EPS}; see browser_tests/fixtures/utils/preview3dCameraState.ts)`
         }
       )
       .toBe(true)
@@ -281,23 +265,12 @@ export class Preview3DPipelineContext {
 export const preview3dPipelineTest = comfyPageFixture.extend<{
   preview3dPipeline: Preview3DPipelineContext
 }>({
-  preview3dPipeline: async ({ comfyPage }, use, testInfo) => {
+  preview3dPipeline: async ({ comfyPage }, use) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
     )
-
-    const hasPreview3dNodes = await backendHasPreview3DNodes(comfyPage)
-    if (!hasPreview3dNodes) {
-      testInfo.skip(
-        true,
-        'Requires ComfyUI backend with Load3D and Preview3D nodes (object_info)'
-      )
-      await use(new Preview3DPipelineContext(comfyPage))
-      await comfyPage.workflow.setupWorkflowsDirectory({})
-      return
-    }
 
     await comfyPage.workflow.loadWorkflow('3d/preview3d_pipeline')
     await comfyPage.vueNodes.waitForNodes()

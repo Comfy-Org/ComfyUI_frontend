@@ -2,8 +2,6 @@ import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { execSync } from 'child_process'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { config as dotenvConfig } from 'dotenv'
 import type { IncomingMessage, ServerResponse } from 'http'
 import { Readable } from 'stream'
@@ -22,8 +20,6 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import { comfyAPIPlugin } from './build/plugins'
 
 dotenvConfig()
-
-const __viteConfigDir = path.dirname(fileURLToPath(import.meta.url))
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
@@ -638,8 +634,7 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
-      '@': '/src',
-      '@e2e': path.resolve(__viteConfigDir, 'browser_tests')
+      '@': '/src'
     }
   },
 
