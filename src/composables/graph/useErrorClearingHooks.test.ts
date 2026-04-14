@@ -730,6 +730,54 @@ describe('realtime verification staleness guards', () => {
   })
 })
 
+describe('scan skips interior of bypassed subgraph containers', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
+  })
+
+  it('does not surface interior missing model when entering a bypassed subgraph', async () => {
+    // Repro: root has a bypassed subgraph container, interior node is
+    // itself active. useGraphNodeManager replays `onNodeAdded` for each
+    // interior node on subgraph entry, which previously reached
+    // scanSingleNodeErrors without an ancestor check and resurfaced the
+    // error that the initial pipeline post-filter had correctly dropped.
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    subgraphNode.mode = LGraphEventMode.BYPASS
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    // Any scanner output would surface the error if the ancestor guard
+    // didn't short-circuit first — return a concrete missing candidate.
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: `${subgraphNode.id}:${interiorNode.id}`,
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'fake.safetensors',
+        isMissing: true
+      }
+    ])
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(subgraph)
+
+    // Simulate useGraphNodeManager replaying onNodeAdded for existing
+    // interior nodes after Vue node manager init on subgraph entry.
+    subgraph.onNodeAdded?.(interiorNode)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
+})
+
 describe('clearWidgetRelatedErrors parameter routing', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

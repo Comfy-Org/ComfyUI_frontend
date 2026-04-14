@@ -41,7 +41,8 @@ import {
   collectAllNodes,
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
-  getNodeByExecutionId
+  getNodeByExecutionId,
+  isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
 
 function resolvePromotedExecId(
@@ -172,6 +173,12 @@ function scanAndAddNodeErrors(node: LGraphNode): void {
 
 function scanSingleNodeErrors(node: LGraphNode): void {
   if (!app.rootGraph) return
+  // Skip when any enclosing subgraph is muted/bypassed. Callers only
+  // verify each node's own mode; entering a bypassed subgraph (via
+  // useGraphNodeManager replaying onNodeAdded for existing interior
+  // nodes) reaches this point without the ancestor check.
+  const execId = getExecutionIdByNode(app.rootGraph, node)
+  if (execId && !isAncestorPathActive(app.rootGraph, execId)) return
 
   const modelCandidates = scanNodeModelCandidates(
     app.rootGraph,
