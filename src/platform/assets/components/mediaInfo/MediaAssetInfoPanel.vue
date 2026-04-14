@@ -16,7 +16,7 @@
       </div>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem :collapse="true" :class="accordionClass">
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
