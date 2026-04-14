@@ -277,4 +277,4 @@ export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
 }
 
-export type { Locale, TranslationKey }
+export type { Locale }
