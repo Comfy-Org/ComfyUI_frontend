@@ -25,6 +25,7 @@
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
         :show-generation-time-sort="activeTab === 'output'"
+        :suggestions="availableTags"
       />
     </template>
 
@@ -57,7 +58,7 @@
         "
         :message="$t('sideToolbar.noFilesFoundMessage')"
       />
-      <div v-else class="size-full">
+      <div v-else class="relative size-full">
         <AssetsSidebarListView
           v-if="viewMode === 'list'"
           :asset-items="listViewAssetItems"
@@ -81,6 +82,33 @@
           @approach-end="handleApproachEnd"
           @zoom="handleZoomClick"
         />
+        <!-- Selection action bar -->
+        <div
+          v-if="hasSelection"
+          class="absolute inset-x-0 bottom-0 flex h-14 items-center justify-between gap-2 border-t border-comfy-input bg-base-background px-6"
+        >
+          <Button variant="secondary" @click="clearSelection">
+            {{
+              $t('mediaAsset.selection.selectedCount', {
+                count: totalOutputCount
+              })
+            }}
+          </Button>
+          <div class="flex items-center gap-2">
+            <Button
+              v-if="shouldShowDeleteButton"
+              variant="secondary"
+              @click="handleDeleteSelected"
+            >
+              <i class="icon-[lucide--trash-2] size-4" />
+              <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
+            </Button>
+            <Button variant="secondary" @click="handleDownloadSelected">
+              <i class="icon-[lucide--download] size-4" />
+              <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
+            </Button>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -117,13 +145,22 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useStorage } from '@vueuse/core'
-import { computed, nextTick, provide, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -133,6 +170,8 @@ import MediaAssetInfoPanel from '@/platform/assets/components/mediaInfo/MediaAss
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -179,6 +218,7 @@ const currentAssets = computed(() =>
 )
 const loading = computed(() => currentAssets.value.loading.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
+const availableTags = useAvailableMediaTags(mediaAssets)
 
 // Filtering — reuses the same composable as the sidebar
 const viewMode = useStorage<'list' | 'grid'>(
@@ -202,9 +242,30 @@ const {
 })
 
 // Selection — same composable as the sidebar
-const { isSelected, handleAssetClick, reconcileSelection } = useAssetSelection()
+const {
+  isSelected,
+  handleAssetClick,
+  hasSelection,
+  clearSelection,
+  getSelectedAssets,
+  reconcileSelection,
+  getTotalOutputCount,
+  activate: activateSelection,
+  deactivate: deactivateSelection
+} = useAssetSelection()
+
+const { downloadMultipleAssets, deleteAssets } = useMediaAssetActions()
+
+const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+
+const totalOutputCount = computed(() =>
+  getTotalOutputCount(selectedAssets.value)
+)
 
 watch(displayAssets, (assets) => reconcileSelection(assets))
+
+onMounted(() => activateSelection())
+onUnmounted(() => deactivateSelection())
 
 // Right panel
 const isRightPanelOpen = ref(false)
@@ -218,7 +279,8 @@ const shouldShowDeleteButton = computed(() => {
 function handleAssetSelect(asset: AssetItem) {
   focusedAsset.value = asset
   isRightPanelOpen.value = true
-  handleAssetClick(asset, 0, displayAssets.value)
+  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
+  handleAssetClick(asset, index, displayAssets.value)
 }
 
 function handleZoomClick(asset: AssetItem) {
@@ -294,6 +356,7 @@ watch(
   () => {
     searchQuery.value = ''
     focusedAsset.value = null
+    clearSelection()
     void currentAssets.value.fetchMediaList()
   },
   { immediate: true }
@@ -301,5 +364,16 @@ watch(
 
 async function refreshAssets() {
   await currentAssets.value.fetchMediaList()
+}
+
+function handleDownloadSelected() {
+  downloadMultipleAssets(selectedAssets.value)
+  clearSelection()
+}
+
+async function handleDeleteSelected() {
+  if (await deleteAssets(selectedAssets.value)) {
+    clearSelection()
+  }
 }
 </script>

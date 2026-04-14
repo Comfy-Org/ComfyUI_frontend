@@ -278,6 +278,7 @@
     "clear": "Clear",
     "clearAll": "Clear all",
     "createTag": "Create new tag",
+    "tagPrefix": "tag:",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
     "itemsSelected": "No items selected | {count} item selected | {count} items selected",

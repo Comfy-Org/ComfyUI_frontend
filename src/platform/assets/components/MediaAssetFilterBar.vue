@@ -1,13 +1,43 @@
 <template>
   <SidebarTopArea :bottom-divider>
-    <SearchInput
-      ref="searchInputRef"
-      :model-value="searchQuery"
-      :placeholder="
-        $t('g.searchPlaceholder', { subject: $t('sideToolbar.labels.assets') })
-      "
-      @update:model-value="handleSearchChange"
-    />
+    <div class="flex items-center gap-2">
+      <slot name="prefix" />
+      <SearchAutocomplete
+        v-if="suggestions && suggestions.length > 0"
+        ref="searchInputRef"
+        v-model="searchModel"
+        :suggestions="filteredTagSuggestions"
+        :placeholder="
+          $t('g.searchPlaceholder', {
+            subject: $t('sideToolbar.labels.assets')
+          })
+        "
+        class="min-w-0 flex-1"
+        @select="handleTagSelect"
+      >
+        <template #suggestion="{ suggestion }">
+          <span class="text-muted-foreground italic opacity-90">
+            {{ $t('g.tagPrefix') }}
+          </span>
+          <span
+            class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
+            v-html="highlightQuery(suggestion, searchModel)"
+          />
+        </template>
+      </SearchAutocomplete>
+      <SearchInput
+        v-else
+        ref="searchInputRef"
+        :model-value="searchQuery"
+        :placeholder="
+          $t('g.searchPlaceholder', {
+            subject: $t('sideToolbar.labels.assets')
+          })
+        "
+        class="min-w-0 flex-1"
+        @update:model-value="handleSearchChange"
+      />
+    </div>
     <template #actions>
       <MediaAssetFilterButton
         v-if="isCloud"
@@ -38,10 +68,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
+import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import { highlightQuery } from '@/utils/formatUtil'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
@@ -50,11 +82,18 @@ import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 
-const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
+const {
+  searchQuery,
+  showGenerationTimeSort = false,
+  bottomDivider = false,
+  suggestions
+} = defineProps<{
   searchQuery: string
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
   bottomDivider?: boolean
+  /** When provided, search field shows tag autocomplete suggestions */
+  suggestions?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +104,13 @@ const emit = defineEmits<{
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 
-const searchInputRef = ref<InstanceType<typeof SearchInput>>()
+const searchInputRef = ref()
+
+// Two-way model for SearchAutocomplete
+const searchModel = computed({
+  get: () => searchQuery,
+  set: (value: string) => emit('update:searchQuery', value)
+})
 
 function focus() {
   searchInputRef.value?.focus()
@@ -80,4 +125,27 @@ const handleSearchChange = (value: string | undefined) => {
 const handleMediaTypeFiltersChange = (value: string[]) => {
   emit('update:mediaTypeFilters', value)
 }
+
+/** Filter suggestions based on current search text */
+const filteredTagSuggestions = computed(() => {
+  if (!suggestions) return []
+  // Strip any existing "tag: " prefix from the query for matching
+  const query = searchModel.value.replace(/^tag:\s*/i, '').trim()
+  if (!query) return suggestions
+  const lower = query.toLowerCase()
+  return suggestions.filter((s) => s.toLowerCase().includes(lower))
+})
+
+function handleTagSelect(tag: string) {
+  emit('update:searchQuery', `tag: ${tag}`)
+}
 </script>
+
+<style scoped>
+:deep(.highlight) {
+  font-weight: 700;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+</style>
