@@ -993,7 +993,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
+  /** Temporarily stored during configure for use by _internalConfigureAfterSlots */
+  private _pendingWidgetsValues?: unknown[]
+
+  /**
+   * Per-instance promoted widget values.
+   * Multiple SubgraphNode instances share the same inner nodes, so
+   * promoted widget values must be stored per-instance to avoid collisions.
+   * Key: `${sourceNodeId}:${sourceWidgetName}`
+   */
+  readonly _instanceWidgetValues = new Map<string, unknown>()
+
   override configure(info: ExportedSubgraphInstance): void {
+    this._instanceWidgetValues.clear()
+    this._pendingWidgetsValues = info.widgets_values
+
     for (const input of this.inputs) {
       if (
         input._listenerController &&
@@ -1143,6 +1157,21 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
       if (store.isPromoted(this.rootGraph.id, this.id, source)) continue
       store.promote(this.rootGraph.id, this.id, source)
+    }
+
+    // Hydrate per-instance promoted widget values from serialized data.
+    // LGraphNode.configure skips promoted widgets (serialize === false on
+    // the view), so they must be applied here after promoted views exist.
+    // Only iterate serializable views to match what serialize() wrote.
+    if (this._pendingWidgetsValues) {
+      const views = this._getPromotedViews()
+      let i = 0
+      for (const view of views) {
+        if (!view.sourceSerialize) continue
+        if (i >= this._pendingWidgetsValues.length) break
+        view.value = this._pendingWidgetsValues[i++] as typeof view.value
+      }
+      this._pendingWidgetsValues = undefined
     }
   }
 
@@ -1538,6 +1567,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onRemoved(): void {
     this._eventAbortController.abort()
     this._invalidatePromotedViewsCache()
+    this._instanceWidgetValues.clear()
 
     for (const widget of this.widgets) {
       if (isPromotedWidgetView(widget)) {
@@ -1593,28 +1623,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     ctx.restore()
   }
 
-  /**
-   * Synchronizes widget values from this SubgraphNode instance to the
-   * corresponding widgets in the subgraph definition before serialization.
-   * This ensures nested subgraph widget values are preserved when saving.
-   */
   override serialize(): ISerialisedNode {
-    // Sync widget values to subgraph definition before serialization.
-    // Only sync for inputs that are linked to a promoted widget via _widget.
-    for (const input of this.inputs) {
-      if (!input._widget) continue
-
-      const subgraphInput =
-        input._subgraphSlot ??
-        this.subgraph.inputNode.slots.find((slot) => slot.name === input.name)
-      if (!subgraphInput) continue
-
-      const connectedWidgets = subgraphInput.getConnectedWidgets()
-      for (const connectedWidget of connectedWidgets) {
-        connectedWidget.value = input._widget.value
-      }
-    }
-
     // Write promotion store state back to properties for serialization
     const entries = usePromotionStore().getPromotions(
       this.rootGraph.id,
@@ -1622,7 +1631,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
     this.properties.proxyWidgets = this._serializeEntries(entries)
 
-    return super.serialize()
+    const serialized = super.serialize()
+    const views = this._getPromotedViews()
+
+    const serializableViews = views.filter((view) => view.sourceSerialize)
+    if (serializableViews.length > 0) {
+      serialized.widgets_values = serializableViews.map((view) => {
+        const value = view.serializeValue
+          ? view.serializeValue(this, -1)
+          : view.value
+        return value != null && typeof value === 'object'
+          ? JSON.parse(JSON.stringify(value))
+          : (value ?? null)
+      })
+    }
+
+    return serialized
   }
   override clone() {
     const clone = super.clone()

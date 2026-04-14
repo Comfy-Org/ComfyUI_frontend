@@ -12,7 +12,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'widgets/save_image_and_animated_webp'
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       await comfyPage.runButton.click()
 

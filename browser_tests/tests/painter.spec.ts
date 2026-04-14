@@ -13,7 +13,6 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => window.app?.graph?.clear())
     await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test(
