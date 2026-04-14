@@ -28,10 +28,6 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-})
-
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
@@ -49,7 +45,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const deleteButton = comfyPage.page.getByTestId('delete-button')
     await expect(deleteButton).toBeVisible()
-    await deleteButton.click({ force: true })
+    await deleteButton.click()
     await comfyPage.nextFrame()
 
     await expect
@@ -65,7 +61,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const infoButton = comfyPage.page.getByTestId('info-button')
     await expect(infoButton).toBeVisible()
-    await infoButton.click({ force: true })
+    await infoButton.click()
     await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
   })
 
@@ -98,7 +94,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const deleteButton = comfyPage.page.getByTestId('delete-button')
     await expect(deleteButton).toBeVisible()
-    await deleteButton.click({ force: true })
+    await deleteButton.click()
     await comfyPage.nextFrame()
 
     await expect
@@ -120,7 +116,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const bypassButton = comfyPage.page.getByTestId('bypass-button')
     await expect(bypassButton).toBeVisible()
-    await bypassButton.click({ force: true })
+    await bypassButton.click()
     await comfyPage.nextFrame()
 
     await expect.poll(() => nodeRef.isBypassed()).toBe(true)
@@ -128,7 +124,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       BYPASS_CLASS
     )
 
-    await bypassButton.click({ force: true })
+    await bypassButton.click()
     await comfyPage.nextFrame()
 
     await expect.poll(() => nodeRef.isBypassed()).toBe(false)
@@ -147,7 +143,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       'convert-to-subgraph-button'
     )
     await expect(convertButton).toBeVisible()
-    await convertButton.click({ force: true })
+    await convertButton.click()
     await comfyPage.nextFrame()
 
     // KSampler should be gone, replaced by a subgraph node
@@ -175,7 +171,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       'convert-to-subgraph-button'
     )
     await expect(convertButton).toBeVisible()
-    await convertButton.click({ force: true })
+    await convertButton.click()
     await comfyPage.nextFrame()
 
     await expect
@@ -200,13 +196,14 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
 
-    const frameButton = comfyPage.page.getByRole('button', {
-      name: /Frame Nodes/i
-    })
-    await expect(frameButton).toBeVisible()
-    await comfyPage.page
+    await expect(
+      comfyPage.selectionToolbox.getByRole('button', {
+        name: /Frame Nodes/i
+      })
+    ).toBeVisible()
+    await comfyPage.selectionToolbox
       .getByRole('button', { name: /Frame Nodes/i })
-      .click({ force: true })
+      .click()
     await comfyPage.nextFrame()
 
     await expect

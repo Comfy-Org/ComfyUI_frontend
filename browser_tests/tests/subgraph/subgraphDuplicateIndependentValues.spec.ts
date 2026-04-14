@@ -11,14 +11,8 @@ async function openVueNodeContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
 
 test.describe(
   'Subgraph Duplicate Independent Values',
-  { tag: ['@slow', '@subgraph'] },
+  { tag: ['@slow', '@subgraph', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
     test('Duplicated subgraphs maintain independent widget values', async ({
       comfyPage
     }) => {

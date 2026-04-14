@@ -150,7 +150,7 @@
         "playwright/no-element-handle": "error",
         "playwright/no-eval": "error",
         "playwright/no-focused-test": "error",
-        "playwright/no-force-option": "off",
+        "playwright/no-force-option": "error",
         "playwright/no-networkidle": "error",
         "playwright/no-page-pause": "error",
         "playwright/no-skipped-test": "error",

@@ -62,7 +62,7 @@ test.describe(
         return
       }
 
-      await moreOptionsBtn.click({ force: true })
+      await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
       const menuOptionsVisibleAfterClick = await comfyPage.page
@@ -126,9 +126,7 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Rename', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Rename', { exact: true }).click()
       const input = comfyPage.page.locator(
         '.group-title-editor.node-title-editor .editable-text input'
       )
@@ -153,11 +151,7 @@ test.describe(
         await comfyPage.nextFrame()
       }
 
-      await comfyPage.page
-        .locator('#graph-canvas')
-        .click({ position: { x: 0, y: 50 }, force: true })
-
-      await comfyPage.nextFrame()
+      await comfyPage.canvasOps.mouseClickAt({ x: 0, y: 50 })
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
       ).toBeHidden()
