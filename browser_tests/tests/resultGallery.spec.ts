@@ -12,7 +12,6 @@ test.describe('MediaLightbox', { tag: ['@slow', '@vue-nodes'] }, () => {
     await comfyPage.workflow.loadWorkflow(
       'widgets/save_image_and_animated_webp'
     )
-    await comfyPage.vueNodes.waitForNodes()
     await comfyPage.runButton.click()
 
     // Wait for SaveImage node to produce output
