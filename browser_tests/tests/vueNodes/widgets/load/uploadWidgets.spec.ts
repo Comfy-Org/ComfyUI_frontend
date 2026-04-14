@@ -6,7 +6,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test('should hide canvas-only upload buttons', async ({ comfyPage }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
     await comfyPage.vueNodes.waitForNodes()
 
