@@ -10,9 +10,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const canvasRef = ref<HTMLCanvasElement>()
 
 useFrameScrub(canvasRef, {
-  frameCount: 74,
+  frameCount: 75,
   frameSrc: (i) =>
-    `/videos/hero-logo-seq/Logo${String(i + 1).padStart(2, '0')}.webp`,
+    `/videos/hero-logo-seq/Logo${String(i).padStart(2, '0')}.webp`,
   scrollTrigger: (canvas) => ({
     trigger: canvas,
     start: 'top 80%',
