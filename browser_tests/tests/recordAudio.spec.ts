@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getNodeClipRegion } from '@e2e/fixtures/utils/screenshotClip'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -30,6 +31,10 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
       .toBe(1)
 
     // Take a screenshot of the canvas with the RecordAudio node
-    await expect(comfyPage.canvas).toHaveScreenshot('record_audio_node.png')
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')
+    const clip = await getNodeClipRegion(comfyPage, [nodes[0].id])
+    await expect(comfyPage.page).toHaveScreenshot('record_audio_node.png', {
+      clip
+    })
   })
 })

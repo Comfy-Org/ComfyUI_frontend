@@ -322,6 +322,9 @@ export class ComfyPage {
         window.app && window.app.extensionManager
     )
     await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    await this.page.addStyleTag({
+      content: '.comfy-menu.no-drag.comfy-menu-manual-pos { display: none; }'
+    })
     await this.nextFrame()
   }
 
@@ -371,8 +374,11 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.locator('button.comfy-close-menu-btn').click()
-    await this.nextFrame()
+    const btn = this.page.locator('button.comfy-close-menu-btn')
+    if (await btn.isVisible()) {
+      await btn.click({ timeout: 2000 }).catch(() => {})
+      await this.nextFrame()
+    }
   }
 
   async clickDialogButton(prompt: string, buttonText: string = 'Yes') {

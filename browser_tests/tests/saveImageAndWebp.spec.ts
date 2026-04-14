@@ -29,9 +29,8 @@ test.describe(
         timeout: 30000
       })
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'save-image-and-webm-preview.png'
-      )
+      await expect(saveImageNode).toHaveScreenshot('save-image-preview.png')
+      await expect(saveWebmNode).toHaveScreenshot('save-webm-preview.png')
     })
   }
 )
