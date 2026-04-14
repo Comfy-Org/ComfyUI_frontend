@@ -2,6 +2,7 @@
   "name": "@comfyorg/comfyui-frontend",
   "version": "1.42.10",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
   "license": "GPL-3.0-only",
