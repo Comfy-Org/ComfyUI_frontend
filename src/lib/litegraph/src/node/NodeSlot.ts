@@ -173,16 +173,14 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
           ctx.clip(path, 'evenodd')
         }
         const radius = highlight ? 5 : 4
-        const typesSet = new Set(
-          `${this.type}`
-            .split(',')
-            .map(
-              this.isConnected
-                ? (type) => colorContext.getConnectedColor(type)
-                : (type) => colorContext.getDisconnectedColor(type)
-            )
-        )
-        const types = [...typesSet].slice(0, 3)
+        const types = `${this.type}`
+          .split(',')
+          .map(
+            this.isConnected
+              ? (type) => colorContext.getConnectedColor(type)
+              : (type) => colorContext.getDisconnectedColor(type)
+          )
+          .slice(0, 3)
         if (types.length > 1) {
           doFill = false
           const arcLen = (Math.PI * 2) / types.length

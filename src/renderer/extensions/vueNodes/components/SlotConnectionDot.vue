@@ -32,10 +32,7 @@ const types = computed(() => {
   //TODO Support connected/disconnected colors?
   if (!props.slotData) return [getSlotColor()]
   if (props.slotData.type === '*') return ['']
-  const typesSet = new Set(
-    `${props.slotData.type}`.split(',').map(getSlotColor)
-  )
-  return [...typesSet].slice(0, 3)
+  return `${props.slotData.type}`.split(',').map(getSlotColor).slice(0, 3)
 })
 
 defineExpose({
