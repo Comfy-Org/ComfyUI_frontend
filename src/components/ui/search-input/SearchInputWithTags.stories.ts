@@ -158,6 +158,122 @@ export const Loading: Story = {
   })
 }
 
+const MIXED_SUGGESTIONS = [
+  ...TAG_SUGGESTIONS.map((t) => `tag:${t}`),
+  ...['image', 'video', 'audio', '3d', 'text'].map((t) => `type:${t}`)
+]
+
+function stripPrefix(value: string): string {
+  const idx = value.indexOf(':')
+  return idx >= 0 ? value.slice(idx + 1) : value
+}
+
+function mixedChipClass(value: string): string {
+  if (value.startsWith('type:'))
+    return 'bg-primary/15 text-primary border-primary/30'
+  return ''
+}
+
+export const MixedTagsAndTypes: Story = {
+  render: () => ({
+    components: { SearchInputWithTags },
+    setup() {
+      const chips = ref<string[]>([])
+      const search = ref('')
+      return {
+        chips,
+        search,
+        MIXED_SUGGESTIONS,
+        chipClass: mixedChipClass,
+        chipLabel: stripPrefix
+      }
+    },
+    template: `
+      <div class="w-[500px]">
+        <SearchInputWithTags
+          v-model="chips"
+          v-model:query="search"
+          :suggestions="MIXED_SUGGESTIONS"
+          :chip-class="chipClass"
+          :chip-label="chipLabel"
+          :allow-create="false"
+          placeholder="Search by tag or type..."
+        >
+          <template #suggestion="{ suggestion }">
+            <span class="text-muted-foreground italic opacity-90">
+              {{ suggestion.startsWith('type:') ? 'type:' : 'tag:' }}
+            </span>
+            <span
+              :class="[
+                'ml-1.5 inline-flex items-center rounded-sm px-2 py-0.5 text-xs',
+                suggestion.startsWith('type:')
+                  ? 'bg-primary/15 text-primary border border-primary/30'
+                  : 'bg-modal-card-tag-background text-modal-card-tag-foreground'
+              ]"
+            >
+              {{ chipLabel(suggestion) }}
+            </span>
+          </template>
+        </SearchInputWithTags>
+        <div class="mt-4 text-xs text-muted-foreground">
+          Chips: {{ chips.length === 0 ? 'none' : chips.join(', ') }}
+          <br/>Search: "{{ search }}"
+        </div>
+      </div>
+    `
+  })
+}
+
+export const WithMixedChips: Story = {
+  render: () => ({
+    components: { SearchInputWithTags },
+    setup() {
+      const chips = ref(['tag:landscape', 'type:video', 'tag:anime'])
+      const search = ref('')
+      return {
+        chips,
+        search,
+        MIXED_SUGGESTIONS,
+        chipClass: mixedChipClass,
+        chipLabel: stripPrefix
+      }
+    },
+    template: `
+      <div class="w-[500px]">
+        <SearchInputWithTags
+          v-model="chips"
+          v-model:query="search"
+          :suggestions="MIXED_SUGGESTIONS"
+          :chip-class="chipClass"
+          :chip-label="chipLabel"
+          :allow-create="false"
+          placeholder="Search..."
+        >
+          <template #suggestion="{ suggestion }">
+            <span class="text-muted-foreground italic opacity-90">
+              {{ suggestion.startsWith('type:') ? 'type:' : 'tag:' }}
+            </span>
+            <span
+              :class="[
+                'ml-1.5 inline-flex items-center rounded-sm px-2 py-0.5 text-xs',
+                suggestion.startsWith('type:')
+                  ? 'bg-primary/15 text-primary border border-primary/30'
+                  : 'bg-modal-card-tag-background text-modal-card-tag-foreground'
+              ]"
+            >
+              {{ chipLabel(suggestion) }}
+            </span>
+          </template>
+        </SearchInputWithTags>
+        <div class="mt-4 text-xs text-muted-foreground">
+          Chips: {{ chips.join(', ') }}
+          <br/>Search: "{{ search }}"
+        </div>
+      </div>
+    `
+  })
+}
+
 export const Disabled: Story = {
   render: () => ({
     components: { SearchInputWithTags },

@@ -55,6 +55,7 @@
         v-model="tags"
         delimiter=""
         :disabled
+        :display-value="chipLabel"
         :class="
           cn(
             'flex scrollbar-hide min-w-0 flex-1 items-center gap-1 overflow-x-auto',
@@ -66,7 +67,13 @@
           v-for="tag in tags"
           :key="tag"
           :value="tag"
-          class="h-5 shrink-0 rounded-sm border border-border-default bg-modal-card-tag-background py-0 pr-0.5 pl-1.5 text-[10px] text-modal-card-tag-foreground"
+          :class="
+            cn(
+              'h-5 shrink-0 rounded-sm py-0 pr-0.5 pl-1.5 text-[10px]',
+              'border border-border-default bg-modal-card-tag-background text-modal-card-tag-foreground',
+              chipClass?.(tag)
+            )
+          "
         >
           <TagsInputItemText />
           <TagsInputItemDelete />
@@ -190,6 +197,8 @@ const {
   caseSensitive = false,
   aliasChars = '-_',
   allowCreate = false,
+  chipClass,
+  chipLabel,
   class: className
 } = defineProps<{
   suggestions?: string[]
@@ -201,6 +210,10 @@ const {
   caseSensitive?: boolean
   aliasChars?: string
   allowCreate?: boolean
+  /** Returns additional CSS classes for a chip based on its value */
+  chipClass?: (value: string) => string
+  /** Returns the display text for a chip. Default: show the raw value */
+  chipLabel?: (value: string) => string
   class?: HTMLAttributes['class']
 }>()
 

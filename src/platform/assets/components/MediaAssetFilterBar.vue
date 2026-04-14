@@ -4,10 +4,12 @@
       <slot name="prefix" />
       <SearchInputWithTags
         ref="searchRef"
-        v-model="filterTags"
+        v-model="selectedChips"
         v-model:query="searchModel"
-        :suggestions="suggestions ?? []"
+        :suggestions="allSuggestions"
         :allow-create="false"
+        :chip-class="getChipClass"
+        :chip-label="getChipLabel"
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
@@ -17,12 +19,17 @@
       >
         <template #suggestion="{ suggestion }">
           <span class="text-muted-foreground italic opacity-90">
-            {{ $t('g.tagPrefix') }}
+            {{ getSuggestionPrefix(suggestion) }}
           </span>
           <span
-            class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
+            :class="
+              cn(
+                'ml-1.5 inline-flex items-center rounded-sm px-2 py-0.5 text-xs',
+                getSuggestionPillClass(suggestion)
+              )
+            "
           >
-            {{ suggestion }}
+            {{ stripPrefix(suggestion) }}
           </span>
         </template>
       </SearchInputWithTags>
@@ -57,17 +64,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import SearchInputWithTags from '@/components/ui/search-input/SearchInputWithTags.vue'
 import { isCloud } from '@/platform/distribution/types'
+import { cn } from '@/utils/tailwindUtil'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'
 import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
+
+const MEDIA_TYPES = ['image', 'video', 'audio', '3d', 'text']
 
 const {
   searchQuery,
@@ -99,6 +109,59 @@ const searchModel = computed({
   set: (value: string) => emit('update:searchQuery', value)
 })
 
+// Combined suggestions: tag:* + type:*
+const allSuggestions = computed(() => {
+  const tagSuggs = (suggestions ?? []).map((t) => `tag:${t}`)
+  const typeSuggs = MEDIA_TYPES.map((t) => `type:${t}`)
+  return [...tagSuggs, ...typeSuggs]
+})
+
+// Single source of truth: all selected chips as prefixed strings
+const selectedChips = ref<string[]>([])
+
+// Sync chips → filterTags + mediaTypeFilters
+watch(
+  selectedChips,
+  (chips) => {
+    filterTags.value = chips
+      .filter((c) => c.startsWith('tag:'))
+      .map((c) => c.slice(4))
+
+    emit(
+      'update:mediaTypeFilters',
+      chips.filter((c) => c.startsWith('type:')).map((c) => c.slice(5))
+    )
+  },
+  { deep: true }
+)
+
+// Prefix helpers
+function stripPrefix(value: string): string {
+  const idx = value.indexOf(':')
+  return idx >= 0 ? value.slice(idx + 1) : value
+}
+
+function getSuggestionPrefix(value: string): string {
+  if (value.startsWith('type:')) return 'type:'
+  return 'tag:'
+}
+
+function getSuggestionPillClass(value: string): string {
+  if (value.startsWith('type:'))
+    return 'bg-primary/15 text-primary border border-primary/30'
+  return 'bg-modal-card-tag-background text-modal-card-tag-foreground'
+}
+
+function getChipClass(value: string): string {
+  if (value.startsWith('type:'))
+    return 'bg-primary/15 text-primary border-primary/30'
+  return ''
+}
+
+function getChipLabel(value: string): string {
+  return stripPrefix(value)
+}
+
 function focus() {
   searchRef.value?.focus()
 }
@@ -106,6 +169,9 @@ function focus() {
 defineExpose({ focus })
 
 const handleMediaTypeFiltersChange = (value: string[]) => {
-  emit('update:mediaTypeFilters', value)
+  // Sync checkbox filter → chips (rebuild type chips, keep tag chips)
+  const tagChips = selectedChips.value.filter((c) => c.startsWith('tag:'))
+  const typeChips = value.map((t) => `type:${t}`)
+  selectedChips.value = [...tagChips, ...typeChips]
 }
 </script>
