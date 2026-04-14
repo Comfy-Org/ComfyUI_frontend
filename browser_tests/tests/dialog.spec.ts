@@ -5,9 +5,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
-type AugmentedWindow = Window &
-  typeof globalThis & { signInPromise?: Promise<boolean> }
-
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
@@ -155,25 +152,21 @@ test.describe('Signin dialog', () => {
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
   })
+
   //FIXME: neither of these tests are useful both need rewrites
   test('Sign-in dialog resolves false when closed without sign-in', async ({
     comfyPage
   }) => {
-    await comfyPage.page.evaluate(async () => {
-      ;(window as AugmentedWindow).signInPromise =
-        window.app!.extensionManager.dialog.showSignInDialog()
-    })
+    const dialogPromise = comfyPage.page.evaluate(() =>
+      window.app!.extensionManager.dialog.showSignInDialog()
+    )
 
     const dialog = new SignInDialog(comfyPage.page)
     await dialog.waitForVisible()
 
     await dialog.close()
-    expect(
-      await comfyPage.page.evaluate(
-        () => (window as AugmentedWindow).signInPromise
-      )
-    ).toBe(false)
-    await expect(dialog.root).not.toBeVisible()
+    expect(await dialogPromise).toBe(false)
+    await expect(dialog.root).toBeHidden()
   })
 
   test('Sign-in dialog shows sign-in form and can fill credentials', async ({
@@ -197,13 +190,12 @@ test.describe('Signin dialog', () => {
 })
 
 test('API Nodes sign-in dialog', async ({ comfyPage }) => {
-  await comfyPage.page.evaluate(() => {
-    ;(window as AugmentedWindow).signInPromise =
-      window.app!.extensionManager.dialog.showApiNodesSignInDialog([
-        'FluxProGenerate',
-        'StableDiffusion3Generate'
-      ])
-  })
+  const dialogPromise = comfyPage.page.evaluate(() =>
+    window.app!.extensionManager.dialog.showApiNodesSignInDialog([
+      'FluxProGenerate',
+      'StableDiffusion3Generate'
+    ])
+  )
 
   const dialog = comfyPage.page.locator('.p-dialog')
   await expect(dialog).toBeVisible()
@@ -215,32 +207,31 @@ test('API Nodes sign-in dialog', async ({ comfyPage }) => {
   await expect(dialog.getByText('StableDiffusion3Generate')).toBeVisible()
 
   await dialog.getByRole('button', { name: 'Cancel' }).click()
-  expect(
-    await comfyPage.page.evaluate(
-      () => (window as AugmentedWindow).signInPromise
-    )
-  ).toBe(false)
-  await expect(dialog).not.toBeVisible()
+  expect(await dialogPromise).toBe(false)
+  await expect(dialog).toBeHidden()
 })
 
 test.describe('Update password dialog', () => {
-  test('Should open update password dialog with form fields', async ({
+  test('Should only allow submission when inputs are valid', async ({
     comfyPage
   }) => {
     await comfyPage.page.evaluate(() => {
       void window.app!.extensionManager.dialog.showUpdatePasswordDialog()
     })
-
     const dialog = comfyPage.page.locator('.p-dialog')
-    await expect(dialog).toBeVisible()
 
-    await expect(dialog.locator('#comfy-org-sign-up-password')).toBeVisible()
-    await expect(
-      dialog.locator('#comfy-org-sign-up-confirm-password')
-    ).toBeVisible()
-    await expect(
-      dialog.getByRole('button', { name: 'Update Password' })
-    ).toBeVisible()
+    await dialog.getByRole('button', { name: 'Update Password' }).click()
+    await expect(dialog, 'Will not accept when input is invalid').toBeVisible()
+
+    const testPassword = 'Unguessable Password #2'
+    await dialog.getByLabel('Password', { exact: true }).fill(testPassword)
+
+    await dialog.getByRole('button', { name: 'Update Password' }).click()
+    await expect(dialog, 'Will not accept when fields mismatch').toBeVisible()
+
+    await dialog.getByLabel('Confirm Password').fill(testPassword)
+    await dialog.getByRole('button', { name: 'Update Password' }).click()
+    await expect(dialog, 'Dialog closes after submission').toBeHidden()
   })
 })
 
@@ -266,7 +257,7 @@ test.describe('Cloud notification dialog', () => {
 
     expect(new URL(popup.url()).hostname).toContain('comfy.org')
     await popup.close()
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
   })
 
   test('Should close when Continue Locally is clicked', async ({
@@ -280,7 +271,7 @@ test.describe('Cloud notification dialog', () => {
     await expect(dialog).toBeVisible()
 
     await dialog.getByRole('button', { name: 'Continue Locally' }).click()
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
   })
 })
 
@@ -294,6 +285,7 @@ test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
   )
 
   const tab = comfyPage.menu.nodeLibraryTabV2
+
   await test.step('Publish a basic subgraph', async () => {
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await comfyPage.contextMenu.openForVueNode(ksampler.header)
@@ -306,6 +298,7 @@ test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
   })
 
   const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
+
   await test.step('Edit the published subgraph', async () => {
     const blueprintNode = tab.getNode(blueprintName)
     await expect(blueprintNode, 'blueprint visible in library').toBeVisible()
@@ -323,7 +316,7 @@ test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
   await test.step('No dialog: user prompted on publish', async () => {
     await dirtyGraphAndSave()
     await comfyPage.nextFrame()
-    await expect(confirmDialog).not.toBeVisible()
+    await expect(confirmDialog).toBeHidden()
   })
 
   await test.step('Should show dialog', async () => {
@@ -343,6 +336,6 @@ test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
     await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
     await dirtyGraphAndSave()
     await comfyPage.nextFrame()
-    await expect(confirmDialog).not.toBeVisible()
+    await expect(confirmDialog).toBeHidden()
   })
 })
