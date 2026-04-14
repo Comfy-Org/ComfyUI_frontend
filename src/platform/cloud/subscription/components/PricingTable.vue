@@ -270,6 +270,7 @@ import {
   TIER_TO_KEY
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  SubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -280,9 +281,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { useAuthStore } from '@/stores/authStore'
-import type { components } from '@/types/comfyRegistryTypes'
 
-type SubscriptionTier = components['schemas']['SubscriptionTier']
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 

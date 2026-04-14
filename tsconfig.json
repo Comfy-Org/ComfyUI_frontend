@@ -50,7 +50,8 @@
     "playwright.config.ts",
     "playwright.i18n.config.ts",
     "vite.config.mts",
-    "vitest.config.ts"
+    "vitest.config.ts",
     // "vitest.setup.ts",
+    ".claude/skills/comfy-qa/scripts/**/*"
   ]
 }

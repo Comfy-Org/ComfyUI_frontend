@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
-} from '../../../../helpers/promotedWidgets'
+} from '@e2e/helpers/promotedWidgets'
 
 test.describe('Vue Nodes Image Preview', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -81,28 +81,23 @@ test.describe('Vue Nodes Image Preview', () => {
       await expect(firstSubgraphNode).toBeVisible()
       await expect(secondSubgraphNode).toBeVisible()
 
-      const firstPromotedWidgets = await getPromotedWidgetNames(comfyPage, '7')
-      const secondPromotedWidgets = await getPromotedWidgetNames(comfyPage, '8')
-      expect(firstPromotedWidgets).toEqual([
-        '$$canvas-image-preview',
-        '$$canvas-image-preview'
-      ])
-      expect(secondPromotedWidgets).toEqual(['$$canvas-image-preview'])
+      await expect
+        .poll(() => getPromotedWidgetNames(comfyPage, '7'))
+        .toEqual(['$$canvas-image-preview', '$$canvas-image-preview'])
+      await expect
+        .poll(() => getPromotedWidgetNames(comfyPage, '8'))
+        .toEqual(['$$canvas-image-preview'])
 
-      expect(
-        await getPromotedWidgetCountByName(
-          comfyPage,
-          '7',
-          '$$canvas-image-preview'
+      await expect
+        .poll(() =>
+          getPromotedWidgetCountByName(comfyPage, '7', '$$canvas-image-preview')
         )
-      ).toBe(2)
-      expect(
-        await getPromotedWidgetCountByName(
-          comfyPage,
-          '8',
-          '$$canvas-image-preview'
+        .toBe(2)
+      await expect
+        .poll(() =>
+          getPromotedWidgetCountByName(comfyPage, '8', '$$canvas-image-preview')
         )
-      ).toBe(1)
+        .toBe(1)
 
       await expect(
         firstSubgraphNode.locator('.lg-node-widgets')

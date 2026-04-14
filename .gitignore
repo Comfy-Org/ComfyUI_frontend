@@ -67,6 +67,9 @@ dist.zip
 /temp/
 /tmp/
 
+# QA local output
+/.comfy-qa/
+
 # Generated JSON Schemas
 /schemas/
 

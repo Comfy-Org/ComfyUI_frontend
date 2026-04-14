@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -41,30 +41,28 @@ test.describe('MediaLightbox', { tag: ['@slow'] }, () => {
     await assetCard.hover()
     await assetCard.getByLabel('Zoom in').click()
 
-    const gallery = comfyPage.page.getByRole('dialog')
-    await expect(gallery).toBeVisible()
-
-    return { gallery }
+    const { root } = comfyPage.mediaLightbox
+    await expect(root).toBeVisible()
   }
 
   test('opens gallery and shows dialog with close button', async ({
     comfyPage
   }) => {
-    const { gallery } = await runAndOpenGallery(comfyPage)
-    await expect(gallery.getByLabel('Close')).toBeVisible()
+    await runAndOpenGallery(comfyPage)
+    await expect(comfyPage.mediaLightbox.closeButton).toBeVisible()
   })
 
   test('closes gallery on Escape key', async ({ comfyPage }) => {
     await runAndOpenGallery(comfyPage)
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(comfyPage.page.getByRole('dialog')).not.toBeVisible()
+    await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
   })
 
   test('closes gallery when clicking close button', async ({ comfyPage }) => {
-    const { gallery } = await runAndOpenGallery(comfyPage)
+    await runAndOpenGallery(comfyPage)
 
-    await gallery.getByLabel('Close').click()
-    await expect(comfyPage.page.getByRole('dialog')).not.toBeVisible()
+    await comfyPage.mediaLightbox.closeButton.click()
+    await expect(comfyPage.mediaLightbox.root).not.toBeVisible()
   })
 })

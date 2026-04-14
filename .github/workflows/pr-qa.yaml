@@ -28,7 +28,7 @@ on:
 
 # TODO: restore concurrency group before merge (disabled for parallel sno-qa-* testing)
 # concurrency:
-#   group: ${{ github.workflow }}-${{ github.ref }}
+#   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
 #   cancel-in-progress: true
 
 jobs:
@@ -101,7 +101,6 @@ jobs:
           echo "number=${NUM}" >> "$GITHUB_OUTPUT"
 
           if [ -n "$NUM" ]; then
-            # Use the API to check if it's a PR (gh pr view can't distinguish)
             if gh api "repos/${REPO}/pulls/${NUM}" --jq '.number' >/dev/null 2>&1; then
               echo "target_type=pr" >> "$GITHUB_OUTPUT"
               echo "Target: PR #$NUM"
@@ -148,14 +147,18 @@ jobs:
         with:
           include_build_step: false
 
+      - name: Install QA dependencies
+        run: pnpm add -D @google/generative-ai@^0.24.1
+
       - name: Run analysis
         if: needs.resolve-matrix.outputs.number
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p qa-guides
-          pnpm exec tsx scripts/qa-analyze-pr.ts \
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-analyze-pr.ts \
             --pr-number "${{ needs.resolve-matrix.outputs.number }}" \
             --repo "${{ github.repository }}" \
             --output-dir qa-guides \
@@ -197,13 +200,29 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Install pnpm/node for PR checkout (needed for tsx scripts later)
       - name: Setup frontend (scripts only)
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: false
 
+      - name: Install QA dependencies
+        run: |
+          pnpm add -D @google/generative-ai@^0.24.1 @anthropic-ai/claude-agent-sdk@^0.2.85
+          git clone --depth 1 --branch feat/show-title-card-api https://github.com/snomiao/demowright.git /tmp/demowright
+          cd /tmp/demowright && npm install && npm install typescript && npm run build
+          sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'fs';const p=JSON.parse(readFileSync('package.json','utf8'));p.exports['./video-script']={import:'./dist/video-script.mjs',types:'./dist/video-script.d.mts'};p.exports['./setup']={import:'./dist/setup.mjs',types:'./dist/setup.d.mts'};writeFileSync('package.json',JSON.stringify(p,null,2))"
+          cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
+
+      - name: Cache main branch dist
+        id: cache-main-dist
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: dist
+          key: qa-main-dist-${{ needs.resolve-matrix.outputs.before_sha }}
+
       - name: Build main branch frontend via worktree
+        if: steps.cache-main-dist.outputs.cache-hit != 'true'
         shell: bash
         run: |
           git worktree add ../main-build origin/main
@@ -221,11 +240,15 @@ jobs:
         with:
           launch_server: 'false'
 
-      - name: Install Playwright browser
+      - name: Install Playwright browser and ffmpeg
         shell: bash
         run: |
           npx playwright install chromium
           mkdir -p "$QA_ARTIFACTS"
+          if ! command -v ffmpeg &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
 
       - name: Get PR diff
         if: needs.resolve-matrix.outputs.target_type == 'pr'
@@ -311,7 +334,7 @@ jobs:
             DIFF_FLAG="--diff ${{ runner.temp }}/issue-body.txt"
           fi
 
-          pnpm exec tsx scripts/qa-record.ts \
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-record.ts \
             --mode "$MODE" \
             $DIFF_FLAG \
             --output-dir "$QA_ARTIFACTS" \
@@ -363,7 +386,6 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Always run setup-frontend first to install node/pnpm
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -381,7 +403,6 @@ jobs:
           PR_NUM: ${{ needs.resolve-matrix.outputs.number }}
         run: |
           SNO_REF=$(git rev-parse HEAD)
-
           git fetch origin "refs/pull/${PR_NUM}/head"
           git checkout FETCH_HEAD
           echo "Building PR #${PR_NUM} frontend at $(git rev-parse --short HEAD)"
@@ -394,16 +415,29 @@ jobs:
           pnpm install --frozen-lockfile || pnpm install
           echo "Restored sno-skills scripts at $(git rev-parse --short HEAD)"
 
+      - name: Install QA dependencies
+        run: |
+          pnpm add -D @google/generative-ai@^0.24.1
+          git clone --depth 1 --branch feat/show-title-card-api https://github.com/snomiao/demowright.git /tmp/demowright
+          cd /tmp/demowright && npm install && npm install typescript && npm run build
+          sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'fs';const p=JSON.parse(readFileSync('package.json','utf8'));p.exports['./video-script']={import:'./dist/video-script.mjs',types:'./dist/video-script.d.mts'};p.exports['./setup']={import:'./dist/setup.mjs',types:'./dist/setup.d.mts'};writeFileSync('package.json',JSON.stringify(p,null,2))"
+          cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
+
       - name: Setup ComfyUI server (no launch)
         uses: ./.github/actions/setup-comfyui-server
         with:
           launch_server: 'false'
 
-      - name: Install Playwright browser
+      - name: Install Playwright browser and ffmpeg
         shell: bash
         run: |
           npx playwright install chromium
           mkdir -p "$QA_ARTIFACTS"
+          if ! command -v ffmpeg &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
 
       - name: Get PR diff
         shell: bash
@@ -460,7 +494,7 @@ jobs:
             echo "Using QA guide for after recording"
             QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-after.json"
           fi
-          pnpm exec tsx scripts/qa-record.ts \
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-record.ts \
             --mode after \
             --diff "${{ runner.temp }}/pr-diff.txt" \
             --output-dir "$QA_ARTIFACTS" \
@@ -492,7 +526,7 @@ jobs:
     if: >-
       always() &&
       (needs.qa-after.result == 'success' || needs.qa-before.result == 'success') &&
-      (github.event.pull_request.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      (github.event.pull_request.number || github.event.issue.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -668,16 +702,8 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          if [ -n "$PR_NUM" ]; then
-            NUM="$PR_NUM"
-          else
-            NUM=$(gh pr list --repo "$REPO" \
-              --head "$BRANCH" --state open \
-              --json number --jq '.[0].number // empty')
-            if [ -z "$NUM" ]; then
-              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
-            fi
-          fi
+          NUM="${PR_NUM:-$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')}"
+          [ -z "$NUM" ] && NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
           echo "number=${NUM}" >> "$GITHUB_OUTPUT"
 
           if [ -n "$NUM" ]; then
@@ -688,7 +714,6 @@ jobs:
             fi
           fi
 
-          # Badge label with target number
           LABEL="QA"
           [ -n "$NUM" ] && LABEL="#${NUM} QA"
           echo "badge_label=${LABEL}" >> "$GITHUB_OUTPUT"
@@ -698,6 +723,9 @@ jobs:
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+
+      - name: Install QA dependencies
+        run: pnpm add -D @google/generative-ai@^0.24.1
 
       - name: Download QA guides
         continue-on-error: true
@@ -732,11 +760,11 @@ jobs:
             HAS_FILES=false
 
             # Check for before files (flat or in subdirectory)
-            if [ -d "qa-artifacts/before" ] && find qa-artifacts/before -name '*.webm' -o -name '*.png' 2>/dev/null | grep -q .; then
+            if [ -d "qa-artifacts/before" ] && find qa-artifacts/before -name '*.webm' -o -name '*.mp4' -o -name '*.png' 2>/dev/null | grep -q .; then
               HAS_FILES=true
             fi
             # Check for after files
-            if [ -d "qa-artifacts/after" ] && find qa-artifacts/after -name '*.webm' -o -name '*.png' 2>/dev/null | grep -q .; then
+            if [ -d "qa-artifacts/after" ] && find qa-artifacts/after -name '*.webm' -o -name '*.mp4' -o -name '*.png' 2>/dev/null | grep -q .; then
               HAS_FILES=true
             fi
 
@@ -761,14 +789,9 @@ jobs:
           if command -v ffmpeg &>/dev/null; then
             echo "ffmpeg already installed"
           else
-            echo "Downloading static ffmpeg..."
-            TMP=$(mktemp -d)
-            curl -sL "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" | tar xJ -C "$TMP"
-            sudo cp "$TMP"/ffmpeg-*/ffmpeg "$TMP"/ffmpeg-*/ffprobe /usr/local/bin/
-            rm -rf "$TMP"
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
           fi
           ffmpeg -version | head -1
-          ffprobe -version | head -1
 
       - name: Convert videos to mp4
         run: |
@@ -787,6 +810,11 @@ jobs:
             [ -d "$dir" ] || continue
             # Convert known video names (single + multi-pass + before)
             for name in qa-session qa-session-1 qa-session-2 qa-session-3 qa-before-session; do
+              # Skip if demowright already produced an MP4 with audio
+              if [ -f "$dir/${name}.mp4" ] && [ -s "$dir/${name}.mp4" ]; then
+                echo "Using existing MP4 (with audio): $dir/${name}.mp4 ($(du -h "$dir/${name}.mp4" | cut -f1))"
+                continue
+              fi
               if [ -f "$dir/${name}.webm" ] && [ -s "$dir/${name}.webm" ]; then
                 convert_video "$dir/${name}.webm" "$dir/${name}.mp4"
               fi
@@ -877,7 +905,7 @@ jobs:
                 ;;
             esac
             echo "::group::Reviewing $vid"
-            pnpm exec tsx scripts/qa-video-review.ts \
+            pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-video-review.ts \
               --artifacts-dir qa-artifacts \
               --output-dir video-reviews \
               --video-file "$vid" \
@@ -950,7 +978,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           PIPELINE_SHA: ${{ github.sha }}
           RUN_START_TIME: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at || '' }}
-        run: bash scripts/qa-deploy-pages.sh
+        run: bash .claude/skills/comfy-qa/scripts/qa-deploy-pages.sh
 
       - name: Post unified QA comment
         env:

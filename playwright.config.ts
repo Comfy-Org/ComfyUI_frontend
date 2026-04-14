@@ -1,5 +1,5 @@
-import { defineConfig, devices } from '@playwright/test'
 import type { PlaywrightTestConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
@@ -11,7 +11,15 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 
       use: {
         trace: 'on', // Always capture traces (CI uses 'on-first-retry')
-        video: 'on' // Always record video (CI uses 'retain-on-failure')
+        video: 'on', // Always record video (CI uses 'retain-on-failure')
+        launchOptions: {
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-gpu',
+            '--disable-dev-shm-usage'
+          ]
+        }
       }
     }
   : {
