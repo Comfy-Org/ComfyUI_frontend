@@ -58,7 +58,7 @@
             )
           "
         >
-          {{ suggestion }}
+          <span v-html="highlightQuery(suggestion, query)" />
         </ComboboxItem>
 
         <ComboboxItem
@@ -72,7 +72,12 @@
             )
           "
         >
-          {{ $t('g.createTag', { tag: createTagValue }) }}
+          <span class="italic opacity-90">{{ $t('g.createTag') }}</span>
+          <span
+            class="ml-2 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
+          >
+            {{ createTagValue }}
+          </span>
         </ComboboxItem>
       </ComboboxViewport>
     </ComboboxContent>
@@ -93,6 +98,7 @@ import {
 import { computed, ref, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
+import { highlightQuery } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import TagsInputInput from './TagsInputInput.vue'
@@ -203,3 +209,12 @@ watch(
   { deep: true }
 )
 </script>
+
+<style scoped>
+:deep(.highlight) {
+  font-weight: 700;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+</style>

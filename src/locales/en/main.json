@@ -277,7 +277,7 @@
     "imageUrl": "Image URL",
     "clear": "Clear",
     "clearAll": "Clear all",
-    "createTag": "Create \"{tag}\"",
+    "createTag": "Create new tag",
     "copyURL": "Copy URL",
     "releaseTitle": "{package} {version} Release",
     "itemsSelected": "No items selected | {count} item selected | {count} items selected",
