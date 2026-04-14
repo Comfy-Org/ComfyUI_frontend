@@ -7,6 +7,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeLocatorId,
+  getParentExecutionIds,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
 
@@ -382,10 +383,7 @@ export function isAncestorPathActive(
   executionId: string
 ): boolean {
   if (!rootGraph) return true
-  const parts = parseExecutionId(executionId)
-  if (!parts || parts.length <= 1) return true
-  for (let i = 1; i < parts.length; i++) {
-    const ancestorId = parts.slice(0, i).join(':')
+  for (const ancestorId of getParentExecutionIds(executionId)) {
     const ancestor = getNodeByExecutionId(rootGraph, ancestorId)
     if (!ancestor) continue
     if (
