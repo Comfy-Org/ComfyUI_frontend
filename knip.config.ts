@@ -47,7 +47,8 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons'
+    '@primevue/icons',
+    'demowright'
   ],
   ignore: [
     // Auto generated API types

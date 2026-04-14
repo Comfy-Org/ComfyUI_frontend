@@ -1,0 +1,1094 @@
+# Automated QA of ComfyUI frontend using Playwright video recordings + Gemini review.
+# Architecture:
+#   resolve-matrix → qa-before (main) ─┐
+#                  → qa-after  (PR)   ─┴→ report
+#
+# Before/after run in PARALLEL on separate runners for clean isolation.
+# Two modes:
+#   Focused (qa-changes label): Linux-only, before/after comparison
+#   Full (qa-full label): 3-OS matrix, after-only
+name: 'PR: QA'
+
+on:
+  push:
+    branches: [sno-qa-*]
+  pull_request:
+    types: [labeled]
+    branches: [main]
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'QA mode'
+        type: choice
+        options: [focused, full]
+        default: focused
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resolve-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set.outputs.os }}
+      mode: ${{ steps.set.outputs.mode }}
+      skip: ${{ steps.set.outputs.skip }}
+      number: ${{ steps.resolve-number.outputs.number }}
+      target_type: ${{ steps.resolve-number.outputs.target_type }}
+      before_sha: ${{ steps.resolve-refs.outputs.before_sha }}
+      after_sha: ${{ steps.resolve-refs.outputs.after_sha }}
+    steps:
+      - name: Determine QA mode
+        id: set
+        env:
+          LABEL: ${{ github.event.label.name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          FULL=false
+
+          # Only run on label events if it's one of our labels
+          if [ "$EVENT_ACTION" = "labeled" ] && \
+             [ "$LABEL" != "qa-changes" ] && [ "$LABEL" != "qa-full" ] && [ "$LABEL" != "qa-issue" ]; then
+             echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Full QA triggers
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && \
+             [ "$INPUT_MODE" = "full" ]; then
+            FULL=true
+          fi
+          if [ "$LABEL" = "qa-full" ]; then
+            FULL=true
+          fi
+
+          if [ "$FULL" = "true" ]; then
+            echo 'os=["ubuntu-latest","macos-latest","windows-latest"]' >> "$GITHUB_OUTPUT"
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+            echo "mode=focused" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Mode: $([ "$FULL" = "true" ] && echo full || echo focused)"
+
+      - name: Resolve target number and type
+        id: resolve-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -n "$ISSUE_NUM" ]; then
+            NUM="$ISSUE_NUM"
+          elif [ -n "$PR_NUM" ]; then
+            NUM="$PR_NUM"
+          else
+            NUM=$(gh pr list --repo "$REPO" \
+              --head "$BRANCH" --state open \
+              --json number --jq '.[0].number // empty')
+            if [ -z "$NUM" ]; then
+              NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
+            fi
+          fi
+          echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$NUM" ]; then
+            if gh api "repos/${REPO}/pulls/${NUM}" --jq '.number' >/dev/null 2>&1; then
+              echo "target_type=pr" >> "$GITHUB_OUTPUT"
+              echo "Target: PR #$NUM"
+            else
+              echo "target_type=issue" >> "$GITHUB_OUTPUT"
+              echo "Target: Issue #$NUM"
+            fi
+          fi
+
+      - name: Resolve commit SHAs for immutable references
+        id: resolve-refs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUM: ${{ steps.resolve-number.outputs.number }}
+          TARGET_TYPE: ${{ steps.resolve-number.outputs.target_type }}
+          REPO: ${{ github.repository }}
+        run: |
+          MAIN_SHA=$(gh api "repos/${REPO}/git/ref/heads/main" --jq '.object.sha')
+          echo "before_sha=${MAIN_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Main: ${MAIN_SHA:0:7}"
+
+          if [ "$TARGET_TYPE" = "pr" ] && [ -n "$NUM" ]; then
+            PR_SHA=$(gh pr view "$NUM" --repo "$REPO" --json headRefOid --jq '.headRefOid')
+            echo "after_sha=${PR_SHA}" >> "$GITHUB_OUTPUT"
+            echo "PR #${NUM}: ${PR_SHA:0:7}"
+          fi
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Analyze PR — deep analysis via Gemini Pro to generate QA guides
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  analyze-pr:
+    needs: [resolve-matrix]
+    if: needs.resolve-matrix.outputs.skip != 'true' && needs.resolve-matrix.outputs.mode == 'focused'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+
+      - name: Setup frontend (scripts only)
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Install QA dependencies
+        run: pnpm add -D @google/generative-ai@^0.24.1
+
+      - name: Run analysis
+        if: needs.resolve-matrix.outputs.number
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p qa-guides
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-analyze-pr.ts \
+            --pr-number "${{ needs.resolve-matrix.outputs.number }}" \
+            --repo "${{ github.repository }}" \
+            --output-dir qa-guides \
+            --type "${{ needs.resolve-matrix.outputs.target_type }}"
+
+      - name: Upload QA guides
+        if: always() && needs.resolve-matrix.outputs.number
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides/qa-guide-*.json
+          retention-days: 14
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # BEFORE recording — main branch frontend on its own runner
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  qa-before:
+    needs: [resolve-matrix, analyze-pr]
+    if: >-
+      always() &&
+      needs.resolve-matrix.outputs.skip != 'true' &&
+      needs.resolve-matrix.outputs.mode == 'focused' &&
+      needs.resolve-matrix.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(needs.resolve-matrix.outputs.os) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Set QA artifacts path
+        shell: bash
+        run: echo "QA_ARTIFACTS=$RUNNER_TEMP/qa-artifacts" >> "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup frontend (scripts only)
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+
+      - name: Install QA dependencies
+        run: |
+          pnpm add -D @google/generative-ai@^0.24.1 @anthropic-ai/claude-agent-sdk@^0.2.85
+          git clone --depth 1 --branch feat/show-title-card-api https://github.com/snomiao/demowright.git /tmp/demowright
+          cd /tmp/demowright && npm install && npm install typescript && npm run build
+          sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'fs';const p=JSON.parse(readFileSync('package.json','utf8'));p.exports['./video-script']={import:'./dist/video-script.mjs',types:'./dist/video-script.d.mts'};p.exports['./setup']={import:'./dist/setup.mjs',types:'./dist/setup.d.mts'};writeFileSync('package.json',JSON.stringify(p,null,2))"
+          cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
+
+      - name: Cache main branch dist
+        id: cache-main-dist
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: dist
+          key: qa-main-dist-${{ needs.resolve-matrix.outputs.before_sha }}
+
+      - name: Build main branch frontend via worktree
+        if: steps.cache-main-dist.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          git worktree add ../main-build origin/main
+          cd ../main-build
+          pnpm install --frozen-lockfile || pnpm install
+          pnpm exec vite build
+          cd "$GITHUB_WORKSPACE"
+          mv ../main-build/dist dist
+          git worktree remove ../main-build --force
+          echo "Built main branch frontend"
+          ls -la dist/index.html
+
+      - name: Setup ComfyUI server (no launch)
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+
+      - name: Install Playwright browser and ffmpeg
+        shell: bash
+        run: |
+          npx playwright install chromium
+          mkdir -p "$QA_ARTIFACTS"
+          if ! command -v ffmpeg &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      - name: Get PR diff
+        if: needs.resolve-matrix.outputs.target_type == 'pr'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number || '' }} \
+            --repo ${{ github.repository }} > "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || \
+          git diff origin/main...HEAD > "${{ runner.temp }}/pr-diff.txt"
+
+          echo "Changed files:"
+          grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
+            sed 's|diff --git a/||;s| b/.*||' | sort -u
+
+      - name: Get issue body (for reproduce mode)
+        if: needs.resolve-matrix.outputs.target_type == 'issue' && needs.resolve-matrix.outputs.number
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue view ${{ needs.resolve-matrix.outputs.number }} \
+            --repo ${{ github.repository }} \
+            --json title,body,labels --jq '"Labels: \([.labels[].name] | join(", "))\nTitle: \(.title)\n\n\(.body)"' \
+            > "${{ runner.temp }}/issue-body.txt"
+          echo "Issue body saved ($(wc -c < "${{ runner.temp }}/issue-body.txt") bytes)"
+
+      - name: Download QA guide
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides
+
+      - name: Start server with main branch frontend
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --front-end-root ../dist &
+          echo $! > /tmp/comfyui-server.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1 && echo "Server ready (main)" && exit 0
+            sleep 2
+          done
+          echo "::error::Server timeout (main)"; exit 1
+
+      - name: Pre-seed settings
+        shell: bash
+        run: |
+          curl -sf -X POST http://127.0.0.1:8188/api/users \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"qa-ci"}' || echo "User creation failed (may already exist)"
+          curl -sf -X POST http://127.0.0.1:8188/api/devtools/set_settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || \
+          curl -sf -X POST http://127.0.0.1:8188/api/settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
+
+      - name: Run QA recording
+        shell: bash
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_QA }}
+          TARGET_TYPE: ${{ needs.resolve-matrix.outputs.target_type }}
+        run: |
+          MODE="before"
+          if [ "$TARGET_TYPE" = "issue" ]; then
+            MODE="reproduce"
+          fi
+
+          QA_GUIDE_FLAG=""
+          if [ -f qa-guides/qa-guide-before.json ]; then
+            echo "Using QA guide for $MODE recording"
+            QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-before.json"
+          fi
+
+          DIFF_FLAG=""
+          if [ -f "${{ runner.temp }}/pr-diff.txt" ]; then
+            DIFF_FLAG="--diff ${{ runner.temp }}/pr-diff.txt"
+          elif [ -f "${{ runner.temp }}/issue-body.txt" ]; then
+            DIFF_FLAG="--diff ${{ runner.temp }}/issue-body.txt"
+          fi
+
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-record.ts \
+            --mode "$MODE" \
+            $DIFF_FLAG \
+            --output-dir "$QA_ARTIFACTS" \
+            --url http://127.0.0.1:8188 \
+            --test-plan .claude/skills/comfy-qa/SKILL.md \
+            $QA_GUIDE_FLAG
+
+      - name: Collect artifacts
+        if: always()
+        shell: bash
+        run: |
+          kill "$(cat /tmp/comfyui-server.pid)" 2>/dev/null || true
+          echo "=== QA BEFORE artifacts ==="
+          ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
+        with:
+          name: qa-before-${{ runner.os }}-${{ github.run_id }}
+          path: ${{ env.QA_ARTIFACTS }}/
+          retention-days: 14
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # AFTER recording — PR branch frontend on its own runner
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  qa-after:
+    needs: [resolve-matrix, analyze-pr]
+    if: >-
+      always() &&
+      needs.resolve-matrix.outputs.skip != 'true' &&
+      needs.resolve-matrix.result == 'success' &&
+      needs.resolve-matrix.outputs.target_type == 'pr'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(needs.resolve-matrix.outputs.os) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Set QA artifacts path
+        shell: bash
+        run: echo "QA_ARTIFACTS=$RUNNER_TEMP/qa-artifacts" >> "$GITHUB_ENV"
+
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Install QA dependencies
+        run: |
+          pnpm add -D @google/generative-ai@^0.24.1
+          git clone --depth 1 --branch feat/show-title-card-api https://github.com/snomiao/demowright.git /tmp/demowright
+          cd /tmp/demowright && npm install && npm install typescript && npm run build
+          sed -i 's|"./src/setup.ts"|"./dist/setup.mjs"|' register.cjs
+          node --input-type=module -e "import{readFileSync,writeFileSync}from'fs';const p=JSON.parse(readFileSync('package.json','utf8'));p.exports['./video-script']={import:'./dist/video-script.mjs',types:'./dist/video-script.d.mts'};p.exports['./setup']={import:'./dist/setup.mjs',types:'./dist/setup.d.mts'};writeFileSync('package.json',JSON.stringify(p,null,2))"
+          cd "$GITHUB_WORKSPACE" && pnpm add -D /tmp/demowright
+
+      - name: Setup ComfyUI server (no launch)
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'false'
+
+      - name: Install Playwright browser and ffmpeg
+        shell: bash
+        run: |
+          npx playwright install chromium
+          mkdir -p "$QA_ARTIFACTS"
+          if ! command -v ffmpeg &>/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      - name: Get PR diff
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number || '' }} \
+            --repo ${{ github.repository }} > "${{ runner.temp }}/pr-diff.txt" 2>/dev/null || \
+          git diff origin/main...HEAD > "${{ runner.temp }}/pr-diff.txt"
+
+          echo "Changed files:"
+          grep '^diff --git' "${{ runner.temp }}/pr-diff.txt" | \
+            sed 's|diff --git a/||;s| b/.*||' | sort -u
+
+      - name: Download QA guide
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides
+
+      - name: Start server with PR branch frontend
+        shell: bash
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --multi-user --front-end-root ../dist &
+          echo $! > /tmp/comfyui-server.pid
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8188/api/system_stats >/dev/null 2>&1 && echo "Server ready (PR)" && exit 0
+            sleep 2
+          done
+          echo "::error::Server timeout (PR)"; exit 1
+
+      - name: Pre-seed settings
+        shell: bash
+        run: |
+          curl -sf -X POST http://127.0.0.1:8188/api/users \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"qa-ci"}' || echo "User creation failed (may already exist)"
+          curl -sf -X POST http://127.0.0.1:8188/api/devtools/set_settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || \
+          curl -sf -X POST http://127.0.0.1:8188/api/settings \
+            -H 'Content-Type: application/json' \
+            -d '{"Comfy.TutorialCompleted":true}' || echo "Settings pre-seed skipped"
+
+      - name: Run AFTER QA recording
+        shell: bash
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          QA_GUIDE_FLAG=""
+          if [ -f qa-guides/qa-guide-after.json ]; then
+            echo "Using QA guide for after recording"
+            QA_GUIDE_FLAG="--qa-guide qa-guides/qa-guide-after.json"
+          fi
+          pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-record.ts \
+            --mode after \
+            --diff "${{ runner.temp }}/pr-diff.txt" \
+            --output-dir "$QA_ARTIFACTS" \
+            --url http://127.0.0.1:8188 \
+            --test-plan .claude/skills/comfy-qa/SKILL.md \
+            $QA_GUIDE_FLAG
+
+      - name: Collect artifacts
+        if: always()
+        shell: bash
+        run: |
+          kill "$(cat /tmp/comfyui-server.pid)" 2>/dev/null || true
+          echo "=== QA AFTER artifacts ==="
+          ls -la "$QA_ARTIFACTS/" 2>/dev/null | head -30
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v6.2.0
+        with:
+          name: qa-after-${{ runner.os }}-${{ github.run_id }}
+          path: ${{ env.QA_ARTIFACTS }}/
+          retention-days: 14
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Report — merges artifacts, runs Gemini video review, deploys
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  report:
+    needs: [resolve-matrix, analyze-pr, qa-before, qa-after]
+    if: >-
+      always() &&
+      (needs.qa-after.result == 'success' || needs.qa-before.result == 'success') &&
+      (github.event.pull_request.number || github.event.issue.number || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup badge deploy function
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          npm install -g wrangler@4.74.0 >/dev/null 2>&1
+          BRANCH=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//' | cut -c1-28)
+          echo "QA_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+          # Create badge generator script
+          cat > /tmp/gen-badge.sh <<'BADGESCRIPT'
+          #!/bin/bash
+          # Usage: gen-badge.sh <status> <color> <output-path> [label]
+          STATUS="$1" COLOR="$2" OUT="$3"
+          LABEL="${4:-QA Bot}"
+          LABEL_W=$(( ${#LABEL} * 7 + 12 ))
+          STATUS_W=$(( ${#STATUS} * 7 + 12 ))
+          TOTAL_W=$(( LABEL_W + STATUS_W ))
+          cat > "$OUT" <<SVGEOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="${TOTAL_W}" height="20" role="img" aria-label="${LABEL}: ${STATUS}">
+            <title>${LABEL}: ${STATUS}</title>
+            <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+            <clipPath id="r"><rect width="${TOTAL_W}" height="20" rx="3" fill="#fff"/></clipPath>
+            <g clip-path="url(#r)">
+              <rect width="${LABEL_W}" height="20" fill="#555"/>
+              <rect x="${LABEL_W}" width="${STATUS_W}" height="20" fill="${COLOR}"/>
+              <rect width="${TOTAL_W}" height="20" fill="url(#s)"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
+              <text aria-hidden="true" x="$(( LABEL_W / 2 ))" y="15" fill="#010101" fill-opacity=".3">${LABEL}</text>
+              <text x="$(( LABEL_W / 2 ))" y="14">${LABEL}</text>
+              <text aria-hidden="true" x="$(( LABEL_W + STATUS_W / 2 ))" y="15" fill="#010101" fill-opacity=".3">${STATUS}</text>
+              <text x="$(( LABEL_W + STATUS_W / 2 ))" y="14">${STATUS}</text>
+            </g>
+          </svg>
+          SVGEOF
+          BADGESCRIPT
+          chmod +x /tmp/gen-badge.sh
+
+          # Create badge deploy script — deploys badge + placeholder status page
+          cat > /tmp/deploy-badge.sh <<'DEPLOYBADGE'
+          #!/bin/bash
+          # Usage: deploy-badge.sh <status> <color> [label] [run_url]
+          STATUS="$1" COLOR="${2:-#555}" LABEL="${3:-QA}" RUN_URL="$4"
+          DIR=$(mktemp -d)
+          /tmp/gen-badge.sh "$STATUS" "$COLOR" "$DIR/badge.svg" "$LABEL"
+          RUN_LINK=""
+          [ -n "$RUN_URL" ] && RUN_LINK="<a href=\"${RUN_URL}\" style=\"color:#7c8aff;text-decoration:none;font-size:.8rem\">View CI run &rarr;</a>"
+          cat > "$DIR/index.html" <<PAGEEOF
+          <!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+          <title>${LABEL} — ${STATUS}</title>
+          <meta http-equiv="refresh" content="30">
+          <style>:root{--bg:#0d0f14;--fg:#e8e8ec;--muted:#8b8fa3;--primary:#7c8aff}*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+          .wrap{max-width:420px;padding:2rem}.badge{margin:1.5rem 0}.status{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin:.5rem 0}
+          .hint{color:var(--muted);font-size:.85rem;line-height:1.6;margin-top:1rem}
+          @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.5s ease-in-out infinite;margin-right:.5rem;vertical-align:middle}
+          </style></head><body><div class=wrap>
+          <div class=badge><img src=badge.svg alt="${LABEL}: ${STATUS}"></div>
+          <p class=status><span class=dot></span>${STATUS}</p>
+          <p class=hint>QA pipeline is running. This page auto-refreshes every 30 seconds.<br>Results will appear here when analysis is complete.</p>
+          <p style="margin-top:1rem">${RUN_LINK}</p>
+          </div></body></html>
+          PAGEEOF
+          DEPLOYBADGE
+          # Append the wrangler deploy (uses outer BRANCH variable)
+          cat >> /tmp/deploy-badge.sh <<DEPLOYWRANGLER
+          wrangler pages deploy "\$DIR" \
+            --project-name="comfy-qa" \
+            --branch="${BRANCH}" 2>&1 | tail -3
+          rm -rf "\$DIR"
+          echo "Deployed: \${STATUS}"
+          DEPLOYWRANGLER
+          chmod +x /tmp/deploy-badge.sh
+
+      - name: Setup dual badge generator
+        run: |
+          cat > /tmp/gen-badge-dual.sh <<'DUALBADGE'
+          #!/bin/bash
+          # Usage: gen-badge-dual.sh <repro> <repro_color> <fix> <fix_color> <output-path> [label]
+          BUG="$1" BUG_C="$2" FIX="Fix: $3" FIX_C="$4" OUT="$5"
+          LABEL="${6:-QA Bot}"
+          LW=$(( ${#LABEL} * 7 + 12 ))
+          BW=$(( ${#BUG} * 7 + 12 ))
+          FW=$(( ${#FIX} * 7 + 12 ))
+          TW=$(( LW + BW + FW ))
+          cat > "$OUT" <<SVGEOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="20" role="img" aria-label="${LABEL}: ${BUG} | ${FIX}">
+            <title>${LABEL}: ${BUG} | ${FIX}</title>
+            <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+            <clipPath id="r"><rect width="${TW}" height="20" rx="3" fill="#fff"/></clipPath>
+            <g clip-path="url(#r)">
+              <rect width="${LW}" height="20" fill="#555"/>
+              <rect x="${LW}" width="${BW}" height="20" fill="${BUG_C}"/>
+              <rect x="$(( LW + BW ))" width="${FW}" height="20" fill="${FIX_C}"/>
+              <rect width="${TW}" height="20" fill="url(#s)"/>
+            </g>
+            <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
+              <text aria-hidden="true" x="$(( LW / 2 ))" y="15" fill="#010101" fill-opacity=".3">${LABEL}</text>
+              <text x="$(( LW / 2 ))" y="14">${LABEL}</text>
+              <text aria-hidden="true" x="$(( LW + BW / 2 ))" y="15" fill="#010101" fill-opacity=".3">${BUG}</text>
+              <text x="$(( LW + BW / 2 ))" y="14">${BUG}</text>
+              <text aria-hidden="true" x="$(( LW + BW + FW / 2 ))" y="15" fill="#010101" fill-opacity=".3">${FIX}</text>
+              <text x="$(( LW + BW + FW / 2 ))" y="14">${FIX}</text>
+            </g>
+          </svg>
+          SVGEOF
+          DUALBADGE
+          chmod +x /tmp/gen-badge-dual.sh
+
+          # Universal vertical box badge — used for all badges (issues + PRs)
+          cat > /tmp/gen-badge-box.sh <<'BOXBADGE'
+          #!/bin/bash
+          # Usage: gen-badge-box.sh <output-path> <label> <repro> <not_repro> <fail> <total> [fix_result] [fix_color] [repro_method]
+          OUT="$1" LABEL="$2" REPRO="$3" NOREPRO="$4" FAIL="$5" TOTAL="$6"
+          FIX_RESULT="${7:-}" FIX_COLOR="${8:-#4c1}" REPRO_METHOD="${9:-}"
+          W=160
+          ROW=18
+          HEADER=22
+          ROWS=0
+          [ "$REPRO" -gt 0 ] 2>/dev/null && ROWS=$((ROWS+1))
+          [ "$NOREPRO" -gt 0 ] 2>/dev/null && ROWS=$((ROWS+1))
+          [ "$FAIL" -gt 0 ] 2>/dev/null && ROWS=$((ROWS+1))
+          [ "$ROWS" -eq 0 ] && ROWS=1
+          # Add fix quality row for PRs
+          [ -n "$FIX_RESULT" ] && ROWS=$((ROWS+1))
+          H=$((HEADER + ROWS * ROW + 4))
+          Y=$((HEADER + 2))
+          cat > "$OUT" <<SVGEOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" role="img" aria-label="${LABEL}">
+            <title>${LABEL}: ${REPRO} reproduced, ${NOREPRO} not-repro, ${FAIL} inconclusive / ${TOTAL}${FIX_RESULT:+ | Fix: ${FIX_RESULT}}</title>
+            <rect width="${W}" height="${H}" rx="4" fill="#2a2d35"/>
+            <rect width="${W}" height="${HEADER}" rx="4" fill="#555"/>
+            <rect y="$((HEADER-4))" width="${W}" height="4" fill="#555"/>
+            <text x="$((W/2))" y="15" fill="#fff" text-anchor="middle" font-family="Verdana,sans-serif" font-size="11" font-weight="bold">${LABEL}</text>
+          SVGEOF
+          add_row() {
+            local icon="$1" text="$2" color="$3"
+            echo "  <rect x='4' y='${Y}' width='$((W-8))' height='$((ROW-2))' rx='3' fill='${color}' opacity='.15'/>" >> "$OUT"
+            echo "  <text x='10' y='$((Y+13))' fill='${color}' font-family='Verdana,sans-serif' font-size='11'>${icon} ${text}</text>" >> "$OUT"
+            Y=$((Y+ROW))
+          }
+          REPRO_LABEL="${REPRO} reproduced"
+          case "$REPRO_METHOD" in
+            e2e_test) REPRO_LABEL="${REPRO} via E2E test" ;;
+            video)    REPRO_LABEL="${REPRO} via video" ;;
+            both)     REPRO_LABEL="${REPRO} via E2E+video" ;;
+          esac
+          [ "$REPRO" -gt 0 ] 2>/dev/null && add_row "✓" "$REPRO_LABEL" "#58a6ff"
+          [ "$NOREPRO" -gt 0 ] 2>/dev/null && add_row "✗" "${NOREPRO} not reproducible" "#8b949e"
+          [ "$FAIL" -gt 0 ] 2>/dev/null && add_row "⚠" "${FAIL} inconclusive" "#d29922"
+          [ -n "$FIX_RESULT" ] && add_row "⚙" "Fix: ${FIX_RESULT}" "$FIX_COLOR"
+          echo "</svg>" >> "$OUT"
+          BOXBADGE
+          chmod +x /tmp/gen-badge-box.sh
+
+      - name: Resolve target number and type
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          NUM="${PR_NUM:-$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')}"
+          [ -z "$NUM" ] && NUM=$(echo "$BRANCH" | sed -n 's/^sno-qa-\([0-9]\+\)$/\1/p')
+          echo "number=${NUM}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$NUM" ]; then
+            if gh api "repos/${REPO}/pulls/${NUM}" --jq '.number' >/dev/null 2>&1; then
+              echo "target_type=pr" >> "$GITHUB_OUTPUT"
+            else
+              echo "target_type=issue" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+          LABEL="QA"
+          [ -n "$NUM" ] && LABEL="#${NUM} QA"
+          echo "badge_label=${LABEL}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Install QA dependencies
+        run: pnpm add -D @google/generative-ai@^0.24.1
+
+      - name: Download QA guides
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: qa-guides-${{ github.run_id }}
+          path: qa-guides
+
+      - name: Download BEFORE artifacts
+        if: needs.qa-before.result == 'success'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: qa-artifacts/before
+          pattern: qa-before-*
+
+      - name: Download AFTER artifacts
+        if: needs.qa-after.result == 'success'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          path: qa-artifacts/after
+          pattern: qa-after-*
+
+      - name: Merge artifacts into per-OS report directories
+        run: |
+          echo "=== Downloaded BEFORE artifacts ==="
+          find qa-artifacts/before -type f 2>/dev/null | head -20
+          echo "=== Downloaded AFTER artifacts ==="
+          find qa-artifacts/after -type f 2>/dev/null | head -20
+
+          for os in Linux macOS Windows; do
+            REPORT_DIR="qa-artifacts/qa-report-${os}-${{ github.run_id }}"
+            HAS_FILES=false
+
+            # Check for before files (flat or in subdirectory)
+            if [ -d "qa-artifacts/before" ] && find qa-artifacts/before -name '*.webm' -o -name '*.mp4' -o -name '*.png' 2>/dev/null | grep -q .; then
+              HAS_FILES=true
+            fi
+            # Check for after files
+            if [ -d "qa-artifacts/after" ] && find qa-artifacts/after -name '*.webm' -o -name '*.mp4' -o -name '*.png' 2>/dev/null | grep -q .; then
+              HAS_FILES=true
+            fi
+
+            if [ "$HAS_FILES" = true ]; then
+              mkdir -p "$REPORT_DIR"
+              # Copy all before files (handles both flat and nested layouts)
+              find qa-artifacts/before -type f 2>/dev/null | while read f; do
+                cp "$f" "$REPORT_DIR/" 2>/dev/null || true
+              done
+              # Copy all after files (overwrites duplicates with after versions)
+              find qa-artifacts/after -type f 2>/dev/null | while read f; do
+                cp "$f" "$REPORT_DIR/" 2>/dev/null || true
+              done
+              echo "Merged $os artifacts into $REPORT_DIR"
+              ls -la "$REPORT_DIR/" | head -20
+              break  # Only create one report dir (multi-OS not yet supported in parallel mode)
+            fi
+          done
+
+      - name: Install ffmpeg
+        run: |
+          if command -v ffmpeg &>/dev/null; then
+            echo "ffmpeg already installed"
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      - name: Convert videos to mp4
+        run: |
+          convert_video() {
+            local WEBM="$1" MP4="$2"
+            echo "Converting $WEBM ($(du -h "$WEBM" | cut -f1)) to $MP4"
+            ffmpeg -y -i "$WEBM" \
+              -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p \
+              -movflags +faststart -g 60 \
+              "$MP4" 2>&1 | tail -5 \
+            || echo "ffmpeg conversion failed for $WEBM (non-fatal)"
+            [ -f "$MP4" ] && echo "Created: $MP4 ($(du -h "$MP4" | cut -f1))"
+          }
+
+          for dir in qa-artifacts/qa-report-*; do
+            [ -d "$dir" ] || continue
+            # Convert known video names (single + multi-pass + before)
+            for name in qa-session qa-session-1 qa-session-2 qa-session-3 qa-before-session; do
+              # Skip if demowright already produced an MP4 with audio
+              if [ -f "$dir/${name}.mp4" ] && [ -s "$dir/${name}.mp4" ]; then
+                echo "Using existing MP4 (with audio): $dir/${name}.mp4 ($(du -h "$dir/${name}.mp4" | cut -f1))"
+                continue
+              fi
+              if [ -f "$dir/${name}.webm" ] && [ -s "$dir/${name}.webm" ]; then
+                convert_video "$dir/${name}.webm" "$dir/${name}.mp4"
+              fi
+            done
+            # Fallback: find any non-empty webm not yet converted
+            if [ ! -f "$dir/qa-session.mp4" ] && [ ! -f "$dir/qa-session-1.mp4" ]; then
+              WEBM=$(find "$dir" -name '*.webm' -type f -size +0c | head -1)
+              [ -n "$WEBM" ] && convert_video "$WEBM" "$dir/qa-session.mp4"
+            fi
+          done
+
+      - name: Build context for video review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$TARGET_NUM" ]; then
+            echo "No target number available, skipping context"
+            exit 0
+          fi
+
+          if [ "$TARGET_TYPE" = "issue" ]; then
+            {
+              echo "### Issue #${TARGET_NUM}"
+              gh issue view "$TARGET_NUM" --repo "$REPO" \
+                --json title,body,labels --jq '"Labels: \([.labels[].name] | join(", "))\nTitle: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
+              echo ""
+              echo "### Comments"
+              # Filter out QA bot comments to prevent INCONCLUSIVE feedback loop
+              gh api "repos/${REPO}/issues/${TARGET_NUM}/comments" \
+                --jq '.[] | select(.user.login != "github-actions[bot]") | .body' 2>/dev/null | head -200 || true
+              echo ""
+              echo "This video attempts to reproduce a reported bug on the main branch."
+            } > pr-context.txt
+            echo "Issue context saved ($(wc -l < pr-context.txt) lines)"
+          else
+            {
+              echo "### PR #${TARGET_NUM}"
+              gh pr view "$TARGET_NUM" --repo "$REPO" \
+                --json title,body --jq '"Title: \(.title)\n\nDescription:\n\(.body)"' 2>/dev/null || true
+              echo ""
+              echo "### Changed files"
+              gh pr diff "$TARGET_NUM" --repo "$REPO" 2>/dev/null \
+                | grep '^diff --git' | sed 's|diff --git a/||;s| b/.*||' | sort -u || true
+              echo ""
+              echo "### Diff (truncated to 300 lines)"
+              gh pr diff "$TARGET_NUM" --repo "$REPO" 2>/dev/null \
+                | head -300 || true
+            } > pr-context.txt
+            echo "PR context saved ($(wc -l < pr-context.txt) lines)"
+          fi
+
+      - name: Run video review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p video-reviews
+          PR_CTX_FLAG=""
+          if [ -f pr-context.txt ]; then
+            PR_CTX_FLAG="--pr-context pr-context.txt"
+          fi
+          TARGET_URL_FLAG=""
+          if [ -n "$TARGET_NUM" ]; then
+            if [ "$TARGET_TYPE" = "issue" ]; then
+              TARGET_URL_FLAG="--target-url https://github.com/${REPO}/issues/${TARGET_NUM}"
+            else
+              TARGET_URL_FLAG="--target-url https://github.com/${REPO}/pull/${TARGET_NUM}"
+            fi
+          fi
+          for vid in qa-artifacts/qa-report-*/qa-session*.mp4; do
+            [ -f "$vid" ] || continue
+            DIR=$(dirname "$vid")
+            BEFORE_FLAG=""
+            if [ -f "$DIR/qa-before-session.mp4" ]; then
+              BEFORE_FLAG="--before-video $DIR/qa-before-session.mp4"
+            fi
+            # Extract pass label from multi-pass filenames (qa-session-1.mp4 → pass1)
+            PASS_LABEL_FLAG=""
+            case "$(basename "$vid")" in
+              qa-session-[0-9].mp4)
+                PASS_NUM=$(basename "$vid" | sed 's/qa-session-\([0-9]\).mp4/\1/')
+                PASS_LABEL_FLAG="--pass-label pass${PASS_NUM}"
+                ;;
+            esac
+            echo "::group::Reviewing $vid"
+            pnpm exec tsx .claude/skills/comfy-qa/scripts/qa-video-review.ts \
+              --artifacts-dir qa-artifacts \
+              --output-dir video-reviews \
+              --video-file "$vid" \
+              --model gemini-3-flash-preview $PR_CTX_FLAG $BEFORE_FLAG $TARGET_URL_FLAG $PASS_LABEL_FLAG || true
+            echo "::endgroup::"
+          done
+
+      - name: Generate regression test from QA report
+        if: needs.resolve-matrix.outputs.mode == 'focused' && steps.pr.outputs.target_type == 'pr'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ steps.pr.outputs.number }}"
+          PR_BRANCH="${{ github.head_ref || github.ref_name }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR number, skipping test generation"
+            exit 0
+          fi
+
+          # Find the first QA report
+          REPORT=$(find video-reviews -name '*-qa-video-report.md' -type f | head -1)
+          if [ ! -f "$REPORT" ]; then
+            echo "No QA report found, skipping test generation"
+            exit 0
+          fi
+
+          # Ensure we have the PR diff
+          DIFF_FILE="${{ runner.temp }}/pr-diff.txt"
+          if [ ! -f "$DIFF_FILE" ]; then
+            gh pr diff "$PR_NUM" --repo "${{ github.repository }}" > "$DIFF_FILE" 2>/dev/null || true
+          fi
+
+          # Generate the test
+          TEST_NAME="qa-pr${PR_NUM}"
+          TEST_PATH="browser_tests/tests/${TEST_NAME}.spec.ts"
+          echo "::group::Generating regression test from QA report"
+          pnpm exec tsx scripts/qa-generate-test.ts \
+            --qa-report "$REPORT" \
+            --pr-diff "$DIFF_FILE" \
+            --output "$TEST_PATH" || {
+            echo "Test generation failed (non-fatal)"
+            exit 0
+          }
+          echo "::endgroup::"
+
+          # Push to {branch}-add-qa-test
+          TEST_BRANCH="${PR_BRANCH}-add-qa-test"
+          git checkout -b "$TEST_BRANCH" HEAD 2>/dev/null || git checkout "$TEST_BRANCH" 2>/dev/null || true
+          git add "$TEST_PATH"
+          git commit -m "test: add QA regression test for PR #${PR_NUM}" || {
+            echo "Nothing to commit"
+            exit 0
+          }
+          git push origin "$TEST_BRANCH" --force-with-lease || echo "Push failed (non-fatal)"
+          echo "Pushed regression test to branch: $TEST_BRANCH"
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy-videos
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
+          BEFORE_SHA: ${{ needs.resolve-matrix.outputs.before_sha }}
+          AFTER_SHA: ${{ needs.resolve-matrix.outputs.after_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          PIPELINE_SHA: ${{ github.sha }}
+          RUN_START_TIME: ${{ github.event.head_commit.timestamp || github.event.pull_request.updated_at || '' }}
+        run: bash .claude/skills/comfy-qa/scripts/qa-deploy-pages.sh
+
+      - name: Post unified QA comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VIDEO_BASE: ${{ steps.deploy-videos.outputs.url }}
+          QA_MODE: ${{ needs.resolve-matrix.outputs.mode }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          BEFORE_SHA: ${{ needs.resolve-matrix.outputs.before_sha }}
+          AFTER_SHA: ${{ needs.resolve-matrix.outputs.after_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          RUN="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
+          COMMENT_MARKER="<!-- QA_REPORT_COMMENT -->"
+
+          MODE_BADGE="🔍 Focused"
+          if [ "$QA_MODE" = "full" ]; then MODE_BADGE="🔬 Full (3-OS)"; fi
+          if [ "$TARGET_TYPE" = "issue" ]; then MODE_BADGE="🐛 Issue Reproduce"; fi
+
+          # Build commit links
+          COMMIT_LINE=""
+          REPO_URL="https://github.com/${REPO}"
+          if [ -n "$BEFORE_SHA" ] || [ -n "$AFTER_SHA" ]; then
+            PARTS=""
+            [ -n "$BEFORE_SHA" ] && PARTS="main [\`${BEFORE_SHA:0:7}\`](${REPO_URL}/commit/${BEFORE_SHA})"
+            [ -n "$AFTER_SHA" ] && PARTS="${PARTS:+${PARTS} · }PR [\`${AFTER_SHA:0:7}\`](${REPO_URL}/commit/${AFTER_SHA})"
+            COMMIT_LINE="**Commits**: ${PARTS}"
+          fi
+
+          # Build video section with GIF thumbnails linking to full videos
+          VIDEO_SECTION=""
+          for os in Linux macOS Windows; do
+            GIF_URL="${VIDEO_BASE}/qa-${os}-thumb.gif"
+            VID_URL="${VIDEO_BASE}/qa-${os}.mp4"
+            # Fallback to pass1 for multi-pass recordings
+            curl -sf --head "$VID_URL" >/dev/null 2>&1 || VID_URL="${VIDEO_BASE}/qa-${os}-pass1.mp4"
+            if curl -sf --head "$VID_URL" >/dev/null 2>&1; then
+              if curl -sf --head "$GIF_URL" >/dev/null 2>&1; then
+                VIDEO_SECTION="${VIDEO_SECTION}[![${os} QA](${GIF_URL})](${VID_URL})"$'\n'
+              else
+                VIDEO_SECTION="${VIDEO_SECTION}[${os} video](${VID_URL})"$'\n'
+              fi
+            fi
+          done
+
+          # Build video review section from per-platform reports
+          VIDEO_REVIEW=""
+          for f in video-reviews/*-qa-video-report.md; do
+            [ -f "$f" ] || continue
+            [ -n "$VIDEO_REVIEW" ] && VIDEO_REVIEW="${VIDEO_REVIEW}
+          ---
+          "
+            VIDEO_REVIEW="${VIDEO_REVIEW}$(cat "$f")"
+          done
+
+          VIDEO_REVIEW_SECTION=""
+          if [ -n "$VIDEO_REVIEW" ]; then
+            VIDEO_REVIEW_SECTION=$(cat <<REVIEWEOF
+
+          <details>
+          <summary>Video Review</summary>
+
+          ${VIDEO_REVIEW}
+
+          </details>
+          REVIEWEOF
+          )
+          fi
+
+          BODY=$(cat <<EOF
+          ${COMMENT_MARKER}
+          ## QA ${MODE_BADGE}
+
+          [![QA Badge](${VIDEO_BASE}/badge.svg)](${VIDEO_BASE}/)
+
+          ${VIDEO_SECTION}
+          **Run**: [${RUN}](${RUN}) · [Download artifacts](${RUN}#artifacts) · [All videos](${VIDEO_BASE})
+          ${COMMIT_LINE:+${COMMIT_LINE}
+          }${VIDEO_REVIEW_SECTION}
+          EOF
+          )
+
+          PR_NUM="${{ steps.pr.outputs.number }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR found, skipping comment"
+            exit 0
+          fi
+
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR_NUM}/comments" \
+            --jq ".[] | select(.body | contains(\"${COMMENT_MARKER}\")) | .id" | head -1)
+
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              --field body="$BODY"
+          elif [ "$TARGET_TYPE" = "issue" ]; then
+            gh issue comment "$PR_NUM" \
+              --repo ${{ github.repository }} --body "$BODY"
+          else
+            gh pr comment "$PR_NUM" \
+              --repo ${{ github.repository }} --body "$BODY"
+          fi
+
+      - name: Cleanup old video review comments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM="${{ steps.pr.outputs.number }}"
+          if [ -z "$PR_NUM" ]; then exit 0; fi
+          OLD_MARKER="<!-- QA_VIDEO_REVIEW_COMMENT -->"
+          gh api "repos/${{ github.repository }}/issues/${PR_NUM}/comments" \
+            --jq ".[] | select(.body | contains(\"${OLD_MARKER}\")) | .id" | \
+          while read -r comment_id; do
+            echo "Deleting old video review comment: $comment_id"
+            gh api --method DELETE "repos/${{ github.repository }}/issues/comments/${comment_id}" || true
+          done
+
+      - name: Remove QA label
+        if: >-
+          github.event.label.name == 'qa-changes' ||
+          github.event.label.name == 'qa-full' ||
+          github.event.label.name == 'qa-issue'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          TARGET_NUM: ${{ steps.pr.outputs.number }}
+          TARGET_TYPE: ${{ steps.pr.outputs.target_type }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$TARGET_TYPE" = "issue" ]; then
+            [ -n "$TARGET_NUM" ] && gh issue edit "$TARGET_NUM" --repo "$REPO" --remove-label "$LABEL_NAME" || true
+          else
+            [ -n "$TARGET_NUM" ] && gh pr edit "$TARGET_NUM" --repo "$REPO" --remove-label "$LABEL_NAME" || true
+          fi
+
+      - name: Deploy FAILED badge on error
+        if: failure()
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: /tmp/deploy-badge.sh "FAILED" "#e05d44" "${{ steps.pr.outputs.badge_label || 'QA' }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
