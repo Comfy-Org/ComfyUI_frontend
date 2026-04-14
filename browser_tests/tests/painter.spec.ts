@@ -387,8 +387,20 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       await drawStroke(comfyPage.page, canvas)
       await comfyPage.nextFrame()
 
-      // Canvas should have less content after erasing over the same area
-      await expect.poll(() => hasCanvasContent(canvas)).toBe(false)
+      await expect
+        .poll(
+          () =>
+            canvas.evaluate((el: HTMLCanvasElement) => {
+              const ctx = el.getContext('2d')
+              if (!ctx) return false
+              const cx = Math.floor(el.width / 2)
+              const cy = Math.floor(el.height / 2)
+              const { data } = ctx.getImageData(cx - 5, cy - 5, 10, 10)
+              return data.every((v, i) => i % 4 !== 3 || v === 0)
+            }),
+          { message: 'erased area should be transparent' }
+        )
+        .toBe(true)
     })
 
     test('Eraser on empty canvas adds no content', async ({ comfyPage }) => {
