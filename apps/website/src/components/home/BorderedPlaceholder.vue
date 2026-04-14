@@ -1,12 +1,12 @@
 <template>
   <div
-    class="rounded-5xl relative flex items-center justify-center overflow-hidden p-0.5"
+    class="rounded-5xl relative flex items-center justify-center overflow-hidden p-0.5 [clip-path:inset(0_round_var(--radius-5xl))]"
   >
     <div
-      class="animate-border-spin absolute inset-[-50%]"
+      class="animate-border-spin absolute inset-0"
       style="
         background: conic-gradient(
-          from 0deg,
+          from var(--border-angle),
           color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent)
             0%,
           var(--color-primary-comfy-yellow) 100%
