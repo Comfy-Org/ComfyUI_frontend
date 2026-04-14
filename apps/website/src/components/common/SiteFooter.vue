@@ -40,11 +40,31 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   {
     title: t('footer.resources', locale),
     links: [
-      { label: t('footer.blog', locale), href: externalLinks.blog, external: true },
-      { label: t('nav.discord', locale), href: externalLinks.discord, external: true },
-      { label: t('nav.github', locale), href: externalLinks.github, external: true },
-      { label: t('nav.docs', locale), href: externalLinks.docs, external: true },
-      { label: t('nav.youtube', locale), href: externalLinks.youtube, external: true }
+      {
+        label: t('footer.blog', locale),
+        href: externalLinks.blog,
+        external: true
+      },
+      {
+        label: t('nav.discord', locale),
+        href: externalLinks.discord,
+        external: true
+      },
+      {
+        label: t('nav.github', locale),
+        href: externalLinks.github,
+        external: true
+      },
+      {
+        label: t('nav.docs', locale),
+        href: externalLinks.docs,
+        external: true
+      },
+      {
+        label: t('nav.youtube', locale),
+        href: externalLinks.youtube,
+        external: true
+      }
     ]
   }
 ]
@@ -67,7 +87,10 @@ const contactSection = {
 </script>
 
 <template>
-  <footer ref="footerRef" class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20">
+  <footer
+    ref="footerRef"
+    class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20"
+  >
     <div
       class="border-primary-warm-gray flex flex-col gap-12 border-t pt-16 lg:gap-0"
     >
@@ -75,9 +98,7 @@ const contactSection = {
       <div class="flex flex-col gap-12 lg:flex-row lg:gap-0">
         <!-- Left: tagline -->
         <div class="flex-1">
-          <p
-            class="text-2xl font-medium tracking-wide uppercase lg:text-3xl"
-          >
+          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
             {{ t('footer.tagline', locale) }}
           </p>
         </div>
@@ -139,14 +160,13 @@ const contactSection = {
       </div>
 
       <!-- Logo + bottom bar -->
-      <div class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-        <canvas
-          ref="canvasRef"
-          class="mt-12 size-52 opacity-80 lg:mt-24"
-        />
+      <div
+        class="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
+      >
+        <canvas ref="canvasRef" class="mt-12 size-52 opacity-80 lg:mt-24" />
         <div class="flex justify-center gap-6 lg:justify-end">
           <p class="text-sm">{{ t('footer.location', locale) }}</p>
-          <p class="text-sm">&copy; 2026 Comfy Org</p>
+          <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
         </div>
       </div>
     </div>

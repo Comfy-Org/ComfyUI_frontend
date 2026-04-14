@@ -7,13 +7,11 @@ test.describe('Desktop layout @smoke', () => {
 
   test('navigation links visible and hamburger hidden', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopLinks = nav.locator('.md\\:flex').first()
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
     await expect(desktopLinks.getByText('PRODUCTS').first()).toBeVisible()
     await expect(desktopLinks.getByText('PRICING').first()).toBeVisible()
 
-    await expect(
-      page.getByRole('button', { name: 'Toggle menu' })
-    ).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Toggle menu' })).toBeHidden()
   })
 
   test('product cards in grid layout', async ({ page }) => {
@@ -44,7 +42,7 @@ test.describe('Mobile layout @mobile', () => {
   })
 
   test('SocialProofBar shows two marquee rows on mobile', async ({ page }) => {
-    const mobileContainer = page.locator('.flex.flex-col.gap-8.md\\:hidden')
+    const mobileContainer = page.getByTestId('social-proof-mobile')
     await expect(mobileContainer).toBeVisible()
   })
 })

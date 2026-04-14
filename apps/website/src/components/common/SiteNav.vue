@@ -18,7 +18,11 @@ const navLinks: NavLink[] = [
     items: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api, badge: 'NEW' },
+      {
+        label: t('nav.comfyApi', locale),
+        href: routes.api,
+        badge: t('nav.badgeNew', locale)
+      },
       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
     ]
   },
@@ -26,18 +30,42 @@ const navLinks: NavLink[] = [
   {
     label: t('nav.community', locale),
     items: [
-      { label: t('nav.comfyHub', locale), href: externalLinks.workflows, badge: 'NEW' },
+      {
+        label: t('nav.comfyHub', locale),
+        href: externalLinks.workflows,
+        badge: t('nav.badgeNew', locale)
+      },
       { label: t('nav.gallery', locale), href: routes.gallery }
     ]
   },
   {
     label: t('nav.resources', locale),
     items: [
-      { label: t('nav.blogs', locale), href: externalLinks.blog, external: true },
-      { label: t('nav.github', locale), href: externalLinks.github, external: true },
-      { label: t('nav.discord', locale), href: externalLinks.discord, external: true },
-      { label: t('nav.docs', locale), href: externalLinks.docs, external: true },
-      { label: t('nav.youtube', locale), href: externalLinks.youtube, external: true }
+      {
+        label: t('nav.blogs', locale),
+        href: externalLinks.blog,
+        external: true
+      },
+      {
+        label: t('nav.github', locale),
+        href: externalLinks.github,
+        external: true
+      },
+      {
+        label: t('nav.discord', locale),
+        href: externalLinks.discord,
+        external: true
+      },
+      {
+        label: t('nav.docs', locale),
+        href: externalLinks.docs,
+        external: true
+      },
+      {
+        label: t('nav.youtube', locale),
+        href: externalLinks.youtube,
+        external: true
+      }
     ]
   },
   {
@@ -51,8 +79,16 @@ const navLinks: NavLink[] = [
 ]
 
 const ctaButtons = [
-  { label: t('nav.downloadLocal', locale), href: routes.download, primary: false },
-  { label: t('nav.launchCloud', locale), href: externalLinks.app, primary: true }
+  {
+    label: t('nav.downloadLocal', locale),
+    href: routes.download,
+    primary: false
+  },
+  {
+    label: t('nav.launchCloud', locale),
+    href: externalLinks.app,
+    primary: true
+  }
 ]
 
 const currentPath = ref('')
@@ -102,18 +138,20 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <MobileMenu :open="mobileMenuOpen" :links="navLinks" :cta-links="ctaButtons" @close="closeMobileMenu" />
+  <MobileMenu
+    :open="mobileMenuOpen"
+    :links="navLinks"
+    :cta-links="ctaButtons"
+    :locale="locale"
+    @close="closeMobileMenu"
+  />
 
   <nav
     class="bg-primary-comfy-ink fixed inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-5 md:px-20 md:py-8"
     aria-label="Main navigation"
   >
     <a :href="routes.home" aria-label="Comfy home">
-      <img
-        src="/icons/logomark.svg"
-        alt="Comfy"
-        class="h-8 md:hidden"
-      />
+      <img src="/icons/logomark.svg" alt="Comfy" class="h-8 md:hidden" />
       <span
         class="hidden h-10 w-36 bg-contain bg-left bg-no-repeat md:block"
         style="background-image: url('/icons/logo.svg')"
@@ -122,7 +160,10 @@ onUnmounted(() => {
     </a>
 
     <!-- Desktop nav links -->
-    <div class="hidden items-center gap-10 md:flex">
+    <div
+      data-testid="desktop-nav-links"
+      class="hidden items-center gap-10 md:flex"
+    >
       <NavDesktopLink
         v-for="link in navLinks"
         :key="link.label"
@@ -136,7 +177,10 @@ onUnmounted(() => {
     </div>
 
     <!-- Desktop CTA buttons -->
-    <div class="hidden items-center gap-2 md:flex">
+    <div
+      data-testid="desktop-nav-cta"
+      class="hidden items-center gap-2 md:flex"
+    >
       <BrandButton
         v-for="cta in ctaButtons"
         :key="cta.href"
@@ -150,9 +194,11 @@ onUnmounted(() => {
     <!-- Mobile hamburger -->
     <button
       class="flex size-10 items-center justify-center rounded-xl md:hidden"
-      :class="mobileMenuOpen
-        ? 'border-primary-comfy-yellow border-2 bg-transparent'
-        : 'bg-primary-comfy-yellow'"
+      :class="
+        mobileMenuOpen
+          ? 'border-primary-comfy-yellow border-2 bg-transparent'
+          : 'bg-primary-comfy-yellow'
+      "
       :aria-label="t('nav.toggleMenu', locale)"
       aria-controls="site-mobile-menu"
       :aria-expanded="mobileMenuOpen"

@@ -4,7 +4,7 @@ const { title, description } = defineProps<{
   description: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   click: []
 }>()
 </script>
@@ -12,7 +12,7 @@ defineEmits<{
 <template>
   <button
     class="rounded-5xl bg-primary-comfy-yellow text-primary-comfy-ink w-full cursor-pointer p-8 text-left transition-all"
-    @click="$emit('click')"
+    @click="emit('click')"
   >
     <h3 class="text-2xl/tight font-medium">
       {{ title }}

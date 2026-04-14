@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
-import { gsap, ScrollTrigger } from '../scripts/smoothScroll'
+import { gsap, ScrollTrigger } from '../scripts/gsapSetup'
 
 interface FrameScrubOptions {
   frameCount: number
@@ -13,13 +13,14 @@ export function useFrameScrub(
   options: FrameScrubOptions
 ) {
   let ctx: gsap.Context | undefined
+  const images: HTMLImageElement[] = []
 
   onMounted(() => {
     if (!canvasRef.value) return
     const canvas: HTMLCanvasElement = canvasRef.value
 
-    const context = canvas.getContext('2d')!
-    const images: HTMLImageElement[] = []
+    const context = canvas.getContext('2d')
+    if (!context) return
     let loadedCount = 0
     const resolvedTrigger = options.scrollTrigger(canvas)
 
@@ -32,16 +33,19 @@ export function useFrameScrub(
       context.drawImage(img, 0, 0)
     }
 
+    function onFrameReady() {
+      loadedCount++
+      if (loadedCount === options.frameCount) {
+        drawFrame(0)
+        initScrub()
+      }
+    }
+
     for (let i = 0; i < options.frameCount; i++) {
       const img = new Image()
       img.src = options.frameSrc(i)
-      img.onload = () => {
-        loadedCount++
-        if (loadedCount === options.frameCount) {
-          drawFrame(0)
-          initScrub()
-        }
-      }
+      img.onload = onFrameReady
+      img.onerror = onFrameReady
       images.push(img)
     }
 
@@ -62,6 +66,11 @@ export function useFrameScrub(
   })
 
   onUnmounted(() => {
+    images.forEach((img) => {
+      img.onload = null
+      img.onerror = null
+    })
+    images.length = 0
     ctx?.revert()
   })
 }

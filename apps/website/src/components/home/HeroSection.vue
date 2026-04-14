@@ -27,11 +27,9 @@ useFrameScrub(canvasRef, {
     class="flex flex-col items-center px-4 pt-36 pb-16 lg:px-20 lg:pt-50 lg:pb-8"
   >
     <h1
-      class="text-primary-comfy-canvas text-center text-5xl font-light lg:text-8xl"
+      class="text-primary-comfy-canvas text-center text-5xl font-light whitespace-pre-line lg:text-8xl"
     >
-      {{ t('hero.title', locale).split('\n')[0] }}
-      <br />
-      {{ t('hero.title', locale).split('\n')[1] }}
+      {{ t('hero.title', locale) }}
     </h1>
 
     <div class="mt-12 w-full max-w-3xl overflow-hidden rounded-2xl">

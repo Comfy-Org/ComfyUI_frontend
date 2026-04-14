@@ -50,11 +50,9 @@ const cards = [
         {{ t('products.label', locale) }}
       </p>
       <h2
-        class="text-primary-comfy-canvas mt-4 text-4xl font-light lg:text-5xl"
+        class="text-primary-comfy-canvas mt-4 text-4xl font-light whitespace-pre-line lg:text-5xl"
       >
-        {{ t('products.heading', locale).split('\n')[0] }}
-        <br />
-        {{ t('products.heading', locale).split('\n')[1] }}
+        {{ t('products.heading', locale) }}
       </h2>
       <p class="text-primary-warm-gray mt-4 text-sm">
         {{ t('products.subheading', locale) }}

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onUnmounted, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import BrandButton from './BrandButton.vue'
 import type { NavLink } from './NavDesktopLink.vue'
 
@@ -13,20 +15,20 @@ interface CtaLink {
 const {
   open = false,
   links = [],
-  ctaLinks = []
+  ctaLinks = [],
+  locale = 'en'
 } = defineProps<{
   open?: boolean
   links?: NavLink[]
   ctaLinks?: CtaLink[]
+  locale?: Locale
 }>()
 
 const emit = defineEmits<{
   close: []
 }>()
 
-const activeSection = defineModel<string | null>('activeSection', {
-  default: null
-})
+const activeSection = ref<string | null>(null)
 
 const activeSectionItems = computed(
   () => links.find((l) => l.label === activeSection.value)?.items
@@ -97,7 +99,7 @@ onUnmounted(() => {
           @click="activeSection = null"
         >
           <span aria-hidden="true">&lsaquo;</span>
-          BACK
+          {{ t('nav.back', locale) }}
         </button>
 
         <p class="text-primary-warm-gray mb-4 text-sm">

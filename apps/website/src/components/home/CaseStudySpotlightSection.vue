@@ -25,10 +25,10 @@ const routes = getRoutes(locale)
           >
             {{ t('caseStudy.label', locale) }}
           </p>
-          <h2 class="text-primary-comfy-canvas text-5xl font-light">
-            {{ t('caseStudy.heading', locale).split('\n')[0] }}<br />{{
-              t('caseStudy.heading', locale).split('\n')[1]
-            }}
+          <h2
+            class="text-primary-comfy-canvas text-5xl font-light whitespace-pre-line"
+          >
+            {{ t('caseStudy.heading', locale) }}
           </h2>
           <p class="text-primary-warm-gray text-base">
             {{ t('caseStudy.subheading', locale) }}

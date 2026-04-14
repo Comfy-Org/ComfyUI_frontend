@@ -34,11 +34,14 @@ const emit = defineEmits<{
     class="relative"
     @mouseenter="link.items?.length && emit('open', link.label)"
     @mouseleave="emit('close')"
+    @focusin="link.items?.length && emit('open', link.label)"
+    @focusout="emit('close')"
   >
     <button
       v-if="link.items?.length"
       type="button"
       class="group text-primary-comfy-canvas hover:text-primary-warm-gray flex cursor-pointer items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors"
+      aria-haspopup="true"
       :aria-expanded="isOpen"
       @click="emit('toggle', link.label)"
     >
@@ -63,12 +66,15 @@ const emit = defineEmits<{
     <div
       v-if="link.items?.length"
       v-show="isOpen"
+      role="menu"
+      data-testid="nav-dropdown"
       class="bg-transparency-white-t4 absolute top-full left-0 w-max rounded-xl p-2 shadow-lg backdrop-blur-md"
     >
       <a
         v-for="item in link.items"
         :key="item.href"
         :href="item.href"
+        role="menuitem"
         class="text-primary-comfy-canvas hover:bg-transparency-white-t4 flex items-center gap-2 rounded-sm p-2 text-xs font-medium tracking-wide transition-colors hover:text-white"
         @click="emit('close')"
       >

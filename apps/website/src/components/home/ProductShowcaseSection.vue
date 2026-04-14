@@ -28,9 +28,9 @@ const features = [
 ]
 
 const badgeSegments = [
-  { text: 'HOW' },
+  { text: t('showcase.badgeHow', locale) },
   { logoSrc: '/icons/logo.svg', logoAlt: 'Comfy' },
-  { text: 'WORKS' }
+  { text: t('showcase.badgeWorks', locale) }
 ]
 
 const activeIndex = ref(0)

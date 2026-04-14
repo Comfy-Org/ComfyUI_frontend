@@ -6,9 +6,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle(
-      'Comfy — Professional Control of Visual AI'
-    )
+    await expect(page).toHaveTitle('Comfy — Professional Control of Visual AI')
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
@@ -24,9 +22,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('ProductShowcase section is visible', async ({ page }) => {
-    await expect(
-      page.getByText('HOW', { exact: true }).first()
-    ).toBeVisible()
+    await expect(page.getByText('HOW', { exact: true }).first()).toBeVisible()
     await expect(
       page.getByText(/Connect models, processing steps, and outputs/)
     ).toBeVisible()
@@ -63,6 +59,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('BuildWhatSection is visible', async ({ page }) => {
+    // "DOESN'T EXIST" is the actual badge text rendered in the Build What section
     await expect(page.getByText("DOESN'T EXIST")).toBeVisible()
   })
 })

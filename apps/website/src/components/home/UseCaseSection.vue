@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { gsap, ScrollTrigger } from '../../scripts/smoothScroll'
+import { gsap, ScrollTrigger } from '../../scripts/gsapSetup'
 
 import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'

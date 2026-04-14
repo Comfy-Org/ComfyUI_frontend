@@ -6,8 +6,11 @@ import NodeBadge from '../common/NodeBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const row1 = [{ text: 'BUILD WHAT' }]
-const row2 = [{ text: "DOESN'T EXIST" }, { text: 'YET' }]
+const row1 = [{ text: t('buildWhat.row1', locale) }]
+const row2 = [
+  { text: t('buildWhat.row2a', locale) },
+  { text: t('buildWhat.row2b', locale) }
+]
 </script>
 
 <template>

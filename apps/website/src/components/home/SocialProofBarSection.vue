@@ -24,7 +24,7 @@ const row2 = logos.slice(6)
     <div class="animate-marquee hidden items-center gap-2 md:flex">
       <div
         v-for="(logo, i) in [...logos, ...logos]"
-        :key="i"
+        :key="`${logo}-${i}`"
         class="flex h-20 w-50 shrink-0 items-center justify-center"
       >
         <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
@@ -32,11 +32,14 @@ const row2 = logos.slice(6)
     </div>
 
     <!-- Two rows on mobile -->
-    <div class="flex flex-col gap-8 md:hidden">
+    <div
+      data-testid="social-proof-mobile"
+      class="flex flex-col gap-8 md:hidden"
+    >
       <div class="animate-marquee flex items-center gap-8">
         <div
           v-for="(logo, i) in [...row1, ...row1]"
-          :key="i"
+          :key="`${logo}-${i}`"
           class="flex h-14 w-40 shrink-0 items-center justify-center"
         >
           <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
@@ -45,7 +48,7 @@ const row2 = logos.slice(6)
       <div class="animate-marquee-reverse flex items-center gap-8">
         <div
           v-for="(logo, i) in [...row2, ...row2]"
-          :key="i"
+          :key="`${logo}-${i}`"
           class="flex h-14 w-40 shrink-0 items-center justify-center"
         >
           <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />

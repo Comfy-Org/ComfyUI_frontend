@@ -49,6 +49,8 @@ const translations = {
     'zh-CN':
       '浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。'
   },
+  'showcase.badgeHow': { en: 'HOW', 'zh-CN': '如何' },
+  'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运作' },
 
   // UseCaseSection
   'useCase.label': {
@@ -214,9 +216,11 @@ const translations = {
   // BuildWhatSection
   'buildWhat.subtitle': {
     en: "Comfy gives you the building blocks to create workflows nobody's imagined yet — and share them with everyone.",
-    'zh-CN':
-      'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。'
+    'zh-CN': 'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。'
   },
+  'buildWhat.row1': { en: 'BUILD WHAT', 'zh-CN': '构建' },
+  'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的' },
+  'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
 
   // SiteNav
   'nav.products': { en: 'PRODUCTS', 'zh-CN': '产品' },
@@ -245,6 +249,7 @@ const translations = {
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
+  'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
 
   // SiteFooter
   'footer.tagline': {

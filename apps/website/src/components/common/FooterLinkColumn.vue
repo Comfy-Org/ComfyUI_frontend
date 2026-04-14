@@ -5,7 +5,7 @@ export interface FooterLink {
   external?: boolean
 }
 
-defineProps<{
+const { title, links } = defineProps<{
   title: string
   links: FooterLink[]
 }>()

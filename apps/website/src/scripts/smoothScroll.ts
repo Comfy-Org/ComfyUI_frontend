@@ -1,30 +1,21 @@
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import Lenis from 'lenis'
+import { gsap, ScrollTrigger } from './gsapSetup'
 
-gsap.registerPlugin(ScrollTrigger)
+let initialized = false
 
-function needsLenis(): boolean {
+export async function initSmoothScroll() {
+  if (initialized) return
+  initialized = true
+
   const ua = navigator.userAgent
   const isWindows = /Windows/.test(ua)
   const isLinux = /Linux/.test(ua) && !/Android/.test(ua)
-  return isWindows || isLinux
-}
+  if (!isWindows && !isLinux) return
 
-let lenis: Lenis | undefined
+  const { default: Lenis } = await import('lenis')
 
-export function initSmoothScroll() {
-  if (lenis) return
-
-  if (!needsLenis()) return
-
-  lenis = new Lenis()
-
+  const lenis = new Lenis()
   lenis.on('scroll', ScrollTrigger.update)
-
-  gsap.ticker.add((time) => {
-    lenis!.raf(time * 1000)
-  })
+  gsap.ticker.add((time) => lenis.raf(time * 1000))
   gsap.ticker.lagSmoothing(0)
 }
 

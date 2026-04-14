@@ -13,18 +13,22 @@ test.describe('Desktop navigation @smoke', () => {
 
   test('has all top-level nav items', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopLinks = nav.locator('.md\\:flex').first()
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
 
-    for (const label of ['PRODUCTS', 'PRICING', 'COMMUNITY', 'RESOURCES', 'COMPANY']) {
-      await expect(
-        desktopLinks.getByText(label).first()
-      ).toBeVisible()
+    for (const label of [
+      'PRODUCTS',
+      'PRICING',
+      'COMMUNITY',
+      'RESOURCES',
+      'COMPANY'
+    ]) {
+      await expect(desktopLinks.getByText(label).first()).toBeVisible()
     }
   })
 
   test('CTA buttons are visible', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopCTA = nav.locator('.md\\:flex').last()
+    const desktopCTA = nav.getByTestId('desktop-nav-cta')
     await expect(
       desktopCTA.getByRole('link', { name: 'DOWNLOAD LOCAL' })
     ).toBeVisible()
@@ -41,15 +45,13 @@ test.describe('Desktop dropdown @interaction', () => {
 
   test('hovering PRODUCTS shows dropdown items', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopLinks = nav.locator('.md\\:flex').first()
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
     const productsButton = desktopLinks.getByRole('button', {
       name: /PRODUCTS/i
     })
     await productsButton.hover()
 
-    const dropdown = productsButton
-      .locator('..')
-      .locator('.backdrop-blur-md')
+    const dropdown = productsButton.locator('..').getByTestId('nav-dropdown')
     for (const item of [
       'Comfy Local',
       'Comfy Cloud',
@@ -62,7 +64,7 @@ test.describe('Desktop dropdown @interaction', () => {
 
   test('moving mouse away closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopLinks = nav.locator('.md\\:flex').first()
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: /PRODUCTS/i }).hover()
 
     const comfyLocal = nav.getByRole('link', { name: 'Comfy Local' }).first()
@@ -74,7 +76,7 @@ test.describe('Desktop dropdown @interaction', () => {
 
   test('Escape key closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopLinks = nav.locator('.md\\:flex').first()
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: /PRODUCTS/i }).hover()
 
     const comfyLocal = nav.getByRole('link', { name: 'Comfy Local' }).first()
@@ -131,9 +133,7 @@ test.describe('Mobile menu @mobile', () => {
     await expect(
       menu.getByRole('link', { name: 'DOWNLOAD LOCAL' })
     ).toBeVisible()
-    await expect(
-      menu.getByRole('link', { name: 'LAUNCH CLOUD' })
-    ).toBeVisible()
+    await expect(menu.getByRole('link', { name: 'LAUNCH CLOUD' })).toBeVisible()
   })
 })
 
@@ -155,7 +155,7 @@ test.describe('Footer @smoke', () => {
 
   test('copyright text is visible', async ({ page }) => {
     await expect(
-      page.locator('footer').getByText(/© 2026 Comfy Org/)
+      page.locator('footer').getByText(/© \d{4} Comfy Org/)
     ).toBeVisible()
   })
 })
