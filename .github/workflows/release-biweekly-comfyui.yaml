@@ -3,7 +3,7 @@
 name: 'Release: ComfyUI'
 
 on:
-  # Bi-weekly schedule: Monday at 12:00 PM PST (20:00 UTC)
+  # Bi-weekly schedule: Monday at 20:00 UTC
   schedule:
     - cron: '0 20 * * 1'
 

@@ -140,7 +140,14 @@ function resolveRelease(
   // Determine target branch based on release type:
   //   'patch' → target current minor (hotfix for production version)
   //   'minor' → try next minor, fall back to current minor (bi-weekly cadence)
-  const releaseType = process.env.RELEASE_TYPE?.trim() || 'minor'
+  const releaseTypeInput = process.env.RELEASE_TYPE?.trim().toLowerCase() || 'minor'
+  if (releaseTypeInput !== 'minor' && releaseTypeInput !== 'patch') {
+    console.error(
+      `Invalid RELEASE_TYPE: "${releaseTypeInput}". Expected "minor" or "patch"`
+    )
+    return null
+  }
+  const releaseType: 'minor' | 'patch' = releaseTypeInput
   let targetMinor: number
   let targetBranch: string
 
@@ -174,7 +181,7 @@ function resolveRelease(
     )
 
     if (!nextMinorExists) {
-      // Fall back to current minor for patch releases
+      // Fall back to current minor for minor release
       targetMinor = currentMinor
       targetBranch = `core/1.${targetMinor}`
 
@@ -191,7 +198,7 @@ function resolveRelease(
       }
 
       console.error(
-        `Next minor branch core/1.${currentMinor + 1} not found, falling back to core/1.${currentMinor} for patch release`
+        `Next minor branch core/1.${currentMinor + 1} not found, falling back to core/1.${currentMinor} for minor release`
       )
     }
   }
