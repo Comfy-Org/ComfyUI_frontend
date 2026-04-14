@@ -928,6 +928,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../../packages/tailwind-utils
       '@vercel/analytics':
         specifier: 'catalog:'
         version: 2.0.1(react@19.2.4)(vue-router@4.4.3(vue@3.5.13(typescript@5.9.3)))(vue@3.5.13(typescript@5.9.3))

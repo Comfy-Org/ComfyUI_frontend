@@ -14,6 +14,7 @@
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
