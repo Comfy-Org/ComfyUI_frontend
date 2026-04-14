@@ -59,7 +59,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       await expect(swapGroup).toBeVisible()
       await expect(swapGroup).toContainText('E2E_OldSampler')
       await expect(
-        swapGroup.getByRole('button', { name: /replace all/i })
+        swapGroup.getByRole('button', { name: 'Replace All', exact: true })
       ).toBeVisible()
     })
 
@@ -148,7 +148,9 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       await expect(swapGroup).toContainText('E2E_OldUpscaler')
 
       // Click "Replace All"
-      await swapGroup.getByRole('button', { name: /replace all/i }).click()
+      await swapGroup
+        .getByRole('button', { name: 'Replace All', exact: true })
+        .click()
 
       // Swap group should disappear
       await expect(swapGroup).toBeHidden()
@@ -166,7 +168,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       comfyPage
     }) => {
       await getSwapNodesGroup(comfyPage.page)
-        .getByRole('button', { name: /replace all/i })
+        .getByRole('button', { name: 'Replace All', exact: true })
         .click()
 
       const workflow = await comfyPage.workflow.getExportedWorkflow()
