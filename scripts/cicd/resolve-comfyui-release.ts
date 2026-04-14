@@ -137,35 +137,63 @@ function resolveRelease(
   // Fetch all branches
   exec('git fetch origin', frontendRepoPath)
 
-  // Try next minor first, fall back to current minor if not available
-  let targetMinor = currentMinor + 1
-  let targetBranch = `core/1.${targetMinor}`
+  // Determine target branch based on release type:
+  //   'patch' → target current minor (hotfix for production version)
+  //   'minor' → try next minor, fall back to current minor (bi-weekly cadence)
+  const releaseType = process.env.RELEASE_TYPE?.trim() || 'minor'
+  let targetMinor: number
+  let targetBranch: string
 
-  const nextMinorExists = exec(
-    `git rev-parse --verify origin/${targetBranch}`,
-    frontendRepoPath
-  )
-
-  if (!nextMinorExists) {
-    // Fall back to current minor for patch releases
+  if (releaseType === 'patch') {
     targetMinor = currentMinor
     targetBranch = `core/1.${targetMinor}`
 
-    const currentMinorExists = exec(
+    const branchExists = exec(
       `git rev-parse --verify origin/${targetBranch}`,
       frontendRepoPath
     )
 
-    if (!currentMinorExists) {
+    if (!branchExists) {
       console.error(
-        `Neither core/1.${currentMinor + 1} nor core/1.${currentMinor} branches exist in frontend repo`
+        `Patch release requested but branch ${targetBranch} does not exist`
       )
       return null
     }
 
     console.error(
-      `Next minor branch core/1.${currentMinor + 1} not found, falling back to core/1.${currentMinor} for patch release`
+      `Patch release: targeting current production branch ${targetBranch}`
     )
+  } else {
+    // Try next minor first, fall back to current minor if not available
+    targetMinor = currentMinor + 1
+    targetBranch = `core/1.${targetMinor}`
+
+    const nextMinorExists = exec(
+      `git rev-parse --verify origin/${targetBranch}`,
+      frontendRepoPath
+    )
+
+    if (!nextMinorExists) {
+      // Fall back to current minor for patch releases
+      targetMinor = currentMinor
+      targetBranch = `core/1.${targetMinor}`
+
+      const currentMinorExists = exec(
+        `git rev-parse --verify origin/${targetBranch}`,
+        frontendRepoPath
+      )
+
+      if (!currentMinorExists) {
+        console.error(
+          `Neither core/1.${currentMinor + 1} nor core/1.${currentMinor} branches exist in frontend repo`
+        )
+        return null
+      }
+
+      console.error(
+        `Next minor branch core/1.${currentMinor + 1} not found, falling back to core/1.${currentMinor} for patch release`
+      )
+    }
   }
 
   // Get latest patch tag for target minor
