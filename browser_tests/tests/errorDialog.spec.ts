@@ -159,6 +159,7 @@ test.describe('Error dialog', () => {
       errorDialog.getByText('This may be due to the following script')
     ).toBeVisible()
   })
+
   test('Should display string error messages', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       window.app!.extensionManager.dialog.showErrorDialog(
@@ -175,6 +176,7 @@ test.describe('Error dialog', () => {
     await expect(errorDialog.getByText('Custom Error Title')).toBeVisible()
     await expect(errorDialog.getByText('Something went wrong')).toBeVisible()
   })
+
   test('Should display default title when no title provided', async ({
     comfyPage
   }) => {
