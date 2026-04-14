@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetAdditionalTags } from '@/platform/assets/utils/assetMetadataUtils'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
@@ -35,6 +36,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
   const mediaTypeFilters = ref<string[]>([])
+  const filterTags = ref<string[]>([])
 
   const fuseOptions = {
     keys: ['display_name', 'name', 'user_metadata.additional_tags'],
@@ -53,13 +55,21 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     return results.map((result) => result.item)
   })
 
+  const tagFiltered = computed(() => {
+    if (filterTags.value.length === 0) return searchFiltered.value
+    return searchFiltered.value.filter((asset) => {
+      const assetTags = getAssetAdditionalTags(asset)
+      return filterTags.value.every((t) => assetTags.includes(t))
+    })
+  })
+
   const typeFiltered = computed(() => {
     // Apply media type filter
     if (mediaTypeFilters.value.length === 0) {
-      return searchFiltered.value
+      return tagFiltered.value
     }
 
-    return searchFiltered.value.filter((asset) => {
+    return tagFiltered.value.filter((asset) => {
       const mediaType = getMediaTypeFromFilename(asset.name)
       // Convert '3D' to '3d' for comparison
       const normalizedType = mediaType.toLowerCase()
@@ -90,6 +100,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
 
   return {
     searchQuery,
+    filterTags,
     sortBy,
     mediaTypeFilters,
     filteredAssets

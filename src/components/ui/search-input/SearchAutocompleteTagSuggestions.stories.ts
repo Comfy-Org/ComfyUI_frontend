@@ -1,9 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
-import { highlightQuery } from '@/utils/formatUtil'
-
-import SearchAutocomplete from './SearchAutocomplete.vue'
+import TagsInputAutocomplete from '@/components/ui/tags-input/TagsInputAutocomplete.vue'
 
 const TAG_SUGGESTIONS = [
   'landscape',
@@ -19,7 +17,7 @@ const TAG_SUGGESTIONS = [
 ]
 
 const meta = {
-  title: 'Components/SearchAutocompleteTagSuggestions',
+  title: 'Components/SearchWithTagFilters',
   tags: ['autodocs']
 } satisfies Meta
 
@@ -28,96 +26,70 @@ type Story = StoryObj
 
 export const Default: Story = {
   render: () => ({
-    components: { SearchAutocomplete },
+    components: { TagsInputAutocomplete },
     setup() {
-      const query = ref('')
-      const allTags = TAG_SUGGESTIONS
-
-      const filteredTags = computed(() => {
-        const stripped = query.value.replace(/^tag:\s*/i, '').trim()
-        if (!stripped) return allTags
-        const lower = stripped.toLowerCase()
-        return allTags.filter((t) => t.toLowerCase().includes(lower))
-      })
-
-      function onSelect(tag: string) {
-        query.value = `tag: ${tag}`
-      }
-
-      function highlight(text: string) {
-        const stripped = query.value.replace(/^tag:\s*/i, '').trim()
-        return highlightQuery(text, stripped)
-      }
-
-      return { query, filteredTags, onSelect, highlight }
+      const filterTags = ref<string[]>([])
+      const searchText = ref('')
+      return { filterTags, searchText, TAG_SUGGESTIONS }
     },
     template: `
       <div class="w-96">
-        <SearchAutocomplete
-          v-model="query"
-          :suggestions="filteredTags"
-          placeholder="Search assets..."
-          @select="onSelect"
+        <TagsInputAutocomplete
+          v-model="filterTags"
+          v-model:query="searchText"
+          :suggestions="TAG_SUGGESTIONS"
+          :allow-create="false"
+          placeholder="Search or filter by tag..."
+          class="bg-secondary-background rounded-lg"
         >
           <template #suggestion="{ suggestion }">
-            <span class="italic opacity-90 text-muted-foreground">tag:</span>
-            <span
-              class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
-              v-html="highlight(suggestion)"
-            />
+            <span class="text-muted-foreground italic opacity-90">tag:</span>
+            <span class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground">
+              {{ suggestion }}
+            </span>
           </template>
-        </SearchAutocomplete>
+        </TagsInputAutocomplete>
         <div class="mt-4 text-sm text-muted-foreground">
-          Query: "{{ query }}"
+          Tags: {{ filterTags.length === 0 ? 'none' : filterTags.join(', ') }}
+        </div>
+        <div class="mt-1 text-sm text-muted-foreground">
+          Search: "{{ searchText }}"
         </div>
       </div>
     `
   })
 }
 
-export const WithPartialMatch: Story = {
+export const WithSelectedTags: Story = {
   render: () => ({
-    components: { SearchAutocomplete },
+    components: { TagsInputAutocomplete },
     setup() {
-      const query = ref('land')
-      const allTags = TAG_SUGGESTIONS
-
-      const filteredTags = computed(() => {
-        const stripped = query.value.replace(/^tag:\s*/i, '').trim()
-        if (!stripped) return allTags
-        const lower = stripped.toLowerCase()
-        return allTags.filter((t) => t.toLowerCase().includes(lower))
-      })
-
-      function onSelect(tag: string) {
-        query.value = `tag: ${tag}`
-      }
-
-      function highlight(text: string) {
-        const stripped = query.value.replace(/^tag:\s*/i, '').trim()
-        return highlightQuery(text, stripped)
-      }
-
-      return { query, filteredTags, onSelect, highlight }
+      const filterTags = ref(['landscape', 'anime'])
+      const searchText = ref('')
+      return { filterTags, searchText, TAG_SUGGESTIONS }
     },
     template: `
       <div class="w-96">
-        <SearchAutocomplete
-          v-model="query"
-          :suggestions="filteredTags"
-          placeholder="Search assets..."
-          @select="onSelect"
+        <TagsInputAutocomplete
+          v-model="filterTags"
+          v-model:query="searchText"
+          :suggestions="TAG_SUGGESTIONS"
+          :allow-create="false"
+          placeholder="Add more tags..."
+          class="bg-secondary-background rounded-lg"
         >
           <template #suggestion="{ suggestion }">
-            <span class="italic opacity-90 text-muted-foreground">tag:</span>
-            <span
-              class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
-              v-html="highlight(suggestion)"
-            />
+            <span class="text-muted-foreground italic opacity-90">tag:</span>
+            <span class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground">
+              {{ suggestion }}
+            </span>
           </template>
-        </SearchAutocomplete>
+        </TagsInputAutocomplete>
         <div class="mt-4 text-sm text-muted-foreground">
-          Query: "{{ query }}"
+          Tags: {{ filterTags.join(', ') }}
+        </div>
+        <div class="mt-1 text-sm text-muted-foreground">
+          Search: "{{ searchText }}"
         </div>
       </div>
     `

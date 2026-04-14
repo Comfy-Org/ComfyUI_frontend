@@ -58,7 +58,19 @@
             )
           "
         >
-          <span v-html="highlightQuery(suggestion, query)" />
+          <slot
+            name="suggestion"
+            :suggestion="suggestion"
+            :segments="highlightSegments(suggestion, query)"
+          >
+            <template
+              v-for="(seg, i) in highlightSegments(suggestion, query)"
+              :key="i"
+            >
+              <span v-if="seg.bold" class="font-bold">{{ seg.text }}</span>
+              <span v-else>{{ seg.text }}</span>
+            </template>
+          </slot>
         </ComboboxItem>
 
         <ComboboxItem
@@ -98,7 +110,6 @@ import {
 import { computed, ref, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { highlightQuery } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import TagsInputInput from './TagsInputInput.vue'
@@ -112,6 +123,7 @@ const {
   disabled = false,
   caseSensitive = false,
   aliasChars = '-_',
+  allowCreate = true,
   class: className
 } = defineProps<{
   /** Available tag suggestions for the autocomplete dropdown */
@@ -122,6 +134,8 @@ const {
   caseSensitive?: boolean
   /** Characters treated as equivalent when matching against suggestions (e.g. '-' matches '_'). Default: '-_' */
   aliasChars?: string
+  /** When true (default), shows "Create new tag" option for unmatched text. Set false for search mode. */
+  allowCreate?: boolean
   class?: HTMLAttributes['class']
 }>()
 
@@ -130,8 +144,8 @@ const emit = defineEmits<{
 }>()
 
 const modelValue = defineModel<string[]>({ required: true })
+const query = defineModel<string>('query', { default: '' })
 
-const query = ref('')
 const isOpen = ref(false)
 
 const filterSensitivity = computed(() =>
@@ -177,8 +191,9 @@ const filteredSuggestions = computed(() =>
 /** The resolved value for the "Create custom tag" option */
 const createTagValue = computed(() => resolveTag(query.value))
 
-/** Show "Create custom tag" when there's typed text that doesn't exactly match any visible suggestion */
+/** Show "Create custom tag" when allowed and typed text doesn't exactly match any visible suggestion */
 const showCreateOption = computed(() => {
+  if (!allowCreate) return false
   const trimmed = query.value.trim()
   if (!trimmed) return false
   // Don't show if the resolved tag is already selected
@@ -193,6 +208,22 @@ const showCreateOption = computed(() => {
 const showDropdown = computed(
   () => filteredSuggestions.value.length > 0 || showCreateOption.value
 )
+
+/** Split text into segments with bold flag for case-insensitive query matches */
+function highlightSegments(
+  text: string,
+  q: string
+): { text: string; bold: boolean }[] {
+  if (!q) return [{ text, bold: false }]
+  const idx = text.toLowerCase().indexOf(q.toLowerCase())
+  if (idx === -1) return [{ text, bold: false }]
+  const segments: { text: string; bold: boolean }[] = []
+  if (idx > 0) segments.push({ text: text.slice(0, idx), bold: false })
+  segments.push({ text: text.slice(idx, idx + q.length), bold: true })
+  if (idx + q.length < text.length)
+    segments.push({ text: text.slice(idx + q.length), bold: false })
+  return segments
+}
 
 /** Watch for tags added via any path (dropdown select, create option) */
 watch(
@@ -209,12 +240,3 @@ watch(
   { deep: true }
 )
 </script>
-
-<style scoped>
-:deep(.highlight) {
-  font-weight: 700;
-  background: none;
-  padding: 0;
-  margin: 0;
-}
-</style>

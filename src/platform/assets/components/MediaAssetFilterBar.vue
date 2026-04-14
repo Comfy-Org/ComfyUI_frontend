@@ -2,18 +2,19 @@
   <SidebarTopArea :bottom-divider>
     <div class="flex items-center gap-2">
       <slot name="prefix" />
-      <SearchAutocomplete
+      <TagsInputAutocomplete
         v-if="suggestions && suggestions.length > 0"
-        ref="searchInputRef"
-        v-model="searchModel"
-        :suggestions="filteredTagSuggestions"
+        ref="tagSearchRef"
+        v-model="filterTags"
+        v-model:query="searchModel"
+        :suggestions
+        :allow-create="false"
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
           })
         "
         class="min-w-0 flex-1"
-        @select="handleTagSelect"
       >
         <template #suggestion="{ suggestion }">
           <span class="text-muted-foreground italic opacity-90">
@@ -21,10 +22,11 @@
           </span>
           <span
             class="ml-1.5 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
-            v-html="highlightQuery(suggestion, searchModel)"
-          />
+          >
+            {{ suggestion }}
+          </span>
         </template>
-      </SearchAutocomplete>
+      </TagsInputAutocomplete>
       <SearchInput
         v-else
         ref="searchInputRef"
@@ -71,9 +73,8 @@
 import { computed, ref } from 'vue'
 
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
+import TagsInputAutocomplete from '@/components/ui/tags-input/TagsInputAutocomplete.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { highlightQuery } from '@/utils/formatUtil'
 import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
@@ -92,7 +93,7 @@ const {
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
   bottomDivider?: boolean
-  /** When provided, search field shows tag autocomplete suggestions */
+  /** When provided, search field shows tag autocomplete with chip filters */
   suggestions?: string[]
 }>()
 
@@ -101,12 +102,15 @@ const emit = defineEmits<{
   'update:mediaTypeFilters': [value: string[]]
 }>()
 
+const filterTags = defineModel<string[]>('filterTags', { default: () => [] })
+
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 
 const searchInputRef = ref()
+const tagSearchRef = ref()
 
-// Two-way model for SearchAutocomplete
+// Two-way binding for TagsInputAutocomplete query
 const searchModel = computed({
   get: () => searchQuery,
   set: (value: string) => emit('update:searchQuery', value)
@@ -114,6 +118,7 @@ const searchModel = computed({
 
 function focus() {
   searchInputRef.value?.focus()
+  tagSearchRef.value?.$el?.querySelector('input')?.focus()
 }
 
 defineExpose({ focus })
@@ -125,27 +130,4 @@ const handleSearchChange = (value: string | undefined) => {
 const handleMediaTypeFiltersChange = (value: string[]) => {
   emit('update:mediaTypeFilters', value)
 }
-
-/** Filter suggestions based on current search text */
-const filteredTagSuggestions = computed(() => {
-  if (!suggestions) return []
-  // Strip any existing "tag: " prefix from the query for matching
-  const query = searchModel.value.replace(/^tag:\s*/i, '').trim()
-  if (!query) return suggestions
-  const lower = query.toLowerCase()
-  return suggestions.filter((s) => s.toLowerCase().includes(lower))
-})
-
-function handleTagSelect(tag: string) {
-  emit('update:searchQuery', `tag: ${tag}`)
-}
 </script>
-
-<style scoped>
-:deep(.highlight) {
-  font-weight: 700;
-  background: none;
-  padding: 0;
-  margin: 0;
-}
-</style>

@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { TagsInputItemProps } from 'reka-ui'
-import { TagsInputItem, useForwardProps } from 'reka-ui'
+import {
+  injectTagsInputRootContext,
+  TagsInputItem,
+  useForwardProps
+} from 'reka-ui'
+import { nextTick, ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
@@ -10,10 +15,26 @@ const { class: className, ...restProps } = defineProps<
 >()
 
 const forwardedProps = useForwardProps(restProps)
+const context = injectTagsInputRootContext()
+const itemRef = ref<InstanceType<typeof TagsInputItem>>()
+
+function handleClick() {
+  if (context.disabled.value) return
+  const el = itemRef.value?.$el
+  if (!el) return
+  context.selectedElement.value = el
+  // Refocus the input so keyboard events (Delete/Backspace/arrows) flow through reka-ui's handler
+  void nextTick(() => {
+    const root = el.closest('[dir]')
+    const input = root?.querySelector('input')
+    input?.focus()
+  })
+}
 </script>
 
 <template>
   <TagsInputItem
+    ref="itemRef"
     v-bind="forwardedProps"
     :class="
       cn(
@@ -21,6 +42,7 @@ const forwardedProps = useForwardProps(restProps)
         className
       )
     "
+    @click="handleClick"
   >
     <slot />
   </TagsInputItem>

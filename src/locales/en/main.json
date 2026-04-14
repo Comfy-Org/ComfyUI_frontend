@@ -846,7 +846,9 @@
         "fileSize": "File Size",
         "generationTime": "Generation Time",
         "tagging": "Tagging",
-        "description": "Description"
+        "description": "Description",
+        "selection": "Selection",
+        "selectedCount": "Total"
       }
     },
     "backToAssets": "Back to all assets",
