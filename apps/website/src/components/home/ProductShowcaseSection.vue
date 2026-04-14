@@ -81,9 +81,19 @@ const activeIndex = ref(0)
             <FeatureCard
               :title="feature.title"
               :description="feature.description"
+              class="hidden lg:block"
               @click="activeIndex = i"
             />
           </div>
+
+          <!-- Active card (mobile only) -->
+          <FeatureCard
+            v-if="activeIndex === i"
+            :title="feature.title"
+            :description="feature.description"
+            class="lg:hidden"
+            @click="activeIndex = i"
+          />
 
           <!-- Inactive card -->
           <button
