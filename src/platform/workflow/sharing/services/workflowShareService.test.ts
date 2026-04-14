@@ -163,6 +163,82 @@ describe(useWorkflowShareService, () => {
     expect(status.publishedAt).toBeInstanceOf(Date)
   })
 
+  it('includes prefill data from hub workflow details', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-prefill/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-prefill',
+          share_id: 'wf-prefill',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-prefill') {
+        return mockJsonResponse({
+          description: 'A cool workflow',
+          tags: ['art', 'upscale'],
+          thumbnail_type: 'image_comparison',
+          sample_image_urls: ['https://example.com/img1.png']
+        })
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-prefill')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toEqual({
+      description: 'A cool workflow',
+      tags: ['art', 'upscale'],
+      thumbnailType: 'imageComparison',
+      sampleImageUrls: ['https://example.com/img1.png']
+    })
+    expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
+  })
+
+  it('returns null prefill when hub workflow details are unavailable', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-no-meta/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-no-meta',
+          share_id: 'wf-no-meta',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      return mockJsonResponse({}, false, 500)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-no-meta')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toBeNull()
+  })
+
+  it('does not fetch hub workflow details when publish record is unlisted', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        workflow_id: 'wf-unlisted',
+        share_id: 'wf-unlisted',
+        publish_time: '2026-02-23T00:00:00Z',
+        listed: false
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-unlisted')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toBeNull()
+    expect(mockFetchApi).toHaveBeenCalledTimes(1)
+    expect(mockFetchApi).toHaveBeenCalledWith('/userdata/wf-unlisted/publish')
+  })
+
   it('preserves app subpath when normalizing publish status share URLs', async () => {
     window.history.replaceState({}, '', '/comfy/subpath/')
     mockFetchApi.mockResolvedValue(
@@ -303,7 +379,8 @@ describe(useWorkflowShareService, () => {
       isPublished: false,
       shareId: null,
       shareUrl: null,
-      publishedAt: null
+      publishedAt: null,
+      prefill: null
     })
   })
 

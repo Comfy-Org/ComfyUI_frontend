@@ -1,18 +1,15 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 const BYPASS_HOTKEY = 'Control+b'
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
-test.describe('Vue Node Bypass', () => {
+test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test(

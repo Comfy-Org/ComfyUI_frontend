@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
@@ -112,11 +112,9 @@ async function getNodeGroupCenteringErrors(
   })
 }
 
-test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
+test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {
@@ -130,7 +128,6 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
   })
 
   test('should allow fitting group to contents', async ({ comfyPage }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('groups/oversized_group')
     await comfyPage.keyboard.selectAll()
     await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
@@ -188,14 +185,16 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
     await comfyPage.vueNodes.waitForNodes(1)
 
-    const workflowRendererVersion = await comfyPage.page.evaluate(() => {
-      const extra = window.app!.graph.extra as
-        | { workflowRendererVersion?: string }
-        | undefined
-      return extra?.workflowRendererVersion
-    })
-
-    expect(workflowRendererVersion).toMatch(/^Vue/)
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const extra = window.app!.graph.extra as
+            | { workflowRendererVersion?: string }
+            | undefined
+          return extra?.workflowRendererVersion
+        })
+      )
+      .toMatch(/^Vue/)
 
     await expect(async () => {
       const centeringErrors = await getNodeGroupCenteringErrors(comfyPage)

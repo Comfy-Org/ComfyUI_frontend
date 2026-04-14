@@ -21,6 +21,7 @@ import {
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -65,8 +66,9 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
@@ -83,14 +85,21 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { getCnrIdFromProperties } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {
   scanAllModelCandidates,
   enrichWithEmbeddedMetadata,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import {
+  scanAllMediaCandidates,
+  verifyCloudMediaCandidates
+} from '@/platform/missingMedia/missingMediaScan'
 import { assetService } from '@/platform/assets/services/assetService'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -579,6 +588,9 @@ export class ComfyApp {
     // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
+        // Skip if already handled (e.g. file drop onto publish dialog tiles)
+        if (event.defaultPrevented) return
+
         event.preventDefault()
         event.stopPropagation()
 
@@ -1105,7 +1117,9 @@ export class ComfyApp {
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
-    useExecutionErrorStore().surfaceMissingNodes(missingNodeTypes)
+    if (useMissingNodesErrorStore().surfaceMissingNodes(missingNodeTypes)) {
+      useExecutionErrorStore().showErrorOverlay()
+    }
   }
 
   async loadGraphData(
@@ -1114,23 +1128,35 @@ export class ComfyApp {
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
     options: {
-      showMissingNodes?: boolean
-      showMissingModels?: boolean
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
       deferWarnings?: boolean
+      skipAssetScans?: boolean
+      silentAssetErrors?: boolean
     } = {}
   ) {
     const {
-      showMissingNodes = true,
-      showMissingModels = true,
       checkForRerouteMigration = false,
       openSource,
-      deferWarnings = false
+      deferWarnings = false,
+      skipAssetScans = false,
+      silentAssetErrors = false
     } = options
     useWorkflowService().beforeLoadNewGraph()
 
-    useMissingModelStore().clearMissingModels()
+    if (skipAssetScans) {
+      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // so cached results restored by showPendingWarnings still display sizes.
+      // Abort any in-flight verification from the outgoing workflow so a late
+      // result cannot repopulate the store after we've switched workflows.
+      useMissingModelStore().createVerificationAbortController().abort()
+      useMissingMediaStore().createVerificationAbortController().abort()
+      useMissingModelStore().setMissingModels([])
+      useMissingMediaStore().setMissingMedia([])
+    } else {
+      useMissingModelStore().clearMissingModels()
+      useMissingMediaStore().clearMissingMedia()
+    }
 
     if (clean !== false) {
       // Reset canvas context before configuring a new graph so subgraph UI
@@ -1206,24 +1232,31 @@ export class ComfyApp {
       }
       for (let n of nodes) {
         if (!(n.type in LiteGraph.registered_node_types)) {
-          const replacement = nodeReplacementStore.getReplacementFor(n.type)
-          const cnrId = getCnrIdFromProperties(
-            n.properties as Record<string, unknown> | undefined
-          )
-          const executionId = pathPrefix
-            ? `${pathPrefix}:${n.id}`
-            : String(n.id)
+          // Always sanitize so configure() can handle unregistered types,
+          // but only report as missing if the node is active.
+          const isMuted =
+            n.mode === LGraphEventMode.NEVER ||
+            n.mode === LGraphEventMode.BYPASS
+          if (!isMuted) {
+            const replacement = nodeReplacementStore.getReplacementFor(n.type)
+            const cnrId = getCnrIdFromProperties(
+              n.properties as Record<string, unknown> | undefined
+            )
+            const executionId = pathPrefix
+              ? `${pathPrefix}:${n.id}`
+              : String(n.id)
 
-          missingNodeTypes.push({
-            type: n.type,
-            nodeId: executionId,
-            cnrId,
-            ...(displayName && {
-              hint: t('g.inSubgraph', { name: displayName })
-            }),
-            isReplaceable: replacement !== null,
-            replacement: replacement ?? undefined
-          })
+            missingNodeTypes.push({
+              type: n.type,
+              nodeId: executionId,
+              cnrId,
+              ...(displayName && {
+                hint: t('g.inSubgraph', { name: displayName })
+              }),
+              isReplaceable: replacement !== null,
+              replacement: replacement ?? undefined
+            })
+          }
 
           n.type = sanitizeNodeName(n.type)
         }
@@ -1403,15 +1436,20 @@ export class ComfyApp {
         requestAnimationFrame(() => fitView())
       }
 
-      await this.runMissingModelPipeline(
-        graphData,
-        missingNodeTypes,
-        showMissingNodes,
-        showMissingModels
-      )
+      if (!skipAssetScans) {
+        await this.runMissingModelPipeline(
+          graphData,
+          missingNodeTypes,
+          silentAssetErrors
+        )
+
+        await this.runMissingMediaPipeline(silentAssetErrors)
+      }
 
       if (!deferWarnings) {
-        useWorkflowService().showPendingWarnings()
+        useWorkflowService().showPendingWarnings(undefined, {
+          silent: silentAssetErrors
+        })
       }
 
       void useSubgraphNavigationStore().updateHash()
@@ -1426,8 +1464,7 @@ export class ComfyApp {
   private async runMissingModelPipeline(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    showMissingNodes: boolean,
-    showMissingModels: boolean
+    silent: boolean = false
   ): Promise<{ missingModels: ModelFile[] }> {
     const missingModelStore = useMissingModelStore()
 
@@ -1477,33 +1514,36 @@ export class ComfyApp {
 
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
     if (activeWf) {
-      const warnings: PendingWarnings = {}
-      if (missingNodeTypes.length && showMissingNodes) {
-        warnings.missingNodeTypes = missingNodeTypes
+      activeWf.pendingWarnings = {
+        ...activeWf.pendingWarnings,
+        missingNodeTypes: missingNodeTypes.length
+          ? missingNodeTypes
+          : undefined,
+        missingModelCandidates: confirmedCandidates.length
+          ? confirmedCandidates
+          : undefined
       }
-      if (confirmedCandidates.length && showMissingModels) {
-        warnings.missingModelCandidates = confirmedCandidates
-      }
-      if (warnings.missingNodeTypes || warnings.missingModelCandidates) {
-        activeWf.pendingWarnings = warnings
-      }
+      this.cleanupPendingWarnings(activeWf)
     }
 
-    // Intentionally runs on every graph load (including tab switches and
-    // undo/redo) because missing model state depends on external asset data
-    // that may change between workflow activations.
     if (enrichedCandidates.length) {
       if (isCloud) {
         const controller = missingModelStore.createVerificationAbortController()
-        verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+        void verifyAssetSupportedCandidates(
+          enrichedCandidates,
+          controller.signal
+        )
           .then(() => {
             if (controller.signal.aborted) return
             const confirmed = enrichedCandidates.filter(
               (c) => c.isMissing === true
             )
             if (confirmed.length) {
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
             }
+            this.cacheModelCandidates(activeWf, confirmed)
           })
           .catch((err) => {
             console.warn(
@@ -1523,7 +1563,7 @@ export class ComfyApp {
         const controller = missingModelStore.createVerificationAbortController()
         const confirmed = enrichedCandidates.filter((c) => c.isMissing === true)
         if (confirmed.length) {
-          api
+          void api
             .getFolderPaths()
             .then((paths) => {
               if (controller.signal.aborted) return
@@ -1537,7 +1577,10 @@ export class ComfyApp {
             })
             .finally(() => {
               if (controller.signal.aborted) return
-              useExecutionErrorStore().surfaceMissingModels(confirmed)
+              useExecutionErrorStore().surfaceMissingModels(confirmed, {
+                silent
+              })
+              this.cacheModelCandidates(activeWf, confirmed)
             })
 
           void Promise.allSettled(
@@ -1557,6 +1600,88 @@ export class ComfyApp {
     }
 
     return { missingModels }
+  }
+
+  private cleanupPendingWarnings(wf: {
+    pendingWarnings: PendingWarnings | null
+  }) {
+    if (
+      !wf.pendingWarnings?.missingNodeTypes &&
+      !wf.pendingWarnings?.missingModelCandidates &&
+      !wf.pendingWarnings?.missingMediaCandidates
+    ) {
+      wf.pendingWarnings = null
+    }
+  }
+
+  private cacheModelCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingModelCandidate[]
+  ) {
+    if (!wf) return
+    wf.pendingWarnings = {
+      ...wf.pendingWarnings,
+      missingModelCandidates: confirmed.length ? confirmed : undefined
+    }
+    this.cleanupPendingWarnings(wf)
+  }
+
+  private cacheMediaCandidates(
+    wf: ComfyWorkflow | null,
+    confirmed: MissingMediaCandidate[]
+  ) {
+    if (!wf) return
+    wf.pendingWarnings = {
+      ...wf.pendingWarnings,
+      missingMediaCandidates: confirmed.length ? confirmed : undefined
+    }
+    this.cleanupPendingWarnings(wf)
+  }
+
+  private async runMissingMediaPipeline(
+    silent: boolean = false
+  ): Promise<void> {
+    const missingMediaStore = useMissingMediaStore()
+    const activeWf = useWorkspaceStore().workflow.activeWorkflow
+    const candidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+
+    if (!candidates.length) {
+      this.cacheMediaCandidates(activeWf, [])
+      return
+    }
+
+    if (isCloud) {
+      const controller = missingMediaStore.createVerificationAbortController()
+      void verifyCloudMediaCandidates(candidates, controller.signal)
+        .then(() => {
+          if (controller.signal.aborted) return
+          const confirmed = candidates.filter((c) => c.isMissing === true)
+          if (confirmed.length) {
+            useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
+          }
+          this.cacheMediaCandidates(activeWf, confirmed)
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Media Pipeline] Asset verification failed:',
+            err
+          )
+          useToastStore().add({
+            severity: 'warn',
+            summary: st(
+              'toastMessages.missingMediaVerificationFailed',
+              'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+            ),
+            life: 5000
+          })
+        })
+    } else {
+      const confirmed = candidates.filter((c) => c.isMissing === true)
+      if (confirmed.length) {
+        useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
+      }
+      this.cacheMediaCandidates(activeWf, confirmed)
+    }
   }
 
   async graphToPrompt(graph = this.rootGraph) {
@@ -1588,7 +1713,7 @@ export class ComfyApp {
     executionErrorStore.clearAllErrors()
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const comfyOrgAuthToken = await useAuthStore().getAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
@@ -1647,6 +1772,34 @@ export class ComfyApp {
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
+            } else if (
+              error instanceof PromptExecutionError &&
+              error.status === 403
+            ) {
+              // User is authenticated but not authorized (e.g. not whitelisted).
+              // Show a clear message instead of a generic error or sign-in prompt.
+              // The response may be middleware JSON {"message": "..."} or the
+              // standard {"error": {"message": "..."}} shape, so check both.
+              const raw =
+                error.response && typeof error.response === 'object'
+                  ? (error.response as Record<string, unknown>)
+                  : {}
+              const rawError =
+                raw.error && typeof raw.error === 'object'
+                  ? (raw.error as Record<string, unknown>)
+                  : undefined
+              const detail =
+                typeof raw.message === 'string'
+                  ? raw.message
+                  : typeof rawError?.message === 'string'
+                    ? rawError.message
+                    : typeof raw.error === 'string'
+                      ? raw.error
+                      : t('errorDialog.accessRestrictedMessage')
+              useDialogService().showErrorDialog(new Error(detail), {
+                title: t('errorDialog.accessRestrictedTitle'),
+                reportType: 'accessRestrictedError'
+              })
             } else if (
               !useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab') ||
               !(error instanceof PromptExecutionError)

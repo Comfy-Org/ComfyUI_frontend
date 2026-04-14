@@ -1,7 +1,15 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
 import {
   scanAllModelCandidates,
+  scanNodeModelCandidates,
   isModelFileName,
   enrichWithEmbeddedMetadata,
   verifyAssetSupportedCandidates,
@@ -9,12 +17,6 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
@@ -30,32 +32,32 @@ function makeComboWidget(
   value: string | number,
   options: string[] = []
 ): IComboWidget {
-  return {
+  return fromAny<IComboWidget, unknown>({
     type: 'combo',
     name,
     value,
     options: { values: options }
-  } as unknown as IComboWidget
+  })
 }
 
 /** Helper: create an asset widget mock (Cloud combo replacement) */
 function makeAssetWidget(name: string, value: string): IBaseWidget {
-  return {
+  return fromAny<IBaseWidget, unknown>({
     type: 'asset',
     name,
     value,
     options: {}
-  } as unknown as IBaseWidget
+  })
 }
 
 /** Helper: create a non-combo widget mock */
 function makeOtherWidget(name: string, value: unknown): IBaseWidget {
-  return {
+  return fromAny<IBaseWidget, unknown>({
     type: 'number',
     name,
     value,
     options: {}
-  } as unknown as IBaseWidget
+  })
 }
 
 /** Helper: create a mock LGraphNode with configured widgets */
@@ -65,17 +67,17 @@ function makeNode(
   widgets: IBaseWidget[] = [],
   executionId?: string
 ): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id,
     type,
     widgets,
     _testExecutionId: executionId
-  } as unknown as LGraphNode
+  })
 }
 
 /** Helper: create a mock LGraph containing given nodes */
 function makeGraph(nodes: LGraphNode[]): LGraph {
-  return { _testNodes: nodes } as unknown as LGraph
+  return fromAny<LGraph, unknown>({ _testNodes: nodes })
 }
 
 const noAssetSupport = () => false
@@ -107,6 +109,52 @@ describe('MODEL_FILE_EXTENSIONS', () => {
   it('should contain standard extensions', () => {
     expect(MODEL_FILE_EXTENSIONS.has('.safetensors')).toBe(true)
     expect(MODEL_FILE_EXTENSIONS.has('.ckpt')).toBe(true)
+  })
+})
+
+describe('scanNodeModelCandidates', () => {
+  it('returns candidates for a node with a missing model combo widget', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'missing_model.safetensors', [
+        'existing_model.safetensors'
+      ])
+    ])
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      isAssetSupported: false,
+      name: 'missing_model.safetensors',
+      isMissing: true
+    })
+  })
+
+  it('returns empty array for node with no widgets', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'EmptyNode', [])
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
+  it('returns empty array when executionId is null', () => {
+    const graph = makeGraph([])
+    const node = makeNode(
+      1,
+      'CheckpointLoaderSimple',
+      [makeComboWidget('ckpt_name', 'model.safetensors', [])],
+      ''
+    )
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toEqual([])
   })
 })
 
@@ -389,14 +437,66 @@ describe('scanAllModelCandidates', () => {
     expect(result[1].widgetName).toBe('vae_name')
   })
 
+  it('skips muted nodes (mode === NEVER)', () => {
+    const mutedNode = fromAny<LGraphNode, unknown>({
+      id: 10,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 2, // LGraphEventMode.NEVER
+      _testExecutionId: '10'
+    })
+
+    const graph = makeGraph([mutedNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips bypassed nodes (mode === BYPASS)', () => {
+    const bypassedNode = fromAny<LGraphNode, unknown>({
+      id: 11,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 4, // LGraphEventMode.BYPASS
+      _testExecutionId: '11'
+    })
+
+    const graph = makeGraph([bypassedNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('includes active nodes (mode === ALWAYS)', () => {
+    const activeNode = fromAny<LGraphNode, unknown>({
+      id: 12,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 0, // LGraphEventMode.ALWAYS
+      _testExecutionId: '12'
+    })
+
+    const graph = makeGraph([activeNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].isMissing).toBe(true)
+  })
+
   it('skips subgraph container nodes whose promoted widgets are already scanned via interior nodes', () => {
-    const containerNode = {
+    const containerNode = fromAny<LGraphNode, unknown>({
       id: 65,
       type: 'abc-def-uuid',
       widgets: [makeComboWidget('ckpt_name', 'model.safetensors', [])],
       isSubgraphNode: () => true,
       _testExecutionId: '65'
-    } as unknown as LGraphNode
+    })
 
     const interiorNode = makeNode(
       42,
@@ -437,7 +537,7 @@ const alwaysInstalled = async () => true
 describe('enrichWithEmbeddedMetadata', () => {
   it('enriches existing candidate with url and directory from embedded metadata', async () => {
     const candidates = [makeCandidate('model_a.safetensors')]
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -467,7 +567,7 @@ describe('enrichWithEmbeddedMetadata', () => {
           hash_type: 'sha256'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,
@@ -487,7 +587,7 @@ describe('enrichWithEmbeddedMetadata', () => {
         url: 'https://existing.com'
       })
     ]
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -515,7 +615,7 @@ describe('enrichWithEmbeddedMetadata', () => {
           directory: 'new_dir'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,
@@ -530,7 +630,7 @@ describe('enrichWithEmbeddedMetadata', () => {
 
   it('does not mutate the original candidates array', async () => {
     const candidates = [makeCandidate('model_a.safetensors')]
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -558,7 +658,7 @@ describe('enrichWithEmbeddedMetadata', () => {
           directory: 'checkpoints'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const originalUrl = candidates[0].url
     await enrichWithEmbeddedMetadata(candidates, graphData, alwaysMissing)
@@ -568,7 +668,7 @@ describe('enrichWithEmbeddedMetadata', () => {
 
   it('adds new candidate for embedded model not found by COMBO scan', async () => {
     const candidates: MissingModelCandidate[] = []
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -596,7 +696,7 @@ describe('enrichWithEmbeddedMetadata', () => {
           directory: 'checkpoints'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,
@@ -611,7 +711,7 @@ describe('enrichWithEmbeddedMetadata', () => {
 
   it('does not add candidate when model is already installed', async () => {
     const candidates: MissingModelCandidate[] = []
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 0,
       last_link_id: 0,
       nodes: [],
@@ -627,12 +727,200 @@ describe('enrichWithEmbeddedMetadata', () => {
           directory: 'checkpoints'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,
       graphData,
       alwaysInstalled
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips embedded models from muted nodes', async () => {
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 2, // NEVER (muted)
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('drops workflow-level model entries when only referencing nodes are bypassed (other active nodes present)', async () => {
+    // Regression: a previous `hasActiveNodes` check kept workflow-level
+    // models in a mixed graph if ANY active node existed, even when every
+    // node that actually referenced the model was bypassed. The correct
+    // check drops unmatched workflow-level entries since candidates are
+    // derived from active-node widgets.
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 2,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4, // BYPASS — only node referencing the model
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        },
+        {
+          id: 2,
+          type: 'KSampler',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0, // ALWAYS — unrelated active node
+          properties: {},
+          widgets_values: {}
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('keeps unmatched node-sourced entries in a mixed graph', async () => {
+    // A node-sourced unmatched entry (sourceNodeType !== '') must survive
+    // the workflow-level filter. This ensures the simplification does not
+    // over-filter legitimate per-node missing models.
+    const candidates = [
+      makeCandidate('node_model.safetensors', { nodeId: '1' })
+    ]
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {
+            models: [
+              {
+                name: 'node_model.safetensors',
+                url: 'https://example.com/node_model',
+                directory: 'checkpoints'
+              }
+            ]
+          },
+          widgets_values: { ckpt_name: 'node_model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: []
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('node_model.safetensors')
+  })
+
+  it('skips embedded models from bypassed nodes', async () => {
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4, // BYPASS
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
     )
 
     expect(result).toHaveLength(0)
@@ -662,7 +950,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
     // OSS path: candidates start empty, enrichWithEmbeddedMetadata adds
     // missing embedded models so the dialog can show them.
     const candidates: MissingModelCandidate[] = []
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 2,
       last_link_id: 0,
       nodes: [
@@ -706,7 +994,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
           directory: 'loras'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,
@@ -726,7 +1014,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
     // When isAssetSupported is omitted (OSS), unmatched embedded models
     // should have isMissing=true (not undefined), enabling the dialog.
     const candidates: MissingModelCandidate[] = []
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -754,7 +1042,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
           directory: 'checkpoints'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,
@@ -769,7 +1057,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
 
   it('enrichWithEmbeddedMetadata correctly filters for dialog: only isMissing=true with url', async () => {
     const candidates: MissingModelCandidate[] = []
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -802,7 +1090,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
           directory: 'checkpoints'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const selectiveInstallCheck = async (name: string) =>
       name === 'installed_model.safetensors'
@@ -821,7 +1109,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
 
   it('enrichWithEmbeddedMetadata with isAssetSupported leaves isMissing undefined for asset-supported models (Cloud path)', async () => {
     const candidates: MissingModelCandidate[] = []
-    const graphData = {
+    const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
@@ -849,7 +1137,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
           directory: 'checkpoints'
         }
       ]
-    } as unknown as ComfyWorkflowJSON
+    })
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,

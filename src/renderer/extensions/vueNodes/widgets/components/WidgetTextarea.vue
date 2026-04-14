@@ -10,13 +10,14 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-xxs text-muted-foreground"
+      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
     >
       {{ displayName }}
     </label>
     <Textarea
       v-bind="filteredProps"
       :id
+      ref="textAreaRef"
       v-model="modelValue"
       :class="
         cn(
@@ -28,7 +29,7 @@
       :placeholder
       :readonly="isReadOnly"
       data-capture-wheel="true"
-      @pointerdown.capture.stop
+      @pointerdown.capture.stop="trackFocus"
       @pointermove.capture.stop
       @pointerup.capture.stop
       @contextmenu.capture="handleContextMenu"
@@ -49,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -70,7 +71,14 @@ const { widget, placeholder = '' } = defineProps<{
   placeholder?: string
 }>()
 
+const textAreaRef = useTemplateRef('textAreaRef')
+
 const modelValue = defineModel<string>({ default: '' })
+
+const isFocused = ref(false)
+function trackFocus() {
+  isFocused.value = document.activeElement === textAreaRef.value?.$el
+}
 
 const hideLayoutField = useHideLayoutField()
 const { copyToClipboard } = useCopyToClipboard()
@@ -87,7 +95,7 @@ const isReadOnly = computed(() =>
 )
 
 function handleContextMenu(e: MouseEvent) {
-  if (isNodeOptionsOpen()) {
+  if (isNodeOptionsOpen() || isFocused.value) {
     e.stopPropagation()
     return
   }

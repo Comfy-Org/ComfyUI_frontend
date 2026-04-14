@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
-import type { Position } from '../types'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import type { Position } from '@e2e/fixtures/types'
 
 export class CanvasHelper {
   constructor(
@@ -74,6 +74,51 @@ export class CanvasHelper {
     await this.nextFrame()
   }
 
+  /**
+   * Convert a canvas-element-relative position to absolute page coordinates.
+   * Use with `page.mouse` APIs when Vue DOM overlays above the canvas would
+   * cause Playwright's actionability check to fail on the canvas locator.
+   */
+  private async toAbsolute(position: Position): Promise<Position> {
+    const box = await this.canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+    return { x: box.x + position.x, y: box.y + position.y }
+  }
+
+  /**
+   * Click at canvas-element-relative coordinates using `page.mouse.click()`.
+   * Bypasses Playwright's actionability checks on the canvas locator, which
+   * can fail when Vue-rendered DOM nodes overlay the `<canvas>` element.
+   */
+  async mouseClickAt(
+    position: Position,
+    options?: {
+      button?: 'left' | 'right' | 'middle'
+      modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[]
+    }
+  ): Promise<void> {
+    const abs = await this.toAbsolute(position)
+    const modifiers = options?.modifiers ?? []
+    for (const mod of modifiers) await this.page.keyboard.down(mod)
+    try {
+      await this.page.mouse.click(abs.x, abs.y, {
+        button: options?.button
+      })
+    } finally {
+      for (const mod of modifiers) await this.page.keyboard.up(mod)
+    }
+    await this.nextFrame()
+  }
+
+  /**
+   * Double-click at canvas-element-relative coordinates using `page.mouse`.
+   */
+  async mouseDblclickAt(position: Position): Promise<void> {
+    const abs = await this.toAbsolute(position)
+    await this.page.mouse.dblclick(abs.x, abs.y)
+    await this.nextFrame()
+  }
+
   async clickEmptySpace(): Promise<void> {
     await this.canvas.click({ position: DefaultGraphPositions.emptySpaceClick })
     await this.nextFrame()
@@ -89,6 +134,12 @@ export class CanvasHelper {
 
   async moveMouseToEmptyArea(): Promise<void> {
     await this.page.mouse.move(10, 10)
+  }
+
+  async isReadOnly(): Promise<boolean> {
+    return this.page.evaluate(() => {
+      return window.app!.canvas.state.readOnly
+    })
   }
 
   async getScale(): Promise<number> {
@@ -161,6 +212,39 @@ export class CanvasHelper {
       x: screenPos.x + deltaX,
       y: screenPos.y + deltaY
     })
+  }
+
+  /**
+   * Pan the canvas back and forth in a sweep pattern using middle-mouse drag.
+   * Each step advances one animation frame, giving per-frame measurement
+   * granularity for performance tests.
+   */
+  async panSweep(options?: {
+    steps?: number
+    dx?: number
+    dy?: number
+  }): Promise<void> {
+    const { steps = 120, dx = 8, dy = 3 } = options ?? {}
+    const box = await this.canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+    await this.page.mouse.move(centerX, centerY)
+    await this.page.mouse.down({ button: 'middle' })
+
+    // Sweep forward
+    for (let i = 0; i < steps; i++) {
+      await this.page.mouse.move(centerX + i * dx, centerY + i * dy)
+      await this.nextFrame()
+    }
+    // Sweep back
+    for (let i = steps; i > 0; i--) {
+      await this.page.mouse.move(centerX + i * dx, centerY + i * dy)
+      await this.nextFrame()
+    }
+
+    await this.page.mouse.up({ button: 'middle' })
   }
 
   async disconnectEdge(): Promise<void> {

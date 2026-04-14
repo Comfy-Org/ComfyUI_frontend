@@ -1,14 +1,16 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { WorkspaceStore } from '../../types/globals'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
+  readonly newWorkflowButton: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
+    this.newWorkflowButton = page.locator('.new-blank-workflow-button')
   }
 
   async getTabNames(): Promise<string[]> {
@@ -56,9 +58,20 @@ export class Topbar {
       .locator('..')
   }
 
+  getTab(index: number): Locator {
+    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+  }
+
+  getActiveTab(): Locator {
+    return this.page.locator(
+      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
+    )
+  }
+
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
-    await tab.getByRole('button', { name: 'Close' }).click({ force: true })
+    await tab.hover()
+    await tab.locator('.close-button').click()
   }
 
   getSaveDialog(): Locator {
@@ -92,7 +105,7 @@ export class Topbar {
       { timeout: 3000 }
     )
     // Wait for the dialog to close.
-    await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
+    await this.getSaveDialog().waitFor({ state: 'hidden' })
 
     // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
     // If so, return early to let the test handle the confirmation

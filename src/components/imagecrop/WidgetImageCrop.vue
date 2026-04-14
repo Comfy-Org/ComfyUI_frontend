@@ -17,8 +17,12 @@
       <div
         v-else-if="!imageUrl"
         class="flex size-full flex-col items-center justify-center text-center"
+        data-testid="crop-empty-state"
       >
-        <i class="mb-2 icon-[lucide--image] size-12" />
+        <i
+          class="mb-2 icon-[lucide--image] size-12"
+          data-testid="crop-empty-icon"
+        />
         <p class="text-sm">{{ $t('imageCrop.noInputImage') }}</p>
       </div>
 
@@ -43,6 +47,7 @@
           )
         "
         :style="cropBoxStyle"
+        data-testid="crop-overlay"
         @pointerdown="handleDragStart"
         @pointermove="handleDragMove"
         @pointerup="handleDragEnd"

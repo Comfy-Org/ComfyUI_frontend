@@ -1,70 +1,113 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+
+import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
+import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
+import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
+import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
+import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
+import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 
 export class AppModeHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  readonly steps: BuilderStepsHelper
+  readonly footer: BuilderFooterHelper
+  readonly saveAs: BuilderSaveAsHelper
+  readonly select: BuilderSelectHelper
+  readonly outputHistory: OutputHistoryComponent
+  readonly widgets: AppModeWidgetHelper
+  /** The "Connect an output" popover shown when saving without outputs. */
+  public readonly connectOutputPopover: Locator
+  /** The empty-state placeholder shown when no outputs are selected. */
+  public readonly outputPlaceholder: Locator
+  /** The linear-mode widget list container (visible in app mode). */
+  public readonly linearWidgets: Locator
+  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
+  public readonly imagePickerPopover: Locator
+  /** The Run button in the app mode footer. */
+  public readonly runButton: Locator
+  /** The welcome screen shown when app mode has no outputs or no nodes. */
+  public readonly welcome: Locator
+  /** The empty workflow message shown when no nodes exist. */
+  public readonly emptyWorkflowText: Locator
+  /** The "Build app" button shown when nodes exist but no outputs. */
+  public readonly buildAppButton: Locator
+  /** The "Back to workflow" button on the welcome screen. */
+  public readonly backToWorkflowButton: Locator
+  /** The "Load template" button shown when no nodes exist. */
+  public readonly loadTemplateButton: Locator
+  /** The cancel button for an in-progress run in the output history. */
+  public readonly cancelRunButton: Locator
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.steps = new BuilderStepsHelper(comfyPage)
+    this.footer = new BuilderFooterHelper(comfyPage)
+    this.saveAs = new BuilderSaveAsHelper(comfyPage)
+    this.select = new BuilderSelectHelper(comfyPage)
+    this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.widgets = new AppModeWidgetHelper(comfyPage)
+    this.connectOutputPopover = this.page.getByTestId(
+      TestIds.builder.connectOutputPopover
+    )
+    this.outputPlaceholder = this.page.getByTestId(
+      TestIds.builder.outputPlaceholder
+    )
+    this.linearWidgets = this.page.getByTestId('linear-widgets')
+    this.imagePickerPopover = this.page
+      .getByRole('dialog')
+      .filter({ has: this.page.getByRole('button', { name: 'All' }) })
+      .first()
+    this.runButton = this.page
+      .getByTestId('linear-run-button')
+      .getByRole('button', { name: /run/i })
+    this.welcome = this.page.getByTestId(TestIds.appMode.welcome)
+    this.emptyWorkflowText = this.page.getByTestId(
+      TestIds.appMode.emptyWorkflow
+    )
+    this.buildAppButton = this.page.getByTestId(TestIds.appMode.buildApp)
+    this.backToWorkflowButton = this.page.getByTestId(
+      TestIds.appMode.backToWorkflow
+    )
+    this.loadTemplateButton = this.page.getByTestId(
+      TestIds.appMode.loadTemplate
+    )
+    this.cancelRunButton = this.page.getByTestId(
+      TestIds.outputHistory.cancelRun
+    )
+  }
 
   private get page(): Page {
     return this.comfyPage.page
   }
 
-  private get builderToolbar(): Locator {
-    return this.page.getByRole('navigation', { name: 'App Builder' })
+  /** Enable the linear mode feature flag and top menu. */
+  async enableLinearMode() {
+    await this.page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        linear_toggle_enabled: true
+      }
+    })
+    await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   }
 
-  /** Enter builder mode via the "Workflow actions" dropdown → "Build app". */
+  /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
     await this.page
       .getByRole('button', { name: 'Workflow actions' })
       .first()
       .click()
-    await this.page.getByRole('menuitem', { name: 'Build app' }).click()
-    await this.comfyPage.nextFrame()
-  }
-
-  /** Exit builder mode via the footer "Exit app builder" button. */
-  async exitBuilder() {
-    await this.page.getByRole('button', { name: 'Exit app builder' }).click()
-    await this.comfyPage.nextFrame()
-  }
-
-  /** Click the "Inputs" step in the builder toolbar. */
-  async goToInputs() {
-    await this.builderToolbar.getByRole('button', { name: 'Inputs' }).click()
-    await this.comfyPage.nextFrame()
-  }
-
-  /** Click the "Outputs" step in the builder toolbar. */
-  async goToOutputs() {
-    await this.builderToolbar.getByRole('button', { name: 'Outputs' }).click()
-    await this.comfyPage.nextFrame()
-  }
-
-  /** Click the "Preview" step in the builder toolbar. */
-  async goToPreview() {
-    await this.builderToolbar.getByRole('button', { name: 'Preview' }).click()
-    await this.comfyPage.nextFrame()
-  }
-
-  /** Click the "Next" button in the builder footer. */
-  async next() {
-    await this.page.getByRole('button', { name: 'Next' }).click()
-    await this.comfyPage.nextFrame()
-  }
-
-  /** Click the "Back" button in the builder footer. */
-  async back() {
-    await this.page.getByRole('button', { name: 'Back' }).click()
+    await this.page
+      .getByRole('menuitem', { name: /Build app|Edit app/ })
+      .click()
     await this.comfyPage.nextFrame()
   }
 
   /** Toggle app mode (linear view) on/off. */
   async toggleAppMode() {
-    await this.page.evaluate(() => {
-      window.app!.extensionManager.command.execute('Comfy.ToggleLinear')
-    })
+    await this.comfyPage.workflow.waitForActiveWorkflow()
+    await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
     await this.comfyPage.nextFrame()
   }
 
@@ -103,11 +146,6 @@ export class AppModeHelper {
     await this.toggleAppMode()
   }
 
-  /** The linear-mode widget list container (visible in app mode). */
-  get linearWidgets(): Locator {
-    return this.page.locator('[data-testid="linear-widgets"]')
-  }
-
   /**
    * Get the actions menu trigger for a widget in the app mode widget list.
    * @param widgetName Text shown in the widget label (e.g. "seed").
@@ -117,85 +155,5 @@ export class AppModeHelper {
       .locator(`div:has(> div > span:text-is("${widgetName}"))`)
       .getByTestId(TestIds.builder.widgetActionsMenu)
       .first()
-  }
-
-  /**
-   * Get the actions menu trigger for a widget in the builder input-select
-   * sidebar (IoItem).
-   * @param title The widget title shown in the IoItem.
-   */
-  getBuilderInputItemMenu(title: string): Locator {
-    return this.page
-      .getByTestId(TestIds.builder.ioItem)
-      .filter({ hasText: title })
-      .getByTestId(TestIds.builder.widgetActionsMenu)
-  }
-
-  /**
-   * Get the actions menu trigger for a widget in the builder preview/arrange
-   * sidebar (AppModeWidgetList with builderMode).
-   * @param ariaLabel The aria-label on the widget row, e.g. "seed — KSampler".
-   */
-  getBuilderPreviewWidgetMenu(ariaLabel: string): Locator {
-    return this.page
-      .locator(`[aria-label="${ariaLabel}"]`)
-      .getByTestId(TestIds.builder.widgetActionsMenu)
-  }
-
-  /**
-   * Rename a widget by clicking its popover trigger, selecting "Rename",
-   * and filling in the dialog.
-   * @param popoverTrigger The button that opens the widget's actions popover.
-   * @param newName The new name to assign.
-   */
-  async renameWidget(popoverTrigger: Locator, newName: string) {
-    await popoverTrigger.click()
-    await this.page.getByText('Rename', { exact: true }).click()
-
-    const dialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
-    await dialogInput.fill(newName)
-    await this.page.keyboard.press('Enter')
-    await dialogInput.waitFor({ state: 'hidden' })
-    await this.comfyPage.nextFrame()
-  }
-
-  /**
-   * Rename a builder IoItem via the popover menu "Rename" action.
-   * @param title The current widget title shown in the IoItem.
-   * @param newName The new name to assign.
-   */
-  async renameBuilderInputViaMenu(title: string, newName: string) {
-    const menu = this.getBuilderInputItemMenu(title)
-    await menu.click()
-    await this.page.getByText('Rename', { exact: true }).click()
-
-    const input = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
-      .getByRole('textbox')
-    await input.fill(newName)
-    await this.page.keyboard.press('Enter')
-    await this.comfyPage.nextFrame()
-  }
-
-  /**
-   * Rename a builder IoItem by double-clicking its title to trigger
-   * inline editing.
-   * @param title The current widget title shown in the IoItem.
-   * @param newName The new name to assign.
-   */
-  async renameBuilderInput(title: string, newName: string) {
-    const titleEl = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
-      .filter({ hasText: title })
-    await titleEl.dblclick()
-
-    const input = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
-      .getByRole('textbox')
-    await input.fill(newName)
-    await this.page.keyboard.press('Enter')
-    await this.comfyPage.nextFrame()
   }
 }

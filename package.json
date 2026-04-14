@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.43.2",
+  "version": "1.44.4",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -8,6 +8,7 @@
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
   "scripts": {
+    "build:cloud": "cross-env DISTRIBUTION=cloud NODE_OPTIONS='--max-old-space-size=8192' nx build",
     "build:desktop": "nx build @comfyorg/desktop-ui",
     "build-storybook": "storybook build",
     "build:types": "nx build --config vite.types.config.mts && node scripts/prepare-types.js",
@@ -27,16 +28,15 @@
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
-    "lint:fix:no-cache": "oxlint src --type-aware --fix && eslint src --fix",
-    "lint:fix": "oxlint src --type-aware --fix && eslint src --cache --fix",
-    "lint:no-cache": "pnpm exec stylelint '{apps,packages,src}/**/*.{css,vue}' && oxlint src --type-aware && eslint src",
+    "lint:fix:no-cache": "oxlint src browser_tests --type-aware --fix && eslint src --fix",
+    "lint:fix": "oxlint src browser_tests --type-aware --fix && eslint src --cache --fix",
+    "lint:no-cache": "pnpm exec stylelint '{apps,packages,src}/**/*.{css,vue}' && oxlint src browser_tests --type-aware && eslint src",
     "lint:unstaged:fix": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache --fix",
     "lint:unstaged": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache",
-    "lint": "pnpm stylelint && oxlint src --type-aware && eslint src --cache",
+    "lint": "pnpm stylelint && oxlint src browser_tests --type-aware && eslint src --cache",
     "lint:desktop": "nx run @comfyorg/desktop-ui:lint",
     "locale": "lobe-i18n locale",
-    "oxlint": "oxlint src --type-aware",
-    "preinstall": "pnpm dlx only-allow pnpm",
+    "oxlint": "oxlint src browser_tests --type-aware",
     "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
     "storybook": "nx storybook",
@@ -44,7 +44,8 @@
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
     "stylelint": "stylelint --cache '{apps,packages,src}/**/*.{css,vue}'",
     "test:browser": "pnpm exec nx e2e",
-    "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 pnpm test:browser",
+    "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
+    "test:coverage": "vitest run --coverage",
     "test:unit": "nx run test",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
@@ -71,6 +72,7 @@
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
     "@sparkjsdev/spark": "catalog:",
+    "@tanstack/vue-virtual": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-link": "catalog:",
     "@tiptap/extension-table": "catalog:",
@@ -120,6 +122,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/ingest-types": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
     "@lobehub/i18n-cli": "catalog:",
@@ -138,6 +141,7 @@
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
+    "@total-typescript/shoehorn": "catalog:",
     "@types/fs-extra": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
@@ -146,7 +150,6 @@
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "@vue/test-utils": "catalog:",
     "@webgpu/types": "catalog:",
     "cross-env": "catalog:",
     "eslint": "catalog:",
@@ -155,6 +158,7 @@
     "eslint-plugin-better-tailwindcss": "catalog:",
     "eslint-plugin-import-x": "catalog:",
     "eslint-plugin-oxlint": "catalog:",
+    "eslint-plugin-playwright": "catalog:",
     "eslint-plugin-storybook": "catalog:",
     "eslint-plugin-testing-library": "catalog:",
     "eslint-plugin-unused-imports": "catalog:",
@@ -200,11 +204,21 @@
     "zod-to-json-schema": "catalog:"
   },
   "engines": {
-    "node": "24.x"
+    "node": "24.x",
+    "pnpm": ">=10"
   },
+  "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "overrides": {
       "vite": "catalog:"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@firebase/util",
+      "core-js",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver",
+      "vue-demi"
+    ]
   }
 }

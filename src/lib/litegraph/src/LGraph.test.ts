@@ -7,16 +7,19 @@ import {
   LGraph,
   LGraphNode,
   LiteGraph,
-  LLink
+  LLink,
+  Reroute
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   createTestSubgraphData,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
+import { subgraphTest } from './subgraph/__fixtures__/subgraphFixtures'
 
 import {
   duplicateLinksRoot,
@@ -97,6 +100,42 @@ describe('LGraph', () => {
   test('supports schema v0.4 graphs', ({ expect, oldSchemaGraph }) => {
     const fromOldSchema = new LGraph(oldSchemaGraph)
     expect(fromOldSchema).toMatchSnapshot('oldSchemaGraph')
+  })
+  subgraphTest('should snap slots to same y-level', ({ emptySubgraph }) => {
+    const node = new LGraphNode('testname')
+    node.addInput('test', 'IMAGE')
+    emptySubgraph.add(node)
+
+    emptySubgraph.inputNode.pos = [0, 0]
+    // Reroute needs offset of ~20y to align with first slot
+    const reroute = new Reroute(1, emptySubgraph, [0, 20])
+
+    node.snapToGrid(10)
+    reroute.snapToGrid(10)
+    emptySubgraph.inputNode.snapToGrid(10)
+
+    node.arrange()
+    emptySubgraph.inputNode.arrange()
+
+    const yPos = node.getInputPos(0)[1]
+    expect(reroute.pos[1]).toBe(yPos)
+    expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos)
+
+    // Assign non-equal positions and repeat
+    emptySubgraph.inputNode.pos = [0, 43]
+    node.pos = [0, 50]
+    reroute.pos = [0, 63]
+
+    node.snapToGrid(10)
+    reroute.snapToGrid(10)
+    emptySubgraph.inputNode.snapToGrid(10)
+
+    node.arrange()
+    emptySubgraph.inputNode.arrange()
+
+    const yPos2 = node.getInputPos(0)[1]
+    expect(reroute.pos[1]).toBe(yPos2)
+    expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos2)
   })
 })
 
@@ -965,5 +1004,27 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
+  })
+})
+
+describe('Zero UUID handling in configure', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia())
+  })
+
+  it('rejects zeroUuid for root graphs and assigns a new ID', () => {
+    const graph = new LGraph()
+    const data = graph.serialize()
+    data.id = zeroUuid
+    graph.configure(data)
+    expect(graph.id).not.toBe(zeroUuid)
+  })
+
+  it('preserves zeroUuid for subgraphs', () => {
+    const graph = new LGraph()
+    const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
+    const subgraph = graph.createSubgraph(subgraphData)
+    subgraph.configure(subgraphData)
+    expect(subgraph.id).toBe(zeroUuid)
   })
 })

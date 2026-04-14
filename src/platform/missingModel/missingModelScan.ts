@@ -13,6 +13,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IAssetWidget,
   IBaseWidget,
@@ -22,6 +23,8 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { resolveComboValues } from '@/utils/litegraphUtil'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -50,14 +53,6 @@ export function isModelFileName(name: string): boolean {
   return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
 }
 
-function resolveComboOptions(widget: IComboWidget): string[] {
-  const values = widget.options.values
-  if (!values) return []
-  if (typeof values === 'function') return values(widget)
-  if (Array.isArray(values)) return values
-  return Object.keys(values)
-}
-
 /**
  * Scan COMBO and asset widgets on configured graph nodes for model-like values.
  * Must be called after `graph.configure()` so widget name/value mappings are accurate.
@@ -80,27 +75,54 @@ export function scanAllModelCandidates(
     // Skip subgraph container nodes: their promoted widgets are synthetic
     // views of interior widgets, which are already scanned via recursion.
     if (node.isSubgraphNode?.()) continue
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
 
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    if (!executionId) continue
+    candidates.push(
+      ...scanNodeModelCandidates(
+        rootGraph,
+        node,
+        isAssetSupported,
+        getDirectory
+      )
+    )
+  }
 
-    for (const widget of node.widgets) {
-      let candidate: MissingModelCandidate | null = null
+  return candidates
+}
 
-      if (isAssetWidget(widget)) {
-        candidate = scanAssetWidget(node, widget, executionId, getDirectory)
-      } else if (isComboWidget(widget)) {
-        candidate = scanComboWidget(
-          node,
-          widget,
-          executionId,
-          isAssetSupported,
-          getDirectory
-        )
-      }
+/** Scan a single node's widgets for missing model candidates (OSS immediate resolution). */
+export function scanNodeModelCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined
+): MissingModelCandidate[] {
+  if (!node.widgets?.length) return []
 
-      if (candidate) candidates.push(candidate)
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  const candidates: MissingModelCandidate[] = []
+  for (const widget of node.widgets) {
+    let candidate: MissingModelCandidate | null = null
+
+    if (isAssetWidget(widget)) {
+      candidate = scanAssetWidget(node, widget, executionId, getDirectory)
+    } else if (isComboWidget(widget)) {
+      candidate = scanComboWidget(
+        node,
+        widget,
+        executionId,
+        isAssetSupported,
+        getDirectory
+      )
     }
+
+    if (candidate) candidates.push(candidate)
   }
 
   return candidates
@@ -139,7 +161,7 @@ function scanComboWidget(
   if (!isModelFileName(value)) return null
 
   const nodeIsAssetSupported = isAssetSupported(node.type, widget.name)
-  const options = resolveComboOptions(widget)
+  const options = resolveComboValues(widget)
   const inOptions = options.includes(value)
 
   return {
@@ -204,8 +226,18 @@ export async function enrichWithEmbeddedMetadata(
     }
   }
 
+  // Workflow-level entries (sourceNodeType === '') survive only when
+  // some active (non-muted, non-bypassed) node actually references the
+  // model — not merely because any unrelated active node exists. A
+  // reference is any widget value (or node.properties.models entry)
+  // that matches the model name on an active node.
+  const activeUnmatched = unmatched.filter(
+    (m) =>
+      m.sourceNodeType !== '' || isModelReferencedByActiveNode(m.name, allNodes)
+  )
+
   const settled = await Promise.allSettled(
-    unmatched.map(async (model) => {
+    activeUnmatched.map(async (model) => {
       const installed = await checkModelInstalled(model.name, model.directory)
       if (installed) return null
 
@@ -242,6 +274,32 @@ export async function enrichWithEmbeddedMetadata(
   return enriched
 }
 
+function isModelReferencedByActiveNode(
+  modelName: string,
+  allNodes: ReturnType<typeof flattenWorkflowNodes>
+): boolean {
+  for (const node of allNodes) {
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
+
+    const embeddedModels = (
+      node.properties as { models?: Array<{ name: string }> } | undefined
+    )?.models
+    if (embeddedModels?.some((m) => m.name === modelName)) return true
+
+    const values = node.widgets_values
+    if (!values) continue
+    const valueArray = Array.isArray(values) ? values : Object.values(values)
+    for (const v of valueArray) {
+      if (typeof v === 'string' && v === modelName) return true
+    }
+  }
+  return false
+}
+
 function collectEmbeddedModelsWithSource(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: ComfyWorkflowJSON
@@ -249,6 +307,12 @@ function collectEmbeddedModelsWithSource(
   const result: EmbeddedModelWithSource[] = []
 
   for (const node of allNodes) {
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
+
     const selected = getSelectedModelsMetadata(
       node as Parameters<typeof getSelectedModelsMetadata>[0]
     )

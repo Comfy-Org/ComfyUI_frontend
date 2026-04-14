@@ -10,6 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -34,19 +35,43 @@ export const useSubgraphNavigationStore = defineStore(
     /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
     const idStack = ref<string[]>([])
 
-    /** LRU cache for viewport states. Key: subgraph ID or 'root' for root graph */
+    /** LRU cache for viewport states. Key: `workflowPath:graphId` */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
       maxSize: VIEWPORT_CACHE_MAX_SIZE
     })
 
-    /**
-     * Get the ID of the root graph for the currently active workflow.
-     * @returns The ID of the root graph for the currently active workflow.
-     */
+    /** Get the ID of the root graph for the currently active workflow. */
     const getCurrentRootGraphId = () => {
       const canvas = canvasStore.getCanvas()
       return canvas.graph?.rootGraph?.id ?? 'root'
     }
+
+    /**
+     * Set by saveCurrentViewport() (called from beforeLoadNewGraph) to
+     * prevent onNavigated from re-saving a stale viewport during the
+     * workflow switch transition. Uses setTimeout instead of rAF so the
+     * flag resets even when the tab is backgrounded.
+     */
+    let isWorkflowSwitching = false
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    /** Build a workflow-scoped cache key. */
+    function buildCacheKey(
+      graphId: string,
+      workflowRef?: { path?: string } | null
+    ): string {
+      const wf = workflowRef ?? workflowStore.activeWorkflow
+      const prefix = wf?.path ?? ''
+      return `${prefix}:${graphId}`
+    }
+
+    /** ID of the graph currently shown on the canvas. */
+    function getActiveGraphId(): string {
+      const canvas = canvasStore.getCanvas()
+      return canvas?.subgraph?.id ?? getCurrentRootGraphId()
+    }
+
+    // ── Navigation stack ─────────────────────────────────────────────
 
     /**
      * A stack representing subgraph navigation history from the root graph to
@@ -60,7 +85,6 @@ export const useSubgraphNavigationStore = defineStore(
 
     /**
      * Restore the navigation stack from a list of subgraph IDs.
-     * @param subgraphIds The list of subgraph IDs to restore the navigation stack from.
      * @see exportState
      */
     const restoreState = (subgraphIds: string[]) => {
@@ -70,69 +94,73 @@ export const useSubgraphNavigationStore = defineStore(
 
     /**
      * Export the navigation stack as a list of subgraph IDs.
-     * @returns The list of subgraph IDs, ending with the currently active subgraph.
      * @see restoreState
      */
     const exportState = () => [...idStack.value]
 
-    /**
-     * Get the current viewport state.
-     * @returns The current viewport state, or null if the canvas is not available.
-     */
+    // ── Viewport save / restore ──────────────────────────────────────
+
+    /** Get the current viewport state, or null if the canvas is not available. */
     const getCurrentViewport = (): DragAndScaleState | null => {
       const canvas = canvasStore.getCanvas()
       if (!canvas) return null
-
       return {
         scale: canvas.ds.state.scale,
         offset: [...canvas.ds.state.offset]
       }
     }
 
-    /**
-     * Save the current viewport state.
-     * @param graphId The graph ID to save for. Use 'root' for root graph, or omit to use current context.
-     */
-    const saveViewport = (graphId: string) => {
+    /** Save the current viewport state for a graph. */
+    function saveViewport(graphId: string, workflowRef?: object | null): void {
       const viewport = getCurrentViewport()
       if (!viewport) return
-
-      viewportCache.set(graphId, viewport)
+      viewportCache.set(buildCacheKey(graphId, workflowRef), viewport)
     }
 
-    /**
-     * Restore viewport state for a graph.
-     * @param graphId The graph ID to restore. Use 'root' for root graph, or omit to use current context.
-     */
-    const restoreViewport = (graphId: string) => {
-      const viewport = viewportCache.get(graphId)
-      if (!viewport) return
-
+    /** Apply a viewport state to the canvas. */
+    function applyViewport(viewport: DragAndScaleState): void {
       const canvas = app.canvas
       if (!canvas) return
-
       canvas.ds.scale = viewport.scale
       canvas.ds.offset[0] = viewport.offset[0]
       canvas.ds.offset[1] = viewport.offset[1]
       canvas.setDirty(true, true)
     }
 
-    /**
-     * Update the navigation stack when the active subgraph changes.
-     * @param subgraph The new active subgraph.
-     * @param prevSubgraph The previous active subgraph.
-     */
-    const onNavigated = (
+    function restoreViewport(graphId: string): void {
+      const canvas = app.canvas
+      if (!canvas) return
+
+      const expectedKey = buildCacheKey(graphId)
+      const viewport = viewportCache.get(expectedKey)
+      if (viewport) {
+        applyViewport(viewport)
+        return
+      }
+
+      // First visit — fit to content so subgraph nodes are visible
+      requestAnimationFrame(() => {
+        if (getActiveGraphId() !== graphId) return
+        if (!canvas.graph?.nodes?.length) return
+        useLitegraphService().fitView()
+      })
+    }
+
+    // ── Navigation handler ───────────────────────────────────────────
+
+    function onNavigated(
       subgraph: Subgraph | undefined,
       prevSubgraph: Subgraph | undefined
-    ) => {
-      // Save viewport state for the graph we're leaving
-      if (prevSubgraph) {
-        // Leaving a subgraph
-        saveViewport(prevSubgraph.id)
-      } else if (!prevSubgraph && subgraph) {
-        // Leaving root graph to enter a subgraph
-        saveViewport(getCurrentRootGraphId())
+    ): void {
+      // During a workflow switch, beforeLoadNewGraph already saved the
+      // outgoing viewport — skip the save here to avoid caching stale
+      // canvas state from the transition.
+      if (!isWorkflowSwitching) {
+        if (prevSubgraph) {
+          saveViewport(prevSubgraph.id)
+        } else if (!prevSubgraph && subgraph) {
+          saveViewport(getCurrentRootGraphId())
+        }
       }
 
       const isInRootGraph = !subgraph
@@ -147,20 +175,22 @@ export const useSubgraphNavigationStore = defineStore(
       if (isInReachableSubgraph) {
         idStack.value = [...path]
       } else {
-        // Treat as if opening a new subgraph
         idStack.value = [subgraph.id]
       }
 
-      // Always try to restore viewport for the target subgraph
       restoreViewport(subgraph.id)
     }
 
-    // Update navigation stack when opened subgraph changes (also triggers when switching workflows)
+    // ── Watchers ─────────────────────────────────────────────────────
+
+    // Sync flush ensures we capture the outgoing viewport before any other
+    // watchers or DOM updates from the same state change mutate the canvas.
     watch(
       () => workflowStore.activeSubgraph,
       (newValue, oldValue) => {
         onNavigated(newValue, oldValue)
-      }
+      },
+      { flush: 'sync' }
     )
 
     //Allow navigation with forward/back buttons
@@ -229,6 +259,16 @@ export const useSubgraphNavigationStore = defineStore(
     watch(() => canvasStore.currentGraph, updateHash)
     watch(routeHash, () => navigateToHash(String(routeHash.value)))
 
+    /** Save the current viewport for the active graph/workflow. Called by
+     *  workflowService.beforeLoadNewGraph() before the canvas is overwritten. */
+    function saveCurrentViewport(): void {
+      saveViewport(getActiveGraphId())
+      isWorkflowSwitching = true
+      setTimeout(() => {
+        isWorkflowSwitching = false
+      }, 0)
+    }
+
     return {
       activeSubgraph,
       navigationStack,
@@ -236,7 +276,9 @@ export const useSubgraphNavigationStore = defineStore(
       exportState,
       saveViewport,
       restoreViewport,
+      saveCurrentViewport,
       updateHash,
+      /** @internal Exposed for test assertions only. */
       viewportCache
     }
   }

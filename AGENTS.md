@@ -179,6 +179,12 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 24. Do not use function expressions if it's possible to use function declarations instead
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
+## Design Standards
+
+Before implementing any user-facing feature, consult the [Comfy Design Standards](https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards) Figma file. Use the Figma MCP to fetch it live — the file is the single source of truth and may be updated by designers at any time.
+
+See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
+
 ## Testing Guidelines
 
 See @docs/testing/\*.md for detailed patterns.
@@ -208,7 +214,7 @@ See @docs/testing/\*.md for detailed patterns.
 3. Keep your module mocks contained  
    Do not use global mutable state within the test file  
    Use `vi.hoisted()` if necessary to allow for per-test Arrange phase manipulation of deeper mock state
-4. For Component testing, use [Vue Test Utils](https://test-utils.vuejs.org/) and especially follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
+4. For Component testing, prefer [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) with `@testing-library/user-event` for user-centric, behavioral tests. [Vue Test Utils](https://test-utils.vuejs.org/) is also accepted, especially for tests that need direct access to the component wrapper (e.g., `findComponent`, `emitted()`). Follow the advice [about making components easy to test](https://test-utils.vuejs.org/guide/essentials/easy-to-test.html)
 5. Aim for behavioral coverage of critical and new features
 
 ### Playwright / Browser / E2E Tests
@@ -216,6 +222,7 @@ See @docs/testing/\*.md for detailed patterns.
 1. Follow the Best Practices described [in the Playwright documentation](https://playwright.dev/docs/best-practices)
 2. Do not use waitForTimeout, use Locator actions and [retrying assertions](https://playwright.dev/docs/test-assertions#auto-retrying-assertions)
 3. Tags like `@mobile`, `@2x` are respected by config and should be used for relevant tests
+4. Type all API mock responses in `route.fulfill()` using generated types or schemas from `packages/ingest-types`, `packages/registry-types`, `src/workbench/extensions/manager/types/generatedManagerTypes.ts`, or `src/schemas/` — see `docs/guidance/playwright.md` for the full source-of-truth table
 
 ## External Resources
 
@@ -225,11 +232,24 @@ See @docs/testing/\*.md for detailed patterns.
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
 - PrimeVue: <https://primevue.org>
+- Comfy Design Standards: <https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards>
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
 - Nx: <https://nx.dev/docs/reference/nx-commands>
 - [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
+
+## Architecture Decision Records
+
+All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
+
+### Entity Architecture Constraints (ADR 0003 + ADR 0008)
+
+1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
+2. **Centralized registries and ECS-style access**: Entity data lives in the World (centralized registry), queried via `world.getComponent(entityId, ComponentType)`. Do not add new instance properties/methods to entity classes. Do not use OOP inheritance for entity modeling.
+3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
+4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
+5. **Extension ecosystem impact**: Changes to entity callbacks (`onConnectionsChange`, `onRemoved`, `onAdded`, `onConnectInput/Output`, `onConfigure`, `onWidgetChanged`), `node.widgets` access, `node.serialize`, or `graph._version++` affect 40+ custom node repos and require migration guidance.
 
 ## Project Philosophy
 
@@ -298,6 +318,9 @@ When referencing Comfy-Org repos:
   - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
+- NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
+  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
+  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
 
 ## Agent-only rules
 
