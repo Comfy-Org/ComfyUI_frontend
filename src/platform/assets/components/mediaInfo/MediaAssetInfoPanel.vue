@@ -3,13 +3,16 @@
     data-component-id="MediaAssetInfoPanel"
     class="flex scrollbar-custom h-full flex-col"
   >
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem
+      v-if="!compact || isMulti"
+      :class="firstAccordionClass"
+    >
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('sideToolbar.mediaAssets.infoPanel.preview') }}
         </span>
       </template>
-      <div class="px-4">
+      <div :class="cn('px-4', compact && 'mx-auto max-w-[60%]')">
         <!-- Multi-select: image stack -->
         <ImageStack
           v-if="isMulti"
@@ -18,12 +21,19 @@
         />
         <!-- Single: asset card -->
         <div v-else class="overflow-hidden rounded-lg">
-          <MediaAssetCard :asset="primaryAsset" @zoom="emit('zoom', primaryAsset)" />
+          <MediaAssetCard
+            :asset="primaryAsset"
+            @zoom="emit('zoom', primaryAsset)"
+          />
         </div>
         <!-- Multi-select: compact summary below preview -->
         <div v-if="isMulti" class="mt-2 text-center text-sm">
           <span class="text-muted-foreground">
-            {{ t('mediaAsset.selection.selectedCount', { count: allAssets.length }) }}
+            {{
+              t('mediaAsset.selection.selectedCount', {
+                count: allAssets.length
+              })
+            }}
           </span>
           <span v-if="mediaTypeSummary" class="text-muted-foreground">
             — {{ mediaTypeSummary }}
@@ -33,7 +43,11 @@
     </PropertiesAccordionItem>
 
     <!-- Single asset: basic info -->
-    <PropertiesAccordionItem v-if="!isMulti" :collapse="true" :class="accordionClass">
+    <PropertiesAccordionItem
+      v-if="!isMulti"
+      :collapse="true"
+      :class="showPreview ? accordionClass : firstAccordionClass"
+    >
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
@@ -197,18 +211,31 @@ const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
 )
 
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
-
-const { asset, assets, tagSuggestions = [] } = defineProps<{
+const {
+  asset,
+  assets,
+  tagSuggestions = [],
+  compact = false
+} = defineProps<{
   /** Single asset (used when no multi-selection) */
   asset: AssetItem
   /** Multiple selected assets (when provided, shows multi-select UI) */
   assets?: AssetItem[]
   /** Tag suggestions for autocomplete */
   tagSuggestions?: string[]
+  /** When true, uses transparent background for sidebar/popover context */
+  compact?: boolean
 }>()
+
+const accordionClass = computed(() =>
+  cn('border-t border-border-default', !compact && 'bg-modal-panel-background')
+)
+
+const firstAccordionClass = computed(() =>
+  cn(!compact && 'bg-modal-panel-background')
+)
+
+const showPreview = computed(() => !compact || isMulti.value)
 
 const emit = defineEmits<{
   zoom: [asset: AssetItem]

@@ -1,9 +1,14 @@
 <template>
-  <div class="relative aspect-square" :style="containerStyle">
+  <div
+    class="relative aspect-square"
+    :style="containerStyle"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
+  >
     <div
       v-for="(url, i) in visibleImages"
       :key="i"
-      class="absolute overflow-hidden rounded-lg border border-border-default bg-modal-card-placeholder-background shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+      class="absolute overflow-hidden rounded-lg border border-border-default bg-modal-card-placeholder-background shadow-[0_2px_8px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out"
       :class="isStack ? 'inset-[8%]' : 'inset-0'"
       :style="layerStyle(i)"
     >
@@ -23,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const {
   images = [],
@@ -46,6 +51,14 @@ const OFFSETS = [
   { x: 0, y: 0 }
 ]
 
+// Hover: spread out more
+const HOVER_ROTATIONS = [-8, 6, 0]
+const HOVER_OFFSETS = [
+  { x: -12, y: -8 },
+  { x: 14, y: -6 },
+  { x: 0, y: 0 }
+]
+
 const isStack = computed(() => images.length > 1)
 const visibleImages = computed(() => images.slice(0, maxVisible))
 
@@ -55,16 +68,21 @@ const stackDepth = computed(() =>
 
 const containerStyle = computed(() => ({}))
 
+const isHovered = ref(false)
+
 function layerStyle(index: number) {
   if (!isStack.value) return { zIndex: 0 }
 
   const depth = stackDepth.value
   const reverseIndex = depth - 1 - index
-  const rotation = ROTATIONS[index % ROTATIONS.length]
-  const offset = OFFSETS[index % OFFSETS.length]
+  const rotations = isHovered.value ? HOVER_ROTATIONS : ROTATIONS
+  const offsets = isHovered.value ? HOVER_OFFSETS : OFFSETS
+  const rotation = rotations[index % rotations.length]
+  const offset = offsets[index % offsets.length]
+  const scale = isHovered.value && index < depth - 1 ? 0.95 : 1
 
   return {
-    transform: `rotate(${rotation}deg) translate(${offset.x}px, ${offset.y}px)`,
+    transform: `rotate(${rotation}deg) translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
     zIndex: reverseIndex
   }
 }

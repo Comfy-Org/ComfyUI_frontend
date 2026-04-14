@@ -56,15 +56,38 @@
         :show-generation-time-sort="activeTab === 'output'"
         :suggestions="availableTags"
       />
-      <!-- Tab list -->
+      <!-- Tab list + asset info button -->
       <div
         v-if="!isInFolderView"
-        class="border-b border-comfy-input p-2 2xl:px-4"
+        class="flex items-center justify-between border-b border-comfy-input p-2 2xl:px-4"
       >
         <TabList v-model="activeTab">
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
           <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         </TabList>
+        <Popover v-if="hasSelection" :show-arrow="false">
+          <template #button>
+            <Button
+              v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.assetInfo') }"
+              variant="secondary"
+              size="icon"
+              :aria-label="$t('sideToolbar.mediaAssets.assetInfo')"
+            >
+              <i class="icon-[lucide--info] size-4" />
+            </Button>
+          </template>
+          <template #default>
+            <div class="max-h-[70vh] w-72 overflow-y-auto">
+              <MediaAssetInfoPanel
+                :asset="selectedAssets[0]"
+                :assets="selectedAssets.length > 1 ? selectedAssets : undefined"
+                :tag-suggestions="availableTags"
+                compact
+                @zoom="handleZoomClick"
+              />
+            </div>
+          </template>
+        </Popover>
       </div>
     </template>
     <template #body>
@@ -248,6 +271,8 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
+import MediaAssetInfoPanel from '@/platform/assets/components/mediaInfo/MediaAssetInfoPanel.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { useMediaAssetBrowserDialog } from '@/platform/assets/composables/useMediaAssetBrowserDialog'
