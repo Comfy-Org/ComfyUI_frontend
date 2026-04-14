@@ -184,6 +184,13 @@ export const TestIds = {
   },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
+  },
+  terminal: {
+    root: 'terminal-root',
+    host: 'terminal-host',
+    copyButton: 'terminal-copy-button',
+    logsErrorMessage: 'logs-error-message',
+    logsLoadingSpinner: 'logs-loading-spinner'
   }
 } as const
 
@@ -217,3 +224,4 @@ export type TestIdValue =
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
   | (typeof TestIds.loading)[keyof typeof TestIds.loading]
   | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]
+  | (typeof TestIds.terminal)[keyof typeof TestIds.terminal]
