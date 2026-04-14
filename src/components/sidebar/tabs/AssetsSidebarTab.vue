@@ -37,7 +37,7 @@
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
+      <div v-if="isInFolderView" class="p-2 2xl:px-4">
         <Button variant="secondary" size="lg" @click="exitFolderView">
           <i class="icon-[lucide--arrow-left] size-4" />
           <span>{{ $t('sideToolbar.backToAssets') }}</span>
