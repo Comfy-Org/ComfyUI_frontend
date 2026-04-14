@@ -13,6 +13,7 @@ import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { NodeEvent } from '@/lib/litegraph/src/infrastructure/LGraphNodeEventMap'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -475,8 +476,6 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const onExecuted = node.onExecuted
-
     useLoad3d(node).waitForLoad3d((load3d) => {
       const config = new Load3DConfiguration(load3d, node.properties)
 
@@ -502,10 +501,8 @@ useExtensionService().registerExtension({
           config.configure(settings)
         }
 
-        node.onExecuted = function (output: Load3dPreviewOutput) {
-          onExecuted?.call(this, output)
-
-          const result = output.result
+        node.on(NodeEvent.EXECUTED, ({ output }) => {
+          const result = (output as Load3dPreviewOutput).result
           const filePath = result?.[0]
 
           if (!filePath) {
@@ -533,7 +530,7 @@ useExtensionService().registerExtension({
           if (bgImagePath) {
             load3d.setBackgroundImage(bgImagePath)
           }
-        }
+        })
       }
     })
   }

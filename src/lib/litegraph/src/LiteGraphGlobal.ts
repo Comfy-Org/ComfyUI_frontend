@@ -5,6 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
+import { NodeEvent } from './infrastructure/LGraphNodeEventMap'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -571,6 +572,7 @@ export class LiteGraphGlobal {
 
     // callback
     node.onNodeCreated?.()
+    node.emit?.(NodeEvent.NODE_CREATED)
     return node
   }
 

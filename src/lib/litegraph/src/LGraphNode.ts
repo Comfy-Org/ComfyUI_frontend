@@ -87,6 +87,10 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
+import type { INodeEventEmitter } from './infrastructure/NodeEventEmitter'
+import { applyNodeEventEmitter } from './infrastructure/NodeEventEmitter'
+import type { LGraphNodeEventMap } from './infrastructure/LGraphNodeEventMap'
+import { NodeEvent } from './infrastructure/LGraphNodeEventMap'
 import { findFreeSlotOfType } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
@@ -229,9 +233,15 @@ export interface LGraphNode {
  * @param type a type for the node
  */
 
+export interface LGraphNode extends INodeEventEmitter<LGraphNodeEventMap> {}
+
 export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
+  /** @internal Lazily-created instance event listener map. */
+  declare _eventListeners?: Map<string, Set<(detail: unknown) => void>>
+  /** @internal Class-level event listener map (static). */
+  static _classEventListeners?: Map<string, Set<(detail: unknown) => void>>
   // Static properties used by dynamic child classes
   static title?: string
   static MAX_CONSOLE?: number
@@ -877,6 +887,13 @@ export class LGraphNode
           ? this.graph._links.get(input.link)
           : null
       this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
+      this.emit(NodeEvent.CONNECTIONS_CHANGE, {
+        type: NodeSlotType.INPUT,
+        index: i,
+        isConnected: true,
+        link,
+        inputOrOutput: input
+      })
       this.onInputAdded?.(input)
     }
 
@@ -890,6 +907,13 @@ export class LGraphNode
       for (const linkId of output.links) {
         const link = this.graph ? this.graph._links.get(linkId) : null
         this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
+        this.emit(NodeEvent.CONNECTIONS_CHANGE, {
+          type: NodeSlotType.OUTPUT,
+          index: i,
+          isConnected: true,
+          link,
+          inputOrOutput: output
+        })
       }
       this.onOutputAdded?.(output)
     }
@@ -935,6 +959,7 @@ export class LGraphNode
     }
 
     this.onConfigure?.(info)
+    this.emit(NodeEvent.CONFIGURED, { serialisedNode: info })
   }
 
   /**
@@ -1594,6 +1619,7 @@ export class LGraphNode
   setSize(size: Size): void {
     this.size = size
     this.onResize?.(this.size)
+    this.emit(NodeEvent.RESIZE, { size: this.size })
   }
 
   /**
@@ -2996,6 +3022,13 @@ export class LGraphNode
       link,
       output
     )
+    this.emit(NodeEvent.CONNECTIONS_CHANGE, {
+      type: NodeSlotType.OUTPUT,
+      index: outputIndex,
+      isConnected: true,
+      link,
+      inputOrOutput: output
+    })
 
     inputNode.onConnectionsChange?.(
       NodeSlotType.INPUT,
@@ -3004,6 +3037,13 @@ export class LGraphNode
       link,
       input
     )
+    inputNode.emit(NodeEvent.CONNECTIONS_CHANGE, {
+      type: NodeSlotType.INPUT,
+      index: inputIndex,
+      isConnected: true,
+      link,
+      inputOrOutput: input
+    })
 
     this.setDirtyCanvas(false, true)
     graph.afterChange()
@@ -3145,6 +3185,13 @@ export class LGraphNode
           link_info,
           input
         )
+        target.emit(NodeEvent.CONNECTIONS_CHANGE, {
+          type: NodeSlotType.INPUT,
+          index: link_info.target_slot,
+          isConnected: false,
+          link: link_info,
+          inputOrOutput: input
+        })
         this.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
           slot,
@@ -3152,6 +3199,13 @@ export class LGraphNode
           link_info,
           output
         )
+        this.emit(NodeEvent.CONNECTIONS_CHANGE, {
+          type: NodeSlotType.OUTPUT,
+          index: slot,
+          isConnected: false,
+          link: link_info,
+          inputOrOutput: output
+        })
 
         break
       }
@@ -3197,6 +3251,13 @@ export class LGraphNode
             link_info,
             input
           )
+          target.emit(NodeEvent.CONNECTIONS_CHANGE, {
+            type: NodeSlotType.INPUT,
+            index: link_info.target_slot,
+            isConnected: false,
+            link: link_info,
+            inputOrOutput: input
+          })
         }
         // remove the link from the links pool
         link_info.disconnect(graph, 'input')
@@ -3208,6 +3269,13 @@ export class LGraphNode
           link_info,
           output
         )
+        this.emit(NodeEvent.CONNECTIONS_CHANGE, {
+          type: NodeSlotType.OUTPUT,
+          index: slot,
+          isConnected: false,
+          link: link_info,
+          inputOrOutput: output
+        })
       }
       output.links = null
     }
@@ -3310,6 +3378,13 @@ export class LGraphNode
           link_info,
           input
         )
+        this.emit(NodeEvent.CONNECTIONS_CHANGE, {
+          type: NodeSlotType.INPUT,
+          index: slot,
+          isConnected: false,
+          link: link_info,
+          inputOrOutput: input
+        })
         target_node.onConnectionsChange?.(
           NodeSlotType.OUTPUT,
           i,
@@ -3317,6 +3392,13 @@ export class LGraphNode
           link_info,
           output
         )
+        target_node.emit(NodeEvent.CONNECTIONS_CHANGE, {
+          type: NodeSlotType.OUTPUT,
+          index: i,
+          isConnected: false,
+          link: link_info,
+          inputOrOutput: output
+        })
       }
     }
 
@@ -4283,3 +4365,5 @@ export class LGraphNode
     ctx.fillStyle = originalFillStyle
   }
 }
+
+applyNodeEventEmitter(LGraphNode)

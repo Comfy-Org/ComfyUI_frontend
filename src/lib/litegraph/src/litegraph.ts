@@ -86,6 +86,13 @@ export { ContextMenu } from './ContextMenu'
 
 export { DragAndScale } from './DragAndScale'
 
+export { NodeEvent } from './infrastructure/LGraphNodeEventMap'
+export type { LGraphNodeEventMap } from './infrastructure/LGraphNodeEventMap'
+export {
+  onAllNodeEvents,
+  offAllNodeEvents
+} from './infrastructure/NodeEventEmitter'
+export type { Unsubscribe } from './infrastructure/NodeEventEmitter'
 export { Rectangle } from './infrastructure/Rectangle'
 export type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 export type {

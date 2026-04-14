@@ -5,6 +5,7 @@ import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { NodeEvent } from '@/lib/litegraph/src/infrastructure/LGraphNodeEventMap'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -81,12 +82,8 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    const onExecuted = node.onExecuted
-
-    node.onExecuted = function (output: SaveMeshOutput) {
-      onExecuted?.call(this, output)
-
-      const fileInfo = output['3d']?.[0]
+    node.on(NodeEvent.EXECUTED, ({ output }) => {
+      const fileInfo = (output as SaveMeshOutput)['3d']?.[0]
 
       if (!fileInfo) return
 
@@ -119,6 +116,6 @@ useExtensionService().registerExtension({
           }
         }
       })
-    }
+    })
   }
 })

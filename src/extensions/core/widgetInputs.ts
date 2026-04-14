@@ -1,5 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph, NodeEvent } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -315,6 +315,12 @@ export class PrimitiveNode extends LGraphNode {
           {} as CanvasPointerEvent
         )
         this.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
+        this.emit(NodeEvent.WIDGET_CHANGED, {
+          name: widget.name,
+          value: newValue,
+          oldValue,
+          widget
+        })
       }
     })
   }

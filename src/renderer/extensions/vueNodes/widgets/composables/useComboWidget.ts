@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget, NodeEvent } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
@@ -137,6 +137,12 @@ function createAssetBrowserWidget(
     defaultValue,
     onValueChange: (widget, newValue, oldValue) => {
       node.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
+      node.emit(NodeEvent.WIDGET_CHANGED, {
+        name: widget.name,
+        value: newValue,
+        oldValue,
+        widget
+      })
     }
   })
 }

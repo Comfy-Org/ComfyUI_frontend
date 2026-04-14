@@ -21,6 +21,7 @@ import type { LGraph } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId, NodeProperty } from './LGraphNode'
+import { NodeEvent } from './infrastructure/LGraphNodeEventMap'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
@@ -3080,6 +3081,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // value changed
     if (oldValue != widget.value) {
       node.onWidgetChanged?.(widget.name, widget.value, oldValue, widget)
+      node.emit(NodeEvent.WIDGET_CHANGED, {
+        name: widget.name,
+        value: widget.value,
+        oldValue,
+        widget
+      })
       if (!node.graph) throw new NullGraphError()
       node.graph._version++
     }

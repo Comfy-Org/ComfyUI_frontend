@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { NodeEvent } from '@/lib/litegraph/src/infrastructure/LGraphNodeEventMap'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -18,12 +19,9 @@ useExtensionService().registerExtension({
     const [oldWidth, oldHeight] = node.size
     node.setSize([Math.max(oldWidth, 400), Math.max(oldHeight, 350)])
 
-    const onExecuted = node.onExecuted
-
-    node.onExecuted = function (output: ImageCompareOutput) {
-      onExecuted?.call(this, output)
-
-      const { a_images: aImages, b_images: bImages } = output
+    node.on(NodeEvent.EXECUTED, ({ output }) => {
+      const { a_images: aImages, b_images: bImages } =
+        output as ImageCompareOutput
       const rand = app.getRandParam()
 
       const toUrl = (record: Record<string, string>) => {
@@ -42,6 +40,6 @@ useExtensionService().registerExtension({
         widget.value = { beforeImages, afterImages }
         widget.callback?.(widget.value)
       }
-    }
+    })
   }
 })

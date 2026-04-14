@@ -58,7 +58,9 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Public API shim for custom nodes, consumed by comfyAPIPlugin at build time
+    'src/scripts/nodeEvents.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

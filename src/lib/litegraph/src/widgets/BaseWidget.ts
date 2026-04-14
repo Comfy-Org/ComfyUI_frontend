@@ -11,6 +11,7 @@ import type {
   Size
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeEvent } from '@/lib/litegraph/src/infrastructure/LGraphNodeEventMap'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
@@ -436,6 +437,12 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.callback?.(this.value, canvas, node, pos, e)
 
     node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
+    node.emit(NodeEvent.WIDGET_CHANGED, {
+      name: this.name ?? '',
+      value: v,
+      oldValue,
+      widget: this
+    })
     if (node.graph) node.graph._version++
   }
 

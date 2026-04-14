@@ -16,7 +16,8 @@ import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  NodeEvent
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
@@ -738,8 +739,9 @@ export class ComfyApp {
       })
 
       const node = getNodeByExecutionId(this.rootGraph, executionId)
-      if (node && node.onExecuted) {
-        node.onExecuted(detail.output)
+      if (node) {
+        node.onExecuted?.(detail.output)
+        node.emit(NodeEvent.EXECUTED, { output: detail.output })
       }
     })
 

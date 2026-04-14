@@ -29,6 +29,7 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
+import { NodeEvent } from './infrastructure/LGraphNodeEventMap'
 import { LLink } from './LLink'
 import type { LinkId, SerialisedLLinkArray } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
@@ -394,6 +395,8 @@ export class LGraph
     if (this._nodes) {
       for (const _node of this._nodes) {
         _node.onRemoved?.()
+        _node.emit?.(NodeEvent.REMOVED)
+        _node._removeAllListeners?.()
         this.onNodeRemoved?.(_node)
       }
     }
@@ -1004,6 +1007,7 @@ export class LGraph
     this._nodes_by_id[node.id] = node
 
     node.onAdded?.(this)
+    node.emit?.(NodeEvent.ADDED, { graph: this })
 
     if (this.config.align_to_grid) node.alignToGrid()
 
@@ -1100,6 +1104,8 @@ export class LGraph
       if (!hasRemainingReferences) {
         forEachNode(node.subgraph, (innerNode) => {
           innerNode.onRemoved?.()
+          innerNode.emit?.(NodeEvent.REMOVED)
+          innerNode._removeAllListeners?.()
           innerNode.graph?.onNodeRemoved?.(innerNode)
         })
         this.rootGraph.subgraphs.delete(node.subgraph.id)
@@ -1108,6 +1114,8 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
+    node.emit?.(NodeEvent.REMOVED)
+    node._removeAllListeners?.()
 
     node.graph = null
     this._version++
