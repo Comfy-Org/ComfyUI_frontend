@@ -119,6 +119,8 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
+        role="toolbar"
+        :aria-label="$t('mediaAsset.selection.actions')"
         class="flex h-18 w-full items-center justify-between gap-1"
       >
         <div class="flex-1 pl-4">
@@ -144,6 +146,7 @@
             <Button
               v-if="shouldShowDeleteButton"
               size="icon"
+              :aria-label="$t('mediaAsset.selection.deleteSelected')"
               data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
             >
@@ -151,6 +154,7 @@
             </Button>
             <Button
               size="icon"
+              :aria-label="$t('mediaAsset.selection.downloadSelected')"
               data-testid="assets-download-selected"
               @click="handleDownloadSelected"
             >
