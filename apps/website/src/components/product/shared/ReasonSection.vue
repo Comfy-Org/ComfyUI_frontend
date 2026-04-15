@@ -46,10 +46,7 @@ const {
           t(headingSuffixKey, locale)
         }}</template>
       </h2>
-      <p
-        v-if="subtitleKey"
-        class="text-primary-comfy-canvas/70 mt-6 text-sm"
-      >
+      <p v-if="subtitleKey" class="text-primary-comfy-canvas/70 mt-6 text-sm">
         {{ t(subtitleKey, locale) }}
       </p>
     </div>
