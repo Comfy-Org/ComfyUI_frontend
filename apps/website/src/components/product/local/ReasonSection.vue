@@ -1,35 +1,38 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
-import { t } from '../../../i18n/translations'
-import SharedReasonSection from '../shared/ReasonSection.vue'
+import type { Reason } from '../shared/ReasonSection.vue'
+
+import ReasonSection from '../shared/ReasonSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const reasons = [
+const reasons: Reason[] = [
   {
-    title: t('download.reason.1.title', locale),
-    description: t('download.reason.1.description', locale)
+    titleKey: 'download.reason.1.title',
+    descriptionKey: 'download.reason.1.description'
   },
   {
-    title: t('download.reason.2.title', locale),
-    description: t('download.reason.2.description', locale)
+    titleKey: 'download.reason.2.title',
+    descriptionKey: 'download.reason.2.description'
   },
   {
-    title: t('download.reason.3.title', locale),
-    description: t('download.reason.3.description', locale)
+    titleKey: 'download.reason.3.title',
+    descriptionKey: 'download.reason.3.description'
   },
   {
-    title: t('download.reason.4.title', locale),
-    description: t('download.reason.4.description', locale)
+    titleKey: 'download.reason.4.title',
+    descriptionKey: 'download.reason.4.description'
   }
 ]
 </script>
 
 <template>
-  <SharedReasonSection
-    :heading="t('download.reason.heading', locale)"
-    :heading-highlight="t('download.reason.headingHighlight', locale)"
+  <ReasonSection
+    :locale="locale"
+    heading-key="download.reason.heading"
+    heading-highlight-key="download.reason.headingHighlight"
+    highlight-class="text-primary-warm-white"
     :reasons="reasons"
   />
 </template>

@@ -1,6 +1,27 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import type { Reason } from './ReasonSection.vue'
+
 import ReasonSection from './ReasonSection.vue'
+
+const defaultReasons: Reason[] = [
+  {
+    titleKey: 'download.reason.1.title',
+    descriptionKey: 'download.reason.1.description'
+  },
+  {
+    titleKey: 'download.reason.2.title',
+    descriptionKey: 'download.reason.2.description'
+  },
+  {
+    titleKey: 'download.reason.3.title',
+    descriptionKey: 'download.reason.3.description'
+  },
+  {
+    titleKey: 'download.reason.4.title',
+    descriptionKey: 'download.reason.4.description'
+  }
+]
 
 const meta: Meta<typeof ReasonSection> = {
   title: 'Website/Product/ReasonSection',
@@ -12,30 +33,10 @@ const meta: Meta<typeof ReasonSection> = {
     })
   ],
   args: {
-    heading: 'Why professionals\nchoose ',
-    headingHighlight: 'Comfy Local',
-    reasons: [
-      {
-        title: 'Unlimited\ncreative power',
-        description:
-          'Run any workflow without limits. No queues, no credits, no restrictions on what you can create.'
-      },
-      {
-        title: 'Any model,\nany time',
-        description:
-          'Use any open-source model instantly. Switch between Stable Diffusion, Flux, and more with a single click.'
-      },
-      {
-        title: 'Your machine,\nyour rules',
-        description:
-          'Your data never leaves your computer. Full privacy and complete control over your creative environment.'
-      },
-      {
-        title: 'Free.\nOpen Source.',
-        description:
-          'No subscriptions, no hidden fees. ComfyUI is and always will be free and open source.'
-      }
-    ]
+    headingKey: 'download.reason.heading',
+    headingHighlightKey: 'download.reason.headingHighlight',
+    highlightClass: 'text-primary-warm-white',
+    reasons: defaultReasons
   }
 }
 
@@ -44,19 +45,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-export const WithoutHighlight: Story = {
+export const FewReasons: Story = {
   args: {
-    heading: 'Why choose Comfy',
-    headingHighlight: '',
-    reasons: [
-      {
-        title: 'Fast',
-        description: 'Optimized for speed and efficiency.'
-      },
-      {
-        title: 'Flexible',
-        description: 'Adapt to any workflow with ease.'
-      }
-    ]
+    reasons: defaultReasons.slice(0, 2)
   }
 }

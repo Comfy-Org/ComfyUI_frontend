@@ -1,16 +1,24 @@
 <script setup lang="ts">
-interface Reason {
-  title: string
-  description: string
+import type { Locale, TranslationKey } from '../../../i18n/translations'
+
+import { t } from '../../../i18n/translations'
+
+export interface Reason {
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
 }
 
 const {
-  heading,
-  headingHighlight = '',
+  locale = 'en',
+  headingKey,
+  headingHighlightKey,
+  highlightClass = 'text-white',
   reasons
 } = defineProps<{
-  heading: string
-  headingHighlight?: string
+  locale?: Locale
+  headingKey: TranslationKey
+  headingHighlightKey: TranslationKey
+  highlightClass?: string
   reasons: Reason[]
 }>()
 </script>
@@ -26,9 +34,9 @@ const {
       <h2
         class="text-primary-comfy-canvas text-4xl font-light whitespace-pre-line md:text-5xl"
       >
-        {{ heading
-        }}<span v-if="headingHighlight" class="text-primary-warm-white">{{
-          headingHighlight
+        {{ t(headingKey, locale)
+        }}<span :class="highlightClass">{{
+          t(headingHighlightKey, locale)
         }}</span>
       </h2>
     </div>
@@ -36,17 +44,20 @@ const {
     <!-- Right reasons list -->
     <div class="flex-1">
       <div
-        v-for="(reason, i) in reasons"
-        :key="i"
+        v-for="reason in reasons"
+        :key="reason.titleKey"
         class="border-primary-comfy-canvas/20 flex flex-col gap-4 border-b py-10 first:pt-0 md:flex-row md:gap-12"
       >
-        <h3
-          class="text-primary-comfy-canvas shrink-0 text-2xl font-light whitespace-pre-line md:w-52"
-        >
-          {{ reason.title }}
-        </h3>
+        <div class="shrink-0 md:w-52">
+          <h3
+            class="text-primary-comfy-canvas text-2xl font-light whitespace-pre-line"
+          >
+            {{ t(reason.titleKey, locale) }}
+          </h3>
+          <slot name="reason-extra" :reason="reason" />
+        </div>
         <p class="text-primary-comfy-canvas/70 flex-1 text-sm">
-          {{ reason.description }}
+          {{ t(reason.descriptionKey, locale) }}
         </p>
       </div>
     </div>

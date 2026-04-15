@@ -8,7 +8,7 @@ const {
   className = ''
 } = defineProps<{
   href: string
-  label: string
+  label?: string
   variant?: 'solid' | 'outline'
   className?: string
 }>()
@@ -27,6 +27,6 @@ const {
       )
     "
   >
-    {{ label }}
+    <slot>{{ label }}</slot>
   </a>
 </template>

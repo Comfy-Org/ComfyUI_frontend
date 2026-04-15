@@ -62,8 +62,10 @@
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-condensed: 'PP Formula Condensed', sans-serif;
+  --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;
   --radius-4xl: 2rem;
+  --radius-4\.5xl: 2.25rem;
   --radius-5xl: 2.5rem;
 }
 
