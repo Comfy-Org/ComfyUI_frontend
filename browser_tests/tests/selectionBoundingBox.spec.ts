@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { measureSelectionBounds } from '@e2e/fixtures/helpers/boundsUtils'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 const SUBGRAPH_ID = '2'
 const REGULAR_ID = '3'
@@ -25,6 +26,19 @@ function getTargetId(type: NodeType): string {
 
 function getRefId(type: NodeType): string {
   return type === 'subgraph' ? REGULAR_ID : SUBGRAPH_ID
+}
+
+async function userToggleCollapse(
+  comfyPage: ComfyPage,
+  nodeRef: NodeReference
+) {
+  await nodeRef.click('title')
+  await comfyPage.keyboard.collapse()
+}
+
+async function userToggleBypass(comfyPage: ComfyPage, nodeRef: NodeReference) {
+  await nodeRef.click('title')
+  await comfyPage.keyboard.bypass()
 }
 
 async function assertSelectionEncompassesNodes(
@@ -94,7 +108,8 @@ test.describe(
 
             if (state === 'collapsed') {
               const nodeRef = await comfyPage.nodeOps.getNodeRefById(targetId)
-              await nodeRef.setCollapsed(true)
+              await userToggleCollapse(comfyPage, nodeRef)
+              await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
             }
 
             await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
@@ -105,6 +120,72 @@ test.describe(
         }
       }
     }
+  }
+)
+
+test.describe(
+  'Selection bounding box (Vue mode) — collapsed node bypass toggle',
+  { tag: ['@canvas', '@node'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await comfyPage.vueNodes.waitForNodes()
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
+
+    test('collapsed node narrows bounding box when bypass is removed', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.repositionNodes({
+        [SUBGRAPH_ID]: REF_POS,
+        [REGULAR_ID]: TARGET_POSITIONS['bottom-right']
+      })
+      await comfyPage.nextFrame()
+      await comfyPage.vueNodes.waitForNodes()
+
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
+      await userToggleBypass(comfyPage, nodeRef)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+      await userToggleCollapse(comfyPage, nodeRef)
+      await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
+
+      await userToggleBypass(comfyPage, nodeRef)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+      await comfyPage.nextFrame()
+
+      await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
+        SUBGRAPH_ID,
+        REGULAR_ID
+      ])
+    })
+
+    test('collapsed node widens bounding box when bypass is added', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.repositionNodes({
+        [SUBGRAPH_ID]: REF_POS,
+        [REGULAR_ID]: TARGET_POSITIONS['bottom-right']
+      })
+      await comfyPage.nextFrame()
+      await comfyPage.vueNodes.waitForNodes()
+
+      const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
+      await userToggleCollapse(comfyPage, nodeRef)
+      await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
+
+      await userToggleBypass(comfyPage, nodeRef)
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+      await comfyPage.nextFrame()
+
+      await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
+        SUBGRAPH_ID,
+        REGULAR_ID
+      ])
+    })
   }
 )
 
@@ -138,7 +219,8 @@ test.describe(
 
           if (state === 'collapsed') {
             const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
-            await nodeRef.setCollapsed(true)
+            await userToggleCollapse(comfyPage, nodeRef)
+            await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
           }
 
           await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
