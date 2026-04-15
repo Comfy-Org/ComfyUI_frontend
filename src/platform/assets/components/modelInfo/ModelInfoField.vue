@@ -1,7 +1,9 @@
 <template>
   <div class="flex flex-col gap-2 px-4 py-2 text-sm text-base-foreground">
     <div class="relative flex items-center justify-between">
-      <span class="select-none">{{ label }}</span>
+      <span class="select-none">
+        <slot name="label">{{ label }}</slot>
+      </span>
       <slot name="label-action" />
     </div>
     <slot />
@@ -10,6 +12,6 @@
 
 <script setup lang="ts">
 defineProps<{
-  label: string
+  label?: string
 }>()
 </script>

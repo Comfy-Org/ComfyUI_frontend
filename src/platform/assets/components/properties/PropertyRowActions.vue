@@ -1,9 +1,7 @@
 <template>
   <div class="flex items-center gap-1">
     <span
-      v-if="
-        count !== undefined && totalCount !== undefined && count < totalCount
-      "
+      v-if="count !== undefined && totalCount !== undefined"
       class="text-2xs text-muted-foreground"
     >
       {{ count }}/{{ totalCount }}

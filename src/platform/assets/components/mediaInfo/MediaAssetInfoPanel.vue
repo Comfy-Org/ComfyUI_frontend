@@ -172,10 +172,24 @@
           {{ t('sideToolbar.mediaAssets.infoPanel.properties') }}
         </span>
       </template>
+      <div
+        v-if="isGeneratedOutput"
+        class="px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ t('sideToolbar.mediaAssets.infoPanel.generatedOutputReadonly') }}
+      </div>
       <PropertiesEditor
+        v-else-if="isMulti"
+        v-model="multiUserProperties"
+        :suggestions="propertySuggestions"
+        :total-count="allAssets.length"
+        :property-counts="multiPropertyCounts"
+        :mixed-keys="multiMixedKeys"
+      />
+      <PropertiesEditor
+        v-else
         v-model="userProperties"
         :suggestions="propertySuggestions"
-        :readonly="false"
       />
     </PropertiesAccordionItem>
 
@@ -220,6 +234,7 @@ import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import ImageStack from '@/platform/assets/components/mediaInfo/ImageStack.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import PropertiesEditor from '@/platform/assets/components/properties/PropertiesEditor.vue'
+import { useMultiPropertyEditing } from '@/platform/assets/composables/useMultiPropertyEditing'
 import { usePropertySuggestions } from '@/platform/assets/composables/usePropertySuggestions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type {
@@ -287,8 +302,8 @@ const isMulti = computed(() => (assets?.length ?? 0) > 1)
 const allAssets = computed(() => (isMulti.value ? assets! : [asset]))
 const primaryAsset = computed(() => asset)
 
-// Generated output assets use job IDs, not real asset IDs — metadata edits
-// won't persist until the backend provides output assets via the asset API.
+// Generated output assets use job IDs, not real asset IDs.
+// Metadata edits can't persist until the output asset API is integrated.
 const isGeneratedOutput = computed(() =>
   allAssets.value.some((a) => !!a.user_metadata?.jobId)
 )
@@ -341,14 +356,6 @@ const executionTime = computed(
 
 const jobId = computed(() => outputMetadata.value?.jobId)
 
-// When the store confirms a write (user_metadata changes), clear pending for that asset
-watch(
-  () => primaryAsset.value.user_metadata,
-  () => {
-    delete pendingByAsset.value[primaryAsset.value.id]
-  }
-)
-
 watch(
   () => primaryAsset.value.id,
   () => {
@@ -359,10 +366,32 @@ watch(
 async function flushMetadata(targetAsset: AssetItem) {
   const pending = pendingByAsset.value[targetAsset.id]
   if (!pending || Object.keys(pending).length === 0) return
+
+  // Snapshot the keys being flushed so we only clear those after success.
+  // New edits arriving during the API call are preserved.
+  const flushedKeys = Object.keys(pending)
+
   await assetsStore.updateAssetMetadata(targetAsset, {
     ...(targetAsset.user_metadata ?? {}),
     ...pending
   })
+
+  // Only remove the keys we actually flushed, keeping any that were
+  // added to pending while the API call was in flight.
+  const current = pendingByAsset.value[targetAsset.id]
+  if (current) {
+    for (const key of flushedKeys) {
+      if (
+        current[key as keyof AssetUserMetadata] ===
+        pending[key as keyof AssetUserMetadata]
+      ) {
+        delete current[key as keyof AssetUserMetadata]
+      }
+    }
+    if (Object.keys(current).length === 0) {
+      delete pendingByAsset.value[targetAsset.id]
+    }
+  }
 }
 
 const debouncedFlushMetadata = useDebounceFn(async () => {
@@ -402,6 +431,15 @@ const userProperties = computed<UserProperties>({
   set: (value: UserProperties) =>
     queueMetadataUpdate({ user_properties: value })
 })
+
+// --- Multi-select flush ---
+const debouncedFlushAllSelected = useDebounceFn(async () => {
+  await Promise.all(allAssets.value.map((a) => flushMetadata(a)))
+}, 500)
+
+// --- Multi-select property logic ---
+const { multiPropertyCounts, multiMixedKeys, multiUserProperties } =
+  useMultiPropertyEditing(allAssets, pendingByAsset, debouncedFlushAllSelected)
 
 // --- Multi-select tag logic ---
 
@@ -473,10 +511,6 @@ function multiTagClass(tag: string): string | undefined {
   if (ratio > 0.33) return 'opacity-55'
   return 'opacity-40'
 }
-
-const debouncedFlushAllSelected = useDebounceFn(async () => {
-  await Promise.all(allAssets.value.map((a) => flushMetadata(a)))
-}, 500)
 
 const userDescription = computed({
   get: () =>

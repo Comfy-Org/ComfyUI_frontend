@@ -1,16 +1,20 @@
 import { z } from 'zod'
 
-const zStringProperty = z.object({
+const zPropertyBase = z.object({
+  _order: z.number().optional()
+})
+
+const zStringProperty = zPropertyBase.extend({
   type: z.literal('string'),
   value: z.string()
 })
 
-const zBooleanProperty = z.object({
+const zBooleanProperty = zPropertyBase.extend({
   type: z.literal('boolean'),
   value: z.boolean()
 })
 
-const zNumberProperty = z.object({
+const zNumberProperty = zPropertyBase.extend({
   type: z.literal('number'),
   value: z.number(),
   min: z.number().optional(),
@@ -63,6 +67,14 @@ export function createPropertyFromSuggestion(
         ...(suggestion.max !== undefined && { max: suggestion.max })
       }
   }
+}
+
+export function coverageOpacityClass(count: number, total: number): string {
+  if (count >= total) return 'font-semibold'
+  const ratio = count / total
+  if (ratio > 0.66) return 'opacity-75'
+  if (ratio > 0.33) return 'opacity-55'
+  return 'opacity-40'
 }
 
 export function getAssetUserProperties(

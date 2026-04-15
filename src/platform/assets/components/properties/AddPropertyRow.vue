@@ -119,7 +119,7 @@
     <input
       readonly
       :placeholder="t('properties.addProperty')"
-      class="w-full cursor-pointer border-none bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground"
+      class="w-full cursor-pointer border-none bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground"
       @click="startAdding"
       @focus="startAdding"
     />
@@ -200,7 +200,7 @@ const canCreate = computed(() => {
 const propertyTypes: { type: PropertyType; icon: string; label: string }[] = [
   { type: 'string', icon: 'icon-[lucide--type]', label: 'Text' },
   { type: 'number', icon: 'icon-[lucide--hash]', label: 'Number' },
-  { type: 'boolean', icon: 'icon-[lucide--toggle-left]', label: 'Boolean' }
+  { type: 'boolean', icon: 'icon-[lucide--square-check]', label: 'Boolean' }
 ]
 
 function iconForType(type: PropertyType): string {

@@ -42,9 +42,14 @@
       </div>
 
       <!-- Main content area -->
-      <div class="relative z-10 flex min-h-0 flex-1 gap-4 px-4 pb-4">
+      <div
+        class="relative z-10 grid min-h-0 flex-1 gap-4 px-4 pb-4 transition-[grid-template-columns] duration-300 ease-out"
+        :style="{
+          gridTemplateColumns: `1fr ${showPanel ? '20rem' : '0rem'}`
+        }"
+      >
         <!-- Media content (nav arrows are absolute within this) -->
-        <div class="relative flex flex-1 items-center justify-center">
+        <div class="relative flex items-center justify-center">
           <!-- Previous Button -->
           <Button
             v-if="hasMultiple"
@@ -64,7 +69,7 @@
               :src="activeItem.url"
               :contain="false"
               :alt="activeItem.filename"
-              class="size-auto max-h-[85vh] max-w-full object-contain"
+              class="size-auto max-h-[85vh] max-w-full object-contain transition-[max-width] duration-300 ease-out"
             />
             <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
             <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
@@ -83,17 +88,19 @@
           </Button>
         </div>
 
-        <!-- Info panel -->
-        <div
-          v-if="infoPanelOpen && asset"
-          class="w-80 shrink-0 overflow-y-auto rounded-lg border border-border-subtle bg-base-background shadow-sm"
-        >
-          <MediaAssetInfoPanel
-            :asset="asset"
-            :tag-suggestions="tagSuggestions"
-            :property-suggestions="propertySuggestions"
-            compact
-          />
+        <!-- Info panel: outer div clips via grid column, inner div is fixed width -->
+        <div class="min-w-0 overflow-hidden">
+          <div
+            v-if="asset"
+            class="h-full w-80 overflow-y-auto rounded-lg border border-border-subtle bg-base-background shadow-sm"
+          >
+            <MediaAssetInfoPanel
+              :asset="asset!"
+              :tag-suggestions="tagSuggestions"
+              :property-suggestions="propertySuggestions"
+              compact
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -138,6 +145,7 @@ const dialogRef = ref<HTMLElement>()
 let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => allGalleryItems.length > 1)
 const activeItem = computed(() => allGalleryItems[activeIndex])
+const showPanel = computed(() => infoPanelOpen.value && !!asset)
 
 watch(
   () => activeIndex,
