@@ -29,7 +29,7 @@ test.describe('App mode usage', () => {
     await expect(centerPanel).toBeVisible()
   })
 
-  test('Widet Interaction', async ({ comfyPage }) => {
+  test('Widget Interaction', async ({ comfyPage }) => {
     await comfyPage.appMode.enterAppModeWithInputs([
       ['3', 'seed'],
       ['3', 'sampler_name'],
