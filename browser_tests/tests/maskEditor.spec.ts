@@ -132,7 +132,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(dialog.getByText('Save')).toBeVisible()
       await expect(dialog.getByText('Cancel')).toBeVisible()
 
-      await expect(dialog).toHaveScreenshot('mask-editor-dialog-open.png')
+      await comfyPage.expectScreenshot(dialog, 'mask-editor-dialog-open.png')
     }
   )
 
@@ -159,7 +159,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
         dialog.getByRole('heading', { name: 'Mask Editor' })
       ).toBeVisible()
 
-      await expect(dialog).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        dialog,
         'mask-editor-dialog-from-context-menu.png'
       )
     }

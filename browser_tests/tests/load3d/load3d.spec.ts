@@ -112,9 +112,8 @@ test.describe('Load3D', () => {
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
-      await comfyPage.nextFrame()
-
-      await expect(load3d.node).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        load3d.node,
         'load3d-uploaded-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
       )
@@ -142,9 +141,8 @@ test.describe('Load3D', () => {
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
-      await comfyPage.nextFrame()
-
-      await expect(load3d.node).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        load3d.node,
         'load3d-dropped-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
       )
