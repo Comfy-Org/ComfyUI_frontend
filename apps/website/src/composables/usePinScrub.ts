@@ -59,8 +59,12 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
 
     function cacheLayout() {
       const contentRect = content.getBoundingClientRect()
+      const sectionStyle = getComputedStyle(section)
       contentH = content.scrollHeight
-      vpH = window.innerHeight
+      vpH =
+        window.innerHeight -
+        parseFloat(sectionStyle.paddingTop) -
+        parseFloat(sectionStyle.paddingBottom)
       buttonCenters = Array.from(nav.querySelectorAll(':scope > *')).map(
         (btn) => {
           const btnRect = btn.getBoundingClientRect()
