@@ -71,7 +71,7 @@ onUnmounted(() => {
 
 <template>
   <section
-    class="relative flex min-h-screen flex-col lg:flex-row lg:items-center"
+    class="relative flex min-h-auto flex-col lg:flex-row lg:items-center"
   >
     <div class="relative w-full lg:w-3/5">
       <canvas ref="canvasRef" class="w-full" />
