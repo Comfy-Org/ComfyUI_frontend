@@ -114,4 +114,21 @@ describe('DomWidget disabled style', () => {
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
   })
+
+  it('disables pointer events when widget is not visible', async () => {
+    const widgetState = createWidgetState(false)
+    widgetState.visible = false
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    widgetState.zIndex = 3
+    await nextTick()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.pointerEvents).toBe('none')
+  })
 })

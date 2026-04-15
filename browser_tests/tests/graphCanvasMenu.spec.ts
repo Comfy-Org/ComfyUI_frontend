@@ -94,6 +94,6 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     await backdrop.click()
 
     // Modal should be hidden
-    await expect(zoomModal).not.toBeVisible()
+    await expect(zoomModal).toBeHidden()
   })
 })

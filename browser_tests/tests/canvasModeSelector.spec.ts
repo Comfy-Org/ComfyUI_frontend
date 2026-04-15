@@ -70,7 +70,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(menu).toBeVisible()
       await trigger.click()
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
       await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     })
 
@@ -81,7 +81,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(menu).toBeVisible()
       await handItem.click()
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
     })
 
     test('closes when Escape is pressed', async ({ comfyPage }) => {
@@ -91,7 +91,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(menu).toBeVisible()
       await selectItem.press('Escape')
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
       await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     })
   })
@@ -197,7 +197,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await selectItem.press('ArrowDown')
       await handItem.press('Escape')
       await comfyPage.nextFrame()
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
       await expect(trigger).toBeFocused()
     })
   })

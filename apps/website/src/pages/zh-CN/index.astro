@@ -1,34 +1,22 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import SiteNav from '../../components/SiteNav.vue'
-import HeroSection from '../../components/HeroSection.vue'
-import SocialProofBar from '../../components/SocialProofBar.vue'
-import ProductShowcase from '../../components/ProductShowcase.vue'
-import ValuePillars from '../../components/ValuePillars.vue'
-import UseCaseSection from '../../components/UseCaseSection.vue'
-import CaseStudySpotlight from '../../components/CaseStudySpotlight.vue'
-import TestimonialsSection from '../../components/TestimonialsSection.vue'
-import GetStartedSection from '../../components/GetStartedSection.vue'
-import CTASection from '../../components/CTASection.vue'
-import ManifestoSection from '../../components/ManifestoSection.vue'
-import AcademySection from '../../components/AcademySection.vue'
-import SiteFooter from '../../components/SiteFooter.vue'
+import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
+import HeroSection from '../../components/home/HeroSection.vue'
+import SocialProofBarSection from '../../components/home/SocialProofBarSection.vue'
+import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
+import UseCaseSection from '../../components/home/UseCaseSection.vue'
+import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
+import GetStartedSection from '../../components/home/GetStartedSection.vue'
+import BuildWhatSection from '../../components/home/BuildWhatSection.vue'
 ---
 
 <BaseLayout title="Comfy — 视觉 AI 的专业控制">
-  <SiteNav locale="zh-CN" client:load />
-  <main>
-    <HeroSection locale="zh-CN" />
-    <SocialProofBar locale="zh-CN" />
-    <ProductShowcase locale="zh-CN" />
-    <ValuePillars locale="zh-CN" />
-    <UseCaseSection locale="zh-CN" client:visible />
-    <CaseStudySpotlight locale="zh-CN" />
-    <TestimonialsSection locale="zh-CN" client:visible />
-    <GetStartedSection locale="zh-CN" />
-    <CTASection locale="zh-CN" />
-    <ManifestoSection locale="zh-CN" />
-    <AcademySection locale="zh-CN" />
-  </main>
-  <SiteFooter locale="zh-CN" />
+  <HeroSection locale="zh-CN" client:load />
+  <SocialProofBarSection />
+  <ProductShowcaseSection locale="zh-CN" client:visible />
+  <UseCaseSection locale="zh-CN" client:visible />
+  <GetStartedSection locale="zh-CN" />
+  <ProductCardsSection locale="zh-CN" />
+  <CaseStudySpotlightSection locale="zh-CN" />
+  <BuildWhatSection locale="zh-CN" />
 </BaseLayout>

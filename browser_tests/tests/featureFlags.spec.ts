@@ -69,7 +69,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       expect(flags?.data).not.toBeNull()
       expect(flags?.data).toHaveProperty('supports_preview_metadata')
       expect(typeof flags?.data?.supports_preview_metadata).toBe('boolean')
-    }).toPass()
+    }).toPass({ timeout: 5000 })
 
     // Verify server sent feature flags back
     await expect(async () => {
@@ -82,7 +82,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       expect(flags).toHaveProperty('max_upload_size')
       expect(typeof flags?.max_upload_size).toBe('number')
       expect(Object.keys(flags ?? {}).length).toBeGreaterThan(0)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
 
     await newPage.close()
   })
@@ -102,7 +102,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       expect(typeof flags.supports_preview_metadata).toBe('boolean')
       expect(flags).toHaveProperty('max_upload_size')
       expect(typeof flags.max_upload_size).toBe('number')
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   })
 
   test('serverSupportsFeature method works with real backend flags', async ({
@@ -182,7 +182,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       )
       expect(typeof maxUpload).toBe('number')
       expect(maxUpload as number).toBeGreaterThan(0)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
 
     // Test getServerFeature with default value for non-existent feature
     await expect
@@ -210,7 +210,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       expect(typeof features.supports_preview_metadata).toBe('boolean')
       expect(features).toHaveProperty('max_upload_size')
       expect(Object.keys(features).length).toBeGreaterThan(0)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
   })
 
   test('Client feature flags are immutable', async ({ comfyPage }) => {
@@ -348,14 +348,14 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       expect(flags).toHaveProperty('supports_preview_metadata')
       expect(typeof flags?.supports_preview_metadata).toBe('boolean')
       expect(flags).toHaveProperty('max_upload_size')
-    }).toPass()
+    }).toPass({ timeout: 5000 })
 
     // Verify feature flags were received and API was initialized
     await expect(async () => {
       const readiness = await newPage.evaluate(() => window.__appReadiness)
       expect(readiness?.featureFlagsReceived).toBe(true)
       expect(readiness?.apiInitialized).toBe(true)
-    }).toPass()
+    }).toPass({ timeout: 5000 })
 
     await newPage.close()
   })

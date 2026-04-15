@@ -116,7 +116,7 @@ test.describe('Job history sidebar - filter tabs', () => {
     await expect(tab.getJobById('job-completed-1')).toBeVisible({
       timeout: 5000
     })
-    await expect(tab.getJobById('job-failed-1')).not.toBeVisible()
+    await expect(tab.getJobById('job-failed-1')).toBeHidden()
   })
 
   test('Failed tab filters to failed jobs only', async ({ comfyPage }) => {
@@ -127,7 +127,7 @@ test.describe('Job history sidebar - filter tabs', () => {
     await tab.failedTab.click()
 
     await expect(tab.getJobById('job-failed-1')).toBeVisible({ timeout: 5000 })
-    await expect(tab.getJobById('job-completed-1')).not.toBeVisible()
+    await expect(tab.getJobById('job-completed-1')).toBeHidden()
   })
 
   test('All tab shows all jobs again', async ({ comfyPage }) => {
@@ -137,7 +137,7 @@ test.describe('Job history sidebar - filter tabs', () => {
 
     // Switch to Completed then back to All
     await tab.completedTab.click()
-    await expect(tab.getJobById('job-failed-1')).not.toBeVisible()
+    await expect(tab.getJobById('job-failed-1')).toBeHidden()
 
     await tab.allTab.click()
 
@@ -210,7 +210,7 @@ test.describe('Job history sidebar - empty state', () => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
 
-    await expect(tab.failedTab).not.toBeVisible()
+    await expect(tab.failedTab).toBeHidden()
   })
 })
 
@@ -236,7 +236,7 @@ test.describe('Job history sidebar - completed only', () => {
     await tab.open()
     await tab.waitForJobsLoad()
 
-    await expect(tab.failedTab).not.toBeVisible()
+    await expect(tab.failedTab).toBeHidden()
     await expect(tab.allTab).toBeVisible()
     await expect(tab.completedTab).toBeVisible()
   })

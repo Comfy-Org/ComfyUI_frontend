@@ -9,6 +9,7 @@ type KeysOfType<T, Match> = {
 export class ConfirmDialog {
   public readonly root: Locator
   public readonly delete: Locator
+  public readonly noWarnOverwriteToggle: Locator
   public readonly overwrite: Locator
   public readonly reject: Locator
   public readonly confirm: Locator
@@ -21,6 +22,7 @@ export class ConfirmDialog {
     this.reject = this.root.getByRole('button', { name: 'Cancel' })
     this.confirm = this.root.getByRole('button', { name: 'Confirm' })
     this.save = this.root.getByRole('button', { name: 'Save' })
+    this.noWarnOverwriteToggle = this.root.locator('#doNotAskAgain')
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {

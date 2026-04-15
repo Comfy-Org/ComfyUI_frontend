@@ -8,7 +8,13 @@ import type { Position, Size } from '@e2e/fixtures/types'
 import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class NodeOperationsHelper {
-  constructor(private comfyPage: ComfyPage) {}
+  public readonly promptDialogInput: Locator
+
+  constructor(private comfyPage: ComfyPage) {
+    this.promptDialogInput = this.page.locator(
+      '.p-dialog-content input[type="text"]'
+    )
+  }
 
   private get page() {
     return this.comfyPage.page
@@ -155,15 +161,27 @@ export class NodeOperationsHelper {
     await this.comfyPage.nextFrame()
   }
 
-  get promptDialogInput(): Locator {
-    return this.page.locator('.p-dialog-content input[type="text"]')
-  }
-
   async fillPromptDialog(value: string): Promise<void> {
     await this.promptDialogInput.fill(value)
     await this.page.keyboard.press('Enter')
     await this.promptDialogInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
+  }
+
+  async panToNode(nodeRef: NodeReference): Promise<void> {
+    const nodePos = await nodeRef.getPosition()
+    await this.page.evaluate((pos) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+      canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
+      canvas.setDirty(true, true)
+    }, nodePos)
+    await this.comfyPage.nextFrame()
+  }
+
+  async selectNodeWithPan(nodeRef: NodeReference): Promise<void> {
+    await this.panToNode(nodeRef)
+    await nodeRef.click('title')
   }
 
   async dragTextEncodeNode2(): Promise<void> {
