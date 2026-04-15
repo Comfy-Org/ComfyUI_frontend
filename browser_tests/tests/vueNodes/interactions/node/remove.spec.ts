@@ -2,24 +2,13 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe(
   'Vue Nodes - Delete Key Interaction',
   { tag: '@vue-nodes' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-      await comfyPage.setup()
-    })
-
     test('Can select all and delete Vue nodes with Delete key', async ({
       comfyPage
     }) => {
-      await comfyPage.vueNodes.waitForNodes()
-
       // Get initial Vue node count
       await expect
         .poll(() => comfyPage.vueNodes.getNodeCount())
@@ -44,8 +33,6 @@ test.describe(
     test('Can select specific Vue node and delete it', async ({
       comfyPage
     }) => {
-      await comfyPage.vueNodes.waitForNodes()
-
       // Get initial Vue node count
       await expect
         .poll(() => comfyPage.vueNodes.getNodeCount())
@@ -71,8 +58,6 @@ test.describe(
     test('Can select and delete Vue node with Backspace key', async ({
       comfyPage
     }) => {
-      await comfyPage.vueNodes.waitForNodes()
-
       const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
 
       // Select first Vue node
@@ -114,8 +99,6 @@ test.describe(
     test('Delete key does not delete node when nothing is selected', async ({
       comfyPage
     }) => {
-      await comfyPage.vueNodes.waitForNodes()
-
       // Ensure no Vue nodes are selected
       await comfyPage.vueNodes.clearSelection()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
@@ -132,7 +115,6 @@ test.describe(
     test('Can multi-select with Ctrl+click and delete multiple Vue nodes', async ({
       comfyPage
     }) => {
-      await comfyPage.vueNodes.waitForNodes()
       const initialNodeCount = await comfyPage.vueNodes.getNodeCount()
 
       // Multi-select first two Vue nodes using Ctrl+click

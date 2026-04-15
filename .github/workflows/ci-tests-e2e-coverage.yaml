@@ -1,0 +1,73 @@
+name: 'CI: E2E Coverage'
+
+on:
+  workflow_run:
+    workflows: ['CI: Tests E2E']
+    types:
+      - completed
+
+concurrency:
+  group: e2e-coverage-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download all shard coverage data
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: e2e-coverage-shard-.*
+          name_is_regexp: true
+          path: temp/coverage-shards
+          if_no_artifact_found: warn
+
+      - name: Install lcov
+        run: sudo apt-get install -y -qq lcov
+
+      - name: Merge shard coverage into single LCOV
+        run: |
+          mkdir -p coverage/playwright
+          LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
+          if [ -z "$LCOV_FILES" ]; then
+            echo "No coverage.lcov files found"
+            touch coverage/playwright/coverage.lcov
+            exit 0
+          fi
+          ADD_ARGS=""
+          for f in $LCOV_FILES; do ADD_ARGS="$ADD_ARGS -a $f"; done
+          lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
+          wc -l coverage/playwright/coverage.lcov
+
+      - name: Upload merged coverage data
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage
+          path: coverage/playwright/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload E2E coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        with:
+          files: coverage/playwright/coverage.lcov
+          flags: e2e
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

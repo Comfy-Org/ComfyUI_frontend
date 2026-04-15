@@ -1,5 +1,7 @@
 import { readFileSync } from 'fs'
 
+import { test } from '@playwright/test'
+
 import type { AppMode } from '@/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
@@ -73,6 +75,9 @@ export class WorkflowHelper {
       assetPath(`${workflowName}.json`)
     )
     await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async deleteWorkflow(
@@ -173,6 +178,11 @@ export class WorkflowHelper {
       undefined,
       { timeout }
     )
+  }
+
+  async switchToTab(tabName: string): Promise<void> {
+    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    await this.waitForWorkflowIdle()
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>
