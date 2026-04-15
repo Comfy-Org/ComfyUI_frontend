@@ -1,13 +1,17 @@
 import { getActivePinia } from 'pinia'
 
+import type { Pinia } from 'pinia'
+
 import { usePromotionStore } from '@/stores/promotionStore'
 
 let cachedPromotionStore: ReturnType<typeof usePromotionStore> | undefined
+let cachedPinia: Pinia | undefined
 
 function getPromotionStore() {
   const activePinia = getActivePinia()
-  if (!cachedPromotionStore || cachedPromotionStore.$pinia !== activePinia) {
-    cachedPromotionStore = usePromotionStore()
+  if (!cachedPromotionStore || cachedPinia !== activePinia) {
+    cachedPromotionStore = usePromotionStore(activePinia)
+    cachedPinia = activePinia
   }
   return cachedPromotionStore
 }
