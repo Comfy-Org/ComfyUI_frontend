@@ -170,7 +170,6 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await comfyPage.workflow.loadWorkflow(
       'groupnodes/group_node_identical_nodes_hidden_inputs'
     )
-    await comfyPage.nextFrame()
 
     const groupNodeId = 19
     const groupNodeName = 'two_VAE_decode'

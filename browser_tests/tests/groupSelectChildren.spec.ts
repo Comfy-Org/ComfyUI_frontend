@@ -60,7 +60,6 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       true
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
@@ -84,7 +83,6 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       false
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
@@ -107,7 +105,6 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       true
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     // Select the outer group (cascades to children)
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')

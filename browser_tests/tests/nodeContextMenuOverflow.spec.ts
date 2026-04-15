@@ -13,7 +13,6 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-      await comfyPage.nextFrame()
     })
 
     async function openMoreOptions(comfyPage: ComfyPage) {

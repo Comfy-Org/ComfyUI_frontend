@@ -74,6 +74,7 @@ export class WorkflowHelper {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
+    await this.waitForWorkflowIdle()
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()

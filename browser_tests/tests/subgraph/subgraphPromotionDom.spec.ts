@@ -68,7 +68,6 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const parentTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(parentTextarea).toBeVisible()
