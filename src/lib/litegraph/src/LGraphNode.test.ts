@@ -688,35 +688,35 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('caches collapsed size and skips callback on subsequent calls', () => {
+    test('reads fresh collapsed size on every call (no stale cache)', () => {
       const spy = vi.fn(() => ({ width: 180, height: 36 }))
       LiteGraph.getCollapsedSize = spy
 
       node.measure(out)
       expect(spy).toHaveBeenCalledTimes(1)
-
-      node.measure(out)
-      expect(spy).toHaveBeenCalledTimes(1)
       expect(out[2]).toBe(180)
+
+      // Simulate size change (e.g. bypass badge added/removed on collapsed node)
+      spy.mockReturnValue({ width: 240, height: 36 })
+      node.measure(out)
+      expect(spy).toHaveBeenCalledTimes(2)
+      expect(out[2]).toBe(240)
     })
 
-    test('clears cache when node is expanded', () => {
+    test('reflects updated size after expand→collapse cycle', () => {
       const spy = vi.fn(() => ({ width: 180, height: 36 }))
       LiteGraph.getCollapsedSize = spy
 
       node.measure(out)
       expect(out[2]).toBe(180)
-      expect(out[3]).toBe(36)
 
       node.flags.collapsed = false
       node.measure(out)
       expect(out[2]).toBe(node.size[0])
 
       node.flags.collapsed = true
-      const newSize = { width: 200, height: 40 }
-      spy.mockReturnValue(newSize)
+      spy.mockReturnValue({ width: 200, height: 40 })
       node.measure(out)
-      expect(spy).toHaveBeenCalledTimes(2)
       expect(out[2]).toBe(200)
       expect(out[3]).toBe(40)
     })
