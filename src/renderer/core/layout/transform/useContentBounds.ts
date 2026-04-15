@@ -1,6 +1,6 @@
 import { reactive, readonly } from 'vue'
 
-import type { Bounds, Point } from '@/renderer/core/layout/types'
+import type { Bounds, NodeLayout, Point } from '@/renderer/core/layout/types'
 
 /**
  * Margin added around tracked content bounds to avoid frequent resizing
@@ -29,6 +29,7 @@ interface ContentBoundsState {
  */
 export function useContentBounds(): ContentBoundsState & {
   expandToInclude(bounds: Bounds): void
+  update(nodes: ReadonlyMap<string, NodeLayout>, version: number): void
   flush(): boolean
   reset(): void
 } {
@@ -65,6 +66,33 @@ export function useContentBounds(): ContentBoundsState & {
     }
   }
 
+  let lastTrackedVersion = -1
+  let sampleNodeId: string | null = null
+
+  /**
+   * Update bounds from the current set of node layouts, skipping work
+   * when the version hasn't changed. Detects workflow switches by
+   * checking whether a previously sampled node still exists — when
+   * the entire node set is replaced, resets bounds to prevent
+   * unbounded growth across unrelated workflows.
+   */
+  function update(
+    nodes: ReadonlyMap<string, NodeLayout>,
+    version: number
+  ) {
+    if (version === lastTrackedVersion) return
+    lastTrackedVersion = version
+
+    if (sampleNodeId !== null && nodes.size > 0 && !nodes.has(sampleNodeId)) {
+      reset()
+    }
+    sampleNodeId = nodes.size > 0 ? (nodes.keys().next().value ?? null) : null
+
+    for (const [, layout] of nodes) {
+      expandToInclude(layout.bounds)
+    }
+  }
+
   /**
    * Applies pending bound changes to the reactive offset and size.
    * Returns true if the values actually changed.
@@ -95,6 +123,7 @@ export function useContentBounds(): ContentBoundsState & {
     offset: readonly(offset),
     size: readonly(size),
     expandToInclude,
+    update,
     flush,
     reset
   }
