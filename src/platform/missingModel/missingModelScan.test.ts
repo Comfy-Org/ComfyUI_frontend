@@ -1084,6 +1084,57 @@ describe('enrichWithEmbeddedMetadata', () => {
     expect(result).toHaveLength(1)
     expect(result[0].name).toBe('rare_model.safetensors')
   })
+
+  it('drops workflow-level entries when interior reference is under a different directory', async () => {
+    // Same name, different directory: the interior's properties.models
+    // entry is not the same asset as the workflow-level entry, so the
+    // fallback helper must not treat it as a reference that keeps the
+    // workflow-level model alive.
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {
+            models: [
+              {
+                name: 'collide_model.safetensors',
+                directory: 'loras'
+              }
+            ]
+          },
+          widgets_values: ['unrelated_widget.safetensors']
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'collide_model.safetensors',
+          url: 'https://example.com/collide',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      [],
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
 })
 
 describe('OSS missing model detection (non-Cloud path)', () => {

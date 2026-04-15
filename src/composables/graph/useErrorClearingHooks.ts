@@ -260,8 +260,13 @@ function isCandidateStillActive(nodeId: unknown): boolean {
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
+  // Capture rootGraph at scan time so a late verification for workflow
+  // A cannot leak into workflow B after a switch — execution IDs (esp.
+  // root-level like "1") collide across workflows.
+  const rootGraphAtScan = app.rootGraph
   try {
     await verifyAssetSupportedCandidates(pending)
+    if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
     )
@@ -274,8 +279,10 @@ async function verifyAndAddPendingModels(
 async function verifyAndAddPendingMedia(
   pending: MissingMediaCandidate[]
 ): Promise<void> {
+  const rootGraphAtScan = app.rootGraph
   try {
     await verifyCloudMediaCandidates(pending)
+    if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
     )

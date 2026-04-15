@@ -278,7 +278,12 @@ export async function enrichWithEmbeddedMetadata(
   const activeUnmatched = unmatched.filter(
     (m) =>
       m.sourceNodeType !== '' ||
-      isModelReferencedByActiveNode(m.name, allNodes, flattenedNodeById)
+      isModelReferencedByActiveNode(
+        m.name,
+        m.directory,
+        allNodes,
+        flattenedNodeById
+      )
   )
 
   const settled = await Promise.allSettled(
@@ -321,6 +326,7 @@ export async function enrichWithEmbeddedMetadata(
 
 function isModelReferencedByActiveNode(
   modelName: string,
+  modelDirectory: string | undefined,
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
 ): boolean {
@@ -332,11 +338,28 @@ function isModelReferencedByActiveNode(
       continue
     if (!isAncestorPathActiveInFlattened(String(node.id), nodeById)) continue
 
+    // Require directory agreement when both sides specify one, so a
+    // same-name entry under a different folder does not keep an
+    // unrelated workflow-level model alive as missing.
     const embeddedModels = (
-      node.properties as { models?: Array<{ name: string }> } | undefined
+      node.properties as
+        | { models?: Array<{ name: string; directory?: string }> }
+        | undefined
     )?.models
-    if (embeddedModels?.some((m) => m.name === modelName)) return true
+    if (
+      embeddedModels?.some(
+        (m) =>
+          m.name === modelName &&
+          (modelDirectory === undefined ||
+            m.directory === undefined ||
+            m.directory === modelDirectory)
+      )
+    ) {
+      return true
+    }
 
+    // widgets_values carries only the name, so directory cannot be
+    // checked here — fall back to filename matching.
     const values = node.widgets_values
     if (!values) continue
     const valueArray = Array.isArray(values) ? values : Object.values(values)

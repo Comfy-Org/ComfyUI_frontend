@@ -728,6 +728,61 @@ describe('realtime verification staleness guards', () => {
 
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
   })
+
+  it('skips adding verified model when rootGraph switched before verification resolved', async () => {
+    // Workflow A has a pending candidate on node id=1. A is replaced
+    // by workflow B (fresh LGraph, potentially has a node with the
+    // same id). Late verification from A must not leak into B.
+    const graphA = new LGraph()
+    const nodeA = new LGraphNode('CheckpointLoaderSimple')
+    graphA.add(nodeA)
+    const rootSpy = vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graphA)
+
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
+      {
+        nodeId: String(nodeA.id),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: true,
+        name: 'stale_from_A.safetensors',
+        isMissing: undefined
+      }
+    ])
+    let resolveVerify: (() => void) | undefined
+    const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
+    const verifySpy = vi
+      .spyOn(missingModelScan, 'verifyAssetSupportedCandidates')
+      .mockImplementation(async (candidates) => {
+        await verifyPromise
+        for (const c of candidates) c.isMissing = true
+      })
+    vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([])
+
+    installErrorClearingHooks(graphA)
+
+    nodeA.mode = LGraphEventMode.ALWAYS
+    graphA.onTrigger?.({
+      type: 'node:property:changed',
+      nodeId: nodeA.id,
+      property: 'mode',
+      oldValue: LGraphEventMode.BYPASS,
+      newValue: LGraphEventMode.ALWAYS
+    })
+    await vi.waitFor(() => expect(verifySpy).toHaveBeenCalledOnce())
+
+    // Workflow swap: app.rootGraph now points at graphB.
+    const graphB = new LGraph()
+    const nodeB = new LGraphNode('CheckpointLoaderSimple')
+    graphB.add(nodeB)
+    rootSpy.mockReturnValue(graphB)
+
+    resolveVerify!()
+    await new Promise((r) => setTimeout(r, 0))
+
+    // A's verification finished but rootGraph is now B — the late
+    // result must not be added to the store.
+    expect(useMissingModelStore().missingModelCandidates).toBeNull()
+  })
 })
 
 describe('scan skips interior of bypassed subgraph containers', () => {
