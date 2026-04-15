@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 defineProps<{
   heading: string
   subtitle?: string
@@ -20,8 +22,12 @@ defineProps<{
     </div>
 
     <div
-      class="mt-12 grid gap-6 lg:mt-16"
-      :class="columns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'"
+      :class="
+        cn(
+          'mt-12 grid gap-6 lg:mt-16',
+          columns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'
+        )
+      "
     >
       <slot />
     </div>

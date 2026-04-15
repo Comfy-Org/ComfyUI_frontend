@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import CardGridSection from '../shared/CardGridSection.vue'
@@ -42,14 +44,16 @@ const steps = [
           <span
             v-for="i in 15"
             :key="i"
-            class="block size-5 rounded-sm"
-            :class="[
-              i === 3 || i === 8 || i === 13
-                ? 'bg-primary-comfy-yellow'
-                : i % 3 === 0
-                  ? 'bg-primary-comfy-plum'
-                  : 'bg-secondary-mauve'
-            ]"
+            :class="
+              cn(
+                'block size-5 rounded-sm',
+                i === 3 || i === 8 || i === 13
+                  ? 'bg-primary-comfy-yellow'
+                  : i % 3 === 0
+                    ? 'bg-primary-comfy-plum'
+                    : 'bg-secondary-mauve'
+              )
+            "
           />
         </div>
       </div>

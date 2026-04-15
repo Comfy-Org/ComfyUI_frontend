@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import { t } from '../../../i18n/translations'
 import CardGridSection from '../shared/CardGridSection.vue'
 
@@ -38,14 +39,16 @@ const cards = [
           <span
             v-for="j in 15"
             :key="j"
-            class="block size-5 rounded-sm"
-            :class="[
-              j === 3 || j === 8 || j === 13
-                ? 'bg-primary-comfy-yellow'
-                : j % 3 === 0
-                  ? 'bg-primary-comfy-plum'
-                  : 'bg-secondary-mauve'
-            ]"
+            :class="
+              cn(
+                'block size-5 rounded-sm',
+                j === 3 || j === 8 || j === 13
+                  ? 'bg-primary-comfy-yellow'
+                  : j % 3 === 0
+                    ? 'bg-primary-comfy-plum'
+                    : 'bg-secondary-mauve'
+              )
+            "
           />
         </div>
       </div>

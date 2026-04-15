@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { reactive } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -60,16 +61,22 @@ function toggle(index: number) {
             :id="`faq-trigger-${index}`"
             :aria-expanded="expanded[index]"
             :aria-controls="`faq-panel-${index}`"
-            class="flex w-full cursor-pointer items-center justify-between text-left"
-            :class="index === 0 ? 'pb-6' : 'py-6'"
+            :class="
+              cn(
+                'flex w-full cursor-pointer items-center justify-between text-left',
+                index === 0 ? 'pb-6' : 'py-6'
+              )
+            "
             @click="toggle(index)"
           >
             <span
-              class="text-lg font-light md:text-xl"
               :class="
-                expanded[index]
-                  ? 'text-primary-comfy-yellow'
-                  : 'text-primary-comfy-canvas'
+                cn(
+                  'text-lg font-light md:text-xl',
+                  expanded[index]
+                    ? 'text-primary-comfy-yellow'
+                    : 'text-primary-comfy-canvas'
+                )
               "
             >
               {{ faq.question }}

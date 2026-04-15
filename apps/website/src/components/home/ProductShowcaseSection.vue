@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -59,8 +60,7 @@ const activeIndex = ref(0)
           <!-- Image area (mobile, rendered before active item) -->
           <BorderedPlaceholder
             v-if="activeIndex === i"
-            class="lg:hidden"
-            :class="i !== 0 ? 'mt-4' : ''"
+            :class="cn('lg:hidden', i !== 0 && 'mt-4')"
           />
 
           <!-- Connector (mobile) -->
@@ -78,8 +78,9 @@ const activeIndex = ref(0)
 
           <!-- Accordion item with connector -->
           <div
-            class="flex items-stretch"
-            :class="activeIndex !== i ? 'mt-4 lg:mt-0' : ''"
+            :class="
+              cn('flex items-stretch', activeIndex !== i && 'mt-4 lg:mt-0')
+            "
           >
             <img
               v-if="activeIndex === i"
@@ -90,11 +91,13 @@ const activeIndex = ref(0)
             />
             <button
               type="button"
-              class="rounded-5xl w-full cursor-pointer p-8 text-left transition-colors duration-300"
               :class="
-                activeIndex === i
-                  ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                  : 'bg-transparency-white-t4 text-primary-comfy-canvas lg:ml-5'
+                cn(
+                  'rounded-5xl w-full cursor-pointer p-8 text-left transition-colors duration-300',
+                  activeIndex === i
+                    ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                    : 'bg-transparency-white-t4 text-primary-comfy-canvas lg:ml-5'
+                )
               "
               @click="activeIndex = i"
             >
@@ -105,25 +108,35 @@ const activeIndex = ref(0)
                 <img
                   src="/icons/plus.svg"
                   alt=""
-                  class="size-5 shrink-0 transition-opacity duration-300"
-                  :class="activeIndex === i ? 'opacity-0' : 'opacity-100'"
+                  :class="
+                    cn(
+                      'size-5 shrink-0 transition-opacity duration-300',
+                      activeIndex === i ? 'opacity-0' : 'opacity-100'
+                    )
+                  "
                   aria-hidden="true"
                 />
               </div>
 
               <!-- Animated description (stacked for constant height) -->
               <div
-                class="grid transition-[grid-template-rows] duration-300"
                 :class="
-                  activeIndex === i ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  cn(
+                    'grid transition-[grid-template-rows] duration-300',
+                    activeIndex === i ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                  )
                 "
               >
                 <div class="grid overflow-hidden">
                   <p
                     v-for="(f, j) in features"
                     :key="f.title"
-                    class="col-start-1 row-start-1 mt-4 text-sm/relaxed font-normal opacity-80"
-                    :class="j === i ? 'visible' : 'invisible'"
+                    :class="
+                      cn(
+                        'col-start-1 row-start-1 mt-4 text-sm/relaxed font-normal opacity-80',
+                        j === i ? 'visible' : 'invisible'
+                      )
+                    "
                   >
                     {{ f.description }}
                   </p>

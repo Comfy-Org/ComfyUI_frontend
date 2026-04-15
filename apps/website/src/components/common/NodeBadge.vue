@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 const { segments, segmentClass = 'px-6' } = defineProps<{
   segments: Array<{ text?: string; logoSrc?: string; logoAlt?: string }>
   segmentClass?: string
@@ -28,8 +30,12 @@ const { segments, segmentClass = 'px-6' } = defineProps<{
         aria-hidden="true"
       />
       <span
-        class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center justify-center py-1 lg:py-5"
-        :class="segmentClass"
+        :class="
+          cn(
+            'bg-primary-comfy-yellow text-primary-comfy-ink flex items-center justify-center py-1 lg:py-5',
+            segmentClass
+          )
+        "
       >
         <img
           v-if="segment.logoSrc"

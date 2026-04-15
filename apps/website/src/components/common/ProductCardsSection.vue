@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import ProductCard from './ProductCard.vue'
@@ -64,10 +66,12 @@ const cards = excludeProduct
 
     <!-- Cards -->
     <div
-      :class="[
-        'mt-16 grid grid-cols-1 gap-4',
-        cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
-      ]"
+      :class="
+        cn(
+          'mt-16 grid grid-cols-1 gap-4',
+          cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+        )
+      "
     >
       <ProductCard v-for="card in cards" :key="card.product" v-bind="card" />
     </div>

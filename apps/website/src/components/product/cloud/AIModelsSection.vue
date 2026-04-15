@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
@@ -111,8 +113,12 @@ function getCardClass(layoutClass: string): string {
               />
 
               <div
-                class="absolute top-5 right-5 flex h-12 min-w-12 items-center justify-center px-3 lg:top-6 lg:right-6"
-                :class="card.badgeClass"
+                :class="
+                  cn(
+                    'absolute top-5 right-5 flex h-12 min-w-12 items-center justify-center px-3 lg:top-6 lg:right-6',
+                    card.badgeClass
+                  )
+                "
               >
                 <span
                   class="inline-block size-6 bg-current"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -196,11 +197,13 @@ onUnmounted(() => {
     <!-- Mobile hamburger -->
     <button
       ref="hamburgerRef"
-      class="flex size-10 items-center justify-center rounded-xl lg:hidden"
       :class="
-        mobileMenuOpen
-          ? 'border-primary-comfy-yellow border-2 bg-transparent'
-          : 'bg-primary-comfy-yellow'
+        cn(
+          'flex size-10 items-center justify-center rounded-xl lg:hidden',
+          mobileMenuOpen
+            ? 'border-primary-comfy-yellow border-2 bg-transparent'
+            : 'bg-primary-comfy-yellow'
+        )
       "
       :aria-label="t('nav.toggleMenu', locale)"
       aria-controls="site-mobile-menu"

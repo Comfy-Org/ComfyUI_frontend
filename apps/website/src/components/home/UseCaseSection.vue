@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useId } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -132,11 +133,13 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
         <button
           v-for="(category, index) in categories"
           :key="category.label"
-          class="lg:text-6.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors"
           :class="
-            index === activeCategory
-              ? 'text-primary-comfy-canvas'
-              : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
+            cn(
+              'lg:text-6.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
+              index === activeCategory
+                ? 'text-primary-comfy-canvas'
+                : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
+            )
           "
           @click="scrollToIndex(index)"
         >
