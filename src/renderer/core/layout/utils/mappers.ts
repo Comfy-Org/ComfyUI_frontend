@@ -21,7 +21,6 @@ export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
   ynode.set('bounds', layout.bounds)
-  if (layout.collapsedSize) ynode.set('collapsedSize', layout.collapsedSize)
   return ynode
 }
 
@@ -35,7 +34,7 @@ function getOr<K extends keyof NodeLayout>(
 }
 
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
-  const layout: NodeLayout = {
+  return {
     id: getOr(ynode, 'id', NODE_LAYOUT_DEFAULTS.id),
     position: getOr(ynode, 'position', NODE_LAYOUT_DEFAULTS.position),
     size: getOr(ynode, 'size', NODE_LAYOUT_DEFAULTS.size),
@@ -43,8 +42,4 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
     visible: getOr(ynode, 'visible', NODE_LAYOUT_DEFAULTS.visible),
     bounds: getOr(ynode, 'bounds', NODE_LAYOUT_DEFAULTS.bounds)
   }
-  const collapsedSize = ynode.get('collapsedSize')
-  if (collapsedSize)
-    layout.collapsedSize = collapsedSize as NodeLayout['collapsedSize']
-  return layout
 }

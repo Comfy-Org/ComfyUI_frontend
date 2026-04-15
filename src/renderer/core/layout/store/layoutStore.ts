@@ -242,7 +242,8 @@ class LayoutStoreImpl implements LayoutStore {
           get: () => {
             track()
             const ynode = this.ynodes.get(nodeId)
-            return ynode ? yNodeToLayout(ynode) : null
+            const layout = ynode ? yNodeToLayout(ynode) : null
+            return layout
           },
           set: (newLayout: NodeLayout | null) => {
             if (newLayout === null) {
