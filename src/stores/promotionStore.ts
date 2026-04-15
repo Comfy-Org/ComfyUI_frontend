@@ -49,11 +49,13 @@ export const usePromotionStore = defineStore('promotion', () => {
   }
 
   function _decrementKey(refCounts: Map<string, number>, key: string): void {
-    const count = (refCounts.get(key) ?? 1) - 1
-    if (count <= 0) {
+    const current = refCounts.get(key)
+    if (current === undefined) return
+
+    if (current <= 1) {
       refCounts.delete(key)
     } else {
-      refCounts.set(key, count)
+      refCounts.set(key, current - 1)
     }
   }
 

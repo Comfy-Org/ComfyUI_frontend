@@ -202,7 +202,9 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
    * Node 6 (Sub 1) has proxyWidgets promoting widgets from inner nodes,
    * and those promotions are also promoted up to node 5 (Sub 0). When
    * navigating into Sub 0, node 6 should show the promoted ring on its
-   * widgets.
+   * widgets. The fixture's proxyWidgets entries are scoped to Sub 1's
+   * local graph, so the nested `string_a` promotion correctly points at
+   * inner node 9 instead of the outer SubgraphNode 5.
    */
   test.describe(
     'Promoted indicator on 3-level nested subgraphs (#10612)',
@@ -225,14 +227,8 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const outerRings = outerNode.locator(`.${PROMOTED_BORDER_CLASS}`)
         await comfyExpect(outerRings).toHaveCount(0)
 
-        // Navigate programmatically — the enter-subgraph button on
-        // node 5 is obscured by the canvas z-999 overlay at root level.
-        await comfyPage.page.evaluate(() => {
-          const node = window.app!.graph!.getNodeById('5')
-          if (node?.isSubgraphNode()) {
-            window.app!.canvas.setGraph(node.subgraph)
-          }
-        })
+        // Exercise the same enter-subgraph control users click.
+        await comfyPage.vueNodes.enterSubgraph('5')
         await comfyPage.nextFrame()
         await comfyPage.vueNodes.waitForNodes()
 

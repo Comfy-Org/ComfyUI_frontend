@@ -70,6 +70,43 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
     })
   })
 
+  it('infers the leaf-node disambiguator for nested subgraph entries', () => {
+    const rootGraph = createTestRootGraph()
+    const innerSubgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'seed', type: 'number' }]
+    })
+
+    const samplerNode = new LGraphNode('Sampler')
+    const samplerInput = samplerNode.addInput('seed', 'number')
+    samplerNode.addWidget('number', 'noise_seed', 42, () => {})
+    samplerInput.widget = { name: 'noise_seed' }
+    innerSubgraph.add(samplerNode)
+    innerSubgraph.inputNode.slots[0].connect(samplerNode.inputs[0], samplerNode)
+
+    const outerSubgraph = createTestSubgraph({ rootGraph })
+    const nestedNode = createTestSubgraphNode(innerSubgraph, {
+      parentGraph: outerSubgraph
+    })
+    outerSubgraph.add(nestedNode)
+
+    const hostNode = createTestSubgraphNode(outerSubgraph, {
+      parentGraph: rootGraph
+    })
+
+    const result = normalizeLegacyProxyWidgetEntry(
+      hostNode,
+      String(nestedNode.id),
+      'seed'
+    )
+
+    expect(result).toEqual({
+      sourceNodeId: String(nestedNode.id),
+      sourceWidgetName: 'seed',
+      disambiguatingSourceNodeId: String(samplerNode.id)
+    })
+  })
+
   it('strips a single legacy prefix from widget name', () => {
     const rootGraph = createTestRootGraph()
     const innerSubgraph = createTestSubgraph({

@@ -9,6 +9,7 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { isWidgetPromoted } from '@/core/graph/subgraph/promotionLookup'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -29,7 +30,6 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -167,7 +167,6 @@ export function computeProcessedWidgets({
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
 
-  const promotionStore = usePromotionStore()
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
   const widgetValueStore = useWidgetValueStore()
@@ -253,7 +252,7 @@ export function computeProcessedWidgets({
     const bareWidgetId = String(
       stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
     )
-    const promotionSourceNodeId = widget.storeName
+    const disambiguatingSourceNodeId = widget.storeName
       ? String(bareWidgetId)
       : undefined
 
@@ -270,14 +269,17 @@ export function computeProcessedWidgets({
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
+    // Nested SubgraphNode promotions are keyed by the subgraph slot name.
+    // storeName still identifies the concrete leaf widget and is only used
+    // as the disambiguator when multiple promoted views share that slot.
     const sourceWidgetName = widget.slotName ?? widget.name
     const isPromoted =
       graphId &&
-      promotionStore.isWidgetPromoted(
+      isWidgetPromoted(
         graphId,
         hostNodeId,
         sourceWidgetName,
-        promotionSourceNodeId
+        disambiguatingSourceNodeId
       )
     const borderStyle = isPromoted
       ? 'ring ring-component-node-widget-promoted'

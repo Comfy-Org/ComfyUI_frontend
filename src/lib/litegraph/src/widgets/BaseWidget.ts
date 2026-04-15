@@ -1,3 +1,4 @@
+import { isWidgetPromoted } from '@/core/graph/subgraph/promotionLookup'
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
@@ -17,7 +18,6 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -211,11 +211,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (
       graphId &&
       !suppressPromotedOutline &&
-      usePromotionStore().isWidgetPromoted(
-        graphId,
-        String(this.node.id),
-        this.name
-      )
+      isWidgetPromoted(graphId, String(this.node.id), this.name)
     )
       return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
     return this.advanced

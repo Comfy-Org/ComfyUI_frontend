@@ -193,6 +193,29 @@ describe(usePromotionStore, () => {
     })
   })
 
+  describe('isWidgetPromoted', () => {
+    it('matches exact disambiguated promotion keys', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+
+      expect(store.isWidgetPromoted(graphA, '3', 'text', '1')).toBe(true)
+      expect(store.isWidgetPromoted(graphA, '3', 'text', '2')).toBe(false)
+    })
+
+    it('falls back to the base key when disambiguatingSourceNodeId is omitted', () => {
+      store.promote(graphA, nodeId, {
+        sourceNodeId: '3',
+        sourceWidgetName: 'text',
+        disambiguatingSourceNodeId: '1'
+      })
+
+      expect(store.isWidgetPromoted(graphA, '3', 'text')).toBe(true)
+    })
+  })
+
   describe('setPromotions', () => {
     it('replaces existing entries', () => {
       store.promote(graphA, nodeId, {

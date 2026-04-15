@@ -12,10 +12,8 @@ vi.mock('@/stores/domWidgetStore', () => ({
   })
 }))
 
-vi.mock('@/stores/promotionStore', () => ({
-  usePromotionStore: () => ({
-    isWidgetPromoted: isWidgetPromotedMock
-  })
+vi.mock('@/core/graph/subgraph/promotionLookup', () => ({
+  isWidgetPromoted: isWidgetPromotedMock
 }))
 
 vi.mock('@/utils/formatUtil', () => ({
