@@ -102,7 +102,7 @@
         </div>
       </div>
       <Slider
-        :model-value="brushOpacity * 100"
+        :model-value="brushOpacity"
         class="my-1 h-8 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
         :min="0"
         :max="100"
