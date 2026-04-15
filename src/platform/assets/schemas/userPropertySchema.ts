@@ -27,9 +27,6 @@ export const zUserProperties = z.record(z.string(), zUserProperty)
 
 export type PropertyType = 'string' | 'boolean' | 'number'
 
-export type StringProperty = z.infer<typeof zStringProperty>
-export type BooleanProperty = z.infer<typeof zBooleanProperty>
-export type NumberProperty = z.infer<typeof zNumberProperty>
 export type UserProperty = z.infer<typeof zUserProperty>
 export type UserProperties = z.infer<typeof zUserProperties>
 
