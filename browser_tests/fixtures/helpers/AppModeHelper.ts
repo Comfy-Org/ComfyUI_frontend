@@ -17,8 +17,17 @@ export class AppModeHelper {
   readonly select: BuilderSelectHelper
   readonly outputHistory: OutputHistoryComponent
   readonly widgets: AppModeWidgetHelper
+
   /** The "Connect an output" popover shown when saving without outputs. */
   public readonly connectOutputPopover: Locator
+  /** The "Switch to Outputs" button inside the connect-output popover. */
+  public readonly connectOutputSwitchButton: Locator
+  /** The empty-workflow dialog shown when entering builder on an empty graph. */
+  public readonly emptyWorkflowDialog: Locator
+  /** "Back to workflow" button on the empty-workflow dialog. */
+  public readonly emptyWorkflowBackButton: Locator
+  /** "Load template" button on the empty-workflow dialog. */
+  public readonly emptyWorkflowLoadTemplateButton: Locator
   /** The empty-state placeholder shown when no outputs are selected. */
   public readonly outputPlaceholder: Locator
   /** The linear-mode widget list container (visible in app mode). */
@@ -39,6 +48,18 @@ export class AppModeHelper {
   public readonly loadTemplateButton: Locator
   /** The cancel button for an in-progress run in the output history. */
   public readonly cancelRunButton: Locator
+  /** Arrange-step placeholder shown when outputs are configured but no run has happened. */
+  public readonly arrangePreview: Locator
+  /** Arrange-step state shown when no outputs have been configured. */
+  public readonly arrangeNoOutputs: Locator
+  /** "Switch to Outputs" button inside the arrange no-outputs state. */
+  public readonly arrangeSwitchToOutputsButton: Locator
+  /** The Vue Node switch notification popup shown on entering builder. */
+  public readonly vueNodeSwitchPopup: Locator
+  /** The "Dismiss" button inside the Vue Node switch popup. */
+  public readonly vueNodeSwitchDismissButton: Locator
+  /** The "Don't show again" checkbox inside the Vue Node switch popup. */
+  public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.steps = new BuilderStepsHelper(comfyPage)
@@ -47,8 +68,21 @@ export class AppModeHelper {
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
     this.widgets = new AppModeWidgetHelper(comfyPage)
+
     this.connectOutputPopover = this.page.getByTestId(
       TestIds.builder.connectOutputPopover
+    )
+    this.connectOutputSwitchButton = this.page.getByTestId(
+      TestIds.builder.connectOutputSwitch
+    )
+    this.emptyWorkflowDialog = this.page.getByTestId(
+      TestIds.builder.emptyWorkflowDialog
+    )
+    this.emptyWorkflowBackButton = this.page.getByTestId(
+      TestIds.builder.emptyWorkflowBack
+    )
+    this.emptyWorkflowLoadTemplateButton = this.page.getByTestId(
+      TestIds.builder.emptyWorkflowLoadTemplate
     )
     this.outputPlaceholder = this.page.getByTestId(
       TestIds.builder.outputPlaceholder
@@ -75,6 +109,22 @@ export class AppModeHelper {
     this.cancelRunButton = this.page.getByTestId(
       TestIds.outputHistory.cancelRun
     )
+    this.arrangePreview = this.page.getByTestId(TestIds.appMode.arrangePreview)
+    this.arrangeNoOutputs = this.page.getByTestId(
+      TestIds.appMode.arrangeNoOutputs
+    )
+    this.arrangeSwitchToOutputsButton = this.page.getByTestId(
+      TestIds.appMode.arrangeSwitchToOutputs
+    )
+    this.vueNodeSwitchPopup = this.page.getByTestId(
+      TestIds.appMode.vueNodeSwitchPopup
+    )
+    this.vueNodeSwitchDismissButton = this.page.getByTestId(
+      TestIds.appMode.vueNodeSwitchDismiss
+    )
+    this.vueNodeSwitchDontShowAgainCheckbox = this.page.getByTestId(
+      TestIds.appMode.vueNodeSwitchDontShowAgain
+    )
   }
 
   private get page(): Page {
@@ -90,6 +140,22 @@ export class AppModeHelper {
       }
     })
     await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  }
+
+  /** Set preference so the Vue node switch popup does not appear in builder. */
+  async suppressVueNodeSwitchPopup() {
+    await this.comfyPage.settings.setSetting(
+      'Comfy.AppBuilder.VueNodeSwitchDismissed',
+      true
+    )
+  }
+
+  /** Allow the Vue node switch popup so tests can assert its behavior. */
+  async allowVueNodeSwitchPopup() {
+    await this.comfyPage.settings.setSetting(
+      'Comfy.AppBuilder.VueNodeSwitchDismissed',
+      false
+    )
   }
 
   /** Enter builder mode via the "Workflow actions" dropdown. */

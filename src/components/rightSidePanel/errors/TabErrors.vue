@@ -293,8 +293,8 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
-  missingModelGroups,
-  missingMediaGroups,
+  filteredMissingModelGroups: missingModelGroups,
+  filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
