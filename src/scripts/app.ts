@@ -109,6 +109,7 @@ import {
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
+  isMissingCandidateActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
@@ -1513,6 +1514,10 @@ export class ComfyApp {
     // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
     // scans only checked each node's own mode; the cascade from an
     // inactive container to its interior happens here.
+    // Asymmetric on purpose: a candidate dropped here is not resurrected if
+    // the user un-bypasses the container mid-verification. The realtime
+    // mode-change path (handleNodeModeChange → scanAndAddNodeErrors) is
+    // responsible for surfacing errors after an un-bypass.
     const enrichedCandidates = enrichedAll.filter(
       (c) =>
         c.nodeId == null ||
@@ -1556,8 +1561,10 @@ export class ComfyApp {
         )
           .then(() => {
             if (controller.signal.aborted) return
-            const confirmed = enrichedCandidates.filter(
-              (c) => c.isMissing === true
+            // Re-check ancestor: user may have bypassed a container
+            // while verification was in flight.
+            const confirmed = enrichedCandidates.filter((c) =>
+              isMissingCandidateActive(this.rootGraph, c)
             )
             if (confirmed.length) {
               useExecutionErrorStore().surfaceMissingModels(confirmed, {
@@ -1680,7 +1687,10 @@ export class ComfyApp {
       void verifyCloudMediaCandidates(candidates, controller.signal)
         .then(() => {
           if (controller.signal.aborted) return
-          const confirmed = candidates.filter((c) => c.isMissing === true)
+          // Re-check ancestor after async verification (see model pipeline).
+          const confirmed = candidates.filter((c) =>
+            isMissingCandidateActive(this.rootGraph, c)
+          )
           if (confirmed.length) {
             useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
           }

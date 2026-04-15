@@ -397,6 +397,26 @@ export function isAncestorPathActive(
 }
 
 /**
+ * Predicate used after async verification resolves: a missing-asset
+ * candidate is surfaceable when it is confirmed missing and its
+ * enclosing subgraph is still active. Null `nodeId` (workflow-level
+ * models) bypasses the ancestor check since it has no scope to
+ * validate. Unified helper so the initial pipeline post-filter and the
+ * three async-resolution call sites cannot drift.
+ */
+export function isMissingCandidateActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: {
+    nodeId?: string | number | null | undefined
+    isMissing?: boolean | undefined
+  }
+): boolean {
+  if (candidate.isMissing !== true) return false
+  if (candidate.nodeId == null) return true
+  return isAncestorPathActive(rootGraph, String(candidate.nodeId))
+}
+
+/**
  * Returns the execution ID for a node identified by its (graph, nodeId) pair.
  *
  * Unlike {@link getExecutionIdByNode}, this does not rely on `node.graph`.

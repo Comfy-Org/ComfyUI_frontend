@@ -30,7 +30,8 @@ import {
   visitGraphNodes,
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
-  isAncestorPathActive
+  isAncestorPathActive,
+  isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 
@@ -791,6 +792,72 @@ describe('graphTraversalUtil', () => {
       it('returns true when rootGraph is null/undefined', () => {
         expect(isAncestorPathActive(null, '65:63')).toBe(true)
         expect(isAncestorPathActive(undefined, '65:63')).toBe(true)
+      })
+    })
+
+    describe('isMissingCandidateActive', () => {
+      function makeBypassedContainer(interiorId: string) {
+        const interior = createMockNode(interiorId)
+        const subgraph = createMockSubgraph('sub', [interior])
+        const container = createMockLGraphNode({
+          id: 65,
+          isSubgraphNode: () => true,
+          subgraph,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        return createMockGraph([container])
+      }
+
+      it('surfaces confirmed missing candidates under active ancestors', () => {
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub', [interior])
+        const container = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([container])
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '65:63',
+            isMissing: true
+          })
+        ).toBe(true)
+      })
+
+      it('drops confirmed missing candidates whose ancestor is bypassed (cloud .then race)', () => {
+        // Mirrors the reopen gap: pipeline-start filter passed, then
+        // the user bypassed the container during verification, and the
+        // async resolver must not resurface the candidate.
+        const rootGraph = makeBypassedContainer('63')
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '65:63',
+            isMissing: true
+          })
+        ).toBe(false)
+      })
+
+      it('drops unverified candidates (isMissing !== true)', () => {
+        const rootGraph = createMockGraph([])
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '1',
+            isMissing: undefined
+          })
+        ).toBe(false)
+        expect(
+          isMissingCandidateActive(rootGraph, { nodeId: '1', isMissing: false })
+        ).toBe(false)
+      })
+
+      it('keeps workflow-level candidates (nodeId == null) when confirmed missing', () => {
+        const rootGraph = makeBypassedContainer('63')
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: undefined,
+            isMissing: true
+          })
+        ).toBe(true)
       })
     })
 

@@ -20,6 +20,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode
@@ -271,9 +272,13 @@ export async function enrichWithEmbeddedMetadata(
   // model — not merely because any unrelated active node exists. A
   // reference is any widget value (or node.properties.models entry)
   // that matches the model name on an active node.
+  // Hoist the id→node map once; isModelReferencedByActiveNode would
+  // otherwise rebuild it on every unmatched entry.
+  const flattenedNodeById = new Map(allNodes.map((n) => [String(n.id), n]))
   const activeUnmatched = unmatched.filter(
     (m) =>
-      m.sourceNodeType !== '' || isModelReferencedByActiveNode(m.name, allNodes)
+      m.sourceNodeType !== '' ||
+      isModelReferencedByActiveNode(m.name, allNodes, flattenedNodeById)
   )
 
   const settled = await Promise.allSettled(
@@ -316,7 +321,8 @@ export async function enrichWithEmbeddedMetadata(
 
 function isModelReferencedByActiveNode(
   modelName: string,
-  allNodes: ReturnType<typeof flattenWorkflowNodes>
+  allNodes: ReturnType<typeof flattenWorkflowNodes>,
+  nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
 ): boolean {
   for (const node of allNodes) {
     if (
@@ -324,6 +330,7 @@ function isModelReferencedByActiveNode(
       node.mode === LGraphEventMode.BYPASS
     )
       continue
+    if (!isAncestorPathActiveInFlattened(String(node.id), nodeById)) continue
 
     const embeddedModels = (
       node.properties as { models?: Array<{ name: string }> } | undefined
@@ -338,6 +345,22 @@ function isModelReferencedByActiveNode(
     }
   }
   return false
+}
+
+function isAncestorPathActiveInFlattened(
+  executionId: string,
+  nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
+): boolean {
+  for (const ancestorId of getParentExecutionIds(executionId)) {
+    const ancestor = nodeById.get(ancestorId)
+    if (!ancestor) continue
+    if (
+      ancestor.mode === LGraphEventMode.NEVER ||
+      ancestor.mode === LGraphEventMode.BYPASS
+    )
+      return false
+  }
+  return true
 }
 
 function collectEmbeddedModelsWithSource(

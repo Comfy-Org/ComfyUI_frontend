@@ -15,6 +15,8 @@ import {
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
+import activeSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/activeSubgraphUnmatchedModel.json' with { type: 'json' }
+import bypassedSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/bypassedSubgraphUnmatchedModel.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -1052,6 +1054,35 @@ describe('enrichWithEmbeddedMetadata', () => {
     )
 
     expect(result).toHaveLength(0)
+  })
+
+  it('drops workflow-level entries when only reference is in a bypassed subgraph interior', async () => {
+    // Interior properties.models references the workflow-level model
+    // but its widget value does not — forcing the workflow-level entry
+    // down the unmatched path where isModelReferencedByActiveNode
+    // decides. Previously the helper ignored the bypassed container.
+    const result = await enrichWithEmbeddedMetadata(
+      [],
+      fromAny<ComfyWorkflowJSON, unknown>(bypassedSubgraphUnmatchedModel),
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('keeps workflow-level entries when reference is in an active subgraph interior', async () => {
+    // Positive control for the bypassed case above: identical fixture
+    // with container mode=0 must still surface the unmatched workflow-
+    // level model. Guards against a regression where the ancestor gate
+    // drops every workflow-level entry regardless of context.
+    const result = await enrichWithEmbeddedMetadata(
+      [],
+      fromAny<ComfyWorkflowJSON, unknown>(activeSubgraphUnmatchedModel),
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('rare_model.safetensors')
   })
 })
 
