@@ -1194,6 +1194,7 @@
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
+    "invertMask": "Invert Mask",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
@@ -1203,6 +1204,11 @@
     "mirrorHorizontal": "Mirror Horizontal",
     "mirrorVertical": "Mirror Vertical",
     "clickToResetZoom": "Click to reset zoom",
+    "toolPen": "Mask Pen",
+    "toolPaintPen": "Paint Pen",
+    "toolEraser": "Eraser",
+    "toolPaintBucket": "Paint Bucket",
+    "toolColorSelect": "Color Select",
     "brushSettings": "Brush Settings",
     "brushShape": "Brush Shape",
     "colorSelector": "Color Selector",
@@ -1222,6 +1228,7 @@
     "method": "Method",
     "stopAtMask": "Stop at mask",
     "maskTolerance": "Mask Tolerance",
+    "layerSettings": "Layer Settings",
     "layers": "Layers",
     "maskLayer": "Mask Layer",
     "maskOpacity": "Mask Opacity",
@@ -1233,7 +1240,9 @@
     "baseLayerPreview": "Base layer preview",
     "black": "Black",
     "white": "White",
-    "negative": "Negative"
+    "negative": "Negative",
+    "image": "Image",
+    "imageTransformations": "Image Transformations"
   },
   "commands": {
     "runWorkflow": "Run workflow",

@@ -1,44 +1,86 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-(--descrip-text)">
-      {{ t('maskEditor.layers') }}
-    </h3>
+    <div class="mt-2.5 flex items-center justify-between gap-2">
+      <h3 class="text-descrip-text text-center font-sans text-[15px]">
+        {{ t('maskEditor.layerSettings') }}
+      </h3>
+    </div>
 
-    <SliderControl
-      :label="t('maskEditor.maskOpacity')"
-      :min="0"
-      :max="1"
-      :step="0.01"
-      :model-value="store.maskOpacity"
-      @update:model-value="onMaskOpacityChange"
-    />
-
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
-      t('maskEditor.maskBlendingOptions')
-    }}</span>
-
-    <div
-      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px]"
-    >
-      <select
-        class="maskEditor_sidePanelDropdown"
-        :value="store.maskBlendMode"
-        @change="onBlendModeChange"
+    <div class="flex items-center gap-2">
+      <DropdownMenuRoot
+        v-model:open="blendModeDropdownOpen"
+        :modal="false"
+        class="flex-1"
       >
-        <option value="black">{{ t('maskEditor.black') }}</option>
-        <option value="white">{{ t('maskEditor.white') }}</option>
-        <option value="negative">{{ t('maskEditor.negative') }}</option>
-      </select>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-border-default bg-secondary-background px-2 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+          >
+            <span>{{ blendModeLabels[store.maskBlendMode] }}</span>
+            <i
+              class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal to="body">
+          <DropdownMenuContent
+            align="start"
+            :side-offset="5"
+            :collision-padding="10"
+            class="z-2102 min-w-40 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+          >
+            <WorkflowActionsList :items="blendModeMenuItems" />
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
+
+      <DropdownMenuRoot v-model:open="opacityDropdownOpen" :modal="false">
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="flex h-8 w-20 items-center justify-between gap-2 rounded-lg border border-border-default bg-secondary-background px-2 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+          >
+            <span>{{ Math.round(store.maskOpacity * 100) }}%</span>
+            <i
+              class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
+            />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal to="body">
+          <DropdownMenuContent
+            align="start"
+            :side-offset="5"
+            :collision-padding="10"
+            class="z-2102 rounded-lg border border-border-subtle bg-base-background px-3 py-4 shadow-interface"
+          >
+            <div class="flex w-48 flex-col gap-3">
+              <span class="text-left font-sans text-xs text-(--descrip-text)">
+                {{ t('maskEditor.maskOpacity') }}
+              </span>
+              <Slider
+                :model-value="store.maskOpacity"
+                class="my-1 flex-1 rounded-lg bg-component-node-widget-background py-0.5"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                @update:model-value="onMaskOpacityChange"
+              />
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
     </div>
 
     <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.maskLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full cursor-pointer flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'mask' ? '2px solid #007acc' : 'none'
       }"
+      @click="setActiveLayer('mask')"
     >
       <input
         type="checkbox"
@@ -54,24 +96,17 @@
           />
         </svg>
       </div>
-      <button
-        style="font-size: 12px"
-        :style="{ opacity: store.activeLayer === 'mask' ? '0.5' : '1' }"
-        :disabled="store.activeLayer === 'mask'"
-        @click="setActiveLayer('mask')"
-      >
-        {{ t('maskEditor.activateLayer') }}
-      </button>
     </div>
 
     <span class="text-left font-sans text-xs text-(--descrip-text)">{{
       t('maskEditor.paintLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full cursor-pointer flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'rgb' ? '2px solid #007acc' : 'none'
       }"
+      @click="setActiveLayer('rgb')"
     >
       <input
         type="checkbox"
@@ -91,17 +126,6 @@
           />
         </svg>
       </div>
-      <button
-        style="font-size: 12px"
-        :style="{
-          opacity: store.activeLayer === 'rgb' ? '0.5' : '1',
-          display: showLayerButtons ? 'block' : 'none'
-        }"
-        :disabled="store.activeLayer === 'rgb'"
-        @click="setActiveLayer('rgb')"
-      >
-        {{ t('maskEditor.activateLayer') }}
-      </button>
     </div>
 
     <span class="text-left font-sans text-xs text-(--descrip-text)">{{
@@ -131,13 +155,19 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Slider from 'primevue/slider'
+import {
+  DropdownMenuContent,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
+import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import type { ImageLayer } from '@/extensions/core/maskeditor/types'
-import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
+import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-
-import SliderControl from './controls/SliderControl.vue'
 
 const { toolManager } = defineProps<{
   toolManager?: ReturnType<typeof useToolManager>
@@ -147,16 +177,38 @@ const { t } = useI18n()
 const store = useMaskEditorStore()
 const canvasManager = useCanvasManager()
 
+const blendModeDropdownOpen = ref(false)
+const opacityDropdownOpen = ref(false)
 const maskLayerVisible = ref(true)
 const paintLayerVisible = ref(true)
 const baseImageLayerVisible = ref(true)
 
+const blendModeLabels: Record<MaskBlendMode, string> = {
+  [MaskBlendMode.Black]: t('maskEditor.black'),
+  [MaskBlendMode.White]: t('maskEditor.white'),
+  [MaskBlendMode.Negative]: t('maskEditor.negative')
+}
+
+const blendModeOptions = [
+  { id: MaskBlendMode.Black, label: t('maskEditor.black') },
+  { id: MaskBlendMode.White, label: t('maskEditor.white') },
+  { id: MaskBlendMode.Negative, label: t('maskEditor.negative') }
+]
+
+const blendModeMenuItems = blendModeOptions.map((option) => ({
+  id: option.id,
+  label: option.label,
+  command: () => onBlendModeSelect(option.id)
+}))
+
+const onBlendModeSelect = async (blendMode: MaskBlendMode) => {
+  store.maskBlendMode = blendMode
+  blendModeDropdownOpen.value = false
+  await canvasManager.updateMaskColor()
+}
+
 const baseImageSrc = computed(() => {
   return store.image?.src ?? ''
-})
-
-const showLayerButtons = computed(() => {
-  return store.currentTool === Tools.Eraser
 })
 
 const onMaskLayerVisibilityChange = (event: Event) => {
@@ -189,35 +241,16 @@ const onBaseImageLayerVisibilityChange = (event: Event) => {
   }
 }
 
-const onMaskOpacityChange = (value: number) => {
-  store.setMaskOpacity(value)
+const onMaskOpacityChange = (value: number | number[] | undefined) => {
+  const numValue = Array.isArray(value) ? value[0] : (value ?? 0)
+  store.setMaskOpacity(numValue)
 
   const maskCanvas = store.maskCanvas
   if (maskCanvas) {
-    maskCanvas.style.opacity = String(value)
+    maskCanvas.style.opacity = String(numValue)
   }
 
-  maskLayerVisible.value = value !== 0
-}
-
-const onBlendModeChange = async (event: Event) => {
-  const value = (event.target as HTMLSelectElement).value
-  let blendMode: MaskBlendMode
-
-  switch (value) {
-    case 'white':
-      blendMode = MaskBlendMode.White
-      break
-    case 'negative':
-      blendMode = MaskBlendMode.Negative
-      break
-    default:
-      blendMode = MaskBlendMode.Black
-  }
-
-  store.maskBlendMode = blendMode
-
-  await canvasManager.updateMaskColor()
+  maskLayerVisible.value = numValue !== 0
 }
 
 const setActiveLayer = (layer: ImageLayer) => {

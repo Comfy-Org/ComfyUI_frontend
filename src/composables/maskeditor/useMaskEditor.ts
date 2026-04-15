@@ -25,6 +25,7 @@ export function useMaskEditor() {
       dialogComponentProps: {
         style: 'width: 90vw; height: 90vh;',
         modal: true,
+        dismissableMask: false,
         maximizable: true,
         closable: true,
         pt: {
