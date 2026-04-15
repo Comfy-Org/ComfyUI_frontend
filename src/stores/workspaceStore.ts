@@ -2,6 +2,9 @@ import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useCanvasToast } from '@/composables/useCanvasToast'
+import { t } from '@/i18n'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -95,6 +98,15 @@ function workspaceStoreSetup() {
     focusMode,
     toggleFocusMode: () => {
       focusMode.value = !focusMode.value
+      const canvasToast = useCanvasToast()
+      const keybinding = useKeybindingStore().getKeybindingByCommandId(
+        'Workspace.ToggleFocusMode'
+      )
+      const shortcut = keybinding?.combo.toString()
+      canvasToast.show(
+        focusMode.value ? t('g.focusModeOn') : t('g.focusModeOff'),
+        { shortcut }
+      )
     },
     toast,
     queueSettings,

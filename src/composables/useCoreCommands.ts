@@ -1,4 +1,6 @@
+import { useCanvasToast } from '@/composables/useCanvasToast'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
@@ -439,21 +441,26 @@ export function useCoreCommands(): ComfyCommand[] {
 
       function: (() => {
         const settingStore = useSettingStore()
+        const canvasToast = useCanvasToast()
         let lastLinksRenderMode = LiteGraph.SPLINE_LINK
 
         return async () => {
           const currentMode = settingStore.get('Comfy.LinkRenderMode')
+          const keybinding = useKeybindingStore().getKeybindingByCommandId(
+            'Comfy.Canvas.ToggleLinkVisibility'
+          )
+          const shortcut = keybinding?.combo.toString()
 
           if (currentMode === LiteGraph.HIDDEN_LINK) {
-            // If links are hidden, restore the last positive value or default to spline mode
             await settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
+            canvasToast.show(t('g.linksVisible'), { shortcut })
           } else {
-            // If links are visible, store the current mode and hide links
             lastLinksRenderMode = currentMode
             await settingStore.set(
               'Comfy.LinkRenderMode',
               LiteGraph.HIDDEN_LINK
             )
+            canvasToast.show(t('g.linksHidden'), { shortcut })
           }
         }
       })(),

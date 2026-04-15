@@ -95,6 +95,7 @@
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle v-if="comfyAppReady" />
 
+  <CanvasToast />
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
   <VueNodeSwitchPopup />
@@ -131,6 +132,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import CanvasToast from '@/components/graph/CanvasToast.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
