@@ -41,7 +41,8 @@ import {
   collectAllNodes,
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
-  getNodeByExecutionId
+  getNodeByExecutionId,
+  isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
 
 function resolvePromotedExecId(
@@ -172,6 +173,14 @@ function scanAndAddNodeErrors(node: LGraphNode): void {
 
 function scanSingleNodeErrors(node: LGraphNode): void {
   if (!app.rootGraph) return
+  // Skip when any enclosing subgraph is muted/bypassed. Callers only
+  // verify each node's own mode; entering a bypassed subgraph (via
+  // useGraphNodeManager replaying onNodeAdded for existing interior
+  // nodes) reaches this point without the ancestor check. A null
+  // execId means the node has no current graph (e.g. detached mid
+  // lifecycle) — also skip, since we cannot verify its scope.
+  const execId = getExecutionIdByNode(app.rootGraph, node)
+  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return
 
   const modelCandidates = scanNodeModelCandidates(
     app.rootGraph,
@@ -237,16 +246,27 @@ function scanSingleNodeErrors(node: LGraphNode): void {
  */
 function isCandidateStillActive(nodeId: unknown): boolean {
   if (!app.rootGraph || nodeId == null) return false
-  const node = getNodeByExecutionId(app.rootGraph, String(nodeId))
+  const execId = String(nodeId)
+  const node = getNodeByExecutionId(app.rootGraph, execId)
   if (!node) return false
-  return !isNodeInactive(node.mode)
+  if (isNodeInactive(node.mode)) return false
+  // Also reject if any enclosing subgraph was bypassed between scan
+  // kick-off and verification resolving — mirrors the pipeline-level
+  // ancestor post-filter so realtime and initial-load paths stay
+  // symmetric.
+  return isAncestorPathActive(app.rootGraph, execId)
 }
 
 async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[]
 ): Promise<void> {
+  // Capture rootGraph at scan time so a late verification for workflow
+  // A cannot leak into workflow B after a switch — execution IDs (esp.
+  // root-level like "1") collide across workflows.
+  const rootGraphAtScan = app.rootGraph
   try {
     await verifyAssetSupportedCandidates(pending)
+    if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
     )
@@ -259,8 +279,10 @@ async function verifyAndAddPendingModels(
 async function verifyAndAddPendingMedia(
   pending: MissingMediaCandidate[]
 ): Promise<void> {
+  const rootGraphAtScan = app.rootGraph
   try {
     await verifyCloudMediaCandidates(pending)
+    if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
     )
