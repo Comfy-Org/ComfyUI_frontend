@@ -54,23 +54,33 @@ const activeIndex = ref(0)
       <BorderedPlaceholder class="hidden flex-1 lg:flex" />
 
       <!-- Feature accordion -->
-      <div class="flex w-full flex-col gap-4 lg:w-85">
+      <div class="flex w-full flex-col lg:w-85 lg:gap-4">
         <template v-for="(feature, i) in features" :key="feature.title">
           <!-- Image area (mobile, rendered before active item) -->
-          <BorderedPlaceholder v-if="activeIndex === i" class="lg:hidden" />
+          <BorderedPlaceholder
+            v-if="activeIndex === i"
+            class="lg:hidden"
+            :class="i !== 0 ? 'mt-4' : ''"
+          />
 
           <!-- Connector (mobile) -->
-          <div v-if="activeIndex === i" class="flex items-stretch lg:hidden">
+          <div
+            v-if="activeIndex === i"
+            class="flex h-5 items-center overflow-visible lg:hidden"
+          >
             <img
               src="/icons/node-link.svg"
               alt=""
-              class="ml-20 block scale-x-75 scale-y-50 rotate-90"
+              class="ml-20 h-8 w-5 rotate-90"
               aria-hidden="true"
             />
           </div>
 
           <!-- Accordion item with connector -->
-          <div class="flex items-stretch">
+          <div
+            class="flex items-stretch"
+            :class="activeIndex !== i ? 'mt-4 lg:mt-0' : ''"
+          >
             <img
               v-if="activeIndex === i"
               src="/icons/node-link.svg"
