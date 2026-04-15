@@ -2,20 +2,12 @@ import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
 import { resultItemType } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
 
-const METADATA_KEYS = new Set(['animated', 'text'])
+const METADATA_KEYS = new Set(['animated'])
 
-/**
- * Validates that an unknown value is a well-formed ResultItem.
- *
- * Requires `filename` (string) since ResultItemImpl needs it for a valid URL.
- * `subfolder` is optional here — ResultItemImpl constructor falls back to ''.
- */
 function isResultItem(item: unknown): item is ResultItem {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false
 
   const candidate = item as Record<string, unknown>
-
-  if (typeof candidate.filename !== 'string') return false
 
   if (
     candidate.type !== undefined &&

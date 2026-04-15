@@ -1,4 +1,3 @@
-// TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
