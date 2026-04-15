@@ -109,7 +109,7 @@ const translations = {
     'zh-CN': '启动云端'
   },
   'getStarted.step1.or': {
-    en: 'or',
+    en: ' or ',
     'zh-CN': '或'
   },
   'getStarted.step2.title': {
