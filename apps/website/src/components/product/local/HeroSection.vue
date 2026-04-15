@@ -41,6 +41,8 @@ const { downloadUrl } = useDownloadUrl()
           </a>
           <a
             :href="externalLinks.github"
+            target="_blank"
+            rel="noopener"
             class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink flex items-center justify-center gap-2 rounded-full border px-8 py-4 text-sm font-bold tracking-wider transition-colors md:min-w-60"
           >
             <span

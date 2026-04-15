@@ -36,8 +36,8 @@ const {
     <!-- Right reasons list -->
     <div class="flex-1">
       <div
-        v-for="reason in reasons"
-        :key="reason.title"
+        v-for="(reason, i) in reasons"
+        :key="i"
         class="border-primary-comfy-canvas/20 flex flex-col gap-4 border-b py-10 first:pt-0 md:flex-row md:gap-12"
       >
         <h3
