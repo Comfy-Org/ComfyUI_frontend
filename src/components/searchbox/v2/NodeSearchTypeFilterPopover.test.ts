@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -40,19 +40,21 @@ describe(NodeSearchTypeFilterPopover, () => {
     const user = userEvent.setup()
     const onToggle = vi.fn()
     const onClear = vi.fn()
+    const onEscapeClose = vi.fn()
     render(NodeSearchTypeFilterPopover, {
       props: {
         chip: props.chip ?? createMockChip(),
         selectedValues: props.selectedValues ?? [],
         onToggle,
-        onClear
+        onClear,
+        onEscapeClose
       },
       slots: {
         default: '<button data-testid="trigger">Input</button>'
       },
       global: { plugins: [testI18n] }
     })
-    return { user, onToggle, onClear }
+    return { user, onToggle, onClear, onEscapeClose }
   }
 
   async function openPopover(user: ReturnType<typeof userEvent.setup>) {
@@ -156,6 +158,19 @@ describe(NodeSearchTypeFilterPopover, () => {
     await nextTick()
 
     expect(screen.queryAllByRole('option')).toHaveLength(0)
-    expect(screen.getByText('No results')).toBeInTheDocument()
+    expect(screen.getByText('No Results')).toBeInTheDocument()
+  })
+
+  it('should emit escapeClose and close the popover when Escape is pressed', async () => {
+    const { user, onEscapeClose } = createRender()
+    await openPopover(user)
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    })
+    expect(onEscapeClose).toHaveBeenCalled()
   })
 })

@@ -5,8 +5,12 @@
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
       <div class="text-foreground flex items-center gap-2 text-sm">
-        <span v-if="isBookmarked && !hideBookmarkIcon">
-          <i class="pi pi-bookmark-fill mr-1 text-sm" />
+        <span
+          v-if="isBookmarked && !hideBookmarkIcon"
+          role="img"
+          :aria-label="$t('g.bookmarked')"
+        >
+          <i aria-hidden="true" class="pi pi-bookmark-fill mr-1 text-sm" />
         </span>
         <span
           class="truncate"
@@ -95,6 +99,7 @@
       </span>
       <span
         v-if="showNodeFrequency && nodeFrequency > 0"
+        data-testid="frequency-badge"
         class="rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
       >
         {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
