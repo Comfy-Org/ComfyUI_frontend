@@ -15,8 +15,14 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
+const mockOpenMaskEditor = vi.fn()
+
+vi.mock('@/composables/maskeditor/useMaskEditor', () => ({
+  useMaskEditor: () => ({
+    openMaskEditor: mockOpenMaskEditor,
+    clearMask: vi.fn(),
+    isClearingMask: { value: false }
+  })
 }))
 
 function mockClipboard(clipboard: Partial<Clipboard> | undefined) {
@@ -100,6 +106,17 @@ describe('useImageMenuOptions', () => {
 
       expect(copyIdx).toBeLessThan(pasteIdx)
       expect(pasteIdx).toBeLessThan(saveIdx)
+    })
+
+    it('calls openMaskEditor with the node when Open in Mask Editor is chosen', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
+
+      maskOption!.action!()
+
+      expect(mockOpenMaskEditor).toHaveBeenCalledWith(node)
     })
   })
 

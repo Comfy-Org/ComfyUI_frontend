@@ -65,7 +65,10 @@ export class CanvasHelper {
   }
 
   async doubleClick(): Promise<void> {
-    await this.page.mouse.dblclick(10, 10, { delay: 5 })
+    await this.canvas.dblclick({
+      position: DefaultGraphPositions.emptySpaceClick,
+      delay: 5
+    })
     await this.nextFrame()
   }
 
