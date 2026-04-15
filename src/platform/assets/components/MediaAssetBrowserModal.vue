@@ -158,6 +158,7 @@
     :file-kind="contextMenuFileKind"
     :show-delete-button="shouldShowDeleteButton"
     @zoom="handleZoomClick(contextMenuAsset!)"
+    @open-info="handleOpenInfo"
     @hide="contextMenuAsset = null"
     @asset-deleted="refreshAssets"
   />
@@ -424,6 +425,13 @@ const shouldShowDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
   return true
 })
+
+function handleOpenInfo() {
+  if (contextMenuAsset.value) {
+    focusedAsset.value = contextMenuAsset.value
+    isRightPanelOpen.value = true
+  }
+}
 
 function handleAssetSelect(asset: AssetItem) {
   focusedAsset.value = asset

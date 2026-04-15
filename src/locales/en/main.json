@@ -860,7 +860,7 @@
         "description": "Description",
         "selection": "Selection",
         "selectedCount": "Total",
-        "generatedOutputReadonly": "Tagging is not yet available for generated outputs."
+        "generatedOutputReadonly": "Editing is not yet available for generated outputs."
       }
     },
     "backToAssets": "Back to all assets",
@@ -3092,6 +3092,8 @@
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
       "inspect": "Inspect asset",
+      "assetInfo": "Asset Info",
+      "assetInfoMultiple": "Asset Info ({count})",
       "more": "More options",
       "zoom": "Zoom in",
       "moreOptions": "More options",

@@ -65,7 +65,11 @@
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
           <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         </TabList>
-        <Popover v-if="hasSelection" :show-arrow="false">
+        <Popover
+          v-if="hasSelection"
+          v-model="infoPopoverOpen"
+          :show-arrow="false"
+        >
           <template #button>
             <Button
               variant="secondary"
@@ -235,6 +239,7 @@
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"
+    @open-info="infoPopoverOpen = true"
     @hide="handleContextMenuHide"
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
@@ -329,6 +334,7 @@ const viewMode = useStorage<'list' | 'grid'>(
 )
 const isListView = computed(() => viewMode.value === 'list')
 
+const infoPopoverOpen = ref(false)
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
 

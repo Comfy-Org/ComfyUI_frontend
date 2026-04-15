@@ -7,7 +7,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -29,7 +29,7 @@ const {
   showArrow?: boolean
 }>()
 
-const open = ref(false)
+const open = defineModel<boolean>({ default: false })
 
 // Custom click-outside handler since we disabled reka-ui's interact-outside.
 // reka-ui's DismissableLayer cannot distinguish between genuine outside clicks
