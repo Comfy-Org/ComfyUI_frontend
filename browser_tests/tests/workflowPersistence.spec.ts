@@ -289,10 +289,8 @@ test.describe('Workflow Persistence', () => {
     const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.nextFrame()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'en')
-    await comfyPage.nextFrame()
 
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
@@ -349,7 +347,6 @@ test.describe('Workflow Persistence', () => {
 
     // Create B: duplicate, add a node, then save (unmodified after save)
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
@@ -410,7 +407,6 @@ test.describe('Workflow Persistence', () => {
 
     // Create B: duplicate and save
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    await comfyPage.nextFrame()
     await comfyPage.menu.topbar.saveWorkflow(nameB)
 
     // Add a Note node in B to mark it as modified
@@ -487,7 +483,6 @@ test.describe('Workflow Persistence', () => {
 
     // Create B as an unsaved workflow with a Note node
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))

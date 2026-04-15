@@ -35,7 +35,6 @@ test.describe(
       await comfyPage.nextFrame()
 
       await ksamplerNodes[0].click('title')
-      await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 

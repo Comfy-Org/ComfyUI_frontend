@@ -70,6 +70,14 @@ export class WorkflowHelper {
     )
   }
 
+  async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
+    await this.comfyPage.page.evaluate(
+      (wf) => window.app!.loadGraphData(wf),
+      workflow
+    )
+    await this.comfyPage.nextFrame()
+  }
+
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)

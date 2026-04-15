@@ -223,8 +223,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await beforeChange(comfyPage)
       await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
-      await comfyPage.page.keyboard.press('KeyP')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyP')
       await expect(node).toBePinned()
       await afterChange(comfyPage)
     }
