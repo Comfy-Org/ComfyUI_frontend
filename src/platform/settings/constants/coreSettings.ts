@@ -1238,8 +1238,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
-    defaultValue: false,
-    experimental: true,
+    defaultValue: true,
+    experimental: false,
     versionAdded: '1.40.0'
   },
   {
