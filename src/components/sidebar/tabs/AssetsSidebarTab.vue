@@ -68,12 +68,12 @@
         <Popover v-if="hasSelection" :show-arrow="false">
           <template #button>
             <Button
-              v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.assetInfo') }"
               variant="secondary"
-              size="icon"
+              size="sm"
               :aria-label="$t('sideToolbar.mediaAssets.assetInfo')"
             >
-              <i class="icon-[lucide--info] size-4" />
+              <i class="icon-[lucide--info] size-3.5" />
+              {{ $t('sideToolbar.mediaAssets.assetInfo') }}
             </Button>
           </template>
           <template #default>
