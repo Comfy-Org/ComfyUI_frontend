@@ -822,7 +822,10 @@
     "noSuggestions": "Type a property name",
     "mixed": "Mixed",
     "selectType": "Select type…",
-    "createNew": "Create"
+    "createNew": "Create",
+    "typeText": "Text",
+    "typeNumber": "Number",
+    "typeBoolean": "Boolean"
   },
   "sideToolbar": {
     "sidebar": "Sidebar",

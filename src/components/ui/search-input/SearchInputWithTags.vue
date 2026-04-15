@@ -146,12 +146,14 @@
             )
           "
         >
-          <span class="italic opacity-90">{{ $t('g.createTag') }}</span>
-          <span
-            class="ml-2 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
-          >
-            {{ createTagValue }}
-          </span>
+          <slot name="create" :value="createTagValue">
+            <span class="italic opacity-90">{{ $t('g.createTag') }}</span>
+            <span
+              class="ml-2 inline-flex items-center rounded-sm bg-modal-card-tag-background px-2 py-0.5 text-xs text-modal-card-tag-foreground"
+            >
+              {{ createTagValue }}
+            </span>
+          </slot>
         </ComboboxItem>
       </ComboboxViewport>
     </ComboboxContent>
@@ -197,6 +199,7 @@ const {
   caseSensitive = false,
   aliasChars = '-_',
   allowCreate = false,
+  canCreate,
   chipClass,
   chipLabel,
   class: className
@@ -210,6 +213,8 @@ const {
   caseSensitive?: boolean
   aliasChars?: string
   allowCreate?: boolean
+  /** Optional callback to control when the "Create" option appears */
+  canCreate?: (value: string) => boolean
   /** Returns additional CSS classes for a chip based on its value */
   chipClass?: (value: string) => string
   /** Returns the display text for a chip. Default: show the raw value */
@@ -244,7 +249,11 @@ function focus() {
   }
 }
 
-defineExpose({ focus })
+function openDropdown() {
+  isOpen.value = true
+}
+
+defineExpose({ focus, openDropdown })
 
 function clearAll() {
   tags.value = []
@@ -291,6 +300,7 @@ const showCreateOption = computed(() => {
   const trimmed = query.value.trim()
   if (!trimmed) return false
   if (tags.value.includes(createTagValue.value)) return false
+  if (canCreate && !canCreate(createTagValue.value)) return false
   return !filteredSuggestions.value.some(
     (s) => normalizeForMatch(s) === normalizeForMatch(trimmed)
   )

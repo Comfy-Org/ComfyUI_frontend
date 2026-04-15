@@ -40,13 +40,19 @@ const {
   readonly = false,
   totalCount,
   propertyCounts,
-  mixedKeys
+  mixedKeys,
+  handlePropertyUpdate,
+  handlePropertyDelete,
+  handlePropertyAdd
 } = defineProps<{
   suggestions?: Map<string, PropertySuggestion>
   readonly?: boolean
   totalCount?: number
   propertyCounts?: Map<string, number>
   mixedKeys?: Set<string>
+  handlePropertyUpdate?: (key: string, property: UserProperty) => void
+  handlePropertyDelete?: (key: string) => void
+  handlePropertyAdd?: (key: string, property: UserProperty) => void
 }>()
 
 const sortedKeys = computed(() =>
@@ -56,7 +62,7 @@ const sortedKeys = computed(() =>
 )
 
 function updateProperty(key: string, updated: UserProperty) {
-  // Preserve _order from the existing property
+  if (handlePropertyUpdate) return handlePropertyUpdate(key, updated)
   const existing = properties.value[key]
   properties.value = {
     ...properties.value,
@@ -65,11 +71,13 @@ function updateProperty(key: string, updated: UserProperty) {
 }
 
 function deleteProperty(key: string) {
+  if (handlePropertyDelete) return handlePropertyDelete(key)
   const { [key]: _, ...rest } = properties.value
   properties.value = rest
 }
 
 function addProperty(key: string, property: UserProperty) {
+  if (handlePropertyAdd) return handlePropertyAdd(key, property)
   const maxOrder = Math.max(
     0,
     ...Object.values(properties.value).map((p) => p._order ?? 0)

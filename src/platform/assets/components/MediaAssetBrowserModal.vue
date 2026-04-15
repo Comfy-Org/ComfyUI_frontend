@@ -27,6 +27,8 @@
         v-model:media-type-filters="mediaTypeFilters"
         :show-generation-time-sort="activeTab === 'output'"
         :suggestions="availableTags"
+        :property-suggestions="propertySuggestions"
+        @update:property-filters="propertyFilters = $event"
       />
     </template>
 
@@ -338,8 +340,14 @@ const viewMode = useStorage<'list' | 'grid'>(
   'grid'
 )
 
-const { searchQuery, filterTags, sortBy, mediaTypeFilters, filteredAssets } =
-  useMediaAssetFiltering(baseAssets)
+const {
+  searchQuery,
+  filterTags,
+  propertyFilters,
+  sortBy,
+  mediaTypeFilters,
+  filteredAssets
+} = useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => filteredAssets.value)
 

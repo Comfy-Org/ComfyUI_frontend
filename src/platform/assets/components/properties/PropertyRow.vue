@@ -47,12 +47,10 @@
       <!-- Boolean -->
       <CheckboxRoot
         v-if="property.type === 'boolean'"
-        :checked="isMixed ? 'indeterminate' : property.value"
+        :model-value="isMixed ? 'indeterminate' : property.value"
         :disabled="readonly"
         class="flex size-5 shrink-0 items-center justify-center rounded-sm border border-border-default bg-secondary-background transition-colors data-[state=checked]:border-primary data-[state=checked]:bg-primary"
-        @update:checked="
-          (v: boolean | 'indeterminate') => updateBooleanValue(v === true)
-        "
+        @update:model-value="handleCheckedChange"
       >
         <CheckboxIndicator class="text-primary-foreground">
           <i v-if="isMixed" class="icon-[lucide--minus] size-3.5" />
@@ -127,6 +125,10 @@ const rowClass = computed(() => {
   if (count === undefined || totalCount === undefined) return undefined
   return coverageOpacityClass(count, totalCount)
 })
+
+function handleCheckedChange(value: boolean | 'indeterminate') {
+  if (typeof value === 'boolean') updateBooleanValue(value)
+}
 
 function updateStringValue(value: string | number | undefined) {
   emit('update:property', { type: 'string', value: String(value ?? '') })
