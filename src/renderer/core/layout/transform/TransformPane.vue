@@ -19,9 +19,10 @@
 
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
-import { computed, useTemplateRef, watch } from 'vue'
+import { computed, onUnmounted, useTemplateRef, watch } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LayoutChange } from '@/renderer/core/layout/types'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useContentBounds } from '@/renderer/core/layout/transform/useContentBounds'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
@@ -44,8 +45,25 @@ const transformPaneRef = useTemplateRef('transformPaneRef')
 const offsetWrapperRef = useTemplateRef('offsetWrapperRef')
 
 const contentBounds = useContentBounds()
-const allNodes = layoutStore.getAllNodes()
-const storeVersion = layoutStore.getVersion()
+
+// Collect changed node IDs between RAF frames for differential updates.
+let pendingChangedIds = new Set<string>()
+let needsFullScan = true
+
+const unsubscribe = layoutStore.onChange((change: LayoutChange) => {
+  if (change.type === 'create' || change.type === 'delete') {
+    needsFullScan = true
+  } else {
+    for (const id of change.nodeIds) {
+      pendingChangedIds.add(id)
+    }
+  }
+})
+onUnmounted(unsubscribe)
+
+function getNodeLayout(id: string) {
+  return layoutStore.getNodeLayoutRef(id).value
+}
 
 // --- DOM mutation (avoids Vue vdom diffing on every frame) ---
 
@@ -90,7 +108,15 @@ useRafFn(
   () => {
     if (!canvas) return
     syncWithCanvas(canvas)
-    contentBounds.update(allNodes.value, storeVersion.value)
+
+    if (needsFullScan) {
+      needsFullScan = false
+      contentBounds.initialize(layoutStore.getAllNodes().value)
+    } else if (pendingChangedIds.size > 0) {
+      contentBounds.updateChanged(pendingChangedIds, getNodeLayout)
+    }
+    pendingChangedIds = new Set()
+
     contentBounds.flush()
     applyStyles()
   },

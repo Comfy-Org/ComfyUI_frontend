@@ -29,7 +29,11 @@ interface ContentBoundsState {
  */
 export function useContentBounds(): ContentBoundsState & {
   expandToInclude(bounds: Bounds): void
-  update(nodes: ReadonlyMap<string, NodeLayout>, version: number): void
+  initialize(nodes: ReadonlyMap<string, NodeLayout>): void
+  updateChanged(
+    changedIds: ReadonlySet<string>,
+    getLayout: (id: string) => NodeLayout | null
+  ): void
   flush(): boolean
   reset(): void
 } {
@@ -66,30 +70,30 @@ export function useContentBounds(): ContentBoundsState & {
     }
   }
 
-  let lastTrackedVersion = -1
-  let sampleNodeId: string | null = null
-
   /**
-   * Update bounds from the current set of node layouts, skipping work
-   * when the version hasn't changed. Detects workflow switches by
-   * checking whether a previously sampled node still exists — when
-   * the entire node set is replaced, resets bounds to prevent
-   * unbounded growth across unrelated workflows.
+   * Full scan of all nodes. Used on workflow load or when the entire
+   * node set is replaced.
    */
-  function update(
-    nodes: ReadonlyMap<string, NodeLayout>,
-    version: number
-  ) {
-    if (version === lastTrackedVersion) return
-    lastTrackedVersion = version
-
-    if (sampleNodeId !== null && nodes.size > 0 && !nodes.has(sampleNodeId)) {
-      reset()
-    }
-    sampleNodeId = nodes.size > 0 ? (nodes.keys().next().value ?? null) : null
-
+  function initialize(nodes: ReadonlyMap<string, NodeLayout>) {
+    reset()
     for (const [, layout] of nodes) {
       expandToInclude(layout.bounds)
+    }
+  }
+
+  /**
+   * Differential update: only process nodes that actually changed.
+   * O(k) where k is the number of changed nodes, instead of O(n).
+   */
+  function updateChanged(
+    changedIds: ReadonlySet<string>,
+    getLayout: (id: string) => NodeLayout | null
+  ) {
+    for (const id of changedIds) {
+      const layout = getLayout(id)
+      if (layout) {
+        expandToInclude(layout.bounds)
+      }
     }
   }
 
@@ -123,7 +127,8 @@ export function useContentBounds(): ContentBoundsState & {
     offset: readonly(offset),
     size: readonly(size),
     expandToInclude,
-    update,
+    initialize,
+    updateChanged,
     flush,
     reset
   }

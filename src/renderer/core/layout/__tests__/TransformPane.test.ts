@@ -39,7 +39,8 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     getAllNodes: () => computed(() => mockNodes.value),
     getVersion: () => computed(() => mockVersion.value),
-    onChange: vi.fn(() => () => {})
+    onChange: vi.fn(() => () => {}),
+    getNodeLayoutRef: (id: string) => computed(() => mockNodes.value.get(id) ?? null)
   }
 }))
 
