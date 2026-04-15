@@ -123,15 +123,46 @@ export function mapHubWorkflowIndexEntryToTemplate(
   }
 }
 
+// TODO(hub-api): Pending BE spec confirmation — field names (section/sectionGroup) may change.
 export function mapHubWorkflowIndexToCategories(
-  entries: HubWorkflowIndexEntry[],
-  title: string = 'All'
+  entries: HubWorkflowIndexEntry[]
 ): WorkflowTemplates[] {
-  return [
-    {
-      moduleName: 'default',
-      title,
-      templates: entries.map(mapHubWorkflowIndexEntryToTemplate)
+  const hasSections = entries.some((e) => e.section)
+
+  if (!hasSections) {
+    return [
+      {
+        moduleName: 'default',
+        title: 'All',
+        templates: entries.map(mapHubWorkflowIndexEntryToTemplate)
+      }
+    ]
+  }
+
+  const sectionMap = new Map<
+    string,
+    { entries: HubWorkflowIndexEntry[]; sectionGroup?: string }
+  >()
+
+  for (const entry of entries) {
+    const key = entry.section ?? 'All'
+    if (!sectionMap.has(key)) {
+      sectionMap.set(key, { entries: [], sectionGroup: entry.sectionGroup })
     }
-  ]
+    sectionMap.get(key)!.entries.push(entry)
+  }
+
+  return Array.from(
+    sectionMap,
+    ([section, { entries: sectionEntries, sectionGroup }]) => {
+      const templates = sectionEntries.map(mapHubWorkflowIndexEntryToTemplate)
+      return {
+        moduleName: 'default',
+        title: section,
+        category: sectionGroup,
+        isEssential: sectionEntries.some((e) => e.isEssential),
+        templates
+      }
+    }
+  )
 }

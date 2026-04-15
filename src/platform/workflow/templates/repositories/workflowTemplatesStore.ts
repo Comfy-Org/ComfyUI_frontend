@@ -503,10 +503,7 @@ export const useWorkflowTemplatesStore = defineStore(
           fetchLogoIndex()
         ])
 
-        coreTemplates.value = mapHubWorkflowIndexToCategories(
-          hubIndexResult,
-          st('templateWorkflows.category.All', 'All')
-        )
+        coreTemplates.value = mapHubWorkflowIndexToCategories(hubIndexResult)
         englishTemplates.value = []
         logoIndex.value = logoIndexResult
 
