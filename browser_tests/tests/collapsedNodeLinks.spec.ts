@@ -12,7 +12,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test.afterEach(async ({ comfyPage }) => {

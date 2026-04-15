@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import SiteNav from '../../components/SiteNav.vue'
-import SiteFooter from '../../components/SiteFooter.vue'
 
 const team = [
   { name: 'comfyanonymous', role: 'ComfyUI 创始人、联合创始人' },
@@ -55,8 +53,7 @@ const faqs = [
 ---
 
 <BaseLayout title="关于我们 — Comfy" description="了解 ComfyUI 背后的团队和使命——开源的生成式 AI 平台。">
-  <SiteNav locale="zh-CN" client:load />
-  <main>
+  <div>
     <!-- 主页横幅 -->
     <section class="px-6 pb-24 pt-40 text-center">
       <h1 class="mx-auto max-w-4xl text-4xl font-bold leading-tight md:text-6xl">
@@ -170,6 +167,5 @@ const faqs = [
         查看开放职位
       </a>
     </section>
-  </main>
-  <SiteFooter locale="zh-CN" />
+  </div>
 </BaseLayout>
