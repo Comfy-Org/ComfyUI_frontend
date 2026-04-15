@@ -126,7 +126,7 @@ let mq: MediaQueryList
 
 onMounted(() => {
   currentPath.value = window.location.pathname
-  mq = window.matchMedia('(min-width: 768px)')
+  mq = window.matchMedia('(min-width: 1024px)')
   mq.addEventListener('change', onMediaChange)
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('astro:after-swap', onNavigate)
@@ -149,22 +149,22 @@ onUnmounted(() => {
   />
 
   <nav
-    class="bg-primary-comfy-ink fixed inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-5 md:px-20 md:py-8"
+    class="bg-primary-comfy-ink fixed inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-5 lg:px-10 lg:py-8 xl:px-20"
     aria-label="Main navigation"
   >
     <a :href="routes.home" aria-label="Comfy home">
-      <img src="/icons/logomark.svg" alt="Comfy" class="h-8 md:hidden" />
+      <img src="/icons/logomark.svg" alt="Comfy" class="h-8 lg:hidden" />
       <img
         src="/icons/logo.svg"
         alt="Comfy"
-        class="hidden h-10 w-36 object-contain object-left md:block"
+        class="hidden h-10 w-36 object-contain object-left lg:block"
       />
     </a>
 
     <!-- Desktop nav links -->
     <div
       data-testid="desktop-nav-links"
-      class="hidden items-center gap-10 md:flex"
+      class="hidden items-center gap-4 lg:flex xl:gap-10"
     >
       <NavDesktopLink
         v-for="link in navLinks"
@@ -181,7 +181,7 @@ onUnmounted(() => {
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden items-center gap-2 md:flex"
+      class="hidden items-center gap-2 lg:flex"
     >
       <BrandButton
         v-for="cta in ctaButtons"
@@ -196,7 +196,7 @@ onUnmounted(() => {
     <!-- Mobile hamburger -->
     <button
       ref="hamburgerRef"
-      class="flex size-10 items-center justify-center rounded-xl md:hidden"
+      class="flex size-10 items-center justify-center rounded-xl lg:hidden"
       :class="
         mobileMenuOpen
           ? 'border-primary-comfy-yellow border-2 bg-transparent'
