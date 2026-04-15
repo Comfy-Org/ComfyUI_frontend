@@ -32,7 +32,7 @@ interface SubscriptionStatusSnapshot {
   subscription_duration?: SubscriptionDuration | null
 }
 
-export interface PendingSubscriptionCheckoutAttempt {
+interface PendingSubscriptionCheckoutAttempt {
   attempt_id: string
   started_at_ms: number
   tier: TierKey
@@ -166,7 +166,7 @@ const normalizeAttempt = (
   }
 }
 
-export const clearPendingSubscriptionCheckoutAttempt = (): void => {
+const clearPendingSubscriptionCheckoutAttempt = (): void => {
   const storage = getStorage()
   if (!storage) {
     return
@@ -176,7 +176,7 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   dispatchPendingCheckoutChangeEvent()
 }
 
-export const getPendingSubscriptionCheckoutAttempt =
+const getPendingSubscriptionCheckoutAttempt =
   (): PendingSubscriptionCheckoutAttempt | null => {
     const storage = getStorage()
     if (!storage) {
