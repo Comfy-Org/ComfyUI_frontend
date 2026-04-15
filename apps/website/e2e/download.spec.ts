@@ -23,15 +23,17 @@ test.describe('Download page @smoke', () => {
   })
 
   test('HeroSection has download and GitHub buttons', async ({ page }) => {
-    const downloadBtn = page
-      .getByRole('link', { name: /DOWNLOAD LOCAL/i })
-      .first()
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: /Run on your hardware/i,
+        level: 1
+      })
+    })
+    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD LOCAL/i })
     await expect(downloadBtn).toBeVisible()
     await expect(downloadBtn).toHaveAttribute('target', '_blank')
 
-    const githubBtn = page
-      .getByRole('link', { name: /INSTALL FROM GITHUB/i })
-      .first()
+    const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
     await expect(githubBtn).toBeVisible()
     await expect(githubBtn).toHaveAttribute(
       'href',
@@ -144,12 +146,14 @@ test.describe('Download page mobile @mobile', () => {
   })
 
   test('download buttons are stacked vertically', async ({ page }) => {
-    const downloadBtn = page
-      .getByRole('link', { name: /DOWNLOAD LOCAL/i })
-      .first()
-    const githubBtn = page
-      .getByRole('link', { name: /INSTALL FROM GITHUB/i })
-      .first()
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: /Run on your hardware/i,
+        level: 1
+      })
+    })
+    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD LOCAL/i })
+    const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
 
     await downloadBtn.scrollIntoViewIfNeeded()
 
