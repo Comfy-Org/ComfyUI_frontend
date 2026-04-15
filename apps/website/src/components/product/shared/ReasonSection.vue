@@ -12,12 +12,16 @@ const {
   locale = 'en',
   headingKey,
   headingHighlightKey,
+  headingSuffixKey,
+  subtitleKey,
   highlightClass = 'text-white',
   reasons
 } = defineProps<{
   locale?: Locale
   headingKey: TranslationKey
-  headingHighlightKey: TranslationKey
+  headingHighlightKey?: TranslationKey
+  headingSuffixKey?: TranslationKey
+  subtitleKey?: TranslationKey
   highlightClass?: string
   reasons: Reason[]
 }>()
@@ -35,10 +39,19 @@ const {
         class="text-primary-comfy-canvas text-4xl font-light whitespace-pre-line md:text-5xl"
       >
         {{ t(headingKey, locale)
-        }}<span :class="highlightClass">{{
+        }}<span v-if="headingHighlightKey" :class="highlightClass">{{
           t(headingHighlightKey, locale)
-        }}</span>
+        }}</span
+        ><template v-if="headingSuffixKey">{{
+          t(headingSuffixKey, locale)
+        }}</template>
       </h2>
+      <p
+        v-if="subtitleKey"
+        class="text-primary-comfy-canvas/70 mt-6 text-sm"
+      >
+        {{ t(subtitleKey, locale) }}
+      </p>
     </div>
 
     <!-- Right reasons list -->

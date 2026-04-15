@@ -223,6 +223,333 @@ const translations = {
     'zh-CN': 'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。'
   },
 
+  // API – HeroSection
+  'api.hero.heading': {
+    en: 'Turn any workflow into\na production endpoint.',
+    'zh-CN': '将任何工作流转化为\n生产级端点。'
+  },
+  'api.hero.subtitle': {
+    en: 'Design your workflows. Deploy them as API calls. Automate generation, integrate with your systems, and scale to thousands of outputs on Comfy Cloud.',
+    'zh-CN':
+      '设计你的工作流。将它们部署为 API 调用。自动化生成、与你的系统集成，并在 Comfy Cloud 上扩展到数千个输出。'
+  },
+  'api.hero.getApiKeys': {
+    en: 'GET API KEYS',
+    'zh-CN': '获取 API 密钥'
+  },
+  'api.hero.viewDocs': {
+    en: 'VIEW DOCS',
+    'zh-CN': '查看文档'
+  },
+
+  // Enterprise – TeamSection
+  'enterprise.team.heading': {
+    en: 'Team workspaces\nand shared assets.',
+    'zh-CN': '团队工作区\n与共享资产。'
+  },
+  'enterprise.team.subtitle': {
+    en: 'Organize workflows, models, and outputs in shared workspaces. Control who builds, who runs, and who deploys.',
+    'zh-CN':
+      '在共享工作区中组织工作流、模型和输出。控制谁构建、谁运行、谁部署。'
+  },
+  'enterprise.team.feature1.title': {
+    en: 'Role-based access',
+    'zh-CN': '基于角色的访问控制'
+  },
+  'enterprise.team.feature1.description': {
+    en: 'Control who builds, who runs, and who deploys.',
+    'zh-CN': '控制谁构建、谁运行、谁部署。'
+  },
+  'enterprise.team.feature2.title': {
+    en: 'Single Sign-On',
+    'zh-CN': '单点登录'
+  },
+  'enterprise.team.feature2.description': {
+    en: 'Most things you build locally run on Comfy Cloud \u2014 same file, same results, powerful GPUs on demand. When a job outgrows your machine, push it to the cloud. No conversion, no rework.',
+    'zh-CN':
+      '你在本地构建的大部分内容都能在 Comfy Cloud 上运行——相同文件、相同结果、按需使用强大 GPU。当任务超出你的机器能力时，推送到云端。无需转换，无需返工。'
+  },
+  'enterprise.team.feature2.cta': {
+    en: 'SEE CLOUD FEATURES',
+    'zh-CN': '查看云端特性'
+  },
+  'enterprise.team.feature3.title': {
+    en: 'App Mode',
+    'zh-CN': 'App 模式'
+  },
+  'enterprise.team.feature3.description': {
+    en: 'Non-technical team members run workflows without touching the node graph.',
+    'zh-CN': '非技术团队成员无需接触节点图即可运行工作流。'
+  },
+
+  // Enterprise – ReasonSection
+  'enterprise.reason.heading': {
+    en: 'Enterprise-grade infrastructure for the creative engine inside your organization.',
+    'zh-CN': '为组织内的创作引擎提供企业级基础设施。'
+  },
+  'enterprise.reason.subtitle': {
+    en: 'Comfy Cloud API gives you a managed infrastructure so you can focus on the workflow, not the hardware.',
+    'zh-CN':
+      'Comfy Cloud API 为你提供托管基础设施，让你专注于工作流，而非硬件。'
+  },
+  'enterprise.reason.1.title': {
+    en: 'Dedicated GPU compute',
+    'zh-CN': '专属 GPU 算力'
+  },
+  'enterprise.reason.1.description': {
+    en: 'Reserved server-grade, powerful compute for your organization.',
+    'zh-CN': '为你的组织预留的服务器级强大算力。'
+  },
+  'enterprise.reason.2.title': {
+    en: 'Priority queuing',
+    'zh-CN': '优先队列'
+  },
+  'enterprise.reason.2.description': {
+    en: 'Your production jobs run first.',
+    'zh-CN': '你的生产任务优先运行。'
+  },
+  'enterprise.reason.3.title': {
+    en: 'Flexible Deployment',
+    'zh-CN': '灵活部署'
+  },
+  'enterprise.reason.3.description': {
+    en: 'Same workflows on Comfy Cloud. Scale compute up or down based on your production schedule.',
+    'zh-CN': '在 Comfy Cloud 上运行相同的工作流。根据生产计划弹性扩缩算力。'
+  },
+  'enterprise.reason.4.title': {
+    en: 'Custom SLAs',
+    'zh-CN': '自定义 SLA'
+  },
+  'enterprise.reason.4.description': {
+    en: 'Uptime and response commitments built around your schedule.',
+    'zh-CN': '根据你的时间安排定制正常运行时间和响应承诺。'
+  },
+  'enterprise.reason.5.title': {
+    en: 'Commercial license guaranteed',
+    'zh-CN': '商业许可保障'
+  },
+  'enterprise.reason.5.description': {
+    en: 'Every model available through Comfy Cloud is cleared for commercial use. No license ambiguity for your legal team.',
+    'zh-CN':
+      '通过 Comfy Cloud 提供的每个模型均已获得商业使用许可。法务团队无需担心许可歧义。'
+  },
+
+  // Enterprise – HeroSection
+  'enterprise.hero.heading': {
+    en: 'Your team already runs ComfyUI. Scale it with confidence.',
+    'zh-CN': '你的团队已经在使用 ComfyUI。放心地扩展它。'
+  },
+  'enterprise.hero.subtitle': {
+    en: 'ComfyUI Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.',
+    'zh-CN':
+      'ComfyUI 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
+  },
+  'enterprise.hero.contactSales': {
+    en: 'CONTACT SALES',
+    'zh-CN': '联系销售'
+  },
+
+  // Enterprise – DataOwnershipSection
+  'enterprise.ownership.line1': {
+    en: 'Your data.',
+    'zh-CN': '你的数据。'
+  },
+  'enterprise.ownership.line2': {
+    en: 'Your network.',
+    'zh-CN': '你的网络。'
+  },
+  'enterprise.ownership.line3': {
+    en: 'Your terms.',
+    'zh-CN': '你的条款。'
+  },
+  'enterprise.ownership.subtitle': {
+    en: 'Your workflows, models, and generated outputs stay within your organization\u2019s environment. Role-based access controls and data isolation built for organizations with the strictest requirements.',
+    'zh-CN':
+      '你的工作流、模型和生成输出始终保留在你的组织环境中。基于角色的访问控制和数据隔离，为最严格要求的组织而构建。'
+  },
+
+  // Enterprise – BYOKeySection
+  'enterprise.byoKey.heading': {
+    en: 'Bring your own API key',
+    'zh-CN': '自带 API 密钥'
+  },
+  'enterprise.byoKey.subtitle': {
+    en: 'Use your own contracts with third-party model providers. Comfy orchestrates the pipeline. You choose which models to run and whose API keys to use.',
+    'zh-CN':
+      '使用你与第三方模型提供商的合约。Comfy 编排管线。你决定运行哪些模型、使用谁的 API 密钥。'
+  },
+  'enterprise.byoKey.card1.title': {
+    en: 'API key management',
+    'zh-CN': 'API 密钥管理'
+  },
+  'enterprise.byoKey.card1.description': {
+    en: 'Bring your own API keys from any model provider. Use your existing contracts and pricing.',
+    'zh-CN': '从任何模型提供商导入你自己的 API 密钥。使用你现有的合约和定价。'
+  },
+  'enterprise.byoKey.card2.title': {
+    en: 'Real-time progress',
+    'zh-CN': '实时进度'
+  },
+  'enterprise.byoKey.card2.description': {
+    en: 'Step-by-step execution updates via WebSocket.',
+    'zh-CN': '通过 WebSocket 逐步更新执行状态。'
+  },
+
+  // Enterprise – OrchestrationSection
+  'enterprise.orchestration.heading': {
+    en: 'The orchestration layer isn\u2019t worth rebuilding.',
+    'zh-CN': '编排层不值得重建。'
+  },
+  'enterprise.orchestration.highlight': {
+    en: 'Every team that evaluates building this internally reaches the same conclusion.',
+    'zh-CN': '每个评估过内部自建的团队都得出了同样的结论。'
+  },
+  'enterprise.orchestration.description': {
+    en: 'Internal estimates are 12\u201318 months with a dedicated engineering team. No matter how good or how fast, building this internally won\u2019t have 5,000+ extensions, 60,000+ nodes, or same-day model support.',
+    'zh-CN':
+      '内部评估需要一个专属工程团队耗时 12\u201318 个月。无论多优秀多快速，自建方案都不会拥有 5,000+ 扩展、60,000+ 节点或当日模型支持。'
+  },
+  'enterprise.orchestration.quote': {
+    en: 'Platforms like OpenArt and Fal already run Comfy underneath \u2014 because they reached the same conclusion.',
+    'zh-CN':
+      'OpenArt 和 Fal 等平台底层已经运行 Comfy——因为他们得出了同样的结论。'
+  },
+  'enterprise.orchestration.footer': {
+    en: 'Comfy Enterprise plans come with support from the team that builds the engine: direct access to our engineering team and a whiteglove onboarding.',
+    'zh-CN':
+      'Comfy 企业版计划附带引擎开发团队的支持：直接访问我们的工程团队和白手套式入职服务。'
+  },
+
+  // API – StepsSection
+  'api.steps.heading': {
+    en: 'Three steps to production',
+    'zh-CN': '三步进入生产'
+  },
+  'api.steps.step1.title': {
+    en: 'Design the workflow',
+    'zh-CN': '设计工作流'
+  },
+  'api.steps.step1.description': {
+    en: 'Build and test in the ComfyUI interface \u2014 locally or on Comfy Cloud. When it works, export the API format.',
+    'zh-CN':
+      '在 ComfyUI 界面中构建和测试——本地或 Comfy Cloud 上。测试通过后，导出 API 格式。'
+  },
+  'api.steps.step2.title': {
+    en: 'Submit via API',
+    'zh-CN': '通过 API 提交'
+  },
+  'api.steps.step2.description': {
+    en: 'Send the workflow JSON or a single request to the API endpoint. Modify inputs programmatically \u2014 prompts, seeds, images, any parameter on any node.',
+    'zh-CN':
+      '将工作流 JSON 或单个请求发送到 API 端点。以编程方式修改输入——提示词、种子、图像、任何节点上的任何参数。'
+  },
+  'api.steps.step3.title': {
+    en: 'Monitor and Retrieve',
+    'zh-CN': '监控与获取'
+  },
+  'api.steps.step3.description': {
+    en: 'Track progress in real time over WebSocket. Download the finished output when the job completes.',
+    'zh-CN': '通过 WebSocket 实时跟踪进度。作业完成后下载最终输出。'
+  },
+
+  // API – AutomationSection
+  'api.automation.heading': {
+    en: 'The automation layer for\nprofessional-grade visual AI',
+    'zh-CN': '专业级视觉 AI 的\n自动化层'
+  },
+  'api.automation.subtitle': {
+    en: 'To transform ComfyUI from a powerful tool to reliable infrastructure.',
+    'zh-CN': '将 ComfyUI 从强大的工具转化为可靠的基础设施。'
+  },
+  'api.automation.feature1.title': {
+    en: "Automate what can't be manual",
+    'zh-CN': '自动化无法手动完成的工作'
+  },
+  'api.automation.feature1.description': {
+    en: 'Trigger generation when a user uploads a photo. Process an entire product catalog overnight. Swap a character\u2019s expression across 500 frames.',
+    'zh-CN':
+      '当用户上传照片时触发生成。一夜之间处理整个产品目录。在 500 帧中替换角色表情。'
+  },
+  'api.automation.feature1.description2': {
+    en: 'The API is for running workflows inside other systems \u2014 triggered by code, not by a person at a keyboard.',
+    'zh-CN':
+      'API 用于在其他系统内运行工作流——由代码触发，而非由键盘前的人触发。'
+  },
+  'api.automation.feature2.title': {
+    en: 'Inject dynamic values at runtime',
+    'zh-CN': '在运行时注入动态值'
+  },
+  'api.automation.feature2.description': {
+    en: 'Pass a different face, a different product, a different brand palette into the same pipeline \u2014 consistent, controlled output every time.',
+    'zh-CN':
+      '将不同的面孔、不同的产品、不同的品牌色板传入同一管线——每次都获得一致、可控的输出。'
+  },
+  'api.automation.feature2.description2': {
+    en: 'The workflow stays fixed. The inputs change.',
+    'zh-CN': '工作流保持不变。输入可以改变。'
+  },
+  'api.automation.feature3.title': {
+    en: 'Integrate ComfyUI into the rest of your stack',
+    'zh-CN': '将 ComfyUI 集成到你的技术栈中'
+  },
+  'api.automation.feature3.description': {
+    en: 'Generation is usually one step in a larger system. Fetch input from S3, call the ComfyUI API, post-process the result, write it to a database, and notify a team.',
+    'zh-CN':
+      '生成通常只是更大系统中的一个步骤。从 S3 获取输入、调用 ComfyUI API、后处理结果、写入数据库、通知团队。'
+  },
+
+  // API – ReasonSection
+  'api.reason.heading': {
+    en: 'Deploy on\n',
+    'zh-CN': '部署在\n'
+  },
+  'api.reason.headingHighlight': {
+    en: 'Comfy Cloud —\n',
+    'zh-CN': 'Comfy Cloud——\n'
+  },
+  'api.reason.headingSuffix': {
+    en: 'no servers to\nmanage.',
+    'zh-CN': '无需管理\n服务器。'
+  },
+  'api.reason.subtitle': {
+    en: 'Comfy Cloud API gives you a managed infrastructure so you can focus on the workflow, not the hardware.',
+    'zh-CN':
+      'Comfy Cloud API 为你提供托管基础设施，让你专注于工作流，而非硬件。'
+  },
+  'api.reason.1.title': {
+    en: 'Powerful GPUs on demand',
+    'zh-CN': '按需使用强大 GPU'
+  },
+  'api.reason.1.description': {
+    en: 'Heavy video generation, complex multi-step pipelines, large batch jobs.',
+    'zh-CN': '重度视频生成、复杂多步管线、大批量任务。'
+  },
+  'api.reason.2.title': {
+    en: 'One API key. Immediate access.',
+    'zh-CN': '一个 API 密钥。即时访问。'
+  },
+  'api.reason.2.description': {
+    en: 'No environment setup, no model downloads, no GPU procurement.',
+    'zh-CN': '无需环境配置、无需下载模型、无需采购 GPU。'
+  },
+  'api.reason.3.title': {
+    en: 'Open models & partner models through one endpoint',
+    'zh-CN': '通过一个端点访问开源模型和合作伙伴模型'
+  },
+  'api.reason.3.description': {
+    en: 'Open-source models alongside partner models like Kling, Luma, Nano Banana, Grok, and Runway \u2014 all with one credit balance.',
+    'zh-CN':
+      '开源模型与 Kling、Luma、Nano Banana、Grok、Runway 等合作伙伴模型并存——全部使用同一额度。'
+  },
+  'api.reason.4.title': {
+    en: 'Real-time progress',
+    'zh-CN': '实时进度'
+  },
+  'api.reason.4.description': {
+    en: 'Step-by-step execution updates and live previews during generation via WebSocket.',
+    'zh-CN': '通过 WebSocket 获取逐步执行更新和生成过程中的实时预览。'
+  },
+
   // Download – FAQSection
   'download.faq.heading': {
     en: "FAQ's",
