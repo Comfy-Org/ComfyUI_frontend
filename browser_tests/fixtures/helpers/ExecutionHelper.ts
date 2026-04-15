@@ -1,18 +1,19 @@
 import type { WebSocketRoute } from '@playwright/test'
+import type { JobEntry } from '@comfyorg/ingest-types'
 
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { AssetScenarioHelper } from '@e2e/fixtures/helpers/AssetScenarioHelper'
+import { createMockJob } from '@e2e/fixtures/helpers/jobFixtures'
 
 /**
  * Helper for simulating prompt execution in e2e tests.
  */
 export class ExecutionHelper {
   private jobCounter = 0
-  private readonly completedJobs: RawJobListItem[] = []
+  private readonly completedJobs: JobEntry[] = []
   private readonly page: ComfyPage['page']
   private readonly command: ComfyPage['command']
-  private readonly assets: ComfyPage['assets']
+  private readonly assetScenario: AssetScenarioHelper
 
   constructor(
     comfyPage: ComfyPage,
@@ -20,7 +21,7 @@ export class ExecutionHelper {
   ) {
     this.page = comfyPage.page
     this.command = comfyPage.command
-    this.assets = comfyPage.assets
+    this.assetScenario = new AssetScenarioHelper(comfyPage.page)
   }
 
   /**
@@ -172,8 +173,6 @@ export class ExecutionHelper {
   /**
    * Complete a job by adding it to mock history, sending execution_success,
    * and triggering a history refresh via a status event.
-   *
-   * Requires an {@link AssetsHelper} to be passed in the constructor.
    */
   async completeWithHistory(
     jobId: string,
@@ -193,7 +192,7 @@ export class ExecutionHelper {
       })
     )
 
-    await this.assets.mockOutputHistory(this.completedJobs)
+    await this.assetScenario.seedGeneratedHistory(this.completedJobs)
     this.executionSuccess(jobId)
     // Trigger queue/history refresh
     this.status(0)
