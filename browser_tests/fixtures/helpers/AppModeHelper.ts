@@ -160,6 +160,15 @@ export class AppModeHelper {
 
   /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
+    // Wait for any workflow-tab popover to dismiss before clicking —
+    // the popover overlay can intercept the "Workflow actions" click.
+    // Best-effort: the popover may or may not exist; if it stays visible
+    // past the timeout we still proceed with the click.
+    await this.page
+      .locator('.workflow-popover-fade')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {})
+
     await this.page
       .getByRole('button', { name: 'Workflow actions' })
       .first()
@@ -174,7 +183,6 @@ export class AppModeHelper {
   async toggleAppMode() {
     await this.comfyPage.workflow.waitForActiveWorkflow()
     await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
-    await this.comfyPage.nextFrame()
   }
 
   /**

@@ -10,7 +10,7 @@ import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { sleep } from '@e2e/fixtures/utils/timing'
+import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -336,9 +336,7 @@ export class ComfyPage {
   }
 
   async nextFrame() {
-    await this.page.evaluate(() => {
-      return new Promise<number>(requestAnimationFrame)
-    })
+    await nextFrame(this.page)
   }
 
   async delay(ms: number) {
@@ -391,6 +389,27 @@ export class ComfyPage {
 
   get domWidgets(): Locator {
     return this.page.locator('.dom-widget')
+  }
+
+  async expectScreenshot(
+    locator: Locator,
+    name: string | string[],
+    options?: {
+      animations?: 'disabled' | 'allow'
+      caret?: 'hide' | 'initial'
+      mask?: Array<Locator>
+      maskColor?: string
+      maxDiffPixelRatio?: number
+      maxDiffPixels?: number
+      omitBackground?: boolean
+      scale?: 'css' | 'device'
+      stylePath?: string | Array<string>
+      threshold?: number
+      timeout?: number
+    }
+  ): Promise<void> {
+    await this.nextFrame()
+    await comfyExpect(locator).toHaveScreenshot(name, options)
   }
 
   async setFocusMode(focusMode: boolean) {

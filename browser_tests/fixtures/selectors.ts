@@ -198,6 +198,16 @@ export const TestIds = {
   },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
+  },
+  imageCompare: {
+    viewport: 'image-compare-viewport',
+    empty: 'image-compare-empty',
+    batchNav: 'batch-nav',
+    beforeBatch: 'before-batch',
+    afterBatch: 'after-batch',
+    batchCounter: 'batch-counter',
+    batchNext: 'batch-next',
+    batchPrev: 'batch-prev'
   }
 } as const
 
@@ -231,3 +241,4 @@ export type TestIdValue =
   | (typeof TestIds.errors)[keyof typeof TestIds.errors]
   | (typeof TestIds.loading)[keyof typeof TestIds.loading]
   | (typeof TestIds.load3dViewer)[keyof typeof TestIds.load3dViewer]
+  | (typeof TestIds.imageCompare)[keyof typeof TestIds.imageCompare]

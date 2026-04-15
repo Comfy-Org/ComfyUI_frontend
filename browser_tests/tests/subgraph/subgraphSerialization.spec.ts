@@ -81,8 +81,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
 
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Escape')
 
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
   })
