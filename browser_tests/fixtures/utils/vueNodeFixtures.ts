@@ -15,13 +15,11 @@ export class VueNodeFixture {
 
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
-    this.title = locator.locator('[data-testid="node-title"]')
-    this.titleInput = locator.locator('[data-testid="node-title-input"]')
+    this.title = locator.getByTestId('node-title')
+    this.titleInput = locator.getByTestId('node-title-input')
     this.body = locator.locator('[data-testid^="node-body-"]')
     this.pinIndicator = locator.getByTestId(TestIds.node.pinIndicator)
-    this.collapseButton = locator.locator(
-      '[data-testid="node-collapse-button"]'
-    )
+    this.collapseButton = locator.getByTestId('node-collapse-button')
     this.collapseIcon = this.collapseButton.locator('i')
     this.root = locator
   }

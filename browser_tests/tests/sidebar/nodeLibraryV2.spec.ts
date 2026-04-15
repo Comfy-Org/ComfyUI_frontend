@@ -4,7 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node library sidebar V2', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
 
     const tab = comfyPage.menu.nodeLibraryTabV2
@@ -42,11 +41,11 @@ test.describe('Node library sidebar V2', () => {
   test('Search filters nodes in All tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await expect(tab.getNode('KSampler (Advanced)')).not.toBeVisible()
+    await expect(tab.getNode('KSampler (Advanced)')).toBeHidden()
 
     await tab.searchInput.fill('KSampler')
     await expect(tab.getNode('KSampler (Advanced)')).toBeVisible()
-    await expect(tab.getNode('CLIPLoader')).not.toBeVisible()
+    await expect(tab.getNode('CLIPLoader')).toBeHidden()
   })
 
   test('Drag node to canvas adds it', async ({ comfyPage }) => {

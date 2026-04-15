@@ -6,7 +6,6 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
@@ -33,7 +32,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       await comfyPage.actionbar.propertiesButton.click()
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
-      await expect(panel.errorsTabIcon).not.toBeVisible()
+      await expect(panel.errorsTabIcon).toBeHidden()
     })
   })
 
@@ -55,7 +54,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       await errorOverlay
         .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
         .click()
-      await expect(errorOverlay).not.toBeVisible()
+      await expect(errorOverlay).toBeHidden()
 
       const runtimePanel = comfyPage.page.getByTestId(
         TestIds.dialogs.runtimeErrorPanel

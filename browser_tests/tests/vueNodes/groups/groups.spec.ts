@@ -112,11 +112,9 @@ async function getNodeGroupCenteringErrors(
   })
 }
 
-test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
+test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {
@@ -130,7 +128,6 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
   })
 
   test('should allow fitting group to contents', async ({ comfyPage }) => {
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('groups/oversized_group')
     await comfyPage.keyboard.selectAll()
     await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')

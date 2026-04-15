@@ -131,7 +131,7 @@ test.describe(
         const enterButton = subgraphVueNode.getByTestId('subgraph-enter-button')
         await expect(enterButton).toBeVisible()
 
-        const nodeBody = subgraphVueNode.locator('[data-testid="node-body-11"]')
+        const nodeBody = subgraphVueNode.getByTestId('node-body-11')
         await expect(nodeBody).toBeVisible()
 
         const widgets = nodeBody.locator('.lg-node-widgets > div')
@@ -182,10 +182,6 @@ test.describe(
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      })
-
       test('Can promote and un-promote a widget from inside a subgraph', async ({
         comfyPage
       }) => {
@@ -199,12 +195,7 @@ test.describe(
 
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos, { button: 'right' })
 
         // Look for the Promote Widget menu entry
         const promoteEntry = comfyPage.page
@@ -235,12 +226,7 @@ test.describe(
         const stepsWidget = await ksampler.getWidget(2)
         const widgetPos = await stepsWidget.getPosition()
 
-        await comfyPage.canvas.click({
-          position: widgetPos,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos, { button: 'right' })
 
         const promoteEntry = comfyPage.page
           .locator('.litemenu-entry')
@@ -266,12 +252,7 @@ test.describe(
         const stepsWidget2 = await ksampler2.getWidget(2)
         const widgetPos2 = await stepsWidget2.getPosition()
 
-        await comfyPage.canvas.click({
-          position: widgetPos2,
-          button: 'right',
-          force: true
-        })
-        await comfyPage.nextFrame()
+        await comfyPage.canvasOps.mouseClickAt(widgetPos2, { button: 'right' })
 
         const unpromoteEntry = comfyPage.page
           .locator('.litemenu-entry')
@@ -400,7 +381,7 @@ test.describe(
 
         await comfyPage.command.executeCommand('Comfy.QueuePrompt')
 
-        const nodeBody = subgraphVueNode.locator('[data-testid="node-body-5"]')
+        const nodeBody = subgraphVueNode.getByTestId('node-body-5')
         await expect(nodeBody).toBeVisible()
         await expect(
           nodeBody.locator('.lg-node-widgets > div').first()
@@ -492,8 +473,6 @@ test.describe(
       test('Nested promoted widget entries reflect interior changes after slot removal', async ({
         comfyPage
       }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
@@ -537,8 +516,6 @@ test.describe(
       test('Removing I/O slot removes associated promoted widget', async ({
         comfyPage
       }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )

@@ -168,6 +168,22 @@ export class NodeOperationsHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async panToNode(nodeRef: NodeReference): Promise<void> {
+    const nodePos = await nodeRef.getPosition()
+    await this.page.evaluate((pos) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+      canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
+      canvas.setDirty(true, true)
+    }, nodePos)
+    await this.comfyPage.nextFrame()
+  }
+
+  async selectNodeWithPan(nodeRef: NodeReference): Promise<void> {
+    await this.panToNode(nodeRef)
+    await nodeRef.click('title')
+  }
+
   async dragTextEncodeNode2(): Promise<void> {
     await this.comfyPage.canvasOps.dragAndDrop(
       DefaultGraphPositions.textEncodeNode2,

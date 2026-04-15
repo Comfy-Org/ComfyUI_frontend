@@ -307,7 +307,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await searchInput.fill('Test Pack B')
 
     await expect(dialog.getByText('Test Pack B')).toBeVisible()
-    await expect(dialog.getByText('Test Pack A')).not.toBeVisible()
+    await expect(dialog.getByText('Test Pack A')).toBeHidden()
   })
 
   test('Clicking a pack card opens the info panel', async ({ comfyPage }) => {
@@ -360,7 +360,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     await expect(dialog).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(dialog).not.toBeVisible()
+    await expect(dialog).toBeHidden()
   })
 
   test('Empty search shows no results message', async ({ comfyPage }) => {

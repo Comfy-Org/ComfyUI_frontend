@@ -20,7 +20,6 @@ async function pressKeyAndExpectRequest(
 test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
   test.describe('Sidebar Toggle Shortcuts', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
       await comfyPage.nextFrame()
     })
@@ -38,13 +37,13 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
           `.${tabId}-tab-button.side-bar-button-selected`
         )
 
-        await expect(selectedButton).not.toBeVisible()
+        await expect(selectedButton).toBeHidden()
 
         await comfyPage.canvas.press(key)
         await expect(selectedButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).not.toBeVisible()
+        await expect(selectedButton).toBeHidden()
       })
     }
   })
@@ -164,15 +163,13 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
   test.describe('Mode and Panel Toggles', () => {
     test("'Alt+m' toggles app mode", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       // Set up linearData so app mode has something to show
       await comfyPage.appMode.enterAppModeWithInputs([])
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
 
       // Toggle off with Alt+m
       await comfyPage.page.keyboard.press('Alt+KeyM')
-      await expect(comfyPage.appMode.linearWidgets).not.toBeVisible()
+      await expect(comfyPage.appMode.linearWidgets).toBeHidden()
 
       // Toggle on again
       await comfyPage.page.keyboard.press('Alt+KeyM')
@@ -180,7 +177,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     })
 
     test("'Alt+Shift+m' toggles minimap", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
       await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
       await comfyPage.workflow.loadWorkflow('default')
@@ -189,22 +185,20 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await expect(minimap).toBeVisible()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
-      await expect(minimap).not.toBeVisible()
+      await expect(minimap).toBeHidden()
 
       await comfyPage.page.keyboard.press('Alt+Shift+KeyM')
       await expect(minimap).toBeVisible()
     })
 
     test("'Ctrl+`' toggles terminal/logs panel", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
-      await expect(comfyPage.bottomPanel.root).not.toBeVisible()
+      await expect(comfyPage.bottomPanel.root).toBeHidden()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
       await expect(comfyPage.bottomPanel.root).toBeVisible()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
-      await expect(comfyPage.bottomPanel.root).not.toBeVisible()
+      await expect(comfyPage.bottomPanel.root).toBeHidden()
     })
   })
 

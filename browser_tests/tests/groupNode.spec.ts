@@ -88,7 +88,10 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .getNode(groupNodeName)
         .locator('.bookmark-button')
         .click()
-      await comfyPage.page.hover('.p-tree-node-label.tree-explorer-node-label')
+      await comfyPage.page
+        .locator('.p-tree-node-label.tree-explorer-node-label')
+        .first()
+        .hover()
       await expect(
         comfyPage.page.locator('.node-lib-node-preview')
       ).toBeVisible()
@@ -99,6 +102,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
         .click()
     })
   })
+
   test(
     'Can be added to canvas using search',
     { tag: '@screenshot' },
@@ -154,7 +158,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await comfyPage.nextFrame()
     await expect(manage1.selectedNodeTypeSelect).toHaveValue('g1')
     await manage1.close()
-    await expect(manage1.root).not.toBeVisible()
+    await expect(manage1.root).toBeHidden()
 
     const manage2 = await group2.manageGroupNode()
     await expect(manage2.selectedNodeTypeSelect).toHaveValue('g2')
@@ -241,7 +245,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test.describe('Copy and paste', () => {
@@ -349,6 +353,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await comfyPage.page.keyboard.press('Alt+g')
       await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
     })
+
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
       await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
       await comfyPage.canvas.click({

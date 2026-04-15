@@ -3,14 +3,9 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Mask Editor', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
+test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await comfyPage.vueNodes.waitForNodes()
 
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

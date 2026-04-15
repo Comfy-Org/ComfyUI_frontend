@@ -3,6 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
+import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
 import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
 import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
@@ -14,6 +15,7 @@ export class AppModeHelper {
   readonly footer: BuilderFooterHelper
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
+  readonly outputHistory: OutputHistoryComponent
   readonly widgets: AppModeWidgetHelper
   /** The "Connect an output" popover shown when saving without outputs. */
   public readonly connectOutputPopover: Locator
@@ -35,12 +37,15 @@ export class AppModeHelper {
   public readonly backToWorkflowButton: Locator
   /** The "Load template" button shown when no nodes exist. */
   public readonly loadTemplateButton: Locator
+  /** The cancel button for an in-progress run in the output history. */
+  public readonly cancelRunButton: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.steps = new BuilderStepsHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
+    this.outputHistory = new OutputHistoryComponent(comfyPage.page)
     this.widgets = new AppModeWidgetHelper(comfyPage)
     this.connectOutputPopover = this.page.getByTestId(
       TestIds.builder.connectOutputPopover
@@ -48,7 +53,7 @@ export class AppModeHelper {
     this.outputPlaceholder = this.page.getByTestId(
       TestIds.builder.outputPlaceholder
     )
-    this.linearWidgets = this.page.locator('[data-testid="linear-widgets"]')
+    this.linearWidgets = this.page.getByTestId('linear-widgets')
     this.imagePickerPopover = this.page
       .getByRole('dialog')
       .filter({ has: this.page.getByRole('button', { name: 'All' }) })
@@ -66,6 +71,9 @@ export class AppModeHelper {
     )
     this.loadTemplateButton = this.page.getByTestId(
       TestIds.appMode.loadTemplate
+    )
+    this.cancelRunButton = this.page.getByTestId(
+      TestIds.outputHistory.cancelRun
     )
   }
 

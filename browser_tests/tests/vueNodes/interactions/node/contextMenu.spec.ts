@@ -60,13 +60,7 @@ async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
   return refs[0]
 }
 
-test.describe('Vue Node Context Menu', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.vueNodes.waitForNodes()
-  })
-
+test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
   test.describe('Single Node Actions', () => {
     test('should rename node via context menu', async ({ comfyPage }) => {
       await openContextMenu(comfyPage, 'KSampler')
@@ -143,7 +137,7 @@ test.describe('Vue Node Context Menu', () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Unpin')
 
-      await expect(fixture.pinIndicator).not.toBeVisible()
+      await expect(fixture.pinIndicator).toBeHidden()
       await expect.poll(() => nodeRef.isPinned()).toBe(false)
     })
 
@@ -178,7 +172,7 @@ test.describe('Vue Node Context Menu', () => {
 
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Minimize Node')
-      await expect(fixture.body).not.toBeVisible()
+      await expect(fixture.body).toBeHidden()
 
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Expand Node')
@@ -194,9 +188,7 @@ test.describe('Vue Node Context Menu', () => {
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
 
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('KSampler')
-      ).not.toBeVisible()
+      await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeHidden()
     })
   })
 
@@ -309,9 +301,7 @@ test.describe('Vue Node Context Menu', () => {
 
       const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
       await expect(subgraphNode).toBeVisible()
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('KSampler')
-      ).not.toBeVisible()
+      await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeHidden()
 
       // Unpack the subgraph
       await openContextMenu(comfyPage, 'New Subgraph')
@@ -320,7 +310,7 @@ test.describe('Vue Node Context Menu', () => {
       await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeVisible()
       await expect(
         comfyPage.vueNodes.getNodeByTitle('New Subgraph')
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
 
     test('should open properties panel via Edit Subgraph Widgets', async ({
@@ -433,7 +423,7 @@ test.describe('Vue Node Context Menu', () => {
 
       for (const title of nodeTitles) {
         const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
-        await expect(fixture.pinIndicator).not.toBeVisible()
+        await expect(fixture.pinIndicator).toBeHidden()
       }
     })
 
@@ -474,8 +464,8 @@ test.describe('Vue Node Context Menu', () => {
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Minimize Node')
 
-      await expect(fixture1.body).not.toBeVisible()
-      await expect(fixture2.body).not.toBeVisible()
+      await expect(fixture1.body).toBeHidden()
+      await expect(fixture2.body).toBeHidden()
 
       await openMultiNodeContextMenu(comfyPage, nodeTitles)
       await clickExactMenuItem(comfyPage, 'Expand Node')

@@ -47,7 +47,6 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
   }
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
     await comfyPage.settings.setSetting(
       'Comfy.NodeSearchBoxImpl',
@@ -57,7 +56,6 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
 
   test.describe('Loading options', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route, request) => {

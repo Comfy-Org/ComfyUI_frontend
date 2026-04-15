@@ -47,12 +47,10 @@ test.describe(
 
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      const moreOptionsBtn = comfyPage.page.locator(
-        '[data-testid="more-options-button"]'
-      )
+      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
       await expect(moreOptionsBtn).toBeVisible()
 
-      await comfyPage.page.click('[data-testid="more-options-button"]')
+      await moreOptionsBtn.click()
 
       await comfyPage.nextFrame()
 
@@ -64,7 +62,7 @@ test.describe(
         return
       }
 
-      await moreOptionsBtn.click({ force: true })
+      await moreOptionsBtn.click()
       await comfyPage.nextFrame()
 
       const menuOptionsVisibleAfterClick = await comfyPage.page
@@ -113,7 +111,7 @@ test.describe(
 
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Color', { exact: true }).click()
-      const blueSwatch = comfyPage.page.locator('[title="Blue"]')
+      const blueSwatch = comfyPage.page.getByTitle('Blue')
       await expect(blueSwatch.first()).toBeVisible()
       await blueSwatch.first().click()
       await comfyPage.nextFrame()
@@ -128,9 +126,7 @@ test.describe(
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
       await openMoreOptions(comfyPage)
-      await comfyPage.page
-        .getByText('Rename', { exact: true })
-        .click({ force: true })
+      await comfyPage.page.getByText('Rename', { exact: true }).click()
       const input = comfyPage.page.locator(
         '.group-title-editor.node-title-editor .editable-text input'
       )
@@ -155,14 +151,10 @@ test.describe(
         await comfyPage.nextFrame()
       }
 
-      await comfyPage.page
-        .locator('#graph-canvas')
-        .click({ position: { x: 0, y: 50 }, force: true })
-
-      await comfyPage.nextFrame()
+      await comfyPage.canvasOps.mouseClickAt({ x: 0, y: 50 })
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
 
     test('closes More Options menu when clicking the button again (toggle)', async ({
@@ -191,7 +183,7 @@ test.describe(
 
       await expect(
         comfyPage.page.getByText('Rename', { exact: true })
-      ).not.toBeVisible()
+      ).toBeHidden()
     })
   }
 )
