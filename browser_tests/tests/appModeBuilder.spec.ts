@@ -11,6 +11,7 @@ test.describe('App mode builder selection', () => {
   test('Can independently select inputs of same name', async ({
     comfyPage
   }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     const items = comfyPage.appMode.select.selectedItems
 
     await comfyPage.vueNodes.selectNodes(['6', '7'])

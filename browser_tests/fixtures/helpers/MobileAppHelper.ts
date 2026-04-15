@@ -1,28 +1,23 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import { TestIds } from '../selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class MobileAppHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  readonly actionmenu: Locator
+  readonly contentPanel: Locator
+  readonly navigation: Locator
+  readonly navigationTabs: Locator
+  readonly view: Locator
+  readonly workflows: Locator
 
-  get view(): Locator {
-    return this.page.getByTestId(TestIds.linear.mobile)
-  }
-  get navigation(): Locator {
-    return this.page.getByRole('tablist').filter({ hasText: 'Run' })
-  }
-  get workflows() {
-    return this.view.getByTestId(TestIds.linear.mobileWorkflows)
-  }
-  get actionmenu() {
-    return this.view.getByTestId(TestIds.linear.mobileActionMenu)
-  }
-  get navigationTabs() {
-    return this.navigation.getByRole('tab')
-  }
-  get contentPanel() {
-    return this.page.getByRole('tabpanel')
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.view = this.page.getByTestId(TestIds.linear.mobile)
+    this.actionmenu = this.view.getByTestId(TestIds.linear.mobileActionMenu)
+    this.contentPanel = this.page.getByRole('tabpanel')
+    this.navigation = this.page.getByRole('tablist').filter({ hasText: 'Run' })
+    this.navigationTabs = this.navigation.getByRole('tab')
+    this.workflows = this.view.getByTestId(TestIds.linear.mobileWorkflows)
   }
 
   async switchWorkflow(workflowName: string) {
