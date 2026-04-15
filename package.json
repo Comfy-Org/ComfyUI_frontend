@@ -50,6 +50,7 @@
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "nx run @comfyorg/desktop-ui:typecheck",
+    "typecheck:website": "nx run @comfyorg/website:typecheck",
     "zipdist": "node scripts/zipdist.js",
     "clean": "nx reset"
   },
