@@ -29,13 +29,14 @@ const { activeIndex: activeCategory } = usePinScrub(
   { itemCount: categories.length }
 )
 
-useParallax([leftImgRef, rightImgRef], { trigger: sectionRef })
+useParallax([rightImgRef], { trigger: sectionRef })
+useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
 </script>
 
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative flex flex-col items-center overflow-hidden px-8 py-20 lg:h-screen lg:px-0 lg:py-24"
+    class="bg-primary-comfy-ink relative flex flex-col items-center overflow-hidden px-8 py-20 lg:h-[calc(100vh+60px)] lg:px-0 lg:py-24"
   >
     <!-- Left image -->
     <div
