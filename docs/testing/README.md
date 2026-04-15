@@ -17,7 +17,8 @@ The ComfyUI Frontend project uses **colocated tests** - test files are placed al
 - **Component Tests**: Located directly alongside their components (e.g., `MyComponent.test.ts` next to `MyComponent.vue`)
 - **Unit Tests**: Located alongside their source files (e.g., `myUtil.test.ts` next to `myUtil.ts`)
 - **Store Tests**: Located in `src/stores/` alongside their store files
-- **Browser Tests**: Located in the `browser_tests/` directory (see dedicated README there)
+- **Browser Tests**: Playwright specs live in `browser_tests/tests/**/*.spec.ts` (see dedicated README there)
+- **Browser Test Helper Unit Tests**: Vitest tests for browser fixtures/helpers may be colocated in `browser_tests/` as `*.test.ts`, outside `browser_tests/tests/`
 
 ### Test File Naming
 
