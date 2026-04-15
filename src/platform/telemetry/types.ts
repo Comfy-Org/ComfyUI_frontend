@@ -344,6 +344,29 @@ export interface BeginCheckoutMetadata
   previous_tier?: TierKey
 }
 
+export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
+  user_id?: string
+  transaction_id: string
+  value: number
+  currency: string
+  tier: Exclude<TierKey, 'free'>
+  cycle: BillingCycle
+  checkout_type: 'new' | 'change'
+  previous_tier?: Exclude<TierKey, 'free'>
+  ecommerce: {
+    transaction_id: string
+    value: number
+    currency: string
+    items: Array<{
+      item_name: string
+      item_category: 'subscription'
+      item_variant: BillingCycle
+      price: number
+      quantity: 1
+    }>
+  }
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -360,7 +383,9 @@ export interface TelemetryProvider {
     metadata?: SubscriptionMetadata
   ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
-  trackMonthlySubscriptionSucceeded?(): void
+  trackMonthlySubscriptionSucceeded?(
+    metadata?: SubscriptionSuccessMetadata
+  ): void
   trackMonthlySubscriptionCancelled?(): void
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
@@ -559,3 +584,4 @@ export type TelemetryEventProperties =
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata
+  | SubscriptionSuccessMetadata

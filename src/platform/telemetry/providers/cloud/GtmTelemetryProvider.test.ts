@@ -92,9 +92,34 @@ describe('GtmTelemetryProvider', () => {
 
     it('pushes subscription_success for subscription activation', () => {
       const provider = createInitializedProvider()
-      provider.trackMonthlySubscriptionSucceeded()
+      provider.trackMonthlySubscriptionSucceeded({
+        transaction_id: 'stripe-event-123',
+        value: 35,
+        currency: 'USD',
+        tier: 'creator',
+        cycle: 'monthly',
+        checkout_type: 'change',
+        previous_tier: 'standard',
+        ecommerce: {
+          transaction_id: 'stripe-event-123',
+          value: 35,
+          currency: 'USD',
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'monthly',
+              price: 35,
+              quantity: 1
+            }
+          ]
+        }
+      })
       expect(lastDataLayerEntry()).toMatchObject({
-        event: 'subscription_success'
+        event: 'subscription_success',
+        transaction_id: 'stripe-event-123',
+        tier: 'creator',
+        checkout_type: 'change'
       })
     })
 

@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -13,6 +13,7 @@ import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
@@ -23,6 +24,82 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 export type CloudSubscriptionStatusResponse = NonNullable<
   operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
 >
+
+type TrackedSubscriptionTierKey = Exclude<TierKey, 'free'>
+
+type PendingSubscriptionSuccessResponse = {
+  id: string
+  transaction_id: string
+  value: number
+  currency: string
+  tier: TrackedSubscriptionTierKey
+  cycle: 'monthly' | 'yearly'
+  checkout_type: 'new' | 'change'
+  previous_tier?: TrackedSubscriptionTierKey | null
+}
+
+type FetchSubscriptionStatusOptions = {
+  syncPendingSuccess?: boolean
+}
+
+const SUBSCRIPTION_SUCCESS_DELIVERED_STORAGE_KEY =
+  'comfy.subscription_success.delivered_transactions'
+
+function readDeliveredSubscriptionSuccessTransactions(): string[] {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(
+      SUBSCRIPTION_SUCCESS_DELIVERED_STORAGE_KEY
+    )
+    if (!rawValue) {
+      return []
+    }
+
+    const parsedValue = JSON.parse(rawValue)
+    if (!Array.isArray(parsedValue)) {
+      return []
+    }
+
+    return parsedValue.filter(
+      (transactionId): transactionId is string =>
+        typeof transactionId === 'string' && transactionId.length > 0
+    )
+  } catch {
+    return []
+  }
+}
+
+function hasDeliveredSubscriptionSuccess(transactionId: string): boolean {
+  return readDeliveredSubscriptionSuccessTransactions().includes(transactionId)
+}
+
+function markSubscriptionSuccessAsDelivered(transactionId: string): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const nextTransactions = [
+    transactionId,
+    ...readDeliveredSubscriptionSuccessTransactions().filter(
+      (existingTransactionId) => existingTransactionId !== transactionId
+    )
+  ].slice(0, 20)
+
+  try {
+    window.localStorage.setItem(
+      SUBSCRIPTION_SUCCESS_DELIVERED_STORAGE_KEY,
+      JSON.stringify(nextTransactions)
+    )
+  } catch (error) {
+    console.warn(
+      '[Subscription] Failed to persist delivered subscription success transaction',
+      error
+    )
+  }
+}
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -111,8 +188,111 @@ function useSubscriptionInternal() {
       return getCheckoutAttribution()
     }
 
+  const buildAuthHeaders = async (): Promise<Record<string, string>> => {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+
+    return {
+      ...authHeader,
+      'Content-Type': 'application/json'
+    }
+  }
+
+  const fetchPendingSubscriptionSuccess = async (
+    headers: Record<string, string>
+  ): Promise<PendingSubscriptionSuccessResponse | null> => {
+    const response = await fetch(
+      buildApiUrl('/customers/pending-subscription-success'),
+      {
+        headers
+      }
+    )
+
+    if (response.status === 204) {
+      return null
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch pending subscription success: ${response.status}`
+      )
+    }
+
+    return response.json()
+  }
+
+  const consumePendingSubscriptionSuccess = async (
+    headers: Record<string, string>,
+    id: string
+  ): Promise<void> => {
+    const response = await fetch(
+      buildApiUrl(`/customers/pending-subscription-success/${id}/consume`),
+      {
+        method: 'POST',
+        headers
+      }
+    )
+
+    if (!response.ok && response.status !== 404) {
+      throw new Error(
+        `Failed to consume pending subscription success: ${response.status}`
+      )
+    }
+  }
+
+  const syncPendingSubscriptionSuccess = async (
+    headers: Record<string, string>
+  ): Promise<void> => {
+    const pendingSuccess = await fetchPendingSubscriptionSuccess(headers)
+    if (!pendingSuccess) {
+      return
+    }
+
+    if (hasDeliveredSubscriptionSuccess(pendingSuccess.transaction_id)) {
+      await consumePendingSubscriptionSuccess(headers, pendingSuccess.id)
+      return
+    }
+
+    telemetry?.trackMonthlySubscriptionSucceeded({
+      ...(authStore.userId ? { user_id: authStore.userId } : {}),
+      transaction_id: pendingSuccess.transaction_id,
+      value: pendingSuccess.value,
+      currency: pendingSuccess.currency,
+      tier: pendingSuccess.tier,
+      cycle: pendingSuccess.cycle,
+      checkout_type: pendingSuccess.checkout_type,
+      ...(pendingSuccess.previous_tier
+        ? { previous_tier: pendingSuccess.previous_tier }
+        : {}),
+      ecommerce: {
+        transaction_id: pendingSuccess.transaction_id,
+        value: pendingSuccess.value,
+        currency: pendingSuccess.currency,
+        items: [
+          {
+            item_name: pendingSuccess.tier,
+            item_category: 'subscription',
+            item_variant: pendingSuccess.cycle,
+            price: pendingSuccess.value,
+            quantity: 1
+          }
+        ]
+      }
+    })
+
+    markSubscriptionSuccessAsDelivered(pendingSuccess.transaction_id)
+    await consumePendingSubscriptionSuccess(headers, pendingSuccess.id)
+  }
+
   const fetchStatus = wrapWithErrorHandlingAsync(
-    fetchSubscriptionStatus,
+    () => fetchSubscriptionStatus(),
+    reportError
+  )
+
+  const syncStatusAfterCheckout = wrapWithErrorHandlingAsync(
+    () => fetchSubscriptionStatus({ syncPendingSuccess: true }),
     reportError
   )
 
@@ -188,19 +368,15 @@ function useSubscriptionInternal() {
    * Fetch the current cloud subscription status for the authenticated user
    * @returns Subscription status or null if no subscription exists
    */
-  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const authHeader = await getAuthHeader()
-    if (!authHeader) {
-      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
+  async function fetchSubscriptionStatus(
+    options?: FetchSubscriptionStatusOptions
+  ): Promise<CloudSubscriptionStatusResponse | null> {
+    const headers = await buildAuthHeaders()
 
     const response = await fetch(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        }
+        headers
       }
     )
 
@@ -216,7 +392,39 @@ function useSubscriptionInternal() {
     const statusData = await response.json()
     subscriptionStatus.value = statusData
 
+    if (options?.syncPendingSuccess && statusData.is_active) {
+      await syncPendingSubscriptionSuccess(headers)
+    }
+
     return statusData
+  }
+
+  const handleDeliveredSubscriptionSuccessChange = (event: StorageEvent) => {
+    if (
+      event.key !== SUBSCRIPTION_SUCCESS_DELIVERED_STORAGE_KEY ||
+      !isCloud ||
+      !isLoggedIn.value
+    ) {
+      return
+    }
+
+    void fetchSubscriptionStatus().catch((error) => {
+      console.error(
+        '[Subscription] Failed to refresh subscription status after cross-tab success delivery:',
+        error
+      )
+    })
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', handleDeliveredSubscriptionSuccessChange)
+
+    onScopeDispose(() => {
+      window.removeEventListener(
+        'storage',
+        handleDeliveredSubscriptionSuccessChange
+      )
+    })
   }
 
   watch(
@@ -224,7 +432,7 @@ function useSubscriptionInternal() {
     async (loggedIn) => {
       if (loggedIn && isCloud) {
         try {
-          await fetchSubscriptionStatus()
+          await fetchSubscriptionStatus({ syncPendingSuccess: true })
         } catch (error) {
           // Network errors are expected during navigation/component unmount
           // and when offline - log for debugging but don't surface to user
@@ -243,20 +451,14 @@ function useSubscriptionInternal() {
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getAuthHeader()
-      if (!authHeader) {
-        throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-      }
+      const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
       const response = await fetch(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
-          headers: {
-            ...authHeader,
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(checkoutAttribution)
         }
       )
@@ -293,6 +495,7 @@ function useSubscriptionInternal() {
     // Actions
     subscribe,
     fetchStatus,
+    syncStatusAfterCheckout,
     showSubscriptionDialog,
     manageSubscription,
     requireActiveSubscription,
