@@ -16,7 +16,7 @@
             subject: $t('sideToolbar.labels.assets')
           })
         "
-        class="min-w-0 flex-1"
+        class="min-w-96 flex-1"
       >
         <template #suggestion="{ suggestion }">
           <span class="text-muted-foreground italic opacity-90">
