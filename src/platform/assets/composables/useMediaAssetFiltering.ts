@@ -47,10 +47,15 @@ function matchesPropertyFilter(
         return value <= n
     }
   }
-  if (typeof value === 'boolean') return value === (target === 'true')
+  if (typeof value === 'boolean') {
+    if (op !== '=') return false
+    if (target !== 'true' && target !== 'false') return false
+    return value === (target === 'true')
+  }
   if (typeof value === 'string') {
     if (op === '~') return value.toLowerCase().includes(target.toLowerCase())
-    return value === target
+    if (op === '=') return value === target
+    return false
   }
   return false
 }

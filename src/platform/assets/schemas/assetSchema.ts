@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { zUserProperties } from './userPropertySchema'
+
 // Zod schemas for asset API validation matching ComfyUI Assets REST API spec
 const zAsset = z.object({
   id: z.string(),
@@ -104,7 +106,7 @@ const zAssetUserMetadata = z.object({
   base_model: z.array(z.string()).optional(),
   additional_tags: z.array(z.string()).optional(),
   user_description: z.string().optional(),
-  user_properties: z.record(z.unknown()).optional()
+  user_properties: zUserProperties.optional()
 })
 
 export type AssetUserMetadata = z.infer<typeof zAssetUserMetadata>

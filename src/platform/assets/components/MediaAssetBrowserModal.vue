@@ -541,6 +541,7 @@ watch(
   () => {
     searchQuery.value = ''
     filterTags.value = navTagFilter.value ? [navTagFilter.value] : []
+    propertyFilters.value = []
     focusedAsset.value = null
     clearSelection()
     exitFolderView()

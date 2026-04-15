@@ -70,6 +70,7 @@ export function createPropertyFromSuggestion(
 }
 
 export function coverageOpacityClass(count: number, total: number): string {
+  if (total <= 0) return 'opacity-40'
   if (count >= total) return 'font-semibold'
   const ratio = count / total
   if (ratio > 0.66) return 'opacity-75'

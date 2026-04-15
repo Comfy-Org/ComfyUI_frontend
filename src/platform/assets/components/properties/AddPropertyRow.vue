@@ -198,9 +198,21 @@ const canCreate = computed(() => {
 })
 
 const propertyTypes: { type: PropertyType; icon: string; label: string }[] = [
-  { type: 'string', icon: 'icon-[lucide--type]', label: 'Text' },
-  { type: 'number', icon: 'icon-[lucide--hash]', label: 'Number' },
-  { type: 'boolean', icon: 'icon-[lucide--square-check]', label: 'Boolean' }
+  {
+    type: 'string',
+    icon: 'icon-[lucide--type]',
+    label: t('properties.typeText')
+  },
+  {
+    type: 'number',
+    icon: 'icon-[lucide--hash]',
+    label: t('properties.typeNumber')
+  },
+  {
+    type: 'boolean',
+    icon: 'icon-[lucide--square-check]',
+    label: t('properties.typeBoolean')
+  }
 ]
 
 function iconForType(type: PropertyType): string {
@@ -245,7 +257,8 @@ function handleEnterKey() {
   }
 }
 
-function handleKeySelected(value: string) {
+function handleKeySelected(rawValue: string) {
+  const value = rawValue.trim()
   if (!value || existingKeys.value.includes(value)) return
 
   const suggestion = suggestions.value.get(value)

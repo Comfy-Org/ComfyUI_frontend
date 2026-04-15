@@ -507,7 +507,12 @@ const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 // Expand image sets (outputCount > 1) into sub-images for the info panel
 const expandedSelectedAssets = ref<AssetItem[]>([])
 
-watch(selectedAssets, async (assets) => {
+watch(selectedAssets, async (assets, _, onCleanup) => {
+  let cancelled = false
+  onCleanup(() => {
+    cancelled = true
+  })
+
   if (assets.length !== 1) {
     expandedSelectedAssets.value = []
     return
@@ -516,9 +521,10 @@ watch(selectedAssets, async (assets) => {
   if (getOutputCount(asset) > 1) {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     if (metadata) {
-      expandedSelectedAssets.value = await resolveOutputAssetItems(metadata, {
+      const items = await resolveOutputAssetItems(metadata, {
         createdAt: asset.created_at
       })
+      if (!cancelled) expandedSelectedAssets.value = items
       return
     }
   }
@@ -604,6 +610,7 @@ watch(
     // Clear search when switching tabs
     searchQuery.value = ''
     filterTags.value = []
+    propertyFilters.value = []
     // Reset pagination state when tab changes
     void refreshAssets()
     // Refocus search bar after tab switch
