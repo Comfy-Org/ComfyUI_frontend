@@ -94,6 +94,31 @@ export class VueNodeHelpers {
     await this.page.mouse.click(50, 50)
   }
 
+  private getVisibleClickPosition(
+    box: NonNullable<Awaited<ReturnType<Locator['boundingBox']>>>
+  ) {
+    const viewport = this.page.viewportSize()
+    if (!viewport) {
+      return { x: box.width / 2, y: box.height * 0.75 }
+    }
+
+    const visibleLeft = Math.max(box.x, 0)
+    const visibleRight = Math.min(box.x + box.width, viewport.width)
+    const visibleTop = Math.max(box.y, 0)
+    const visibleBottom = Math.min(box.y + box.height, viewport.height)
+
+    if (visibleLeft >= visibleRight || visibleTop >= visibleBottom) {
+      throw new Error(
+        'subgraph-enter-button has no visible viewport intersection'
+      )
+    }
+
+    return {
+      x: visibleLeft - box.x + (visibleRight - visibleLeft) / 2,
+      y: Math.max(1, Math.min(box.height - 2, visibleBottom - box.y - 2))
+    }
+  }
+
   /**
    * Delete selected Vue nodes using Delete key
    */
@@ -193,18 +218,18 @@ export class VueNodeHelpers {
     const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
     const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
 
-    // The footer tab button extends below the node body (visible area),
-    // but its bounding box center overlaps the node body div.
-    // Click at the bottom 25% of the button which is the genuinely visible
-    // and unobstructed area outside the node body boundary.
+    // The footer tab sits below the node body and can be partially clipped by
+    // the viewport. Click inside the visible slice of the button instead of
+    // using the raw bounding-box center, which can land on the page root.
     const box = await editButton.boundingBox()
     if (!box) {
       throw new Error(
         'subgraph-enter-button has no bounding box: element may be hidden or not in DOM'
       )
     }
+
     await editButton.click({
-      position: { x: box.width / 2, y: box.height * 0.75 }
+      position: this.getVisibleClickPosition(box)
     })
   }
 }
