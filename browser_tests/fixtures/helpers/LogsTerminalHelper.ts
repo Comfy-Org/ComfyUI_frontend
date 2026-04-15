@@ -47,24 +47,29 @@ export class LogsTerminalHelper {
   static buildWsLogFrame(messages: string[]): string {
     return JSON.stringify({
       type: 'logs',
-      data: {
-        entries: messages.map((m) => ({ t: new Date().toISOString(), m }))
-      }
+      data: { entries: LogsTerminalHelper.buildEntries(messages) }
     })
   }
 
   private static buildRawLogsResponse(messages: string[]): LogsRawResponse {
     return {
       size: { cols: 80, row: 24 },
-      entries: messages.map((m) => ({ t: new Date().toISOString(), m }))
+      entries: LogsTerminalHelper.buildEntries(messages)
     }
+  }
+
+  private static buildEntries(messages: string[]) {
+    return messages.map((m) => ({
+      t: '1970-01-01T00:00:00.000Z',
+      m: m.endsWith('\n') ? m : `${m}\n`
+    }))
   }
 }
 
 export const logsTerminalFixture = base.extend<{
   logsTerminal: LogsTerminalHelper
 }>({
-  logsTerminal: async ({ page, context: _ }, use) => {
+  logsTerminal: async ({ page }, use) => {
     await use(new LogsTerminalHelper(page))
   }
 })

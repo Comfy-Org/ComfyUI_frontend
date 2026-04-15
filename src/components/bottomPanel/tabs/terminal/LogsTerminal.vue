@@ -2,14 +2,14 @@
   <div class="size-full bg-transparent">
     <p
       v-if="errorMessage"
-      data-testid="logs-error-message"
+      data-testid="terminal-error-message"
       class="p-4 text-center"
     >
       {{ errorMessage }}
     </p>
     <ProgressSpinner
       v-else-if="loading"
-      data-testid="logs-loading-spinner"
+      data-testid="terminal-loading-spinner"
       class="relative inset-0 z-10 flex h-full items-center justify-center"
     />
     <BaseTerminal v-show="!loading" @created="terminalCreated" />

@@ -189,8 +189,8 @@ export const TestIds = {
     root: 'terminal-root',
     host: 'terminal-host',
     copyButton: 'terminal-copy-button',
-    logsErrorMessage: 'logs-error-message',
-    logsLoadingSpinner: 'logs-loading-spinner'
+    errorMessage: 'terminal-error-message',
+    loadingSpinner: 'terminal-loading-spinner'
   }
 } as const
 

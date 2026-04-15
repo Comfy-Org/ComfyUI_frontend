@@ -32,13 +32,9 @@ export class LogsTab {
     this.terminalRoot = page.getByTestId(TestIds.terminal.root)
     this.terminalHost = page.getByTestId(TestIds.terminal.host)
     this.copyButton = page.getByTestId(TestIds.terminal.copyButton)
-    this.errorMessage = page.getByTestId(TestIds.terminal.logsErrorMessage)
-    this.loadingSpinner = page.getByTestId(TestIds.terminal.logsLoadingSpinner)
+    this.errorMessage = page.getByTestId(TestIds.terminal.errorMessage)
+    this.loadingSpinner = page.getByTestId(TestIds.terminal.loadingSpinner)
     this.xtermScreen = this.terminalHost.locator('.xterm-screen')
-  }
-
-  async activate() {
-    await this.tab.click()
   }
 }
 
@@ -46,7 +42,6 @@ export class BottomPanel {
   readonly root: Locator
   readonly keyboardShortcutsButton: Locator
   readonly toggleButton: Locator
-  readonly closeButton: Locator
   readonly shortcuts: ShortcutsTab
   readonly logs: LogsTab
 
@@ -58,7 +53,6 @@ export class BottomPanel {
     this.toggleButton = page.getByRole('button', {
       name: /Toggle Bottom Panel/i
     })
-    this.closeButton = this.root.getByRole('button', { name: /close/i })
     this.shortcuts = new ShortcutsTab(page)
     this.logs = new LogsTab(page)
   }
