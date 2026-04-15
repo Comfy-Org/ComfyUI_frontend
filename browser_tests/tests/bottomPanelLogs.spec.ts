@@ -18,10 +18,19 @@ const test = mergeTests(comfyPageFixture, logsTerminalFixture, webSocketFixture)
 
 test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
   test.describe('panel', () => {
+    test.beforeEach(async ({ logsTerminal }) => {
+      await logsTerminal.mockSubscribeLogs()
+      await logsTerminal.mockRawLogs([])
+    })
+
     test('opens to Logs tab via toggle button', async ({ comfyPage }) => {
       await expect(comfyPage.bottomPanel.root).toBeHidden()
       await comfyPage.bottomPanel.toggleButton.click()
-      await expect(comfyPage.bottomPanel.logs.tab).toBeVisible()
+      await expect(comfyPage.bottomPanel.logs.tab).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeVisible()
     })
 
     test('closes via toggle button', async ({ comfyPage }) => {
