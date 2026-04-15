@@ -121,7 +121,7 @@ jobs:
           SLACK_PAYLOAD: ${{ steps.slack-payload.outputs.payload }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         run: |
-          # Channel: #p-frontend-automated-testing
+          # Channel: #p-deprecated-frontend-automated-testing
           BODY=$(echo "$SLACK_PAYLOAD" | jq --arg ch "C0AP09LKRDZ" '. + {channel: $ch}')
           curl -sf -X POST \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \

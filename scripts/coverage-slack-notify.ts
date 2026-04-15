@@ -28,12 +28,12 @@ function parseLcovContent(content: string): CoverageData | null {
     } else if (line.startsWith('LF:')) {
       const n = parseInt(line.slice(3), 10) || 0
       const entry = perFile.get(currentFile) ?? { lf: 0, lh: 0 }
-      entry.lf = Math.max(entry.lf, n)
+      entry.lf = n
       perFile.set(currentFile, entry)
     } else if (line.startsWith('LH:')) {
       const n = parseInt(line.slice(3), 10) || 0
       const entry = perFile.get(currentFile) ?? { lf: 0, lh: 0 }
-      entry.lh = Math.max(entry.lh, n)
+      entry.lh = n
       perFile.set(currentFile, entry)
     }
   }

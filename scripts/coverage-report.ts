@@ -47,7 +47,7 @@ for (const line of lcov.split('\n')) {
       brf: 0,
       brh: 0
     }
-    rec.lf = Math.max(rec.lf, n)
+    rec.lf = n
     fileRecords.set(currentFile, rec)
   } else if (line.startsWith('LH:')) {
     const n = parseInt(line.slice(3), 10) || 0
@@ -59,24 +59,24 @@ for (const line of lcov.split('\n')) {
       brf: 0,
       brh: 0
     }
-    rec.lh = Math.max(rec.lh, n)
+    rec.lh = n
     fileRecords.set(currentFile, rec)
   } else if (line.startsWith('FNF:')) {
     const n = parseInt(line.slice(4), 10) || 0
     const rec = fileRecords.get(currentFile)
-    if (rec) rec.fnf = Math.max(rec.fnf, n)
+    if (rec) rec.fnf = n
   } else if (line.startsWith('FNH:')) {
     const n = parseInt(line.slice(4), 10) || 0
     const rec = fileRecords.get(currentFile)
-    if (rec) rec.fnh = Math.max(rec.fnh, n)
+    if (rec) rec.fnh = n
   } else if (line.startsWith('BRF:')) {
     const n = parseInt(line.slice(4), 10) || 0
     const rec = fileRecords.get(currentFile)
-    if (rec) rec.brf = Math.max(rec.brf, n)
+    if (rec) rec.brf = n
   } else if (line.startsWith('BRH:')) {
     const n = parseInt(line.slice(4), 10) || 0
     const rec = fileRecords.get(currentFile)
-    if (rec) rec.brh = Math.max(rec.brh, n)
+    if (rec) rec.brh = n
   }
 }
 
