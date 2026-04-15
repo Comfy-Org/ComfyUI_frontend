@@ -40,12 +40,7 @@
         v-if="!imageError"
         :src="currentImageUrl"
         :alt="imageAltText"
-        :class="
-          cn(
-            'pointer-events-none absolute inset-0 block size-full object-contain transition-opacity',
-            (isHovered || isFocused) && 'opacity-60'
-          )
-        "
+        class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
@@ -150,7 +145,7 @@ const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
 
 const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
+  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-lg transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
 
 // Component state
 const currentIndex = ref(0)
