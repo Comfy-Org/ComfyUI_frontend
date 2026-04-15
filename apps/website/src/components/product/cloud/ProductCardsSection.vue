@@ -7,9 +7,5 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <ProductCardsSection
-    :locale="locale"
-    exclude-product="cloud"
-    label-key="products.labelProducts"
-  />
+  <ProductCardsSection :locale="locale" exclude-product="cloud" />
 </template>

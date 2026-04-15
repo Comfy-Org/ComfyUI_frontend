@@ -10,7 +10,7 @@ type Product = 'local' | 'cloud' | 'api' | 'enterprise'
 const {
   locale = 'en',
   excludeProduct,
-  labelKey = 'products.label'
+  labelKey = ''
 } = defineProps<{
   locale?: Locale
   excludeProduct?: Product
@@ -47,6 +47,7 @@ const cards = excludeProduct
     <!-- Header -->
     <div class="flex flex-col items-center text-center">
       <p
+        v-if="labelKey"
         class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
       >
         {{ t(labelKey, locale) }}

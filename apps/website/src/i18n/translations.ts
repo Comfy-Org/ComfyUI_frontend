@@ -130,10 +130,6 @@ const translations = {
   },
 
   // ProductCardsSection
-  'products.label': {
-    en: 'Comfy UI',
-    'zh-CN': 'Comfy UI'
-  },
   'products.labelProducts': {
     en: 'Products',
     'zh-CN': '产品'
