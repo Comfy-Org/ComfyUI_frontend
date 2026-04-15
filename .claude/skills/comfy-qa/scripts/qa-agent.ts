@@ -16,7 +16,10 @@
  */
 
 import type { Page } from '@playwright/test'
+/* eslint-disable import-x/no-unresolved */
+// @ts-expect-error -- claude-agent-sdk has no type declarations for vue-tsc
 import { query, tool, createSdkMcpServer } from '@anthropic-ai/claude-agent-sdk'
+/* eslint-enable import-x/no-unresolved */
 import { z } from 'zod'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { execSync } from 'child_process'

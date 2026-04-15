@@ -39,7 +39,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{astro,vue,ts}', '*.{js,ts,mjs}']
     }
   },
-  ignoreBinaries: ['python3', 'wrangler'],
+  ignoreBinaries: ['python3'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify-json/lucide',
