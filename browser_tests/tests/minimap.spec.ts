@@ -3,6 +3,11 @@ import type { Locator, Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  clientPointOnMinimapOverlay,
+  MINIMAP_POINTER_OPTS,
+  readMainCanvasOffset
+} from '@e2e/helpers/minimap'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
@@ -31,34 +36,6 @@ async function clickMinimapAt(
     box!.x + box!.width * relX,
     box!.y + box!.height * relY
   )
-}
-
-async function clientPointOnMinimapOverlay(
-  overlay: Locator,
-  relX: number,
-  relY: number
-): Promise<{ clientX: number; clientY: number }> {
-  const box = await overlay.boundingBox()
-  expect(box, 'Minimap interaction overlay not found').toBeTruthy()
-  return {
-    clientX: box!.x + box!.width * relX,
-    clientY: box!.y + box!.height * relY
-  }
-}
-
-const MINIMAP_POINTER_OPTS = {
-  bubbles: true,
-  cancelable: true,
-  pointerId: 1
-} as const
-
-async function readMainCanvasOffset(
-  page: Page
-): Promise<{ x: number; y: number }> {
-  return page.evaluate(() => ({
-    x: window.app!.canvas.ds.offset[0],
-    y: window.app!.canvas.ds.offset[1]
-  }))
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
@@ -140,24 +117,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapContainer).toBeVisible()
   })
 
-  test('Close button hides minimap', async ({ comfyPage }) => {
-    const minimap = comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
-    await expect(minimap).toBeVisible()
-
-    await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
-    await expect(minimap).toBeHidden()
-
-    await expect(
-      comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
-    ).resolves.toBe(false)
-
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
-    await expect(toggleButton).toBeVisible()
-  })
-
-  test('Re-open minimap after close via toolbar toggle', async ({
+  test('Close button hides minimap; toolbar toggle reopens it', async ({
     comfyPage
   }) => {
     const minimap = comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
@@ -171,13 +131,23 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
     await expect(minimap).toBeHidden()
 
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
+      )
+      .toBe(false)
+
+    await expect(toggleButton).toBeVisible()
+
     await toggleButton.click()
     await expect(minimap).toBeVisible()
     await expect(viewport).toBeVisible()
 
-    await expect(
-      comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
-    ).resolves.toBe(true)
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
+      )
+      .toBe(true)
   })
 
   test(
@@ -429,7 +399,6 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       clientX: upPoint.clientX,
       clientY: upPoint.clientY
     })
-    await comfyPage.nextFrame()
   })
 
   test(
@@ -479,9 +448,11 @@ test.describe('Minimap mobile', { tag: ['@mobile', '@canvas'] }, () => {
       'Mobile project should use a viewport narrower than the lg breakpoint'
     ).toBeLessThan(1024)
 
-    await expect(
-      comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
-    ).resolves.toBe(false)
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
+      )
+      .toBe(false)
 
     await expect(
       comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
