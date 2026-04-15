@@ -274,6 +274,12 @@ jobs:
             --repo ${{ github.repository }} \
             --json title,body,labels --jq '"Labels: \([.labels[].name] | join(", "))\nTitle: \(.title)\n\n\(.body)"' \
             > "${{ runner.temp }}/issue-body.txt"
+          # Append top comments for reproduction context
+          gh issue view ${{ needs.resolve-matrix.outputs.number }} \
+            --repo ${{ github.repository }} \
+            --comments --json comments \
+            --jq '[.comments[] | select(.authorAssociation != "NONE" or (.body | test("repro|step|how to|workaround"; "i"))) | .body] | first(5; .[]) // empty' \
+            >> "${{ runner.temp }}/issue-body.txt" 2>/dev/null || true
           echo "Issue body saved ($(wc -c < "${{ runner.temp }}/issue-body.txt") bytes)"
 
       - name: Download QA guide

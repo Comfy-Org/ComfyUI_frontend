@@ -559,7 +559,10 @@ export async function runResearchPhase(
 - done(verdict, summary, evidence, testCode) — Finish with the final test
 
 ## Workflow
-1. Read the issue description carefully
+1. Read the issue description carefully. Think about:
+   - What PRECONDITIONS are needed? (many nodes on canvas? specific layout? saved workflow? subgraph?)
+   - What HIDDEN ASSUMPTIONS exist? (e.g. "z-index bug" means nodes must overlap → need a crowded canvas)
+   - What specific UI STATE triggers the bug? (dirty workflow? collapsed node? specific menu open?)
 2. **Environment setup (critical)** — many bugs only reproduce with the user's specific workflow. If the issue body contains a workflow JSON (code block or a link like \`[workflow.json](https://github.com/user-attachments/...)\`), you MUST load it:
    - **URL attachment**: call loadWorkflow(url) directly with the attachment URL — ONE call, no download step needed.
    - **Inline JSON code block**: call loadWorkflow(jsonString) with the raw JSON text from the issue body.
@@ -573,11 +576,17 @@ export async function runResearchPhase(
 4. Use inspect() to understand the current UI state and discover element selectors
 5. If unsure about the fixture API, use readFixture("ComfyPage.ts") or relevant helper
 6. Write a Playwright test that:
-   - Performs the exact reproduction steps from the issue
-   - Asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
+   - FIRST sets up the preconditions (add multiple nodes, create specific layout, save workflow, etc.)
+   - THEN performs the exact reproduction steps from the issue
+   - FINALLY asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
+   - Think like a tester: the bug may only appear under specific conditions that the reporter assumed were obvious
    - If a workflow was loaded in step 2, the test MUST load the same workflow itself (fetch + loadGraphData inside the test) — the agent's setup does not persist into the separate test browser session
 7. Run the test with runTest()
-8. If it fails: read the error, fix the test, run again (max 5 attempts)
+8. If it fails, ANALYZE the error before retrying (max 5 attempts):
+   - Is it a selector issue? Use inspect() to find the right element
+   - Is it a timing issue? The UI may need time to update — use nextFrame() or expect.poll()
+   - Is the precondition wrong? Maybe the bug only appears with MORE nodes, AFTER a save, etc.
+   - Try a DIFFERENT approach, not the same code with minor tweaks
 9. Call done() with the final verdict and test code
 
 ## Test writing guidelines
