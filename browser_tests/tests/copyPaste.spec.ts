@@ -155,7 +155,6 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       const loadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       await loadImageNodes[0].click('title')
-      await comfyPage.nextFrame()
 
       const uploadPromise = comfyPage.page.waitForResponse(
         (resp) => resp.url().includes('/upload/') && resp.status() === 200,

@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
 
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+
 export class SettingsHelper {
   constructor(private readonly page: Page) {}
 
@@ -10,6 +12,7 @@ export class SettingsHelper {
       },
       { id: settingId, value: settingValue }
     )
+    await nextFrame(this.page)
   }
 
   async getSetting<T = unknown>(settingId: string): Promise<T> {
