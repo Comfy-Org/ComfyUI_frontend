@@ -671,6 +671,10 @@ export async function runResearchPhase(
 ### Settings (comfyPage.settings)
 - \`.setSetting(id, value)\` — change a ComfyUI setting
 - \`.getSetting(id)\` — read current setting value
+- Common setting IDs:
+  - \`'Comfy.UseNewMenu'\` — 'Top' | 'Bottom' | 'Disabled'
+  - \`'Comfy.Locale'\` — 'en' | 'zh' | 'ja' | 'ko' | 'ru' | 'fr' | 'es' etc. (change UI language)
+  - \`'Comfy.NodeBadge.NodeSourceBadgeMode'\` — node badge display
 
 ### Keyboard (comfyPage.keyboard)
 - \`.undo()\` / \`.redo()\` — Ctrl+Z / Ctrl+Y
@@ -683,6 +687,7 @@ export async function runResearchPhase(
 - \`.setupWorkflowsDirectory(structure)\` — setup test directory
 - \`.deleteWorkflow(name)\`
 - \`.isCurrentWorkflowModified()\` — check dirty state
+- Available subgraph assets: loadWorkflow('subgraphs/basic-subgraph'), 'subgraphs/nested-subgraph', 'subgraphs/subgraph-with-promoted-text-widget', etc.
 
 ### Context Menu (comfyPage.contextMenu)
 - \`.openFor(locator)\` — right-click locator and wait for menu
@@ -690,12 +695,26 @@ export async function runResearchPhase(
 - \`.isVisible()\` — check if context menu is showing
 - \`.assertHasItems(items)\` — assert menu contains items
 
+### Queue & Assets (comfyPage.assets)
+- \`comfyPage.runButton.click()\` — execute current workflow (backend runs with --cpu in CI)
+- \`comfyPage.assets.mockOutputHistory(jobs)\` — mock queue history with fake job items
+- \`comfyPage.assets.mockEmptyState()\` — clear all mocked state
+- Queue overlay: \`page.getByTestId('queue-overlay-toggle')\` to open queue panel
+
+### Subgraph (comfyPage.subgraph)
+- \`.isInSubgraph()\` — check if currently viewing a subgraph
+- \`.getNodeCount()\` — nodes in current graph view
+- \`.getSlotCount('input'|'output')\` — I/O slot count
+- \`.connectToInput(sourceNode, slotIdx, inputName)\` — connect to subgraph input
+- \`.exitViaBreadcrumb()\` — navigate out of subgraph
+- \`.convertDefaultKSamplerToSubgraph()\` — helper: convert default workflow node to subgraph
+- NodeReference: \`.convertToSubgraph()\`, \`.navigateIntoSubgraph()\`
+
 ### Other helpers
 - \`comfyPage.settingDialog\` — SettingDialog component
 - \`comfyPage.searchBox\` / \`comfyPage.searchBoxV2\` — node search
 - \`comfyPage.toast\` — ToastHelper (\`.visibleToasts\`)
-- \`comfyPage.subgraph\` — SubgraphHelper
-- \`comfyPage.vueNodes\` — VueNodeHelpers
+- \`comfyPage.vueNodes\` — VueNodeHelpers (\`.enterSubgraph(nodeId)\`, \`.selectNode(nodeId)\`)
 - \`comfyPage.bottomPanel\` — BottomPanel
 - \`comfyPage.clipboard\` — ClipboardHelper
 - \`comfyPage.dragDrop\` — DragDropHelper
