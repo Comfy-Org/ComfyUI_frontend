@@ -105,6 +105,16 @@
   animation: marquee-reverse 30s linear infinite;
 }
 
+.crossfade-enter-active,
+.crossfade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.crossfade-enter-from,
+.crossfade-leave-to {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
