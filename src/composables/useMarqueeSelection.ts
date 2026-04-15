@@ -51,6 +51,7 @@ export function useMarqueeSelection(options: MarqueeSelectionOptions) {
   let scrollTopAtStart = 0
   let selectionSnapshot: Set<string> = new Set()
   let mode: SelectionMode = 'replace'
+  let capturedPointerId: number | null = null
 
   function getMarqueeRect(): Rect | null {
     const el = container.value
@@ -174,6 +175,7 @@ export function useMarqueeSelection(options: MarqueeSelectionOptions) {
     if (!el) return
 
     pending = true
+    capturedPointerId = e.pointerId
     startClientX = e.clientX
     startClientY = e.clientY
     currentClientX = e.clientX
@@ -201,6 +203,15 @@ export function useMarqueeSelection(options: MarqueeSelectionOptions) {
       ) {
         isActive.value = true
         resumeAutoScroll()
+        // Capture pointer so pointerup fires even outside the browser window
+        const el = container.value
+        if (el && capturedPointerId !== null) {
+          try {
+            el.setPointerCapture(capturedPointerId)
+          } catch {
+            // Ignore if pointer capture fails (e.g. pointer already released)
+          }
+        }
       } else {
         return
       }
@@ -225,6 +236,17 @@ export function useMarqueeSelection(options: MarqueeSelectionOptions) {
     rectStyle.value = null
     pauseAutoScroll()
 
+    // Release pointer capture
+    const el = container.value
+    if (el && capturedPointerId !== null) {
+      try {
+        el.releasePointerCapture(capturedPointerId)
+      } catch {
+        // Ignore — pointer may already be released
+      }
+    }
+    capturedPointerId = null
+
     // After a real drag, swallow the synthetic click so card click handlers
     // don't overwrite the marquee selection with a single-select.
     if (wasDrag) {
@@ -242,10 +264,14 @@ export function useMarqueeSelection(options: MarqueeSelectionOptions) {
   useEventListener(container, 'pointerdown', onPointerDown)
   useEventListener(document, 'pointermove', onPointerMove)
   useEventListener(document, 'pointerup', onPointerUp)
+  useEventListener(document, 'pointercancel', onPointerUp)
+  useEventListener(document, 'visibilitychange', () => {
+    if (document.hidden && (pending || isActive.value)) onPointerUp()
+  })
 
   // Clean up if container changes
   watch(container, () => {
-    if (isActive.value) onPointerUp()
+    if (pending || isActive.value) onPointerUp()
   })
 
   return {
