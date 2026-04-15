@@ -2,10 +2,25 @@
  * Extension V2 Service
  *
  * Manages extension lifecycle: scope creation, handle construction,
- * hook dispatch. Imports from the ECS world/command layer directly.
+ * reactive dispatch. The extension system watches the ECS World for
+ * entity creation/removal and auto-mounts/unmounts extension scopes.
+ *
+ * Pattern mirrors Vue's setupStatefulComponent (component.ts:829-927):
+ * - scope.run() activates the EffectScope (like setCurrentInstance)
+ * - pauseTracking() prevents accidental deps during setup
+ * - All watches/effects created inside scope.run() are captured
+ * - scope.stop() on entity removal cleans up everything
+ *
+ * See decisions/D3.5-reactive-dispatch-and-scope-alignment.md
  */
 
-import { EffectScope, onScopeDispose, watch } from 'vue'
+import {
+  EffectScope,
+  onScopeDispose,
+  pauseTracking,
+  resetTracking,
+  watch
+} from 'vue'
 
 // These modules don't exist yet — they will be created as part of ADR 0008.
 import { useWorld } from '@/ecs/world'
@@ -21,9 +36,13 @@ import {
   WidgetContainer,
   Connectivity,
   SlotIdentity,
-  SlotConnection
+  LoadedFromWorkflow
 } from '@/ecs/components'
-import type { NodeEntityId, WidgetEntityId, SlotEntityId } from '@/ecs/entityIds'
+import type {
+  NodeEntityId,
+  WidgetEntityId,
+  SlotEntityId
+} from '@/ecs/entityIds'
 
 import type {
   NodeExtensionOptions,
@@ -37,8 +56,8 @@ import type {
 } from '@/types/extensionV2'
 
 // ─── Scope Registry ──────────────────────────────────────────────────
-// One EffectScope per extension+node pair. Disposed when entity is
-// removed from the World.
+// One EffectScope per extension+entity pair. Disposed when the entity is
+// removed from the World (detected by the reactive mount watcher).
 
 const scopeRegistry = new Map<string, EffectScope>()
 
@@ -53,6 +72,15 @@ function getOrCreateScope(
     scopeRegistry.set(key, scope)
   }
   return scope
+}
+
+function stopScope(extensionName: string, entityId: number): void {
+  const key = `${extensionName}:${entityId}`
+  const scope = scopeRegistry.get(key)
+  if (scope) {
+    scope.stop()
+    scopeRegistry.delete(key)
+  }
 }
 
 // ─── WidgetHandle ────────────────────────────────────────────────────
@@ -77,10 +105,17 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
     },
 
     isHidden() {
-      return world.getComponent(widgetId, WidgetValue).options?.hidden ?? false
+      return (
+        world.getComponent(widgetId, WidgetValue).options?.hidden ?? false
+      )
     },
     setHidden(hidden: boolean) {
-      dispatch({ type: 'SetWidgetOption', widgetId, key: 'hidden', value: hidden })
+      dispatch({
+        type: 'SetWidgetOption',
+        widgetId,
+        key: 'hidden',
+        value: hidden
+      })
     },
     getOptions(): WidgetOptions {
       return world.getComponent(widgetId, WidgetValue).options ?? {}
@@ -219,11 +254,20 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
     // Events — backed by World component watches
     on(event: string, fn: Function) {
       if (event === 'positionChanged') {
-        watch(() => world.getComponent(nodeId, Position).pos, (pos) => fn(pos))
+        watch(
+          () => world.getComponent(nodeId, Position).pos,
+          (pos) => fn(pos)
+        )
       } else if (event === 'sizeChanged') {
-        watch(() => world.getComponent(nodeId, Dimensions).size, (s) => fn(s))
+        watch(
+          () => world.getComponent(nodeId, Dimensions).size,
+          (s) => fn(s)
+        )
       } else if (event === 'modeChanged') {
-        watch(() => world.getComponent(nodeId, Execution).mode, (m) => fn(m))
+        watch(
+          () => world.getComponent(nodeId, Execution).mode,
+          (m) => fn(m)
+        )
       } else if (event === 'executed') {
         world.onSystemEvent(nodeId, 'executed', fn)
       } else if (event === 'connected') {
@@ -239,7 +283,7 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
   }
 }
 
-// ─── Extension Registry & Dispatch ───────────────────────────────────
+// ─── Extension Registry ──────────────────────────────────────────────
 
 const nodeExtensions: NodeExtensionOptions[] = []
 const widgetExtensions: WidgetExtensionOptions[] = []
@@ -252,34 +296,89 @@ export function defineWidgetExtension(options: WidgetExtensionOptions): void {
   widgetExtensions.push(options)
 }
 
-/** Called by the framework when a node entity is created in the World. */
-export function dispatchNodeCreated(nodeId: NodeEntityId): void {
+// ─── Reactive Mount System ───────────────────────────────────────────
+// Watches the World for entity creation/removal. When a NodeType
+// component appears, extensions are mounted for that entity. When it
+// disappears, all extension scopes for that entity are stopped.
+//
+// This replaces the imperative dispatchNodeCreated/dispatchLoadedGraphNode
+// pattern. The World is the single source of truth — if an entity
+// exists, its extensions are mounted.
+
+/**
+ * Mount extensions for a newly detected node entity.
+ *
+ * Follows Vue's setupStatefulComponent pattern:
+ * 1. scope.run() activates the EffectScope
+ * 2. pauseTracking() prevents accidental dependency tracking
+ * 3. Extension hook runs — explicit watches via node.on() are captured
+ * 4. resetTracking() restores tracking state
+ */
+function mountExtensionsForNode(nodeId: NodeEntityId): void {
   const world = useWorld()
   const comfyClass = world.getComponent(nodeId, NodeType).comfyClass
+  const isLoaded = world.hasComponent(nodeId, LoadedFromWorkflow)
 
   for (const ext of nodeExtensions) {
     if (ext.nodeTypes && !ext.nodeTypes.includes(comfyClass)) continue
-    if (!ext.nodeCreated) continue
+
+    const hook = isLoaded ? ext.loadedGraphNode : ext.nodeCreated
+    if (!hook) continue
 
     const scope = getOrCreateScope(ext.name, nodeId)
     scope.run(() => {
-      ext.nodeCreated!(createNodeHandle(nodeId))
+      pauseTracking()
+      try {
+        hook(createNodeHandle(nodeId))
+      } finally {
+        resetTracking()
+      }
     })
   }
 }
 
-/** Called by the framework when a node is loaded from a saved workflow. */
-export function dispatchLoadedGraphNode(nodeId: NodeEntityId): void {
-  const world = useWorld()
-  const comfyClass = world.getComponent(nodeId, NodeType).comfyClass
-
+/**
+ * Unmount all extension scopes for a removed node entity.
+ * scope.stop() disposes all watches, computed, and onScopeDispose
+ * callbacks created during the extension's setup.
+ */
+function unmountExtensionsForNode(nodeId: NodeEntityId): void {
   for (const ext of nodeExtensions) {
-    if (ext.nodeTypes && !ext.nodeTypes.includes(comfyClass)) continue
-    if (!ext.loadedGraphNode) continue
-
-    const scope = getOrCreateScope(ext.name, nodeId)
-    scope.run(() => {
-      ext.loadedGraphNode!(createNodeHandle(nodeId))
-    })
+    stopScope(ext.name, nodeId)
   }
+}
+
+/**
+ * Start the reactive extension mount system.
+ *
+ * Called once during app initialization. Watches the World's entity list
+ * and auto-mounts/unmounts extensions as entities appear/disappear.
+ *
+ * This means no code path (add node, paste, load workflow, undo, CRDT
+ * sync) needs to manually call a dispatch function — the World is the
+ * single source of truth.
+ */
+export function startExtensionSystem(): void {
+  const world = useWorld()
+
+  watch(
+    () => world.queryAll(NodeType),
+    (currentIds, previousIds) => {
+      const prev = new Set(previousIds ?? [])
+      const curr = new Set(currentIds)
+
+      for (const nodeId of currentIds) {
+        if (!prev.has(nodeId)) {
+          mountExtensionsForNode(nodeId)
+        }
+      }
+
+      for (const nodeId of previousIds ?? []) {
+        if (!curr.has(nodeId)) {
+          unmountExtensionsForNode(nodeId)
+        }
+      }
+    },
+    { flush: 'post' }
+  )
 }
