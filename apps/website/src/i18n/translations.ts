@@ -429,6 +429,14 @@ const translations = {
     'zh-CN':
       '运行 Wan 2.2、Flux、LTX 和 Qwen 等开源模型，以及 Nano Banana、Seedance、Seedream、Grok、Kling、Hunyuan 3D 等合作伙伴模型。Comfy Cloud 上的每个模型都已获得商业使用许可。无许可证歧义。通过统一的积分余额使用。'
   },
+  'cloud.reason.2.badge.onlyOn': {
+    en: 'ONLY ON',
+    'zh-CN': '仅在'
+  },
+  'cloud.reason.2.badge.cloud': {
+    en: 'CLOUD',
+    'zh-CN': '云端'
+  },
   'cloud.reason.3.title': {
     en: 'More control than any\nother visual AI tool',
     'zh-CN': '比任何其他\n视觉 AI 工具更强的控制力'

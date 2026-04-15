@@ -95,6 +95,7 @@ function getCardClass(layoutClass: string): string {
             <a
               v-for="card in modelCards"
               :key="card.titleKey"
+              :href="externalLinks.workflows"
               :class="getCardClass(card.layoutClass)"
             >
               <img
