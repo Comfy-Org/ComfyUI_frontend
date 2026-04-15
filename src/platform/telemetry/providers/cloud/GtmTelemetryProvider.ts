@@ -16,6 +16,7 @@ import type {
   SettingChangedMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryProvider,
@@ -167,8 +168,17 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('signup_opened')
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.pushEvent('subscription_success')
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    if (metadata?.ecommerce) {
+      window.dataLayer?.push({ ecommerce: null })
+    }
+
+    this.pushEvent(
+      'subscription_success',
+      metadata ? { ...metadata } : undefined
+    )
   }
 
   trackRunButton(options?: {

@@ -1,5 +1,9 @@
 import { computed, ref, watch } from 'vue'
-import { createSharedComposable } from '@vueuse/core'
+import {
+  createSharedComposable,
+  defaultWindow,
+  useEventListener
+} from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -14,6 +18,13 @@ import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
 import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+  consumePendingSubscriptionCheckoutSuccess,
+  hasPendingSubscriptionCheckoutAttempt,
+  recordPendingSubscriptionCheckoutAttempt
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<
@@ -23,6 +34,8 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 export type CloudSubscriptionStatusResponse = NonNullable<
   operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
 >
+
+const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
@@ -111,6 +124,78 @@ function useSubscriptionInternal() {
       return getCheckoutAttribution()
     }
 
+  let pendingCheckoutRecoveryTimeout: number | null = null
+  let pendingCheckoutRecoveryAttempt = 0
+  let isRecoveringPendingCheckout = false
+
+  const stopPendingCheckoutRecovery = () => {
+    if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
+      defaultWindow.clearTimeout(pendingCheckoutRecoveryTimeout)
+    }
+
+    pendingCheckoutRecoveryTimeout = null
+    pendingCheckoutRecoveryAttempt = 0
+  }
+
+  const schedulePendingCheckoutRecovery = () => {
+    if (
+      !defaultWindow ||
+      pendingCheckoutRecoveryTimeout !== null ||
+      !isLoggedIn.value ||
+      !hasPendingSubscriptionCheckoutAttempt()
+    ) {
+      return
+    }
+
+    const nextDelay =
+      PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[
+        pendingCheckoutRecoveryAttempt
+      ]
+
+    if (nextDelay === undefined) {
+      return
+    }
+
+    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
+      pendingCheckoutRecoveryTimeout = null
+      pendingCheckoutRecoveryAttempt += 1
+      void recoverPendingSubscriptionCheckout('retry')
+    }, nextDelay)
+  }
+
+  const syncPendingSubscriptionSuccess = (
+    statusData: CloudSubscriptionStatusResponse
+  ) => {
+    const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
+
+    if (!metadata) {
+      if (hasPendingSubscriptionCheckoutAttempt()) {
+        schedulePendingCheckoutRecovery()
+      } else {
+        stopPendingCheckoutRecovery()
+      }
+      return
+    }
+
+    telemetry?.trackMonthlySubscriptionSucceeded({
+      ...(authStore.userId ? { user_id: authStore.userId } : {}),
+      ...metadata
+    })
+    stopPendingCheckoutRecovery()
+  }
+
+  const buildAuthHeaders = async (): Promise<Record<string, string>> => {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+
+    return {
+      ...authHeader,
+      'Content-Type': 'application/json'
+    }
+  }
+
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
     reportError
@@ -126,6 +211,20 @@ function useSubscriptionInternal() {
         })
       )
     }
+
+    recordPendingSubscriptionCheckoutAttempt({
+      tier: 'standard',
+      cycle: 'monthly',
+      checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
+      ...(subscriptionTier.value
+        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
+        : {}),
+      ...(subscriptionDuration.value === 'ANNUAL'
+        ? { previous_cycle: 'yearly' as const }
+        : subscriptionDuration.value === 'MONTHLY'
+          ? { previous_cycle: 'monthly' as const }
+          : {})
+    })
 
     window.open(response.checkout_url, '_blank')
   }, reportError)
@@ -184,23 +283,44 @@ function useSubscriptionInternal() {
     await accessBillingPortal()
   }
 
+  const recoverPendingSubscriptionCheckout = async (
+    source: 'pageshow' | 'visibilitychange' | 'retry'
+  ) => {
+    if (
+      !isCloud ||
+      !isLoggedIn.value ||
+      !hasPendingSubscriptionCheckoutAttempt() ||
+      isRecoveringPendingCheckout
+    ) {
+      return
+    }
+
+    isRecoveringPendingCheckout = true
+
+    try {
+      await fetchSubscriptionStatus()
+    } catch (error) {
+      console.error(
+        `[Subscription] Failed to recover pending checkout on ${source}:`,
+        error
+      )
+      schedulePendingCheckoutRecovery()
+    } finally {
+      isRecoveringPendingCheckout = false
+    }
+  }
+
   /**
    * Fetch the current cloud subscription status for the authenticated user
    * @returns Subscription status or null if no subscription exists
    */
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const authHeader = await getAuthHeader()
-    if (!authHeader) {
-      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
+    const headers = await buildAuthHeaders()
 
     const response = await fetch(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        }
+        headers
       }
     )
 
@@ -215,9 +335,40 @@ function useSubscriptionInternal() {
 
     const statusData = await response.json()
     subscriptionStatus.value = statusData
+    syncPendingSubscriptionSuccess(statusData)
 
     return statusData
   }
+
+  const handlePendingSubscriptionCheckoutChange = () => {
+    if (!hasPendingSubscriptionCheckoutAttempt()) {
+      stopPendingCheckoutRecovery()
+      return
+    }
+
+    pendingCheckoutRecoveryAttempt = 0
+    void recoverPendingSubscriptionCheckout('retry')
+  }
+
+  useEventListener(defaultWindow, PENDING_SUBSCRIPTION_CHECKOUT_EVENT, () => {
+    handlePendingSubscriptionCheckoutChange()
+  })
+
+  useEventListener(defaultWindow, 'storage', (event: StorageEvent) => {
+    if (event.key === PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) {
+      handlePendingSubscriptionCheckoutChange()
+    }
+  })
+
+  useEventListener(defaultWindow, 'pageshow', () => {
+    void recoverPendingSubscriptionCheckout('pageshow')
+  })
+
+  useEventListener(defaultWindow, 'visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      void recoverPendingSubscriptionCheckout('visibilitychange')
+    }
+  })
 
   watch(
     () => isLoggedIn.value,
@@ -234,6 +385,7 @@ function useSubscriptionInternal() {
         }
       } else {
         subscriptionStatus.value = null
+        stopPendingCheckoutRecovery()
         stopCancellationWatcher()
         isInitialized.value = true
       }
@@ -243,20 +395,14 @@ function useSubscriptionInternal() {
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getAuthHeader()
-      if (!authHeader) {
-        throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-      }
+      const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
       const response = await fetch(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
-          headers: {
-            ...authHeader,
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(checkoutAttribution)
         }
       )

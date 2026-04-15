@@ -98,6 +98,41 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
+    it('pushes subscription_success metadata with ecommerce reset', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackMonthlySubscriptionSucceeded({
+        checkout_attempt_id: 'attempt-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        value: 336,
+        currency: 'USD',
+        ecommerce: {
+          currency: 'USD',
+          value: 336,
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'yearly',
+              price: 336,
+              quantity: 1
+            }
+          ]
+        }
+      })
+
+      const dataLayer = window.dataLayer as Record<string, unknown>[]
+
+      expect(dataLayer[dataLayer.length - 2]).toMatchObject({ ecommerce: null })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'subscription_success',
+        checkout_attempt_id: 'attempt-123',
+        value: 336
+      })
+    })
+
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
       provider.trackRunButton({ trigger_source: 'button' })

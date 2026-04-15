@@ -7,6 +7,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -113,6 +114,13 @@ export async function performSubscriptionCheckout(
         ...checkoutAttribution
       })
     }
+
+    recordPendingSubscriptionCheckoutAttempt({
+      tier: tierKey,
+      cycle: currentBillingCycle,
+      checkout_type: 'new'
+    })
+
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')
     } else {

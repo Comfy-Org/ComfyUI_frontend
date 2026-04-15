@@ -274,6 +274,7 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -479,6 +480,15 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
           await accessBillingPortal()
         } else {
+          recordPendingSubscriptionCheckoutAttempt({
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'change',
+            ...(currentTierKey.value
+              ? { previous_tier: currentTierKey.value }
+              : {}),
+            previous_cycle: isYearlySubscription.value ? 'yearly' : 'monthly'
+          })
           await accessBillingPortal(checkoutTier)
         }
       } else {

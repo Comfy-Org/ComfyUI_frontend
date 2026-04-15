@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
   mockIsLoggedIn,
@@ -12,7 +13,8 @@ const {
   mockGetCheckoutAttribution,
   mockTelemetry,
   mockUserId,
-  mockIsCloud
+  mockIsCloud,
+  mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
@@ -28,9 +30,29 @@ const {
   })),
   mockTelemetry: {
     trackSubscription: vi.fn(),
+    trackMonthlySubscriptionSucceeded: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn()
   },
-  mockUserId: { value: 'user-123' }
+  mockUserId: { value: 'user-123' },
+  mockLocalStorage: (() => {
+    const store = new Map<string, string>()
+
+    return {
+      getItem: vi.fn((key: string) => store.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store.set(key, value)
+      }),
+      removeItem: vi.fn((key: string) => {
+        store.delete(key)
+      }),
+      clear: vi.fn(() => {
+        store.clear()
+      }),
+      __reset: () => {
+        store.clear()
+      }
+    }
+  })()
 }))
 
 let scope: ReturnType<typeof effectScope> | undefined
@@ -54,6 +76,16 @@ function useSubscriptionWithScope() {
 
   return subscription
 }
+
+Object.defineProperty(window, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: vi.fn(() => ({
@@ -124,6 +156,7 @@ describe('useSubscription', () => {
     scope?.stop()
     scope = undefined
     setDistribution('localhost')
+    mockLocalStorage.__reset()
   })
 
   beforeEach(() => {
@@ -132,8 +165,10 @@ describe('useSubscription', () => {
     setDistribution('cloud')
 
     vi.clearAllMocks()
+    mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
+    mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
@@ -311,6 +346,16 @@ describe('useSubscription', () => {
       )
 
       expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+      expect(
+        JSON.parse(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ??
+            '{}'
+        )
+      ).toMatchObject({
+        tier: 'standard',
+        cycle: 'monthly',
+        checkout_type: 'new'
+      })
 
       windowOpenSpy.mockRestore()
     })
@@ -324,6 +369,135 @@ describe('useSubscription', () => {
       const { subscribe } = useSubscriptionWithScope()
 
       await expect(subscribe()).rejects.toThrow()
+    })
+  })
+
+  describe('pending checkout recovery', () => {
+    it('emits subscription_success when a pending new subscription becomes active', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-123',
+          started_at_ms: Date.now(),
+          tier: 'creator',
+          cycle: 'yearly',
+          checkout_type: 'new'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'ANNUAL',
+          renewal_date: '2025-11-16'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionSucceeded
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            user_id: 'user-123',
+            checkout_attempt_id: 'attempt-123',
+            tier: 'creator',
+            cycle: 'yearly',
+            checkout_type: 'new',
+            value: 336,
+            currency: 'USD'
+          })
+        )
+      })
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
+    })
+
+    it('emits subscription_success when a pending upgrade reaches the target tier', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-456',
+          started_at_ms: Date.now(),
+          tier: 'pro',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          previous_tier: 'creator',
+          previous_cycle: 'monthly'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'PRO',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          mockTelemetry.trackMonthlySubscriptionSucceeded
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            checkout_attempt_id: 'attempt-456',
+            tier: 'pro',
+            cycle: 'monthly',
+            checkout_type: 'change',
+            previous_tier: 'creator',
+            value: 100
+          })
+        )
+      })
+    })
+
+    it('rechecks pending checkout attempts on pageshow', async () => {
+      mockIsLoggedIn.value = true
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: '',
+          renewal_date: ''
+        })
+      } as Response)
+
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+
+      vi.mocked(global.fetch).mockClear()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-pageshow',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      window.dispatchEvent(new Event('pageshow'))
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
     })
   })
 
