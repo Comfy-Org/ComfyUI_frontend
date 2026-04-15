@@ -13,7 +13,7 @@ type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
 
 // --- Property filter parsing and evaluation ---
 
-export interface PropertyFilter {
+interface PropertyFilter {
   key: string
   op: string
   target: string
