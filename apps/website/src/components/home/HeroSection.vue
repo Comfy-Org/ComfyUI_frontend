@@ -14,9 +14,12 @@ useFrameScrub(canvasRef, {
   frameSrc: (i) =>
     `/videos/hero-logo-seq/Logo${String(i).padStart(2, '0')}.webp`,
   scrollTrigger: (canvas) => ({
-    trigger: canvas,
-    start: 'top 80%',
-    end: 'bottom 20%',
+    trigger: document.documentElement,
+    start: 'top top',
+    end: () => {
+      const rect = canvas.getBoundingClientRect()
+      return `+=${rect.bottom + window.scrollY}`
+    },
     scrub: 0.3
   })
 })
