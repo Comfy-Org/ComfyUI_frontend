@@ -37,14 +37,16 @@ export class SceneModelManager implements ModelManagerInterface {
   private renderer: THREE.WebGLRenderer
   private eventManager: EventManagerInterface
   private activeCamera: THREE.Camera
-  private setupCamera: (size: THREE.Vector3) => void
+  private setupCamera: (size: THREE.Vector3, center: THREE.Vector3) => void
+  private setupGizmo: (model: THREE.Object3D) => void
 
   constructor(
     scene: THREE.Scene,
     renderer: THREE.WebGLRenderer,
     eventManager: EventManagerInterface,
     getActiveCamera: () => THREE.Camera,
-    setupCamera: (size: THREE.Vector3) => void
+    setupCamera: (size: THREE.Vector3, center: THREE.Vector3) => void,
+    setupGizmo: (model: THREE.Object3D) => void
   ) {
     this.scene = scene
     this.renderer = renderer
@@ -52,6 +54,7 @@ export class SceneModelManager implements ModelManagerInterface {
     this.activeCamera = getActiveCamera()
     this.setupCamera = setupCamera
     this.textureLoader = new THREE.TextureLoader()
+    this.setupGizmo = setupGizmo
 
     this.normalMaterial = new THREE.MeshNormalMaterial({
       flatShading: false,
@@ -371,32 +374,31 @@ export class SceneModelManager implements ModelManagerInterface {
   clearModel(): void {
     const objectsToRemove: THREE.Object3D[] = []
 
-    this.scene.traverse((object) => {
+    for (const object of [...this.scene.children]) {
       const isEnvironmentObject =
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||
-        object instanceof THREE.Camera
+        object instanceof THREE.Camera ||
+        object.name === 'GizmoTransformControls'
 
       if (!isEnvironmentObject) {
         objectsToRemove.push(object)
       }
-    })
+    }
 
     objectsToRemove.forEach((obj) => {
-      if (obj.parent && obj.parent !== this.scene) {
-        obj.parent.remove(obj)
-      } else {
-        this.scene.remove(obj)
-      }
+      this.scene.remove(obj)
 
-      if (obj instanceof THREE.Mesh) {
-        obj.geometry?.dispose()
-        if (Array.isArray(obj.material)) {
-          obj.material.forEach((material) => material.dispose())
-        } else {
-          obj.material?.dispose()
+      obj.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry?.dispose()
+          if (Array.isArray(child.material)) {
+            child.material.forEach((material) => material.dispose())
+          } else {
+            child.material?.dispose()
+          }
         }
-      }
+      })
     })
 
     this.reset()
@@ -497,24 +499,9 @@ export class SceneModelManager implements ModelManagerInterface {
       // SplatMesh handles its own rendering, just add to scene
       this.scene.add(model)
       // Set a default camera distance for splat models
-      this.setupCamera(new THREE.Vector3(5, 5, 5))
+      this.setupCamera(new THREE.Vector3(5, 5, 5), new THREE.Vector3(0, 2.5, 0))
       return
     }
-
-    const box = new THREE.Box3().setFromObject(model)
-    const size = box.getSize(new THREE.Vector3())
-    const center = box.getCenter(new THREE.Vector3())
-
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const targetSize = 5
-    const scale = targetSize / maxDim
-    model.scale.multiplyScalar(scale)
-
-    box.setFromObject(model)
-    box.getCenter(center)
-    box.getSize(size)
-
-    model.position.set(-center.x, -box.min.y, -center.z)
 
     this.scene.add(model)
 
@@ -527,7 +514,46 @@ export class SceneModelManager implements ModelManagerInterface {
     }
     this.setupModelMaterials(model)
 
-    this.setupCamera(size)
+    const box = new THREE.Box3().setFromObject(model)
+    const size = box.getSize(new THREE.Vector3())
+    const center = box.getCenter(new THREE.Vector3())
+
+    this.setupCamera(size, center)
+
+    this.setupGizmo(model)
+  }
+
+  fitToViewer(): void {
+    if (!this.currentModel || this.containsSplatMesh()) return
+    const model = this.currentModel
+
+    // Reset transform to compute from raw geometry (idempotent)
+    model.scale.set(1, 1, 1)
+    model.position.set(0, 0, 0)
+
+    const box = new THREE.Box3().setFromObject(model)
+    const size = box.getSize(new THREE.Vector3())
+    const center = box.getCenter(new THREE.Vector3())
+
+    const maxDim = Math.max(size.x, size.y, size.z)
+    if (maxDim === 0) return
+
+    const targetSize = 5
+    const scale = targetSize / maxDim
+    model.scale.set(scale, scale, scale)
+
+    box.setFromObject(model)
+    box.getCenter(center)
+    box.getSize(size)
+
+    model.position.set(-center.x, -box.min.y, -center.z)
+
+    const newBox = new THREE.Box3().setFromObject(model)
+    const newSize = newBox.getSize(new THREE.Vector3())
+    const newCenter = newBox.getCenter(new THREE.Vector3())
+
+    this.setupCamera(newSize, newCenter)
+    this.setupGizmo(model)
   }
 
   containsSplatMesh(model?: THREE.Object3D | null): boolean {
@@ -547,6 +573,8 @@ export class SceneModelManager implements ModelManagerInterface {
 
   setUpDirection(direction: UpDirection): void {
     if (!this.currentModel) return
+
+    const directionChanged = this.currentUpDirection !== direction
 
     if (!this.originalRotation && this.currentModel.rotation) {
       this.originalRotation = this.currentModel.rotation.clone()
@@ -581,5 +609,9 @@ export class SceneModelManager implements ModelManagerInterface {
     }
 
     this.eventManager.emitEvent('upDirectionChange', direction)
+
+    if (directionChanged) {
+      this.setupGizmo(this.currentModel)
+    }
   }
 }

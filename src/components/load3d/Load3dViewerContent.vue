@@ -74,6 +74,14 @@
             />
           </div>
 
+          <div class="space-y-4 p-2">
+            <GizmoControls
+              v-model:gizmo-enabled="viewer.gizmoEnabled.value"
+              v-model:gizmo-mode="viewer.gizmoMode.value"
+              @reset-transform="viewer.resetGizmoTransform"
+            />
+          </div>
+
           <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
             <ExportControls @export-model="viewer.exportModel" />
           </div>
@@ -99,6 +107,7 @@ import { useI18n } from 'vue-i18n'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import CameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import ExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
+import GizmoControls from '@/components/load3d/controls/viewer/ViewerGizmoControls.vue'
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'

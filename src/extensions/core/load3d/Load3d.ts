@@ -7,6 +7,7 @@ import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
 import { HDRIManager } from './HDRIManager'
+import { GizmoManager } from './GizmoManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
@@ -18,10 +19,12 @@ import {
   type CameraState,
   type CaptureResult,
   type EventCallback,
+  type GizmoMode,
   type Load3DOptions,
   type MaterialMode,
   type UpDirection
 } from './interfaces'
+import { Object3D } from 'three'
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
@@ -61,6 +64,7 @@ class Load3d {
   modelManager: SceneModelManager
   recordingManager: RecordingManager
   animationManager: AnimationManager
+  gizmoManager: GizmoManager
 
   STATUS_MOUSE_ON_NODE: boolean
   STATUS_MOUSE_ON_SCENE: boolean
@@ -146,7 +150,8 @@ class Load3d {
       this.renderer,
       this.eventManager,
       this.getActiveCamera.bind(this),
-      this.setupCamera.bind(this)
+      this.setupCamera.bind(this),
+      this.setGizmo.bind(this)
     )
 
     this.loaderManager = new LoaderManager(this.modelManager, this.eventManager)
@@ -158,12 +163,29 @@ class Load3d {
     )
 
     this.animationManager = new AnimationManager(this.eventManager)
+
+    this.gizmoManager = new GizmoManager(
+      this.sceneManager.scene,
+      this.renderer,
+      this.controlsManager.controls,
+      this.getActiveCamera.bind(this),
+      () => {
+        const transform = this.gizmoManager.getTransform()
+        this.eventManager.emitEvent('gizmoTransformChange', {
+          ...transform,
+          enabled: this.gizmoManager.isEnabled(),
+          mode: this.gizmoManager.getMode()
+        })
+      }
+    )
+
     this.sceneManager.init()
     this.cameraManager.init()
     this.controlsManager.init()
     this.lightingManager.init()
     this.loaderManager.init()
     this.animationManager.init()
+    this.gizmoManager.init()
 
     this.viewHelperManager.createViewHelper(container)
     this.viewHelperManager.init()
@@ -287,6 +309,10 @@ class Load3d {
     return this.recordingManager
   }
 
+  getGizmoManager(): GizmoManager {
+    return this.gizmoManager
+  }
+
   getTargetSize(): { width: number; height: number } {
     return {
       width: this.targetWidth,
@@ -388,8 +414,12 @@ class Load3d {
     return this.controlsManager.controls
   }
 
-  private setupCamera(size: THREE.Vector3): void {
-    this.cameraManager.setupForModel(size)
+  private setGizmo(model: Object3D): void {
+    this.gizmoManager.setupForModel(model)
+  }
+
+  private setupCamera(size: THREE.Vector3, center: THREE.Vector3): void {
+    this.cameraManager.setupForModel(size, center)
   }
 
   private startAnimation(): void {
@@ -551,6 +581,7 @@ class Load3d {
     this.cameraManager.toggleCamera(cameraType)
 
     this.controlsManager.updateCamera(this.cameraManager.activeCamera)
+    this.gizmoManager.updateCamera(this.cameraManager.activeCamera)
     this.viewHelperManager.recreateViewHelper()
 
     this.handleResize()
@@ -601,6 +632,7 @@ class Load3d {
   ): Promise<void> {
     this.cameraManager.reset()
     this.controlsManager.reset()
+    this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
 
@@ -629,6 +661,7 @@ class Load3d {
 
   clearModel(): void {
     this.animationManager.dispose()
+    this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.forceRender()
   }
@@ -736,7 +769,11 @@ class Load3d {
   }
 
   captureScene(width: number, height: number): Promise<CaptureResult> {
-    return this.sceneManager.captureScene(width, height)
+    this.gizmoManager.removeFromScene()
+
+    return this.sceneManager.captureScene(width, height).finally(() => {
+      this.gizmoManager.ensureHelperInScene()
+    })
   }
 
   public async startRecording(): Promise<void> {
@@ -866,6 +903,43 @@ class Load3d {
     }
   }
 
+  public setGizmoEnabled(enabled: boolean): void {
+    this.gizmoManager.setEnabled(enabled)
+    this.forceRender()
+  }
+
+  public setGizmoMode(mode: GizmoMode): void {
+    this.gizmoManager.setMode(mode)
+    this.forceRender()
+  }
+
+  public resetGizmoTransform(): void {
+    this.gizmoManager.reset()
+    this.forceRender()
+  }
+
+  public applyGizmoTransform(
+    position: { x: number; y: number; z: number },
+    rotation: { x: number; y: number; z: number },
+    scale?: { x: number; y: number; z: number }
+  ): void {
+    this.gizmoManager.applyTransform(position, rotation, scale)
+    this.forceRender()
+  }
+
+  public getGizmoTransform(): {
+    position: { x: number; y: number; z: number }
+    rotation: { x: number; y: number; z: number }
+    scale: { x: number; y: number; z: number }
+  } {
+    return this.gizmoManager.getTransform()
+  }
+
+  public fitToViewer(): void {
+    this.modelManager.fitToViewer()
+    this.forceRender()
+  }
+
   public remove(): void {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
@@ -899,6 +973,7 @@ class Load3d {
     this.modelManager.dispose()
     this.recordingManager.dispose()
     this.animationManager.dispose()
+    this.gizmoManager.dispose()
 
     this.renderer.dispose()
     this.renderer.domElement.remove()
