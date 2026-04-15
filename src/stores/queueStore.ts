@@ -256,26 +256,23 @@ export class TaskItemImpl {
     flatOutputs?: ReadonlyArray<ResultItemImpl>
   ) {
     this.job = job
-    // If no outputs provided but job has preview_output, create synthetic outputs
-    // using the real nodeId and mediaType from the backend response
+    const preview = job.preview_output
     const effectiveOutputs =
       outputs ??
-      (job.preview_output
-        ? {
-            [job.preview_output.nodeId]: {
-              [job.preview_output.mediaType]: [job.preview_output]
-            }
-          }
+      (preview && preview.mediaType !== 'text'
+        ? { [preview.nodeId]: { [preview.mediaType]: [preview] } }
         : {})
     this.outputs = effectiveOutputs
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
   calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
-    if (!this.outputs) {
-      return []
+    const mediaOutputs = parseTaskOutput(this.outputs)
+    const preview = this.job.preview_output
+    if (preview?.mediaType === 'text') {
+      return [new ResultItemImpl(preview as ResultItemInit), ...mediaOutputs]
     }
-    return parseTaskOutput(this.outputs)
+    return mediaOutputs
   }
 
   /** All outputs that support preview (images, videos, audio, 3D, text) */

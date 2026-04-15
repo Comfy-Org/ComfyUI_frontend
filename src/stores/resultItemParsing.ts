@@ -9,6 +9,8 @@ function isResultItem(item: unknown): item is ResultItem {
 
   const candidate = item as Record<string, unknown>
 
+  if (typeof candidate.filename !== 'string') return false
+
   if (
     candidate.type !== undefined &&
     !resultItemType.safeParse(candidate.type).success
