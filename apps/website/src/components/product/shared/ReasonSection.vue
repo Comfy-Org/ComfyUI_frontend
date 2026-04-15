@@ -7,10 +7,14 @@ interface Reason {
 const {
   heading,
   headingHighlight = '',
+  headingSuffix = '',
+  subtitle = '',
   reasons
 } = defineProps<{
   heading: string
   headingHighlight?: string
+  headingSuffix?: string
+  subtitle?: string
   reasons: Reason[]
 }>()
 </script>
@@ -29,8 +33,12 @@ const {
         {{ heading
         }}<span v-if="headingHighlight" class="text-primary-warm-white">{{
           headingHighlight
-        }}</span>
+        }}</span
+        >{{ headingSuffix }}
       </h2>
+      <p v-if="subtitle" class="text-primary-comfy-canvas/70 mt-6 text-sm">
+        {{ subtitle }}
+      </p>
     </div>
 
     <!-- Right reasons list -->
