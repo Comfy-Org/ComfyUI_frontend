@@ -96,6 +96,7 @@ catalog:
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
+  monocart-coverage-reports: ^2.12.9
   nx: 22.6.1
   oxfmt: ^0.44.0
   oxlint: ^1.59.0

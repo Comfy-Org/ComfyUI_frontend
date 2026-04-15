@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
+import MCR from 'monocart-coverage-reports'
 
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
@@ -402,10 +403,28 @@ export class ComfyPage {
 
 export const testComfySnapToGridGridSize = 50
 
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
+
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
 }>({
+  page: async ({ page, browserName }, use) => {
+    if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
+      return use(page)
+    }
+
+    await page.coverage.startJSCoverage({ resetOnNavigation: false })
+    await use(page)
+    const coverage = await page.coverage.stopJSCoverage()
+
+    const mcr = MCR({
+      outputDir: './coverage/playwright',
+      reports: []
+    })
+    await mcr.add(coverage)
+  },
+
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
