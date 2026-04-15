@@ -29,7 +29,6 @@ interface ContentBoundsState {
  */
 export function useContentBounds(): ContentBoundsState & {
   expandToInclude(bounds: Bounds): void
-  expandToIncludePoint(point: Point): void
   flush(): boolean
   reset(): void
 } {
@@ -66,10 +65,6 @@ export function useContentBounds(): ContentBoundsState & {
     }
   }
 
-  function expandToIncludePoint(point: Point) {
-    expandToInclude({ x: point.x, y: point.y, width: 0, height: 0 })
-  }
-
   /**
    * Applies pending bound changes to the reactive offset and size.
    * Returns true if the values actually changed.
@@ -100,7 +95,6 @@ export function useContentBounds(): ContentBoundsState & {
     offset: readonly(offset),
     size: readonly(size),
     expandToInclude,
-    expandToIncludePoint,
     flush,
     reset
   }

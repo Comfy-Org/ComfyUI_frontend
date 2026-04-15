@@ -2,12 +2,21 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive } from 'vue'
 
+import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 import TransformPane from '../transform/TransformPane.vue'
 
 const mockCamera = reactive({ x: 0, y: 0, z: 1 })
+
+const { mockNodes, mockVersion } = vi.hoisted(() => {
+  const { ref: createRef } = require('vue')
+  return {
+    mockNodes: createRef(new Map()),
+    mockVersion: createRef(0)
+  }
+})
 
 vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   const syncWithCanvas = vi.fn()
@@ -28,8 +37,8 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getAllNodes: () => computed(() => new Map()),
-    getVersion: () => computed(() => 0),
+    getAllNodes: () => computed(() => mockNodes.value),
+    getVersion: () => computed(() => mockVersion.value),
     onChange: vi.fn(() => () => {})
   }
 }))
@@ -176,19 +185,42 @@ describe('TransformPane', () => {
     })
   })
 
-  describe('transform state integration', () => {
-    it('should provide transform utilities to child components', () => {
+  describe('content bounds offset', () => {
+    it('should adjust transform to compensate for negative-coordinate nodes', async () => {
+      mockCamera.x = 10
+      mockCamera.y = 20
+      mockCamera.z = 1
+
+      const nodeLayout: NodeLayout = {
+        id: '1',
+        position: { x: -500, y: -300 },
+        size: { width: 200, height: 100 },
+        zIndex: 0,
+        visible: true,
+        bounds: { x: -500, y: -300, width: 200, height: 100 }
+      }
+      mockNodes.value = new Map([['1', nodeLayout]])
+      mockVersion.value = 1
+
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
+        props: { canvas: mockCanvas }
       })
 
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.canvasToScreen).toBeDefined()
-      expect(transformState.screenToCanvas).toBeDefined()
+      await nextTick()
+      vi.advanceTimersToNextFrame()
+      await nextTick()
+
+      const pane = screen.getByTestId('transform-pane')
+      const style = pane.getAttribute('style') ?? ''
+
+      // Pane should have explicit dimensions (not 100%)
+      expect(style).toMatch(/width:\s*\d+px/)
+      expect(style).toMatch(/height:\s*\d+px/)
+
+      // Camera translation should be adjusted by offset (camera - offset)
+      // so it won't match the raw camera values
+      expect(style).not.toContain('translate3d(10px, 20px, 0)')
     })
   })
 

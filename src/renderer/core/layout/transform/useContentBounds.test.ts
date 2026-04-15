@@ -84,20 +84,6 @@ describe('useContentBounds', () => {
     })
   })
 
-  describe('expandToIncludePoint', () => {
-    it('expands to include a single point', () => {
-      const cb = useContentBounds()
-      cb.expandToIncludePoint({ x: -800, y: 500 })
-      cb.flush()
-
-      expect(cb.offset.x).toBeGreaterThan(800)
-      // y=500 is positive, doesn't push minY below 0 → offset.y stays 0
-      // maxY expands to 500 + margin
-      expect(cb.offset.y).toBe(0)
-      expect(cb.size.height).toBeGreaterThan(500)
-    })
-  })
-
   describe('flush', () => {
     it('returns false when nothing changed', () => {
       const cb = useContentBounds()

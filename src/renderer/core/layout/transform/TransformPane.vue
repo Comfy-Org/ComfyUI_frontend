@@ -31,11 +31,11 @@ interface TransformPaneProps {
   canvas?: LGraphCanvas
 }
 
-const props = defineProps<TransformPaneProps>()
+const { canvas } = defineProps<TransformPaneProps>()
 
 const { camera, syncWithCanvas } = useTransformState()
 
-const canvasElement = computed(() => props.canvas?.canvas)
+const canvasElement = computed(() => canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
   settleDelay: 256
 })
@@ -118,8 +118,8 @@ watch(isInteracting, (interacting) => {
 
 useRafFn(
   () => {
-    if (!props.canvas) return
-    syncWithCanvas(props.canvas)
+    if (!canvas) return
+    syncWithCanvas(canvas)
     updateContentBounds()
     contentBounds.flush()
     applyStyles()
