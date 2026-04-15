@@ -21,6 +21,34 @@ import { z } from 'zod'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { execSync } from 'child_process'
 
+// ── Helpers ──
+
+/**
+ * Filter npm/pnpm/node warnings that dominate Playwright output tails, then
+ * return the most relevant slice. Prioritizes lines that mention errors,
+ * expected/received values, stack frames, or Playwright FAIL/PASS markers.
+ */
+function summarizePlaywrightOutput(raw: string, maxChars: number): string {
+  const lines = raw.split('\n').filter((l) => {
+    if (/^\s*npm (warn|notice)\b/i.test(l)) return false
+    if (/^\s*pnpm (warn|notice)\b/i.test(l)) return false
+    if (/^\s*\(node:\d+\)\s*(Experimental|Deprecation)Warning/.test(l))
+      return false
+    if (/^\s*Warning:.*Use .* --help/.test(l)) return false
+    return true
+  })
+
+  const errorRegex =
+    /(Error:|Expected|Received|FAIL|PASS|✓|✘|×|Playwright|assert|at [a-zA-Z/._-]+:\d+:\d+|Timeout|waitFor|locator|toHave|toBe|toEqual|strictEqual|deepEqual)/i
+  const keyLines = lines.filter((l) => errorRegex.test(l))
+
+  // Prefer the tail of key lines, fall back to tail of all filtered lines
+  const chosen = keyLines.length > 0 ? keyLines : lines
+  const joined = chosen.join('\n')
+  if (joined.length <= maxChars) return joined
+  return '…(truncated)…\n' + joined.slice(-maxChars)
+}
+
 // ── Types ──
 
 interface ResearchOptions {
@@ -70,6 +98,8 @@ export async function runResearchPhase(
   let finalVideoScript = ''
   let turnCount = 0
   let lastPassedTurn = -1
+  let consecutiveTestFailures = 0
+  const MAX_FAILED_RUNS = 5
   const startTime = Date.now()
   const researchLog: ResearchResult['log'] = []
 
@@ -258,18 +288,33 @@ export async function runResearchPhase(
   // ── Tool: loadWorkflow ──
   const loadWorkflowTool = tool(
     'loadWorkflow',
-    'Load a ComfyUI workflow JSON into the canvas via window.app.loadGraphData(). Call this after downloading the workflow from the issue. Returns the resulting node count.',
+    'Load a ComfyUI workflow into the canvas via window.app.loadGraphData(). Accepts either a URL (http/https — will be fetched) OR a complete workflow JSON string. Returns the resulting node count. For a single step from an issue attachment URL, pass the URL directly — no separate downloadAttachment needed.',
     {
-      json: z
+      jsonOrUrl: z
         .string()
         .describe(
-          'Complete workflow JSON string (the contents of a workflow.json file). Must parse to an object with a "nodes" array.'
+          'Either a URL starting with http(s):// (will be fetched), or a complete workflow JSON string. Must ultimately parse to an object with a "nodes" array.'
         )
     },
-    async (args: { json: string }) => {
+    async (args: { jsonOrUrl: string }) => {
       let resultText: string
       try {
-        const parsed = JSON.parse(args.json) as { nodes?: unknown[] }
+        let jsonText = args.jsonOrUrl
+        if (/^https?:\/\//i.test(jsonText.trim())) {
+          const res = await fetch(jsonText.trim(), { redirect: 'follow' })
+          if (!res.ok) {
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: `Fetch failed: HTTP ${res.status} ${res.statusText}`
+                }
+              ]
+            }
+          }
+          jsonText = await res.text()
+        }
+        const parsed = JSON.parse(jsonText) as { nodes?: unknown[] }
         if (
           !parsed ||
           typeof parsed !== 'object' ||
@@ -308,7 +353,7 @@ export async function runResearchPhase(
         turn: turnCount,
         timestampMs: Date.now() - startTime,
         toolName: 'loadWorkflow',
-        toolInput: { jsonLength: args.json.length },
+        toolInput: { inputLength: args.jsonOrUrl.length },
         toolResult: resultText.slice(0, 300)
       })
 
@@ -381,11 +426,11 @@ export async function runResearchPhase(
             }
           }
         )
-        resultText = `TEST PASSED:\n${output.slice(-1500)}`
+        resultText = `TEST PASSED:\n${summarizePlaywrightOutput(output, 1500)}`
       } catch (e) {
         const err = e as { stdout?: string; stderr?: string; message?: string }
         const output = (err.stdout || '') + '\n' + (err.stderr || '')
-        resultText = `TEST FAILED:\n${output.slice(-2000)}`
+        resultText = `TEST FAILED:\n${summarizePlaywrightOutput(output, 2500)}`
       }
 
       researchLog.push({
@@ -399,6 +444,7 @@ export async function runResearchPhase(
       // Auto-save passing test code for fallback completion — but only if
       // the test contains a bug-specific assertion (not just a discovery/debug test)
       if (resultText.startsWith('TEST PASSED')) {
+        consecutiveTestFailures = 0
         try {
           const code = readFileSync(browserTestPath, 'utf-8')
           const hasBugAssertion =
@@ -417,6 +463,13 @@ export async function runResearchPhase(
         }
         resultText +=
           '\n\n⚠️ Test PASSED — call done() now with verdict REPRODUCED and the test code. Do NOT write more tests.'
+      } else {
+        consecutiveTestFailures++
+        if (consecutiveTestFailures >= MAX_FAILED_RUNS) {
+          resultText += `\n\n⛔ ${consecutiveTestFailures} consecutive test failures — you MUST call done() NOW with verdict NOT_REPRODUCIBLE and summary explaining why. Do not run more tests.`
+        } else if (consecutiveTestFailures >= 3) {
+          resultText += `\n\n⚠️ ${consecutiveTestFailures} failed runs. ${MAX_FAILED_RUNS - consecutiveTestFailures} remaining before forced done(NOT_REPRODUCIBLE).`
+        }
       }
 
       return { content: [{ type: 'text' as const, text: resultText }] }
@@ -498,17 +551,18 @@ export async function runResearchPhase(
 - inspect(selector?) — Read the accessibility tree to understand the current UI. Use to discover selectors, element names, and UI state.
 - readFixture(path) — Read fixture source code from browser_tests/fixtures/. Use to discover available methods. E.g. "helpers/CanvasHelper.ts", "components/Topbar.ts", "ComfyPage.ts"
 - readTest(path) — Read an existing test from browser_tests/tests/ to learn patterns. E.g. "workflow.spec.ts". Pass any name to list available files.
-- downloadAttachment(url) — Fetch a URL (GitHub user-attachments, gist raw, pastebin raw) and return its text. Use to pull workflow.json attached to the issue.
-- loadWorkflow(json) — Load a workflow JSON string into the canvas via window.app.loadGraphData(). Call AFTER downloadAttachment when the issue attaches a workflow. Many bugs only manifest in the user's specific graph state.
+- downloadAttachment(url) — Fetch a URL (GitHub user-attachments, gist raw, pastebin raw) and return its text. Use when you need the body for inspection.
+- loadWorkflow(jsonOrUrl) — Load a workflow into the canvas via window.app.loadGraphData(). Accepts either a URL (will be fetched) OR a JSON string. For a workflow.json attached to an issue, prefer passing the URL directly in ONE call. Many bugs only manifest in the user's specific graph state.
 - writeTest(code) — Write a Playwright test file (.spec.ts)
 - runTest() — Execute the test and get results (pass/fail + errors)
 - done(verdict, summary, evidence, testCode) — Finish with the final test
 
 ## Workflow
 1. Read the issue description carefully
-2. **Environment setup (critical)** — many bugs only reproduce with the user's specific workflow. If the issue body contains a workflow JSON (code block or a link like \`[workflow.json](https://github.com/user-attachments/...)\`), you MUST:
-   a. Call downloadAttachment(url) to fetch the JSON (or use the code block text directly if inline).
-   b. Call loadWorkflow(json) to load it into the canvas.
+2. **Environment setup (critical)** — many bugs only reproduce with the user's specific workflow. If the issue body contains a workflow JSON (code block or a link like \`[workflow.json](https://github.com/user-attachments/...)\`), you MUST load it:
+   - **URL attachment**: call loadWorkflow(url) directly with the attachment URL — ONE call, no download step needed.
+   - **Inline JSON code block**: call loadWorkflow(jsonString) with the raw JSON text from the issue body.
+   - downloadAttachment(url) is only needed when you specifically want to inspect a non-workflow file.
    Skip this step only if the issue clearly does not involve a pre-existing workflow (e.g. pure menu/settings bugs).
 3. Use inspect() to understand the current UI state and discover element selectors
 4. If unsure about the fixture API, use readFixture() to read the relevant helper source code
@@ -721,6 +775,23 @@ ${issueContext}`
         ...(anthropicApiKey ? { apiKey: anthropicApiKey } : {}),
         maxTurns,
         mcpServers: { 'qa-research': server },
+        // Sonnet handles the loop; Opus is consulted via server-side advisor
+        // only when the agent explicitly asks for help — delivers Opus-grade
+        // judgment on hard decisions without paying Opus rates for every turn.
+        settings: {
+          advisorModel: 'claude-opus-4-6',
+          permissions: {
+            // Deny destructive built-ins that could touch the user's machine.
+            // Read/Grep/Glob stay allowed so the agent can explore the repo.
+            deny: [
+              'Bash(*)',
+              'Agent(*)',
+              'Write(*)',
+              'Edit(*)',
+              'NotebookEdit(*)'
+            ]
+          }
+        },
         allowedTools: [
           'mcp__qa-research__inspect',
           'mcp__qa-research__readFixture',
@@ -729,7 +800,10 @@ ${issueContext}`
           'mcp__qa-research__loadWorkflow',
           'mcp__qa-research__writeTest',
           'mcp__qa-research__runTest',
-          'mcp__qa-research__done'
+          'mcp__qa-research__done',
+          'Read',
+          'Grep',
+          'Glob'
         ]
       }
     })) {
@@ -774,6 +848,20 @@ ${issueContext}`
     finalReproducedBy = 'e2e_test'
     finalSummary = `Test passed at turn ${lastPassedTurn} (auto-completed — agent did not call done())`
     finalEvidence = `Test passed with exit code 0`
+  } else if (!agentDone && consecutiveTestFailures > 0) {
+    // Agent ran tests but none passed and it never called done() — treat as not reproducible
+    console.warn(
+      `Auto-completing: ${consecutiveTestFailures} test failures, no passes, done() not called`
+    )
+    finalVerdict = 'NOT_REPRODUCIBLE'
+    finalReproducedBy = 'none'
+    finalSummary = `Agent ran ${consecutiveTestFailures} test attempts, none passed (auto-completed — agent did not call done())`
+    finalEvidence = `${consecutiveTestFailures} consecutive TEST FAILED runs without calling done()`
+    try {
+      finalTestCode = readFileSync(browserTestPath, 'utf-8')
+    } catch {
+      // leave finalTestCode empty
+    }
   }
 
   const result: ResearchResult = {

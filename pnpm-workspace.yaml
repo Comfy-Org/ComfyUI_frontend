@@ -4,7 +4,7 @@ packages:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
-  '@anthropic-ai/claude-agent-sdk': ^0.2.85
+  '@anthropic-ai/claude-agent-sdk': latest
   '@astrojs/sitemap': ^3.7.1
   '@astrojs/vue': ^5.0.0
   '@comfyorg/comfyui-electron-types': 0.6.2

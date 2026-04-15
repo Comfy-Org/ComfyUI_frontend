@@ -29,6 +29,9 @@ dist-ssr
 .claude/worktrees
 CLAUDE.local.md
 
+# QA pipeline ephemeral test file (written per run by qa-agent.ts)
+browser_tests/tests/qa-reproduce.spec.ts
+
 # Editor directories and files
 .vscode/*
 *.code-workspace
