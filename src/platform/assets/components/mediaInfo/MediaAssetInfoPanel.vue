@@ -133,7 +133,16 @@
           {{ t('sideToolbar.mediaAssets.infoPanel.tagging') }}
         </span>
       </template>
-      <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
+      <div
+        v-if="isGeneratedOutput"
+        class="px-4 py-2 text-xs text-muted-foreground"
+      >
+        {{ t('sideToolbar.mediaAssets.infoPanel.generatedOutputReadonly') }}
+      </div>
+      <ModelInfoField
+        v-else
+        :label="t('assetBrowser.modelInfo.additionalTags')"
+      >
         <TagsInputAutocomplete
           v-if="isMulti"
           v-model="multiTags"
@@ -157,7 +166,23 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem v-if="!isMulti" :class="accordionClass">
+    <PropertiesAccordionItem :class="accordionClass">
+      <template #label>
+        <span class="font-inter text-xs uppercase select-none">
+          {{ t('sideToolbar.mediaAssets.infoPanel.properties') }}
+        </span>
+      </template>
+      <PropertiesEditor
+        v-model="userProperties"
+        :suggestions="propertySuggestions"
+        :readonly="false"
+      />
+    </PropertiesAccordionItem>
+
+    <PropertiesAccordionItem
+      v-if="!isMulti && !isGeneratedOutput"
+      :class="accordionClass"
+    >
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
           {{ t('sideToolbar.mediaAssets.infoPanel.description') }}
@@ -194,11 +219,18 @@ import TagsInputAutocomplete from '@/components/ui/tags-input/TagsInputAutocompl
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import ImageStack from '@/platform/assets/components/mediaInfo/ImageStack.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import PropertiesEditor from '@/platform/assets/components/properties/PropertiesEditor.vue'
+import { usePropertySuggestions } from '@/platform/assets/composables/usePropertySuggestions'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type {
   AssetItem,
   AssetUserMetadata
 } from '@/platform/assets/schemas/assetSchema'
+import type {
+  PropertySuggestion,
+  UserProperties
+} from '@/platform/assets/schemas/userPropertySchema'
+import { getAssetUserProperties } from '@/platform/assets/schemas/userPropertySchema'
 import {
   getAssetAdditionalTags,
   getAssetDisplayName,
@@ -222,6 +254,7 @@ const {
   asset,
   assets,
   tagSuggestions = [],
+  propertySuggestions: propertySuggestionsProp,
   compact = false
 } = defineProps<{
   /** Single asset (used when no multi-selection) */
@@ -230,6 +263,8 @@ const {
   assets?: AssetItem[]
   /** Tag suggestions for autocomplete */
   tagSuggestions?: string[]
+  /** Property key suggestions from all loaded assets */
+  propertySuggestions?: Map<string, PropertySuggestion>
   /** When true, uses transparent background for sidebar/popover context */
   compact?: boolean
 }>()
@@ -251,6 +286,12 @@ const emit = defineEmits<{
 const isMulti = computed(() => (assets?.length ?? 0) > 1)
 const allAssets = computed(() => (isMulti.value ? assets! : [asset]))
 const primaryAsset = computed(() => asset)
+
+// Generated output assets use job IDs, not real asset IDs — metadata edits
+// won't persist until the backend provides output assets via the asset API.
+const isGeneratedOutput = computed(() =>
+  allAssets.value.some((a) => !!a.user_metadata?.jobId)
+)
 
 // Preview URLs for ImageStack
 const previewUrls = computed(() =>
@@ -315,17 +356,17 @@ watch(
   }
 )
 
-function flushMetadata(targetAsset: AssetItem) {
+async function flushMetadata(targetAsset: AssetItem) {
   const pending = pendingByAsset.value[targetAsset.id]
   if (!pending || Object.keys(pending).length === 0) return
-  assetsStore.updateAssetMetadata(targetAsset, {
+  await assetsStore.updateAssetMetadata(targetAsset, {
     ...(targetAsset.user_metadata ?? {}),
     ...pending
   })
 }
 
-const debouncedFlushMetadata = useDebounceFn(() => {
-  flushMetadata(primaryAsset.value)
+const debouncedFlushMetadata = useDebounceFn(async () => {
+  await flushMetadata(primaryAsset.value)
 }, 500)
 
 function queueMetadataUpdate(updates: AssetUserMetadata) {
@@ -346,6 +387,20 @@ const additionalTags = computed({
     pendingUpdates.value.additional_tags ??
     getAssetAdditionalTags(primaryAsset.value),
   set: (value: string[]) => queueMetadataUpdate({ additional_tags: value })
+})
+
+// --- User properties ---
+const localPropertySuggestions = usePropertySuggestions(allAssets)
+const propertySuggestions = computed(
+  () => propertySuggestionsProp ?? localPropertySuggestions.value
+)
+
+const userProperties = computed<UserProperties>({
+  get: () =>
+    (pendingUpdates.value.user_properties as UserProperties | undefined) ??
+    getAssetUserProperties(primaryAsset.value.user_metadata),
+  set: (value: UserProperties) =>
+    queueMetadataUpdate({ user_properties: value })
 })
 
 // --- Multi-select tag logic ---
@@ -419,10 +474,8 @@ function multiTagClass(tag: string): string | undefined {
   return 'opacity-40'
 }
 
-const debouncedFlushAllSelected = useDebounceFn(() => {
-  for (const a of allAssets.value) {
-    flushMetadata(a)
-  }
+const debouncedFlushAllSelected = useDebounceFn(async () => {
+  await Promise.all(allAssets.value.map((a) => flushMetadata(a)))
 }, 500)
 
 const userDescription = computed({

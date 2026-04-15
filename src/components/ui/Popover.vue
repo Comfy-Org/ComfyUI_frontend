@@ -7,6 +7,8 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
@@ -26,10 +28,33 @@ const {
   to?: string | HTMLElement
   showArrow?: boolean
 }>()
+
+const open = ref(false)
+
+// Custom click-outside handler since we disabled reka-ui's interact-outside.
+// reka-ui's DismissableLayer cannot distinguish between genuine outside clicks
+// and interactions with nested dismiss layers (e.g. ComboboxContent dropdowns).
+watch(open, (isOpen) => {
+  if (!isOpen) return
+  requestAnimationFrame(() => {
+    const cleanup = useEventListener(
+      document,
+      'pointerdown',
+      (e: PointerEvent) => {
+        const target = e.target as HTMLElement
+        if (target.closest('[data-reka-popper-content-wrapper]')) return
+        if (target.closest('[role="listbox"]')) return
+        if (target.closest('[role="option"]')) return
+        open.value = false
+        cleanup()
+      }
+    )
+  })
+})
 </script>
 
 <template>
-  <PopoverRoot v-slot="{ close }">
+  <PopoverRoot v-model:open="open">
     <PopoverTrigger as-child>
       <slot name="button">
         <Button size="icon">
@@ -44,8 +69,9 @@ const {
         :collision-padding="10"
         v-bind="$attrs"
         class="data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
+        @interact-outside.prevent
       >
-        <slot :close>
+        <slot :close="() => (open = false)">
           <div class="flex flex-col p-1">
             <template v-for="item in entries ?? []" :key="item.label">
               <div
@@ -67,7 +93,7 @@ const {
                   (e) => {
                     if (!item.command || item.disabled) return
                     item.command({ originalEvent: e, item })
-                    close()
+                    open = false
                   }
                 "
               >

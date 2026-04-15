@@ -132,6 +132,7 @@
         :asset="focusedAsset"
         :assets="infoPanelAssets"
         :tag-suggestions="availableTags"
+        :property-suggestions="propertySuggestions"
         @zoom="handleZoomClick"
       />
       <div
@@ -188,6 +189,7 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
+import { usePropertySuggestions } from '@/platform/assets/composables/usePropertySuggestions'
 import { getAssetAdditionalTags } from '@/platform/assets/utils/assetMetadataUtils'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -315,6 +317,7 @@ const baseAssets = computed(() =>
 )
 
 const availableTags = useAvailableMediaTags(baseAssets)
+const propertySuggestions = usePropertySuggestions(mediaAssets)
 
 // Filtering — reuses the same composable as the sidebar
 const viewMode = useStorage<'list' | 'grid'>(

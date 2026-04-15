@@ -815,6 +815,15 @@
     "arrow": "Arrow",
     "box": "Box"
   },
+  "properties": {
+    "addProperty": "Add property",
+    "keyPlaceholder": "Property name",
+    "createKey": "Create \"{key}\"",
+    "noSuggestions": "Type a property name",
+    "mixed": "Mixed",
+    "selectType": "Select type…",
+    "createNew": "Create"
+  },
   "sideToolbar": {
     "sidebar": "Sidebar",
     "themeToggle": "Toggle Theme",
@@ -847,9 +856,11 @@
         "fileSize": "File Size",
         "generationTime": "Generation Time",
         "tagging": "Tagging",
+        "properties": "Properties",
         "description": "Description",
         "selection": "Selection",
-        "selectedCount": "Total"
+        "selectedCount": "Total",
+        "generatedOutputReadonly": "Tagging is not yet available for generated outputs."
       }
     },
     "backToAssets": "Back to all assets",

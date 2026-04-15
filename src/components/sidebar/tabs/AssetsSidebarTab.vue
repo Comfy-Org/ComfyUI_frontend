@@ -82,6 +82,7 @@
                 :asset="selectedAssets[0]"
                 :assets="infoPanelAssets"
                 :tag-suggestions="availableTags"
+                :property-suggestions="propertySuggestions"
                 compact
                 @zoom="handleZoomClick"
               />
@@ -281,6 +282,7 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useAvailableMediaTags } from '@/platform/assets/composables/useAvailableMediaTags'
+import { usePropertySuggestions } from '@/platform/assets/composables/usePropertySuggestions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -415,6 +417,7 @@ const loading = computed(() => currentAssets.value.loading.value)
 const error = computed(() => currentAssets.value.error.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
 const availableTags = useAvailableMediaTags(mediaAssets)
+const propertySuggestions = usePropertySuggestions(mediaAssets)
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
