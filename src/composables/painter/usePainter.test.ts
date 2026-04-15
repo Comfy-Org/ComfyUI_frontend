@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -114,8 +114,8 @@ function mountPainter(nodeId = 'test-node', initialModelValue = '') {
     }
   })
 
-  const wrapper = mount(Wrapper)
-  return { painter, wrapper, canvasEl, cursorEl, modelValue }
+  render(Wrapper)
+  return { painter, canvasEl, cursorEl, modelValue }
 }
 
 describe('usePainter', () => {
