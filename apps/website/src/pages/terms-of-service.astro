@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import SiteNav from '../components/SiteNav.vue'
-import SiteFooter from '../components/SiteFooter.vue'
 ---
 
 <BaseLayout
@@ -9,8 +7,7 @@ import SiteFooter from '../components/SiteFooter.vue'
   description="Terms of Service for ComfyUI and related Comfy services."
   noindex
 >
-  <SiteNav client:load />
-  <main class="mx-auto max-w-3xl px-6 py-24 sm:py-32">
+  <div class="mx-auto max-w-3xl px-6 py-24 sm:py-32">
     <header class="mb-16">
       <h1 class="text-3xl font-bold text-white">Terms of Service</h1>
       <p class="mt-2 text-lg text-smoke-700">for ComfyUI</p>
@@ -299,6 +296,5 @@ import SiteFooter from '../components/SiteFooter.vue'
         </p>
       </div>
     </section>
-  </main>
-  <SiteFooter />
+  </div>
 </BaseLayout>

@@ -7,7 +7,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await comfyPage.vueNodes.waitForNodes()
 
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

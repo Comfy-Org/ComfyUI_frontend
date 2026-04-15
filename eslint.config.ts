@@ -232,13 +232,14 @@ export default defineConfig([
   },
   {
     files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Program',
-          message: '.spec.ts files are only allowed under browser_tests/tests/'
+          message:
+            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
         }
       ]
     }
