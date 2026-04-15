@@ -1,3 +1,4 @@
+import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
@@ -172,15 +173,16 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
           path.arc(pos[0], pos[1], highlight ? 2.5 : 1.5, 0, Math.PI * 2)
           ctx.clip(path, 'evenodd')
         }
+
         const radius = highlight ? 5 : 4
+        const colorMapper = this.isConnected
+          ? colorContext.getConnectedColor
+          : colorContext.getDisconnectedColor
         const types = `${this.type}`
           .split(',')
-          .map(
-            this.isConnected
-              ? (type) => colorContext.getConnectedColor(type)
-              : (type) => colorContext.getDisconnectedColor(type)
-          )
-          .slice(0, 3)
+          .map(colorMapper)
+          .slice(0, MAX_MULTITYPE_SLICES)
+
         if (types.length > 1) {
           doFill = false
           const arcLen = (Math.PI * 2) / types.length
