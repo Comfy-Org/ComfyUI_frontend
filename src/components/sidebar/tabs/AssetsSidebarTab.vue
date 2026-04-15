@@ -55,6 +55,8 @@
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
         :suggestions="availableTags"
+        :property-suggestions="propertySuggestions"
+        @update:property-filters="propertyFilters = $event"
       />
       <!-- Tab list + asset info button -->
       <div
@@ -459,8 +461,14 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, filterTags, sortBy, mediaTypeFilters, filteredAssets } =
-  useMediaAssetFiltering(baseAssets)
+const {
+  searchQuery,
+  filterTags,
+  propertyFilters,
+  sortBy,
+  mediaTypeFilters,
+  filteredAssets
+} = useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
   return filteredAssets.value

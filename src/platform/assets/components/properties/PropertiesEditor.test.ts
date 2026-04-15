@@ -26,8 +26,8 @@ describe('PropertiesEditor callback delegation', () => {
       }
     })
 
-    const textarea = within(container).getByRole('textbox', {
-      name: (_, el) => el.tagName === 'TEXTAREA'
+    const textarea = within(container as HTMLElement).getByRole('textbox', {
+      name: (_, el) => (el as HTMLElement).tagName === 'TEXTAREA'
     })
     await userEvent.clear(textarea)
     await userEvent.type(textarea, 'new value')
