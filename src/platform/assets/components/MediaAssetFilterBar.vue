@@ -201,19 +201,22 @@ watch(
 )
 
 // Intercept incomplete prop: chips — redirect back to query
+let intercepting = false
 watch(selectedChips, (newChips, oldChips) => {
-  if (!oldChips) return
+  if (!oldChips || intercepting) return
   const added = newChips.filter((c) => !oldChips.includes(c))
   const incomplete = added.find(
     (c) => c.startsWith('prop:') && !parsePropFilter(c)
   )
   if (incomplete) {
+    intercepting = true
     selectedChips.value = newChips.filter((c) => c !== incomplete)
     void nextTick(() => {
       searchModel.value = incomplete
       void nextTick(() => {
         searchRef.value?.focus()
         searchRef.value?.openDropdown()
+        intercepting = false
       })
     })
   }
@@ -258,8 +261,11 @@ function getChipLabel(value: string): string {
 }
 
 function canCreateChip(value: string): boolean {
+  // Only allow creating chips for prefixed values
   if (value.startsWith('prop:')) return !!parsePropFilter(value)
-  return true
+  if (value.startsWith('tag:') || value.startsWith('type:')) return true
+  // Plain text is free-text search, not a chip
+  return false
 }
 
 function focus() {
