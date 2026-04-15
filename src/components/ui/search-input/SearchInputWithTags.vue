@@ -166,8 +166,7 @@ import {
   ComboboxItem,
   ComboboxRoot,
   ComboboxViewport,
-  TagsInputRoot,
-  useFilter
+  TagsInputRoot
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
@@ -255,13 +254,6 @@ function clearAll() {
 
 // --- Tag suggestion logic ---
 
-const filterSensitivity = computed(() =>
-  caseSensitive ? 'variant' : ('base' as const)
-)
-const { contains } = useFilter(
-  computed(() => ({ sensitivity: filterSensitivity.value }))
-)
-
 function normalizeForMatch(value: string): string {
   let result = value
   if (!caseSensitive) result = result.toLowerCase()
@@ -284,9 +276,13 @@ function resolveTag(typed: string): string {
   )
 }
 
-const filteredSuggestions = computed(() =>
-  suggestions.filter((s) => contains(s, query.value) && !tags.value.includes(s))
-)
+const filteredSuggestions = computed(() => {
+  const normalizedQuery = normalizeForMatch(query.value)
+  return suggestions.filter(
+    (s) =>
+      normalizeForMatch(s).includes(normalizedQuery) && !tags.value.includes(s)
+  )
+})
 
 const createTagValue = computed(() => resolveTag(query.value))
 
@@ -324,6 +320,7 @@ watch(
   (newVal, oldVal) => {
     if (!oldVal) return
     const added = newVal.filter((t) => !oldVal.includes(t))
+    if (added.length === 0) return
     for (const tag of added) {
       emit('tag-added', tag, suggestions.includes(tag))
     }

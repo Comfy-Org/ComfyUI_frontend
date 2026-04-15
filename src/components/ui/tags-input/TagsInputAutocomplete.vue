@@ -240,6 +240,7 @@ watch(
   (newVal, oldVal) => {
     if (!oldVal) return
     const added = newVal.filter((t) => !oldVal.includes(t))
+    if (added.length === 0) return
     for (const tag of added) {
       emit('tag-added', tag, suggestions.includes(tag))
     }

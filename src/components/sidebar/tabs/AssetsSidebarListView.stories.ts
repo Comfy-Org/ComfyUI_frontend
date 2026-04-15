@@ -176,6 +176,7 @@ function renderAssetsSidebarListView(args: StoryArgs) {
       function onSelectAsset(asset: AssetItem, assets?: AssetItem[]) {
         const list = assets ?? selectableAssets.value
         const index = list.findIndex((a) => a.id === asset.id)
+        if (index < 0) return
         handleAssetClick(asset, index, list)
       }
 

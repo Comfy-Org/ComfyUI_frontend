@@ -302,18 +302,27 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
 
   return items
 })
-const loading = computed(() => currentAssets.value.loading.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
 
 // Folder view — drill into a job's outputs
 const folderJobId = ref<string | null>(null)
 const isInFolderView = computed(() => folderJobId.value !== null)
 
-const { state: folderAssets, execute: loadFolderAssets } = useAsyncState(
+const {
+  state: folderAssets,
+  execute: loadFolderAssets,
+  isLoading: isFolderLoading
+} = useAsyncState(
   (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
     resolveOutputAssetItems(metadata, options),
   [] as AssetItem[],
   { immediate: false, resetOnExecute: true }
+)
+
+const loading = computed(() =>
+  isInFolderView.value
+    ? isFolderLoading.value
+    : currentAssets.value.loading.value
 )
 
 const baseAssets = computed(() =>
@@ -395,8 +404,12 @@ const isRightPanelOpen = ref(false)
 const focusedAsset = ref<AssetItem | null>(null)
 const expandedFocusedAssets = ref<AssetItem[]>([])
 
-// When an image set is focused, resolve its sub-images for the info panel
+// When an image set is focused, resolve its sub-images for the info panel.
+// Guard against stale responses when the user clicks between assets quickly.
+let focusedAssetRequestId = 0
+
 watch(focusedAsset, async (asset) => {
+  const requestId = ++focusedAssetRequestId
   if (!asset) {
     expandedFocusedAssets.value = []
     return
@@ -405,9 +418,11 @@ watch(focusedAsset, async (asset) => {
   if (count > 1) {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     if (metadata) {
-      expandedFocusedAssets.value = await resolveOutputAssetItems(metadata, {
+      const resolved = await resolveOutputAssetItems(metadata, {
         createdAt: asset.created_at
       })
+      if (requestId !== focusedAssetRequestId) return
+      expandedFocusedAssets.value = resolved
       return
     }
   }
@@ -537,6 +552,7 @@ function handleDownloadSelected() {
 
 async function handleDeleteSelected() {
   if (await deleteAssets(selectedAssets.value)) {
+    await refreshAssets()
     clearSelection()
   }
 }
