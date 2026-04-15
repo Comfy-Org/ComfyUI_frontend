@@ -149,7 +149,6 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBeGreaterThan(1)
 
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.nextFrame()
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
