@@ -7,7 +7,7 @@ const { segments, segmentClass = 'px-6' } = defineProps<{
 
 <template>
   <div
-    class="font-formula-condensed flex h-9 items-stretch font-semibold lg:h-auto"
+    class="font-formula-condensed flex h-9 items-stretch font-semibold **:select-none lg:h-auto"
   >
     <img
       src="/icons/node-left.svg"
