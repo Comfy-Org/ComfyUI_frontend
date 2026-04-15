@@ -1,7 +1,7 @@
 <template>
   <div class="group flex flex-col">
     <PropertyRow
-      v-for="key in orderedKeys"
+      v-for="key in sortedKeys"
       :key="key"
       :property-key="key"
       :property="properties[key]"
@@ -15,14 +15,14 @@
     <AddPropertyRow
       v-if="!readonly"
       :suggestions
-      :existing-keys="orderedKeys"
+      :existing-keys="sortedKeys"
       @add="addProperty"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import type {
   PropertySuggestion,
@@ -49,33 +49,34 @@ const {
   mixedKeys?: Set<string>
 }>()
 
-const orderedKeys = ref<string[]>(Object.keys(properties.value))
-
-watch(
-  () => properties.value,
-  (props) => {
-    const current = new Set(orderedKeys.value)
-    const actual = new Set(Object.keys(props))
-    orderedKeys.value = orderedKeys.value.filter((k) => actual.has(k))
-    for (const k of actual) {
-      if (!current.has(k)) orderedKeys.value.push(k)
-    }
-  },
-  { deep: true }
+const sortedKeys = computed(() =>
+  Object.entries(properties.value)
+    .sort(([, a], [, b]) => (a._order ?? 0) - (b._order ?? 0))
+    .map(([key]) => key)
 )
 
 function updateProperty(key: string, updated: UserProperty) {
-  properties.value = { ...properties.value, [key]: updated }
+  // Preserve _order from the existing property
+  const existing = properties.value[key]
+  properties.value = {
+    ...properties.value,
+    [key]: { ...updated, _order: existing?._order }
+  }
 }
 
 function deleteProperty(key: string) {
   const { [key]: _, ...rest } = properties.value
   properties.value = rest
-  orderedKeys.value = orderedKeys.value.filter((k) => k !== key)
 }
 
 function addProperty(key: string, property: UserProperty) {
-  properties.value = { ...properties.value, [key]: property }
-  orderedKeys.value.push(key)
+  const maxOrder = Math.max(
+    0,
+    ...Object.values(properties.value).map((p) => p._order ?? 0)
+  )
+  properties.value = {
+    ...properties.value,
+    [key]: { ...property, _order: maxOrder + 1 }
+  }
 }
 </script>
