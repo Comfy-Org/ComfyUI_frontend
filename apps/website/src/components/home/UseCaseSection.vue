@@ -44,7 +44,7 @@ const navRef = ref<HTMLElement>()
 const leftImgRef = ref<HTMLElement>()
 const rightImgRef = ref<HTMLElement>()
 
-const { activeIndex: activeCategory } = usePinScrub(
+const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
   { section: sectionRef, content: contentRef, nav: navRef },
   { itemCount: categories.length }
 )
@@ -138,7 +138,7 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
               ? 'text-primary-comfy-canvas'
               : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
           "
-          @click="activeCategory = index"
+          @click="scrollToIndex(index)"
         >
           {{ category.label }}
         </button>

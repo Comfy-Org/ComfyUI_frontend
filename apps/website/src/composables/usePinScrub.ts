@@ -38,8 +38,25 @@ function interpolateY(
 export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
   const activeIndex = ref(0)
   let ctx: gsap.Context | undefined
+  let scrollTriggerInstance: ScrollTrigger | undefined
 
   const vhPerItem = options.vhPerItem ?? 100
+
+  function scrollToIndex(index: number) {
+    if (!scrollTriggerInstance) {
+      activeIndex.value = index
+      return
+    }
+    const progress = index / (options.itemCount - 1)
+    const scrollPos =
+      scrollTriggerInstance.start +
+      progress * (scrollTriggerInstance.end - scrollTriggerInstance.start)
+    gsap.to(window, {
+      scrollTo: { y: scrollPos, autoKill: false },
+      duration: 0.6,
+      ease: 'power2.inOut'
+    })
+  }
 
   onMounted(() => {
     if (
@@ -84,7 +101,10 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
           pin: true,
           scrub: true,
           refreshPriority: 1,
-          onRefresh: cacheLayout
+          onRefresh: cacheLayout,
+          onUpdate(self) {
+            scrollTriggerInstance = self
+          }
         },
         onUpdate() {
           activeIndex.value = Math.round(proxy.index)
@@ -106,5 +126,5 @@ export function usePinScrub(refs: PinScrubRefs, options: PinScrubOptions) {
     ctx?.revert()
   })
 
-  return { activeIndex }
+  return { activeIndex, scrollToIndex }
 }
