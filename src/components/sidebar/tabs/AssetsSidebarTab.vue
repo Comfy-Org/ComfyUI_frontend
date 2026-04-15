@@ -221,6 +221,9 @@
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
+    :asset="lightboxAsset"
+    :tag-suggestions="availableTags"
+    :property-suggestions="propertySuggestions"
   />
   <MediaAssetContextMenu
     v-if="contextMenuAsset"
@@ -476,6 +479,14 @@ const previewableVisibleAssets = computed(() =>
     isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
   )
 )
+
+const lightboxAsset = computed(() => {
+  if (galleryActiveIndex.value === -1 || !currentGalleryAssetId.value)
+    return undefined
+  return previewableVisibleAssets.value.find(
+    (a) => a.id === currentGalleryAssetId.value
+  )
+})
 
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 

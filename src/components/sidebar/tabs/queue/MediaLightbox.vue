@@ -7,71 +7,108 @@
       aria-modal="true"
       :aria-label="$t('g.gallery')"
       tabindex="-1"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
-      data-mask
-      @mousedown="onMaskMouseDown"
-      @mouseup="onMaskMouseUp"
+      class="fixed inset-0 z-9999 flex flex-col outline-none"
       @keydown.stop="handleKeyDown"
     >
-      <!-- Close Button -->
-      <Button
-        variant="secondary"
-        size="icon-lg"
-        class="absolute top-4 right-4 z-10 rounded-full"
-        :aria-label="$t('g.close')"
-        @click="close"
-      >
-        <i class="icon-[lucide--x] size-5" />
-      </Button>
+      <!-- Dark backdrop (click to close) -->
+      <div
+        class="absolute inset-0 bg-black/90"
+        data-mask
+        @mousedown="onMaskMouseDown"
+        @mouseup="onMaskMouseUp"
+      />
 
-      <!-- Previous Button -->
-      <Button
-        v-if="hasMultiple"
-        variant="secondary"
-        size="icon-lg"
-        class="fixed top-1/2 left-4 z-10 -translate-y-1/2 rounded-full"
-        :aria-label="$t('g.previous')"
-        @click="navigateImage(-1)"
-      >
-        <i class="icon-[lucide--chevron-left] size-6" />
-      </Button>
-
-      <!-- Content -->
-      <div class="flex max-h-full max-w-full items-center justify-center">
-        <template v-if="activeItem">
-          <ComfyImage
-            v-if="activeItem.isImage"
-            :key="activeItem.url"
-            :src="activeItem.url"
-            :contain="false"
-            :alt="activeItem.filename"
-            class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-          />
-          <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
-          <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
-        </template>
+      <!-- Top bar: toggle + close buttons -->
+      <div class="relative z-10 flex justify-end gap-2 p-4">
+        <Button
+          v-if="asset"
+          variant="secondary"
+          size="icon-lg"
+          class="rounded-full"
+          :aria-label="$t('g.showRightPanel')"
+          @click="infoPanelOpen = !infoPanelOpen"
+        >
+          <i class="icon-[lucide--panel-right] size-5" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon-lg"
+          class="rounded-full"
+          :aria-label="$t('g.close')"
+          @click="close"
+        >
+          <i class="icon-[lucide--x] size-5" />
+        </Button>
       </div>
 
-      <!-- Next Button -->
-      <Button
-        v-if="hasMultiple"
-        variant="secondary"
-        size="icon-lg"
-        class="fixed top-1/2 right-4 z-10 -translate-y-1/2 rounded-full"
-        :aria-label="$t('g.next')"
-        @click="navigateImage(1)"
-      >
-        <i class="icon-[lucide--chevron-right] size-6" />
-      </Button>
+      <!-- Main content area -->
+      <div class="relative z-10 flex min-h-0 flex-1 gap-4 px-4 pb-4">
+        <!-- Media content (nav arrows are absolute within this) -->
+        <div class="relative flex flex-1 items-center justify-center">
+          <!-- Previous Button -->
+          <Button
+            v-if="hasMultiple"
+            variant="secondary"
+            size="icon-lg"
+            class="absolute top-1/2 left-0 z-10 -translate-y-1/2 rounded-full"
+            :aria-label="$t('g.previous')"
+            @click="navigateImage(-1)"
+          >
+            <i class="icon-[lucide--chevron-left] size-6" />
+          </Button>
+
+          <template v-if="activeItem">
+            <ComfyImage
+              v-if="activeItem.isImage"
+              :key="activeItem.url"
+              :src="activeItem.url"
+              :contain="false"
+              :alt="activeItem.filename"
+              class="size-auto max-h-[85vh] max-w-full object-contain"
+            />
+            <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
+            <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
+          </template>
+
+          <!-- Next Button -->
+          <Button
+            v-if="hasMultiple"
+            variant="secondary"
+            size="icon-lg"
+            class="absolute top-1/2 right-0 z-10 -translate-y-1/2 rounded-full"
+            :aria-label="$t('g.next')"
+            @click="navigateImage(1)"
+          >
+            <i class="icon-[lucide--chevron-right] size-6" />
+          </Button>
+        </div>
+
+        <!-- Info panel -->
+        <div
+          v-if="infoPanelOpen && asset"
+          class="w-80 shrink-0 overflow-y-auto rounded-lg border border-border-subtle bg-base-background shadow-sm"
+        >
+          <MediaAssetInfoPanel
+            :asset="asset"
+            :tag-suggestions="tagSuggestions"
+            :property-suggestions="propertySuggestions"
+            compact
+          />
+        </div>
+      </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
+import MediaAssetInfoPanel from '@/platform/assets/components/mediaInfo/MediaAssetInfoPanel.vue'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { PropertySuggestion } from '@/platform/assets/schemas/userPropertySchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultAudio from './ResultAudio.vue'
@@ -81,19 +118,29 @@ const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
 }>()
 
-const props = defineProps<{
+const {
+  allGalleryItems,
+  activeIndex,
+  asset,
+  tagSuggestions = [],
+  propertySuggestions
+} = defineProps<{
   allGalleryItems: ResultItemImpl[]
   activeIndex: number
+  asset?: AssetItem
+  tagSuggestions?: string[]
+  propertySuggestions?: Map<string, PropertySuggestion>
 }>()
 
 const galleryVisible = ref(false)
+const infoPanelOpen = useStorage('Comfy.Lightbox.InfoPanelOpen', true)
 const dialogRef = ref<HTMLElement>()
 let previouslyFocusedElement: HTMLElement | null = null
-const hasMultiple = computed(() => props.allGalleryItems.length > 1)
-const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
+const hasMultiple = computed(() => allGalleryItems.length > 1)
+const activeItem = computed(() => allGalleryItems[activeIndex])
 
 watch(
-  () => props.activeIndex,
+  () => activeIndex,
   (index) => {
     galleryVisible.value = index !== -1
     if (index !== -1) {
@@ -113,8 +160,7 @@ function close() {
 
 function navigateImage(direction: number) {
   const newIndex =
-    (props.activeIndex + direction + props.allGalleryItems.length) %
-    props.allGalleryItems.length
+    (activeIndex + direction + allGalleryItems.length) % allGalleryItems.length
   emit('update:activeIndex', newIndex)
 }
 

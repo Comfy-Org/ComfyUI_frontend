@@ -146,6 +146,9 @@
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
+    :asset="lightboxAsset"
+    :tag-suggestions="availableTags"
+    :property-suggestions="propertySuggestions"
   />
   <MediaAssetContextMenu
     v-if="contextMenuAsset"
@@ -458,6 +461,11 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 
 // Gallery / lightbox — same pattern as the sidebar
 const galleryActiveIndex = ref(-1)
+
+const lightboxAsset = computed(() => {
+  if (galleryActiveIndex.value === -1) return undefined
+  return previewableAssets.value[galleryActiveIndex.value]
+})
 
 const previewableAssets = computed(() =>
   displayAssets.value.filter((asset) =>
