@@ -193,7 +193,17 @@ function fetchIssue(number: string, repo: string, outputDir: string): string {
   const body = shell(
     `gh issue view ${number} --repo ${repo} --json title,body,labels --jq '"Title: " + .title + "\\n\\nLabels: " + ([.labels[].name] | join(", ")) + "\\n\\n" + .body'`
   )
-  return writeTmpFile(outputDir, `issue-${number}.txt`, body)
+  // Append relevant comments for reproduction context
+  let comments = ''
+  try {
+    comments = shell(
+      `gh issue view ${number} --repo ${repo} --comments --json comments --jq '[.comments[] | select(.body | test("repro|step|how to|workaround"; "i")) | .body] | first(5; .[]) // empty'`
+    )
+  } catch {
+    // comments fetch failed, not critical
+  }
+  const content = comments ? `${body}\n\n--- Comments ---\n\n${comments}` : body
+  return writeTmpFile(outputDir, `issue-${number}.txt`, content)
 }
 
 function fetchPR(number: string, repo: string, outputDir: string): string {

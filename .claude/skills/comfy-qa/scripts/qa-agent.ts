@@ -402,8 +402,11 @@ export async function runResearchPhase(
 - done(verdict, summary, evidence, testCode) — Finish with the final test
 
 ## Workflow
-1. Read the issue description carefully
-2. FIRST: Use readTest() to read 1-2 existing tests similar to the bug you're reproducing:
+1. Read the issue description carefully. Think about:
+   - What PRECONDITIONS are needed? (many nodes on canvas? specific layout? saved workflow? subgraph?)
+   - What HIDDEN ASSUMPTIONS exist? (e.g. "z-index bug" means nodes must overlap → need a crowded canvas)
+   - What specific UI STATE triggers the bug? (dirty workflow? collapsed node? specific menu open?)
+2. Use readTest() to read 1-2 existing tests similar to the bug:
    - For menu/workflow bugs: readTest("workflow.spec.ts") or readTest("topbarMenu.spec.ts")
    - For node/canvas bugs: readTest("nodeInteraction.spec.ts") or readTest("copyPaste.spec.ts")
    - For settings bugs: readTest("settingDialogSearch.spec.ts")
@@ -411,10 +414,16 @@ export async function runResearchPhase(
 3. Use inspect() to understand the current UI state and discover element selectors
 4. If unsure about the fixture API, use readFixture("ComfyPage.ts") or relevant helper
 5. Write a Playwright test that:
-   - Performs the exact reproduction steps from the issue
-   - Asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
+   - FIRST sets up the preconditions (add multiple nodes, create specific layout, save workflow, etc.)
+   - THEN performs the reproduction steps from the issue
+   - FINALLY asserts the BROKEN behavior (the bug) — so the test PASSES when the bug exists
+   - Think like a tester: the bug may only appear under specific conditions that the reporter assumed were obvious
 6. Run the test with runTest()
-7. If it fails: read the error, fix the test, run again (max 5 attempts)
+7. If it fails, ANALYZE the error before retrying:
+   - Is it a selector issue? Use inspect() to find the right element
+   - Is it a timing issue? The UI may need time to update — use nextFrame() or expect.poll()
+   - Is the precondition wrong? Maybe the bug only appears with MORE nodes, AFTER a save, etc.
+   - Try a DIFFERENT approach, not the same code with minor tweaks
 8. Call done() with the final verdict and test code
 
 ## Test writing guidelines
