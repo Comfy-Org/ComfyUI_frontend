@@ -1,5 +1,13 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
+import {
+  computed,
+  ref,
+  shallowRef,
+  toRaw,
+  toValue,
+  watch,
+  watchEffect
+} from 'vue'
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
@@ -474,6 +482,76 @@ export class TaskItemImpl {
     )
   }
 }
+export const useHistoryStore = defineStore('history', () => {
+  const BATCH_SIZE = 200
+  const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+
+  let offset = 0
+  const hasMoreHistory = ref(true)
+  const isLoadingMore = ref(false)
+  const historyItems = ref<JobListItem[]>([])
+  const historyError = ref<unknown>(null)
+
+  const loadedIds = new Set<string>()
+
+  const fetchHistory = async (): Promise<JobListItem[]> => {
+    const history = await api.getHistory(BATCH_SIZE, { offset })
+    const newHistory = history.filter((item) => !loadedIds.has(item.id))
+
+    historyItems.value.push(...newHistory)
+    historyItems.value.sort((a, b) => a.create_time - b.create_time)
+    newHistory.forEach((item) => loadedIds.add(item.id))
+
+    offset += BATCH_SIZE
+    hasMoreHistory.value = history.length === BATCH_SIZE
+
+    if (historyItems.value.length > MAX_HISTORY_ITEMS) {
+      const removed = historyItems.value.slice(MAX_HISTORY_ITEMS)
+      historyItems.value = historyItems.value.slice(0, MAX_HISTORY_ITEMS)
+      removed.forEach((item) => loadedIds.delete(item.id))
+    }
+
+    return historyItems.value
+  }
+
+  const updateHistory = async () => {
+    offset = 0
+    hasMoreHistory.value = true
+    historyItems.value = []
+    loadedIds.clear()
+    await loadMoreHistory()
+  }
+
+  const loadMoreHistory = async () => {
+    if (!hasMoreHistory.value || isLoadingMore.value) return
+    if (isLoadingMore.value) {
+      await new Promise((r) => watch(isLoadingMore, r, { once: true }))
+      return
+    }
+
+    isLoadingMore.value = true
+    historyError.value = null
+    try {
+      await fetchHistory()
+    } catch (err) {
+      console.error('Error loading more history:', err)
+      historyError.value = err
+    } finally {
+      isLoadingMore.value = false
+    }
+  }
+
+  void loadMoreHistory()
+
+  return {
+    hasMoreHistory,
+    historyError,
+    historyItems,
+    isLoadingMore,
+    loadMoreHistory,
+    updateHistory
+  }
+})
 
 export const useQueueStore = defineStore('queue', () => {
   // Use shallowRef because TaskItemImpl instances are immutable and arrays are
@@ -484,6 +562,15 @@ export const useQueueStore = defineStore('queue', () => {
   const hasFetchedHistorySnapshot = ref(false)
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
+
+  const historyStore = useHistoryStore()
+  //TODO: Fix tests so this can be a computed
+  watchEffect(
+    () =>
+      (historyTasks.value = historyStore.historyItems
+        .slice(0, toValue(maxHistoryItems))
+        .map((job) => new TaskItemImpl(job)))
+  )
 
   // Single-flight coalescing: at most one fetch in flight at a time.
   // If update() is called while a fetch is running, the call is coalesced
@@ -525,16 +612,14 @@ export const useQueueStore = defineStore('queue', () => {
     dirty = false
     isLoading.value = true
     try {
-      const [queue, history] = await Promise.all([
+      const [queue] = await Promise.all([
         api.getQueue(),
-        api.getHistory(maxHistoryItems.value)
+        historyStore.updateHistory()
       ])
 
       // API returns pre-sorted data (sort_by=create_time&order=desc)
       runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
       pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
-
-      const currentHistory = toValue(historyTasks)
 
       const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
       const executionStore = useExecutionStore()
@@ -557,36 +642,6 @@ export const useQueueStore = defineStore('queue', () => {
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
       }
-
-      // Sort by create_time descending and limit to maxItems
-      const sortedHistory = [...history]
-        .sort((a, b) => b.create_time - a.create_time)
-        .slice(0, toValue(maxHistoryItems))
-
-      // Reuse existing TaskItemImpl instances or create new
-      // Must recreate if outputs_count changed (e.g., API started returning it)
-      const existingByJobId = new Map(
-        currentHistory.map((impl) => [impl.jobId, impl])
-      )
-
-      const nextHistoryTasks = sortedHistory.map((job) => {
-        const existing = existingByJobId.get(job.id)
-        if (!existing) return new TaskItemImpl(job)
-        // Recreate if outputs_count changed to ensure lazy loading works
-        if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
-          return new TaskItemImpl(job)
-        }
-        return existing
-      })
-
-      const isHistoryUnchanged =
-        nextHistoryTasks.length === currentHistory.length &&
-        nextHistoryTasks.every((task, index) => task === currentHistory[index])
-
-      if (!isHistoryUnchanged) {
-        historyTasks.value = nextHistoryTasks
-      }
-      hasFetchedHistorySnapshot.value = true
     } finally {
       isLoading.value = false
       inFlight = false
