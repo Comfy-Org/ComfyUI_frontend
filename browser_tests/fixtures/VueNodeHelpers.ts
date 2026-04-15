@@ -94,6 +94,25 @@ export class VueNodeHelpers {
     await this.page.mouse.click(50, 50)
   }
 
+  private async fitNodeInViewport(nodeId: string): Promise<void> {
+    await this.page.evaluate((id) => {
+      const app = window.app
+      const canvas = app?.canvas
+      const node = canvas?.graph?.getNodeById(id)
+      if (!canvas || !node) {
+        throw new Error(`Node ${id} not found`)
+      }
+
+      const [x, y, width, height] = node.getBounding()
+      canvas.ds.fitToBounds([x - 20, y - 20, width + 40, height + 80], {
+        zoom: 1
+      })
+      canvas.setDirty(true, true)
+    }, nodeId)
+
+    await this.page.evaluate(() => new Promise<number>(requestAnimationFrame))
+  }
+
   private getVisibleClickPosition(
     box: NonNullable<Awaited<ReturnType<Locator['boundingBox']>>>
   ) {
@@ -108,9 +127,7 @@ export class VueNodeHelpers {
     const visibleBottom = Math.min(box.y + box.height, viewport.height)
 
     if (visibleLeft >= visibleRight || visibleTop >= visibleBottom) {
-      throw new Error(
-        'subgraph-enter-button has no visible viewport intersection'
-      )
+      return { x: box.width / 2, y: box.height * 0.75 }
     }
 
     return {
@@ -212,11 +229,25 @@ export class VueNodeHelpers {
 
   /**
    * Enter the subgraph of a node.
-   * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
+   * @param nodeId - The ID of the node to enter the subgraph of. If not
+   * provided, the first matched subgraph will be entered.
    */
   async enterSubgraph(nodeId?: string): Promise<void> {
-    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
-    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
+    const hostNode = nodeId
+      ? this.getNodeLocator(nodeId)
+      : this.nodes
+          .filter({
+            has: this.page.getByTestId(TestIds.widgets.subgraphEnterButton)
+          })
+          .first()
+    const resolvedNodeId =
+      nodeId ?? (await hostNode.getAttribute('data-node-id'))
+
+    if (resolvedNodeId) {
+      await this.fitNodeInViewport(resolvedNodeId)
+    }
+
+    const editButton = hostNode.getByTestId(TestIds.widgets.subgraphEnterButton)
 
     // The footer tab sits below the node body and can be partially clipped by
     // the viewport. Click inside the visible slice of the button instead of
