@@ -1,45 +1,52 @@
 /**
- * Extension V2 Service — wires the new extension API to the existing system.
+ * Extension V2 Service
  *
- * This is the bridge layer. It:
- * 1. Registers v2 extensions alongside v1 extensions
- * 2. Creates NodeHandle/WidgetHandle wrappers around LGraphNode/BaseWidget
- * 3. Manages EffectScopes per extension+entity for automatic cleanup
- * 4. Dispatches nodeCreated/loadedGraphNode hooks to v2 extensions
- *
- * The LGraphNode bridge will be replaced by direct ECS World access once
- * ADR 0008 is implemented. The NodeHandle interface stays the same.
+ * Manages extension lifecycle: scope creation, handle construction,
+ * hook dispatch. Imports from the ECS world/command layer directly.
  */
 
-import { EffectScope, onScopeDispose } from 'vue'
+import { EffectScope, onScopeDispose, watch } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+// These modules don't exist yet — they will be created as part of ADR 0008.
+import { useWorld } from '@/ecs/world'
+import { dispatch } from '@/ecs/commands'
+import {
+  Position,
+  Dimensions,
+  NodeVisual,
+  NodeType,
+  Execution,
+  WidgetValue,
+  WidgetIdentity,
+  WidgetContainer,
+  Connectivity,
+  SlotIdentity,
+  SlotConnection
+} from '@/ecs/components'
+import type { NodeEntityId, WidgetEntityId, SlotEntityId } from '@/ecs/entityIds'
+
 import type {
-  NodeEntityId,
   NodeExtensionOptions,
   NodeHandle,
-  Point,
-  Size,
-  SlotInfo,
-  WidgetEntityId,
   WidgetExtensionOptions,
   WidgetHandle,
-  WidgetOptions
+  WidgetOptions,
+  SlotInfo,
+  Point,
+  Size
 } from '@/types/extensionV2'
 
 // ─── Scope Registry ──────────────────────────────────────────────────
-// One EffectScope per extension+node pair. When the node is removed,
-// scope.stop() auto-cleans all watchers, listeners, and derived state.
+// One EffectScope per extension+node pair. Disposed when entity is
+// removed from the World.
 
 const scopeRegistry = new Map<string, EffectScope>()
 
-function scopeKey(extensionName: string, entityId: number): string {
-  return `${extensionName}:${entityId}`
-}
-
-function getOrCreateScope(extensionName: string, entityId: number): EffectScope {
-  const key = scopeKey(extensionName, entityId)
+function getOrCreateScope(
+  extensionName: string,
+  entityId: number
+): EffectScope {
+  const key = `${extensionName}:${entityId}`
   let scope = scopeRegistry.get(key)
   if (!scope) {
     scope = new EffectScope(true)
@@ -48,238 +55,191 @@ function getOrCreateScope(extensionName: string, entityId: number): EffectScope 
   return scope
 }
 
-function disposeScope(extensionName: string, entityId: number): void {
-  const key = scopeKey(extensionName, entityId)
-  const scope = scopeRegistry.get(key)
-  if (scope) {
-    scope.stop()
-    scopeRegistry.delete(key)
-  }
-}
+// ─── WidgetHandle ────────────────────────────────────────────────────
 
-// ─── Bridge: LGraphNode → NodeHandle ─────────────────────────────────
-// Wraps the legacy class in the stable public interface.
-// Once ECS World exists, this reads from World components instead.
+function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
+  const world = useWorld()
 
-let nextEntityId = 1
-const nodeEntityMap = new WeakMap<LGraphNode, NodeEntityId>()
-
-function getNodeEntityId(node: LGraphNode): NodeEntityId {
-  let id = nodeEntityMap.get(node)
-  if (id === undefined) {
-    id = nextEntityId++ as NodeEntityId
-    nodeEntityMap.set(node, id)
-  }
-  return id
-}
-
-function createWidgetHandle(
-  widget: IBaseWidget,
-  _extensionName: string
-): WidgetHandle {
-  const entityId = nextEntityId++ as WidgetEntityId
-
-  const listeners: Record<string, Set<Function>> = {}
-
-  const handle: WidgetHandle = {
-    entityId,
-    name: widget.name,
-    widgetType: String(widget.type),
+  return {
+    entityId: widgetId,
+    get name() {
+      return world.getComponent(widgetId, WidgetIdentity).name
+    },
+    get widgetType() {
+      return world.getComponent(widgetId, WidgetIdentity).type
+    },
 
     getValue<T = unknown>(): T {
-      return widget.value as T
+      return world.getComponent(widgetId, WidgetValue).value as T
     },
     setValue(value: unknown) {
-      const old = widget.value
-      widget.value = value as typeof widget.value
-      listeners['change']?.forEach((fn) => fn(value, old))
+      dispatch({ type: 'SetWidgetValue', widgetId, value })
     },
 
     isHidden() {
-      return widget.hidden ?? false
+      return world.getComponent(widgetId, WidgetValue).options?.hidden ?? false
     },
     setHidden(hidden: boolean) {
-      widget.hidden = hidden
-      if (widget.options) widget.options.hidden = hidden
+      dispatch({ type: 'SetWidgetOption', widgetId, key: 'hidden', value: hidden })
     },
-
     getOptions(): WidgetOptions {
-      return { ...widget.options } as WidgetOptions
+      return world.getComponent(widgetId, WidgetValue).options ?? {}
     },
     setOption(key: string, value: unknown) {
-      if (widget.options) {
-        ;(widget.options as Record<string, unknown>)[key] = value
-      }
+      dispatch({ type: 'SetWidgetOption', widgetId, key, value })
     },
     setLabel(label: string) {
-      widget.label = label
+      dispatch({ type: 'SetWidgetLabel', widgetId, label })
     },
 
     on(event: string, fn: Function) {
-      if (!listeners[event]) listeners[event] = new Set()
-      listeners[event].add(fn)
+      if (event === 'change') {
+        watch(
+          () => world.getComponent(widgetId, WidgetValue).value,
+          (newVal, oldVal) => fn(newVal, oldVal)
+        )
+      }
+      if (event === 'removed') {
+        onScopeDispose(() => fn())
+      }
     },
 
-    setSerializeValue(
-      fn: (workflowNode: unknown, widgetIndex: number) => unknown
-    ) {
-      widget.serializeValue = fn as never
+    setSerializeValue(fn) {
+      dispatch({ type: 'SetWidgetSerializer', widgetId, serializer: fn })
     }
   }
-
-  // Bridge: wire legacy widget.callback to 'change' event
-  const origCallback = widget.callback
-  widget.callback = (...args: unknown[]) => {
-    ;(origCallback as Function)?.call(widget, ...args)
-    const old = widget.value
-    listeners['change']?.forEach((fn) => fn(args[0], old))
-  }
-
-  return handle
 }
 
-function createNodeHandle(
-  node: LGraphNode,
-  extensionName: string
-): NodeHandle {
-  const entityId = getNodeEntityId(node)
-  const listeners: Record<string, Set<Function>> = {}
+// ─── NodeHandle ──────────────────────────────────────────────────────
 
-  function on(event: string, fn: Function) {
-    if (!listeners[event]) listeners[event] = new Set()
-    listeners[event].add(fn)
+function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
+  const world = useWorld()
 
-    // Auto-cleanup when scope stops
-    onScopeDispose(() => {
-      listeners[event]?.delete(fn)
-    })
-  }
+  return {
+    entityId: nodeId,
+    get type() {
+      return world.getComponent(nodeId, NodeType).type
+    },
+    get comfyClass() {
+      return world.getComponent(nodeId, NodeType).comfyClass
+    },
 
-  // Wire legacy LGraphNode callbacks → event dispatch.
-  // Once ECS exists, these become World component watches instead.
-  const origOnRemoved = node.onRemoved
-  node.onRemoved = () => {
-    origOnRemoved?.call(node)
-    listeners['removed']?.forEach((fn) => fn())
-    disposeScope(extensionName, entityId)
-  }
-
-  const origOnExecuted = node.onExecuted
-  node.onExecuted = (output: Record<string, unknown>) => {
-    origOnExecuted?.call(node, output)
-    listeners['executed']?.forEach((fn) => fn(output))
-  }
-
-  const origOnConfigure = node.onConfigure
-  node.onConfigure = function (this: LGraphNode, ...args: unknown[]) {
-    origOnConfigure?.apply(this, args as never)
-    listeners['configured']?.forEach((fn) => fn())
-  }
-
-  const handle: NodeHandle = {
-    entityId,
-    type: node.type ?? '',
-    comfyClass: (node.constructor as { comfyClass?: string }).comfyClass ?? '',
-
-    // ─── Reads (will become World.getComponent queries) ──────
+    // Reads — direct World queries
     getPosition(): Point {
-      return [node.pos[0], node.pos[1]]
+      return world.getComponent(nodeId, Position).pos
     },
     getSize(): Size {
-      return [node.size[0], node.size[1]]
+      return world.getComponent(nodeId, Dimensions).size
     },
     getTitle() {
-      return node.title
+      return world.getComponent(nodeId, NodeVisual).title
     },
     getMode() {
-      return node.mode
+      return world.getComponent(nodeId, Execution).mode
     },
     getProperty<T = unknown>(key: string): T | undefined {
-      return node.properties?.[key] as T
+      return world.getComponent(nodeId, NodeType).properties?.[key] as T
     },
     getProperties() {
-      return { ...node.properties }
+      return { ...world.getComponent(nodeId, NodeType).properties }
     },
     isSelected() {
-      return node.is_selected ?? false
+      return world.getComponent(nodeId, NodeVisual).selected ?? false
     },
 
-    // ─── Writes (will become command dispatches) ─────────────
+    // Writes — command dispatches
     setPosition(pos: Point) {
-      node.pos[0] = pos[0]
-      node.pos[1] = pos[1]
-      listeners['positionChanged']?.forEach((fn) => fn(pos))
+      dispatch({ type: 'MoveNode', nodeId, pos })
     },
     setSize(size: Size) {
-      node.setSize(size)
-      listeners['sizeChanged']?.forEach((fn) => fn(size))
+      dispatch({ type: 'ResizeNode', nodeId, size })
     },
     setTitle(title: string) {
-      node.title = title
+      dispatch({ type: 'SetNodeVisual', nodeId, patch: { title } })
     },
     setMode(mode) {
-      node.mode = mode
-      listeners['modeChanged']?.forEach((fn) => fn(mode))
+      dispatch({ type: 'SetNodeMode', nodeId, mode })
     },
     setProperty(key: string, value: unknown) {
-      if (!node.properties) node.properties = {}
-      ;(node.properties as Record<string, unknown>)[key] = value
+      dispatch({ type: 'SetNodeProperty', nodeId, key, value })
     },
 
-    // ─── Widgets ─────────────────────────────────────────────
+    // Widgets
     widget(name: string) {
-      const w = node.widgets?.find((w) => w.name === name)
-      return w ? createWidgetHandle(w, extensionName) : undefined
+      const container = world.getComponent(nodeId, WidgetContainer)
+      const widgetId = container.widgetIds.find((id) => {
+        return world.getComponent(id, WidgetIdentity).name === name
+      })
+      return widgetId ? createWidgetHandle(widgetId) : undefined
     },
     widgets() {
-      return (node.widgets ?? []).map((w) => createWidgetHandle(w, extensionName))
+      const container = world.getComponent(nodeId, WidgetContainer)
+      return container.widgetIds.map(createWidgetHandle)
     },
-    addWidget(
-      type: string,
-      name: string,
-      defaultValue: unknown,
-      options?: Partial<WidgetOptions>
-    ) {
-      // Bridge to legacy widget creation.
-      // TODO: Replace with ECS entity creation once World exists.
-      const widget = node.addCustomWidget({
+    addWidget(type, name, defaultValue, options) {
+      const widgetId = dispatch({
+        type: 'CreateWidget',
+        parentNodeId: nodeId,
+        widgetType: type,
         name,
-        type,
-        value: defaultValue,
-        options: options ?? {},
-        draw: () => {},
-        computeSize: () => [0, 20]
-      } as unknown as Parameters<typeof node.addCustomWidget>[0])
-      return createWidgetHandle(widget, extensionName)
+        defaultValue,
+        options
+      })
+      return createWidgetHandle(widgetId)
     },
 
-    // ─── Slots ───────────────────────────────────────────────
+    // Slots
     inputs() {
-      return (node.inputs ?? []).map((input) => ({
-        entityId: nextEntityId++ as unknown as SlotInfo['entityId'],
-        name: input.name,
-        type: String(input.type),
-        direction: 'input' as const,
-        nodeEntityId: entityId
-      }))
+      const conn = world.getComponent(nodeId, Connectivity)
+      return conn.inputSlotIds.map((slotId) => {
+        const slot = world.getComponent(slotId, SlotIdentity)
+        return {
+          entityId: slotId,
+          name: slot.name,
+          type: slot.type,
+          direction: 'input' as const,
+          nodeEntityId: nodeId
+        } satisfies SlotInfo
+      })
     },
     outputs() {
-      return (node.outputs ?? []).map((output) => ({
-        entityId: nextEntityId++ as unknown as SlotInfo['entityId'],
-        name: output.name,
-        type: String(output.type),
-        direction: 'output' as const,
-        nodeEntityId: entityId
-      }))
+      const conn = world.getComponent(nodeId, Connectivity)
+      return conn.outputSlotIds.map((slotId) => {
+        const slot = world.getComponent(slotId, SlotIdentity)
+        return {
+          entityId: slotId,
+          name: slot.name,
+          type: slot.type,
+          direction: 'output' as const,
+          nodeEntityId: nodeId
+        } satisfies SlotInfo
+      })
     },
 
-    on: on as NodeHandle['on']
+    // Events — backed by World component watches
+    on(event: string, fn: Function) {
+      if (event === 'positionChanged') {
+        watch(() => world.getComponent(nodeId, Position).pos, (pos) => fn(pos))
+      } else if (event === 'sizeChanged') {
+        watch(() => world.getComponent(nodeId, Dimensions).size, (s) => fn(s))
+      } else if (event === 'modeChanged') {
+        watch(() => world.getComponent(nodeId, Execution).mode, (m) => fn(m))
+      } else if (event === 'executed') {
+        world.onSystemEvent(nodeId, 'executed', fn)
+      } else if (event === 'connected') {
+        world.onSystemEvent(nodeId, 'connected', fn)
+      } else if (event === 'disconnected') {
+        world.onSystemEvent(nodeId, 'disconnected', fn)
+      } else if (event === 'configured') {
+        world.onSystemEvent(nodeId, 'configured', fn)
+      } else if (event === 'removed') {
+        onScopeDispose(() => fn())
+      }
+    }
   }
-
-  return handle
 }
 
-// ─── Extension Registry ──────────────────────────────────────────────
+// ─── Extension Registry & Dispatch ───────────────────────────────────
 
 const nodeExtensions: NodeExtensionOptions[] = []
 const widgetExtensions: WidgetExtensionOptions[] = []
@@ -292,46 +252,34 @@ export function defineWidgetExtension(options: WidgetExtensionOptions): void {
   widgetExtensions.push(options)
 }
 
-/**
- * Called by the framework when a node is created.
- * Dispatches to all registered v2 node extensions.
- */
-export function dispatchNodeCreated(node: LGraphNode): void {
-  const comfyClass =
-    (node.constructor as { comfyClass?: string }).comfyClass ?? ''
+/** Called by the framework when a node entity is created in the World. */
+export function dispatchNodeCreated(nodeId: NodeEntityId): void {
+  const world = useWorld()
+  const comfyClass = world.getComponent(nodeId, NodeType).comfyClass
 
   for (const ext of nodeExtensions) {
-    // Skip if this extension filters to specific types and this node isn't one
     if (ext.nodeTypes && !ext.nodeTypes.includes(comfyClass)) continue
     if (!ext.nodeCreated) continue
 
-    const entityId = getNodeEntityId(node)
-    const scope = getOrCreateScope(ext.name, entityId)
-
+    const scope = getOrCreateScope(ext.name, nodeId)
     scope.run(() => {
-      const handle = createNodeHandle(node, ext.name)
-      ext.nodeCreated!(handle)
+      ext.nodeCreated!(createNodeHandle(nodeId))
     })
   }
 }
 
-/**
- * Called by the framework when a node is loaded from a saved workflow.
- */
-export function dispatchLoadedGraphNode(node: LGraphNode): void {
-  const comfyClass =
-    (node.constructor as { comfyClass?: string }).comfyClass ?? ''
+/** Called by the framework when a node is loaded from a saved workflow. */
+export function dispatchLoadedGraphNode(nodeId: NodeEntityId): void {
+  const world = useWorld()
+  const comfyClass = world.getComponent(nodeId, NodeType).comfyClass
 
   for (const ext of nodeExtensions) {
     if (ext.nodeTypes && !ext.nodeTypes.includes(comfyClass)) continue
     if (!ext.loadedGraphNode) continue
 
-    const entityId = getNodeEntityId(node)
-    const scope = getOrCreateScope(ext.name, entityId)
-
+    const scope = getOrCreateScope(ext.name, nodeId)
     scope.run(() => {
-      const handle = createNodeHandle(node, ext.name)
-      ext.loadedGraphNode!(handle)
+      ext.loadedGraphNode!(createNodeHandle(nodeId))
     })
   }
 }
