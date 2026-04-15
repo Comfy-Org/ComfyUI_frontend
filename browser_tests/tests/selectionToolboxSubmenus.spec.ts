@@ -14,7 +14,6 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-      await comfyPage.nextFrame()
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await comfyPage.nextFrame()
     })
@@ -43,7 +42,6 @@ test.describe(
       await comfyPage.nextFrame()
 
       await ksamplerNodes[0].click('title')
-      await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 

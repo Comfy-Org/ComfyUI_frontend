@@ -140,13 +140,11 @@ export class NodeOperationsHelper {
       { x: bottomRight.x - 2, y: bottomRight.y - 1 },
       target
     )
-    await this.comfyPage.nextFrame()
     if (revertAfter) {
       await this.comfyPage.canvasOps.dragAndDrop(
         { x: target.x - 2, y: target.y - 1 },
         bottomRight
       )
-      await this.comfyPage.nextFrame()
     }
   }
 
@@ -158,7 +156,6 @@ export class NodeOperationsHelper {
     }
     await node.clickContextMenuOption('Convert to Group Node')
     await this.fillPromptDialog(groupNodeName)
-    await this.comfyPage.nextFrame()
   }
 
   async fillPromptDialog(value: string): Promise<void> {
@@ -192,7 +189,6 @@ export class NodeOperationsHelper {
         y: 300
       }
     )
-    await this.comfyPage.nextFrame()
   }
 
   async adjustEmptyLatentWidth(): Promise<void> {

@@ -102,7 +102,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.nextFrame()
 
         const textarea = comfyPage.page.getByTestId(
           TestIds.widgets.domWidgetTextarea
@@ -150,7 +149,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.nextFrame()
 
         const testContent = 'promoted-value-sync-test'
 
@@ -318,7 +316,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-preview-node'
         )
-        await comfyPage.nextFrame()
 
         // The SaveImage node is in the recommendedNodes list, so its
         // filename_prefix widget should be auto-promoted
@@ -403,7 +400,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
-        await comfyPage.nextFrame()
 
         await expect
           .poll(() => getPromotedWidgetNames(comfyPage, '5'))
@@ -455,7 +451,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.nextFrame()
 
         // Verify promotions exist
         await expect
@@ -476,7 +471,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
-        await comfyPage.nextFrame()
 
         await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '5', 0)
         const initialNames = await getPromotedWidgetNames(comfyPage, '5')
