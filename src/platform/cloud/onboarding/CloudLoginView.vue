@@ -39,7 +39,12 @@
       <template v-if="!showEmailForm">
         <!-- OAuth Buttons (primary) -->
         <div class="flex flex-col gap-4">
-          <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
+          <Button
+            v-if="!isWebView"
+            type="button"
+            class="h-10 w-full"
+            @click="signInWithGoogle"
+          >
             <i class="pi pi-google mr-2"></i>
             {{ t('auth.login.loginWithGoogle') }}
           </Button>
@@ -116,6 +121,7 @@ import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/u
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
+import { isEmbeddedWebView } from '@/utils/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -126,6 +132,7 @@ const authError = ref('')
 const toastStore = useToastStore()
 const showEmailForm = ref(false)
 const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
+const isWebView = isEmbeddedWebView()
 
 function switchToEmailForm() {
   showEmailForm.value = true
