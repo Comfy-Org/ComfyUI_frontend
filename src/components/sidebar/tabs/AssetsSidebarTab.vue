@@ -14,6 +14,7 @@
           <button
             class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
             role="button"
+            :aria-label="$t('mediaAsset.actions.copyJobId')"
             @click="copyJobId"
           >
             <i class="icon-[lucide--copy] text-sm"></i>
