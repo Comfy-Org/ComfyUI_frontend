@@ -127,7 +127,9 @@ export class VueNodeHelpers {
     const visibleBottom = Math.min(box.y + box.height, viewport.height)
 
     if (visibleLeft >= visibleRight || visibleTop >= visibleBottom) {
-      return { x: box.width / 2, y: box.height * 0.75 }
+      throw new Error(
+        'subgraph-enter-button has no visible viewport intersection'
+      )
     }
 
     return {
@@ -242,25 +244,30 @@ export class VueNodeHelpers {
           .first()
     const resolvedNodeId =
       nodeId ?? (await hostNode.getAttribute('data-node-id'))
-
-    if (resolvedNodeId) {
-      await this.fitNodeInViewport(resolvedNodeId)
-    }
-
     const editButton = hostNode.getByTestId(TestIds.widgets.subgraphEnterButton)
 
-    // The footer tab sits below the node body and can be partially clipped by
-    // the viewport. Click inside the visible slice of the button instead of
-    // using the raw bounding-box center, which can land on the page root.
-    const box = await editButton.boundingBox()
-    if (!box) {
-      throw new Error(
-        'subgraph-enter-button has no bounding box: element may be hidden or not in DOM'
-      )
+    const clickEnterButton = async () => {
+      // The footer tab sits below the node body and can be partially clipped
+      // by the viewport. Click inside the visible slice of the button instead
+      // of using the raw bounding-box center, which can land on the page root.
+      const box = await editButton.boundingBox()
+      if (!box) {
+        throw new Error(
+          'subgraph-enter-button has no bounding box: element may be hidden or not in DOM'
+        )
+      }
+
+      await editButton.click({
+        position: this.getVisibleClickPosition(box)
+      })
     }
 
-    await editButton.click({
-      position: this.getVisibleClickPosition(box)
-    })
+    try {
+      await clickEnterButton()
+    } catch (error) {
+      if (!resolvedNodeId) throw error
+      await this.fitNodeInViewport(resolvedNodeId)
+      await clickEnterButton()
+    }
   }
 }
