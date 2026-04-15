@@ -66,7 +66,10 @@ const modelCards: ModelCard[] = [
 ]
 
 function getCardClass(layoutClass: string): string {
-  return `${layoutClass} group relative h-72 overflow-hidden rounded-4xl bg-black/40 lg:h-auto cursor-pointer`
+  return cn(
+    layoutClass,
+    'group relative h-72 cursor-pointer overflow-hidden rounded-4xl bg-black/40 lg:h-auto'
+  )
 }
 </script>
 

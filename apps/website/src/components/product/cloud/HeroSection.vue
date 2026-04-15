@@ -9,7 +9,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="flex flex-col items-center px-4 py-24 lg:px-20 lg:py-24">
+  <section class="flex flex-col items-center px-4 pb-24 lg:px-20 lg:pb-24">
     <ProductHeroBadge text="CLOUD" />
 
     <h1

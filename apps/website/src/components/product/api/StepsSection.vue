@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import CardGridSection from '../shared/CardGridSection.vue'
+import IsometricGrid from '../shared/IsometricGrid.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -35,28 +34,7 @@ const steps = [
       :key="step.number"
       class="bg-primary-comfy-ink flex aspect-square flex-col rounded-3xl border border-white/10 p-6"
     >
-      <!-- Isometric illustration area -->
-      <div class="flex flex-1 items-center justify-center" aria-hidden="true">
-        <div
-          class="grid grid-cols-5 gap-0.5"
-          style="transform: rotateX(55deg) rotateZ(45deg)"
-        >
-          <span
-            v-for="i in 15"
-            :key="i"
-            :class="
-              cn(
-                'block size-5 rounded-sm',
-                i === 3 || i === 8 || i === 13
-                  ? 'bg-primary-comfy-yellow'
-                  : i % 3 === 0
-                    ? 'bg-primary-comfy-plum'
-                    : 'bg-secondary-mauve'
-              )
-            "
-          />
-        </div>
-      </div>
+      <IsometricGrid />
 
       <!-- Step content -->
       <p class="text-primary-comfy-yellow text-sm font-bold tracking-wider">

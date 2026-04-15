@@ -52,8 +52,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <!-- Isometric node clusters -->
         <div class="relative z-10 mt-20 flex gap-4 lg:mt-0 lg:gap-6">
           <div
-            class="grid grid-cols-3 gap-0.5"
-            style="transform: rotateX(55deg) rotateZ(45deg)"
+            class="grid transform-[rotateX(55deg)_rotateZ(45deg)] grid-cols-3 gap-0.5"
           >
             <span
               class="bg-secondary-mauve block size-7 rounded-lg lg:size-9"
@@ -84,8 +83,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             />
           </div>
           <div
-            class="grid grid-cols-3 gap-0.5"
-            style="transform: rotateX(55deg) rotateZ(45deg)"
+            class="grid transform-[rotateX(55deg)_rotateZ(45deg)] grid-cols-3 gap-0.5"
           >
             <span
               class="bg-primary-warm-gray block size-7 rounded-lg lg:size-9"

@@ -41,7 +41,7 @@ const reasons: CloudReason[] = [
     :reasons="reasons"
   >
     <template #reason-extra="{ reason }">
-      <div v-if="(reason as CloudReason).badge" class="mt-3">
+      <div v-if="'badge' in reason && reason.badge" class="mt-3">
         <span
           class="font-formula-condensed text-primary-comfy-yellow text-lg font-bold tracking-wide"
         >
