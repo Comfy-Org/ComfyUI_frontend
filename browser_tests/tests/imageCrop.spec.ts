@@ -110,21 +110,13 @@ test.describe('Image Crop', () => {
       const node = comfyPage.vueNodes.getNodeLocator('1')
       const inputs = node.locator('input[inputmode="decimal"]')
 
-      await expect
-        .poll(async () => inputs.nth(0).inputValue(), { timeout: 5000 })
-        .toBe('50')
+      await expect.poll(() => inputs.nth(0).inputValue()).toBe('50')
 
-      await expect
-        .poll(async () => inputs.nth(1).inputValue(), { timeout: 5000 })
-        .toBe('100')
+      await expect.poll(() => inputs.nth(1).inputValue()).toBe('100')
 
-      await expect
-        .poll(async () => inputs.nth(2).inputValue(), { timeout: 5000 })
-        .toBe('200')
+      await expect.poll(() => inputs.nth(2).inputValue()).toBe('200')
 
-      await expect
-        .poll(async () => inputs.nth(3).inputValue(), { timeout: 5000 })
-        .toBe('300')
+      await expect.poll(() => inputs.nth(3).inputValue()).toBe('300')
     }
   )
 })

@@ -66,6 +66,12 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     })
   }
 
+  function pollMaskPixelCount(page: Page): Promise<number> {
+    return getMaskCanvasPixelData(page).then(
+      (d) => d?.nonTransparentPixels ?? 0
+    )
+  }
+
   async function drawStrokeOnPointerZone(
     page: Page,
     dialog: ReturnType<typeof page.locator>
@@ -89,6 +95,16 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await page.mouse.up()
 
     return { startX, startY, endX, endY, box }
+  }
+
+  async function drawStrokeAndExpectPixels(
+    comfyPage: ComfyPage,
+    dialog: ReturnType<typeof comfyPage.page.locator>
+  ) {
+    await drawStrokeOnPointerZone(comfyPage.page, dialog)
+    await expect
+      .poll(() => pollMaskPixelCount(comfyPage.page))
+      .toBeGreaterThan(0)
   }
 
   test(
@@ -156,136 +172,56 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     expect(dataBefore).not.toBeNull()
     expect(dataBefore!.nonTransparentPixels).toBe(0)
 
-    await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-    await expect
-      .poll(
-        async () => {
-          const dataAfter = await getMaskCanvasPixelData(comfyPage.page)
-          return dataAfter?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBeGreaterThan(0)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
   })
 
   test('undo reverts a brush stroke', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBeGreaterThan(0)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
 
     const undoButton = dialog.locator('button[title="Undo"]')
     await expect(undoButton).toBeVisible()
     await undoButton.click()
 
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBe(0)
+    await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
   })
 
   test('redo restores an undone stroke', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBeGreaterThan(0)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
 
     const undoButton = dialog.locator('button[title="Undo"]')
     await undoButton.click()
 
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBe(0)
+    await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
 
     const redoButton = dialog.locator('button[title="Redo"]')
     await expect(redoButton).toBeVisible()
     await redoButton.click()
 
     await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
+      .poll(() => pollMaskPixelCount(comfyPage.page))
       .toBeGreaterThan(0)
   })
 
   test('clear button removes all mask content', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBeGreaterThan(0)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
 
     const clearButton = dialog.getByRole('button', { name: 'Clear' })
     await expect(clearButton).toBeVisible()
     await clearButton.click()
 
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBe(0)
+    await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
   })
 
   test('cancel closes the dialog without saving', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBeGreaterThan(0)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
 
     const cancelButton = dialog.getByRole('button', { name: 'Cancel' })
     await cancelButton.click()
@@ -305,43 +241,19 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await invertButton.click()
 
     await expect
-      .poll(
-        async () => {
-          const dataAfter = await getMaskCanvasPixelData(comfyPage.page)
-          return dataAfter?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
+      .poll(() => pollMaskPixelCount(comfyPage.page))
       .toBeGreaterThan(pixelsBefore)
   })
 
   test('keyboard shortcut Ctrl+Z triggers undo', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 
-    await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBeGreaterThan(0)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
 
     const modifier = process.platform === 'darwin' ? 'Meta+z' : 'Control+z'
     await comfyPage.page.keyboard.press(modifier)
 
-    await expect
-      .poll(
-        async () => {
-          const data = await getMaskCanvasPixelData(comfyPage.page)
-          return data?.nonTransparentPixels ?? 0
-        },
-        { timeout: 5000 }
-      )
-      .toBe(0)
+    await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
   })
 
   test(
@@ -471,17 +383,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       const dialog = await openMaskEditorDialog(comfyPage)
 
       // Draw a stroke with the mask pen (default tool)
-      await drawStrokeOnPointerZone(comfyPage.page, dialog)
-
-      await expect
-        .poll(
-          async () => {
-            const data = await getMaskCanvasPixelData(comfyPage.page)
-            return data?.nonTransparentPixels ?? 0
-          },
-          { timeout: 5000 }
-        )
-        .toBeGreaterThan(0)
+      await drawStrokeAndExpectPixels(comfyPage, dialog)
 
       const pixelsAfterDraw = await getMaskCanvasPixelData(comfyPage.page)
 
@@ -493,13 +395,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await drawStrokeOnPointerZone(comfyPage.page, dialog)
 
       await expect
-        .poll(
-          async () => {
-            const data = await getMaskCanvasPixelData(comfyPage.page)
-            return data?.nonTransparentPixels ?? 0
-          },
-          { timeout: 5000 }
-        )
+        .poll(() => pollMaskPixelCount(comfyPage.page))
         .toBeLessThan(pixelsAfterDraw!.nonTransparentPixels)
     }
   )
