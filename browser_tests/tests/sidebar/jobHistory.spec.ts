@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { createMockJob } from '../../fixtures/helpers/AssetsHelper'
-import type { RawJobListItem } from '../../../src/platform/remote/comfyui/jobs/jobTypes'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const now = Date.now() / 1000
+const now = Date.now()
 
 const COMPLETED_JOBS: RawJobListItem[] = [
   createMockJob({
@@ -37,10 +37,6 @@ const FAILED_JOBS: RawJobListItem[] = [
 ]
 
 const ALL_JOBS = [...COMPLETED_JOBS, ...FAILED_JOBS]
-
-// The job history sidebar tab uses the same /api/jobs endpoint as
-// the assets tab. Mocks are set up via comfyPage.assets which
-// intercepts /api/jobs and handles status/offset/limit query params.
 
 // ==========================================================================
 // 1. Tab open and job display
@@ -117,11 +113,9 @@ test.describe('Job history sidebar - filter tabs', () => {
 
     await tab.completedTab.click()
 
-    // Should show completed jobs
     await expect(tab.getJobById('job-completed-1')).toBeVisible({
       timeout: 5000
     })
-    // Failed job should not be visible
     await expect(tab.getJobById('job-failed-1')).not.toBeVisible()
   })
 
@@ -150,7 +144,7 @@ test.describe('Job history sidebar - filter tabs', () => {
     await expect(tab.getJobById('job-completed-1')).toBeVisible({
       timeout: 5000
     })
-    await expect(tab.getJobById('job-failed-1')).toBeVisible()
+    await expect(tab.getJobById('job-failed-1')).toBeVisible({ timeout: 5000 })
   })
 })
 
@@ -173,6 +167,7 @@ test.describe('Job history sidebar - search', () => {
     const tab = comfyPage.menu.jobHistoryTab
     await tab.open()
     await tab.waitForJobsLoad()
+    await expect(tab.jobItems).toHaveCount(ALL_JOBS.length, { timeout: 5000 })
 
     const initialCount = await tab.jobItems.count()
 
@@ -206,7 +201,7 @@ test.describe('Job history sidebar - empty state', () => {
     await tab.open()
 
     await expect(tab.noActiveJobsText).toBeVisible()
-    expect(await tab.jobItems.count()).toBe(0)
+    await expect(tab.jobItems).toHaveCount(0)
   })
 
   test('Failed tab is hidden when no failed jobs exist', async ({

@@ -289,10 +289,6 @@ export class JobHistorySidebarTab extends SidebarTab {
     return this.root.locator(`[data-job-id="${id}"]`)
   }
 
-  get groupLabels() {
-    return this.root.locator('.text-xs.text-text-secondary')
-  }
-
   override async open() {
     await this.dismissToasts()
     await super.open()
