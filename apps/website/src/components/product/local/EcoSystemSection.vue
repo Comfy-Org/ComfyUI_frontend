@@ -10,14 +10,14 @@ const { downloadUrl } = useDownloadUrl()
 </script>
 
 <template>
-  <section class="px-4 py-24 md:px-20 md:py-40">
+  <section class="px-4 py-24 lg:px-20 lg:py-40">
     <div
-      class="flex flex-col-reverse items-stretch gap-10 md:flex-row md:gap-16"
+      class="flex flex-col-reverse items-stretch gap-10 lg:flex-row lg:gap-16"
     >
       <!-- Text content -->
       <div class="flex flex-1 flex-col justify-between">
         <div>
-          <h2 class="text-primary-comfy-canvas text-3xl font-light md:text-4xl">
+          <h2 class="text-primary-comfy-canvas text-3xl font-light lg:text-4xl">
             {{ t('download.ecosystem.heading', locale) }}
           </h2>
           <p class="text-primary-comfy-canvas/70 mt-6 text-sm">
@@ -26,7 +26,7 @@ const { downloadUrl } = useDownloadUrl()
         </div>
 
         <!-- CTA buttons -->
-        <div class="mt-10 flex flex-col gap-4 md:flex-row">
+        <div class="mt-10 flex flex-col gap-4 lg:flex-row">
           <a
             :href="downloadUrl"
             target="_blank"

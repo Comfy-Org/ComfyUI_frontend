@@ -134,6 +134,10 @@ const translations = {
     en: 'Comfy UI',
     'zh-CN': 'Comfy UI'
   },
+  'products.labelProducts': {
+    en: 'Products',
+    'zh-CN': '产品'
+  },
   'products.heading': {
     en: 'The AI creation\nengine for complete control',
     'zh-CN': '完全掌控的\nAI 创作引擎'
