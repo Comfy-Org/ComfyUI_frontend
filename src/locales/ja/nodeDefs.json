@@ -2190,6 +2190,10 @@
       "image": {
         "name": "画像"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "クロップを出力サイズに合わせて引き伸ばすか、アスペクト比を維持するために黒いピクセルでパディングするかを選択します。"
+      },
       "output_height": {
         "name": "出力高さ",
         "tooltip": "各切り抜き画像がリサイズされる高さ。"
@@ -2309,6 +2313,23 @@
     "display_name": "ノイズを無効にする",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "バウンディングボックスを描画",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -4982,6 +5003,36 @@
       "0": {
         "name": "画像",
         "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "ImageHistogram": {
+    "display_name": "画像ヒストグラム",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "輝度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "赤",
+        "tooltip": null
+      },
+      "3": {
+        "name": "緑",
+        "tooltip": null
+      },
+      "4": {
+        "name": "青",
+        "tooltip": null
       }
     }
   },
@@ -12226,6 +12277,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 検出",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "クラスで検出結果をフィルタリングします。「all」に設定するとフィルタリングを無効にします。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "画像ごとに返す検出の最大数。信頼度スコアの高い順に並びます。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "ランダムクロップ画像",
     "inputs": {
@@ -15631,6 +15710,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv画像",
+        "tooltip": null
       }
     }
   },
@@ -17890,6 +17973,241 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "最初のフレーム画像から動画を生成します。オプションで最後のフレーム画像や音声も指定できます。",
+    "display_name": "Wan 2.7 画像から動画へ",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "動画生成を制御する音声（例：リップシンク、ビートに合わせた動き）。長さ：2秒～30秒。指定しない場合は、モデルが自動的に合うBGMや効果音を生成します。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "最初のフレーム画像。この画像から出力動画のアスペクト比が決まります。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最後のフレーム画像。最初から最後のフレームへと遷移する動画を生成します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "AIによるプロンプトの強化を行うかどうか。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "リファレンス素材から人物や物体を特徴とする動画を生成します。単一キャラクターの演技や複数キャラクターのインタラクションに対応しています。",
+    "display_name": "Wan 2.7 リファレンスから動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Wan 2.7モデルを使用してテキストプロンプトに基づいたビデオを生成します。",
+    "display_name": "Wan 2.7 テキストからビデオへ",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "ビデオ生成を駆動する音声（例：リップシンク、ビートに合わせた動き）。長さ：3秒～30秒。未指定の場合、モデルが自動的に合うBGMや効果音を生成します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt_extend": {
+        "name": "プロンプト拡張",
+        "tooltip": "AIアシストでプロンプトを強化するかどうか。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "ビデオの続きから生成を行い、オプションでラストフレーム制御も可能です。",
+    "display_name": "Wan 2.7 ビデオ継続生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_clip": {
+        "name": "最初のクリップ",
+        "tooltip": "継続元となる入力ビデオ。長さ：2秒～10秒。出力のアスペクト比はこのビデオから取得されます。"
+      },
+      "last_frame": {
+        "name": "ラストフレーム",
+        "tooltip": "ラストフレーム画像。継続生成はこのフレームへと遷移します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt_extend": {
+        "name": "プロンプト拡張",
+        "tooltip": "AIアシストでプロンプトを強化するかどうか。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "テキスト指示、参照画像、またはスタイル転送を使ってビデオを編集します。",
+    "display_name": "Wan 2.7 ビデオ編集",
+    "inputs": {
+      "audio_setting": {
+        "name": "オーディオ設定",
+        "tooltip": "「auto」：プロンプトに基づきモデルが音声再生成の有無を判断。「origin」：入力ビデオの元の音声を保持。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "生成に使用するシード値。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "編集対象のビデオ。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
       }
     },
     "outputs": {

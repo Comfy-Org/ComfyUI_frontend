@@ -1,0 +1,76 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+const cards = [
+  {
+    icon: '🪟',
+    title: 'Windows',
+    description: '需要 NVIDIA 或 AMD 显卡',
+    cta: '下载 Windows 版',
+    href: 'https://download.comfy.org/windows/nsis/x64',
+    outlined: false,
+  },
+  {
+    icon: '🍎',
+    title: 'Mac',
+    description: '需要 Apple Silicon (M 系列)',
+    cta: '下载 Mac 版',
+    href: 'https://download.comfy.org/mac/dmg/arm64',
+    outlined: false,
+  },
+  {
+    icon: '🐙',
+    title: 'GitHub',
+    description: '在任何平台上从源码构建',
+    cta: '从 GitHub 安装',
+    href: 'https://github.com/comfyanonymous/ComfyUI',
+    outlined: true,
+  },
+]
+---
+
+<BaseLayout title="下载 — Comfy">
+  <div class="mx-auto max-w-5xl px-6 py-32 text-center">
+    <h1 class="text-4xl font-bold text-white md:text-5xl">
+      下载 ComfyUI
+    </h1>
+    <p class="mt-4 text-lg text-smoke-700">
+      在本地体验 AI 创作
+    </p>
+
+    <div class="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
+      {cards.map((card) => (
+        <a
+          href={card.href}
+          class="flex flex-col items-center rounded-xl border border-white/10 bg-charcoal-600 p-8 text-center transition-colors hover:border-brand-yellow"
+        >
+          <span class="text-4xl" aria-hidden="true">{card.icon}</span>
+          <h2 class="mt-4 text-xl font-semibold text-white">{card.title}</h2>
+          <p class="mt-2 text-sm text-smoke-700">{card.description}</p>
+          <span
+            class:list={[
+              'mt-6 inline-block rounded-full px-6 py-2 text-sm font-semibold transition-opacity hover:opacity-90',
+              card.outlined
+                ? 'border border-brand-yellow text-brand-yellow'
+                : 'bg-brand-yellow text-black',
+            ]}
+          >
+            {card.cta}
+          </span>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-20 rounded-xl border border-white/10 bg-charcoal-800 p-8">
+      <p class="text-lg text-smoke-700">
+        没有 GPU？{' '}
+        <a
+          href="https://app.comfy.org"
+          class="font-semibold text-brand-yellow hover:underline"
+        >
+          试试 Comfy Cloud →
+        </a>
+      </p>
+    </div>
+  </div>
+</BaseLayout>

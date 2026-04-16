@@ -2190,6 +2190,10 @@
       "image": {
         "name": "imagem"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Escolher entre esticar o recorte para caber no tamanho de saída ou preencher com pixels pretos para preservar a proporção."
+      },
       "output_height": {
         "name": "altura_de_saida",
         "tooltip": "Altura para a qual cada recorte será redimensionado."
@@ -2309,6 +2313,23 @@
     "display_name": "Desativar Ruído",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Desenhar BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -4982,6 +5003,36 @@
       "0": {
         "name": "imagens",
         "tooltip": "Imagens processadas"
+      }
+    }
+  },
+  "ImageHistogram": {
+    "display_name": "Histograma de Imagem",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminância",
+        "tooltip": null
+      },
+      "2": {
+        "name": "vermelho",
+        "tooltip": null
+      },
+      "3": {
+        "name": "verde",
+        "tooltip": null
+      },
+      "4": {
+        "name": "azul",
+        "tooltip": null
       }
     }
   },
@@ -12226,6 +12277,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detectar",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrar detecções por classe. Defina como 'all' para desabilitar o filtro."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Número máximo de detecções a retornar por imagem. Em ordem decrescente de confiança."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "Corte Aleatório de Imagens",
     "inputs": {
@@ -15631,6 +15710,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "imagem UV",
+        "tooltip": null
       }
     }
   },
@@ -17890,6 +17973,241 @@
       },
       "width": {
         "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "Gere um vídeo a partir de uma imagem do primeiro quadro, com opção de imagem do último quadro e áudio.",
+    "display_name": "Wan 2.7 Imagem para Vídeo",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Áudio para direcionar a geração do vídeo (ex: sincronização labial, movimento no ritmo da batida). Duração: 2s-30s. Se não for fornecido, o modelo gera automaticamente música de fundo ou efeitos sonoros correspondentes."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagem do primeiro quadro. A proporção de aspecto de saída é derivada desta imagem."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Imagem do último quadro. O modelo gera um vídeo fazendo a transição do primeiro para o último quadro."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se deseja aprimorar o prompt com assistência de IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Gere um vídeo apresentando uma pessoa ou objeto a partir de materiais de referência. Suporta performances de personagem único e interações entre múltiplos personagens.",
+    "display_name": "Wan 2.7 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Gera um vídeo com base em um prompt de texto usando o modelo Wan 2.7.",
+    "display_name": "Wan 2.7 Texto para Vídeo",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio para direcionar a geração do vídeo (ex: sincronização labial, movimento no ritmo da música). Duração: 3s-30s. Se não fornecido, o modelo gera automaticamente música de fundo ou efeitos sonoros compatíveis."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt_extend": {
+        "name": "estender_prompt",
+        "tooltip": "Se deseja aprimorar o prompt com assistência de IA."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente a ser usada para a geração."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Continue um vídeo de onde parou, com controle opcional do último quadro.",
+    "display_name": "Wan 2.7 Continuação de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "first_clip": {
+        "name": "primeiro_clip",
+        "tooltip": "Vídeo de entrada para continuar. Duração: 2s-10s. A proporção de aspecto de saída é derivada deste vídeo."
+      },
+      "last_frame": {
+        "name": "último_quadro",
+        "tooltip": "Imagem do último quadro. A continuação fará a transição para este quadro."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt_extend": {
+        "name": "estender_prompt",
+        "tooltip": "Se deseja aprimorar o prompt com assistência de IA."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente a ser usada para a geração."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Edite um vídeo usando instruções de texto, imagens de referência ou transferência de estilo.",
+    "display_name": "Wan 2.7 Edição de Vídeo",
+    "inputs": {
+      "audio_setting": {
+        "name": "configuração_de_áudio",
+        "tooltip": "'auto': o modelo decide se deve regenerar o áudio com base no prompt. 'origin': preserva o áudio original do vídeo de entrada."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente a ser usada para a geração."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "O vídeo a ser editado."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
       }
     },
     "outputs": {

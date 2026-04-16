@@ -216,6 +216,18 @@ export const zWorkflowApiAssetsRequest = z.object({
   workflow_api_json: z.record(z.unknown())
 })
 
+export const zPublishWorkflowAssetsRequest = z.object({
+  asset_ids: z.array(z.string())
+})
+
+export const zWorkflowPublishInfo = z.object({
+  workflow_id: z.string(),
+  share_id: z.string(),
+  publish_time: z.string().datetime().nullish(),
+  listed: z.boolean(),
+  assets: z.array(zAssetInfo)
+})
+
 export const zForkWorkflowRequest = z.object({
   source_version: z.number().int(),
   name: z.string().optional()
@@ -756,6 +768,106 @@ export const zDeletionRequest = z.object({
   deletion_status: z.array(zDeletionStatus)
 })
 
+/**
+ * Detailed execution error information from ComfyUI
+ */
+export const zExecutionError = z.object({
+  node_id: z.string(),
+  node_type: z.string(),
+  exception_message: z.string(),
+  exception_type: z.string(),
+  traceback: z.array(z.string()),
+  current_inputs: z.record(z.unknown()),
+  current_outputs: z.record(z.unknown())
+})
+
+/**
+ * Full job details including workflow and outputs
+ */
+export const zJobDetailResponse = z.object({
+  id: z.string().uuid(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled'
+  ]),
+  workflow: z.record(z.unknown()).optional(),
+  execution_error: zExecutionError.optional(),
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  update_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  outputs: z.record(z.unknown()).optional(),
+  preview_output: z.record(z.unknown()).optional(),
+  outputs_count: z.number().int().optional(),
+  workflow_id: z.string().optional(),
+  execution_status: z.record(z.unknown()).optional(),
+  execution_meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export const zJobEntry = z.object({
+  id: z.string().uuid(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled'
+  ]),
+  execution_error: zExecutionError.optional(),
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  preview_output: z.record(z.unknown()).optional(),
+  outputs_count: z.number().int().optional(),
+  workflow_id: z.string().optional(),
+  execution_start_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_end_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+export const zJobsListResponse = z.object({
+  jobs: z.array(zJobEntry),
+  pagination: zPaginationInfo
+})
+
 export const zTagsModificationResponse = z.object({
   added: z.array(z.string()).optional(),
   removed: z.array(z.string()).optional(),
@@ -931,27 +1043,31 @@ export const zUserResponse = z.object({
   status: z.string()
 })
 
-export const zLogsSubscribeRequest = z.object({
-  enabled: z.boolean()
-})
-
 /**
- * Raw logs response with entries and size
+ * System statistics response
  */
-export const zRawLogsResponse = z.object({
-  entries: z
-    .array(
-      z.object({
-        m: z.string().optional()
-      })
-    )
-    .optional(),
-  size: z
-    .object({
-      cols: z.number().int().optional(),
-      rows: z.number().int().optional()
+export const zSystemStatsResponse = z.object({
+  system: z.object({
+    os: z.string(),
+    python_version: z.string(),
+    embedded_python: z.boolean(),
+    comfyui_version: z.string(),
+    comfyui_frontend_version: z.string().optional(),
+    workflow_templates_version: z.string().optional(),
+    cloud_version: z.string().optional(),
+    pytorch_version: z.string(),
+    argv: z.array(z.string()),
+    ram_total: z.number(),
+    ram_free: z.number()
+  }),
+  devices: z.array(
+    z.object({
+      name: z.string(),
+      type: z.string(),
+      vram_total: z.number().optional(),
+      vram_free: z.number().optional()
     })
-    .optional()
+  )
 })
 
 /**
@@ -999,6 +1115,49 @@ export const zModelFolder = z.object({
 })
 
 /**
+ * Error response for ComfyUI prompt execution.
+ */
+export const zPromptErrorResponse = z.record(z.unknown())
+
+export const zGetUserDataResponseFullFile = z.object({
+  path: z.string().optional(),
+  size: z.number().int().optional(),
+  modified: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+export const zGetUserDataResponseFull = z.array(zGetUserDataResponseFullFile)
+
+export const zUserDataResponseFull = z.object({
+  path: z.string().optional(),
+  size: z.number().int().optional(),
+  modified: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * Request to manage history operations
+ */
+export const zHistoryManageRequest = z.object({
+  delete: z.array(z.string()).optional(),
+  clear: z.boolean().optional()
+})
+
+/**
  * Job status information
  */
 export const zJobStatusResponse = z.object({
@@ -1016,6 +1175,89 @@ export const zJobStatusResponse = z.object({
   last_state_update: z.string().datetime().optional(),
   assigned_inference: z.string().nullish(),
   error_message: z.string().nullish()
+})
+
+export const zQueueManageResponse = z.object({
+  deleted: z.array(z.string()).optional(),
+  cleared: z.boolean().optional()
+})
+
+/**
+ * Request to manage queue operations
+ */
+export const zQueueManageRequest = z.object({
+  delete: z.array(z.string()).optional(),
+  clear: z.boolean().optional()
+})
+
+/**
+ * Queue information with pending and running jobs
+ */
+export const zQueueInfo = z.object({
+  queue_running: z.array(z.array(z.unknown())).optional(),
+  queue_pending: z.array(z.array(z.unknown())).optional()
+})
+
+/**
+ * History entry with full prompt data
+ */
+export const zHistoryDetailEntry = z.object({
+  prompt: z
+    .object({
+      priority: z.number().optional(),
+      prompt_id: z.string().optional(),
+      prompt: z.record(z.unknown()).optional(),
+      extra_data: z.record(z.unknown()).optional(),
+      outputs_to_execute: z.array(z.string()).optional()
+    })
+    .optional(),
+  outputs: z.record(z.unknown()).optional(),
+  status: z.record(z.unknown()).optional(),
+  meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Detailed execution history response for a specific prompt.
+ * Returns a dictionary with prompt_id as key and full history data as value.
+ *
+ */
+export const zHistoryDetailResponse = z.record(zHistoryDetailEntry)
+
+/**
+ * History entry with prompt_id and execution data
+ */
+export const zHistoryEntry = z.object({
+  prompt_id: z.string(),
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  workflow_id: z.string().optional(),
+  prompt: z
+    .object({
+      priority: z.number().optional(),
+      prompt_id: z.string().optional(),
+      extra_data: z.record(z.unknown()).optional()
+    })
+    .optional(),
+  outputs: z.record(z.unknown()).optional(),
+  status: z.record(z.unknown()).optional(),
+  meta: z.record(z.unknown()).optional()
+})
+
+/**
+ * Execution history response with history array.
+ * Returns an object with a "history" key containing an array of history entries.
+ * Each entry includes prompt_id as a property along with execution data.
+ *
+ */
+export const zHistoryResponse = z.object({
+  history: z.array(zHistoryEntry)
 })
 
 /**
@@ -1042,6 +1284,32 @@ export const zGlobalSubgraphInfo = z.object({
   data: z.string().optional()
 })
 
+export const zNodeInfo = z.object({
+  input: z.record(z.unknown()).optional(),
+  input_order: z.record(z.array(z.string())).optional(),
+  output: z.array(z.string()).optional(),
+  output_is_list: z.array(z.boolean()).optional(),
+  output_name: z.array(z.string()).optional(),
+  name: z.string().optional(),
+  display_name: z.string().optional(),
+  description: z.string().optional(),
+  python_module: z.string().optional(),
+  category: z.string().optional(),
+  output_node: z.boolean().optional(),
+  output_tooltips: z.array(z.string()).optional(),
+  deprecated: z.boolean().optional(),
+  experimental: z.boolean().optional(),
+  api_node: z.boolean().optional()
+})
+
+export const zPromptInfo = z.object({
+  exec_info: z
+    .object({
+      queue_remaining: z.number().int().optional()
+    })
+    .optional()
+})
+
 export const zExportDownloadUrlResponse = z.object({
   url: z.string(),
   expires_at: z.string().datetime().optional()
@@ -1050,6 +1318,22 @@ export const zExportDownloadUrlResponse = z.object({
 export const zErrorResponse = z.object({
   code: z.string(),
   message: z.string()
+})
+
+export const zPromptResponse = z.object({
+  prompt_id: z.string().uuid().optional(),
+  number: z.number().optional(),
+  node_errors: z.record(z.unknown()).optional()
+})
+
+export const zPromptRequest = z.object({
+  prompt: z.record(z.unknown()),
+  number: z.number().optional(),
+  front: z.boolean().optional(),
+  extra_data: z.record(z.unknown()).optional(),
+  partial_execution_targets: z.array(z.string()).optional(),
+  workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional()
 })
 
 export const zAssetWritable = z.object({
@@ -1095,6 +1379,53 @@ export const zAssetCreatedWritable = zAssetWritable.and(
  * Response after submitting feedback
  */
 export const zFeedbackResponseWritable = z.record(z.unknown())
+
+export const zGetPromptInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetPromptInfoResponse = zPromptInfo
+
+export const zExecutePromptData = z.object({
+  body: zPromptRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Prompt accepted
+ */
+export const zExecutePromptResponse = zPromptResponse
+
+export const zGetNodeInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetNodeInfoResponse = z.record(zNodeInfo)
+
+export const zGetFeaturesData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetFeaturesResponse = z.object({
+  supports_preview_metadata: z.boolean().optional(),
+  max_upload_size: z.number().int().optional()
+})
 
 export const zGetWorkflowTemplatesData = z.object({
   body: z.never().optional(),
@@ -1169,6 +1500,97 @@ export const zGetModelPreviewData = z.object({
  * Success - Model preview image
  */
 export const zGetModelPreviewResponse = z.string()
+
+export const zManageHistoryData = z.object({
+  body: zHistoryManageRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetHistoryData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      max_items: z.number().int().optional(),
+      offset: z.number().int().optional().default(0)
+    })
+    .optional()
+})
+
+/**
+ * Success - Execution history retrieved
+ */
+export const zGetHistoryResponse = zHistoryResponse
+
+export const zGetHistoryForPromptData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    prompt_id: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Success - History for prompt retrieved
+ */
+export const zGetHistoryForPromptResponse = zHistoryDetailResponse
+
+export const zListJobsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      status: z.string().optional(),
+      workflow_id: z.string().optional(),
+      output_type: z.enum(['image', 'video', 'audio', '3d']).optional(),
+      sort_by: z.enum(['create_time', 'execution_time']).optional(),
+      sort_order: z.enum(['asc', 'desc']).optional(),
+      offset: z.number().int().gte(0).optional().default(0),
+      limit: z.number().int().gte(1).lte(1000).optional().default(100)
+    })
+    .optional()
+})
+
+/**
+ * Success - Jobs retrieved
+ */
+export const zListJobsResponse = zJobsListResponse
+
+export const zGetJobDetailData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    job_id: z.string().uuid()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Success - Job details retrieved
+ */
+export const zGetJobDetailResponse = zJobDetailResponse
+
+export const zViewFileData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    subfolder: z.string().optional(),
+    type: z.string().optional(),
+    fullpath: z.string().optional(),
+    format: z.string().optional(),
+    frame_rate: z.number().int().optional(),
+    workflow: z.string().optional(),
+    timestamp: z.number().int().optional(),
+    channel: z.string().optional(),
+    res: z.number().int().gte(64).lte(1024).optional()
+  })
+})
+
+/**
+ * Success - File content returned (used when channel or res parameter is present)
+ */
+export const zViewFileResponse = z.string()
 
 export const zGetMaskLayersData = z.object({
   body: z.never().optional(),
@@ -1482,6 +1904,34 @@ export const zImportPublishedAssetsData = z.object({
  */
 export const zImportPublishedAssetsResponse2 = zImportPublishedAssetsResponse
 
+export const zGetQueueInfoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zGetQueueInfoResponse = zQueueInfo
+
+export const zManageQueueData = z.object({
+  body: zQueueManageRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Success
+ */
+export const zManageQueueResponse = zQueueManageResponse
+
+export const zInterruptJobData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
 export const zListSecretsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -1543,6 +1993,28 @@ export const zUpdateSecretData = z.object({
  */
 export const zUpdateSecretResponse = zSecretResponse
 
+export const zGetAllSettingsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * User settings as key-value pairs
+ */
+export const zGetAllSettingsResponse = z.record(z.unknown())
+
+export const zUpdateMultipleSettingsData = z.object({
+  body: z.record(z.unknown()),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Updated user settings
+ */
+export const zUpdateMultipleSettingsResponse = z.record(z.unknown())
+
 export const zGetSettingByKeyData = z.object({
   body: z.never().optional(),
   path: z.object({
@@ -1584,6 +2056,164 @@ export const zSubmitFeedbackData = z.object({
  */
 export const zSubmitFeedbackResponse = zFeedbackResponse
 
+export const zGetUserdataData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      dir: z.string().optional(),
+      recurse: z.boolean().optional().default(false),
+      split: z.boolean().optional().default(false),
+      full_info: z.boolean().optional().default(false)
+    })
+    .optional()
+})
+
+/**
+ * A list of user data files.
+ */
+export const zGetUserdataResponse = zGetUserDataResponseFull
+
+export const zGetUserdataFilePublishData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Publish info (publish_time is null if never published)
+ */
+export const zGetUserdataFilePublishResponse = zWorkflowPublishInfo
+
+export const zPostUserdataFilePublishData = z.object({
+  body: zPublishWorkflowAssetsRequest,
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Workflow published
+ */
+export const zPostUserdataFilePublishResponse = zWorkflowPublishInfo
+
+export const zDeleteUserdataFileData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * File deleted successfully (No Content).
+ */
+export const zDeleteUserdataFileResponse = z.void()
+
+export const zGetUserdataFileData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z.never().optional()
+})
+
+/**
+ * Successfully retrieved the file.
+ */
+export const zGetUserdataFileResponse = z.string()
+
+export const zPostUserdataFileData = z.object({
+  body: z.string(),
+  path: z.object({
+    file: z.string()
+  }),
+  query: z
+    .object({
+      overwrite: z.enum(['true', 'false']).optional(),
+      full_info: z.enum(['true', 'false']).optional()
+    })
+    .optional()
+})
+
+/**
+ * File uploaded successfully.
+ */
+export const zPostUserdataFileResponse = zUserDataResponseFull
+
+export const zMoveUserdataFileData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    file: z.string(),
+    dest: z.string()
+  }),
+  query: z
+    .object({
+      overwrite: z.enum(['true', 'false']).optional()
+    })
+    .optional()
+})
+
+/**
+ * File moved successfully.
+ */
+export const zMoveUserdataFileResponse = zUserDataResponseFull
+
+export const zUploadImageData = z.object({
+  body: z.object({
+    image: z.string(),
+    overwrite: z.string().optional(),
+    subfolder: z.string().optional(),
+    type: z.string().optional()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Image uploaded successfully
+ */
+export const zUploadImageResponse = z.object({
+  name: z.string().optional(),
+  subfolder: z.string().optional(),
+  type: z.string().optional()
+})
+
+export const zUploadMaskData = z.object({
+  body: z.object({
+    image: z.string(),
+    original_ref: z.string()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Mask uploaded successfully
+ */
+export const zUploadMaskResponse = z.object({
+  name: z.string().optional(),
+  subfolder: z.string().optional(),
+  type: z.string().optional(),
+  metadata: z
+    .object({
+      is_mask: z.boolean().optional(),
+      original_hash: z.string().optional(),
+      mask_type: z.string().optional(),
+      related_files: z
+        .object({
+          mask: z.string().optional(),
+          paint: z.string().optional(),
+          painted: z.string().optional()
+        })
+        .optional()
+    })
+    .optional()
+})
+
 export const zGetLogsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
@@ -1595,7 +2225,7 @@ export const zGetLogsData = z.object({
  */
 export const zGetLogsResponse = zLogsResponse
 
-export const zGetRawLogsData = z.object({
+export const zGetSystemStatsData = z.object({
   body: z.never().optional(),
   path: z.never().optional(),
   query: z.never().optional()
@@ -1604,20 +2234,7 @@ export const zGetRawLogsData = z.object({
 /**
  * Success
  */
-export const zGetRawLogsResponse = zRawLogsResponse
-
-export const zSubscribeToLogsData = z.object({
-  body: zLogsSubscribeRequest,
-  path: z.never().optional(),
-  query: z.never().optional()
-})
-
-/**
- * Success
- */
-export const zSubscribeToLogsResponse = z.object({
-  enabled: z.boolean().optional()
-})
+export const zGetSystemStatsResponse = zSystemStatsResponse
 
 export const zDeleteSessionData = z.object({
   body: z.never().optional(),
@@ -2367,3 +2984,153 @@ export const zGetPublishedWorkflowData = z.object({
  * Published workflow details with asset statuses
  */
 export const zGetPublishedWorkflowResponse = zPublishedWorkflowDetail
+
+export const zGetExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetVhsViewVideoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    type: z.string().optional(),
+    subfolder: z.string().optional()
+  })
+})
+
+export const zGetVhsViewAudioData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string(),
+    type: z.string().optional(),
+    subfolder: z.string().optional()
+  })
+})
+
+export const zGetVhsQueryVideoData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetUsersRawData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetApiViewVideoAliasData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetViewCompatAliasData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.object({
+    filename: z.string()
+  })
+})
+
+export const zGetWebsocketData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      clientId: z.string().optional()
+    })
+    .optional()
+})
+
+export const zGetTemplateProxyData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetHealthData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetOpenapiSpecData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetMonitoringTasksData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zDeleteMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zPostMonitoringTasksSubpathData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetPprofData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})
+
+export const zGetPprofProfileData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetPprofTraceData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zPostPprofSymbolData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+export const zGetStaticExtensionsData = z.object({
+  body: z.never().optional(),
+  path: z.object({
+    path: z.string()
+  }),
+  query: z.never().optional()
+})

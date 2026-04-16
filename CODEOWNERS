@@ -41,12 +41,49 @@
 /src/components/templates/                        @Myestery @christian-byrne @comfyui-wiki
 
 # Mask Editor
-/src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp
-/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp
+/src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp @jtydhr88
+/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp @jtydhr88
+/src/components/maskeditor/                       @trsommer @brucew4yn3rp @jtydhr88
+/src/composables/maskeditor/                      @trsommer @brucew4yn3rp @jtydhr88
+/src/stores/maskEditorStore.ts                    @trsommer @brucew4yn3rp @jtydhr88
+/src/stores/maskEditorDataStore.ts                @trsommer @brucew4yn3rp @jtydhr88
+
+# Image Crop
+/src/extensions/core/imageCrop.ts                 @jtydhr88
+/src/components/imagecrop/                        @jtydhr88
+/src/composables/useImageCrop.ts                  @jtydhr88
+/src/lib/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88
+
+# Image Compare
+/src/extensions/core/imageCompare.ts              @jtydhr88
+/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue       @jtydhr88
+/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts   @jtydhr88
+/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.stories.ts @jtydhr88
+/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts    @jtydhr88
+/src/lib/litegraph/src/widgets/ImageCompareWidget.ts @jtydhr88
+
+# Painter
+/src/extensions/core/painter.ts                   @jtydhr88
+/src/components/painter/                           @jtydhr88
+/src/composables/painter/                          @jtydhr88
+/src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts @jtydhr88
+/src/lib/litegraph/src/widgets/PainterWidget.ts   @jtydhr88
+
+# GLSL
+/src/renderer/glsl/                               @jtydhr88 @pythongosssss @christian-byrne
 
 # 3D
 /src/extensions/core/load3d.ts                    @jtydhr88
+/src/extensions/core/load3dLazy.ts                @jtydhr88
+/src/extensions/core/load3d/                      @jtydhr88
 /src/components/load3d/                           @jtydhr88
+/src/composables/useLoad3d.ts                     @jtydhr88
+/src/composables/useLoad3d.test.ts                @jtydhr88
+/src/composables/useLoad3dDrag.ts                 @jtydhr88
+/src/composables/useLoad3dDrag.test.ts            @jtydhr88
+/src/composables/useLoad3dViewer.ts               @jtydhr88
+/src/composables/useLoad3dViewer.test.ts          @jtydhr88
+/src/services/load3dService.ts                    @jtydhr88
 
 # Manager
 /src/workbench/extensions/manager/                @viva-jinyi @christian-byrne @ltdrdata

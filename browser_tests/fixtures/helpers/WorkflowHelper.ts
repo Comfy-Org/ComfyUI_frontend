@@ -1,12 +1,15 @@
 import { readFileSync } from 'fs'
 
-import type { AppMode } from '../../../src/composables/useAppMode'
+import { test } from '@playwright/test'
+
+import type { AppMode } from '@/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { WorkspaceStore } from '../../types/globals'
-import type { ComfyPage } from '../ComfyPage'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -20,7 +23,7 @@ export class WorkflowHelper {
 
     for (const [key, value] of Object.entries(structure)) {
       if (typeof value === 'string') {
-        const filePath = this.comfyPage.assetPath(value)
+        const filePath = assetPath(value)
         result[key] = readFileSync(filePath, 'utf-8')
       } else {
         result[key] = this.convertLeafToContent(value)
@@ -57,11 +60,33 @@ export class WorkflowHelper {
     await this.comfyPage.nextFrame()
   }
 
-  async loadWorkflow(workflowName: string) {
-    await this.comfyPage.workflowUploadInput.setInputFiles(
-      this.comfyPage.assetPath(`${workflowName}.json`)
+  async waitForDraftPersisted({ timeout = 5000 } = {}) {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        Object.keys(localStorage).some((k) =>
+          k.startsWith('Comfy.Workflow.Draft.v2:')
+        ),
+      { timeout }
+    )
+  }
+
+  async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
+    await this.comfyPage.page.evaluate(
+      (wf) => window.app!.loadGraphData(wf),
+      workflow
     )
     await this.comfyPage.nextFrame()
+  }
+
+  async loadWorkflow(workflowName: string) {
+    await this.comfyPage.workflowUploadInput.setInputFiles(
+      assetPath(`${workflowName}.json`)
+    )
+    await this.waitForWorkflowIdle()
+    await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async deleteWorkflow(
@@ -105,6 +130,14 @@ export class WorkflowHelper {
     })
   }
 
+  async waitForActiveWorkflow(): Promise<void> {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        (window.app!.extensionManager as WorkspaceStore).workflow
+          .activeWorkflow !== null
+    )
+  }
+
   async getActiveWorkflowPath(): Promise<string | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow
@@ -144,6 +177,21 @@ export class WorkflowHelper {
       return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.isModified
     })
+  }
+
+  async waitForWorkflowIdle(timeout = 5000): Promise<void> {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy,
+      undefined,
+      { timeout }
+    )
+  }
+
+  async switchToTab(tabName: string): Promise<void> {
+    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    await this.waitForWorkflowIdle()
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>

@@ -1331,6 +1331,7 @@
     "updating": "更新中",
     "upload": "上传",
     "uploadAlreadyInProgress": "上传已在进行中",
+    "uploadTimedOut": "上传超时。请重试。",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "用户",
@@ -1641,9 +1642,18 @@
     "exportRecording": "导出录制",
     "exportingModel": "正在导出模型...",
     "fov": "视场",
+    "hdri": {
+      "changeFile": "更换HDRI",
+      "intensity": "强度",
+      "label": "HDRI环境",
+      "removeFile": "移除HDRI",
+      "showAsBackground": "作为背景显示",
+      "uploadFile": "上传HDRI（.hdr, .exr）"
+    },
     "light": "灯光",
     "lightIntensity": "光照强度",
     "loadingBackgroundImage": "正在加载背景图像",
+    "loadingHDRI": "正在加载HDRI...",
     "loadingModel": "正在加载3D模型...",
     "materialMode": "材质模式",
     "materialModes": {
@@ -2258,6 +2268,7 @@
     "dataset": "dataset",
     "debug": "调试",
     "deprecated": "已弃用",
+    "detection": "检测",
     "edit_models": "编辑模型",
     "flux": "Flux",
     "gligen": "GLIGEN",
@@ -2526,6 +2537,23 @@
     "inputsNone": "无输入",
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
+    "missingMedia": {
+      "audio": "音频",
+      "cancelSelection": "取消选择",
+      "collapseNodes": "隐藏引用节点",
+      "confirmSelection": "确认选择",
+      "expandNodes": "显示引用节点",
+      "image": "图像",
+      "locateNode": "定位节点",
+      "missingMediaTitle": "缺少输入",
+      "or": "或",
+      "selectedFromLibrary": "已从素材库选择",
+      "uploadFile": "上传{type}",
+      "uploaded": "已上传",
+      "uploading": "正在上传...",
+      "useFromLibrary": "从素材库选择",
+      "video": "视频"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "该模型已存在于“{category}”中",
       "assetLoadTimeout": "模型检测超时。请尝试重新加载工作流。",
@@ -3251,6 +3279,7 @@
       "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
       "totalDueToday": "今日应付总额"
     },
+    "refreshCredits": "刷新额度",
     "renewsDate": "将于 {date} 续订",
     "required": {
       "pollingFailed": "订阅激活失败",
@@ -3423,6 +3452,7 @@
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
     "failedToInitiateSubscription": "订阅启动失败：{error}",
     "failedToLoadBackgroundImage": "无法加载背景图片",
+    "failedToLoadHDRI": "HDRI文件加载失败",
     "failedToLoadModel": "无法加载3D模型",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "failedToQueue": "排队失败",
@@ -3458,6 +3488,7 @@
     "pleaseSelectOutputNodes": "请选择输出节点",
     "unableToGetModelFilePath": "无法获取模型文件路径",
     "unauthorizedDomain": "您的域名 {domain} 未被授权使用此服务。请联系 {email} 将您的域名添加到白名单。",
+    "unsupportedHDRIFormat": "不支持的文件格式。请上传.hdr或.exr文件。",
     "updateRequested": "已请求更新",
     "useApiKeyTip": "提示：无法正常登录？请使用 Comfy API Key 选项。",
     "userNotAuthenticated": "用户未认证"
