@@ -84,7 +84,7 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
     <!-- Left image -->
     <div
       ref="leftImgRef"
-      class="absolute top-80 left-0 h-50 w-1/4 -translate-x-2/5 overflow-hidden lg:h-240 lg:max-h-3/4"
+      class="absolute top-50 left-0 h-50 w-1/4 -translate-x-2/5 overflow-hidden lg:h-240 lg:max-h-3/4"
       :style="`clip-path: url(#${leftBlobId})`"
     >
       <Transition name="crossfade">
@@ -99,7 +99,7 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
     </div>
     <div
       ref="rightImgRef"
-      class="absolute top-30 right-0 h-50 w-1/4 translate-x-2/5 overflow-hidden lg:h-240 lg:max-h-3/4"
+      class="absolute top-0 right-0 h-50 w-1/4 translate-x-2/5 overflow-hidden lg:h-240 lg:max-h-3/4"
       :style="`clip-path: url(#${rightBlobId})`"
     >
       <Transition name="crossfade">
