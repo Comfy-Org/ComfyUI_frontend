@@ -1,6 +1,6 @@
 import { app } from '../../scripts/app'
 
-export type Enclosure = {
+type Enclosure = {
   start: number
   end: number
 }
