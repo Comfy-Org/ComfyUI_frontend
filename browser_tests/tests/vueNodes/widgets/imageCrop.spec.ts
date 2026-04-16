@@ -144,7 +144,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         await expect.soft(node.locator('img'), 'no preview img').toHaveCount(0)
         await expect
           .soft(node.getByTestId('crop-resize-right'), 'no resize handles')
-          .toBeHidden()
+          .toHaveCount(0)
       }
     )
 

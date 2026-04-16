@@ -400,6 +400,22 @@ describe('useImageCrop', () => {
     expect((vm.resizeHandles as unknown[]).length).toBe(4)
   })
 
+  it('sets isLoading to true when imageUrl changes to a new URL, then clears on load', async () => {
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    mockGetNodeImageUrls.mockImplementation((n) =>
+      n === sourceNode ? ['https://example.com/b.png'] : null
+    )
+    outputStore.nodeOutputs['touch'] = {}
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/b.png')
+    expect(vm.isLoading).toBe(true)
+    ;(vm.handleImageLoad as () => void)()
+    expect(vm.isLoading).toBe(false)
+  })
+
   it('clears imageUrl on image error', async () => {
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeTruthy()

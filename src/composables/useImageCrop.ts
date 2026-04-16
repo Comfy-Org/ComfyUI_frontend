@@ -380,11 +380,14 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     imageUrl.value = null
   }
 
-  const capturePointer = (e: PointerEvent) =>
-    (e.target as HTMLElement).setPointerCapture(e.pointerId)
+  const capturePointer = (e: PointerEvent) => {
+    if (e.target instanceof HTMLElement) e.target.setPointerCapture(e.pointerId)
+  }
 
-  const releasePointer = (e: PointerEvent) =>
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+  const releasePointer = (e: PointerEvent) => {
+    if (e.target instanceof HTMLElement)
+      e.target.releasePointerCapture(e.pointerId)
+  }
 
   const handleDragStart = (e: PointerEvent) => {
     if (!imageUrl.value) return
