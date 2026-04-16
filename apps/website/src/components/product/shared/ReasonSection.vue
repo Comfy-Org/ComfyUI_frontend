@@ -36,7 +36,7 @@ const {
       class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 md:top-28 md:w-115 md:py-0"
     >
       <h2
-        class="text-primary-comfy-canvas text-4xl font-light whitespace-pre-line md:text-5xl"
+        class="text-primary-comfy-canvas text-4xl/16 font-light whitespace-pre-line md:text-5xl/16"
       >
         {{ t(headingKey, locale)
         }}<span v-if="headingHighlightKey" :class="highlightClass">{{
