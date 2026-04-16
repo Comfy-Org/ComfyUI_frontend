@@ -64,8 +64,12 @@ export class BottomPanel {
     this.logs = new LogsTab(page)
   }
 
-  async open() {
+  async toggleLogs() {
     await this.toggleButton.click()
+    await this.logs.tab.waitFor({ state: 'visible' })
+    if ((await this.logs.tab.getAttribute('aria-selected')) !== 'true') {
+      await this.logs.tab.click()
+    }
   }
 
   async resizeByDragging(deltaY: number): Promise<void> {

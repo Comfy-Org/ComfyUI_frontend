@@ -25,7 +25,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
 
     test('opens to Logs tab via toggle button', async ({ comfyPage }) => {
       await expect(comfyPage.bottomPanel.root).toBeHidden()
-      await comfyPage.bottomPanel.toggleButton.click()
+      await comfyPage.bottomPanel.toggleLogs()
       await expect(comfyPage.bottomPanel.logs.tab).toHaveAttribute(
         'aria-selected',
         'true'
@@ -34,7 +34,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     })
 
     test('closes via toggle button', async ({ comfyPage }) => {
-      await comfyPage.bottomPanel.toggleButton.click()
+      await comfyPage.bottomPanel.toggleLogs()
       await expect(comfyPage.bottomPanel.root).toBeVisible()
 
       await comfyPage.bottomPanel.toggleButton.click()
@@ -45,7 +45,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       await comfyPage.bottomPanel.keyboardShortcutsButton.click()
       await expect(comfyPage.bottomPanel.shortcuts.essentialsTab).toBeVisible()
 
-      await comfyPage.bottomPanel.toggleButton.click()
+      await comfyPage.bottomPanel.toggleLogs()
       await expect(comfyPage.bottomPanel.logs.tab).toBeVisible()
       await expect(comfyPage.bottomPanel.shortcuts.essentialsTab).toBeHidden()
     })
@@ -63,7 +63,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     }) => {
       const resolveRaw = await logsTerminal.mockRawLogsPending()
 
-      await comfyPage.bottomPanel.open()
+      await comfyPage.bottomPanel.toggleLogs()
       await expect(comfyPage.bottomPanel.logs.loadingSpinner).toBeVisible()
 
       resolveRaw()
@@ -77,7 +77,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       const logLine = 'Hello from ComfyUI backend!'
       await logsTerminal.mockRawLogs([logLine])
 
-      await comfyPage.bottomPanel.open()
+      await comfyPage.bottomPanel.toggleLogs()
 
       await expect(comfyPage.bottomPanel.logs.xtermScreen).toBeVisible()
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
@@ -89,7 +89,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       comfyPage,
       getWebSocket
     }) => {
-      await comfyPage.bottomPanel.open()
+      await comfyPage.bottomPanel.toggleLogs()
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeVisible()
 
       const ws = await getWebSocket()
@@ -117,7 +117,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       const logLine = 'Copy me to the clipboard'
       await logsTerminal.mockRawLogs([logLine])
 
-      await comfyPage.bottomPanel.open()
+      await comfyPage.bottomPanel.toggleLogs()
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
         logLine
       )
@@ -139,7 +139,7 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
     }) => {
       await logsTerminal.mockRawLogsError()
 
-      await comfyPage.bottomPanel.open()
+      await comfyPage.bottomPanel.toggleLogs()
 
       await expect(comfyPage.bottomPanel.logs.errorMessage).toBeVisible()
       await expect(comfyPage.bottomPanel.logs.errorMessage).toContainText(
