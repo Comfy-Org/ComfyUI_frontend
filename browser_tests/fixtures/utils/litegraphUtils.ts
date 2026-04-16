@@ -388,7 +388,6 @@ export class NodeReference {
   async copy() {
     await this.click('title')
     await this.comfyPage.clipboard.copy()
-    await this.comfyPage.nextFrame()
   }
   async delete(): Promise<void> {
     await this.click('title')
@@ -434,7 +433,6 @@ export class NodeReference {
   async convertToGroupNode(groupNodeName: string = 'GroupNode') {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.nodeOps.fillPromptDialog(groupNodeName)
-    await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
       `workflow>${groupNodeName}`
     )

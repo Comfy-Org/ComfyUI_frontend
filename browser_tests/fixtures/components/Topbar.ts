@@ -140,6 +140,27 @@ export class Topbar {
   }
 
   /**
+   * Set Nodes 2.0 on or off via the Comfy logo menu switch (no-op if already
+   * in the requested state).
+   */
+  async setVueNodesEnabled(enabled: boolean) {
+    await this.openTopbarMenu()
+    const nodes2Switch = this.page.getByRole('switch', { name: 'Nodes 2.0' })
+    await nodes2Switch.waitFor({ state: 'visible' })
+    if ((await nodes2Switch.isChecked()) !== enabled) {
+      await nodes2Switch.click()
+      await this.page.waitForFunction(
+        (wantEnabled) =>
+          window.app!.ui.settings.getSettingValue('Comfy.VueNodes.Enabled') ===
+          wantEnabled,
+        enabled,
+        { timeout: 5000 }
+      )
+    }
+    await this.closeTopbarMenu()
+  }
+
+  /**
    * Navigate to a submenu by hovering over a menu item
    */
   async openSubmenu(menuItemLabel: string): Promise<Locator> {

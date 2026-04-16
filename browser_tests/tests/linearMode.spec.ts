@@ -4,10 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-  })
-
   test('Displays linear controls when app mode active', async ({
     comfyPage
   }) => {

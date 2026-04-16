@@ -1,0 +1,100 @@
+name: 'CI: E2E Coverage'
+
+on:
+  workflow_run:
+    workflows: ['CI: Tests E2E']
+    types:
+      - completed
+
+concurrency:
+  group: e2e-coverage-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Download all shard coverage data
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: e2e-coverage-shard-.*
+          name_is_regexp: true
+          path: temp/coverage-shards
+          if_no_artifact_found: warn
+
+      - name: Install lcov
+        run: sudo apt-get install -y -qq lcov
+
+      - name: Merge shard coverage into single LCOV
+        run: |
+          mkdir -p coverage/playwright
+          LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
+          if [ -z "$LCOV_FILES" ]; then
+            echo "No coverage.lcov files found"
+            touch coverage/playwright/coverage.lcov
+            exit 0
+          fi
+          ADD_ARGS=""
+          for f in $LCOV_FILES; do ADD_ARGS="$ADD_ARGS -a $f"; done
+          lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
+          wc -l coverage/playwright/coverage.lcov
+
+      - name: Validate merged coverage
+        run: |
+          SHARD_COUNT=$(find temp/coverage-shards -name 'coverage.lcov' -type f | wc -l | tr -d ' ')
+          if [ "$SHARD_COUNT" -eq 0 ]; then
+            echo "::error::No shard coverage.lcov files found under temp/coverage-shards"
+            exit 1
+          fi
+
+          MERGED_SF=$(grep -c '^SF:' coverage/playwright/coverage.lcov || echo 0)
+          MERGED_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
+          MERGED_LF=$(awk -F: '/^LF:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
+          echo "### Merged coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **$MERGED_SF** source files" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **$MERGED_LH / $MERGED_LF** lines hit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Shard | Files | Lines Hit |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|-----------|" >> "$GITHUB_STEP_SUMMARY"
+          for f in $(find temp/coverage-shards -name 'coverage.lcov' -type f | sort); do
+            SHARD=$(basename "$(dirname "$f")")
+            SHARD_SF=$(grep -c '^SF:' "$f" || echo 0)
+            SHARD_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$f")
+            echo "| $SHARD | $SHARD_SF | $SHARD_LH |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$MERGED_LH" -lt "$SHARD_LH" ]; then
+              echo "::error::Merged LH ($MERGED_LH) < shard LH ($SHARD_LH) in $SHARD — possible data loss"
+            fi
+          done
+
+      - name: Upload merged coverage data
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-coverage
+          path: coverage/playwright/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload E2E coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        with:
+          files: coverage/playwright/coverage.lcov
+          flags: e2e
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
