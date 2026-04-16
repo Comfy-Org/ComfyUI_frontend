@@ -45,7 +45,7 @@ const { t } = useI18n()
   display: flex;
   flex-direction: column;
   font-size: var(--layout-font-md);
-  line-height: 1.3;
+  line-height: 1.1;
   color: var(--layout-color-text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -64,5 +64,13 @@ const { t } = useI18n()
 .feedback-cell :deep(a:hover) {
   background-color: var(--layout-color-cell-hover) !important;
   color: var(--layout-color-text) !important;
+}
+
+/* Match the 20px icon size of the Builder / Share IconCells so all
+   chrome icons read at the same scale. */
+.feedback-cell :deep(button i),
+.feedback-cell :deep(a i) {
+  width: 20px;
+  height: 20px;
 }
 </style>

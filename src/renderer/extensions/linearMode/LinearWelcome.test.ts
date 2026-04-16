@@ -37,6 +37,12 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
+vi.mock('@/stores/commandStore', () => ({
+  useCommandStore: () => ({
+    execute: vi.fn()
+  })
+}))
+
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false })
 
 function renderComponent(

@@ -5,6 +5,7 @@ import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemp
 import { useAppModeStore } from '@/stores/appModeStore'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import AppModeWordmark from './AppModeWordmark.vue'
@@ -18,6 +19,20 @@ const isAppDefault = computed(
   () => workflowStore.activeWorkflow?.initialMode === 'app'
 )
 const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
+
+// Same command the corner RunCell dispatches. Shift-click queues to
+// the front of the line; plain click appends.
+const commandStore = useCommandStore()
+async function runFromPill(e: MouseEvent) {
+  const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
+  try {
+    await commandStore.execute(commandId, {
+      metadata: { subscribe_to_run: false, trigger_source: 'linear' }
+    })
+  } catch (error) {
+    console.error('[LinearWelcome] Queue prompt failed:', error)
+  }
+}
 </script>
 
 <template>
@@ -47,15 +62,18 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         <p class="mt-0 text-base-foreground">
           <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
             <template #runButton>
-              <span
-                class="mx-1 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm px-3 py-1 text-base font-medium"
+              <button
+                type="button"
+                class="mx-1 inline-flex translate-y-px transform cursor-pointer items-center gap-2 rounded-md border-0 px-4 py-1.5 text-xl font-medium outline-none focus:outline-none"
                 :style="{
                   backgroundColor: 'var(--layout-color-accent)',
                   color: 'var(--layout-color-accent-foreground)'
                 }"
+                @click="runFromPill"
               >
+                <i class="icon-[lucide--play] size-5" />
                 {{ t('menu.run') }}
-              </span>
+              </button>
             </template>
           </i18n-t>
         </p>

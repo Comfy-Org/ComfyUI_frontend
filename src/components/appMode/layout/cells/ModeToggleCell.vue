@@ -37,4 +37,12 @@ import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown
   width: 100%;
   padding: 0 !important;
 }
+
+/* Match the 20px icon size of the Builder / Share / Feedback chrome.
+   Targets the leading App/Graph icon (m-1 is the icon-button wrapper)
+   without touching the dropdown chevron. */
+.mode-toggle-cell :deep(button.m-1 > i) {
+  width: 20px;
+  height: 20px;
+}
 </style>

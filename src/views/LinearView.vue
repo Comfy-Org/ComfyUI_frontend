@@ -11,6 +11,7 @@ import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
 import LayoutView from '@/components/appMode/layout/LayoutView.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -119,9 +120,34 @@ function dragDrop(e: DragEvent) {
     </div>
     <div
       v-if="showLayoutView"
-      class="relative h-[calc(100%-var(--workflow-tabs-height))] w-full"
+      class="flex h-[calc(100%-var(--workflow-tabs-height))] w-full"
     >
-      <LayoutView />
+      <SideToolbar />
+      <Splitter
+        v-if="activeTab"
+        class="flex-1 border-none bg-transparent"
+        state-key="Comfy.LinearView.SidebarPanelSplitter"
+        state-storage="local"
+        @resizestart="$event.originalEvent.preventDefault()"
+      >
+        <SplitterPanel
+          :size="SIDE_PANEL_SIZE"
+          :min-size="SIDEBAR_MIN_SIZE"
+          class="min-w-78 overflow-hidden"
+        >
+          <div
+            class="size-full overflow-x-hidden border-r border-border-subtle"
+          >
+            <ExtensionSlot :extension="activeTab" />
+          </div>
+        </SplitterPanel>
+        <SplitterPanel :size="100 - SIDE_PANEL_SIZE" class="relative">
+          <LayoutView />
+        </SplitterPanel>
+      </Splitter>
+      <div v-else class="relative flex-1">
+        <LayoutView />
+      </div>
     </div>
     <Splitter
       v-else

@@ -46,7 +46,6 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import {
   openShareDialog,
@@ -65,26 +64,12 @@ const appModeStore = useAppModeStore()
 const { enterBuilder } = appModeStore
 const { hasNodes } = storeToRefs(appModeStore)
 const commandStore = useCommandStore()
-const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 
-const isAssetsActive = computed(
-  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'assets'
-)
-const isAppsActive = computed(
-  () => workspaceStore.sidebarTab.activeSidebarTab?.id === 'apps'
-)
-
 const showShare = computed(() => isCloud && flags.workflowSharingEnabled)
 
-function openAssets() {
-  void commandStore.execute('Workspace.ToggleSidebarTab.assets')
-}
-function showApps() {
-  void commandStore.execute('Workspace.ToggleSidebarTab.apps')
-}
 function openShare() {
   openShareDialog().catch(toastErrorHandler)
 }
@@ -384,18 +369,6 @@ function actionDownload() {
   if (url) downloadFile(url)
 }
 
-/** Middle-truncate a filename like a hash: `first…last`. Preserves the
- *  extension when present. 4/4 chars each side matches what the user
- *  asked for ("1234…5678"). */
-function truncateMiddle(name: string, head = 4, tail = 4): string {
-  if (!name) return ''
-  const dot = name.lastIndexOf('.')
-  const ext = dot > 0 && dot > name.length - 6 ? name.slice(dot) : ''
-  const base = ext ? name.slice(0, dot) : name
-  if (base.length <= head + tail + 1) return name
-  return `${base.slice(0, head)}…${base.slice(-tail)}${ext}`
-}
-
 const infoName = computed(() => {
   const sel = selectedHistory.value
   if (!sel) return ''
@@ -425,7 +398,12 @@ watch(
 const infoDims = computed(() =>
   dimensions.value ? `${dimensions.value.w}x${dimensions.value.h}` : ''
 )
-const infoLabel = computed(() => truncateMiddle(infoName.value))
+// Show only the file extension in the cell (e.g. "png"); full filename
+// stays in the tooltip/aria-label so nothing is lost.
+const infoLabel = computed(() => {
+  const dotIdx = infoName.value.lastIndexOf('.')
+  return dotIdx >= 0 ? infoName.value.slice(dotIdx + 1).toLowerCase() : ''
+})
 const infoTitle = computed(() =>
   [infoDims.value, infoName.value].filter(Boolean).join(' ')
 )
@@ -461,45 +439,52 @@ const historyThumbMap = computed(
 const cells = computed<LayoutCellPlacement[]>(() => {
   const out: LayoutCellPlacement[] = []
 
-  let row = 1
-  if (enableAppBuilder.value) {
-    out.push({ id: 'builder', col: 1, row: row++, kind: 'system-builder' })
-  }
-  if (showShare.value) {
-    out.push({ id: 'share', col: 1, row: row++, kind: 'system-share' })
-  }
-  out.push({ id: 'assets', col: 1, row: row++, kind: 'system-assets' })
-  out.push({ id: 'apps', col: 1, row: row++, kind: 'system-apps' })
-
+  // Row 1, left-to-right: App/Graph mode toggle, then optional builder +
+  // optional share. Toggle is anchored at col 1 so it doesn't shift when
+  // builder / share visibility changes; builder + share slot in to its
+  // right.
   out.push({
     id: 'mode-toggle',
-    col: 2,
+    col: 1,
     row: 1,
     colSpan: 2,
     kind: 'system-mode-toggle'
   })
+  let col = 3
+  if (enableAppBuilder.value) {
+    out.push({ id: 'builder', col: col++, row: 1, kind: 'system-builder' })
+  }
+  if (showShare.value) {
+    out.push({ id: 'share', col: col++, row: 1, kind: 'system-share' })
+  }
 
-  // Action cells on row 1, right of the mode toggle. Only mount when
+  // Action cells on row 1, right of builder/share. Only mount when
   // a history item is selected (mirrors LinearPreview's top bar).
   if (hasSelection.value) {
-    out.push({ id: 'action-rerun', col: 4, row: 1, kind: 'action-rerun' })
+    const actionStartCol = col
+    out.push({
+      id: 'action-rerun',
+      col: actionStartCol,
+      row: 1,
+      kind: 'action-rerun'
+    })
     out.push({
       id: 'action-reuse-params',
-      col: 5,
+      col: actionStartCol + 1,
       row: 1,
       kind: 'action-reuse-params'
     })
     out.push({
       id: 'action-download',
-      col: 6,
+      col: actionStartCol + 2,
       row: 1,
       kind: 'action-download'
     })
     out.push({
       id: 'action-info',
-      col: 7,
+      col: actionStartCol + 3,
       row: 1,
-      colSpan: 5,
+      colSpan: 3,
       kind: 'action-info'
     })
   }
@@ -512,9 +497,8 @@ const cells = computed<LayoutCellPlacement[]>(() => {
     kind: 'system-feedback'
   })
 
-  // History thumbs: one per row, stacking down column 1 immediately
-  // below the icon stack (no gap).
-  const thumbStartRow = row
+  // History thumbs stack down column 1 starting below the chrome row.
+  const thumbStartRow = 2
   for (let i = 0; i < historyThumbs.value.length; i++) {
     out.push({
       id: historyThumbs.value[i].id,
@@ -553,20 +537,6 @@ const cells = computed<LayoutCellPlacement[]>(() => {
           :label="t('actionbar.shareTooltip')"
           :on-activate="openShare"
           @pointerenter="prefetchShareDialog"
-        />
-        <IconCell
-          v-else-if="cell.kind === 'system-assets'"
-          icon="icon-[comfy--image-ai-edit]"
-          :label="t('sideToolbar.mediaAssets.title')"
-          :active="isAssetsActive"
-          :on-activate="openAssets"
-        />
-        <IconCell
-          v-else-if="cell.kind === 'system-apps'"
-          icon="icon-[lucide--panels-top-left]"
-          :label="t('linearMode.appModeToolbar.apps')"
-          :active="isAppsActive"
-          :on-activate="showApps"
         />
         <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
         <IconCell
@@ -639,6 +609,16 @@ const cells = computed<LayoutCellPlacement[]>(() => {
   position: absolute;
   inset: 0;
   background-color: var(--layout-color-canvas);
+  /* Form-builder dot grid — decorative. Not aligned with LayoutGrid
+     cell positions (the grid's gaps expand to absorb viewport slack,
+     so cell corners drift relative to any fixed-pitch pattern). */
+  background-image: radial-gradient(
+    circle,
+    var(--layout-color-grid-dot) 1px,
+    transparent 1.5px
+  );
+  background-size: var(--layout-dot-grid-size) var(--layout-dot-grid-size);
+  background-position: 0 0;
   /* Clip LinearPreview's inner absolute-positioned layers (image,
      skeletons, welcome) so they can never paint above the layout-view
      box — which sits below the top workflow-tabs bar. */
@@ -671,6 +651,24 @@ const cells = computed<LayoutCellPlacement[]>(() => {
 }
 .layout-view :deep(.layout-grid) > * {
   pointer-events: auto;
+}
+
+/* Panel-matched chrome: every system + action cell borrows
+   FloatingPanel's surface styling (1px hairline border + 10px
+   radius) so the whole App Mode chrome reads as one family. */
+.layout-view :deep(.layout-cell[data-cell-kind='system-mode-toggle']),
+.layout-view :deep(.layout-cell[data-cell-kind='system-builder']),
+.layout-view :deep(.layout-cell[data-cell-kind='system-share']),
+.layout-view :deep(.layout-cell[data-cell-kind='system-feedback']),
+.layout-view :deep(.layout-cell[data-cell-kind='action-rerun']),
+.layout-view :deep(.layout-cell[data-cell-kind='action-reuse-params']),
+.layout-view :deep(.layout-cell[data-cell-kind='action-download']),
+.layout-view :deep(.layout-cell[data-cell-kind='action-info']),
+.layout-view :deep(.layout-cell[data-cell-kind='output-thumb']) {
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .info-cell {

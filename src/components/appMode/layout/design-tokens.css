@@ -26,6 +26,7 @@
   --layout-gutter-min: 8px;        /* minimum gap between cells */
   --layout-outer-padding: 16px;    /* margin from viewport edge */
   --layout-cell-radius: 4px;       /* cell background corner radius */
+  --layout-dot-grid-size: 24px;    /* pitch of the canvas dot grid (decorative) */
 
   /* --- Colors ---------------------------------------------------------
      Neutral palette follows Comfy's existing tokens. Accent is used
@@ -40,6 +41,13 @@
   --layout-color-accent-hover: #2c974b;
   --layout-color-accent-active: #298e46;
   --layout-color-accent-foreground: #ffffff;
+  /* Form-builder-style dot pattern on the canvas. Muted text color at
+     low alpha so it reads as texture, not content. */
+  --layout-color-grid-dot: color-mix(
+    in srgb,
+    var(--layout-color-text-muted) 35%,
+    transparent
+  );
 
   /* --- Motion --------------------------------------------------------- */
   --layout-transition-duration: 150ms;
