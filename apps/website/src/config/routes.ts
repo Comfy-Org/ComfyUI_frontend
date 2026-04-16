@@ -29,7 +29,7 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 }
 
 export const externalLinks = {
-  app: 'https://app.comfy.org',
+  cloud: 'https://cloud.comfy.org',
   workflows: 'https://comfy.org/workflows',
   blog: 'https://blog.comfy.org/',
   github: 'https://github.com/Comfy-Org/ComfyUI',
