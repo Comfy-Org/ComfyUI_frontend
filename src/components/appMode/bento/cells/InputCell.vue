@@ -63,17 +63,17 @@ provide(HideLayoutFieldKey, true)
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  padding: 6px 12px 10px;
+  gap: 4px;
   box-sizing: border-box;
 }
 
 .input-cell__header {
   flex-shrink: 0;
   display: flex;
-  min-height: 32px;
+  min-height: 16px;
   align-items: center;
   gap: 4px;
-  padding: 0 4px;
+  padding: 0;
 }
 
 .input-cell__label {

@@ -36,6 +36,9 @@ const positionClass = computed(() => [
     <div class="floating-panel__body">
       <slot />
     </div>
+    <div v-if="$slots.footer" class="floating-panel__footer">
+      <slot name="footer" />
+    </div>
   </section>
 </template>
 
@@ -78,37 +81,62 @@ const positionClass = computed(() => [
   right: var(--bento-outer-padding);
   bottom: var(--bento-outer-padding);
 }
+/* Left-side presets: left edge clears col 1 (icons), top edge clears
+   row 1 (mode toggle + action cells). This places the panel's
+   top-left corner snug at the intersection of the icon column and
+   the mode-toggle row. */
 .floating-panel--left-dock {
-  top: var(--bento-outer-padding);
-  left: calc(var(--bento-outer-padding) + var(--bento-cell-size) + 8px);
-  bottom: var(--bento-outer-padding);
+  top: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  left: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  bottom: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
 }
 .floating-panel--float-tr {
   top: var(--bento-outer-padding);
   right: var(--bento-outer-padding);
-  max-height: 60vh;
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 .floating-panel--float-br {
   bottom: var(--bento-outer-padding);
   right: var(--bento-outer-padding);
-  max-height: 60vh;
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 .floating-panel--float-tl {
-  top: var(--bento-outer-padding);
-  left: calc(var(--bento-outer-padding) + var(--bento-cell-size) + 8px);
-  max-height: 60vh;
+  top: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  left: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 .floating-panel--float-bl {
-  bottom: var(--bento-outer-padding);
-  left: calc(var(--bento-outer-padding) + var(--bento-cell-size) + 8px);
-  max-height: 60vh;
+  bottom: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  left: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 
 .floating-panel__header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 16px;
   min-height: 32px;
   cursor: grab;
   user-select: none;
@@ -136,6 +164,12 @@ const positionClass = computed(() => [
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 4px 8px 12px;
+  padding: 16px;
+}
+
+.floating-panel__footer {
+  flex-shrink: 0;
+  padding: 16px;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
 }
 </style>

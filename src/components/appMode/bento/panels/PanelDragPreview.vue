@@ -28,9 +28,9 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
 .panel-drag-preview {
   position: absolute;
   width: var(--panel-dock-width, 420px);
-  /* International Klein Blue at ~35% opacity with a solid border. */
-  background-color: rgb(0 47 167 / 0.3);
-  border: 2px solid #002fa7;
+  /* Comfy brand blue — vivid to match the logo. */
+  background-color: rgb(30 64 255 / 0.3);
+  border: 2px solid #1e40ff;
   border-radius: 10px;
   pointer-events: none;
   z-index: 20;
@@ -50,28 +50,49 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
   bottom: var(--bento-outer-padding);
 }
 .panel-drag-preview--left-dock {
-  top: var(--bento-outer-padding);
-  left: calc(var(--bento-outer-padding) + var(--bento-cell-size) + 8px);
-  bottom: var(--bento-outer-padding);
+  top: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  left: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  bottom: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
 }
 .panel-drag-preview--float-tr {
   top: var(--bento-outer-padding);
   right: var(--bento-outer-padding);
-  height: 60vh;
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 .panel-drag-preview--float-br {
   bottom: var(--bento-outer-padding);
   right: var(--bento-outer-padding);
-  height: 60vh;
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 .panel-drag-preview--float-tl {
-  top: var(--bento-outer-padding);
-  left: calc(var(--bento-outer-padding) + var(--bento-cell-size) + 8px);
-  height: 60vh;
+  top: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  left: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 .panel-drag-preview--float-bl {
-  bottom: var(--bento-outer-padding);
-  left: calc(var(--bento-outer-padding) + var(--bento-cell-size) + 8px);
-  height: 60vh;
+  bottom: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  left: calc(
+    var(--bento-outer-padding) + var(--bento-cell-size) +
+      var(--bento-gutter-min)
+  );
+  height: calc(50% - var(--bento-outer-padding) - 4px);
 }
 </style>

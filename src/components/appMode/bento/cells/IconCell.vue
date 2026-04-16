@@ -63,7 +63,7 @@ defineProps<{
 }
 
 .icon-cell__icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 </style>

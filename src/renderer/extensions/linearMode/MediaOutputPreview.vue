@@ -16,6 +16,8 @@ defineOptions({ inheritAttrs: false })
 const { output } = defineProps<{
   output: ResultItemImpl
   mobile?: boolean
+  /** Suppress the image/video footer info span (bento renders its own). */
+  hideInfo?: boolean
 }>()
 
 const attrs = useAttrs()
@@ -32,11 +34,13 @@ const outputLabel = computed(
       :mobile
       :src="output.url"
       :label="outputLabel"
+      :hide-info="hideInfo"
     />
     <VideoPreview
       v-else
       :src="output.url"
       :label="outputLabel"
+      :hide-info="hideInfo"
       :class="
         cn(
           'flex-1 object-contain md:p-3 md:contain-size',

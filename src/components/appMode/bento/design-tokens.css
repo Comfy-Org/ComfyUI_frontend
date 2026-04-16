@@ -16,9 +16,9 @@
   /* --- Type scale ------------------------------------------------------
      The entire bento App Mode uses 4 sizes. Resist adding a fifth
      without strong reason. */
-  --bento-font-md: 16px;    /* Default: labels + widget content (textareas, inputs) */
-  --bento-font-lg: 18px;    /* LinearWelcome body */
-  --bento-font-xl: 22px;    /* Primary action (Run) */
+  --bento-font-md: 18px;    /* Default: labels + widget content (textareas, inputs) */
+  --bento-font-lg: 20px;    /* LinearWelcome body */
+  --bento-font-xl: 24px;    /* Primary action (Run) */
   --bento-font-hero: 48px;  /* LinearWelcome heading */
 
   /* --- Grid dimensions ------------------------------------------------ */

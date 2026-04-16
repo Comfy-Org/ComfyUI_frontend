@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-const { src } = defineProps<{
+const { src, hideInfo = false } = defineProps<{
   src: string
   label?: string
+  /** Hide the bottom size+label overlay (bento App Mode renders its own). */
+  hideInfo?: boolean
 }>()
 
 const videoRef = useTemplateRef('videoRef')
@@ -24,7 +26,7 @@ const height = ref('')
       }
     "
   />
-  <span class="z-10 self-center">
+  <span v-if="!hideInfo" class="z-10 self-center">
     {{ `${width} x ${height}` }}
     <template v-if="label"> | {{ label }}</template>
   </span>

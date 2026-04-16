@@ -148,15 +148,16 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
 .panel-block-row {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  /* 16px matches the grip width — the grip fills the gap exactly,
+     with the 4px dots centered so there's 6px clear on each side. */
+  gap: 16px;
   align-items: stretch;
   min-width: 0;
 }
 
 .panel-block {
   position: relative;
-  display: flex;
-  align-items: stretch;
+  display: block;
   flex: 1 1 0;
   min-width: 0;
   border-radius: var(--bento-cell-radius);
@@ -169,8 +170,15 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   opacity: 0.35;
 }
 
+/* Grip is absolutely positioned into the panel body's left padding
+   (panel body padding is 16px; grip width is 16px → grip's right edge
+   touches the block's left edge). Out of flow → block content gets
+   full width and the panel reads with symmetric 16px outer margins. */
 .panel-block__grip {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,7 +203,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
 
 .panel-block__grip-dots {
   width: 4px;
-  height: 16px;
+  height: 100%;
   background-image: radial-gradient(
     circle,
     var(--bento-color-text-muted) 1px,
@@ -206,41 +214,93 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
 }
 
 .panel-block__content {
-  flex: 1;
+  width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .panel-block__input {
-  height: 72px;
+  /* Content-driven height for all input blocks so vertical spacing
+     between blocks stays consistent (the 8px gap from panel-block-list
+     is the only space between them). */
 }
-.panel-block__input[data-multiline='true'] {
-  height: 120px;
+
+/* Center number values inside ScrubableNumberInput (the −/+ widgets)
+   so they match the "Number of runs" BatchCountCell treatment. */
+.panel-block__input :deep(input:not(textarea)) {
+  text-align: center;
+}
+
+/* NodeWidgets is a 3-column grid (slot-dot | label | widget) with
+   pr-3. In the panel, the slot-dot is empty and the label is hidden
+   (HideLayoutFieldKey). Collapse to single-column so widgets align
+   flush with the block label above them. */
+.panel-block__input :deep([data-testid='node-widgets']) {
+  grid-template-columns: 1fr !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+.panel-block__input :deep([data-testid='node-widget']) {
+  grid-template-columns: 1fr !important;
+}
+/* Hide the empty slot-dot column. */
+.panel-block__input :deep([data-testid='node-widget'] > div:first-child) {
+  display: none !important;
+}
+
+/* BatchCountCell: remove horizontal padding so it aligns with the Run
+   button below it. */
+.panel-block__run-batch :deep(.batch-count-cell) {
+  padding: 0;
+}
+
+/* All input blocks use content-driven height. Unset InputCell's
+   overflow: hidden + flex: 1 on the body so cells don't clip or
+   stretch their content. */
+.panel-block__input :deep(.input-cell) {
+  height: auto;
+}
+.panel-block__input :deep(.input-cell__body) {
+  flex: 0 0 auto;
+  overflow: visible;
+  min-height: 0;
+}
+
+/* Multiline textareas use field-sizing:content to grow with their
+   value until a cap; scrollbar kicks in only when truly needed. */
+.panel-block__input[data-multiline='true'] :deep(textarea) {
+  /* field-sizing: content auto-sizes to rows of content (Chrome 123+,
+     Safari 17+). max-height caps growth so a huge prompt can't push
+     the Run button off-screen. */
+  field-sizing: content;
+  height: auto !important;
+  min-height: 2.5em !important;
+  max-height: 50vh !important;
+  resize: none !important;
 }
 
 .panel-block__run {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 0 4px;
+  padding: 0;
 }
 
 .panel-block__run-batch {
-  height: 44px;
-  border-radius: var(--bento-cell-radius);
-  background-color: var(--bento-color-canvas);
+  height: 48px;
 }
 
 .panel-block__run-button {
-  height: 56px;
+  height: 48px;
 }
 
-/* International Klein Blue (#002FA7) for both drop-indicator types so
+/* Comfy brand blue (#1E40FF) for both drop-indicator types so
    the "landing zone" reads consistently across row + column drops. */
 .drop-indicator {
   list-style: none;
-  background-color: #002fa7;
+  background-color: #1e40ff;
   border-radius: 1px;
-  box-shadow: 0 0 0 2px rgb(0 47 167 / 0.25);
+  box-shadow: 0 0 0 2px rgb(30 64 255 / 0.25);
   pointer-events: none;
 }
 

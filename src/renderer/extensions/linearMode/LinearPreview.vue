@@ -27,10 +27,14 @@ const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
-const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
+const { runButtonClick, mobile, typeformWidgetId, hideChrome } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
   typeformWidgetId?: string
+  /** Bento App Mode renders its own history + action chrome in the grid;
+   *  this suppresses both LinearPreview's top action bar and the bottom
+   *  history/feedback strip so we don't double up. */
+  hideChrome?: boolean
 }>()
 
 const selectedItem = ref<AssetItem>()
@@ -73,7 +77,10 @@ async function rerun(e: Event) {
 </script>
 <template>
   <section
-    v-if="selectedItem || selectedOutput || showSkeleton || isWorkflowActive"
+    v-if="
+      !hideChrome &&
+      (selectedItem || selectedOutput || showSkeleton || isWorkflowActive)
+    "
     data-testid="linear-output-info"
     class="flex w-full flex-wrap justify-center gap-2 p-4 text-sm tabular-nums md:z-10"
   >
@@ -143,12 +150,18 @@ async function rerun(e: Event) {
     v-else-if="selectedOutput"
     :output="selectedOutput"
     :mobile
+    :hide-info="hideChrome"
   />
   <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
+  <!-- The inner OutputHistory must stay mounted even when the bento
+       layout hides this bar — its watchers drive selectedItem /
+       selectedOutput via `updateSelection`. v-show keeps the DOM +
+       watchers alive; display:none just hides it visually. -->
   <div
     v-if="!mobile"
+    v-show="!hideChrome"
     class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center"
   >
     <LinearFeedback
@@ -169,6 +182,7 @@ async function rerun(e: Event) {
   </div>
   <OutputHistory
     v-else-if="!isBuilderMode"
+    v-show="!hideChrome"
     @update-selection="handleSelection"
   />
 </template>

@@ -109,7 +109,7 @@ function dragDrop(e: DragEvent) {
   <MobileDisplay v-if="mobileDisplay" />
   <div v-else class="absolute size-full" @dragover.prevent>
     <div
-      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
+      class="workflow-tabs-container pointer-events-auto relative z-30 h-(--workflow-tabs-height) w-full border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
     >
       <div class="flex h-full items-center">
         <WorkflowTabs />
