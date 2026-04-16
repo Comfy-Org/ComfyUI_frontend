@@ -57,17 +57,27 @@ const uid = useId()
 const leftBlobId = `left-blob-${uid}`
 const rightBlobId = `right-blob-${uid}`
 
-useParallax([rightImgRef], { trigger: sectionRef })
-useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
+const pinScrubEnd = `+=${categories.length * 100}%`
+useParallax([rightImgRef], {
+  trigger: sectionRef,
+  start: 'top top',
+  end: pinScrubEnd
+})
+useParallax([leftImgRef], {
+  trigger: sectionRef,
+  y: -60,
+  start: 'top top',
+  end: pinScrubEnd
+})
 </script>
 
 <template>
   <section
     ref="sectionRef"
-    class="bg-primary-comfy-ink relative flex flex-col items-center overflow-hidden px-8 py-20 lg:h-[calc(100vh+60px)] lg:px-0 lg:py-24"
+    class="bg-primary-comfy-ink relative isolate overflow-hidden px-8 py-20 lg:h-[calc(100vh+60px)] lg:px-0 lg:py-24"
   >
     <!-- Clip-path definitions for shaped images -->
-    <svg class="absolute" width="0" height="0" aria-hidden="true">
+    <svg class="absolute size-0" width="0" height="0" aria-hidden="true">
       <defs>
         <clipPath :id="leftBlobId" clipPathUnits="objectBoundingBox">
           <path
@@ -81,85 +91,111 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
         </clipPath>
       </defs>
     </svg>
-    <!-- Left image -->
-    <div
-      ref="leftImgRef"
-      class="absolute top-50 left-0 h-50 w-1/4 -translate-x-2/5 overflow-hidden lg:h-240 lg:max-h-3/4"
-      :style="`clip-path: url(#${leftBlobId})`"
-    >
-      <Transition name="crossfade">
-        <img
-          :key="activeLeft"
-          :src="activeLeft"
-          alt=""
-          aria-hidden="true"
-          class="absolute inset-0 size-full object-cover"
-        />
-      </Transition>
-    </div>
-    <div
-      ref="rightImgRef"
-      class="absolute top-0 right-0 h-50 w-1/4 translate-x-2/5 overflow-hidden lg:h-240 lg:max-h-3/4"
-      :style="`clip-path: url(#${rightBlobId})`"
-    >
-      <Transition name="crossfade">
-        <img
-          :key="activeRight"
-          :src="activeRight"
-          alt=""
-          aria-hidden="true"
-          class="absolute inset-0 size-full object-cover"
-        />
-      </Transition>
-    </div>
-    <div
-      class="from-primary-comfy-ink to-primary-comfy-ink/10 relative z-10 w-full bg-linear-to-b py-4"
-    >
-      <p
-        class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase lg:text-base"
-      >
-        {{ t('useCase.label', locale) }}
-      </p>
-    </div>
 
     <div
-      ref="contentRef"
-      class="flex flex-col items-center will-change-transform"
+      class="relative mx-auto grid w-full grid-cols-1 grid-rows-[auto_minmax(0,1fr)] lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(24rem,42rem)_minmax(0,1fr)]"
     >
-      <nav
-        ref="navRef"
-        class="mt-16 flex max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:gap-8"
-        aria-label="Industry categories"
+      <!-- Label row spanning all columns -->
+      <div
+        class="from-primary-comfy-ink to-primary-comfy-ink/10 relative z-20 col-span-full bg-linear-to-b py-4"
       >
-        <button
-          v-for="(category, index) in categories"
-          :key="category.label"
-          type="button"
-          :class="
-            cn(
-              'lg:text-4.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
-              index === activeCategory
-                ? 'text-primary-comfy-canvas'
-                : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
-            )
-          "
-          :aria-current="index === activeCategory ? 'true' : undefined"
-          @click="scrollToIndex(index)"
+        <p
+          class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase lg:text-base"
         >
-          {{ category.label }}
-        </button>
-      </nav>
+          {{ t('useCase.label', locale) }}
+        </p>
+      </div>
 
-      <p class="text-primary-warm-gray mt-20 max-w-md text-center text-base">
-        {{ t('useCase.body', locale) }}
-      </p>
+      <!-- Left image -->
+      <div
+        class="pointer-events-none relative hidden min-h-0 lg:flex lg:items-center lg:justify-start"
+      >
+        <div class="w-[115%] -translate-x-[12%]">
+          <div
+            ref="leftImgRef"
+            class="relative h-[72vh] max-h-240 w-full overflow-hidden will-change-transform"
+            :style="`clip-path: url(#${leftBlobId})`"
+          >
+            <Transition name="crossfade">
+              <img
+                :key="activeLeft"
+                :src="activeLeft"
+                alt=""
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+              />
+            </Transition>
+          </div>
+        </div>
+      </div>
 
-      <BrandButton
-        :href="externalLinks.workflows"
-        :label="t('useCase.cta', locale)"
-        variant="outline"
-        class-name="mt-8 text-sm"
-      />
+      <!-- Center content -->
+      <div class="relative z-10 min-h-0 overflow-hidden">
+        <div
+          ref="contentRef"
+          class="flex flex-col items-center will-change-transform"
+        >
+          <nav
+            ref="navRef"
+            class="mt-16 flex w-full max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:max-w-none lg:gap-8"
+            aria-label="Industry categories"
+          >
+            <button
+              v-for="(category, index) in categories"
+              :key="category.label"
+              type="button"
+              :class="
+                cn(
+                  'lg:text-4.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
+                  index === activeCategory
+                    ? 'text-primary-comfy-canvas'
+                    : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
+                )
+              "
+              :aria-current="index === activeCategory ? 'true' : undefined"
+              @click="scrollToIndex(index)"
+            >
+              {{ category.label }}
+            </button>
+          </nav>
+
+          <p
+            class="text-primary-warm-gray mt-20 max-w-md text-center text-base"
+          >
+            {{ t('useCase.body', locale) }}
+          </p>
+
+          <BrandButton
+            :href="externalLinks.workflows"
+            :label="t('useCase.cta', locale)"
+            variant="outline"
+            class-name="mt-8 text-sm"
+          />
+        </div>
+      </div>
+
+      <!-- Right image -->
+      <div
+        class="pointer-events-none relative hidden min-h-0 lg:flex lg:items-center lg:justify-end"
+      >
+        <div class="w-[115%] translate-x-[12%]">
+          <div
+            ref="rightImgRef"
+            class="relative h-[72vh] max-h-240 w-full overflow-hidden will-change-transform"
+            :style="`clip-path: url(#${rightBlobId})`"
+          >
+            <Transition name="crossfade">
+              <img
+                :key="activeRight"
+                :src="activeRight"
+                alt=""
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+              />
+            </Transition>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </template>
