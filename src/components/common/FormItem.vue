@@ -1,6 +1,6 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
-  <div class="flex min-h-10 flex-row items-center gap-2">
+  <div class="flex flex-row items-center gap-2">
     <div class="form-label flex grow items-center">
       <span
         :id="`${props.id}-label`"
