@@ -34,6 +34,8 @@ const sizeClass =
       )
     "
   >
-    <slot>{{ label }}</slot>
+    <span class="ppformula-text-center">
+      <slot>{{ label }}</slot>
+    </span>
   </a>
 </template>
