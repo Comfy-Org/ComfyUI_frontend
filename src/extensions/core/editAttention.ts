@@ -1,6 +1,61 @@
 import { app } from '../../scripts/app'
 
-// Allows you to edit the attention weight by holding ctrl (or cmd) and using the up/down arrow keys
+export type Enclosure = {
+  start: number
+  end: number
+}
+
+export function incrementWeight(weight: string, delta: number): string {
+  const floatWeight = parseFloat(weight)
+  if (isNaN(floatWeight)) return weight
+  const newWeight = floatWeight + delta
+  return String(Number(newWeight.toFixed(10)))
+}
+
+export function findNearestEnclosure(
+  text: string,
+  cursorPos: number
+): Enclosure | null {
+  let start = cursorPos,
+    end = cursorPos
+  let openCount = 0,
+    closeCount = 0
+
+  while (start >= 0) {
+    start--
+    if (text[start] === '(' && openCount === closeCount) break
+    if (text[start] === '(') openCount++
+    if (text[start] === ')') closeCount++
+  }
+  if (start < 0) return null
+
+  openCount = 0
+  closeCount = 0
+
+  while (end < text.length) {
+    if (text[end] === ')' && openCount === closeCount) break
+    if (text[end] === '(') openCount++
+    if (text[end] === ')') closeCount++
+    end++
+  }
+  if (end === text.length) return null
+
+  return { start: start + 1, end: end }
+}
+
+export function addWeightToParentheses(text: string): string {
+  const parenRegex = /^\((.*)\)$/
+  const parenMatch = text.match(parenRegex)
+
+  const floatRegex = /:([+-]?(\d*\.)?\d+([eE][+-]?\d+)?)/
+  const floatMatch = text.match(floatRegex)
+
+  if (parenMatch && !floatMatch) {
+    return `(${parenMatch[1]}:1.0)`
+  } else {
+    return text
+  }
+}
 
 app.registerExtension({
   name: 'Comfy.EditAttention',
@@ -18,65 +73,6 @@ app.registerExtension({
       defaultValue: 0.05
     })
 
-    function incrementWeight(weight: string, delta: number): string {
-      const floatWeight = parseFloat(weight)
-      if (isNaN(floatWeight)) return weight
-      const newWeight = floatWeight + delta
-      return String(Number(newWeight.toFixed(10)))
-    }
-
-    type Enclosure = {
-      start: number
-      end: number
-    }
-
-    function findNearestEnclosure(
-      text: string,
-      cursorPos: number
-    ): Enclosure | null {
-      let start = cursorPos,
-        end = cursorPos
-      let openCount = 0,
-        closeCount = 0
-
-      // Find opening parenthesis before cursor
-      while (start >= 0) {
-        start--
-        if (text[start] === '(' && openCount === closeCount) break
-        if (text[start] === '(') openCount++
-        if (text[start] === ')') closeCount++
-      }
-      if (start < 0) return null
-
-      openCount = 0
-      closeCount = 0
-
-      // Find closing parenthesis after cursor
-      while (end < text.length) {
-        if (text[end] === ')' && openCount === closeCount) break
-        if (text[end] === '(') openCount++
-        if (text[end] === ')') closeCount++
-        end++
-      }
-      if (end === text.length) return null
-
-      return { start: start + 1, end: end }
-    }
-
-    function addWeightToParentheses(text: string): string {
-      const parenRegex = /^\((.*)\)$/
-      const parenMatch = text.match(parenRegex)
-
-      const floatRegex = /:([+-]?(\d*\.)?\d+([eE][+-]?\d+)?)/
-      const floatMatch = text.match(floatRegex)
-
-      if (parenMatch && !floatMatch) {
-        return `(${parenMatch[1]}:1.0)`
-      } else {
-        return text
-      }
-    }
-
     function editAttention(event: KeyboardEvent) {
       // @ts-expect-error Runtime narrowing not impl.
       const inputField: HTMLTextAreaElement = event.composedPath()[0]
@@ -92,7 +88,6 @@ app.registerExtension({
       let end = inputField.selectionEnd
       let selectedText = inputField.value.substring(start, end)
 
-      // If there is no selection, attempt to find the nearest enclosure, or select the current word
       if (!selectedText) {
         const nearestEnclosure = findNearestEnclosure(inputField.value, start)
         if (nearestEnclosure) {
@@ -100,7 +95,6 @@ app.registerExtension({
           end = nearestEnclosure.end
           selectedText = inputField.value.substring(start, end)
         } else {
-          // Select the current word, find the start and end of the word
           const delimiters = ' .,\\/!?%^*;:{}=-_`~()\r\n\t'
 
           while (
@@ -122,13 +116,11 @@ app.registerExtension({
         }
       }
 
-      // If the selection ends with a space, remove it
       if (selectedText[selectedText.length - 1] === ' ') {
         selectedText = selectedText.substring(0, selectedText.length - 1)
         end -= 1
       }
 
-      // If there are parentheses left and right of the selection, select them
       if (
         inputField.value[start - 1] === '(' &&
         inputField.value[end] === ')'
@@ -138,7 +130,6 @@ app.registerExtension({
         selectedText = inputField.value.substring(start, end)
       }
 
-      // If the selection is not enclosed in parentheses, add them
       if (
         selectedText[0] !== '(' ||
         selectedText[selectedText.length - 1] !== ')'
@@ -146,10 +137,8 @@ app.registerExtension({
         selectedText = `(${selectedText})`
       }
 
-      // If the selection does not have a weight, add a weight of 1.0
       selectedText = addWeightToParentheses(selectedText)
 
-      // Increment the weight
       const weightDelta = event.key === 'ArrowUp' ? delta : -delta
       const updatedText = selectedText.replace(
         /\((.*):([+-]?\d+(?:\.\d+)?)\)/,
