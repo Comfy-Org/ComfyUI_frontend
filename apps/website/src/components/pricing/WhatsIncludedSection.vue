@@ -28,7 +28,7 @@ const features: IncludedFeature[] = [
   {
     title: 'Credit balance',
     description:
-      'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.'
+      'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.'
   },
   {
     title: 'Add more credits anytime',
@@ -47,7 +47,7 @@ const features: IncludedFeature[] = [
   {
     title: 'Partner Nodes',
     description:
-      'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org" class="text-primary-comfy-yellow underline">here</a>.'
+      'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.'
   },
   {
     title: 'Job queue',
