@@ -1,0 +1,48 @@
+---
+name: 'PR: Vercel Website Preview'
+
+on:
+  workflow_run:
+    workflows: ['CI: Vercel Website Preview']
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download preview metadata
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          name: vercel-preview
+          run_id: ${{ github.event.workflow_run.id }}
+          path: temp/vercel-preview
+
+      - name: Read preview metadata
+        id: meta
+        run: |
+          echo "url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
+          echo "pr-number=$(cat temp/vercel-preview/number.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Write report
+        run: |
+          echo "**Website Preview:** ${{ steps.meta.outputs.url }}" > preview-report.md
+
+      - name: Post PR comment
+        uses: ./.github/actions/post-pr-report-comment
+        with:
+          pr-number: ${{ steps.meta.outputs.pr-number }}
+          report-file: ./preview-report.md
+          comment-marker: '<!-- VERCEL_WEBSITE_PREVIEW -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
