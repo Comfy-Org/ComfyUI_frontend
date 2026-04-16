@@ -77,8 +77,7 @@ test.describe(
       )
       await comfyPage.nextFrame()
 
-      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
-      await subgraphNode.navigateIntoSubgraph()
+      await comfyPage.vueNodes.enterSubgraph('2')
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
