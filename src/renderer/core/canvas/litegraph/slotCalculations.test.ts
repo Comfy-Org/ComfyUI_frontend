@@ -29,8 +29,11 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 
-import { calculateInputSlotPosFromSlot, getSlotPosition } from './slotCalculations';
-import type { SlotPositionContext } from './slotCalculations';
+import {
+  calculateInputSlotPosFromSlot,
+  getSlotPosition
+} from './slotCalculations'
+import type { SlotPositionContext } from './slotCalculations'
 
 const SLOT_HEIGHT = mockLiteGraph.NODE_SLOT_HEIGHT
 const TITLE_HEIGHT = mockLiteGraph.NODE_TITLE_HEIGHT
