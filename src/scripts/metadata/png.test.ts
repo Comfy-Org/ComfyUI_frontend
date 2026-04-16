@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getFromPngBuffer } from './png'
+import { getFromPngBuffer, getFromPngFile } from './png'
+
+afterEach(() => vi.restoreAllMocks())
+
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
 function createPngWithChunk(
   chunkType: string,
   keyword: string,
-  content: string,
+  content: string | Uint8Array,
   options: {
     compressionFlag?: number
     compressionMethod?: number
@@ -20,12 +24,11 @@ function createPngWithChunk(
     translatedKeyword = ''
   } = options
 
-  const signature = new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
-  ])
+  const signature = new Uint8Array(PNG_SIGNATURE)
   const typeBytes = new TextEncoder().encode(chunkType)
   const keywordBytes = new TextEncoder().encode(keyword)
-  const contentBytes = new TextEncoder().encode(content)
+  const contentBytes =
+    content instanceof Uint8Array ? content : new TextEncoder().encode(content)
 
   let chunkData: Uint8Array
   if (chunkType === 'iTXt') {
@@ -66,12 +69,11 @@ function createPngWithChunk(
   new DataView(lengthBytes.buffer).setUint32(0, chunkData.length, false)
 
   const crc = new Uint8Array(4)
-
   const iendType = new TextEncoder().encode('IEND')
   const iendLength = new Uint8Array(4)
   const iendCrc = new Uint8Array(4)
 
-  const total = signature.length + 4 + 4 + chunkData.length + 4 + 4 + 4 + 0 + 4
+  const total = signature.length + (4 + 4 + chunkData.length + 4) + (4 + 4 + 4)
   const result = new Uint8Array(total)
 
   let offset = 0
@@ -138,6 +140,21 @@ describe('getFromPngBuffer', () => {
     expect(result['workflow']).toBe(workflow)
   })
 
+  it('logs warning and skips iTXt chunk with unsupported compression method', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const buffer = createPngWithChunk('iTXt', 'workflow', 'data', {
+      compressionFlag: 1,
+      compressionMethod: 99
+    })
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result['workflow']).toBeUndefined()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Unsupported compression method 99')
+    )
+  })
+
   it('parses compressed iTXt chunk', async () => {
     const workflow = '{"nodes":[{"id":1,"type":"KSampler"}]}'
     const contentBytes = new TextEncoder().encode(workflow)
@@ -163,83 +180,35 @@ describe('getFromPngBuffer', () => {
       pos += chunk.length
     }
 
-    const buffer = createPngWithCompressedITXt(
-      'workflow',
-      compressedBytes,
-      '',
-      ''
-    )
+    const buffer = createPngWithChunk('iTXt', 'workflow', compressedBytes, {
+      compressionFlag: 1,
+      compressionMethod: 0
+    })
     const result = await getFromPngBuffer(buffer)
     expect(result['workflow']).toBe(workflow)
   })
 })
 
-function createPngWithCompressedITXt(
-  keyword: string,
-  compressedContent: Uint8Array,
-  languageTag: string,
-  translatedKeyword: string
-): ArrayBuffer {
-  const signature = new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
-  ])
-  const typeBytes = new TextEncoder().encode('iTXt')
-  const keywordBytes = new TextEncoder().encode(keyword)
-  const langBytes = new TextEncoder().encode(languageTag)
-  const transBytes = new TextEncoder().encode(translatedKeyword)
+describe('getFromPngFile', () => {
+  it('reads metadata from a File object', async () => {
+    const workflow = '{"nodes":[]}'
+    const buffer = createPngWithChunk('tEXt', 'workflow', workflow)
+    const file = new File([buffer], 'test.png', { type: 'image/png' })
 
-  const totalLength =
-    keywordBytes.length +
-    1 +
-    2 +
-    langBytes.length +
-    1 +
-    transBytes.length +
-    1 +
-    compressedContent.length
+    const result = await getFromPngFile(file)
 
-  const chunkData = new Uint8Array(totalLength)
-  let pos = 0
-  chunkData.set(keywordBytes, pos)
-  pos += keywordBytes.length
-  chunkData[pos++] = 0
-  chunkData[pos++] = 1
-  chunkData[pos++] = 0
-  chunkData.set(langBytes, pos)
-  pos += langBytes.length
-  chunkData[pos++] = 0
-  chunkData.set(transBytes, pos)
-  pos += transBytes.length
-  chunkData[pos++] = 0
-  chunkData.set(compressedContent, pos)
+    expect(result['workflow']).toBe(workflow)
+  })
 
-  const lengthBytes = new Uint8Array(4)
-  new DataView(lengthBytes.buffer).setUint32(0, chunkData.length, false)
+  it('returns empty for an invalid PNG File', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const file = new File([new ArrayBuffer(8)], 'bad.png', {
+      type: 'image/png'
+    })
 
-  const crc = new Uint8Array(4)
-  const iendType = new TextEncoder().encode('IEND')
-  const iendLength = new Uint8Array(4)
-  const iendCrc = new Uint8Array(4)
+    const result = await getFromPngFile(file)
 
-  const total = signature.length + 4 + 4 + chunkData.length + 4 + 4 + 4 + 0 + 4
-  const result = new Uint8Array(total)
-
-  let offset = 0
-  result.set(signature, offset)
-  offset += signature.length
-  result.set(lengthBytes, offset)
-  offset += 4
-  result.set(typeBytes, offset)
-  offset += 4
-  result.set(chunkData, offset)
-  offset += chunkData.length
-  result.set(crc, offset)
-  offset += 4
-  result.set(iendLength, offset)
-  offset += 4
-  result.set(iendType, offset)
-  offset += 4
-  result.set(iendCrc, offset)
-
-  return result.buffer
-}
+    expect(result).toEqual({})
+    expect(console.error).toHaveBeenCalledWith('Not a valid PNG file')
+  })
+})

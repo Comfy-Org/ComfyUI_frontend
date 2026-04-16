@@ -11,7 +11,11 @@ export async function getOggMetadata(file: File) {
   let header = ''
   while (header.length < arrayBuffer.byteLength) {
     const page = String.fromCharCode(
-      ...new Uint8Array(arrayBuffer, header.length, header.length + 4096)
+      ...new Uint8Array(
+        arrayBuffer,
+        header.length,
+        Math.min(4096, arrayBuffer.byteLength - header.length)
+      )
     )
     if (page.match('OggS\u0000')) oggs++
     header += page

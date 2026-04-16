@@ -6,18 +6,21 @@ export function getDataFromJSON(
   return new Promise<Record<string, object> | undefined>((resolve) => {
     const reader = new FileReader()
     reader.onload = async () => {
-      const readerResult = reader.result as string
-      const jsonContent = JSON.parse(readerResult)
-      if (jsonContent?.templates) {
-        resolve({ templates: jsonContent.templates })
-        return
+      try {
+        const readerResult = reader.result as string
+        const jsonContent = JSON.parse(readerResult)
+        if (jsonContent?.templates) {
+          resolve({ templates: jsonContent.templates })
+          return
+        }
+        if (isApiJson(jsonContent)) {
+          resolve({ prompt: jsonContent })
+          return
+        }
+        resolve({ workflow: jsonContent })
+      } catch {
+        resolve(undefined)
       }
-      if (isApiJson(jsonContent)) {
-        resolve({ prompt: jsonContent })
-        return
-      }
-      resolve({ workflow: jsonContent })
-      return
     }
     reader.readAsText(file)
     return

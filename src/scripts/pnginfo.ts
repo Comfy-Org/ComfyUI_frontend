@@ -105,14 +105,17 @@ export function getWebpMetadata(file: File) {
           ...webp.slice(offset, offset + 4)
         )
         if (chunk_type === 'EXIF') {
+          let exifOffset = offset + 8
+          let exifLength = chunk_length
           if (
-            String.fromCharCode(...webp.slice(offset + 8, offset + 8 + 6)) ==
+            String.fromCharCode(...webp.slice(exifOffset, exifOffset + 6)) ==
             'Exif\0\0'
           ) {
-            offset += 6
+            exifOffset += 6
+            exifLength -= 6
           }
-          let data = parseExifData(
-            webp.slice(offset + 8, offset + 8 + chunk_length)
+          const data = parseExifData(
+            webp.slice(exifOffset, exifOffset + exifLength)
           )
           for (const key in data) {
             const value = data[Number(key)]
@@ -136,25 +139,31 @@ export function getWebpMetadata(file: File) {
   })
 }
 
-export function getLatentMetadata(file: File): Promise<Record<string, string>> {
+export function getLatentMetadata(
+  file: File
+): Promise<Record<string, string> | undefined> {
   return new Promise((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
-      const safetensorsData = new Uint8Array(
-        event.target?.result as ArrayBuffer
-      )
-      const dataView = new DataView(safetensorsData.buffer)
-      let header_size = dataView.getUint32(0, true)
-      let offset = 8
-      let header = JSON.parse(
-        new TextDecoder().decode(
-          safetensorsData.slice(offset, offset + header_size)
+      try {
+        const safetensorsData = new Uint8Array(
+          event.target?.result as ArrayBuffer
         )
-      )
-      r(header.__metadata__)
+        const dataView = new DataView(safetensorsData.buffer)
+        const headerSize = dataView.getUint32(0, true)
+        const offset = 8
+        const header = JSON.parse(
+          new TextDecoder().decode(
+            safetensorsData.slice(offset, offset + headerSize)
+          )
+        )
+        r(header.__metadata__)
+      } catch {
+        r(undefined)
+      }
     }
 
-    var slice = file.slice(0, 1024 * 1024 * 4)
+    const slice = file.slice(0, 1024 * 1024 * 4)
     reader.readAsArrayBuffer(slice)
   })
 }
