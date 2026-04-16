@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
+import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
@@ -25,7 +26,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </p>
 
     <BrandButton
-      href="https://www.comfy.org"
+      :href="externalLinks.app"
       :label="t('cloud.hero.cta', locale)"
       class="mt-12 w-full text-center lg:mt-8 lg:w-auto"
     />

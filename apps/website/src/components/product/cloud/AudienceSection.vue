@@ -5,6 +5,8 @@ import { t } from '../../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+const headingParts = t('cloud.audience.heading', locale).split('{creators}')
+
 const cards = [
   {
     labelKey: 'cloud.audience.creators.label' as const,
@@ -26,11 +28,11 @@ const cards = [
     <h2
       class="text-primary-comfy-canvas text-3.5xl/tight mx-auto max-w-3xl text-center font-light lg:text-5xl/tight"
     >
-      {{ t('cloud.audience.heading', locale).split('{creators}')[0]
+      {{ headingParts[0]
       }}<span class="text-white">{{
         t('cloud.audience.headingHighlight', locale)
       }}</span
-      >{{ t('cloud.audience.heading', locale).split('{creators}')[1] }}
+      >{{ headingParts[1] }}
     </h2>
 
     <div

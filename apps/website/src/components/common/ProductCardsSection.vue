@@ -21,13 +21,6 @@ const {
 
 const routes = getRoutes(locale)
 
-const allCards: (ReturnType<typeof cardDef> & { product: Product })[] = [
-  cardDef('local', routes.download, 'bg-primary-warm-gray'),
-  cardDef('cloud', routes.cloud, 'bg-secondary-mauve'),
-  cardDef('api', routes.api, 'bg-primary-comfy-plum'),
-  cardDef('enterprise', routes.cloudEnterprise, 'bg-illustration-forest')
-]
-
 function cardDef(product: Product, href: string, bg: string) {
   return {
     product,
@@ -38,6 +31,13 @@ function cardDef(product: Product, href: string, bg: string) {
     bg
   }
 }
+
+const allCards: (ReturnType<typeof cardDef> & { product: Product })[] = [
+  cardDef('local', routes.download, 'bg-primary-warm-gray'),
+  cardDef('cloud', routes.cloud, 'bg-secondary-mauve'),
+  cardDef('api', routes.api, 'bg-primary-comfy-plum'),
+  cardDef('enterprise', routes.cloudEnterprise, 'bg-illustration-forest')
+]
 
 const cards = excludeProduct
   ? allCards.filter((c) => c.product !== excludeProduct)

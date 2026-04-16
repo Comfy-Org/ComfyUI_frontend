@@ -261,13 +261,12 @@ const translations = {
     'zh-CN': '单点登录'
   },
   'enterprise.team.feature2.description': {
-    en: 'Most things you build locally run on Comfy Cloud \u2014 same file, same results, powerful GPUs on demand. When a job outgrows your machine, push it to the cloud. No conversion, no rework.',
-    'zh-CN':
-      '你在本地构建的大部分内容都能在 Comfy Cloud 上运行——相同文件、相同结果、按需使用强大 GPU。当任务超出你的机器能力时，推送到云端。无需转换，无需返工。'
+    en: 'Enable secure, centralized user authentication across your organization with SSO and SCIM provisioning.',
+    'zh-CN': '为您的组织启用集中式安全用户认证，支持 SSO 和 SCIM 配置。'
   },
   'enterprise.team.feature2.cta': {
-    en: 'SEE CLOUD FEATURES',
-    'zh-CN': '查看云端特性'
+    en: 'SET UP SSO',
+    'zh-CN': '设置 SSO'
   },
   'enterprise.team.feature3.title': {
     en: 'App Mode',
@@ -548,7 +547,7 @@ const translations = {
 
   // Download – FAQSection
   'download.faq.heading': {
-    en: "FAQ's",
+    en: 'FAQs',
     'zh-CN': '常见问题'
   },
   'download.faq.1.q': {
@@ -878,7 +877,7 @@ const translations = {
 
   // Cloud – FAQSection
   'cloud.faq.heading': {
-    en: "FAQ's",
+    en: 'FAQs',
     'zh-CN': '常见问题'
   },
   'cloud.faq.1.q': {

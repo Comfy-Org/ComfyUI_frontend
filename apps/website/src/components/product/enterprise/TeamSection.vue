@@ -24,7 +24,7 @@ const features = [
     title: t('enterprise.team.feature3.title', locale),
     description: t('enterprise.team.feature3.description', locale),
     ctaText: t('enterprise.hero.contactSales', locale),
-    ctaHref: '/contact'
+    ctaHref: routes.contact
   }
 ]
 </script>

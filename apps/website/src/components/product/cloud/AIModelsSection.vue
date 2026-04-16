@@ -22,45 +22,43 @@ type ModelCard = {
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+const badgeBase =
+  'bg-white/20 text-white backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink'
+
 const modelCards: ModelCard[] = [
   {
     titleKey: 'cloud.aiModels.card.grokImagine',
     imageSrc: '/images/cloud/ai-models/grok-imagine.webp',
     badgeIcon: '/icons/ai-models/grok.svg',
-    badgeClass:
-      'bg-white/20 text-white rounded-2xl backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink',
+    badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
   },
   {
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
     imageSrc: '/images/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
-    badgeClass:
-      'bg-white/20 text-white rounded-full backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink',
+    badgeClass: `${badgeBase} rounded-full`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
   },
   {
     titleKey: 'cloud.aiModels.card.ltx23',
     imageSrc: '/images/cloud/ai-models/ltx-23.webp',
     badgeIcon: '/icons/ai-models/ltx.svg',
-    badgeClass:
-      'bg-white/20 text-white rounded-full backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink',
+    badgeClass: `${badgeBase} rounded-full`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
     imageSrc: '/images/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
-    badgeClass:
-      'bg-white/20 text-white rounded-full backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink',
+    badgeClass: `${badgeBase} rounded-full`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
     imageSrc: '/images/cloud/ai-models/wan-22.webp',
     badgeIcon: '/icons/ai-models/wan.svg',
-    badgeClass:
-      'bg-white/20 text-white rounded-full backdrop-blur-sm group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink',
+    badgeClass: `${badgeBase} rounded-full`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   }
 ]

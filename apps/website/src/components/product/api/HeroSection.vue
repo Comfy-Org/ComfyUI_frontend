@@ -32,7 +32,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <a
             :href="externalLinks.app"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-full px-8 py-4 text-center text-sm font-bold tracking-wider transition-opacity hover:opacity-90 lg:min-w-60"
           >
             {{ t('api.hero.getApiKeys', locale) }}
@@ -40,7 +40,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           <a
             :href="externalLinks.docs"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink rounded-full border px-8 py-4 text-center text-sm font-bold tracking-wider transition-colors lg:min-w-60"
           >
             {{ t('api.hero.viewDocs', locale) }}

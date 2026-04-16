@@ -59,6 +59,7 @@ function toggle(index: number) {
         >
           <button
             :id="`faq-trigger-${index}`"
+            type="button"
             :aria-expanded="expanded[index]"
             :aria-controls="`faq-panel-${index}`"
             :class="
@@ -89,8 +90,9 @@ function toggle(index: number) {
             </span>
           </button>
           <section
-            v-if="expanded[index]"
+            v-show="expanded[index]"
             :id="`faq-panel-${index}`"
+            role="region"
             :aria-labelledby="`faq-trigger-${index}`"
             class="pb-6"
           >

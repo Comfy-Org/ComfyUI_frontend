@@ -14,7 +14,8 @@ const baseRoutes = {
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   videos: '/videos',
-  caseStudies: '/case-studies'
+  caseStudies: '/case-studies',
+  contact: '/contact'
 } as const
 
 type Routes = typeof baseRoutes

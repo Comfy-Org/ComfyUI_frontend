@@ -92,10 +92,9 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
         <img
           :key="activeLeft"
           :src="activeLeft"
-          :alt="activeLabel"
+          alt=""
+          aria-hidden="true"
           class="absolute inset-0 size-full object-cover"
-          loading="lazy"
-          decoding="async"
         />
       </Transition>
     </div>
@@ -108,10 +107,9 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
         <img
           :key="activeRight"
           :src="activeRight"
-          :alt="activeLabel"
+          alt=""
+          aria-hidden="true"
           class="absolute inset-0 size-full object-cover"
-          loading="lazy"
-          decoding="async"
         />
       </Transition>
     </div>
