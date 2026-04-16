@@ -461,32 +461,27 @@ const cells = computed<LayoutCellPlacement[]>(() => {
   // Action cells on row 1, right of builder/share. Only mount when
   // a history item is selected (mirrors LinearPreview's top bar).
   if (hasSelection.value) {
-    const actionStartCol = col
-    out.push({
-      id: 'action-rerun',
-      col: actionStartCol,
-      row: 1,
-      kind: 'action-rerun'
-    })
+    out.push({ id: 'action-rerun', col: col++, row: 1, kind: 'action-rerun' })
     out.push({
       id: 'action-reuse-params',
-      col: actionStartCol + 1,
+      col: col++,
       row: 1,
       kind: 'action-reuse-params'
     })
     out.push({
       id: 'action-download',
-      col: actionStartCol + 2,
+      col: col++,
       row: 1,
       kind: 'action-download'
     })
     out.push({
       id: 'action-info',
-      col: actionStartCol + 3,
+      col,
       row: 1,
       colSpan: 3,
       kind: 'action-info'
     })
+    col += 3
   }
 
   out.push({
@@ -497,13 +492,13 @@ const cells = computed<LayoutCellPlacement[]>(() => {
     kind: 'system-feedback'
   })
 
-  // History thumbs stack down column 1 starting below the chrome row.
-  const thumbStartRow = 2
+  // History thumbs sit on row 1, right of the action cells. Keeps column 1
+  // clear so the left-dock panel snaps flush against the SideToolbar.
   for (let i = 0; i < historyThumbs.value.length; i++) {
     out.push({
       id: historyThumbs.value[i].id,
-      col: 1,
-      row: thumbStartRow + i,
+      col: col + i,
+      row: 1,
       kind: 'output-thumb'
     })
   }

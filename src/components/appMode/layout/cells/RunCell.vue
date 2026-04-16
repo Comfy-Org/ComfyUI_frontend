@@ -7,10 +7,12 @@
  */
 import { useI18n } from 'vue-i18n'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useCommandStore } from '@/stores/commandStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
+const { toastErrorHandler } = useErrorHandling()
 
 async function handleClick(e: Event) {
   const priority = 'shiftKey' in e && (e as KeyboardEvent | MouseEvent).shiftKey
@@ -23,9 +25,7 @@ async function handleClick(e: Event) {
       }
     })
   } catch (error) {
-    // Surface failures in the console so we can diagnose instead of
-    // the button silently doing nothing.
-    console.error('[RunCell] Queue prompt failed:', error)
+    toastErrorHandler(error)
   }
 }
 </script>

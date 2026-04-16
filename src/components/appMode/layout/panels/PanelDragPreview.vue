@@ -54,10 +54,7 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
   );
-  left: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
-  );
+  left: var(--layout-outer-padding);
   bottom: calc(
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
@@ -78,10 +75,7 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
   );
-  left: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
-  );
+  left: var(--layout-outer-padding);
   height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 .panel-drag-preview--float-bl {
@@ -89,10 +83,7 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
   );
-  left: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
-  );
+  left: var(--layout-outer-padding);
   height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 </style>

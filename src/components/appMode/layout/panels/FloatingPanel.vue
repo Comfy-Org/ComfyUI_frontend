@@ -81,19 +81,15 @@ const positionClass = computed(() => [
   right: var(--layout-outer-padding);
   bottom: var(--layout-outer-padding);
 }
-/* Left-side presets: left edge clears col 1 (icons), top edge clears
-   row 1 (mode toggle + action cells). This places the panel's
-   top-left corner snug at the intersection of the icon column and
-   the mode-toggle row. */
+/* Left-side presets: top edge clears row 1 (mode toggle + action cells);
+   left edge sits flush at the outer padding (mirroring right-dock) so
+   the panel docks snug against the SideToolbar. */
 .floating-panel--left-dock {
   top: calc(
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
   );
-  left: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
-  );
+  left: var(--layout-outer-padding);
   bottom: calc(
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
@@ -114,10 +110,7 @@ const positionClass = computed(() => [
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
   );
-  left: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
-  );
+  left: var(--layout-outer-padding);
   height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 .floating-panel--float-bl {
@@ -125,10 +118,7 @@ const positionClass = computed(() => [
     var(--layout-outer-padding) + var(--layout-cell-size) +
       var(--layout-gutter-min)
   );
-  left: calc(
-    var(--layout-outer-padding) + var(--layout-cell-size) +
-      var(--layout-gutter-min)
-  );
+  left: var(--layout-outer-padding);
   height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 
