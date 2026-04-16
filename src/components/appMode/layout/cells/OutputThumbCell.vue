@@ -8,12 +8,15 @@
  * and emits updateSelection, which drives the main canvas.
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   asset: AssetItem
@@ -49,7 +52,7 @@ function onClick() {
       class="output-thumb__media"
       loading="lazy"
       :src="output.url"
-      :alt="asset.name ?? 'output thumbnail'"
+      :alt="asset.name ?? t('linearMode.outputThumbAlt')"
     />
     <video
       v-else-if="getMediaType(output) === 'video'"

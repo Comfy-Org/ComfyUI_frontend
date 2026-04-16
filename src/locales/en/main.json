@@ -3309,6 +3309,8 @@
     "hasCreditCost": "Requires additional credits",
     "viewGraph": "View node graph",
     "mobileNoWorkflow": "This workflow hasn't been built for app mode. Try a different one.",
+    "outputThumbAlt": "Output thumbnail",
+    "blockDragReorderAria": "Drag to reorder {kind} block",
     "welcome": {
       "title": "App Mode",
       "message": "A simplified view that hides the node graph so you can focus on creating.",

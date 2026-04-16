@@ -8,6 +8,7 @@
  * rows, vertical line between columns.
  */
 import { computed, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import InputCell from '../cells/InputCell.vue'
 import type { InputCellEntry } from '../cells/InputCell.vue'
@@ -15,6 +16,8 @@ import RunCell from '../cells/RunCell.vue'
 import BatchCountCell from '../cells/BatchCountCell.vue'
 import type { BlockPos, BlockRow, DropTarget } from './panelTypes'
 import { useBlockDrag } from './useBlockDrag'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   rows: BlockRow[]
@@ -87,7 +90,9 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
             <button
               type="button"
               class="panel-block__grip"
-              :aria-label="`Drag to reorder ${block.kind} block`"
+              :aria-label="
+                t('linearMode.blockDragReorderAria', { kind: block.kind })
+              "
               @pointerdown="startDrag({ row: rowIdx, col: colIdx }, $event)"
             >
               <span class="panel-block__grip-dots" aria-hidden="true" />
