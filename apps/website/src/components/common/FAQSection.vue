@@ -33,8 +33,7 @@ const faqs = computed(() =>
   }))
 )
 
-// Start expanded so answers are visible on load
-const expanded = reactive(faqKeys.map(() => true))
+const expanded = reactive(faqKeys.map(() => false))
 
 function toggle(index: number) {
   expanded[index] = !expanded[index]
