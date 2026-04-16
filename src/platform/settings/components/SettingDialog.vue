@@ -58,30 +58,26 @@
     </template>
 
     <template #content>
-      <div class="w-full text-sm">
-        <template v-if="activePanel">
-          <Suspense>
-            <component :is="activePanel.component" v-bind="activePanel.props" />
-            <template #fallback>
-              <div>
-                {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
-              </div>
-            </template>
-          </Suspense>
-        </template>
-        <template v-else-if="inSearch">
-          <SettingsPanel :setting-groups="searchResults" />
-        </template>
-        <template v-else-if="activeSettingCategory">
-          <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
-          <ColorPaletteMessage
-            v-if="activeSettingCategory.label === 'Appearance'"
-          />
-          <SettingsPanel
-            :setting-groups="sortedGroups(activeSettingCategory)"
-          />
-        </template>
-      </div>
+      <template v-if="activePanel">
+        <Suspense>
+          <component :is="activePanel.component" v-bind="activePanel.props" />
+          <template #fallback>
+            <div>
+              {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
+            </div>
+          </template>
+        </Suspense>
+      </template>
+      <template v-else-if="inSearch">
+        <SettingsPanel :setting-groups="searchResults" />
+      </template>
+      <template v-else-if="activeSettingCategory">
+        <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
+        <ColorPaletteMessage
+          v-if="activeSettingCategory.label === 'Appearance'"
+        />
+        <SettingsPanel :setting-groups="sortedGroups(activeSettingCategory)" />
+      </template>
     </template>
   </BaseModalLayout>
 </template>
