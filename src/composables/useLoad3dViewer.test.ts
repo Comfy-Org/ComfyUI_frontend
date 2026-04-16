@@ -430,6 +430,17 @@ describe('useLoad3dViewer', () => {
 
       expect(mockLoad3d.updateStatusMouseOnViewer).toHaveBeenCalledWith(false)
     })
+
+    it('should sync hover state when mouseenter fires before init', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      viewer.handleMouseEnter()
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(mockLoad3d.updateStatusMouseOnViewer).toHaveBeenCalledWith(true)
+    })
   })
 
   describe('restoreInitialState', () => {
