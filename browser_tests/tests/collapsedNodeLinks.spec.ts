@@ -64,3 +64,30 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'Collapsed node links inside subgraph on first entry',
+  { tag: ['@canvas', '@node', '@vue-nodes', '@subgraph'] },
+  () => {
+    test('renders collapsed node links correctly after fitView on first subgraph entry', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-collapsed-node'
+      )
+      await comfyPage.nextFrame()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+
+      // fitView runs on first entry and re-syncs slot layouts for the
+      // pre-collapsed KSampler. Screenshot captures the rendered canvas
+      // links to guard against regressing the stale-coordinate bug.
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'subgraph-entry-collapsed-node-links.png'
+      )
+    })
+  }
+)
