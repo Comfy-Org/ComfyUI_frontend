@@ -646,6 +646,13 @@ const cells = computed<LayoutCellPlacement[]>(() => {
   /* Own stacking context so our z-indexed children (background, grid,
      panel, drag preview) compose cleanly without reaching outside. */
   isolation: isolate;
+  /* Reserve the right-dock panel's footprint so centered children
+     (LinearWelcome) visually center in the panel-free area rather than
+     the raw viewport. Consumed as padding-right in LinearWelcome;
+     defaults to 0 outside .layout-view (old splitter App Mode). */
+  --welcome-panel-offset: calc(
+    var(--panel-dock-width, 420px) + var(--layout-outer-padding, 16px)
+  );
 }
 
 .layout-view__background {
