@@ -233,7 +233,7 @@ const showNavButtons = computed(
 )
 
 const actionButtonClass =
-  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-md transition-colors hover:bg-base-foreground/90'
+  'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground text-base-background shadow-interface transition-colors hover:bg-base-foreground/90'
 
 const toggleButtonClass = actionButtonClass
 
