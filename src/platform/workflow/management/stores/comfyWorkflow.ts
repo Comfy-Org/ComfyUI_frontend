@@ -12,13 +12,27 @@ import type { MissingNodeType } from '@/types/comfy'
 
 export interface InputWidgetConfig {
   height?: number
+  /** 1-indexed grid column. Undefined in legacy workflows. */
+  col?: number
+  /** 1-indexed grid row. Undefined in legacy workflows. */
+  row?: number
+  /** Number of grid columns the widget spans. Defaults to full width. */
+  colSpan?: number
+  /** Number of grid rows the widget spans. Defaults to 1. */
+  rowSpan?: number
 }
 
 export type LinearInput = [NodeId, string, InputWidgetConfig?]
 
+export interface LinearLayoutConfig {
+  /** Grid column count. Defaults to 4. */
+  columns?: number
+}
+
 export interface LinearData {
   inputs: LinearInput[]
   outputs: NodeId[]
+  layout?: LinearLayoutConfig
 }
 
 export interface PendingWarnings {

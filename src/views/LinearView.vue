@@ -8,6 +8,7 @@ import { computed, useTemplateRef } from 'vue'
 
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
+import BentoView from '@/components/appMode/bento/BentoView.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -48,6 +49,11 @@ const showLeftBuilder = computed(
 const showRightBuilder = computed(
   () => sidebarOnLeft.value && isArrangeMode.value
 )
+
+// Bento prototype: show new full-viewport canvas when not in any builder
+// mode and the workflow has outputs configured. Builder modes still use
+// the old Splitter so existing flows aren't disrupted.
+const showBentoView = computed(() => !isBuilderMode.value && hasOutputs.value)
 const hasLeftPanel = computed(
   () =>
     isArrangeMode.value ||
@@ -111,7 +117,14 @@ function dragDrop(e: DragEvent) {
         <TopbarSubscribeButton />
       </div>
     </div>
+    <div
+      v-if="showBentoView"
+      class="relative h-[calc(100%-var(--workflow-tabs-height))] w-full"
+    >
+      <BentoView />
+    </div>
     <Splitter
+      v-else
       :key="splitterKey"
       class="bg-comfy-menu-secondary-bg h-[calc(100%-var(--workflow-tabs-height))] w-full border-none"
       @resizestart="$event.originalEvent.preventDefault()"

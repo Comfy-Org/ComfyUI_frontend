@@ -128,6 +128,82 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).toBeNull()
     })
+
+    it('validates 3-tuple with grid layout fields', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [
+            [1, 'prompt', { col: 1, row: 1, colSpan: 4, rowSpan: 3 }],
+            [2, 'seed', { col: 1, row: 4, colSpan: 2, rowSpan: 1 }]
+          ],
+          outputs: []
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs![0]).toEqual([
+        1,
+        'prompt',
+        { col: 1, row: 1, colSpan: 4, rowSpan: 3 }
+      ])
+    })
+
+    it('validates height alongside grid fields (mixed legacy + new)', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [[1, 'prompt', { height: 200, col: 1, colSpan: 4 }]],
+          outputs: []
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+    })
+
+    it('rejects negative or zero grid values', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', { col: 0 }]], outputs: [] }
+      }
+      expect(await validateComfyWorkflow(workflow)).toBeNull()
+
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', { colSpan: -1 }]], outputs: [] }
+      }
+      expect(await validateComfyWorkflow(workflow)).toBeNull()
+    })
+
+    it('validates optional layout block', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [[1, 'prompt']],
+          outputs: [],
+          layout: { columns: 6 }
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.layout).toEqual({ columns: 6 })
+    })
+
+    it('preserves unknown layout fields (forward-compat)', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [[1, 'prompt']],
+          outputs: [],
+          layout: { columns: 4, futureField: 'preserved' }
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(
+        (result!.extra!.linearData!.layout as Record<string, unknown>)
+          .futureField
+      ).toBe('preserved')
+    })
   })
 
   it('workflow.nodes.pos', async () => {

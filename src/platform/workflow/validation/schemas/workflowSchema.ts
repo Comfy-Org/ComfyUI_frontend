@@ -291,13 +291,27 @@ const zExtra = z
               z.tuple([
                 zNodeId,
                 z.string(),
-                z.object({ height: z.number().optional() }).passthrough()
+                z
+                  .object({
+                    height: z.number().optional(),
+                    col: z.number().int().positive().optional(),
+                    row: z.number().int().positive().optional(),
+                    colSpan: z.number().int().positive().optional(),
+                    rowSpan: z.number().int().positive().optional()
+                  })
+                  .passthrough()
               ]),
               z.tuple([zNodeId, z.string()])
             ])
           )
           .optional(),
-        outputs: z.array(zNodeId).optional()
+        outputs: z.array(zNodeId).optional(),
+        layout: z
+          .object({
+            columns: z.number().int().positive().optional()
+          })
+          .passthrough()
+          .optional()
       })
       .optional()
   })
