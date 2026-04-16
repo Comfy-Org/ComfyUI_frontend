@@ -108,11 +108,6 @@ Browser tests in this project follow a specific organization pattern:
   - Organized by functionality (e.g., `widget.spec.ts`, `interaction.spec.ts`)
   - Snapshot directories (e.g., `widget.spec.ts-snapshots/`) contain reference screenshots
 
-- **Helper Unit Tests**: Colocated alongside browser-test helpers and fixtures
-  - Use `.test.ts`
-  - Run under Vitest, not Playwright
-  - Do not place them under `browser_tests/tests/`, which is reserved for Playwright `*.spec.ts`
-
 - **Utilities**: Located in `utils/` - Common utility functions
   - `litegraphUtils.ts` - Utilities for working with LiteGraph nodes
 

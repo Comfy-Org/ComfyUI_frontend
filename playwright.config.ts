@@ -20,7 +20,6 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 
 export default defineConfig({
   testDir: './browser_tests',
-  testMatch: ['tests/**/*.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: 'html',
