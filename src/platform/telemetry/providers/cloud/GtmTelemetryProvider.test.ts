@@ -133,6 +133,55 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
+    it('does not reset ecommerce when GTM is not initialized', () => {
+      window.__CONFIG__ = {
+        ga_measurement_id: 'G-TEST123'
+      }
+
+      const provider = new GtmTelemetryProvider()
+
+      provider.trackMonthlySubscriptionSucceeded({
+        checkout_attempt_id: 'attempt-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        value: 336,
+        currency: 'USD',
+        ecommerce: {
+          currency: 'USD',
+          value: 336,
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'yearly',
+              price: 336,
+              quantity: 1
+            }
+          ]
+        }
+      })
+
+      const dataLayer = window.dataLayer as unknown[]
+
+      expect(
+        dataLayer.some(
+          (entry) =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            'ecommerce' in (entry as Record<string, unknown>)
+        )
+      ).toBe(false)
+      expect(
+        dataLayer.some(
+          (entry) =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            (entry as Record<string, unknown>).event === 'subscription_success'
+        )
+      ).toBe(false)
+    })
+
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
       provider.trackRunButton({ trigger_source: 'button' })

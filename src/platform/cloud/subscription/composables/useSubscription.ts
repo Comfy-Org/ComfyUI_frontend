@@ -21,6 +21,7 @@ import type { operations } from '@/types/comfyRegistryTypes'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+  clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
   hasPendingSubscriptionCheckoutAttempt,
   recordPendingSubscriptionCheckoutAttempt
@@ -212,6 +213,11 @@ function useSubscriptionInternal() {
       )
     }
 
+    const checkoutWindow = window.open(response.checkout_url, '_blank')
+    if (!checkoutWindow) {
+      return
+    }
+
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
@@ -225,8 +231,6 @@ function useSubscriptionInternal() {
           ? { previous_cycle: 'monthly' as const }
           : {})
     })
-
-    window.open(response.checkout_url, '_blank')
   }, reportError)
 
   const showSubscriptionDialog = (options?: {
@@ -284,7 +288,7 @@ function useSubscriptionInternal() {
   }
 
   const recoverPendingSubscriptionCheckout = async (
-    source: 'pageshow' | 'visibilitychange' | 'retry'
+    source: 'bootstrap' | 'pageshow' | 'visibilitychange' | 'retry'
   ) => {
     if (
       !isCloud ||
@@ -346,7 +350,7 @@ function useSubscriptionInternal() {
       return
     }
 
-    pendingCheckoutRecoveryAttempt = 0
+    stopPendingCheckoutRecovery()
     void recoverPendingSubscriptionCheckout('retry')
   }
 
@@ -371,11 +375,19 @@ function useSubscriptionInternal() {
   })
 
   watch(
-    () => isLoggedIn.value,
-    async (loggedIn) => {
+    () => [authStore.isInitialized, isLoggedIn.value] as const,
+    async ([authInitialized, loggedIn]) => {
+      if (!authInitialized) {
+        return
+      }
+
       if (loggedIn && isCloud) {
         try {
-          await fetchSubscriptionStatus()
+          if (hasPendingSubscriptionCheckoutAttempt()) {
+            await recoverPendingSubscriptionCheckout('bootstrap')
+          } else {
+            await fetchSubscriptionStatus()
+          }
         } catch (error) {
           // Network errors are expected during navigation/component unmount
           // and when offline - log for debugging but don't surface to user
@@ -385,6 +397,7 @@ function useSubscriptionInternal() {
         }
       } else {
         subscriptionStatus.value = null
+        clearPendingSubscriptionCheckoutAttempt()
         stopPendingCheckoutRecovery()
         stopCancellationWatcher()
         isInitialized.value = true

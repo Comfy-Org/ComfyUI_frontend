@@ -480,6 +480,11 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           // TODO(COMFY-StripeProration): Remove once backend checkout creation mirrors portal proration ("change at billing end")
           await accessBillingPortal()
         } else {
+          const didOpenPortal = await accessBillingPortal(checkoutTier)
+          if (!didOpenPortal) {
+            return
+          }
+
           recordPendingSubscriptionCheckoutAttempt({
             tier: tierKey,
             cycle: currentBillingCycle.value,
@@ -489,7 +494,6 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
               : {}),
             previous_cycle: isYearlySubscription.value ? 'yearly' : 'monthly'
           })
-          await accessBillingPortal(checkoutTier)
         }
       } else {
         await performSubscriptionCheckout(

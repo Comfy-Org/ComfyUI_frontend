@@ -171,7 +171,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackMonthlySubscriptionSucceeded(
     metadata?: SubscriptionSuccessMetadata
   ): void {
-    if (metadata?.ecommerce) {
+    if (this.initialized && metadata?.ecommerce) {
       window.dataLayer?.push({ ecommerce: null })
     }
 

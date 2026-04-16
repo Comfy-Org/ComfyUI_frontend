@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import {
+  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
+  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
   mockIsLoggedIn,
@@ -14,10 +17,12 @@ const {
   mockTelemetry,
   mockUserId,
   mockIsCloud,
+  mockAuthStoreInitialized,
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
+  mockAuthStoreInitialized: { value: true },
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
@@ -141,6 +146,9 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
     getAuthHeader: mockGetAuthHeader,
+    get isInitialized() {
+      return mockAuthStoreInitialized.value
+    },
     get userId() {
       return mockUserId.value
     }
@@ -153,6 +161,7 @@ global.fetch = vi.fn()
 
 describe('useSubscription', () => {
   afterEach(() => {
+    vi.useRealTimers()
     scope?.stop()
     scope = undefined
     setDistribution('localhost')
@@ -172,6 +181,7 @@ describe('useSubscription', () => {
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
+    mockAuthStoreInitialized.value = true
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
@@ -324,7 +334,7 @@ describe('useSubscription', () => {
       // Mock window.open
       const windowOpenSpy = vi
         .spyOn(window, 'open')
-        .mockImplementation(() => null)
+        .mockImplementation(() => window as unknown as Window)
 
       const { subscribe } = useSubscriptionWithScope()
 
@@ -356,6 +366,30 @@ describe('useSubscription', () => {
         cycle: 'monthly',
         checkout_type: 'new'
       })
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('should not persist a pending checkout attempt when the popup is blocked', async () => {
+      const checkoutUrl = 'https://checkout.stripe.com/test'
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: checkoutUrl })
+      } as Response)
+
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => null)
+
+      const { subscribe } = useSubscriptionWithScope()
+
+      await subscribe()
+
+      expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
 
       windowOpenSpy.mockRestore()
     })
@@ -497,6 +531,154 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    it('does not clear pending attempts before auth initialization resolves', async () => {
+      mockAuthStoreInitialized.value = false
+      mockIsLoggedIn.value = false
+
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-pre-auth',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).not.toBeNull()
+      })
+    })
+
+    it('restarts the retry backoff when a new pending attempt is recorded', async () => {
+      vi.useFakeTimers()
+      mockIsLoggedIn.value = true
+
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-initial',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: '',
+          renewal_date: ''
+        })
+      } as Response)
+
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+
+      await vi.advanceTimersByTimeAsync(3000)
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(2)
+      })
+
+      vi.mocked(global.fetch).mockClear()
+
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-replacement',
+          started_at_ms: Date.now(),
+          tier: 'creator',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      window.dispatchEvent(new Event(PENDING_SUBSCRIPTION_CHECKOUT_EVENT))
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+
+      vi.mocked(global.fetch).mockClear()
+
+      await vi.advanceTimersByTimeAsync(3000)
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+
+      vi.useRealTimers()
+    })
+
+    it('schedules retry recovery when bootstrap status fetch fails', async () => {
+      vi.useFakeTimers()
+      mockIsLoggedIn.value = true
+
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-bootstrap',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      vi.mocked(global.fetch)
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+        .mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            is_active: false,
+            subscription_id: '',
+            renewal_date: ''
+          })
+        } as Response)
+
+      useSubscriptionWithScope()
+
+      await vi.advanceTimersByTimeAsync(3000)
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(2)
+      })
+
+      vi.useRealTimers()
+    })
+
+    it('clears pending checkout attempts when initialized while logged out', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-logout',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      mockIsLoggedIn.value = false
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+        ).toBeNull()
       })
     })
   })

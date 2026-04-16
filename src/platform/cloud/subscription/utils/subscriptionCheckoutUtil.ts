@@ -115,15 +115,23 @@ export async function performSubscriptionCheckout(
       })
     }
 
-    recordPendingSubscriptionCheckoutAttempt({
-      tier: tierKey,
-      cycle: currentBillingCycle,
-      checkout_type: 'new'
-    })
-
     if (openInNewTab) {
-      window.open(data.checkout_url, '_blank')
+      const checkoutWindow = window.open(data.checkout_url, '_blank')
+      if (!checkoutWindow) {
+        return
+      }
+
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
+      })
     } else {
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: tierKey,
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
+      })
       globalThis.location.href = data.checkout_url
     }
   }

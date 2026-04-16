@@ -67,7 +67,13 @@ const createAttemptId = (): string => {
 }
 
 const getStorage = (): Storage | null => {
-  const storage = globalThis.localStorage
+  let storage: Storage | null = null
+
+  try {
+    storage = globalThis.localStorage
+  } catch {
+    return null
+  }
 
   if (
     !storage ||
@@ -166,13 +172,17 @@ const normalizeAttempt = (
   }
 }
 
-const clearPendingSubscriptionCheckoutAttempt = (): void => {
+export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   const storage = getStorage()
   if (!storage) {
     return
   }
 
-  storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+  try {
+    storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+  } catch {
+    return
+  }
   dispatchPendingCheckoutChangeEvent()
 }
 
@@ -183,9 +193,13 @@ const getPendingSubscriptionCheckoutAttempt =
       return null
     }
 
-    const rawAttempt = storage.getItem(
-      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-    )
+    let rawAttempt: string | null
+
+    try {
+      rawAttempt = storage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    } catch {
+      return null
+    }
 
     if (!rawAttempt) {
       return null
@@ -236,10 +250,14 @@ export const recordPendingSubscriptionCheckoutAttempt = (
     ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
   }
 
-  storage.setItem(
-    PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
-    JSON.stringify(attempt)
-  )
+  try {
+    storage.setItem(
+      PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+      JSON.stringify(attempt)
+    )
+  } catch {
+    return attempt
+  }
   dispatchPendingCheckoutChangeEvent()
 
   return attempt

@@ -587,3 +587,4 @@ export type TelemetryEventProperties =
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata
+  | SubscriptionSuccessMetadata
