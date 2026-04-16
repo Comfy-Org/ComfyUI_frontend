@@ -52,7 +52,6 @@ const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
 
 const activeLeft = computed(() => categories[activeCategory.value].leftImg)
 const activeRight = computed(() => categories[activeCategory.value].rightImg)
-const activeLabel = computed(() => categories[activeCategory.value].label)
 
 const uid = useId()
 const leftBlobId = `left-blob-${uid}`
@@ -140,6 +139,7 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
                 : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
             )
           "
+          :aria-current="index === activeCategory ? 'true' : undefined"
           @click="scrollToIndex(index)"
         >
           {{ category.label }}

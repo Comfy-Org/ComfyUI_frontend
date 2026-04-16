@@ -5,6 +5,7 @@ import type { Locale } from '../../../i18n/translations'
 
 import { getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -33,12 +34,12 @@ const routes = computed(() => getRoutes(locale))
         <div
           class="mt-10 flex w-full max-w-md flex-col lg:w-auto lg:max-w-none"
         >
-          <a
+          <BrandButton
             :href="routes.contact"
-            class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-full px-8 py-4 text-center text-sm font-bold tracking-wider transition-opacity hover:opacity-90 lg:min-w-60"
-          >
-            {{ t('enterprise.hero.contactSales', locale) }}
-          </a>
+            :label="t('enterprise.hero.contactSales', locale)"
+            size="lg"
+            class-name="text-center lg:min-w-60"
+          />
         </div>
       </div>
 

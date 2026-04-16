@@ -15,6 +15,10 @@ const meta: Meta<typeof BrandButton> = {
     variant: {
       control: { type: 'select' },
       options: ['solid', 'outline']
+    },
+    size: {
+      control: { type: 'select' },
+      options: ['sm', 'lg']
     }
   },
   args: {
@@ -38,13 +42,33 @@ export const Outline: Story = {
   }
 }
 
+export const LargeSolid: Story = {
+  args: {
+    variant: 'solid',
+    size: 'lg'
+  }
+}
+
+export const LargeOutline: Story = {
+  args: {
+    variant: 'outline',
+    size: 'lg'
+  }
+}
+
 export const AllVariants: Story = {
   render: () => ({
     components: { BrandButton },
     template: `
-      <div class="flex gap-4">
-        <BrandButton href="#" label="SOLID BUTTON" variant="solid" />
-        <BrandButton href="#" label="OUTLINE BUTTON" variant="outline" />
+      <div class="flex flex-col gap-4">
+        <div class="flex gap-4 items-center">
+          <BrandButton href="#" label="SOLID SM" variant="solid" size="sm" />
+          <BrandButton href="#" label="OUTLINE SM" variant="outline" size="sm" />
+        </div>
+        <div class="flex gap-4 items-center">
+          <BrandButton href="#" label="SOLID LG" variant="solid" size="lg" />
+          <BrandButton href="#" label="OUTLINE LG" variant="outline" size="lg" />
+        </div>
       </div>
     `
   })

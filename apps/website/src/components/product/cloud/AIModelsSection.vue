@@ -103,7 +103,7 @@ function getCardClass(layoutClass: string): string {
             >
               <img
                 :src="card.imageSrc"
-                alt=""
+                :alt="t(card.titleKey, locale)"
                 class="size-full object-cover"
                 loading="lazy"
                 decoding="async"

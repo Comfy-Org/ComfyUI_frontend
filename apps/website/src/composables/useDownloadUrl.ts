@@ -1,3 +1,5 @@
+import { onMounted, ref } from 'vue'
+
 import { externalLinks } from '@/config/routes'
 
 const downloadUrls = {
@@ -12,8 +14,6 @@ function isMobile(ua: string): boolean {
 // TODO: Only Windows x64 and macOS arm64 are available today.
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 function getDownloadUrl(): string {
-  if (typeof navigator === 'undefined') return externalLinks.github
-
   const ua = navigator.userAgent.toLowerCase()
   if (isMobile(ua)) return externalLinks.github
   if (ua.includes('win')) return downloadUrls.windows
@@ -24,5 +24,9 @@ function getDownloadUrl(): string {
 }
 
 export function useDownloadUrl() {
-  return { downloadUrl: getDownloadUrl() }
+  const downloadUrl = ref<string>(externalLinks.github)
+  onMounted(() => {
+    downloadUrl.value = getDownloadUrl()
+  })
+  return { downloadUrl }
 }

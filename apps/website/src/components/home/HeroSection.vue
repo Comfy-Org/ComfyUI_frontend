@@ -29,10 +29,10 @@ function drawFrame(
 
 onMounted(() => {
   const canvas = canvasRef.value
-  if (!canvas) return
-  const draw = canvas.getContext('2d')
-  if (!draw) return
+  const draw = canvas?.getContext('2d')
+  if (!canvas || !draw) return
 
+  const render = (frame: number) => drawFrame(canvas, draw, frame)
   const reducedMotion = prefersReducedMotion()
   let settledCount = 0
   let hasSuccessfulFrame = false
@@ -41,7 +41,7 @@ onMounted(() => {
     if (success) hasSuccessfulFrame = true
     settledCount++
     if (settledCount === FRAME_COUNT && hasSuccessfulFrame) {
-      drawFrame(canvas, draw, 0)
+      render(0)
       if (reducedMotion) return
       const proxy = { frame: 0 }
       ctx = gsap.context(() => {
@@ -51,7 +51,7 @@ onMounted(() => {
           ease: 'none',
           repeat: -1,
           onUpdate() {
-            drawFrame(canvas, draw, proxy.frame)
+            render(proxy.frame)
           }
         })
       })

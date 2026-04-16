@@ -47,6 +47,8 @@ const cards = [
           :src="card.image"
           :alt="t(card.titleKey, locale)"
           class="aspect-4/3 w-full rounded-4xl object-cover"
+          loading="lazy"
+          decoding="async"
         />
 
         <div class="mt-8 p-6">

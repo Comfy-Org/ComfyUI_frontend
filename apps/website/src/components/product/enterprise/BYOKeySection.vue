@@ -36,7 +36,7 @@ const cards = [
       <h3 class="text-primary-comfy-canvas mt-2 text-xl font-semibold">
         {{ t(card.titleKey, locale) }}
       </h3>
-      <p class="mt-3 text-sm text-smoke-700">
+      <p class="text-primary-comfy-canvas mt-3 text-sm">
         {{ t(card.descriptionKey, locale) }}
       </p>
     </div>

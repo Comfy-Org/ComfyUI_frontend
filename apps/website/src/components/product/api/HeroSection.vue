@@ -3,6 +3,7 @@ import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -29,22 +30,19 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <div
           class="mt-10 flex w-full max-w-md flex-col gap-4 lg:w-auto lg:max-w-none lg:flex-row"
         >
-          <a
+          <BrandButton
             :href="externalLinks.cloud"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-full px-8 py-4 text-center text-sm font-bold tracking-wider transition-opacity hover:opacity-90 lg:min-w-60"
-          >
-            {{ t('api.hero.getApiKeys', locale) }}
-          </a>
-          <a
+            :label="t('api.hero.getApiKeys', locale)"
+            size="lg"
+            class-name="text-center lg:min-w-60"
+          />
+          <BrandButton
             :href="externalLinks.docs"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink rounded-full border px-8 py-4 text-center text-sm font-bold tracking-wider transition-colors lg:min-w-60"
-          >
-            {{ t('api.hero.viewDocs', locale) }}
-          </a>
+            :label="t('api.hero.viewDocs', locale)"
+            variant="outline"
+            size="lg"
+            class-name="text-center lg:min-w-60"
+          />
         </div>
       </div>
 

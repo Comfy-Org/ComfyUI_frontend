@@ -12,7 +12,7 @@ test.describe('Download page @smoke', () => {
   test('CloudBannerSection is visible with cloud link', async ({ page }) => {
     const link = page.getByRole('link', { name: /TRY COMFY CLOUD/i })
     await expect(link).toBeVisible()
-    await expect(link).toHaveAttribute('href', 'https://app.comfy.org')
+    await expect(link).toHaveAttribute('href', 'https://cloud.comfy.org')
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {

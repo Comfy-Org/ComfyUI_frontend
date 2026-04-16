@@ -15,7 +15,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <div class="lg:w-1/2">
         <div
           class="aspect-square w-full rounded-4xl bg-smoke-200"
-          role="img"
           :aria-label="t('enterprise.orchestration.heading', locale)"
         />
       </div>
