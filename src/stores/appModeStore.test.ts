@@ -364,29 +364,29 @@ describe('appModeStore', () => {
       })
     })
 
-    it('calls checkState when input is selected', async () => {
+    it('calls captureCanvasState when input is selected', async () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
       await nextTick()
-      vi.mocked(workflow.changeTracker!.checkState).mockClear()
+      vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
 
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
 
-      expect(workflow.changeTracker!.checkState).toHaveBeenCalled()
+      expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
     })
 
-    it('calls checkState when input is deselected', async () => {
+    it('calls captureCanvasState when input is deselected', async () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
-      vi.mocked(workflow.changeTracker!.checkState).mockClear()
+      vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
 
       store.selectedInputs.splice(0, 1)
       await nextTick()
 
-      expect(workflow.changeTracker!.checkState).toHaveBeenCalled()
+      expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
     })
 
     it('reflects input changes in linearData', async () => {
