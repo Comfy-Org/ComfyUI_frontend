@@ -117,14 +117,14 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
       class="flex flex-col items-center will-change-transform"
     >
       <p
-        class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase lg:text-base"
+        class="text-primary-comfy-yellow sticky mt-4 text-center text-sm font-bold tracking-widest uppercase lg:text-base"
       >
         {{ t('useCase.label', locale) }}
       </p>
 
       <nav
         ref="navRef"
-        class="mt-16 flex max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:gap-20"
+        class="mt-16 flex max-w-5/6 flex-col items-center justify-center gap-12 lg:mt-20 lg:gap-8"
         aria-label="Industry categories"
       >
         <button
@@ -133,7 +133,7 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
           type="button"
           :class="
             cn(
-              'lg:text-6.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
+              'lg:text-4.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',
               index === activeCategory
                 ? 'text-primary-comfy-canvas'
                 : 'text-primary-comfy-canvas/30 hover:text-primary-comfy-canvas/50'
