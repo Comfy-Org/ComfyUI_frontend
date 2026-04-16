@@ -14,13 +14,27 @@ export type SeededJob = {
   detail: JobDetailResponse
 }
 
-function parseLimit(url: URL, total: number): number {
-  const value = Number(url.searchParams.get('limit'))
-  if (!Number.isInteger(value) || value <= 0) {
-    return total
+type JobsListFixtureResponse = Omit<JobsListResponse, 'pagination'> & {
+  pagination: Omit<JobsListResponse['pagination'], 'limit'> & {
+    limit: number | null
+  }
+}
+
+function parseLimit(url: URL): { error?: string; limit?: number } {
+  if (!url.searchParams.has('limit')) {
+    return {}
   }
 
-  return value
+  const value = Number(url.searchParams.get('limit'))
+  if (!Number.isInteger(value)) {
+    return { error: 'limit must be an integer' }
+  }
+
+  if (value <= 0) {
+    return { error: 'limit must be a positive integer' }
+  }
+
+  return { limit: value }
 }
 
 function parseOffset(url: URL): number {
@@ -124,19 +138,31 @@ export class InMemoryJobsBackend {
         })
 
         const offset = parseOffset(url)
+        const { error: limitError, limit } = parseLimit(url)
+        if (limitError) {
+          await route.fulfill({
+            status: 400,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: limitError })
+          })
+          return
+        }
+
         const total = filteredJobs.length
-        const limit = parseLimit(url, total)
-        const visibleJobs = filteredJobs.slice(offset, offset + limit)
+        const visibleJobs =
+          limit === undefined
+            ? filteredJobs.slice(offset)
+            : filteredJobs.slice(offset, offset + limit)
 
         const response = {
           jobs: visibleJobs,
           pagination: {
             offset,
-            limit,
+            limit: limit ?? null,
             total,
             has_more: offset + visibleJobs.length < total
           }
-        } satisfies JobsListResponse
+        } satisfies JobsListFixtureResponse
 
         await route.fulfill({
           status: 200,

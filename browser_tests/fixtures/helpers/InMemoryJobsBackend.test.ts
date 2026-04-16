@@ -19,6 +19,11 @@ type RegisteredRoute = {
 type PageStub = Pick<Page, 'route' | 'unroute'>
 
 type FulfillOptions = NonNullable<Parameters<Route['fulfill']>[0]>
+type JobsListFixtureResponse = Omit<JobsListResponse, 'pagination'> & {
+  pagination: Omit<JobsListResponse['pagination'], 'limit'> & {
+    limit: number | null
+  }
+}
 
 function createPageStub(): {
   page: PageStub
@@ -185,10 +190,14 @@ describe('InMemoryJobsBackend', () => {
       routes,
       'http://localhost/api/jobs'
     )
-    const response = await invokeJsonRoute<JobsListResponse>(listRouteHandler, {
-      url: 'http://localhost/api/jobs?offset=-1&limit=0'
-    })
+    const response = await invokeJsonRoute<JobsListFixtureResponse>(
+      listRouteHandler,
+      {
+        url: 'http://localhost/api/jobs?offset=-1'
+      }
+    )
 
+    expect(response.status).toBe(200)
     expect(response.body.jobs.map((job) => job.id)).toEqual([
       'job-newest',
       'job-middle',
@@ -196,9 +205,32 @@ describe('InMemoryJobsBackend', () => {
     ])
     expect(response.body.pagination).toEqual({
       offset: 0,
-      limit: 3,
+      limit: null,
       total: 3,
       has_more: false
+    })
+  })
+
+  it('returns 400 when limit is not a positive integer', async () => {
+    const { page, routes } = createPageStub()
+    const backend = new InMemoryJobsBackend(page as unknown as Page)
+
+    await backend.seed([createSeededJob({ id: 'job-1', createTime: 1_000 })])
+
+    const listRouteHandler = getRouteHandler(
+      routes,
+      'http://localhost/api/jobs'
+    )
+    const response = await invokeJsonRoute<{ error: string }>(
+      listRouteHandler,
+      {
+        url: 'http://localhost/api/jobs?limit=0'
+      }
+    )
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({
+      error: 'limit must be a positive integer'
     })
   })
 
