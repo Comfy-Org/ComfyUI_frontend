@@ -84,6 +84,7 @@ import {
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+
 import {
   selectContentClass,
   selectDropdownClass,
@@ -93,7 +94,7 @@ import {
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
