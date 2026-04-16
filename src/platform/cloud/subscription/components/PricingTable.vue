@@ -450,29 +450,31 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (hasPaidSubscription.value) {
+        const targetPlan = {
+          tierKey,
+          billingCycle: currentBillingCycle.value
+        } as const
+        const previousPlan = currentPlanDescriptor.value
         const checkoutAttribution = await getCheckoutAttributionForCloud()
         if (userId.value) {
           telemetry?.trackBeginCheckout({
             user_id: userId.value,
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
+            tier: targetPlan.tierKey,
+            cycle: targetPlan.billingCycle,
             checkout_type: 'change',
             ...checkoutAttribution,
-            ...(currentTierKey.value
-              ? { previous_tier: currentTierKey.value }
-              : {})
+            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {})
           })
         }
         // Pass the target tier to create a deep link to subscription update confirmation
-        const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-        const targetPlan = {
-          tierKey,
-          billingCycle: currentBillingCycle.value
-        }
+        const checkoutTier = getCheckoutTier(
+          targetPlan.tierKey,
+          targetPlan.billingCycle
+        )
         const downgrade =
-          currentPlanDescriptor.value &&
+          previousPlan &&
           isPlanDowngrade({
-            current: currentPlanDescriptor.value,
+            current: previousPlan,
             target: targetPlan
           })
 
@@ -486,13 +488,13 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           }
 
           recordPendingSubscriptionCheckoutAttempt({
-            tier: tierKey,
-            cycle: currentBillingCycle.value,
+            tier: targetPlan.tierKey,
+            cycle: targetPlan.billingCycle,
             checkout_type: 'change',
-            ...(currentTierKey.value
-              ? { previous_tier: currentTierKey.value }
-              : {}),
-            previous_cycle: isYearlySubscription.value ? 'yearly' : 'monthly'
+            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
+            ...(previousPlan
+              ? { previous_cycle: previousPlan.billingCycle }
+              : {})
           })
         }
       } else {

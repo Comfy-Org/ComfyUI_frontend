@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import {
   createSharedComposable,
+  defaultDocument,
   defaultWindow,
   useEventListener
 } from '@vueuse/core'
@@ -263,7 +264,11 @@ function useSubscriptionInternal() {
     })
 
   const manageSubscription = async () => {
-    await accessBillingPortal()
+    const didOpenPortal = await accessBillingPortal()
+    if (!didOpenPortal) {
+      return
+    }
+
     startCancellationWatcher()
   }
 
@@ -368,8 +373,8 @@ function useSubscriptionInternal() {
     void recoverPendingSubscriptionCheckout('pageshow')
   })
 
-  useEventListener(defaultWindow, 'visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+  useEventListener(defaultDocument, 'visibilitychange', () => {
+    if (defaultDocument?.visibilityState === 'visible') {
       void recoverPendingSubscriptionCheckout('visibilitychange')
     }
   })

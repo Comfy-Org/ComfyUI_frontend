@@ -13,6 +13,15 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
+function createDeferredPromise<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+
+  return { promise, resolve }
+}
+
 const mockIsActiveSubscription = ref(false)
 const mockSubscriptionTier = ref<
   'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
@@ -178,7 +187,20 @@ function renderComponent() {
       },
       stubs: {
         SelectButton: {
-          template: '<div><slot /></div>',
+          template: `
+            <div>
+              <button
+                v-for="option in options"
+                :key="option.value"
+                type="button"
+                @click="$emit('update:modelValue', option.value)"
+              >
+                <slot name="option" :option="option">
+                  {{ option.label }}
+                </slot>
+              </button>
+            </div>
+          `,
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
         },
@@ -197,6 +219,8 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
     mockUserId.value = 'user-123'
+    mockAccessBillingPortal.mockReset()
+    mockAccessBillingPortal.mockResolvedValue(true)
     mockTrackBeginCheckout.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
@@ -263,6 +287,46 @@ describe('PricingTable', () => {
       await userEvent.click(creatorButton!)
       await flushPromises()
 
+      expect(
+        JSON.parse(
+          window.localStorage.getItem(
+            PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+          ) ?? '{}'
+        )
+      ).toMatchObject({
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'change',
+        previous_tier: 'standard',
+        previous_cycle: 'monthly'
+      })
+    })
+
+    it('records the plan snapshot that was actually opened', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+
+      const portalOpen = createDeferredPromise<boolean>()
+      mockAccessBillingPortal.mockReturnValueOnce(portalOpen.promise)
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
+
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      const monthlyToggle = screen.getByRole('button', { name: 'Monthly' })
+      await userEvent.click(monthlyToggle)
+      await flushPromises()
+
+      portalOpen.resolve(true)
+      await flushPromises()
+
+      expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
       expect(
         JSON.parse(
           window.localStorage.getItem(

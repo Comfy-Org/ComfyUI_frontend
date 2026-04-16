@@ -179,6 +179,8 @@ describe('useSubscription', () => {
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockAccessBillingPortal.mockReset()
+    mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
     mockAuthStoreInitialized.value = true
@@ -534,6 +536,43 @@ describe('useSubscription', () => {
       })
     })
 
+    it('rechecks pending checkout attempts when the document becomes visible', async () => {
+      mockIsLoggedIn.value = true
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: '',
+          renewal_date: ''
+        })
+      } as Response)
+
+      useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+
+      vi.mocked(global.fetch).mockClear()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-visible',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1)
+      })
+    })
+
     it('does not clear pending attempts before auth initialization resolves', async () => {
       mockAuthStoreInitialized.value = false
       mockIsLoggedIn.value = false
@@ -787,6 +826,40 @@ describe('useSubscription', () => {
       await manageSubscription()
 
       expect(mockAccessBillingPortal).toHaveBeenCalled()
+    })
+
+    it('does not start cancellation watching when the billing portal does not open', async () => {
+      vi.useFakeTimers()
+      mockIsLoggedIn.value = true
+      mockAccessBillingPortal.mockResolvedValueOnce(false)
+
+      const activeResponse = {
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_active',
+          renewal_date: '2025-11-16'
+        })
+      }
+
+      vi.mocked(global.fetch).mockResolvedValue(activeResponse as Response)
+
+      try {
+        const { fetchStatus, manageSubscription } = useSubscriptionWithScope()
+
+        await fetchStatus()
+        vi.mocked(global.fetch).mockClear()
+
+        await manageSubscription()
+        await vi.advanceTimersByTimeAsync(5000)
+
+        expect(global.fetch).not.toHaveBeenCalled()
+        expect(
+          mockTelemetry.trackMonthlySubscriptionCancelled
+        ).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
