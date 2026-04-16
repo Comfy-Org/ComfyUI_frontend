@@ -67,7 +67,7 @@ test.describe(
 
 test.describe(
   'Collapsed node links inside subgraph on first entry',
-  { tag: ['@canvas', '@node', '@vue-nodes', '@subgraph'] },
+  { tag: ['@canvas', '@node', '@vue-nodes', '@subgraph', '@screenshot'] },
   () => {
     test('renders collapsed node links correctly after fitView on first subgraph entry', async ({
       comfyPage
