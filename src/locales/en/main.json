@@ -279,6 +279,7 @@
     "itemSelected": "{selectedCount} item selected",
     "itemsSelected": "{selectedCount} items selected",
     "typesSelected": "{count} type selected | {count} types selected",
+    "clearTypeFilters": "Clear type filters",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",

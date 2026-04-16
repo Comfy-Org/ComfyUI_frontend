@@ -304,6 +304,19 @@
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
                 </DropdownMenuSub>
+                <DropdownMenuItem
+                  :disabled="
+                    selectedInputTypes.size === 0 &&
+                    selectedOutputTypes.size === 0
+                  "
+                  class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-transparent"
+                  @select.prevent="
+                    selectedInputTypes = new Set()
+                    selectedOutputTypes = new Set()
+                  "
+                >
+                  <span class="flex-1">{{ $t('g.clearTypeFilters') }}</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
@@ -360,6 +373,7 @@ import { useLocalStorage } from '@vueuse/core'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
