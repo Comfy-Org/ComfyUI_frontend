@@ -33,7 +33,7 @@ export class KeyboardHelper {
   ): Promise<void> {
     const target = locator ?? this.page.keyboard
     await target.press(`Alt+${keyToPress}`)
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async selectAll(locator?: Locator | null): Promise<void> {
