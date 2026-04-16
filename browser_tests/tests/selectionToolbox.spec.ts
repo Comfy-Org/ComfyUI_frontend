@@ -267,8 +267,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
         .click()
 
       // Undo the colorization
-      await comfyPage.page.keyboard.press('Control+Z')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+Z')
 
       // Node should be uncolored again
       const selectedNode = (

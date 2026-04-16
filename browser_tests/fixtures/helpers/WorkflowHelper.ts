@@ -70,10 +70,19 @@ export class WorkflowHelper {
     )
   }
 
+  async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
+    await this.comfyPage.page.evaluate(
+      (wf) => window.app!.loadGraphData(wf),
+      workflow
+    )
+    await this.comfyPage.nextFrame()
+  }
+
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
+    await this.waitForWorkflowIdle()
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
@@ -178,6 +187,11 @@ export class WorkflowHelper {
       undefined,
       { timeout }
     )
+  }
+
+  async switchToTab(tabName: string): Promise<void> {
+    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    await this.waitForWorkflowIdle()
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>
