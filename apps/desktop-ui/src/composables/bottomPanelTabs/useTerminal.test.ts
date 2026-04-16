@@ -1,6 +1,5 @@
-import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { ref } from 'vue'
 
 const { mockTerminal, MockTerminal, mockFitAddon, MockFitAddon } = vi.hoisted(
   () => {
@@ -33,21 +32,8 @@ vi.mock('@xterm/xterm', () => ({ Terminal: MockTerminal }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: MockFitAddon }))
 vi.mock('@xterm/xterm/css/xterm.css', () => ({}))
 
+import { withSetup } from '@/test/withSetup'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-
-function withSetup<T>(composable: () => T): T {
-  let result!: T
-  render(
-    defineComponent({
-      setup() {
-        result = composable()
-        return {}
-      },
-      template: '<div />'
-    })
-  )
-  return result
-}
 
 function getKeyHandler(): (event: KeyboardEvent) => boolean {
   return mockTerminal.attachCustomKeyEventHandler.mock.calls[0][0]

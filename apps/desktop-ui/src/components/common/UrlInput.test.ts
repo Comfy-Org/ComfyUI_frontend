@@ -163,7 +163,7 @@ describe('UrlInput', () => {
       await user.tab()
 
       const emittedUrl = onUpdate.mock.calls[0]?.[0]
-      expect(typeof emittedUrl).toBe('string')
+      expect(emittedUrl).toBe('https://example.com/')
     })
   })
 

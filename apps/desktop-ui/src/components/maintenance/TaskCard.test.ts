@@ -33,7 +33,17 @@ const baseTask: MaintenanceTask = {
   execute: vi.fn().mockResolvedValue(true)
 }
 
-function renderCard(state: 'OK' | 'error' | 'warning' | 'skipped') {
+const cardStubs = {
+  Card: {
+    template: '<div data-testid="card"><slot name="content"></slot></div>'
+  },
+  Button: { template: '<button />' }
+}
+
+function renderCard(
+  state: 'OK' | 'error' | 'warning' | 'skipped',
+  task: MaintenanceTask = baseTask
+) {
   mockGetRunner.mockReturnValue({
     state,
     executing: false,
@@ -42,18 +52,10 @@ function renderCard(state: 'OK' | 'error' | 'warning' | 'skipped') {
   })
 
   return render(TaskCard, {
-    props: { task: baseTask },
+    props: { task },
     global: {
       plugins: [[PrimeVue, { unstyled: true }]],
-      stubs: {
-        Card: {
-          template:
-            '<div data-testid="card"><slot name="content" /></slot></div>'
-        },
-        Button: {
-          template: '<button />'
-        }
-      }
+      stubs: cardStubs
     }
   })
 }
@@ -80,26 +82,7 @@ describe('TaskCard', () => {
         ...baseTask,
         errorDescription: undefined
       }
-      mockGetRunner.mockReturnValue({
-        state: 'error',
-        executing: false,
-        refreshing: false
-      })
-
-      render(TaskCard, {
-        props: { task: taskWithoutErrorDesc },
-        global: {
-          plugins: [[PrimeVue, { unstyled: true }]],
-          stubs: {
-            Card: {
-              template:
-                '<div data-testid="card"><slot name="content" /></slot></div>'
-            },
-            Button: { template: '<button />' }
-          }
-        }
-      })
-
+      renderCard('error', taskWithoutErrorDesc)
       expect(screen.getByText('Short description')).toBeDefined()
     })
   })

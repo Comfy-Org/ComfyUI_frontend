@@ -1,6 +1,4 @@
-import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
 
 const { mockSerialize, MockSerializeAddon } = vi.hoisted(() => {
   const mockSerialize = vi.fn<[], string>()
@@ -21,21 +19,8 @@ vi.mock('@xterm/addon-serialize', () => ({
 }))
 
 import type { Terminal } from '@xterm/xterm'
+import { withSetup } from '@/test/withSetup'
 import { useTerminalBuffer } from '@/composables/bottomPanelTabs/useTerminalBuffer'
-
-function withSetup<T>(composable: () => T): T {
-  let result!: T
-  render(
-    defineComponent({
-      setup() {
-        result = composable()
-        return {}
-      },
-      template: '<div />'
-    })
-  )
-  return result
-}
 
 describe('useTerminalBuffer', () => {
   beforeEach(() => {
@@ -48,7 +33,7 @@ describe('useTerminalBuffer', () => {
       mockSerialize.mockReturnValue('hello world')
       const { copyTo } = withSetup(() => useTerminalBuffer())
       const mockWrite = vi.fn()
-      copyTo({ write: mockWrite } as unknown as Terminal)
+      copyTo({ write: mockWrite } as Pick<Terminal, 'write'>)
       expect(mockWrite).toHaveBeenCalledWith('hello world')
     })
 
@@ -56,7 +41,7 @@ describe('useTerminalBuffer', () => {
       mockSerialize.mockReturnValue('')
       const { copyTo } = withSetup(() => useTerminalBuffer())
       const mockWrite = vi.fn()
-      copyTo({ write: mockWrite } as unknown as Terminal)
+      copyTo({ write: mockWrite } as Pick<Terminal, 'write'>)
       expect(mockWrite).toHaveBeenCalledWith('')
     })
   })

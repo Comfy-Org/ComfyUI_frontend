@@ -48,19 +48,28 @@ describe('desktopMaintenanceTasks', () => {
   })
 
   describe('URL-opening tasks', () => {
-    it('git execute opens a browser tab', () => {
+    it('git execute opens the git download page', () => {
       findTask('git').execute()
-      expect(window.open).toHaveBeenCalledOnce()
+      expect(window.open).toHaveBeenCalledWith(
+        'https://git-scm.com/downloads/',
+        '_blank'
+      )
     })
 
-    it('uv execute opens a browser tab', () => {
+    it('uv execute opens the uv installation page', () => {
       findTask('uv').execute()
-      expect(window.open).toHaveBeenCalledOnce()
+      expect(window.open).toHaveBeenCalledWith(
+        'https://docs.astral.sh/uv/getting-started/installation/',
+        '_blank'
+      )
     })
 
-    it('vcRedist execute opens a browser tab', () => {
+    it('vcRedist execute opens the VC++ redistributable download', () => {
       findTask('vcRedist').execute()
-      expect(window.open).toHaveBeenCalledOnce()
+      expect(window.open).toHaveBeenCalledWith(
+        'https://aka.ms/vs/17/release/vc_redist.x64.exe',
+        '_blank'
+      )
     })
   })
 })

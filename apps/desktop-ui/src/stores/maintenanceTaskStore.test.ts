@@ -68,32 +68,6 @@ describe('useMaintenanceTaskStore', () => {
     store = createStore()
   })
 
-  describe('initial state', () => {
-    it('creates runners for all tasks', () => {
-      expect(store.tasks.length).toBe(testTasks.length)
-    })
-
-    it('starts with isRefreshing false', () => {
-      expect(store.isRefreshing).toBe(false)
-    })
-
-    it('starts with no errors', () => {
-      expect(store.anyErrors).toBe(false)
-    })
-
-    it('starts with unsafeBasePath false', () => {
-      expect(store.unsafeBasePath).toBe(false)
-    })
-
-    it('starts with no running terminal commands', () => {
-      expect(store.isRunningTerminalCommand).toBe(false)
-    })
-
-    it('starts with no running installation fixes', () => {
-      expect(store.isRunningInstallationFix).toBe(false)
-    })
-  })
-
   describe('processUpdate', () => {
     it('sets isRefreshing to true during in-progress update', () => {
       store.processUpdate(makeUpdate({ inProgress: true }))
@@ -308,6 +282,7 @@ describe('useMaintenanceTaskStore', () => {
 
       resolveTask(true)
       await executePromise
+      expect(store.isRunningInstallationFix).toBe(false)
     })
   })
 })

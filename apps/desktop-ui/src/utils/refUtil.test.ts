@@ -1,22 +1,8 @@
-import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
+import { withSetup } from '@/test/withSetup'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
-
-function withSetup<T>(composable: () => T): T {
-  let result!: T
-  render(
-    defineComponent({
-      setup() {
-        result = composable()
-        return {}
-      },
-      template: '<div />'
-    })
-  )
-  return result
-}
 
 describe('useMinLoadingDurationRef', () => {
   beforeEach(() => {

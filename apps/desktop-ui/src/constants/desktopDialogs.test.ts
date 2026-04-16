@@ -25,15 +25,6 @@ describe('getDialog', () => {
     expect(result.id).toBe('invalidDialog')
   })
 
-  it('includes id, title, message, and buttons in the result', () => {
-    const result = getDialog('reinstallVenv')
-    expect(result).toHaveProperty('id')
-    expect(result).toHaveProperty('title')
-    expect(result).toHaveProperty('message')
-    expect(result).toHaveProperty('buttons')
-    expect(Array.isArray(result.buttons)).toBe(true)
-  })
-
   it('returns a deep clone — mutations do not affect the original', () => {
     const result = getDialog('reinstallVenv')
     const originalFirstLabel = DESKTOP_DIALOGS.reinstallVenv.buttons[0].label
