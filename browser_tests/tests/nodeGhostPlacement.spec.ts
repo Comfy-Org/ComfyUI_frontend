@@ -222,7 +222,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
         await comfyPage.nextFrame()
         const subgraphNodes =
           await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
-        expect(subgraphNodes.length).toBe(1)
+        expect(subgraphNodes).toHaveLength(1)
         const subgraphNode = subgraphNodes[0]
 
         const blueprintName = `ghost-test-${Date.now()}`
@@ -261,7 +261,7 @@ for (const mode of ['litegraph', 'vue'] as const) {
         expect(ghostState!.ghost).toBe(true)
 
         // Wait for search box to close, then click to confirm placement
-        await expect(searchBoxV2.input).not.toBeVisible()
+        await expect(searchBoxV2.input).toBeHidden()
         await comfyPage.nextFrame()
         const viewport = comfyPage.page.viewportSize()!
         await comfyPage.page.mouse.click(
