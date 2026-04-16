@@ -264,7 +264,7 @@ function normalizeSavedSizes() {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}${focusMode.value ? '-focus' : ''}`
 })
 
 const firstPanelStyle = computed(() => {
