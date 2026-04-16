@@ -134,6 +134,15 @@
   mask-position: center;
 }
 
+/* PP Formula has asymmetric vertical metrics
+   Shifting visually with `top` corrects the appearance without changing the
+   inline-block's bounding box, so button/badge sizes are unaffected. */
+@utility ppformula-text-center {
+  display: inline-block;
+  position: relative;
+  top: 0.190em;
+}
+
 :root {
   --site-bg: #211927;
   --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
