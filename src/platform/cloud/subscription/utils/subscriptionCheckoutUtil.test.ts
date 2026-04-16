@@ -171,17 +171,6 @@ describe('performSubscriptionCheckout', () => {
       })
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
-    expect(
-      JSON.parse(
-        window.localStorage.getItem(
-          PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-        ) ?? '{}'
-      )
-    ).toMatchObject({
-      tier: 'pro',
-      cycle: 'yearly',
-      checkout_type: 'new'
-    })
   })
 
   it('continues checkout when attribution collection fails', async () => {

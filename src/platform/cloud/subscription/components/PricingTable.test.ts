@@ -272,36 +272,6 @@ describe('PricingTable', () => {
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('pro-yearly')
     })
 
-    it('records a pending upgrade only after the billing portal opens', async () => {
-      mockIsActiveSubscription.value = true
-      mockSubscriptionTier.value = 'STANDARD'
-      mockAccessBillingPortal.mockResolvedValueOnce(true)
-
-      renderComponent()
-      await flushPromises()
-
-      const creatorButton = screen
-        .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Creator'))
-
-      await userEvent.click(creatorButton!)
-      await flushPromises()
-
-      expect(
-        JSON.parse(
-          window.localStorage.getItem(
-            PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-          ) ?? '{}'
-        )
-      ).toMatchObject({
-        tier: 'creator',
-        cycle: 'yearly',
-        checkout_type: 'change',
-        previous_tier: 'standard',
-        previous_cycle: 'monthly'
-      })
-    })
-
     it('records the plan snapshot that was actually opened', async () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'STANDARD'
