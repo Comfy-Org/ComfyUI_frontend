@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * IconCell — generic icon-button bento cell.
+ * IconCell — generic icon-button layout cell.
  *
  * Used for system-pinned utility cells: Builder (hammer), Share (send),
  * Assets (image-ai-edit), Apps (panels-top-left), Help (question).
@@ -43,14 +43,14 @@ defineProps<{
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--bento-color-text);
+  color: var(--layout-color-text);
   cursor: pointer;
-  transition: background-color var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  transition: background-color var(--layout-transition-duration)
+    var(--layout-transition-easing);
 }
 
 .icon-cell:hover:not(:disabled) {
-  background-color: var(--bento-color-cell-hover);
+  background-color: var(--layout-color-cell-hover);
 }
 
 .icon-cell:disabled {
@@ -59,7 +59,7 @@ defineProps<{
 }
 
 .icon-cell--active {
-  background-color: var(--bento-color-cell-hover);
+  background-color: var(--layout-color-cell-hover);
 }
 
 .icon-cell__icon {

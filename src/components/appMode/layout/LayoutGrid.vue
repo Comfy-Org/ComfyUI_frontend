@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * BentoGrid — grid layout primitive for App Mode.
+ * LayoutGrid — grid layout primitive for App Mode.
  *
  * Renders cells on a 12-column responsive grid where 1×1 cells are square
  * (row height = column width). Empty cells are invisible at runtime; only
@@ -11,7 +11,7 @@
 import { computed, useTemplateRef } from 'vue'
 import { useElementSize } from '@vueuse/core'
 
-export interface BentoCellPlacement {
+export interface LayoutCellPlacement {
   /** Stable identifier for the cell. */
   id: string
   /** 1-indexed grid column. */
@@ -33,7 +33,7 @@ const props = withDefaults(
     /** Cell placements. Each cell's <slot> name is its id.
      *  col/row accept negative values as CSS Grid end-anchored indices
      *  (-1 = last track, -2 = second-to-last, etc.). */
-    cells: BentoCellPlacement[]
+    cells: LayoutCellPlacement[]
     /** Outer margin around the grid (px). Fixed — stays consistent at every viewport. */
     outerPadding?: number
     /** Minimum gap between cells (px). Actual gap grows from this floor
@@ -102,7 +102,7 @@ function resolvePos(v: number, total: number): number {
 
 // Ghost cells fill every unoccupied grid position — prototype visual
 // so the full grid structure is visible before real content lands.
-const ghostCells = computed<BentoCellPlacement[]>(() => {
+const ghostCells = computed<LayoutCellPlacement[]>(() => {
   if (!props.fillEmpty || cols.value < 1 || rows.value < 1) return []
 
   const occupied = new Set<string>()
@@ -118,7 +118,7 @@ const ghostCells = computed<BentoCellPlacement[]>(() => {
     }
   }
 
-  const ghosts: BentoCellPlacement[] = []
+  const ghosts: LayoutCellPlacement[] = []
   for (let r = 1; r <= rows.value; r++) {
     for (let c = 1; c <= cols.value; c++) {
       if (!occupied.has(`${c},${r}`)) {
@@ -129,7 +129,7 @@ const ghostCells = computed<BentoCellPlacement[]>(() => {
   return ghosts
 })
 
-function cellStyle(cell: BentoCellPlacement) {
+function cellStyle(cell: LayoutCellPlacement) {
   const colSpan = cell.colSpan ?? 1
   const rowSpan = cell.rowSpan ?? 1
   return {
@@ -142,16 +142,16 @@ function cellStyle(cell: BentoCellPlacement) {
 <template>
   <div
     ref="gridEl"
-    class="bento-grid"
+    class="layout-grid"
     :style="gridStyle"
-    data-testid="bento-grid"
+    data-testid="layout-grid"
   >
     <!-- Ghost cells (fillEmpty=true) render beneath real cells, showing
          the grid structure. aria-hidden so they don't pollute the a11y tree. -->
     <div
       v-for="ghost in ghostCells"
       :key="ghost.id"
-      class="bento-cell bento-cell--ghost"
+      class="layout-cell layout-cell--ghost"
       :style="cellStyle(ghost)"
       aria-hidden="true"
       :data-cell-id="ghost.id"
@@ -159,7 +159,7 @@ function cellStyle(cell: BentoCellPlacement) {
     <div
       v-for="cell in cells"
       :key="cell.id"
-      class="bento-cell"
+      class="layout-cell"
       :style="cellStyle(cell)"
       :data-cell-id="cell.id"
       :data-cell-kind="cell.kind"
@@ -170,18 +170,18 @@ function cellStyle(cell: BentoCellPlacement) {
 </template>
 
 <style scoped>
-.bento-grid {
+.layout-grid {
   /* Absolute fill eliminates width/height-inheritance ambiguity through
      nested Vue components. Parent must be position: relative (or absolute). */
   position: absolute;
   inset: 0;
   display: grid;
   box-sizing: border-box;
-  background-color: var(--bento-color-canvas);
+  background-color: var(--layout-color-canvas);
   overflow: hidden;
 }
 
-.bento-cell {
+.layout-cell {
   /* Subtle dark-on-darker fill matches mockup. Cells with no slot content
      stay empty (no background) so the canvas reads as composed, not gridded. */
   display: flex;
@@ -192,16 +192,16 @@ function cellStyle(cell: BentoCellPlacement) {
 /* Real cells with rendered slot content get the subtle fill.
    Truly empty cells (no slot content) have no children → no background,
    keeping the runtime canvas composed rather than gridded. */
-.bento-cell:has(> *) {
-  background-color: var(--bento-color-cell-fill);
-  border-radius: var(--bento-cell-radius);
+.layout-cell:has(> *) {
+  background-color: var(--layout-color-cell-fill);
+  border-radius: var(--layout-cell-radius);
 }
 
 /* Ghost cells (fillEmpty prototype) always show the fill so the
    grid structure is visible regardless of slot content. */
-.bento-cell--ghost {
-  background-color: var(--bento-color-cell-fill);
-  border-radius: var(--bento-cell-radius);
+.layout-cell--ghost {
+  background-color: var(--layout-color-cell-fill);
+  border-radius: var(--layout-cell-radius);
   opacity: 0.6;
 }
 </style>

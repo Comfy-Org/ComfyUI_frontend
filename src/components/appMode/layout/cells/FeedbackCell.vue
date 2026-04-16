@@ -44,25 +44,25 @@ const { t } = useI18n()
 .feedback-cell__text {
   display: flex;
   flex-direction: column;
-  font-size: var(--bento-font-md);
+  font-size: var(--layout-font-md);
   line-height: 1.3;
-  color: var(--bento-color-text-muted);
+  color: var(--layout-color-text-muted);
   white-space: nowrap;
   overflow: hidden;
 }
 
 /* TypeformPopoverButton uses variant="inverted" which renders a
-   white button — too loud inside a dark bento cell. Mute it to
+   white button — too loud inside a dark layout cell. Mute it to
    match the cell text color and let the cell bg show through. */
 .feedback-cell :deep(button),
 .feedback-cell :deep(a) {
   background-color: transparent !important;
-  color: var(--bento-color-text-muted) !important;
+  color: var(--layout-color-text-muted) !important;
 }
 
 .feedback-cell :deep(button:hover),
 .feedback-cell :deep(a:hover) {
-  background-color: var(--bento-color-cell-hover) !important;
-  color: var(--bento-color-text) !important;
+  background-color: var(--layout-color-cell-hover) !important;
+  color: var(--layout-color-text) !important;
 }
 </style>

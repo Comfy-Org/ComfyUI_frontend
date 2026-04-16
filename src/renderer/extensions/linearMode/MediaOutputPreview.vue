@@ -16,7 +16,7 @@ defineOptions({ inheritAttrs: false })
 const { output } = defineProps<{
   output: ResultItemImpl
   mobile?: boolean
-  /** Suppress the image/video footer info span (bento renders its own). */
+  /** Suppress the image/video footer info span (layout renders its own). */
   hideInfo?: boolean
 }>()
 

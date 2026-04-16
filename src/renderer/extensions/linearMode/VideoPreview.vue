@@ -4,7 +4,7 @@ import { ref, useTemplateRef } from 'vue'
 const { src, hideInfo = false } = defineProps<{
   src: string
   label?: string
-  /** Hide the bottom size+label overlay (bento App Mode renders its own). */
+  /** Hide the bottom size+label overlay (App Mode layout renders its own). */
   hideInfo?: boolean
 }>()
 

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * BentoView — App Mode runtime view.
+ * LayoutView — App Mode runtime view.
  *
  * Solution 04 (Phase 4-A): LinearPreview is the full-viewport background;
  * system chrome (mode toggle, feedback, utility icons) floats in the
- * bento grid above it; a single right-dock FloatingPanel overlays inputs
+ * layout grid above it; a single right-dock FloatingPanel overlays inputs
  * + run on the right side. Drag, resize, persistence, and multi-panel
  * land in later phases (4-B through 4-I).
  */
@@ -13,8 +13,8 @@ import { computed, ref, shallowRef, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
-import BentoGrid from './BentoGrid.vue'
-import type { BentoCellPlacement } from './BentoGrid.vue'
+import LayoutGrid from './LayoutGrid.vue'
+import type { LayoutCellPlacement } from './LayoutGrid.vue'
 import IconCell from './cells/IconCell.vue'
 import FeedbackCell from './cells/FeedbackCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
@@ -371,7 +371,7 @@ async function actionRerun() {
       metadata: { subscribe_to_run: false, trigger_source: 'linear' }
     })
   } catch (error) {
-    console.error('[BentoView] rerun failed:', error)
+    console.error('[LayoutView] rerun failed:', error)
   }
 }
 
@@ -404,7 +404,7 @@ const infoName = computed(() => {
 
 // Track the loaded image's natural dimensions for the selected output.
 // Mirrors ImagePreview's onImageLoad logic so we can surface WxH in the
-// bento info cell without relying on LinearPreview's hidden overlay.
+// layout info cell without relying on LinearPreview's hidden overlay.
 const dimensions = ref<{ w: number; h: number } | null>(null)
 watch(
   () => selectedHistory.value?.output.url,
@@ -458,8 +458,8 @@ const historyThumbMap = computed(
 )
 
 // --- Chrome cells only (mode toggle, feedback, utility column) ----------
-const cells = computed<BentoCellPlacement[]>(() => {
-  const out: BentoCellPlacement[] = []
+const cells = computed<LayoutCellPlacement[]>(() => {
+  const out: LayoutCellPlacement[] = []
 
   let row = 1
   if (enableAppBuilder.value) {
@@ -529,16 +529,16 @@ const cells = computed<BentoCellPlacement[]>(() => {
 </script>
 
 <template>
-  <div class="bento-view">
+  <div class="layout-view">
     <!-- Background layer: output canvas fills the viewport. LinearPreview's
          built-in chrome (top actions + bottom history/feedback) is hidden;
-         we render replacements as bento cells. -->
-    <div class="bento-view__background">
+         we render replacements as layout cells. -->
+    <div class="layout-view__background">
       <LinearPreview hide-chrome />
     </div>
 
     <!-- Chrome layer: floating utility cells sit above the background. -->
-    <BentoGrid :cells="cells">
+    <LayoutGrid :cells="cells">
       <template v-for="cell in cells" :key="cell.id" #[cell.id]>
         <IconCell
           v-if="cell.kind === 'system-builder'"
@@ -607,7 +607,7 @@ const cells = computed<BentoCellPlacement[]>(() => {
           :output="historyThumbMap.get(cell.id)!.output"
         />
       </template>
-    </BentoGrid>
+    </LayoutGrid>
 
     <!-- Overlay layer: the floating panel(s). Phase 4-A: one panel;
          Phase 4-C: drag between presets. -->
@@ -631,16 +631,16 @@ const cells = computed<BentoCellPlacement[]>(() => {
   </div>
 </template>
 
-<!-- Design tokens cascade to all cells + panels inside .bento-view. -->
+<!-- Design tokens cascade to all cells + panels inside .layout-view. -->
 <style src="./design-tokens.css"></style>
 
 <style scoped>
-.bento-view {
+.layout-view {
   position: absolute;
   inset: 0;
-  background-color: var(--bento-color-canvas);
+  background-color: var(--layout-color-canvas);
   /* Clip LinearPreview's inner absolute-positioned layers (image,
-     skeletons, welcome) so they can never paint above the bento-view
+     skeletons, welcome) so they can never paint above the layout-view
      box — which sits below the top workflow-tabs bar. */
   overflow: hidden;
   /* Own stacking context so our z-indexed children (background, grid,
@@ -648,7 +648,7 @@ const cells = computed<BentoCellPlacement[]>(() => {
   isolation: isolate;
 }
 
-.bento-view__background {
+.layout-view__background {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -657,12 +657,12 @@ const cells = computed<BentoCellPlacement[]>(() => {
 
 /* Lift the chrome grid above the background and make it transparent so
    LinearPreview shows through where there's no chrome cell. */
-.bento-view :deep(.bento-grid) {
+.layout-view :deep(.layout-grid) {
   z-index: 1;
   background-color: transparent;
   pointer-events: none;
 }
-.bento-view :deep(.bento-grid) > * {
+.layout-view :deep(.layout-grid) > * {
   pointer-events: auto;
 }
 
@@ -674,18 +674,18 @@ const cells = computed<BentoCellPlacement[]>(() => {
   gap: 8px;
   padding: 0 12px;
   border: none;
-  border-radius: var(--bento-cell-radius);
-  background-color: var(--bento-color-cell-fill);
-  color: var(--bento-color-text);
+  border-radius: var(--layout-cell-radius);
+  background-color: var(--layout-color-cell-fill);
+  color: var(--layout-color-text);
   cursor: default;
   font-family: inherit;
-  font-size: var(--bento-font-md);
-  transition: background-color var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  font-size: var(--layout-font-md);
+  transition: background-color var(--layout-transition-duration)
+    var(--layout-transition-easing);
 }
 
 .info-cell:hover {
-  background-color: var(--bento-color-cell-hover);
+  background-color: var(--layout-color-cell-hover);
 }
 
 .info-cell__icon {
@@ -696,7 +696,7 @@ const cells = computed<BentoCellPlacement[]>(() => {
 
 .info-cell__dims {
   flex-shrink: 0;
-  color: var(--bento-color-text);
+  color: var(--layout-color-text);
   font-variant-numeric: tabular-nums;
 }
 

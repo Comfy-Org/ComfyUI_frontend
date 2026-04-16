@@ -160,10 +160,10 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   display: block;
   flex: 1 1 0;
   min-width: 0;
-  border-radius: var(--bento-cell-radius);
+  border-radius: var(--layout-cell-radius);
   background-color: transparent;
-  transition: opacity var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  transition: opacity var(--layout-transition-duration)
+    var(--layout-transition-easing);
 }
 
 .panel-block--dragging {
@@ -189,8 +189,8 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   background: transparent;
   cursor: grab;
   opacity: 0;
-  transition: opacity var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  transition: opacity var(--layout-transition-duration)
+    var(--layout-transition-easing);
   touch-action: none;
 }
 .panel-block:hover .panel-block__grip,
@@ -206,7 +206,7 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
   height: 100%;
   background-image: radial-gradient(
     circle,
-    var(--bento-color-text-muted) 1px,
+    var(--layout-color-text-muted) 1px,
     transparent 1.2px
   );
   background-size: 4px 4px;

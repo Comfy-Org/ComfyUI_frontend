@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * OutputThumbCell — one grid-unit (48×48) history thumbnail rendered
- * in the bento grid's left column. Replaces LinearPreview's built-in
- * horizontal history strip when App Mode is in bento/semi-customizable
+ * in the layout grid's left column. Replaces LinearPreview's built-in
+ * horizontal history strip when App Mode is in layout/semi-customizable
  * layout. Clicking sets the shared linearOutputStore selection; the
  * (hidden but still mounted) OutputHistory inside LinearPreview reacts
  * and emits updateSelection, which drives the main canvas.
@@ -70,12 +70,12 @@ function onClick() {
   padding: 0;
   margin: 0;
   border: 2px solid transparent;
-  border-radius: var(--bento-cell-radius);
-  background-color: var(--bento-color-cell-fill);
+  border-radius: var(--layout-cell-radius);
+  background-color: var(--layout-color-cell-fill);
   cursor: pointer;
   overflow: hidden;
-  transition: border-color var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  transition: border-color var(--layout-transition-duration)
+    var(--layout-transition-easing);
 }
 
 .output-thumb:hover {
@@ -83,7 +83,7 @@ function onClick() {
 }
 
 .output-thumb[data-active='true'] {
-  border-color: var(--bento-color-cell-hover);
+  border-color: var(--layout-color-cell-hover);
 }
 
 .output-thumb__media {
@@ -97,6 +97,6 @@ function onClick() {
   width: 60%;
   height: 60%;
   margin: auto;
-  color: var(--bento-color-text-muted);
+  color: var(--layout-color-text-muted);
 }
 </style>

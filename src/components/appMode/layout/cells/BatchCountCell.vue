@@ -5,7 +5,7 @@
  *
  * At 1 row tall × 3 cols wide the label and input sit side-by-side.
  * This cell is also the first label/widget pair broken into its own
- * bento cell — a template for Phase 2 when every input gets its
+ * layout cell — a template for Phase 2 when every input gets its
  * own cell.
  */
 import { storeToRefs } from 'pinia'
@@ -47,8 +47,8 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 
 .batch-count-cell__label {
   flex-shrink: 0;
-  font-size: var(--bento-font-md);
-  color: var(--bento-color-text-muted);
+  font-size: var(--layout-font-md);
+  color: var(--layout-color-text-muted);
   white-space: nowrap;
 }
 
@@ -61,6 +61,6 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
    between the − and + controls rather than biased to one side. */
 .batch-count-cell :deep(input) {
   text-align: center;
-  font-size: var(--bento-font-md);
+  font-size: var(--layout-font-md);
 }
 </style>

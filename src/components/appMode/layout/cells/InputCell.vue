@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * InputCell — bento cell hosting a single selected input widget.
+ * InputCell — layout cell hosting a single selected input widget.
  *
  * Phase 2a: each selected input becomes its own cell. Rendering mirrors
  * AppModeWidgetList's per-widget block exactly (header row with label,
@@ -77,8 +77,8 @@ provide(HideLayoutFieldKey, true)
 }
 
 .input-cell__label {
-  font-size: var(--bento-font-md);
-  color: var(--bento-color-text-muted);
+  font-size: var(--layout-font-md);
+  color: var(--layout-color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,10 +92,10 @@ provide(HideLayoutFieldKey, true)
 
 /* Widget content (textareas, inputs, dropdowns) normally renders at
    text-xs via WidgetTextarea/WidgetInputNumber. Override to the
-   default bento scale. */
+   default layout scale. */
 .input-cell__body :deep(textarea),
 .input-cell__body :deep(input) {
-  font-size: var(--bento-font-md) !important;
+  font-size: var(--layout-font-md) !important;
 }
 
 /* Let multiline textareas fill the cell body. */

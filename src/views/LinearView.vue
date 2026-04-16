@@ -8,7 +8,7 @@ import { computed, useTemplateRef } from 'vue'
 
 import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
-import BentoView from '@/components/appMode/bento/BentoView.vue'
+import LayoutView from '@/components/appMode/layout/LayoutView.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -50,10 +50,10 @@ const showRightBuilder = computed(
   () => sidebarOnLeft.value && isArrangeMode.value
 )
 
-// Bento prototype: show new full-viewport canvas when not in any builder
-// mode and the workflow has outputs configured. Builder modes still use
-// the old Splitter so existing flows aren't disrupted.
-const showBentoView = computed(() => !isBuilderMode.value && hasOutputs.value)
+// Show the App Mode layout (full-viewport output canvas + floating panel)
+// when not in any builder mode and the workflow has outputs configured.
+// Builder modes still use the old Splitter so existing flows aren't disrupted.
+const showLayoutView = computed(() => !isBuilderMode.value && hasOutputs.value)
 const hasLeftPanel = computed(
   () =>
     isArrangeMode.value ||
@@ -118,10 +118,10 @@ function dragDrop(e: DragEvent) {
       </div>
     </div>
     <div
-      v-if="showBentoView"
+      v-if="showLayoutView"
       class="relative h-[calc(100%-var(--workflow-tabs-height))] w-full"
     >
-      <BentoView />
+      <LayoutView />
     </div>
     <Splitter
       v-else

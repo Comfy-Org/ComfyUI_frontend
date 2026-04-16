@@ -34,7 +34,7 @@ async function handleClick(e: Event) {
   <button
     type="button"
     class="run-cell"
-    data-testid="bento-run-cell"
+    data-testid="layout-run-cell"
     @click="handleClick"
   >
     <i class="run-cell__icon icon-[lucide--play]" />
@@ -51,26 +51,26 @@ async function handleClick(e: Event) {
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: var(--bento-cell-radius);
-  background-color: var(--bento-color-accent);
-  color: var(--bento-color-accent-foreground);
-  font-size: var(--bento-font-xl);
+  border-radius: var(--layout-cell-radius);
+  background-color: var(--layout-color-accent);
+  color: var(--layout-color-accent-foreground);
+  font-size: var(--layout-font-xl);
   font-weight: 500;
   cursor: pointer;
-  transition: background-color var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  transition: background-color var(--layout-transition-duration)
+    var(--layout-transition-easing);
 }
 
 .run-cell:hover {
-  background-color: var(--bento-color-accent-hover);
+  background-color: var(--layout-color-accent-hover);
 }
 
 .run-cell:active {
-  background-color: var(--bento-color-accent-active);
+  background-color: var(--layout-color-accent-active);
 }
 
 .run-cell__icon {
-  width: var(--bento-font-xl);
-  height: var(--bento-font-xl);
+  width: var(--layout-font-xl);
+  height: var(--layout-font-xl);
 }
 </style>

@@ -48,8 +48,8 @@ const positionClass = computed(() => [
   display: flex;
   flex-direction: column;
   width: var(--panel-dock-width, 420px);
-  max-width: calc(100vw - var(--bento-outer-padding) * 2);
-  background-color: var(--bento-color-cell-fill);
+  max-width: calc(100vw - var(--layout-outer-padding) * 2);
+  background-color: var(--layout-color-cell-fill);
   border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 10px;
   box-shadow:
@@ -59,27 +59,27 @@ const positionClass = computed(() => [
   overflow: hidden;
   z-index: 10;
   transition:
-    top var(--bento-transition-duration) var(--bento-transition-easing),
-    bottom var(--bento-transition-duration) var(--bento-transition-easing),
-    left var(--bento-transition-duration) var(--bento-transition-easing),
-    right var(--bento-transition-duration) var(--bento-transition-easing),
-    max-height var(--bento-transition-duration) var(--bento-transition-easing),
-    opacity var(--bento-transition-duration) var(--bento-transition-easing);
+    top var(--layout-transition-duration) var(--layout-transition-easing),
+    bottom var(--layout-transition-duration) var(--layout-transition-easing),
+    left var(--layout-transition-duration) var(--layout-transition-easing),
+    right var(--layout-transition-duration) var(--layout-transition-easing),
+    max-height var(--layout-transition-duration) var(--layout-transition-easing),
+    opacity var(--layout-transition-duration) var(--layout-transition-easing);
 }
 
 /* While dragging, fade the live panel so the blue preview reads as the
    destination and the panel itself reads as the thing being moved. */
 .floating-panel--dragging {
   opacity: 0.55;
-  transition: opacity var(--bento-transition-duration)
-    var(--bento-transition-easing);
+  transition: opacity var(--layout-transition-duration)
+    var(--layout-transition-easing);
 }
 
 /* Preset positions — Phase 4-A hard-coded. Drag lands these same values. */
 .floating-panel--right-dock {
-  top: var(--bento-outer-padding);
-  right: var(--bento-outer-padding);
-  bottom: var(--bento-outer-padding);
+  top: var(--layout-outer-padding);
+  right: var(--layout-outer-padding);
+  bottom: var(--layout-outer-padding);
 }
 /* Left-side presets: left edge clears col 1 (icons), top edge clears
    row 1 (mode toggle + action cells). This places the panel's
@@ -87,49 +87,49 @@ const positionClass = computed(() => [
    the mode-toggle row. */
 .floating-panel--left-dock {
   top: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
   left: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
   bottom: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
 }
 .floating-panel--float-tr {
-  top: var(--bento-outer-padding);
-  right: var(--bento-outer-padding);
-  height: calc(50% - var(--bento-outer-padding) - 4px);
+  top: var(--layout-outer-padding);
+  right: var(--layout-outer-padding);
+  height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 .floating-panel--float-br {
-  bottom: var(--bento-outer-padding);
-  right: var(--bento-outer-padding);
-  height: calc(50% - var(--bento-outer-padding) - 4px);
+  bottom: var(--layout-outer-padding);
+  right: var(--layout-outer-padding);
+  height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 .floating-panel--float-tl {
   top: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
   left: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
-  height: calc(50% - var(--bento-outer-padding) - 4px);
+  height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 .floating-panel--float-bl {
   bottom: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
   left: calc(
-    var(--bento-outer-padding) + var(--bento-cell-size) +
-      var(--bento-gutter-min)
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
   );
-  height: calc(50% - var(--bento-outer-padding) - 4px);
+  height: calc(50% - var(--layout-outer-padding) - 4px);
 }
 
 .floating-panel__header {
@@ -151,13 +151,13 @@ const positionClass = computed(() => [
   width: 32px;
   height: 4px;
   border-radius: 2px;
-  background-color: var(--bento-color-text-muted);
+  background-color: var(--layout-color-text-muted);
   opacity: 0.35;
 }
 
 .floating-panel__title {
-  font-size: var(--bento-font-md);
-  color: var(--bento-color-text-muted);
+  font-size: var(--layout-font-md);
+  color: var(--layout-color-text-muted);
 }
 
 .floating-panel__body {

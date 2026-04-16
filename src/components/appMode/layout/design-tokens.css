@@ -1,0 +1,47 @@
+/*
+ * App Mode layout design tokens.
+ *
+ * All visual constants for the App Mode layout live here so the scale
+ * stays small and consistent. Edit here, not in component CSS.
+ *
+ * When adding or adjusting a cell, reference these via var(--layout-*)
+ * instead of hardcoding values. If you need a constant that doesn't
+ * exist yet, add it here first with a comment on intent.
+ *
+ * This file is imported by LayoutView.vue so every cell inside the
+ * layout view inherits these variables automatically.
+ */
+
+.layout-view {
+  /* --- Type scale ------------------------------------------------------
+     The entire App Mode layout uses 4 sizes. Resist adding a fifth
+     without strong reason. */
+  --layout-font-md: 18px;    /* Default: labels + widget content (textareas, inputs) */
+  --layout-font-lg: 20px;    /* LinearWelcome body */
+  --layout-font-xl: 24px;    /* Primary action (Run) */
+  --layout-font-hero: 48px;  /* LinearWelcome heading */
+
+  /* --- Grid dimensions ------------------------------------------------ */
+  --layout-cell-size: 48px;        /* 1×1 cell side length */
+  --layout-gutter-min: 8px;        /* minimum gap between cells */
+  --layout-outer-padding: 16px;    /* margin from viewport edge */
+  --layout-cell-radius: 4px;       /* cell background corner radius */
+
+  /* --- Colors ---------------------------------------------------------
+     Neutral palette follows Comfy's existing tokens. Accent is used
+     only for the primary action and active/focus states — nothing
+     decorative. */
+  --layout-color-canvas: var(--p-content-background, #1a1a1a);
+  --layout-color-cell-fill: var(--p-surface-800, #2a2a2a);
+  --layout-color-cell-hover: var(--p-surface-700, #3a3a3a);
+  --layout-color-text: var(--p-text-color, #fafafa);
+  --layout-color-text-muted: var(--p-text-muted-color, #a1a1a1);
+  --layout-color-accent: #2da44e;          /* GitHub Primer green */
+  --layout-color-accent-hover: #2c974b;
+  --layout-color-accent-active: #298e46;
+  --layout-color-accent-foreground: #ffffff;
+
+  /* --- Motion --------------------------------------------------------- */
+  --layout-transition-duration: 150ms;
+  --layout-transition-easing: cubic-bezier(0.32, 0.72, 0, 1);
+}

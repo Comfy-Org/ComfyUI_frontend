@@ -18,7 +18,7 @@ const {
   mobile?: boolean
   label?: string
   showSize?: boolean
-  /** Hide the bottom size+label overlay (bento App Mode renders its own). */
+  /** Hide the bottom size+label overlay (App Mode layout renders its own). */
   hideInfo?: boolean
 }>()
 

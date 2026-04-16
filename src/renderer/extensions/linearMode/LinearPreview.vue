@@ -31,7 +31,7 @@ const { runButtonClick, mobile, typeformWidgetId, hideChrome } = defineProps<{
   runButtonClick?: (e: Event) => void
   mobile?: boolean
   typeformWidgetId?: string
-  /** Bento App Mode renders its own history + action chrome in the grid;
+  /** App Mode layout renders its own history + action chrome in the grid;
    *  this suppresses both LinearPreview's top action bar and the bottom
    *  history/feedback strip so we don't double up. */
   hideChrome?: boolean
@@ -155,7 +155,7 @@ async function rerun(e: Event) {
   <LatentPreview v-else-if="showSkeleton || isWorkflowActive" />
   <LinearArrange v-else-if="isArrangeMode" />
   <LinearWelcome v-else />
-  <!-- The inner OutputHistory must stay mounted even when the bento
+  <!-- The inner OutputHistory must stay mounted even when the layout
        layout hides this bar — its watchers drive selectedItem /
        selectedOutput via `updateSelection`. v-show keeps the DOM +
        watchers alive; display:none just hides it visually. -->
