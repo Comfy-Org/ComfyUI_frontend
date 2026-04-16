@@ -6,10 +6,9 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
@@ -19,11 +18,12 @@ import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPrev
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
-const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
@@ -33,28 +33,28 @@ const { runButtonClick, mobile, typeformWidgetId } = defineProps<{
   typeformWidgetId?: string
 }>()
 
-const selectedItem = ref<AssetItem>()
+const selectedItem = ref<JobListItem>()
 const selectedOutput = ref<ResultItemImpl>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
 
 function handleSelection(sel: OutputSelection) {
-  selectedItem.value = sel.asset
+  selectedItem.value = sel.job
   selectedOutput.value = sel.output
   canShowPreview.value = sel.canShowPreview
   latentPreview.value = sel.latentPreviewUrl
   showSkeleton.value = sel.showSkeleton ?? false
 }
 
-function downloadAsset(item?: AssetItem) {
+function downloadJob(item?: JobListItem) {
   for (const output of allOutputs(item))
     downloadFile(output.url, output.filename)
 }
 
-async function loadWorkflow(item: AssetItem | undefined) {
+async function loadWorkflow(item: JobListItem | undefined) {
   if (!item) return
-  const { workflow } = await extractWorkflowFromAsset(item)
+  const workflow = await extractWorkflow(item)
   if (!workflow) return
 
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
@@ -120,7 +120,7 @@ async function rerun(e: Event) {
                 label: t('linearMode.downloadAll', {
                   count: allOutputs(selectedItem).length
                 }),
-                command: () => downloadAsset(selectedItem)
+                command: () => downloadJob(selectedItem)
               },
               { separator: true }
             ]
@@ -128,7 +128,7 @@ async function rerun(e: Event) {
         {
           icon: 'icon-[lucide--trash-2]',
           label: t('linearMode.deleteAllAssets'),
-          command: () => mediaActions.deleteAssets(selectedItem!)
+          command: () => api.deleteItem('output', selectedItem!.id)
         }
       ]"
     />

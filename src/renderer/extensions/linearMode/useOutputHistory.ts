@@ -1,37 +1,35 @@
 import { useAsyncState } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import { getJobDetail } from '@/services/jobOutputCache'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemImpl,
+  useHistoryStore,
+  useQueueStore
+} from '@/stores/queueStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 export function useOutputHistory(): {
-  outputs: IAssetsProvider
-  allOutputs: (item?: AssetItem) => ResultItemImpl[]
+  outputs: ComputedRef<JobListItem[]>
+  allOutputs: (item?: JobListItem) => readonly ResultItemImpl[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
   isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
-  const backingOutputs = useMediaAssets('output')
-  void backingOutputs.fetchMediaList()
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
   const appModeStore = useAppModeStore()
   const queueStore = useQueueStore()
+  const historyStore = useHistoryStore()
 
   function matchesActiveWorkflow(task: { jobId: string | number }): boolean {
     const path = workflowStore.activeWorkflow?.path
@@ -60,7 +58,9 @@ export function useOutputHistory(): {
       hasActiveWorkflowJobs()
   )
 
-  function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
+  function filterByOutputNodes(
+    items: readonly ResultItemImpl[]
+  ): readonly ResultItemImpl[] {
     const nodeIds = appModeStore.selectedOutputs
     if (!nodeIds.length) return []
     return items.filter((r) =>
@@ -74,76 +74,45 @@ export function useOutputHistory(): {
 
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    return backingOutputs.media.value.filter((asset) => {
-      const m = getOutputAssetMetadata(asset?.user_metadata)
-      return m ? pathMap.get(m.jobId) === path : false
-    })
+    return historyStore.historyItems.filter(
+      (item) => pathMap.get(item.id) === path
+    )
   })
-
-  const outputs: IAssetsProvider = {
-    ...backingOutputs,
-    media: sessionMedia,
-    hasMore: ref(false),
-    isLoadingMore: ref(false),
-    loadMore: async () => {}
-  }
 
   const resolvedCache = linearStore.resolvedOutputsCache
   const asyncRefs = new Map<
     string,
-    ReturnType<typeof useAsyncState<ResultItemImpl[]>>['state']
+    ReturnType<typeof useAsyncState<readonly ResultItemImpl[]>>['state']
   >()
 
-  function allOutputs(item?: AssetItem): ResultItemImpl[] {
+  function allOutputs(item?: JobListItem): readonly ResultItemImpl[] {
     if (!item?.id) return []
 
     const cached = resolvedCache.get(item.id)
     if (cached) return filterByOutputNodes(cached)
 
-    const user_metadata = getOutputAssetMetadata(item.user_metadata)
-    if (!user_metadata) return []
-
+    /*FIXME
     // For recently completed jobs still pending resolve, derive order from
     // the in-progress items which are in correct execution order.
-    if (linearStore.pendingResolve.has(user_metadata.jobId)) {
+    if (linearStore.pendingResolve.has(item.Id)) {
       const ordered = linearStore.inProgressItems
-        .filter((i) => i.jobId === user_metadata.jobId && i.output)
+        .filter((i) => i.id === item.id && i.output)
         .map((i) => i.output!)
       if (ordered.length > 0) {
         resolvedCache.set(item.id, ordered)
         return filterByOutputNodes(ordered)
       }
-    }
-
-    // Use metadata when all outputs are present. The /jobs list endpoint
-    // only returns preview_output (single item), so outputCount may exceed
-    // allOutputs.length for multi-output jobs.
-    if (
-      user_metadata.allOutputs?.length &&
-      (!user_metadata.outputCount ||
-        user_metadata.outputCount <= user_metadata.allOutputs.length) &&
-      item.preview_url
-    ) {
-      const reversed = user_metadata.allOutputs.toReversed()
-      resolvedCache.set(item.id, reversed)
-      return filterByOutputNodes(reversed)
-    }
+    }*/
 
     // Async fallback for multi-output jobs — fetch full /jobs/{id} detail.
     // This can be hit if the user executes the job then switches tabs.
     const existing = asyncRefs.get(item.id)
     if (existing) return filterByOutputNodes(existing.value)
 
-    const itemId = item.id
     const outputRef = useAsyncState(
-      getJobDetail(user_metadata.jobId).then((jobDetail) => {
-        if (!jobDetail?.outputs) return []
-        const results = Object.entries(jobDetail.outputs)
-          .flatMap(flattenNodeOutput)
-          .toReversed()
-        resolvedCache.set(itemId, results)
-        return results
-      }),
+      new TaskItemImpl(item)
+        .loadFullOutputs()
+        .then((item) => item.calculateFlatOutputs()),
       []
     ).state
     asyncRefs.set(item.id, outputRef)
@@ -151,7 +120,7 @@ export function useOutputHistory(): {
   }
 
   function selectFirstHistory() {
-    const first = outputs.media.value[0]
+    const first = historyStore.historyItems[0]
     if (first) {
       linearStore.selectAsLatest(`history:${first.id}:0`)
     } else {
@@ -163,12 +132,9 @@ export function useOutputHistory(): {
   watchEffect(() => {
     if (linearStore.pendingResolve.size === 0) return
     for (const jobId of linearStore.pendingResolve) {
-      const asset = outputs.media.value.find((a) => {
-        const m = getOutputAssetMetadata(a?.user_metadata)
-        return m?.jobId === jobId
-      })
-      if (!asset) continue
-      const loaded = allOutputs(asset).length > 0
+      const job = historyStore.historyItems.find((j) => j.id === jobId)
+      if (!job) continue
+      const loaded = allOutputs(job).length > 0
       if (loaded) {
         linearStore.resolveIfReady(jobId, true)
         if (!linearStore.selectedId) selectFirstHistory()
@@ -194,7 +160,7 @@ export function useOutputHistory(): {
   }
 
   return {
-    outputs,
+    outputs: sessionMedia,
     allOutputs,
     selectFirstHistory,
     mayBeActiveWorkflowPending,
