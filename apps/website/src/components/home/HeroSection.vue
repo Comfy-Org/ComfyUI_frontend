@@ -34,11 +34,13 @@ onMounted(() => {
   if (!draw) return
 
   const reducedMotion = prefersReducedMotion()
-  let loadedCount = 0
+  let settledCount = 0
+  let hasSuccessfulFrame = false
 
-  function onFrameReady() {
-    loadedCount++
-    if (loadedCount === FRAME_COUNT) {
+  function onSettled(success: boolean) {
+    if (success) hasSuccessfulFrame = true
+    settledCount++
+    if (settledCount === FRAME_COUNT && hasSuccessfulFrame) {
       drawFrame(canvas, draw, 0)
       if (reducedMotion) return
       const proxy = { frame: 0 }
@@ -59,8 +61,8 @@ onMounted(() => {
   for (let i = 0; i < FRAME_COUNT; i++) {
     const img = new Image()
     img.src = `/videos/hero-logo-seq/Logo${String(i).padStart(2, '0')}.webp`
-    img.onload = onFrameReady
-    img.onerror = onFrameReady
+    img.onload = () => onSettled(true)
+    img.onerror = () => onSettled(false)
     images.push(img)
   }
 })

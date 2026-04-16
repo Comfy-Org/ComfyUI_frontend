@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { count = 15, columns = 5 } = defineProps<{
+const { count: rawCount = 15, columns: rawColumns = 5 } = defineProps<{
   count?: number
   columns?: number
 }>()
+
+const columns = Math.max(1, Math.trunc(Number(rawColumns)) || 1)
+const count = Math.max(0, Math.trunc(Number(rawCount)) || 0)
 
 function cellClass(i: number): string {
   return cn(
