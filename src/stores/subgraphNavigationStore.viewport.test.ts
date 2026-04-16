@@ -12,10 +12,13 @@ import {
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
 
-const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
-  mockSetDirty: vi.fn(),
-  mockFitView: vi.fn()
-}))
+const { mockSetDirty, mockFitView, mockRequestSlotSyncAll } = vi.hoisted(
+  () => ({
+    mockSetDirty: vi.fn(),
+    mockFitView: vi.fn(),
+    mockRequestSlotSyncAll: vi.fn()
+  })
+)
 
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
@@ -66,6 +69,13 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
 }))
 
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
+  () => ({
+    requestSlotLayoutSyncForAllNodes: mockRequestSlotSyncAll
+  })
+)
+
 const mockCanvas = app.canvas
 
 let rafCallbacks: FrameRequestCallback[] = []
@@ -86,6 +96,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockCanvas.ds.state.offset = [0, 0]
     mockSetDirty.mockClear()
     mockFitView.mockClear()
+    mockRequestSlotSyncAll.mockClear()
   })
 
   afterEach(() => {
@@ -215,6 +226,53 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       rafCallbacks[0](performance.now())
 
       expect(mockFitView).not.toHaveBeenCalled()
+    })
+
+    it('re-syncs all slot layouts on the frame after fitView', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+
+      store.restoreViewport('root')
+      expect(rafCallbacks).toHaveLength(1)
+
+      // Outer RAF runs fitView and schedules the inner RAF
+      rafCallbacks[0](performance.now())
+      expect(mockFitView).toHaveBeenCalledOnce()
+      expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
+      expect(rafCallbacks).toHaveLength(2)
+
+      // Inner RAF re-syncs slots after fitView's transform has been applied
+      rafCallbacks[1](performance.now())
+      expect(mockRequestSlotSyncAll).toHaveBeenCalledOnce()
+
+      mockGraph.nodes = []
+      mockGraph._nodes = []
+    })
+
+    it('skips slot re-sync if active graph changed between fitView and inner RAF', () => {
+      const store = useSubgraphNavigationStore()
+      store.viewportCache.delete(':root')
+
+      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
+      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
+      mockGraph._nodes = mockGraph.nodes
+
+      store.restoreViewport('root')
+      rafCallbacks[0](performance.now())
+      expect(mockFitView).toHaveBeenCalledOnce()
+
+      // User navigated away before the inner RAF fired
+      mockCanvas.subgraph = { id: 'different-graph' } as never
+      rafCallbacks[1](performance.now())
+
+      expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
+
+      mockGraph.nodes = []
+      mockGraph._nodes = []
     })
 
     it('skips fitView if active graph changed before rAF fires', () => {

@@ -23,8 +23,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-  function checkWorkflowState() {
-    useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
+  function captureWorkflowState() {
+    useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
   function updateSelectedItems(selectedItems: Set<string>) {
@@ -36,7 +36,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         : dropdownItems.value.find((item) => item.id === id)?.name
 
     modelValue.value = name
-    checkWorkflowState()
+    captureWorkflowState()
   }
 
   async function uploadFile(
@@ -109,7 +109,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         widget.callback(uploadedPaths[0])
       }
 
-      checkWorkflowState()
+      captureWorkflowState()
     }
   )
 
