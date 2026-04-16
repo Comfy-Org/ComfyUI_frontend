@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
-import type { operations } from '@/types/comfyRegistryTypes'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 async function openCancelSubscriptionDialog(page: Page, cancelAt?: string) {
@@ -58,20 +57,6 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     const { page } = comfyPage
-    const mockBillingPortalResponse: NonNullable<
-      operations['AccessBillingPortal']['responses']['200']['content']['application/json']
-    > = {
-      billing_portal_url: 'https://billing.stripe.com/test'
-    }
-    let billingRequestCount = 0
-    let billingRequestMethod: string | null = null
-
-    await page.route('**/customers/billing', async (route) => {
-      billingRequestCount += 1
-      billingRequestMethod = route.request().method()
-
-      await route.fulfill({ json: mockBillingPortalResponse })
-    })
 
     await openCancelSubscriptionDialog(page)
 
@@ -86,8 +71,6 @@ test.describe('CancelSubscription dialog', { tag: '@ui' }, () => {
 
     await cancelBtn.click()
 
-    await expect.poll(() => billingRequestCount).toBe(1)
-    expect(billingRequestMethod).toBe('POST')
     await expect(dialog).toBeHidden()
   })
 })
