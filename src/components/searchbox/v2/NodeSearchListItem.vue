@@ -26,7 +26,7 @@
           <div class="flex-1" />
           <div class="flex shrink-0 items-center gap-1">
             <span
-              v-if="showSourceBadge && !isCustom"
+              v-if="showSourceBadge && isCore"
               aria-hidden="true"
               class="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-secondary-background-hover/80"
             >
@@ -126,6 +126,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
+  CORE_NODE_MODULES,
   isCustomNode as isCustomNodeDef,
   NodeSourceType
 } from '@/types/nodeSource'
@@ -168,5 +169,8 @@ const nodeFrequency = computed(() =>
 const nodeBookmarkStore = useNodeBookmarkStore()
 const isBookmarked = computed(() => nodeBookmarkStore.isBookmarked(nodeDef))
 const providerName = computed(() => getProviderName(nodeDef.category))
+const isCore = computed(() =>
+  CORE_NODE_MODULES.includes(nodeDef.python_module.split('.')[0])
+)
 const isCustom = computed(() => isCustomNodeDef(nodeDef))
 </script>
