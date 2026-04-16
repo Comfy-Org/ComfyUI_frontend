@@ -112,11 +112,15 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
         />
       </Transition>
     </div>
-    <p
-      class="text-primary-comfy-yellow relative z-10 mt-4 text-center text-sm font-bold tracking-widest uppercase lg:text-base"
+    <div
+      class="from-primary-comfy-ink to-primary-comfy-ink/10 relative z-10 w-full bg-linear-to-b py-4"
     >
-      {{ t('useCase.label', locale) }}
-    </p>
+      <p
+        class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase lg:text-base"
+      >
+        {{ t('useCase.label', locale) }}
+      </p>
+    </div>
 
     <div
       ref="contentRef"
