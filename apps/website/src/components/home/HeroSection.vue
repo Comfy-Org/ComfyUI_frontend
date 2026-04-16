@@ -73,11 +73,11 @@ onUnmounted(() => {
   <section
     class="relative flex min-h-auto flex-col lg:flex-row lg:items-center"
   >
-    <div class="relative w-full lg:w-3/5">
+    <div class="relative flex-1">
       <canvas ref="canvasRef" class="w-full" />
     </div>
 
-    <div class="px-6 py-12 lg:w-2/5 lg:px-16">
+    <div class="flex-1 px-6 py-12 lg:px-16">
       <h1
         class="text-primary-comfy-canvas text-4xl font-light whitespace-pre-line lg:text-6xl"
       >
