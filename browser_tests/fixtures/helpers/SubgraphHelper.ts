@@ -465,11 +465,7 @@ export class SubgraphHelper {
     const serialized = await this.page.evaluate(() =>
       window.app!.graph!.serialize()
     )
-    await this.page.evaluate(
-      (workflow: ComfyWorkflowJSON) => window.app!.loadGraphData(workflow),
-      serialized as ComfyWorkflowJSON
-    )
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
   }
 
   async convertDefaultKSamplerToSubgraph(): Promise<NodeReference> {
@@ -477,14 +473,12 @@ export class SubgraphHelper {
     const ksampler = await this.comfyPage.nodeOps.getNodeRefById('3')
     await ksampler.click('title')
     const subgraphNode = await ksampler.convertToSubgraph()
-    await this.comfyPage.nextFrame()
     return subgraphNode
   }
 
   async packAllInteriorNodes(hostNodeId: string): Promise<void> {
     await this.comfyPage.vueNodes.enterSubgraph(hostNodeId)
     await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-    await this.comfyPage.nextFrame()
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {
       bubbles: true,
       cancelable: true,

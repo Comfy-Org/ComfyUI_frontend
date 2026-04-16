@@ -157,18 +157,15 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
     )
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-light-red.png'
     )
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
 
@@ -181,7 +178,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
@@ -190,7 +186,6 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       'Comfy.ColorPalette',
       'custom_obsidian_dark'
     )
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
@@ -212,15 +207,12 @@ test.describe(
 
       // Drag mouse to force canvas to redraw
       await comfyPage.page.mouse.move(0, 0)
-      await comfyPage.nextFrame()
-
-      await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
+      await comfyPage.expectScreenshot(comfyPage.canvas, 'node-opacity-0.5.png')
 
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 1.0)
 
       await comfyPage.page.mouse.move(8, 8)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
+      await comfyPage.expectScreenshot(comfyPage.canvas, 'node-opacity-1.png')
     })
 
     test('should persist color adjustments when changing themes', async ({
@@ -229,8 +221,8 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.2)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'arc')
       await comfyPage.page.mouse.move(0, 0)
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'node-opacity-0.2-arc-theme.png'
       )
     })
@@ -240,7 +232,6 @@ test.describe(
     }) => {
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.nextFrame()
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
@@ -279,7 +270,6 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-lightened-colors.png'
       )

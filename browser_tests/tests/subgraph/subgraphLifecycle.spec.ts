@@ -14,7 +14,6 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const textarea = comfyPage.page.getByTestId(
         TestIds.widgets.domWidgetTextarea

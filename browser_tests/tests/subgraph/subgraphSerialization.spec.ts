@@ -40,7 +40,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     await comfyPage.workflow.loadWorkflow(
       'subgraphs/subgraph-with-promoted-text-widget'
     )
-    await comfyPage.nextFrame()
 
     const beforeReload = comfyPage.page.locator('.comfy-multiline-input')
     await expect(beforeReload).toHaveCount(1)
@@ -59,7 +58,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     await comfyPage.workflow.loadWorkflow(
       'subgraphs/subgraph-compressed-target-slot'
     )
-    await comfyPage.nextFrame()
 
     await expect
       .poll(async () => {
@@ -73,20 +71,17 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
-    await comfyPage.nextFrame()
 
     await comfyPage.page.reload()
     await comfyPage.page.waitForFunction(() => !!window.app)
     await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW)
-    await comfyPage.nextFrame()
 
     const subgraphNode = await comfyPage.nodeOps.getNodeRefById('5')
     await subgraphNode.navigateIntoSubgraph()
 
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Escape')
 
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
   })
@@ -121,7 +116,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       const expectedValues = ['Alpha\n', 'Beta\n', 'Gamma\n']
 
       await comfyPage.workflow.loadWorkflow(workflowName)
-      await comfyPage.nextFrame()
 
       const initialValues = await getPromotedHostWidgetValues(
         comfyPage,
