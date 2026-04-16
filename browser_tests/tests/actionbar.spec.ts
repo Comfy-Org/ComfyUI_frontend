@@ -54,7 +54,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
 
         ;(
           window.app!.extensionManager as WorkspaceStore
-        ).workflow.activeWorkflow?.changeTracker.checkState()
+        ).workflow.activeWorkflow?.changeTracker.captureCanvasState()
       }, value)
     }
 
