@@ -54,6 +54,33 @@ jobs:
           lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
           wc -l coverage/playwright/coverage.lcov
 
+      - name: Validate merged coverage
+        run: |
+          SHARD_COUNT=$(find temp/coverage-shards -name 'coverage.lcov' -type f | wc -l | tr -d ' ')
+          if [ "$SHARD_COUNT" -eq 0 ]; then
+            echo "::error::No shard coverage.lcov files found under temp/coverage-shards"
+            exit 1
+          fi
+
+          MERGED_SF=$(grep -c '^SF:' coverage/playwright/coverage.lcov || echo 0)
+          MERGED_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
+          MERGED_LF=$(awk -F: '/^LF:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
+          echo "### Merged coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **$MERGED_SF** source files" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **$MERGED_LH / $MERGED_LF** lines hit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Shard | Files | Lines Hit |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|-----------|" >> "$GITHUB_STEP_SUMMARY"
+          for f in $(find temp/coverage-shards -name 'coverage.lcov' -type f | sort); do
+            SHARD=$(basename "$(dirname "$f")")
+            SHARD_SF=$(grep -c '^SF:' "$f" || echo 0)
+            SHARD_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$f")
+            echo "| $SHARD | $SHARD_SF | $SHARD_LH |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$MERGED_LH" -lt "$SHARD_LH" ]; then
+              echo "::error::Merged LH ($MERGED_LH) < shard LH ($SHARD_LH) in $SHARD — possible data loss"
+            fi
+          done
+
       - name: Upload merged coverage data
         if: always()
         uses: actions/upload-artifact@v6
