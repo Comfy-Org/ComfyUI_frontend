@@ -171,14 +171,10 @@ const sidebarPanelVisible = computed(
 )
 
 const firstPanelVisible = computed(
-  () =>
-    !focusMode.value &&
-    (sidebarLocation.value === 'left' || showOffsideSplitter.value)
+  () => sidebarLocation.value === 'left' || showOffsideSplitter.value
 )
 const lastPanelVisible = computed(
-  () =>
-    !focusMode.value &&
-    (sidebarLocation.value === 'right' || showOffsideSplitter.value)
+  () => sidebarLocation.value === 'right' || showOffsideSplitter.value
 )
 
 /**
@@ -264,10 +260,11 @@ function normalizeSavedSizes() {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}${focusMode.value ? '-focus' : ''}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {
+  if (focusMode.value) return { display: 'none' }
   if (sidebarLocation.value === 'left') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -275,6 +272,7 @@ const firstPanelStyle = computed(() => {
 })
 
 const lastPanelStyle = computed(() => {
+  if (focusMode.value) return { display: 'none' }
   if (sidebarLocation.value === 'right') {
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
   }
@@ -293,9 +291,13 @@ const lastPanelStyle = computed(() => {
   background-color: var(--p-primary-color);
 }
 
-/* Hide sidebar gutter when sidebar is not visible */
-:deep(.side-bar-panel[style*='display: none'] + .p-splitter-gutter),
-:deep(.p-splitter-gutter + .side-bar-panel[style*='display: none']) {
+/* Hide gutter when adjacent panel is not visible */
+:deep(
+  [data-pc-name='splitterpanel'][style*='display: none'] + .p-splitter-gutter
+),
+:deep(
+  .p-splitter-gutter + [data-pc-name='splitterpanel'][style*='display: none']
+) {
   display: none;
 }
 
