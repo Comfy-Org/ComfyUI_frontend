@@ -1,37 +1,37 @@
 <script setup lang="ts">
 /**
- * BentoView — App Mode runtime view rebuilt around the bento grid.
+ * BentoView — App Mode runtime view.
  *
- * Prototype scope: hard-coded cell layout matching design/mockups/grid-system-001.png.
- * System-pinned cells port the existing AppModeToolbar functionality:
- *   - Mode toggle (App ↔ Graph dropdown)
- *   - Builder (hammer)
- *   - Share (cloud + sharing-flag only)
- *   - Assets (sidebar tab toggle)
- *   - Apps (sidebar tab toggle)
- *   - Help (placeholder)
- *   - Run (placeholder)
- *
- * Stub input/output cells are visible boxes for now; real widget/output
- * rendering swaps in next.
+ * Solution 04 (Phase 4-A): LinearPreview is the full-viewport background;
+ * system chrome (mode toggle, feedback, utility icons) floats in the
+ * bento grid above it; a single right-dock FloatingPanel overlays inputs
+ * + run on the right side. Drag, resize, persistence, and multi-panel
+ * land in later phases (4-B through 4-I).
  */
 import { useEventListener } from '@vueuse/core'
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
 import BentoGrid from './BentoGrid.vue'
 import type { BentoCellPlacement } from './BentoGrid.vue'
 import IconCell from './cells/IconCell.vue'
-import RunCell from './cells/RunCell.vue'
 import FeedbackCell from './cells/FeedbackCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
-import InputCell from './cells/InputCell.vue'
 import type { InputCellEntry } from './cells/InputCell.vue'
-import OutputsCell from './cells/OutputsCell.vue'
-import OutputCell from './cells/OutputCell.vue'
-import BatchCountCell from './cells/BatchCountCell.vue'
+import FloatingPanel from './panels/FloatingPanel.vue'
+import PanelBlockList from './panels/PanelBlockList.vue'
+import PanelDragPreview from './panels/PanelDragPreview.vue'
+import type {
+  BlockConfig,
+  BlockPos,
+  BlockRow,
+  DropTarget,
+  PanelPreset
+} from './panels/panelTypes'
+import { usePanelDrag } from './panels/usePanelDrag'
 
+import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -79,10 +79,7 @@ function openShare() {
   openShareDialog().catch(toastErrorHandler)
 }
 
-// --- Per-input cell data ------------------------------------------------
-// Replicates the filtered-nodeData pattern from AppModeWidgetList so that
-// each selected input can be rendered in its own bento cell with just its
-// own widget inside, not the full node's widget list.
+// --- Per-input entry data (unchanged from Phase 2a) ---------------------
 
 const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
 useEventListener(
@@ -91,20 +88,18 @@ useEventListener(
   () => (graphNodes.value = app.rootGraph.nodes)
 )
 
-interface InputEntryWithConfig extends InputCellEntry {
-  config: { col?: number; row?: number; colSpan?: number; rowSpan?: number }
+interface InputEntryWithMeta extends InputCellEntry {
   isMultiline: boolean
 }
 
-const inputEntries = computed<InputEntryWithConfig[]>(() => {
-  // Read graphNodes so we recompute when nodes are added/removed
+const inputEntries = computed<InputEntryWithMeta[]>(() => {
   void graphNodes.value
   const nodeDataByNode = new Map<
     LGraphNode,
     ReturnType<typeof extractVueNodeData>
   >()
 
-  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName, config]) => {
+  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName]) => {
     const [node, widget] = resolveNodeWidget(nodeId, widgetName)
     if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
 
@@ -142,37 +137,159 @@ const inputEntries = computed<InputEntryWithConfig[]>(() => {
         },
         widget,
         node,
-        config: config ?? {},
         isMultiline
       }
     ]
   })
 })
 
-// Map input-cell id → entry so the template can look up by cell id.
 const inputEntryMap = computed(
-  () => new Map(inputEntries.value.map((e) => [`input-${e.key}`, e]))
+  () => new Map(inputEntries.value.map((e) => [e.key, e]))
 )
 
-// Map output-cell id → nodeId so the OutputCell can receive it as a prop.
-const outputNodeMap = computed(() => {
-  const m = new Map<string, (typeof appModeStore.selectedOutputs)[number]>()
-  for (const nodeId of appModeStore.selectedOutputs) {
-    m.set(`output-${nodeId}`, nodeId)
+// --- Phase 4-A: hard-coded single panel + 4-C drag state ----------------
+// Phase 4-B will move preset + blocks into the store and persist them.
+const panelPreset = ref<PanelPreset>('right-dock')
+
+// Block list is a 2D grid (rows of columns) so 4-E (reorder) and 4-F
+// (multi-column) can both mutate it. Reconciliation preserves user
+// rows/columns across input changes.
+const panelRows = ref<BlockRow[]>([])
+
+watchEffect(() => {
+  const desiredInputIds = new Set(
+    inputEntries.value.map((e) => `input-${e.key}`)
+  )
+  const entryByBlockId = new Map(
+    inputEntries.value.map((e) => [`input-${e.key}`, e])
+  )
+  const existingInputIds = new Set<string>()
+  for (const row of panelRows.value) {
+    for (const b of row) {
+      if (b.kind === 'input') existingInputIds.add(b.id)
+    }
   }
-  return m
+
+  // Preserve rows; drop blocks whose input entry is gone; refresh meta.
+  const preserved: BlockRow[] = panelRows.value
+    .map(
+      (row): BlockRow =>
+        row.flatMap((block): BlockConfig[] => {
+          if (block.kind === 'input') {
+            if (!desiredInputIds.has(block.id)) return []
+            const entry = entryByBlockId.get(block.id)!
+            return [
+              {
+                ...block,
+                entryKey: entry.key,
+                isMultiline: entry.isMultiline
+              }
+            ]
+          }
+          return [block]
+        })
+    )
+    .filter((row) => row.length > 0)
+
+  // Find (or create) the trailing run row.
+  let runRowIdx = preserved.findIndex((r) => r.some((b) => b.kind === 'run'))
+  if (runRowIdx === -1) {
+    preserved.push([{ id: 'run', kind: 'run', withBatchCount: true }])
+    runRowIdx = preserved.length - 1
+  }
+
+  // Append brand-new inputs as single-block rows, above the run row.
+  for (const entry of inputEntries.value) {
+    const id = `input-${entry.key}`
+    if (existingInputIds.has(id)) continue
+    const newBlock: BlockConfig = {
+      id,
+      kind: 'input',
+      entryKey: entry.key,
+      isMultiline: entry.isMultiline
+    }
+    preserved.splice(runRowIdx, 0, [newBlock])
+    runRowIdx += 1
+  }
+
+  panelRows.value = preserved
 })
 
-// Layout matches design/mockups/grid-system-001.png:
-// - Col 1 holds a vertical stack of utility icon cells
-// - Col 2-3 row 1 hosts the App↔Graph mode toggle
-// - Col 1 row 8 is the Help cell
-// - Col 11-12 row 8 is the Run cell
-// - Stub input/output cells fill the remaining space for visual demo
+function moveBlock(from: BlockPos, target: DropTarget) {
+  // Work on a fresh copy so Vue sees a new top-level value.
+  const rows: BlockRow[] = panelRows.value.map((r) => r.slice())
+  if (!rows[from.row] || rows[from.row][from.col] === undefined) return
+  const moved = rows[from.row][from.col]
+
+  // --- Noop detection on pre-removal grid ----------------------------
+  const sourceRowLen = rows[from.row].length
+  const isSoloRow = sourceRowLen === 1
+
+  if (
+    (target.kind === 'columnBefore' &&
+      target.rowIndex === from.row &&
+      target.colIndex === from.col) ||
+    (target.kind === 'columnAfter' &&
+      target.rowIndex === from.row &&
+      target.colIndex === from.col)
+  ) {
+    return
+  }
+  if (
+    isSoloRow &&
+    (target.kind === 'newRowBefore' || target.kind === 'newRowAfter') &&
+    target.rowIndex === from.row
+  ) {
+    return
+  }
+
+  // --- Remove from source --------------------------------------------
+  rows[from.row].splice(from.col, 1)
+  const sourceRowRemoved = rows[from.row].length === 0
+  if (sourceRowRemoved) rows.splice(from.row, 1)
+
+  // --- Insert at destination -----------------------------------------
+  const shiftForRemovedRow = (idx: number) =>
+    sourceRowRemoved && from.row < idx ? idx - 1 : idx
+
+  if (target.kind === 'newRowBefore' || target.kind === 'newRowAfter') {
+    const base =
+      target.kind === 'newRowAfter' ? target.rowIndex + 1 : target.rowIndex
+    const destRow = shiftForRemovedRow(base)
+    rows.splice(destRow, 0, [moved])
+  } else {
+    const destRow = shiftForRemovedRow(target.rowIndex)
+    const row = rows[destRow]
+    if (!row) return
+    let destCol = target.colIndex
+    // Same-row compaction: if we removed a block to the left of the
+    // target column within the same row, shift the target col left.
+    if (
+      !sourceRowRemoved &&
+      from.row === target.rowIndex &&
+      from.col < destCol
+    ) {
+      destCol -= 1
+    }
+    if (target.kind === 'columnAfter') destCol += 1
+    destCol = Math.max(0, Math.min(row.length, destCol))
+    row.splice(destCol, 0, moved)
+  }
+
+  panelRows.value = rows
+}
+
+const { isDragging, snapTarget, onHeaderPointerDown } = usePanelDrag({
+  currentPreset: panelPreset,
+  onCommit: (preset) => {
+    panelPreset.value = preset
+  }
+})
+
+// --- Chrome cells only (mode toggle, feedback, utility column) ----------
 const cells = computed<BentoCellPlacement[]>(() => {
   const out: BentoCellPlacement[] = []
 
-  // System-pinned utility column (col 1)
   let row = 1
   if (enableAppBuilder.value) {
     out.push({ id: 'builder', col: 1, row: row++, kind: 'system-builder' })
@@ -183,7 +300,6 @@ const cells = computed<BentoCellPlacement[]>(() => {
   out.push({ id: 'assets', col: 1, row: row++, kind: 'system-assets' })
   out.push({ id: 'apps', col: 1, row: row++, kind: 'system-apps' })
 
-  // Mode toggle (col 2-3, row 1)
   out.push({
     id: 'mode-toggle',
     col: 2,
@@ -192,9 +308,6 @@ const cells = computed<BentoCellPlacement[]>(() => {
     kind: 'system-mode-toggle'
   })
 
-  // Feedback (bottom-left) — 3 cols wide so the "App mode in beta /
-  // Give feedback" text fits next to the Typeform button.
-  // row: -2 anchors to last row regardless of grid size.
   out.push({
     id: 'feedback',
     col: 1,
@@ -203,94 +316,19 @@ const cells = computed<BentoCellPlacement[]>(() => {
     kind: 'system-feedback'
   })
 
-  // Run (bottom-right) — 5 cols wide so the label has room to breathe.
-  out.push({ id: 'run', col: -6, row: -2, colSpan: 5, kind: 'system-run' })
-
-  // Batch count (one row above Run, same column span). First label/
-  // widget pair broken into its own bento cell — pilots Phase 2.
-  out.push({
-    id: 'batch-count',
-    col: -6,
-    row: -3,
-    colSpan: 5,
-    kind: 'system-batch-count'
-  })
-
-  // Phase 2b: the first selected output stays in the hero cell (wraps
-  // LinearPreview so output history, latent previews, progress, and
-  // the welcome state all keep working). Additional outputs (when the
-  // workflow has 2+) render as individual OutputCells stacked below
-  // the hero — plain MediaOutputPreview for each specific node.
-  const outputNodeIds = appModeStore.selectedOutputs
-  const [heroOutputId, ...extraOutputIds] = outputNodeIds
-  const hasExtraOutputs = extraOutputIds.length > 0
-
-  if (heroOutputId !== undefined) {
-    out.push({
-      id: 'outputs',
-      col: 4,
-      row: 1,
-      // If there are extra outputs, hero gets narrower to make room
-      // for them on the right side of the outputs region.
-      colSpan: hasExtraOutputs ? 7 : 10,
-      rowSpan: 10,
-      kind: 'outputs'
-    })
-  }
-
-  // Extra output cells: stack vertically in a narrow column to the
-  // right of the hero. Each takes 3 cols and a few rows — enough to
-  // show the media at a reasonable size without dominating.
-  let extraRow = 1
-  const EXTRA_COL = 11
-  const EXTRA_COL_SPAN = 3
-  const EXTRA_ROW_SPAN = 4
-  for (const nodeId of extraOutputIds) {
-    out.push({
-      id: `output-${nodeId}`,
-      col: EXTRA_COL,
-      row: extraRow,
-      colSpan: EXTRA_COL_SPAN,
-      rowSpan: EXTRA_ROW_SPAN,
-      kind: 'output'
-      // Stash the nodeId on the placement so the template can read it;
-      // BentoCellPlacement allows arbitrary `kind` + the id encodes it.
-    } as BentoCellPlacement)
-    extraRow += EXTRA_ROW_SPAN
-  }
-
-  // Phase 2a: per-input cells. Each selected input becomes its own cell,
-  // auto-stacked in a right-side column wide enough for the NodeWidgets
-  // 3-column grid to breathe. Heuristic: textareas / multiline widgets
-  // take 4 rows; everything else takes 2 rows.
-  //
-  // NOTE: stored per-widget layout config (colSpan/col/row in linearData)
-  // is intentionally ignored here. Earlier experiments wrote colSpan
-  // values into some workflows that now fight the heuristic. Phase 3
-  // will reintroduce stored-config support once drag/resize is wired.
-  const INPUT_COL = -11
-  const INPUT_COL_SPAN = 10
-  let nextInputRow = 1
-  for (const entry of inputEntries.value) {
-    const rowSpan = entry.isMultiline ? 4 : 2
-    out.push({
-      id: `input-${entry.key}`,
-      col: INPUT_COL,
-      row: nextInputRow,
-      colSpan: INPUT_COL_SPAN,
-      rowSpan,
-      kind: 'input'
-    })
-    nextInputRow += rowSpan
-  }
-
   return out
 })
 </script>
 
 <template>
   <div class="bento-view">
-    <BentoGrid :cells="cells" fill-empty>
+    <!-- Background layer: output canvas fills the viewport. -->
+    <div class="bento-view__background">
+      <LinearPreview />
+    </div>
+
+    <!-- Chrome layer: floating utility cells sit above the background. -->
+    <BentoGrid :cells="cells">
       <template v-for="cell in cells" :key="cell.id" #[cell.id]>
         <IconCell
           v-if="cell.kind === 'system-builder'"
@@ -322,39 +360,51 @@ const cells = computed<BentoCellPlacement[]>(() => {
         />
         <ModeToggleCell v-else-if="cell.kind === 'system-mode-toggle'" />
         <FeedbackCell v-else-if="cell.kind === 'system-feedback'" />
-        <RunCell v-else-if="cell.kind === 'system-run'" />
-        <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
-        <InputCell
-          v-else-if="cell.kind === 'input' && inputEntryMap.get(cell.id)"
-          :entry="inputEntryMap.get(cell.id)!"
-        />
-        <OutputsCell v-else-if="cell.kind === 'outputs'" />
-        <OutputCell
-          v-else-if="cell.kind === 'output' && outputNodeMap.get(cell.id)"
-          :node-id="outputNodeMap.get(cell.id)!"
-        />
-        <div v-else class="bento-stub" :data-stub-kind="cell.kind" />
       </template>
     </BentoGrid>
+
+    <!-- Overlay layer: the floating panel(s). Phase 4-A: one panel;
+         Phase 4-C: drag between presets. -->
+    <FloatingPanel
+      :preset="panelPreset"
+      :dragging="isDragging"
+      :on-header-pointer-down="onHeaderPointerDown"
+    >
+      <PanelBlockList
+        :rows="panelRows"
+        :input-entry-map="inputEntryMap"
+        :on-reorder="moveBlock"
+      />
+    </FloatingPanel>
+
+    <PanelDragPreview v-if="isDragging" :preset="snapTarget" />
   </div>
 </template>
 
-<!-- Import design tokens (cascades via CSS custom properties on .bento-view)
-     — must stay imported here so every cell inherits the --bento-* vars. -->
+<!-- Design tokens cascade to all cells + panels inside .bento-view. -->
 <style src="./design-tokens.css"></style>
 
 <style scoped>
 .bento-view {
-  /* Fill the parent wrapper (LinearView sets position:relative on it)
-     and serve as the positioning context for the absolutely-positioned
-     BentoGrid inside. */
   position: absolute;
   inset: 0;
   background-color: var(--bento-color-canvas);
 }
 
-.bento-stub {
-  width: 100%;
-  height: 100%;
+.bento-view__background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Lift the chrome grid above the background and make it transparent so
+   LinearPreview shows through where there's no chrome cell. */
+.bento-view :deep(.bento-grid) {
+  z-index: 1;
+  background-color: transparent;
+  pointer-events: none;
+}
+.bento-view :deep(.bento-grid) > * {
+  pointer-events: auto;
 }
 </style>
