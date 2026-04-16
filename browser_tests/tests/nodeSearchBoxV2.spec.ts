@@ -29,7 +29,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
     await expect(searchBoxV2.results.first()).toBeVisible()
 
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
@@ -48,7 +48,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
     // Enter should add the first (selected) result
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
@@ -141,7 +141,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
       // Enter selects and adds node
       await comfyPage.page.keyboard.press('Enter')
-      await expect(searchBoxV2.input).not.toBeVisible()
+      await expect(searchBoxV2.input).toBeHidden()
 
       await expect
         .poll(() => comfyPage.nodeOps.getGraphNodesCount())

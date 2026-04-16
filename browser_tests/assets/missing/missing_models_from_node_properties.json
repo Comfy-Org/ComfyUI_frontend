@@ -34,7 +34,7 @@
           {
             "name": "fake_model.safetensors",
             "url": "http://localhost:8188/api/devtools/fake_model.safetensors",
-            "directory": "text_encoders"
+            "directory": "checkpoints"
           }
         ]
       },

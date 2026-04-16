@@ -104,7 +104,7 @@
               <Button
                 v-else-if="
                   group.type === 'missing_model' &&
-                  downloadableModels.length > 0
+                  downloadableModels.length > 1
                 "
                 variant="secondary"
                 size="sm"
@@ -293,8 +293,8 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
-  missingModelGroups,
-  missingMediaGroups,
+  filteredMissingModelGroups: missingModelGroups,
+  filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 

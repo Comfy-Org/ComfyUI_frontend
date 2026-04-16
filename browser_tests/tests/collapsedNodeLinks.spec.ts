@@ -8,12 +8,10 @@ const NODE_TITLE = 'KSampler'
 
 test.describe(
   'Collapsed node link positions',
-  { tag: ['@canvas', '@node'] },
+  { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test.afterEach(async ({ comfyPage }) => {

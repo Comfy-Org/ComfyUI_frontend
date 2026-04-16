@@ -132,7 +132,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_INPUT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
@@ -153,10 +155,12 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel!)
 
-      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+      await comfyPage.page.locator(SELECTORS.promptDialog).waitFor({
         state: 'visible'
       })
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_INPUT_NAME)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_INPUT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       // Force re-render
@@ -178,11 +182,13 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel!)
 
-      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+      await comfyPage.page.locator(SELECTORS.promptDialog).waitFor({
         state: 'visible'
       })
       const renamedOutputName = 'renamed_output'
-      await comfyPage.page.fill(SELECTORS.promptDialog, renamedOutputName)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(renamedOutputName)
       await comfyPage.page.keyboard.press('Enter')
 
       // Force re-render
@@ -209,11 +215,13 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
       await comfyPage.nextFrame()
 
-      await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
+      await comfyPage.page.locator(SELECTORS.promptDialog).waitFor({
         state: 'visible'
       })
       const rightClickRenamedName = 'right_click_renamed'
-      await comfyPage.page.fill(SELECTORS.promptDialog, rightClickRenamedName)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(rightClickRenamedName)
       await comfyPage.page.keyboard.press('Enter')
 
       // Force re-render
@@ -270,7 +278,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
       const labelClickRenamedName = 'label_click_renamed'
-      await comfyPage.page.fill(SELECTORS.promptDialog, labelClickRenamedName)
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(labelClickRenamedName)
       await comfyPage.page.keyboard.press('Enter')
 
       await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
@@ -303,8 +313,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_SLOT_NAME)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_SLOT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
@@ -332,8 +344,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         RENAMED_SLOT_NAME
       )
 
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, SECOND_RENAMED_NAME)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(SECOND_RENAMED_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
@@ -366,8 +380,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_SLOT_NAME)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill(RENAMED_SLOT_NAME)
       await comfyPage.page.keyboard.press('Enter')
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
@@ -408,7 +424,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
 
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.nextFrame()
 
       const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('19')
       await subgraphNodeRef.navigateIntoSubgraph()
@@ -434,8 +449,8 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, RENAMED_LABEL)
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill(RENAMED_LABEL)
       await comfyPage.page.keyboard.press('Enter')
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
 
@@ -533,8 +548,10 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeVisible()
-      await comfyPage.page.fill(SELECTORS.promptDialog, '')
-      await comfyPage.page.fill(SELECTORS.promptDialog, 'my_custom_prompt')
+      await comfyPage.page.locator(SELECTORS.promptDialog).fill('')
+      await comfyPage.page
+        .locator(SELECTORS.promptDialog)
+        .fill('my_custom_prompt')
       await comfyPage.page.keyboard.press('Enter')
       await expect(comfyPage.page.locator(SELECTORS.promptDialog)).toBeHidden()
 

@@ -3,10 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Menu', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('Can register sidebar tab', async ({ comfyPage }) => {
     const initialChildrenCount = await comfyPage.menu.buttons.count()
 
@@ -101,7 +97,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
 
       // Check initial state of bottom panel (it's initially hidden)
       const { bottomPanel } = comfyPage
-      await expect(bottomPanel.root).not.toBeVisible()
+      await expect(bottomPanel.root).toBeHidden()
 
       // Checkmark should be invisible initially (panel is hidden)
       await expect(checkmark).toHaveClass(/invisible/)
@@ -126,7 +122,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(viewSubmenu).toBeVisible()
 
       // Verify bottom panel is hidden again
-      await expect(bottomPanel.root).not.toBeVisible()
+      await expect(bottomPanel.root).toBeHidden()
 
       // Checkmark should be invisible again (panel is hidden)
       await expect(checkmark).toHaveClass(/invisible/)
@@ -138,7 +134,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
         .click({ position: { x: viewport.width - 10, y: 10 } })
 
       // Verify menu is now closed
-      await expect(menu).not.toBeVisible()
+      await expect(menu).toBeHidden()
     })
 
     test('Displays keybinding next to item', async ({ comfyPage }) => {

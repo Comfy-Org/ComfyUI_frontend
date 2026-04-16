@@ -206,8 +206,8 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
     // Ensure undo reverts both changes
     await comfyPage.keyboard.undo()
-    await expect(node).not.toBeBypassed({ timeout: 5000 })
-    await expect(node).not.toBeCollapsed({ timeout: 5000 })
+    await expect(node).not.toBeBypassed()
+    await expect(node).not.toBeCollapsed()
     await waitForChangeTrackerSettled(comfyPage, {
       isModified: false,
       redoQueueSize: 1,
@@ -223,8 +223,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await beforeChange(comfyPage)
       await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
-      await comfyPage.page.keyboard.press('KeyP')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyP')
       await expect(node).toBePinned()
       await afterChange(comfyPage)
     }

@@ -24,6 +24,8 @@ export interface PromotedWidgetView extends IBaseWidget {
    * origin.
    */
   readonly disambiguatingSourceNodeId?: string
+  /** Whether the resolved source widget is workflow-persistent. */
+  readonly sourceSerialize: boolean
 }
 
 export function isPromotedWidgetView(
