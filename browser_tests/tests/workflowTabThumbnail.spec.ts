@@ -5,7 +5,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'
@@ -30,7 +29,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
 
     const popover = comfyPage.page.locator('.workflow-popover-fade')
     await expect(popover).toHaveCount(1)
-    await expect(popover).toBeVisible({ timeout: 500 })
+    await expect(popover).toBeVisible()
     if (name) {
       await expect(popover).toContainText(name)
     }
@@ -83,7 +82,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       1,
       'Unsaved Workflow (2)'
     )
-    await expect(thumbnailImg).not.toBeVisible()
+    await expect(thumbnailImg).toBeHidden()
   })
 
   async function addNode(comfyPage: ComfyPage, category: string, node: string) {

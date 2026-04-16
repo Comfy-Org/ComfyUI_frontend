@@ -1331,6 +1331,7 @@
     "updating": "{id} güncelleniyor",
     "upload": "Yükle",
     "uploadAlreadyInProgress": "Yükleme zaten devam ediyor",
+    "uploadTimedOut": "Yükleme zaman aşımına uğradı. Lütfen tekrar deneyin.",
     "usageHint": "Kullanım ipucu",
     "use": "Kullan",
     "user": "Kullanıcı",
@@ -1641,9 +1642,18 @@
     "exportRecording": "Kaydı Dışa Aktar",
     "exportingModel": "Model dışa aktarılıyor...",
     "fov": "FOV",
+    "hdri": {
+      "changeFile": "HDRI Değiştir",
+      "intensity": "Yoğunluk",
+      "label": "HDRI Ortamı",
+      "removeFile": "HDRI Kaldır",
+      "showAsBackground": "Arka Plan Olarak Göster",
+      "uploadFile": "HDRI Yükle (.hdr, .exr)"
+    },
     "light": "Işık",
     "lightIntensity": "Işık Yoğunluğu",
     "loadingBackgroundImage": "Arka Plan Resmi Yükleniyor",
+    "loadingHDRI": "HDRI Yükleniyor...",
     "loadingModel": "3D Model Yükleniyor...",
     "materialMode": "Malzeme Modu",
     "materialModes": {
@@ -3430,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "Kredi satın alma başlatılamadı: {error}",
     "failedToInitiateSubscription": "Abonelik başlatılamadı: {error}",
     "failedToLoadBackgroundImage": "Arka plan görseli yüklenemedi",
+    "failedToLoadHDRI": "HDRI dosyası yüklenemedi",
     "failedToLoadModel": "3B model yüklenemedi",
     "failedToPurchaseCredits": "Kredi satın alınamadı: {error}",
     "failedToQueue": "Kuyruğa alınamadı",
@@ -3465,6 +3476,7 @@
     "pleaseSelectOutputNodes": "Lütfen çıktı düğümlerini seçin",
     "unableToGetModelFilePath": "Model dosyası yolu alınamıyor",
     "unauthorizedDomain": "{domain} alan adınız bu hizmeti kullanma yetkisine sahip değil. Alan adınızı beyaz listeye eklemek için lütfen {email} ile iletişime geçin.",
+    "unsupportedHDRIFormat": "Desteklenmeyen dosya formatı. Lütfen .hdr veya .exr dosyası yükleyin.",
     "updateRequested": "Güncelleme istendi",
     "useApiKeyTip": "İpucu: Normal girişe erişemiyor musunuz? Comfy API Anahtarı seçeneğini kullanın.",
     "userNotAuthenticated": "Kullanıcı doğrulanmadı"

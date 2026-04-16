@@ -1331,6 +1331,7 @@
     "updating": "更新中",
     "upload": "アップロード",
     "uploadAlreadyInProgress": "アップロードはすでに進行中です",
+    "uploadTimedOut": "アップロードがタイムアウトしました。もう一度お試しください。",
     "usageHint": "使用ヒント",
     "use": "使用",
     "user": "ユーザー",
@@ -1641,9 +1642,18 @@
     "exportRecording": "録画をエクスポート",
     "exportingModel": "モデルをエクスポート中...",
     "fov": "FOV",
+    "hdri": {
+      "changeFile": "HDRIを変更",
+      "intensity": "強度",
+      "label": "HDRI環境",
+      "removeFile": "HDRIを削除",
+      "showAsBackground": "背景として表示",
+      "uploadFile": "HDRIをアップロード（.hdr、.exr）"
+    },
     "light": "ライト",
     "lightIntensity": "光の強度",
     "loadingBackgroundImage": "背景画像を読み込んでいます",
+    "loadingHDRI": "HDRIを読み込み中...",
     "loadingModel": "3Dモデルを読み込んでいます...",
     "materialMode": "マテリアルモード",
     "materialModes": {
@@ -3430,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
     "failedToInitiateSubscription": "サブスクリプションの開始に失敗しました: {error}",
     "failedToLoadBackgroundImage": "背景画像の読み込みに失敗しました",
+    "failedToLoadHDRI": "HDRIファイルの読み込みに失敗しました",
     "failedToLoadModel": "3Dモデルの読み込みに失敗しました",
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "failedToQueue": "キューに追加できませんでした",
@@ -3465,6 +3476,7 @@
     "pleaseSelectOutputNodes": "出力ノードを選択してください",
     "unableToGetModelFilePath": "モデルファイルのパスを取得できません",
     "unauthorizedDomain": "あなたのドメイン {domain} はこのサービスを利用する権限がありません。ご利用のドメインをホワイトリストに追加するには、{email} までご連絡ください。",
+    "unsupportedHDRIFormat": "サポートされていないファイル形式です。.hdrまたは.exrファイルをアップロードしてください。",
     "updateRequested": "更新が要求されました",
     "useApiKeyTip": "ヒント：通常のログインにアクセスできませんか？Comfy APIキーオプションを使用してください。",
     "userNotAuthenticated": "ユーザーが認証されていません"

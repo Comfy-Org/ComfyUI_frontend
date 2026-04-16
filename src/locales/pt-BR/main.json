@@ -1331,6 +1331,7 @@
     "updating": "Atualizando {id}",
     "upload": "Enviar",
     "uploadAlreadyInProgress": "O upload já está em andamento",
+    "uploadTimedOut": "O envio excedeu o tempo limite. Por favor, tente novamente.",
     "usageHint": "Dica de uso",
     "use": "Usar",
     "user": "Usuário",
@@ -1641,9 +1642,18 @@
     "exportRecording": "Exportar Gravação",
     "exportingModel": "Exportando modelo...",
     "fov": "Campo de Visão (FOV)",
+    "hdri": {
+      "changeFile": "Alterar HDRI",
+      "intensity": "Intensidade",
+      "label": "Ambiente HDRI",
+      "removeFile": "Remover HDRI",
+      "showAsBackground": "Exibir como fundo",
+      "uploadFile": "Enviar HDRI (.hdr, .exr)"
+    },
     "light": "Luz",
     "lightIntensity": "Intensidade da Luz",
     "loadingBackgroundImage": "Carregando Imagem de Fundo",
+    "loadingHDRI": "Carregando HDRI...",
     "loadingModel": "Carregando Modelo 3D...",
     "materialMode": "Modo de Material",
     "materialModes": {
@@ -3442,6 +3452,7 @@
     "failedToInitiateCreditPurchase": "Falha ao iniciar compra de créditos: {error}",
     "failedToInitiateSubscription": "Falha ao iniciar assinatura: {error}",
     "failedToLoadBackgroundImage": "Falha ao carregar imagem de fundo",
+    "failedToLoadHDRI": "Falha ao carregar o arquivo HDRI",
     "failedToLoadModel": "Falha ao carregar modelo 3D",
     "failedToPurchaseCredits": "Falha ao comprar créditos: {error}",
     "failedToQueue": "Falha ao enfileirar",
@@ -3477,6 +3488,7 @@
     "pleaseSelectOutputNodes": "Por favor, selecione os nós de saída",
     "unableToGetModelFilePath": "Não foi possível obter o caminho do arquivo do modelo",
     "unauthorizedDomain": "Seu domínio {domain} não está autorizado a usar este serviço. Por favor, entre em contato com {email} para adicionar seu domínio à lista de permissões.",
+    "unsupportedHDRIFormat": "Formato de arquivo não suportado. Por favor, envie um arquivo .hdr ou .exr.",
     "updateRequested": "Atualização solicitada",
     "useApiKeyTip": "Dica: Não consegue acessar o login normal? Use a opção Comfy API Key.",
     "userNotAuthenticated": "Usuário não autenticado"

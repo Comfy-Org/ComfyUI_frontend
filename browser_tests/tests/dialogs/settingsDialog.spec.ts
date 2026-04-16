@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
-import { mockSystemStats } from '../../fixtures/data/systemStats'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
@@ -61,7 +61,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     await expect(dialog.root).toBeVisible()
 
     await dialog.close()
-    await expect(dialog.root).not.toBeVisible()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('Escape key closes dialog', async ({ comfyPage }) => {
@@ -70,7 +70,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     await expect(dialog.root).toBeVisible()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(dialog.root).not.toBeVisible()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('Search filters settings list', async ({ comfyPage }) => {
@@ -145,15 +145,32 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Click the PrimeVue Select to open the dropdown
-      await settingRow.locator('.p-select').click()
-      const overlay = comfyPage.page.locator('.p-select-overlay')
-      await expect(overlay).toBeVisible()
+      // Wait for the search filter to fully settle — PrimeVue re-renders
+      // the entire settings list after typing, and the combobox element is
+      // replaced during re-render. Wait until the filtered list stabilises
+      // before interacting with the combobox.
+      const settingItems = dialog.root.locator('[data-setting-id]')
+      await expect
+        .poll(() => settingItems.count(), { timeout: 5000 })
+        .toBeLessThanOrEqual(5)
+
+      const select = settingRow.getByRole('combobox')
+      await expect(select).toBeVisible()
+      await expect(select).toBeEnabled()
+
+      // Open the dropdown via its combobox role and verify it expanded.
+      // Retry because the PrimeVue Select may still re-render after the
+      // filter settles, causing the first click to land on a stale element.
+      await expect(async () => {
+        const expanded = await select.getAttribute('aria-expanded')
+        if (expanded !== 'true') await select.click()
+        await expect(select).toHaveAttribute('aria-expanded', 'true')
+      }).toPass({ timeout: 10_000 })
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-      await overlay
-        .locator(`.p-select-option-label:text-is("${targetValue}")`)
+      await comfyPage.page
+        .getByRole('option', { name: targetValue, exact: true })
         .click()
 
       await expect

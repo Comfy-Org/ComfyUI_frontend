@@ -1,6 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
+import MCR from 'monocart-coverage-reports'
 
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
@@ -9,7 +10,7 @@ import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { sleep } from '@e2e/fixtures/utils/timing'
+import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -34,6 +35,7 @@ import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
+import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -72,15 +74,13 @@ class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly modeToggleButton: Locator
+  public readonly buttons: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
-  }
-
-  get buttons() {
-    return this.sideToolbar.locator('.side-bar-button')
+    this.buttons = this.sideToolbar.locator('.side-bar-button')
   }
 
   get modelLibraryTab() {
@@ -181,6 +181,8 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly assetApi: AssetHelper
   public readonly modelLibrary: ModelLibraryHelper
+  public readonly cloudAuth: CloudAuthHelper
+  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -196,7 +198,7 @@ export class ComfyPage {
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
-    this.selectionToolbox = page.locator('.selection-toolbox')
+    this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
@@ -223,6 +225,7 @@ export class ComfyPage {
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
+    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -232,10 +235,7 @@ export class ComfyPage {
     this.assets = new AssetsHelper(page)
     this.assetApi = createAssetHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
-  }
-
-  get visibleToasts() {
-    return this.toast.visibleToasts
+    this.cloudAuth = new CloudAuthHelper(page)
   }
 
   async setupUser(username: string) {
@@ -322,7 +322,7 @@ export class ComfyPage {
         // window.app.extensionManager => GraphView ready
         window.app && window.app.extensionManager
     )
-    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
+    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
   }
 
@@ -336,9 +336,7 @@ export class ComfyPage {
   }
 
   async nextFrame() {
-    await this.page.evaluate(() => {
-      return new Promise<number>(requestAnimationFrame)
-    })
+    await nextFrame(this.page)
   }
 
   async delay(ms: number) {
@@ -372,7 +370,7 @@ export class ComfyPage {
   }
 
   async closeMenu() {
-    await this.page.click('button.comfy-close-menu-btn')
+    await this.page.locator('button.comfy-close-menu-btn').click()
     await this.nextFrame()
   }
 
@@ -389,9 +387,29 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** Get number of DOM widgets on the canvas. */
-  async getDOMWidgetCount() {
-    return await this.page.locator('.dom-widget').count()
+  get domWidgets(): Locator {
+    return this.page.locator('.dom-widget')
+  }
+
+  async expectScreenshot(
+    locator: Locator,
+    name: string | string[],
+    options?: {
+      animations?: 'disabled' | 'allow'
+      caret?: 'hide' | 'initial'
+      mask?: Array<Locator>
+      maskColor?: string
+      maxDiffPixelRatio?: number
+      maxDiffPixels?: number
+      omitBackground?: boolean
+      scale?: 'css' | 'device'
+      stylePath?: string | Array<string>
+      threshold?: number
+      timeout?: number
+    }
+  ): Promise<void> {
+    await this.nextFrame()
+    await comfyExpect(locator).toHaveScreenshot(name, options)
   }
 
   async setFocusMode(focusMode: boolean) {
@@ -404,10 +422,28 @@ export class ComfyPage {
 
 export const testComfySnapToGridGridSize = 50
 
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
+
 export const comfyPageFixture = base.extend<{
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
 }>({
+  page: async ({ page, browserName }, use) => {
+    if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
+      return use(page)
+    }
+
+    await page.coverage.startJSCoverage({ resetOnNavigation: false })
+    await use(page)
+    const coverage = await page.coverage.stopJSCoverage()
+
+    const mcr = MCR({
+      outputDir: './coverage/playwright',
+      reports: []
+    })
+    await mcr.add(coverage)
+  },
+
   comfyPage: async ({ page, request }, use, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
 
@@ -415,6 +451,8 @@ export const comfyPageFixture = base.extend<{
     const username = `playwright-test-${parallelIndex}`
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
+
+    const isVueNodes = testInfo.tags.includes('@vue-nodes')
 
     try {
       await comfyPage.setupSettings({
@@ -438,13 +476,22 @@ export const comfyPageFixture = base.extend<{
         'Comfy.VersionCompatibility.DisableWarnings': true,
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false
+        'Comfy.RightSidePanel.ShowErrorsTab': false,
+        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true })
       })
     } catch (e) {
       console.error(e)
     }
 
+    if (testInfo.tags.includes('@cloud')) {
+      await comfyPage.cloudAuth.mockAuth()
+    }
+
     await comfyPage.setup()
+
+    if (isVueNodes) {
+      await comfyPage.vueNodes.waitForNodes()
+    }
 
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')

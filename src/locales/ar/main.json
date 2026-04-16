@@ -1331,6 +1331,7 @@
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
+    "uploadTimedOut": "انتهت مهلة التحميل. يرجى المحاولة مرة أخرى.",
     "usageHint": "تلميح الاستخدام",
     "use": "استخدم",
     "user": "المستخدم",
@@ -1641,9 +1642,18 @@
     "exportRecording": "تصدير التسجيل",
     "exportingModel": "جارٍ تصدير النموذج...",
     "fov": "مجال الرؤية (FOV)",
+    "hdri": {
+      "changeFile": "تغيير HDRI",
+      "intensity": "الشدة",
+      "label": "بيئة HDRI",
+      "removeFile": "إزالة HDRI",
+      "showAsBackground": "عرض كخلفية",
+      "uploadFile": "رفع HDRI (.hdr, .exr)"
+    },
     "light": "الإضاءة",
     "lightIntensity": "شدة الإضاءة",
     "loadingBackgroundImage": "جارٍ تحميل صورة الخلفية",
+    "loadingHDRI": "جارٍ تحميل HDRI...",
     "loadingModel": "جارٍ تحميل النموذج ثلاثي الأبعاد...",
     "materialMode": "وضع المادة",
     "materialModes": {
@@ -3430,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "فشل في بدء شراء الرصيد: {error}",
     "failedToInitiateSubscription": "فشل في بدء الاشتراك: {error}",
     "failedToLoadBackgroundImage": "فشل في تحميل صورة الخلفية",
+    "failedToLoadHDRI": "فشل في تحميل ملف HDRI",
     "failedToLoadModel": "فشل في تحميل النموذج ثلاثي الأبعاد",
     "failedToPurchaseCredits": "فشل في شراء الرصيد: {error}",
     "failedToQueue": "فشل في الإضافة إلى قائمة الانتظار",
@@ -3465,6 +3476,7 @@
     "pleaseSelectOutputNodes": "يرجى اختيار عقد الإخراج",
     "unableToGetModelFilePath": "غير قادر على الحصول على مسار ملف النموذج",
     "unauthorizedDomain": "النطاق الخاص بك {domain} غير مخول لاستخدام هذه الخدمة. يرجى الاتصال بـ {email} لإضافة النطاق إلى القائمة البيضاء.",
+    "unsupportedHDRIFormat": "تنسيق الملف غير مدعوم. يرجى رفع ملف .hdr أو .exr.",
     "updateRequested": "تم طلب التحديث",
     "useApiKeyTip": "نصيحة: لا يمكنك الدخول عبر تسجيل الدخول العادي؟ استخدم خيار مفتاح API الخاص بـ Comfy.",
     "userNotAuthenticated": "المستخدم غير مصدق"

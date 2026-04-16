@@ -76,9 +76,7 @@ test.describe('Model library sidebar - folders', () => {
     await tab.getFolderByLabel('checkpoints').click()
 
     // Models should appear as leaf nodes
-    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
     await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
     await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
   })
@@ -91,9 +89,7 @@ test.describe('Model library sidebar - folders', () => {
 
     await tab.getFolderByLabel('loras').click()
 
-    await expect(tab.getLeafByLabel('detail_tweaker_xl')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getLeafByLabel('detail_tweaker_xl')).toBeVisible()
     await expect(tab.getLeafByLabel('add_brightness')).toBeVisible()
   })
 })
@@ -119,12 +115,10 @@ test.describe('Model library sidebar - search', () => {
     await tab.searchInput.fill('dreamshaper')
 
     // Wait for debounce (300ms) + load + render
-    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
 
     // Other models should not be visible
-    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).not.toBeVisible()
+    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeHidden()
   })
 
   test('Clearing search restores folder view', async ({ comfyPage }) => {
@@ -132,17 +126,13 @@ test.describe('Model library sidebar - search', () => {
     await tab.open()
 
     await tab.searchInput.fill('dreamshaper')
-    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
 
     // Clear the search
     await tab.searchInput.fill('')
 
     // Folders should be visible again (collapsed)
-    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible({
-      timeout: 5000
-    })
+    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
     await expect(tab.getFolderByLabel('loras')).toBeVisible()
   })
 
@@ -150,12 +140,14 @@ test.describe('Model library sidebar - search', () => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
+    // Expand a folder and verify models are present before searching
+    await tab.getFolderByLabel('checkpoints').click()
+    await expect(tab.leafNodes).not.toHaveCount(0)
+
     await tab.searchInput.fill('nonexistent_model_xyz')
 
     // Wait for debounce, then verify no leaf nodes
-    await expect
-      .poll(async () => await tab.leafNodes.count(), { timeout: 5000 })
-      .toBe(0)
+    await expect.poll(() => tab.leafNodes.count()).toBe(0)
   })
 })
 
@@ -194,7 +186,7 @@ test.describe('Model library sidebar - refresh', () => {
     await tab.refreshButton.click()
     await refreshRequest
 
-    await expect(tab.getFolderByLabel('loras')).toBeVisible({ timeout: 5000 })
+    await expect(tab.getFolderByLabel('loras')).toBeVisible()
   })
 
   test('Load all folders button triggers loading all model data', async ({
@@ -238,7 +230,7 @@ test.describe('Model library sidebar - empty state', () => {
     await tab.open()
 
     await expect(tab.modelTree).toBeVisible()
-    expect(await tab.folderNodes.count()).toBe(0)
-    expect(await tab.leafNodes.count()).toBe(0)
+    await expect(tab.folderNodes).toHaveCount(0)
+    await expect(tab.leafNodes).toHaveCount(0)
   })
 })

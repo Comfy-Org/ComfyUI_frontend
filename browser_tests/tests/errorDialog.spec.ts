@@ -74,7 +74,7 @@ test.describe('Error dialog', () => {
   }) => {
     const errorDialog = await triggerConfigureError(comfyPage)
     await expect(errorDialog).toBeVisible()
-    await expect(errorDialog.locator('pre')).not.toBeVisible()
+    await expect(errorDialog.locator('pre')).toBeHidden()
 
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
 
@@ -83,7 +83,7 @@ test.describe('Error dialog', () => {
     await expect(reportPre).toHaveText(/\S/)
     await expect(
       errorDialog.getByTestId(TestIds.dialogs.errorDialogShowReport)
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test('Should copy report to clipboard when "Copy to Clipboard" is clicked', async ({
@@ -100,8 +100,9 @@ test.describe('Error dialog', () => {
     await errorDialog.getByTestId(TestIds.dialogs.errorDialogCopyReport).click()
 
     const reportText = await errorDialog.locator('pre').textContent()
-    const copiedText = await getClipboardText(comfyPage.page)
-    expect(copiedText).toBe(reportText)
+    await expect
+      .poll(async () => await getClipboardText(comfyPage.page))
+      .toBe(reportText)
   })
 
   test('Should open GitHub issues search when "Find Issues" is clicked', async ({
@@ -135,5 +136,60 @@ test.describe('Error dialog', () => {
     expect(url.hostname).toBe('support.comfy.org')
 
     await popup.close()
+  })
+
+  test('Should display extension file hint when available', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      const error = new Error('Extension error!')
+      ;(error as Error & { fileName: string }).fileName =
+        '/extensions/my-custom-extension/main.js'
+
+      window.app!.extensionManager.dialog.showErrorDialog(error)
+    })
+
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
+    await expect(errorDialog).toBeVisible()
+
+    await expect(
+      errorDialog.getByText('/extensions/my-custom-extension/main.js')
+    ).toBeVisible()
+    await expect(
+      errorDialog.getByText('This may be due to the following script')
+    ).toBeVisible()
+  })
+
+  test('Should display string error messages', async ({ comfyPage }) => {
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog(
+        'Something went wrong',
+        {
+          title: 'Custom Error Title'
+        }
+      )
+    })
+
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
+    await expect(errorDialog).toBeVisible()
+
+    await expect(errorDialog.getByText('Custom Error Title')).toBeVisible()
+    await expect(errorDialog.getByText('Something went wrong')).toBeVisible()
+  })
+
+  test('Should display default title when no title provided', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog(
+        'A simple string error'
+      )
+    })
+
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
+    await expect(errorDialog).toBeVisible()
+
+    await expect(errorDialog.getByText('Unknown Error')).toBeVisible()
+    await expect(errorDialog.getByText('A simple string error')).toBeVisible()
   })
 })

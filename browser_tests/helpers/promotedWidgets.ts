@@ -1,15 +1,8 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
-export type PromotedWidgetEntry = [string, string]
+type PromotedWidgetEntry = [string, string]
 
-export interface PromotedWidgetSnapshot {
-  proxyWidgets: PromotedWidgetEntry[]
-  widgetNames: string[]
-}
-
-export function isPromotedWidgetEntry(
-  entry: unknown
-): entry is PromotedWidgetEntry {
+function isPromotedWidgetEntry(entry: unknown): entry is PromotedWidgetEntry {
   return (
     Array.isArray(entry) &&
     entry.length === 2 &&
@@ -18,9 +11,7 @@ export function isPromotedWidgetEntry(
   )
 }
 
-export function normalizePromotedWidgets(
-  value: unknown
-): PromotedWidgetEntry[] {
+function normalizePromotedWidgets(value: unknown): PromotedWidgetEntry[] {
   if (!Array.isArray(value)) return []
   return value.filter(isPromotedWidgetEntry)
 }
@@ -31,32 +22,27 @@ export async function getPromotedWidgets(
 ): Promise<PromotedWidgetEntry[]> {
   const raw = await comfyPage.page.evaluate((id) => {
     const node = window.app!.canvas.graph!.getNodeById(id)
-    return node?.properties?.proxyWidgets ?? []
+    const widgets = node?.widgets ?? []
+
+    // Read the live promoted widget views from the host node instead of the
+    // serialized proxyWidgets snapshot, which can lag behind the current graph
+    // state during promotion and cleanup flows.
+    return widgets.flatMap((widget) => {
+      if (
+        widget &&
+        typeof widget === 'object' &&
+        'sourceNodeId' in widget &&
+        typeof widget.sourceNodeId === 'string' &&
+        'sourceWidgetName' in widget &&
+        typeof widget.sourceWidgetName === 'string'
+      ) {
+        return [[widget.sourceNodeId, widget.sourceWidgetName]]
+      }
+      return []
+    })
   }, nodeId)
 
   return normalizePromotedWidgets(raw)
-}
-
-export async function getPromotedWidgetSnapshot(
-  comfyPage: ComfyPage,
-  nodeId: string
-): Promise<PromotedWidgetSnapshot> {
-  const raw = await comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    return {
-      proxyWidgets: node?.properties?.proxyWidgets ?? [],
-      widgetNames: (node?.widgets ?? []).map((widget) => widget.name)
-    }
-  }, nodeId)
-
-  return {
-    proxyWidgets: normalizePromotedWidgets(raw.proxyWidgets),
-    widgetNames: Array.isArray(raw.widgetNames)
-      ? raw.widgetNames.filter(
-          (name): name is string => typeof name === 'string'
-        )
-      : []
-  }
 }
 
 export async function getPromotedWidgetNames(
@@ -75,7 +61,7 @@ export async function getPromotedWidgetCount(
   return promotedWidgets.length
 }
 
-export function isPseudoPreviewEntry(entry: PromotedWidgetEntry): boolean {
+function isPseudoPreviewEntry(entry: PromotedWidgetEntry): boolean {
   return entry[1].startsWith('$$')
 }
 
@@ -85,14 +71,6 @@ export async function getPseudoPreviewWidgets(
 ): Promise<PromotedWidgetEntry[]> {
   const widgets = await getPromotedWidgets(comfyPage, nodeId)
   return widgets.filter(isPseudoPreviewEntry)
-}
-
-export async function getNonPreviewPromotedWidgets(
-  comfyPage: ComfyPage,
-  nodeId: string
-): Promise<PromotedWidgetEntry[]> {
-  const widgets = await getPromotedWidgets(comfyPage, nodeId)
-  return widgets.filter((entry) => !isPseudoPreviewEntry(entry))
 }
 
 export async function getPromotedWidgetCountByName(

@@ -1331,6 +1331,7 @@
     "updating": "Mise à jour",
     "upload": "Téléverser",
     "uploadAlreadyInProgress": "Téléversement déjà en cours",
+    "uploadTimedOut": "Le téléchargement a expiré. Veuillez réessayer.",
     "usageHint": "Conseil d'utilisation",
     "use": "Utiliser",
     "user": "Utilisateur",
@@ -1641,9 +1642,18 @@
     "exportRecording": "Exporter l'enregistrement",
     "exportingModel": "Exportation du modèle en cours...",
     "fov": "FOV",
+    "hdri": {
+      "changeFile": "Changer l'HDRI",
+      "intensity": "Intensité",
+      "label": "Environnement HDRI",
+      "removeFile": "Supprimer l'HDRI",
+      "showAsBackground": "Afficher comme arrière-plan",
+      "uploadFile": "Télécharger un HDRI (.hdr, .exr)"
+    },
     "light": "Lumière",
     "lightIntensity": "Intensité de la lumière",
     "loadingBackgroundImage": "Chargement de l’image d’arrière-plan",
+    "loadingHDRI": "Chargement de l'HDRI...",
     "loadingModel": "Chargement du modèle 3D...",
     "materialMode": "Mode Matériel",
     "materialModes": {
@@ -3430,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "Échec de l'initiation de l'achat de crédits : {error}",
     "failedToInitiateSubscription": "Échec de l'initialisation de l'abonnement : {error}",
     "failedToLoadBackgroundImage": "Échec du chargement de l'image d'arrière-plan",
+    "failedToLoadHDRI": "Échec du chargement du fichier HDRI",
     "failedToLoadModel": "Échec du chargement du modèle 3D",
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "failedToQueue": "Échec de la mise en file d'attente",
@@ -3465,6 +3476,7 @@
     "pleaseSelectOutputNodes": "Veuillez sélectionner les nœuds de sortie",
     "unableToGetModelFilePath": "Impossible d'obtenir le chemin du fichier modèle",
     "unauthorizedDomain": "Votre domaine {domain} n'est pas autorisé à utiliser ce service. Veuillez contacter {email} pour ajouter votre domaine à la liste blanche.",
+    "unsupportedHDRIFormat": "Format de fichier non pris en charge. Veuillez télécharger un fichier .hdr ou .exr.",
     "updateRequested": "Mise à jour demandée",
     "useApiKeyTip": "Astuce : Vous ne pouvez pas accéder à la connexion normale ? Utilisez l’option Clé API Comfy.",
     "userNotAuthenticated": "Utilisateur non authentifié"

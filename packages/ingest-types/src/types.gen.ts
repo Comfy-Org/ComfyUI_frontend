@@ -1961,35 +1961,6 @@ export type SystemStatsResponse = {
   }>
 }
 
-export type LogsSubscribeRequest = {
-  /**
-   * Whether to enable or disable log subscription
-   */
-  enabled: boolean
-}
-
-/**
- * Raw logs response with entries and size
- */
-export type RawLogsResponse = {
-  entries?: Array<{
-    /**
-     * Log message
-     */
-    m?: string
-  }>
-  size?: {
-    /**
-     * Terminal column size
-     */
-    cols?: number
-    /**
-     * Terminal row size
-     */
-    rows?: number
-  }
-}
-
 /**
  * System logs response
  */
@@ -5276,7 +5247,7 @@ export type GetLogsData = {
   body?: never
   path?: never
   query?: never
-  url: '/internal/logs'
+  url: '/api/logs'
 }
 
 export type GetLogsErrors = {
@@ -5296,67 +5267,6 @@ export type GetLogsResponses = {
 }
 
 export type GetLogsResponse = GetLogsResponses[keyof GetLogsResponses]
-
-export type GetRawLogsData = {
-  body?: never
-  path?: never
-  query?: never
-  url: '/internal/logs/raw'
-}
-
-export type GetRawLogsErrors = {
-  /**
-   * Unauthorized
-   */
-  401: ErrorResponse
-}
-
-export type GetRawLogsError = GetRawLogsErrors[keyof GetRawLogsErrors]
-
-export type GetRawLogsResponses = {
-  /**
-   * Success
-   */
-  200: RawLogsResponse
-}
-
-export type GetRawLogsResponse = GetRawLogsResponses[keyof GetRawLogsResponses]
-
-export type SubscribeToLogsData = {
-  body: LogsSubscribeRequest
-  path?: never
-  query?: never
-  url: '/internal/logs/subscribe'
-}
-
-export type SubscribeToLogsErrors = {
-  /**
-   * Bad request
-   */
-  400: ErrorResponse
-  /**
-   * Unauthorized
-   */
-  401: ErrorResponse
-}
-
-export type SubscribeToLogsError =
-  SubscribeToLogsErrors[keyof SubscribeToLogsErrors]
-
-export type SubscribeToLogsResponses = {
-  /**
-   * Success
-   */
-  200: {
-    /**
-     * Whether logs subscription is enabled
-     */
-    enabled?: boolean
-  }
-}
-
-export type SubscribeToLogsResponse =
-  SubscribeToLogsResponses[keyof SubscribeToLogsResponses]
 
 export type GetSystemStatsData = {
   body?: never
@@ -7692,3 +7602,444 @@ export type GetPublishedWorkflowResponses = {
 
 export type GetPublishedWorkflowResponse =
   GetPublishedWorkflowResponses[keyof GetPublishedWorkflowResponses]
+
+export type GetExtensionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/extensions'
+}
+
+export type GetExtensionsResponses = {
+  /**
+   * JSON array of extension file paths
+   */
+  200: unknown
+}
+
+export type GetVhsViewVideoData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the video file to view
+     */
+    filename: string
+    /**
+     * Type of file (e.g., output, input, temp)
+     */
+    type?: string
+    /**
+     * Subfolder path where the file is located
+     */
+    subfolder?: string
+  }
+  url: '/api/vhs/viewvideo'
+}
+
+export type GetVhsViewVideoErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetVhsViewVideoResponses = {
+  /**
+   * Video stream
+   */
+  200: unknown
+}
+
+export type GetVhsViewAudioData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the audio file to view
+     */
+    filename: string
+    /**
+     * Type of file (e.g., output, input, temp)
+     */
+    type?: string
+    /**
+     * Subfolder path where the file is located
+     */
+    subfolder?: string
+  }
+  url: '/api/vhs/viewaudio'
+}
+
+export type GetVhsViewAudioErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetVhsViewAudioResponses = {
+  /**
+   * Audio stream
+   */
+  200: unknown
+}
+
+export type GetVhsQueryVideoData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the video file to query
+     */
+    filename: string
+  }
+  url: '/api/vhs/queryvideo'
+}
+
+export type GetVhsQueryVideoErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetVhsQueryVideoResponses = {
+  /**
+   * Video metadata
+   */
+  200: unknown
+}
+
+export type GetUsersRawData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/users'
+}
+
+export type GetUsersRawErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetUsersRawResponses = {
+  /**
+   * User list
+   */
+  200: unknown
+}
+
+export type GetApiViewVideoAliasData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the file to view (see `/api/view` for the full handler contract)
+     */
+    filename: string
+  }
+  url: '/api/viewvideo'
+}
+
+export type GetApiViewVideoAliasErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetApiViewVideoAliasResponses = {
+  /**
+   * File stream
+   */
+  200: unknown
+}
+
+export type GetViewCompatAliasData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Name of the file to view (see `/api/view` for the full handler contract)
+     */
+    filename: string
+  }
+  url: '/view'
+}
+
+export type GetViewCompatAliasErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetViewCompatAliasResponses = {
+  /**
+   * File stream
+   */
+  200: unknown
+}
+
+export type GetWebsocketData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Stable client identifier used to associate the WebSocket
+     * connection with the frontend session. If omitted, the server
+     * generates one.
+     *
+     */
+    clientId?: string
+  }
+  url: '/ws'
+}
+
+export type GetWebsocketErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type GetTemplateProxyData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/templates/{path}'
+}
+
+export type GetTemplateProxyErrors = {
+  /**
+   * Template not found
+   */
+  404: unknown
+}
+
+export type GetHealthData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/health'
+}
+
+export type GetHealthErrors = {
+  /**
+   * Service is unhealthy
+   */
+  503: unknown
+}
+
+export type GetHealthResponses = {
+  /**
+   * Service is healthy
+   */
+  200: unknown
+}
+
+export type GetOpenapiSpecData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/openapi'
+}
+
+export type GetOpenapiSpecResponses = {
+  /**
+   * OpenAPI specification document
+   */
+  200: unknown
+}
+
+export type GetMonitoringTasksData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/monitoring/tasks'
+}
+
+export type GetMonitoringTasksErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type GetMonitoringTasksResponses = {
+  /**
+   * HTML dashboard
+   */
+  200: unknown
+}
+
+export type DeleteMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type DeleteMonitoringTasksSubpathErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type DeleteMonitoringTasksSubpathResponses = {
+  /**
+   * Deletion result
+   */
+  200: unknown
+}
+
+export type GetMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type GetMonitoringTasksSubpathErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type GetMonitoringTasksSubpathResponses = {
+  /**
+   * Subpath response (asynqmon-determined content type)
+   */
+  200: unknown
+}
+
+export type PostMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type PostMonitoringTasksSubpathErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Forbidden
+   */
+  403: unknown
+}
+
+export type PostMonitoringTasksSubpathResponses = {
+  /**
+   * Action result
+   */
+  200: unknown
+}
+
+export type GetPprofData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/debug/pprof/{path}'
+}
+
+export type GetPprofResponses = {
+  /**
+   * Profile data
+   */
+  200: unknown
+}
+
+export type GetPprofProfileData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/profile'
+}
+
+export type GetPprofProfileResponses = {
+  /**
+   * CPU profile data
+   */
+  200: unknown
+}
+
+export type GetPprofTraceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/trace'
+}
+
+export type GetPprofTraceResponses = {
+  /**
+   * Execution trace data
+   */
+  200: unknown
+}
+
+export type PostPprofSymbolData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/symbol'
+}
+
+export type PostPprofSymbolResponses = {
+  /**
+   * Resolved symbols
+   */
+  200: unknown
+}
+
+export type GetStaticExtensionsData = {
+  body?: never
+  path: {
+    path: string
+  }
+  query?: never
+  url: '/extensions/{path}'
+}
+
+export type GetStaticExtensionsErrors = {
+  /**
+   * File not found
+   */
+  404: unknown
+}
+
+export type GetStaticExtensionsResponses = {
+  /**
+   * Static file
+   */
+  200: unknown
+}

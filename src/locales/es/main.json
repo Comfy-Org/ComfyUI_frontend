@@ -1331,6 +1331,7 @@
     "updating": "Actualizando",
     "upload": "Subir",
     "uploadAlreadyInProgress": "La carga ya está en curso",
+    "uploadTimedOut": "La carga ha excedido el tiempo de espera. Por favor, inténtalo de nuevo.",
     "usageHint": "Sugerencia de uso",
     "use": "Usar",
     "user": "Usuario",
@@ -1641,9 +1642,18 @@
     "exportRecording": "Exportar grabación",
     "exportingModel": "Exportando modelo...",
     "fov": "FOV",
+    "hdri": {
+      "changeFile": "Cambiar HDRI",
+      "intensity": "Intensidad",
+      "label": "Entorno HDRI",
+      "removeFile": "Eliminar HDRI",
+      "showAsBackground": "Mostrar como fondo",
+      "uploadFile": "Subir HDRI (.hdr, .exr)"
+    },
     "light": "Luz",
     "lightIntensity": "Intensidad de luz",
     "loadingBackgroundImage": "Cargando imagen de fondo",
+    "loadingHDRI": "Cargando HDRI...",
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
     "materialModes": {
@@ -3430,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
     "failedToInitiateSubscription": "Error al iniciar la suscripción: {error}",
     "failedToLoadBackgroundImage": "Error al cargar la imagen de fondo",
+    "failedToLoadHDRI": "No se pudo cargar el archivo HDRI",
     "failedToLoadModel": "Error al cargar el modelo 3D",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "failedToQueue": "Error al encolar",
@@ -3465,6 +3476,7 @@
     "pleaseSelectOutputNodes": "Por favor, selecciona los nodos de salida",
     "unableToGetModelFilePath": "No se puede obtener la ruta del archivo del modelo",
     "unauthorizedDomain": "Tu dominio {domain} no está autorizado para usar este servicio. Por favor, contacta a {email} para agregar tu dominio a la lista blanca.",
+    "unsupportedHDRIFormat": "Formato de archivo no compatible. Por favor, sube un archivo .hdr o .exr.",
     "updateRequested": "Actualización solicitada",
     "useApiKeyTip": "Consejo: ¿No puedes acceder al inicio de sesión normal? Usa la opción de clave API de Comfy.",
     "userNotAuthenticated": "Usuario no autenticado"
