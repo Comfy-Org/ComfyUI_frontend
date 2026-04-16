@@ -1018,6 +1018,340 @@ const translations = {
   'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的' },
   'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
 
+  // PriceSection
+  'pricing.title': { en: 'Pricing', 'zh-CN': '价格' },
+  'pricing.subtitle': {
+    en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
+    'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
+  },
+  'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
+  'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
+
+  'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
+  'pricing.plan.free.summary': {
+    en: "Explore Comfy's possibilities",
+    'zh-CN': '探索 Comfy 的可能性'
+  },
+  'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
+  'pricing.plan.free.credits': {
+    en: 'Includes 400 monthly credits',
+    'zh-CN': '每月包含 400 积分'
+  },
+  'pricing.plan.free.estimate': {
+    en: '~35 5s videos using the Wan 2.2 Image-to-Video template*',
+    'zh-CN': '约可生成 35 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+  },
+  'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
+  'pricing.plan.free.feature1': {
+    en: '10-minute max runtime per workflow',
+    'zh-CN': '单个工作流最长运行 10 分钟'
+  },
+  'pricing.plan.free.feature2': {
+    en: 'Runs on RTX 6000 Pro GPUs (96GB VRAM)',
+    'zh-CN': '运行于 RTX 6000 Pro GPU（96GB 显存）'
+  },
+
+  'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
+  'pricing.plan.standard.summary': {
+    en: 'For individuals creating workflows',
+    'zh-CN': '面向个人工作流创作者'
+  },
+  'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
+  'pricing.plan.standard.credits': {
+    en: 'Includes 4,200 monthly credits with top-ups available',
+    'zh-CN': '每月包含 4,200 积分，并支持充值'
+  },
+  'pricing.plan.standard.estimate': {
+    en: '~380 5s videos using the Wan 2.2 Image-to-Video template*',
+    'zh-CN': '约可生成 380 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+  },
+  'pricing.plan.standard.cta': {
+    en: 'SUBSCRIBE TO STANDARD',
+    'zh-CN': '订阅标准版'
+  },
+  'pricing.plan.standard.featureIntro': {
+    en: 'Everything in Free, plus:',
+    'zh-CN': '包含免费版全部能力，另加：'
+  },
+  'pricing.plan.standard.feature1': {
+    en: '30-minute max runtime per workflow',
+    'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.plan.standard.feature2': {
+    en: 'Add more credits anytime',
+    'zh-CN': '可随时增加积分'
+  },
+
+  'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
+  'pricing.plan.creator.summary': {
+    en: 'Professionals and small teams building fine-tuned, repeatable workflows',
+    'zh-CN': '面向专业人士与小团队，构建可复用、精细调优的工作流'
+  },
+  'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
+  'pricing.plan.creator.credits': {
+    en: 'Includes 7,400 monthly credits with top-ups available',
+    'zh-CN': '每月包含 7,400 积分，并支持充值'
+  },
+  'pricing.plan.creator.estimate': {
+    en: '~670 5s videos using the Wan 2.2 Image-to-Video template*',
+    'zh-CN': '约可生成 670 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+  },
+  'pricing.plan.creator.cta': {
+    en: 'SUBSCRIBE TO CREATOR',
+    'zh-CN': '订阅创作者版'
+  },
+  'pricing.plan.creator.featureIntro': {
+    en: 'Everything in Standard, plus:',
+    'zh-CN': '包含标准版全部能力，另加：'
+  },
+  'pricing.plan.creator.feature1': {
+    en: 'Import your own LoRAs',
+    'zh-CN': '导入你自己的 LoRA'
+  },
+  'pricing.plan.creator.feature2': {
+    en: 'Up to 5 seats per workspace (coming soon!)',
+    'zh-CN': '每个工作区最多 5 个席位（即将上线）'
+  },
+  'pricing.plan.creator.nextUp': {
+    en: 'Next Up: Team Collaboration Features',
+    'zh-CN': '下一步：团队协作功能'
+  },
+
+  'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
+  'pricing.plan.pro.summary': {
+    en: 'For growing teams running Comfy in production',
+    'zh-CN': '面向在生产环境使用 Comfy 的成长型团队'
+  },
+  'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
+  'pricing.plan.pro.credits': {
+    en: 'Includes 21,100 monthly credits with top-ups available',
+    'zh-CN': '每月包含 21,100 积分，并支持充值'
+  },
+  'pricing.plan.pro.estimate': {
+    en: '~1,915 5s videos using the Wan 2.2 Image-to-Video template*',
+    'zh-CN': '约可生成 1,915 个 5 秒视频（使用 Wan 2.2 图生视频模板）*'
+  },
+  'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
+  'pricing.plan.pro.featureIntro': {
+    en: 'Everything in Creator, plus:',
+    'zh-CN': '包含创作者版全部能力，另加：'
+  },
+  'pricing.plan.pro.feature1': {
+    en: 'Longer workflow runtime (up to 1 hour)',
+    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'pricing.plan.pro.feature2': {
+    en: 'Up to 20 seats per workspace (coming soon!)',
+    'zh-CN': '每个工作区最多 20 个席位（即将上线）'
+  },
+  'pricing.plan.pro.nextUp': {
+    en: 'Next Up: Advanced Team Collaboration Features',
+    'zh-CN': '下一步：高级团队协作功能'
+  },
+
+  'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
+  'pricing.enterprise.heading': {
+    en: 'Looking for Enterprise Solutions?',
+    'zh-CN': '在寻找企业级解决方案？'
+  },
+  'pricing.enterprise.description': {
+    en: 'For teams running Comfy in production, and at scale.',
+    'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
+  },
+  'pricing.enterprise.cta': { en: 'CONTACT US', 'zh-CN': '联系我们' },
+  'pricing.enterprise.featureIntro': {
+    en: 'Everything in Pro, plus:',
+    'zh-CN': '包含专业版全部能力，另加：'
+  },
+  'pricing.enterprise.feature1': {
+    en: 'Annual commitments with bulk pricing and custom compute packages',
+    'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
+  },
+  'pricing.enterprise.feature2': {
+    en: 'Onboarding and priority support via Slack',
+    'zh-CN': '通过 Slack 提供上手辅导与优先支持'
+  },
+  'pricing.enterprise.feature3': {
+    en: 'Advanced execution (concurrent processing, longer-running jobs, etc)',
+    'zh-CN': '高级执行能力（并发处理、长时任务等）'
+  },
+  'pricing.enterprise.feature4': {
+    en: 'Enterprise security and access controls (permissions, audit logs, SSO, etc)',
+    'zh-CN': '企业级安全与访问控制（权限、审计日志、SSO 等）'
+  },
+  'pricing.enterprise.andMore': { en: 'And more...', 'zh-CN': '以及更多…' },
+  'pricing.footnote': {
+    en: '*Based on 5s videos created with the Wan 2.2 Image-to-Video template using default settings (81 frames, 18fps, 640x640, 4-step sampler)',
+    'zh-CN':
+      '*基于默认设置（81 帧、18fps、640x640、4-step sampler）使用 Wan 2.2 图生视频模板生成 5 秒视频估算'
+  },
+
+  'pricing.included.heading': {
+    en: "What's included\nin the Comfy plan",
+    'zh-CN': 'Comfy 计划\n包含哪些内容'
+  },
+
+  // GalleryHeroSection
+  'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
+  'gallery.heroTitle.before': {
+    en: 'Built, tweaked, and dreamed in',
+    'zh-CN': '在 ComfyUI 中构建、调整与创想'
+  },
+  'gallery.heroSubtitle': {
+    en: 'A small glimpse of what\u2019s being created with ComfyUI by the community.',
+    'zh-CN': '社区使用 ComfyUI 创作成果的一小部分展示。'
+  },
+  // GalleryCard
+  'gallery.card.by': { en: 'By', 'zh-CN': '作者' },
+  'gallery.card.and': { en: 'and', 'zh-CN': '和' },
+  'gallery.card.teamUsing': { en: 'team using', 'zh-CN': '团队使用' },
+  'gallery.detail.visitHub': {
+    en: 'VISIT COMMUNITY HUB',
+    'zh-CN': '访问社区中心'
+  },
+  // ContactSection
+  'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
+  'gallery.contact.heading': {
+    en: 'Questions? Reach out!',
+    'zh-CN': '有问题？联系我们！'
+  },
+  'gallery.contact.cta': { en: 'CONTACT US', 'zh-CN': '联系我们' },
+
+  // AboutHeroSection
+  'about.hero.label': { en: 'ABOUT', 'zh-CN': '关于' },
+  'about.hero.heading': {
+    en: 'Build the tools that reward creative skill',
+    'zh-CN': '打造奖励创造力的工具'
+  },
+  'about.hero.body': {
+    en: 'The team behind Comfy is small, intense, and building what we intend to be our life\u2019s work.',
+    'zh-CN': 'Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。'
+  },
+  'about.hero.cta': { en: 'SEE OPEN ROLES', 'zh-CN': '查看开放职位' },
+
+  // AboutStorySection
+  'about.story.label': { en: 'OUR STORY', 'zh-CN': '我们的故事' },
+  'about.story.headingBefore': {
+    en: 'An open-source project that became the ',
+    'zh-CN': '一个开源项目成为了视觉 AI 的'
+  },
+  'about.story.headingHighlight': {
+    en: 'professional standard',
+    'zh-CN': '行业标准'
+  },
+  'about.story.headingAfter': {
+    en: ' for visual AI.',
+    'zh-CN': '。'
+  },
+  'about.story.body': {
+    en: 'In January, 2023, no tool on the market could chain two AI models together into a repeatable workflow. One developer in Quebec City built his own in two weeks and open-sourced it.',
+    'zh-CN':
+      '2023 年 1 月，市场上没有任何工具能将两个 AI 模型串联成可重复的工作流。一位魁北克市的开发者用两周时间自己构建了一个，并将其开源。'
+  },
+  'about.story.investorsLabel': {
+    en: 'OUR INVESTORS',
+    'zh-CN': '我们的投资者'
+  },
+  'about.story.investorsBody': {
+    en: 'If it can be open, it should be open. That\u2019s how we build an ecosystem that moves faster than any company could think for, and it\u2019s how we think about code, content, and skins. We make money by building things worth paying for, not by controlling what we believe should be free.',
+    'zh-CN':
+      '如果能开放，就应该开放。这是我们建立一个比任何公司都更快发展的生态系统的方式，也是我们对代码、内容和皮肤的思考方式。我们通过构建值得付费的产品来赚钱，而不是通过控制我们认为应该免费的东西。'
+  },
+
+  // AboutQuoteSection
+  'about.quote.text': {
+    en: '\u2018Comfy has innovated a new and powerful ecosystem for creativity without compromising creative control. It has been amazing to watch technical artists and curious creative minds leverage Comfy to explore the full surface area of their ideas.\u2019',
+    'zh-CN':
+      '\u201CComfy 在不牺牲创作控制力的前提下，开创了一个全新而强大的创意生态系统。看到技术艺术家和充满好奇心的创意人士利用 Comfy 探索他们想法的全部可能性，真是令人惊叹。\u201D'
+  },
+  'about.quote.attribution': {
+    en: 'Scott Belsky, Founder of Behance',
+    'zh-CN': 'Scott Belsky，Behance 创始人'
+  },
+
+  // AboutValuesSection
+  'about.values.label': { en: 'OUR VALUES', 'zh-CN': '我们的价值观' },
+  'about.values.headingBefore': {
+    en: 'We believe ',
+    'zh-CN': '我们相信'
+  },
+  'about.values.headingHighlight': {
+    en: 'everyone deserves to design exactly what they dream',
+    'zh-CN': '每个人都值得设计出自己梦想中的作品'
+  },
+  'about.values.headingAfter': {
+    en: ', own their process, and never compromise because of their software.',
+    'zh-CN': '，掌握自己的流程，永远不因软件而妥协。'
+  },
+  'about.values.card1.title': { en: 'SHIP IT', 'zh-CN': 'SHIP IT' },
+  'about.values.card1.body': {
+    en: 'Work hard for what makes it into the world. Ideas don\u2019t substitute for output.',
+    'zh-CN': '为能交付到世界的成果而努力。想法不能替代产出。'
+  },
+  'about.values.card2.title': { en: 'SHARE IT', 'zh-CN': 'SHARE IT' },
+  'about.values.card2.body': {
+    en: 'Every decision and its reasoning gets shared with the team.',
+    'zh-CN': '每个决策及其理由都会与团队共享。'
+  },
+  'about.values.card3.title': {
+    en: 'OPEN SOURCE IT',
+    'zh-CN': 'OPEN SOURCE IT'
+  },
+  'about.values.card3.body': {
+    en: 'If it can be open, it should be open. That\u2019s how we build an ecosystem that moves faster than any company could imagine.',
+    'zh-CN':
+      '如果能开放，就应该开放。这是我们构建一个比任何公司都更快发展的生态系统的方式。'
+  },
+  'about.values.card4.title': {
+    en: 'RESPECT THE CRAFT',
+    'zh-CN': 'RESPECT THE CRAFT'
+  },
+  'about.values.card4.body': {
+    en: 'We build for people who prefer precision over shortcuts. The learning curve is high but the payoff is worth it.',
+    'zh-CN': '我们为追求精确而非捷径的人而构建。学习曲线虽然陡峭，但回报值得。'
+  },
+
+  // AboutCareersSection
+  'about.careers.whyLabel': { en: 'IF YOU...', 'zh-CN': '如果你...' },
+  'about.careers.whyTitle': {
+    en: 'Why join Comfy?',
+    'zh-CN': '为什么加入 Comfy？'
+  },
+  'about.careers.whyTitleBefore': {
+    en: 'Why join',
+    'zh-CN': '为什么加入'
+  },
+  'about.careers.whyTitleAfter': {
+    en: '?',
+    'zh-CN': '？'
+  },
+  'about.careers.reason1': {
+    en: 'Want to build tools that empower others to create.',
+    'zh-CN': '想要构建赋能他人创作的工具。'
+  },
+  'about.careers.reason2': {
+    en: 'Want your output to matter more than your title.',
+    'zh-CN': '想要你的产出比头衔更重要。'
+  },
+  'about.careers.reason3': {
+    en: 'Want high agency in a flat organization.',
+    'zh-CN': '想要在扁平组织中拥有高度自主权。'
+  },
+  'about.careers.reason4': {
+    en: 'Would rather ship and learn than plan and wait.',
+    'zh-CN': '宁愿交付与学习，也不愿计划与等待。'
+  },
+  'about.careers.label': { en: 'CAREERS', 'zh-CN': '招聘' },
+  'about.careers.heading': {
+    en: 'Join the team',
+    'zh-CN': '加入团队'
+  },
+  'about.careers.cta': { en: 'SEE OPEN ROLES', 'zh-CN': '查看开放职位' },
+  'about.careers.noRole': {
+    en: 'Don\u2019t see your dream role here?',
+    'zh-CN': '没找到你理想的职位？'
+  },
+
   // SiteNav
   'nav.products': { en: 'PRODUCTS', 'zh-CN': '产品' },
   'nav.pricing': { en: 'PRICING', 'zh-CN': '价格' },
