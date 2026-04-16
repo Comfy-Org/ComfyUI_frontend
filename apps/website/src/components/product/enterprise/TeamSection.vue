@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { Locale } from '../../../i18n/translations'
 
 import { getRoutes } from '../../../config/routes'
@@ -7,9 +9,9 @@ import FeatureShowcaseSection from '../shared/FeatureShowcaseSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const routes = getRoutes(locale)
+const routes = computed(() => getRoutes(locale))
 
-const features = [
+const features = computed(() => [
   {
     title: t('enterprise.team.feature1.title', locale),
     description: t('enterprise.team.feature1.description', locale)
@@ -18,15 +20,15 @@ const features = [
     title: t('enterprise.team.feature2.title', locale),
     description: t('enterprise.team.feature2.description', locale),
     ctaText: t('enterprise.team.feature2.cta', locale),
-    ctaHref: routes.cloud
+    ctaHref: routes.value.cloud
   },
   {
     title: t('enterprise.team.feature3.title', locale),
     description: t('enterprise.team.feature3.description', locale),
     ctaText: t('enterprise.hero.contactSales', locale),
-    ctaHref: routes.contact
+    ctaHref: routes.value.contact
   }
-]
+])
 </script>
 
 <template>

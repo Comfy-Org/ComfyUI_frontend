@@ -30,7 +30,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           class="mt-10 flex w-full max-w-md flex-col gap-4 lg:w-auto lg:max-w-none lg:flex-row"
         >
           <a
-            :href="externalLinks.app"
+            :href="externalLinks.cloud"
             target="_blank"
             rel="noopener noreferrer"
             class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-full px-8 py-4 text-center text-sm font-bold tracking-wider transition-opacity hover:opacity-90 lg:min-w-60"

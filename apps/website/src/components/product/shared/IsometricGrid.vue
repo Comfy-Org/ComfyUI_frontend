@@ -21,7 +21,8 @@ function cellClass(i: number): string {
 <template>
   <div class="flex flex-1 items-center justify-center" aria-hidden="true">
     <div
-      :class="cn('grid gap-0.5', `grid-cols-${columns}`)"
+      :class="cn('grid gap-0.5')"
+      :style="{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }"
       class="transform-[rotateX(55deg)_rotateZ(45deg)]"
     >
       <span v-for="i in count" :key="i" :class="cellClass(i)" />

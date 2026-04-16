@@ -131,6 +131,7 @@ useParallax([leftImgRef], { trigger: sectionRef, y: -60 })
         <button
           v-for="(category, index) in categories"
           :key="category.label"
+          type="button"
           :class="
             cn(
               'lg:text-6.5xl cursor-pointer text-center text-4xl font-light whitespace-pre-line transition-colors',

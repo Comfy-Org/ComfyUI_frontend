@@ -54,7 +54,7 @@ const steps = [
         class="mt-12 flex flex-col items-center gap-4 lg:flex-row lg:justify-center"
       >
         <a
-          :href="externalLinks.app"
+          :href="externalLinks.cloud"
           target="_blank"
           rel="noopener"
           class="bg-primary-comfy-yellow text-primary-comfy-ink w-full rounded-full px-8 py-4 text-center text-sm font-bold tracking-wider transition-opacity hover:opacity-90 lg:w-auto lg:min-w-48"

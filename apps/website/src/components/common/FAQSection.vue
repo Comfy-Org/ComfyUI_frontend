@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -26,12 +26,15 @@ const faqKeys: Array<{ q: TranslationKey; a: TranslationKey }> = Array.from(
   })
 )
 
-const faqs = faqKeys.map(({ q, a }) => ({
-  question: t(q, locale),
-  answer: t(a, locale)
-}))
+const faqs = computed(() =>
+  faqKeys.map(({ q, a }) => ({
+    question: t(q, locale),
+    answer: t(a, locale)
+  }))
+)
 
-const expanded = reactive(faqs.map(() => true))
+// Start expanded so answers are visible on load
+const expanded = reactive(faqKeys.map(() => true))
 
 function toggle(index: number) {
   expanded[index] = !expanded[index]

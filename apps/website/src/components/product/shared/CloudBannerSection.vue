@@ -14,7 +14,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     >
       {{ t('download.cloud.prefix', locale) }}
       <a
-        :href="externalLinks.app"
+        :href="externalLinks.cloud"
         class="text-primary-comfy-yellow mx-1 font-bold tracking-widest uppercase hover:underline"
       >
         {{ t('download.cloud.cta', locale) }}

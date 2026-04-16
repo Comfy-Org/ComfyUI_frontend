@@ -14,27 +14,33 @@ const FRAME_COUNT = 75
 const images: HTMLImageElement[] = []
 let ctx: gsap.Context | undefined
 
+function drawFrame(
+  canvas: HTMLCanvasElement,
+  draw: CanvasRenderingContext2D,
+  frame: number
+) {
+  const index = Math.round(frame)
+  const img = images[index]
+  if (!img) return
+  canvas.width = img.width
+  canvas.height = img.height
+  draw.drawImage(img, 0, 0)
+}
+
 onMounted(() => {
-  if (!canvasRef.value || prefersReducedMotion()) return
   const canvas = canvasRef.value
+  if (!canvas) return
   const draw = canvas.getContext('2d')
   if (!draw) return
 
+  const reducedMotion = prefersReducedMotion()
   let loadedCount = 0
-
-  function drawFrame(frame: number) {
-    const index = Math.round(frame)
-    const img = images[index]
-    if (!img || !draw) return
-    canvas.width = img.width
-    canvas.height = img.height
-    draw.drawImage(img, 0, 0)
-  }
 
   function onFrameReady() {
     loadedCount++
     if (loadedCount === FRAME_COUNT) {
-      drawFrame(0)
+      drawFrame(canvas, draw, 0)
+      if (reducedMotion) return
       const proxy = { frame: 0 }
       ctx = gsap.context(() => {
         gsap.to(proxy, {
@@ -43,7 +49,7 @@ onMounted(() => {
           ease: 'none',
           repeat: -1,
           onUpdate() {
-            drawFrame(proxy.frame)
+            drawFrame(canvas, draw, proxy.frame)
           }
         })
       })

@@ -26,7 +26,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </p>
 
     <BrandButton
-      :href="externalLinks.app"
+      :href="externalLinks.cloud"
       :label="t('cloud.hero.cta', locale)"
       class="mt-12 w-full text-center lg:mt-8 lg:w-auto"
     />

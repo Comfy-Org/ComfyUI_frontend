@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { Locale } from '../../../i18n/translations'
 
 import { getRoutes } from '../../../config/routes'
@@ -7,7 +9,7 @@ import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const routes = getRoutes(locale)
+const routes = computed(() => getRoutes(locale))
 </script>
 
 <template>

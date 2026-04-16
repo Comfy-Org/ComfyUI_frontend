@@ -87,7 +87,7 @@ const ctaButtons = [
   },
   {
     label: t('nav.launchCloud', locale),
-    href: externalLinks.app,
+    href: externalLinks.cloud,
     primary: true
   }
 ]
