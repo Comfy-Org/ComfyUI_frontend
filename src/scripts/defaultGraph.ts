@@ -115,7 +115,15 @@ export const defaultGraph: ComfyWorkflowJSON = {
         { name: 'CLIP', type: 'CLIP', links: [3, 5], slot_index: 1 },
         { name: 'VAE', type: 'VAE', links: [8], slot_index: 2 }
       ],
-      properties: {},
+      properties: {
+        models: [
+          {
+            name: 'v1-5-pruned-emaonly-fp16.safetensors',
+            url: 'https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors?download=true',
+            directory: 'checkpoints'
+          }
+        ]
+      },
       widgets_values: ['v1-5-pruned-emaonly-fp16.safetensors']
     }
   ],
