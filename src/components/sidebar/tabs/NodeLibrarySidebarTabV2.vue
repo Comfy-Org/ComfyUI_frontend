@@ -53,54 +53,257 @@
             </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
-                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                class="z-9999 w-48 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                 align="end"
                 :side-offset="4"
               >
                 <DropdownMenuCheckboxItem
                   v-model="filterOptions.blueprints"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  @select.prevent
                 >
                   <span class="flex-1">{{
                     $t('sideToolbar.nodeLibraryTab.filterOptions.blueprints')
                   }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
+                  <span class="size-4 shrink-0">
+                    <i
+                      v-if="filterOptions.blueprints"
+                      class="icon-[lucide--check] size-4"
+                    />
+                  </span>
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   v-model="filterOptions.partnerNodes"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  @select.prevent
                 >
                   <span class="flex-1">{{
                     $t('sideToolbar.nodeLibraryTab.filterOptions.partnerNodes')
                   }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
+                  <span class="size-4 shrink-0">
+                    <i
+                      v-if="filterOptions.partnerNodes"
+                      class="icon-[lucide--check] size-4"
+                    />
+                  </span>
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   v-model="filterOptions.comfyNodes"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  @select.prevent
                 >
                   <span class="flex-1">{{
                     $t('sideToolbar.nodeLibraryTab.filterOptions.comfyNodes')
                   }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
+                  <span class="size-4 shrink-0">
+                    <i
+                      v-if="filterOptions.comfyNodes"
+                      class="icon-[lucide--check] size-4"
+                    />
+                  </span>
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
                   v-model="filterOptions.extensions"
                   class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  @select.prevent
                 >
                   <span class="flex-1">{{
                     $t('sideToolbar.nodeLibraryTab.filterOptions.extensions')
                   }}</span>
-                  <DropdownMenuItemIndicator class="w-4">
-                    <i class="icon-[lucide--check] size-4" />
-                  </DropdownMenuItemIndicator>
+                  <span class="size-4 shrink-0">
+                    <i
+                      v-if="filterOptions.extensions"
+                      class="icon-[lucide--check] size-4"
+                    />
+                  </span>
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator class="m-1 h-px bg-border-subtle" />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  >
+                    <span class="flex-1">{{ $t('g.input') }}</span>
+                    <div
+                      v-if="selectedInputTypes.size > 0"
+                      class="flex -space-x-1"
+                    >
+                      <span
+                        v-for="type in selectedInputTypes"
+                        :key="type"
+                        class="size-3 rounded-full border border-comfy-menu-bg"
+                        :style="{ backgroundColor: getSlotColor(type) }"
+                      />
+                    </div>
+                    <i class="icon-[lucide--chevron-right] size-4" />
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent
+                      class="z-9999 flex w-56 flex-col rounded-lg border border-border-default bg-comfy-menu-bg shadow-lg"
+                      :side-offset="2"
+                      :align-offset="-5"
+                    >
+                      <div class="px-3 pt-3 pb-1">
+                        <div
+                          class="flex items-center gap-2 rounded-md border border-border-default bg-comfy-input px-2 py-1"
+                        >
+                          <i
+                            class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
+                          />
+                          <input
+                            v-model="inputTypeSearch"
+                            type="text"
+                            :placeholder="$t('g.search') + '...'"
+                            class="w-full border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            @keydown.stop
+                          />
+                        </div>
+                      </div>
+                      <div class="max-h-48 overflow-y-auto px-1 pb-1">
+                        <DropdownMenuCheckboxItem
+                          v-for="type in availableInputTypes"
+                          :key="type"
+                          :checked="selectedInputTypes.has(type)"
+                          class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                          @select.prevent="
+                            selectedInputTypes = toggleType(
+                              selectedInputTypes,
+                              type
+                            )
+                          "
+                        >
+                          <span
+                            :class="
+                              cn(
+                                'flex size-4 shrink-0 items-center justify-center rounded-sm border',
+                                selectedInputTypes.has(type)
+                                  ? 'border-primary-background bg-primary-background'
+                                  : 'border-border-default'
+                              )
+                            "
+                          >
+                            <i
+                              v-if="selectedInputTypes.has(type)"
+                              class="text-primary-foreground icon-[lucide--check] size-3"
+                            />
+                          </span>
+                          <span class="flex-1 truncate">{{ type }}</span>
+                          <span
+                            class="size-2.5 shrink-0 rounded-full"
+                            :style="{ backgroundColor: getSlotColor(type) }"
+                          />
+                        </DropdownMenuCheckboxItem>
+                      </div>
+                      <div
+                        v-if="selectedInputTypes.size > 0"
+                        class="flex items-center justify-between border-t border-border-subtle px-3 py-1.5 text-xs"
+                      >
+                        <span class="text-muted-foreground">
+                          {{ $t('g.typesSelected', selectedInputTypes.size) }}
+                        </span>
+                        <Button
+                          variant="textonly"
+                          size="sm"
+                          @click="selectedInputTypes = new Set()"
+                        >
+                          {{ $t('g.clearAll') }}
+                        </Button>
+                      </div>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  >
+                    <span class="flex-1">{{ $t('g.output') }}</span>
+                    <div
+                      v-if="selectedOutputTypes.size > 0"
+                      class="flex -space-x-1"
+                    >
+                      <span
+                        v-for="type in selectedOutputTypes"
+                        :key="type"
+                        class="size-3 rounded-full border border-comfy-menu-bg"
+                        :style="{ backgroundColor: getSlotColor(type) }"
+                      />
+                    </div>
+                    <i class="icon-[lucide--chevron-right] size-4" />
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent
+                      class="z-9999 flex w-56 flex-col rounded-lg border border-border-default bg-comfy-menu-bg shadow-lg"
+                      :side-offset="2"
+                      :align-offset="-5"
+                    >
+                      <div class="px-3 pt-3 pb-1">
+                        <div
+                          class="flex items-center gap-2 rounded-md border border-border-default bg-comfy-input px-2 py-1"
+                        >
+                          <i
+                            class="icon-[lucide--search] size-3.5 shrink-0 text-muted-foreground"
+                          />
+                          <input
+                            v-model="outputTypeSearch"
+                            type="text"
+                            :placeholder="$t('g.search') + '...'"
+                            class="w-full border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            @keydown.stop
+                          />
+                        </div>
+                      </div>
+                      <div class="max-h-48 overflow-y-auto px-1 pb-1">
+                        <DropdownMenuCheckboxItem
+                          v-for="type in availableOutputTypes"
+                          :key="type"
+                          :checked="selectedOutputTypes.has(type)"
+                          class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                          @select.prevent="
+                            selectedOutputTypes = toggleType(
+                              selectedOutputTypes,
+                              type
+                            )
+                          "
+                        >
+                          <span
+                            :class="
+                              cn(
+                                'flex size-4 shrink-0 items-center justify-center rounded-sm border',
+                                selectedOutputTypes.has(type)
+                                  ? 'border-primary-background bg-primary-background'
+                                  : 'border-border-default'
+                              )
+                            "
+                          >
+                            <i
+                              v-if="selectedOutputTypes.has(type)"
+                              class="text-primary-foreground icon-[lucide--check] size-3"
+                            />
+                          </span>
+                          <span class="flex-1 truncate">{{ type }}</span>
+                          <span
+                            class="size-2.5 shrink-0 rounded-full"
+                            :style="{ backgroundColor: getSlotColor(type) }"
+                          />
+                        </DropdownMenuCheckboxItem>
+                      </div>
+                      <div
+                        v-if="selectedOutputTypes.size > 0"
+                        class="flex items-center justify-between border-t border-border-subtle px-3 py-1.5 text-xs"
+                      >
+                        <span class="text-muted-foreground">
+                          {{ $t('g.typesSelected', selectedOutputTypes.size) }}
+                        </span>
+                        <Button
+                          variant="textonly"
+                          size="sm"
+                          @click="selectedOutputTypes = new Set()"
+                        >
+                          {{ $t('g.clearAll') }}
+                        </Button>
+                      </div>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
@@ -162,6 +365,10 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, watchEffect } from 'vue'
@@ -171,6 +378,7 @@ import {
   resolveBlueprintSuffix,
   resolveEssentialsDisplayName
 } from '@/constants/essentialsDisplayNames'
+import { getSlotColor } from '@/constants/slotColors'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
@@ -185,9 +393,11 @@ import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
+import { cn } from '@/utils/tailwindUtil'
 import { getProviderIcon } from '@/utils/categoryUtil'
 import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   NodeCategoryId,
@@ -251,6 +461,49 @@ const { t } = useI18n()
 
 const searchBoxRef = ref<InstanceType<typeof SearchInput> | null>(null)
 const searchQuery = ref('')
+
+const selectedInputTypes = ref<Set<string>>(new Set())
+const selectedOutputTypes = ref<Set<string>>(new Set())
+const inputTypeSearch = ref('')
+const outputTypeSearch = ref('')
+
+const availableInputTypes = computed(() => {
+  const filter = nodeDefStore.nodeSearchService.inputTypeFilter
+  const allTypes = filter.fuseSearch.data
+  if (!inputTypeSearch.value) return allTypes
+  return filter.fuseSearch.search(inputTypeSearch.value)
+})
+
+const availableOutputTypes = computed(() => {
+  const filter = nodeDefStore.nodeSearchService.outputTypeFilter
+  const allTypes = filter.fuseSearch.data
+  if (!outputTypeSearch.value) return allTypes
+  return filter.fuseSearch.search(outputTypeSearch.value)
+})
+
+function toggleType(set: Set<string>, type: string) {
+  const next = new Set(set)
+  if (next.has(type)) {
+    next.delete(type)
+  } else {
+    next.add(type)
+  }
+  return next
+}
+
+const activeTypeFilters = computed<
+  FuseFilterWithValue<ComfyNodeDefImpl, string>[]
+>(() => {
+  const filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = []
+  const searchService = nodeDefStore.nodeSearchService
+  for (const type of selectedInputTypes.value) {
+    filters.push({ filterDef: searchService.inputTypeFilter, value: type })
+  }
+  for (const type of selectedOutputTypes.value) {
+    filters.push({ filterDef: searchService.outputTypeFilter, value: type })
+  }
+  return filters
+})
 const expandedKeysByTab = ref<Record<TabId, string[]>>({
   essentials: [],
   all: [],
@@ -267,17 +520,24 @@ const filteredNodeDefs = computed(() => {
   }
   return nodeDefStore.nodeSearchService.searchNode(
     searchQuery.value,
-    [],
+    activeTypeFilters.value,
     { limit: 64 },
     { matchWildcards: false }
   )
 })
 
-const activeNodes = computed(() =>
-  filteredNodeDefs.value.length > 0
-    ? filteredNodeDefs.value
-    : nodeDefStore.visibleNodeDefs
-)
+const activeNodes = computed(() => {
+  const base =
+    filteredNodeDefs.value.length > 0
+      ? filteredNodeDefs.value
+      : nodeDefStore.visibleNodeDefs
+  if (activeTypeFilters.value.length === 0) return base
+  return base.filter((node) =>
+    activeTypeFilters.value.every(({ filterDef, value }) =>
+      filterDef.matches(node, value)
+    )
+  )
+})
 
 const sections = computed(() => {
   if (selectedTab.value !== 'all') return []

@@ -278,6 +278,7 @@
     "releaseTitle": "{package} {version} Release",
     "itemSelected": "{selectedCount} item selected",
     "itemsSelected": "{selectedCount} items selected",
+    "typesSelected": "{count} type selected | {count} types selected",
     "multiSelectDropdown": "Multi-select dropdown",
     "singleSelectDropdown": "Single-select dropdown",
     "progressCountOf": "of",
