@@ -1,8 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import ComingSoon from '../components/common/ComingSoon.astro'
+import HeroSection from '../components/about/HeroSection.vue'
+import VideoSection from '../components/about/VideoSection.vue'
+import StorySection from '../components/about/StorySection.vue'
+import OurValuesSection from '../components/about/OurValuesSection.vue'
+import ValuesSection from '../components/about/ValuesSection.vue'
+import CareersSection from '../components/about/CareersSection.vue'
 ---
 
 <BaseLayout title="About Us — Comfy">
-  <ComingSoon />
+  <HeroSection />
+  <VideoSection />
+  <StorySection />
+  <OurValuesSection />
+  <ValuesSection client:visible />
+  <CareersSection />
 </BaseLayout>
