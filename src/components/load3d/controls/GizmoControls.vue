@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -95,13 +95,8 @@ const { t } = useI18n()
 
 const gizmoConfig = defineModel<GizmoConfig>('gizmoConfig')
 
-const gizmoEnabled = ref(false)
-const gizmoMode = ref<GizmoMode>('translate')
-
-if (gizmoConfig.value) {
-  gizmoEnabled.value = gizmoConfig.value.enabled
-  gizmoMode.value = gizmoConfig.value.mode
-}
+const gizmoEnabled = computed(() => gizmoConfig.value?.enabled ?? false)
+const gizmoMode = computed(() => gizmoConfig.value?.mode ?? 'translate')
 
 const emit = defineEmits<{
   (e: 'toggleGizmo', enabled: boolean): void
@@ -110,34 +105,18 @@ const emit = defineEmits<{
 }>()
 
 const toggleGizmo = () => {
-  gizmoEnabled.value = !gizmoEnabled.value
-  emit('toggleGizmo', gizmoEnabled.value)
+  if (!gizmoConfig.value) return
+  gizmoConfig.value.enabled = !gizmoConfig.value.enabled
+  emit('toggleGizmo', gizmoConfig.value.enabled)
 }
 
 const setMode = (mode: GizmoMode) => {
-  gizmoMode.value = mode
+  if (!gizmoConfig.value) return
+  gizmoConfig.value.mode = mode
   emit('setGizmoMode', mode)
 }
 
 const resetTransform = () => {
   emit('resetGizmoTransform')
 }
-
-watch(
-  () => gizmoConfig.value,
-  (newConfig) => {
-    if (newConfig) {
-      gizmoEnabled.value = newConfig.enabled
-      gizmoMode.value = newConfig.mode
-    }
-  },
-  { deep: true }
-)
-
-watch([gizmoEnabled, gizmoMode], () => {
-  if (gizmoConfig.value) {
-    gizmoConfig.value.enabled = gizmoEnabled.value
-    gizmoConfig.value.mode = gizmoMode.value
-  }
-})
 </script>

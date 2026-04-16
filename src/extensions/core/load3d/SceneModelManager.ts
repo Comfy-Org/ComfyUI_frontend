@@ -530,6 +530,7 @@ export class SceneModelManager implements ModelManagerInterface {
     // Reset transform to compute from raw geometry (idempotent)
     model.scale.set(1, 1, 1)
     model.position.set(0, 0, 0)
+    model.rotation.set(0, 0, 0)
 
     const box = new THREE.Box3().setFromObject(model)
     const size = box.getSize(new THREE.Vector3())

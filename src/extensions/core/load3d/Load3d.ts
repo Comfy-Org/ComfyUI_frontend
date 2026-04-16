@@ -15,16 +15,15 @@ import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
-import {
-  type CameraState,
-  type CaptureResult,
-  type EventCallback,
-  type GizmoMode,
-  type Load3DOptions,
-  type MaterialMode,
-  type UpDirection
+import type {
+  CameraState,
+  CaptureResult,
+  EventCallback,
+  GizmoMode,
+  Load3DOptions,
+  MaterialMode,
+  UpDirection
 } from './interfaces'
-import { Object3D } from 'three'
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
@@ -414,7 +413,7 @@ class Load3d {
     return this.controlsManager.controls
   }
 
-  private setGizmo(model: Object3D): void {
+  private setGizmo(model: THREE.Object3D): void {
     this.gizmoManager.setupForModel(model)
   }
 
@@ -890,7 +889,7 @@ class Load3d {
         this.controlsManager.controls.update()
       }
 
-      const result = await this.sceneManager.captureScene(width, height)
+      const result = await this.captureScene(width, height)
       return result.scene
     } finally {
       this.sceneManager.gridHelper.visible = savedGridVisible
