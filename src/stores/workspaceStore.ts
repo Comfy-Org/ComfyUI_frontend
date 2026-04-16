@@ -2,7 +2,7 @@ import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useCanvasToast } from '@/composables/useCanvasToast'
+import { useSnackbarToast } from '@/composables/useSnackbarToast'
 import { t } from '@/i18n'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -98,7 +98,7 @@ function workspaceStoreSetup() {
     focusMode,
     toggleFocusMode: () => {
       focusMode.value = !focusMode.value
-      const canvasToast = useCanvasToast()
+      const canvasToast = useSnackbarToast()
       const keybinding = useKeybindingStore().getKeybindingByCommandId(
         'Workspace.ToggleFocusMode'
       )

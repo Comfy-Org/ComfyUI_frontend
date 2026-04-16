@@ -1,4 +1,4 @@
-import { useCanvasToast } from '@/composables/useCanvasToast'
+import { useSnackbarToast } from '@/composables/useSnackbarToast'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -441,7 +441,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
       function: (() => {
         const settingStore = useSettingStore()
-        const canvasToast = useCanvasToast()
+        const canvasToast = useSnackbarToast()
         let lastLinksRenderMode = LiteGraph.SPLINE_LINK
 
         return async () => {
@@ -460,7 +460,19 @@ export function useCoreCommands(): ComfyCommand[] {
               'Comfy.LinkRenderMode',
               LiteGraph.HIDDEN_LINK
             )
-            canvasToast.show(t('g.linksHidden'), { shortcut })
+            canvasToast.show(t('g.linksHidden'), {
+              shortcut,
+              actionLabel: shortcut ? undefined : t('g.undo'),
+              onAction: shortcut
+                ? undefined
+                : async () => {
+                    await settingStore.set(
+                      'Comfy.LinkRenderMode',
+                      lastLinksRenderMode
+                    )
+                    canvasToast.show(t('g.linksVisible'))
+                  }
+            })
           }
         }
       })(),
