@@ -140,13 +140,11 @@ export class NodeOperationsHelper {
       { x: bottomRight.x - 2, y: bottomRight.y - 1 },
       target
     )
-    await this.comfyPage.nextFrame()
     if (revertAfter) {
       await this.comfyPage.canvasOps.dragAndDrop(
         { x: target.x - 2, y: target.y - 1 },
         bottomRight
       )
-      await this.comfyPage.nextFrame()
     }
   }
 
@@ -158,7 +156,6 @@ export class NodeOperationsHelper {
     }
     await node.clickContextMenuOption('Convert to Group Node')
     await this.fillPromptDialog(groupNodeName)
-    await this.comfyPage.nextFrame()
   }
 
   async fillPromptDialog(value: string): Promise<void> {
@@ -166,6 +163,22 @@ export class NodeOperationsHelper {
     await this.page.keyboard.press('Enter')
     await this.promptDialogInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
+  }
+
+  async panToNode(nodeRef: NodeReference): Promise<void> {
+    const nodePos = await nodeRef.getPosition()
+    await this.page.evaluate((pos) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] = -pos.x + canvas.canvas.width / 2
+      canvas.ds.offset[1] = -pos.y + canvas.canvas.height / 2 + 100
+      canvas.setDirty(true, true)
+    }, nodePos)
+    await this.comfyPage.nextFrame()
+  }
+
+  async selectNodeWithPan(nodeRef: NodeReference): Promise<void> {
+    await this.panToNode(nodeRef)
+    await nodeRef.click('title')
   }
 
   async dragTextEncodeNode2(): Promise<void> {
@@ -176,7 +189,6 @@ export class NodeOperationsHelper {
         y: 300
       }
     )
-    await this.comfyPage.nextFrame()
   }
 
   async adjustEmptyLatentWidth(): Promise<void> {

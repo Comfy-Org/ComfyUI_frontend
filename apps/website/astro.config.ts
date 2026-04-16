@@ -10,11 +10,6 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()]
   },
-  build: {
-    assetsPrefix: process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : undefined
-  },
   i18n: {
     locales: ['en', 'zh-CN'],
     defaultLocale: 'en',

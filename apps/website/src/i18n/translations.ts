@@ -2,252 +2,280 @@ type Locale = 'en' | 'zh-CN'
 
 const translations = {
   // HeroSection
-  'hero.headline': {
-    en: 'Professional Control of Visual AI',
-    'zh-CN': '视觉 AI 的专业控制'
+  'hero.title': {
+    en: 'Professional Control\nof Visual AI',
+    'zh-CN': '视觉 AI 的\n专业控制'
   },
-  'hero.subheadline': {
+  'hero.subtitle': {
     en: 'Comfy is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output.',
     'zh-CN':
       'Comfy 是面向视觉专业人士的 AI 创作引擎，让您掌控每个模型、每个参数和每个输出。'
   },
-  'hero.cta.getStarted': { en: 'GET STARTED', 'zh-CN': '立即开始' },
-  'hero.cta.learnMore': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
 
-  // SocialProofBar
-  'social.heading': {
-    en: 'Trusted by Industry Leaders',
-    'zh-CN': '受到行业领导者的信赖'
+  // ProductShowcaseSection
+  'showcase.subtitle1': {
+    en: 'Connect models, processing steps, and outputs on a canvas where every decision is visible and every step is inspectable.',
+    'zh-CN':
+      '在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。'
   },
-  'social.customNodes': { en: 'Custom Nodes', 'zh-CN': '自定义节点' },
-  'social.githubStars': { en: 'GitHub Stars', 'zh-CN': 'GitHub 星标' },
-  'social.communityMembers': {
-    en: 'Community Members',
-    'zh-CN': '社区成员'
+  'showcase.subtitle2': {
+    en: 'Start from a community template or build from scratch.',
+    'zh-CN': '从社区模板开始，或从零构建。'
   },
-
-  // ProductShowcase
-  'showcase.heading': { en: 'See Comfy in Action', 'zh-CN': '观看 Comfy 实战' },
-  'showcase.subheading': {
-    en: 'Watch how professionals build AI workflows with unprecedented control',
-    'zh-CN': '观看专业人士如何以前所未有的控制力构建 AI 工作流'
+  'showcase.feature1.title': {
+    en: 'Full Control with Nodes',
+    'zh-CN': '节点式完全控制'
   },
-  'showcase.placeholder': {
-    en: 'Workflow Demo Coming Soon',
-    'zh-CN': '工作流演示即将推出'
+  'showcase.feature1.description': {
+    en: 'Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.',
+    'zh-CN':
+      '在无限画布上连接节点，构建强大的 AI 管线。每个模型、参数和处理步骤都可见且可调整。'
   },
-  'showcase.nodeEditor': { en: 'Node-Based Editor', 'zh-CN': '节点编辑器' },
-  'showcase.realTimePreview': {
-    en: 'Real-Time Preview',
-    'zh-CN': '实时预览'
+  'showcase.feature2.title': {
+    en: 'App mode, a simplified view of your workflows',
+    'zh-CN': 'App 模式，工作流的简化视图'
   },
-  'showcase.versionControl': {
-    en: 'Version Control',
-    'zh-CN': '版本控制'
+  'showcase.feature2.description': {
+    en: 'If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper.',
+    'zh-CN':
+      '如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。'
   },
-
-  // ValuePillars
-  'pillars.heading': {
-    en: 'The Building Blocks of AI Production',
-    'zh-CN': 'AI 制作的基本要素'
+  'showcase.feature3.title': {
+    en: 'Community Workflows on Comfy Hub',
+    'zh-CN': 'Comfy Hub 上的社区工作流'
   },
-  'pillars.subheading': {
-    en: 'Five powerful capabilities that give you complete control',
-    'zh-CN': '五大强大功能，让您完全掌控'
+  'showcase.feature3.description': {
+    en: 'Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs.',
+    'zh-CN':
+      '浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。'
   },
-  'pillars.buildTitle': { en: 'Build', 'zh-CN': '构建' },
-  'pillars.buildDesc': {
-    en: 'Design complex AI workflows visually with our node-based editor',
-    'zh-CN': '使用节点编辑器直观地设计复杂的 AI 工作流'
-  },
-  'pillars.customizeTitle': { en: 'Customize', 'zh-CN': '自定义' },
-  'pillars.customizeDesc': {
-    en: 'Fine-tune every parameter across any model architecture',
-    'zh-CN': '在任何模型架构中微调每个参数'
-  },
-  'pillars.refineTitle': { en: 'Refine', 'zh-CN': '优化' },
-  'pillars.refineDesc': {
-    en: 'Iterate on outputs with precision controls and real-time preview',
-    'zh-CN': '通过精确控制和实时预览迭代输出'
-  },
-  'pillars.automateTitle': { en: 'Automate', 'zh-CN': '自动化' },
-  'pillars.automateDesc': {
-    en: 'Scale your workflows with batch processing and API integration',
-    'zh-CN': '通过批处理和 API 集成扩展工作流'
-  },
-  'pillars.runTitle': { en: 'Run', 'zh-CN': '运行' },
-  'pillars.runDesc': {
-    en: 'Deploy locally or in the cloud with identical results',
-    'zh-CN': '在本地或云端部署，获得相同的结果'
-  },
+  'showcase.badgeHow': { en: 'HOW', 'zh-CN': '如何' },
+  'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运作' },
 
   // UseCaseSection
-  'useCase.heading': {
-    en: 'Built for Every Creative Industry',
-    'zh-CN': '为每个创意行业而生'
+  'useCase.label': {
+    en: 'Industries that create with ComfyUI',
+    'zh-CN': '使用 ComfyUI 创作的行业'
   },
-  'useCase.vfx': { en: 'VFX & Animation', 'zh-CN': '视觉特效与动画' },
-  'useCase.agencies': { en: 'Creative Agencies', 'zh-CN': '创意机构' },
-  'useCase.gaming': { en: 'Gaming', 'zh-CN': '游戏' },
+  'useCase.vfx': {
+    en: 'VFX &\nAnimation',
+    'zh-CN': '视觉特效 &\n动画'
+  },
+  'useCase.advertising': {
+    en: 'Advertising &\nCreative Studios',
+    'zh-CN': '广告 &\n创意工作室'
+  },
+  'useCase.gaming': {
+    en: 'Video Game',
+    'zh-CN': '电子游戏'
+  },
   'useCase.ecommerce': {
-    en: 'eCommerce & Fashion',
-    'zh-CN': '电商与时尚'
+    en: 'eCommerce &\nFashion',
+    'zh-CN': '电商 &\n时尚'
   },
-  'useCase.community': {
-    en: 'Community & Hobbyists',
-    'zh-CN': '社区与爱好者'
+  'useCase.more': {
+    en: '& More',
+    'zh-CN': '& 更多'
   },
   'useCase.body': {
-    en: 'Powered by 60,000+ nodes, thousands of workflows, and a community that builds faster than any one company could.',
+    en: 'Powered by 60,000+ nodes, thousands of workflows,\nand a community that builds faster than any one company could.',
     'zh-CN':
-      '由 60,000+ 节点、数千个工作流和一个比任何公司都更快构建的社区驱动。'
+      '由 60,000+ 节点、数千个工作流\n和一个比任何公司都更快构建的社区驱动。'
   },
-  'useCase.cta': { en: 'EXPLORE WORKFLOWS', 'zh-CN': '探索工作流' },
-
-  // CaseStudySpotlight
-  'caseStudy.heading': { en: 'Customer Stories', 'zh-CN': '客户故事' },
-  'caseStudy.subheading': {
-    en: 'See how leading studios use Comfy in production',
-    'zh-CN': '了解领先工作室如何在生产中使用 Comfy'
+  'useCase.cta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
   },
-  'caseStudy.readMore': { en: 'READ CASE STUDY', 'zh-CN': '阅读案例' },
-
-  // TestimonialsSection
-  'testimonials.heading': {
-    en: 'What Professionals Say',
-    'zh-CN': '专业人士的评价'
-  },
-  'testimonials.all': { en: 'All', 'zh-CN': '全部' },
-  'testimonials.vfx': { en: 'VFX', 'zh-CN': '特效' },
-  'testimonials.gaming': { en: 'Gaming', 'zh-CN': '游戏' },
-  'testimonials.advertising': { en: 'Advertising', 'zh-CN': '广告' },
-  'testimonials.photography': { en: 'Photography', 'zh-CN': '摄影' },
 
   // GetStartedSection
   'getStarted.heading': {
-    en: 'Get Started in Minutes',
-    'zh-CN': '几分钟即可开始'
+    en: 'Get started in minutes',
+    'zh-CN': '几分钟即可上手'
   },
   'getStarted.subheading': {
-    en: 'From download to your first AI-generated output in three simple steps',
-    'zh-CN': '从下载到首次 AI 生成输出，只需三个简单步骤'
+    en: 'Go as deep as you want to.',
+    'zh-CN': '想多深入就多深入。'
   },
   'getStarted.step1.title': {
-    en: 'Download & Sign Up',
-    'zh-CN': '下载与注册'
+    en: 'Download or Sign up',
+    'zh-CN': '下载或注册'
   },
-  'getStarted.step1.desc': {
-    en: 'Get Comfy Desktop for free or create a Cloud account',
-    'zh-CN': '免费获取 Comfy Desktop 或创建云端账号'
+  'getStarted.step1.downloadLocal': {
+    en: 'Download Local',
+    'zh-CN': '下载本地版'
+  },
+  'getStarted.step1.launchCloud': {
+    en: 'Launch Cloud',
+    'zh-CN': '启动云端'
+  },
+  'getStarted.step1.or': {
+    en: 'or',
+    'zh-CN': '或'
   },
   'getStarted.step2.title': {
-    en: 'Load a Workflow',
+    en: 'Load a workflow',
     'zh-CN': '加载工作流'
   },
-  'getStarted.step2.desc': {
-    en: 'Choose from thousands of community workflows or build your own',
-    'zh-CN': '从数千个社区工作流中选择，或自行构建'
+  'getStarted.step2.description': {
+    en: 'Start from a community template or build your own.',
+    'zh-CN': '从社区模板开始，或自行构建。'
   },
-  'getStarted.step3.title': { en: 'Generate', 'zh-CN': '生成' },
-  'getStarted.step3.desc': {
-    en: 'Hit run and watch your AI workflow come to life',
-    'zh-CN': '点击运行，观看 AI 工作流生动呈现'
+  'getStarted.step3.title': {
+    en: 'Generate & Iterate',
+    'zh-CN': '生成与迭代'
   },
-  'getStarted.cta': { en: 'DOWNLOAD COMFY', 'zh-CN': '下载 COMFY' },
-
-  // CTASection
-  'cta.heading': {
-    en: 'Choose Your Way to Comfy',
-    'zh-CN': '选择您的 Comfy 方式'
-  },
-  'cta.desktop.title': { en: 'Comfy Desktop', 'zh-CN': 'Comfy Desktop' },
-  'cta.desktop.desc': {
-    en: 'Full power on your local machine. Free and open source.',
-    'zh-CN': '在本地机器上释放全部性能。免费开源。'
-  },
-  'cta.desktop.cta': { en: 'DOWNLOAD', 'zh-CN': '下载' },
-  'cta.cloud.title': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
-  'cta.cloud.desc': {
-    en: 'Run workflows in the cloud. No GPU required.',
-    'zh-CN': '在云端运行工作流，无需 GPU。'
-  },
-  'cta.cloud.cta': { en: 'TRY CLOUD', 'zh-CN': '试用云端' },
-  'cta.api.title': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
-  'cta.api.desc': {
-    en: 'Integrate AI generation into your applications.',
-    'zh-CN': '将 AI 生成功能集成到您的应用程序中。'
-  },
-  'cta.api.cta': { en: 'VIEW DOCS', 'zh-CN': '查看文档' },
-
-  // ManifestoSection
-  'manifesto.heading': { en: 'Method, Not Magic', 'zh-CN': '方法，而非魔法' },
-  'manifesto.body': {
-    en: 'We believe in giving creators real control over AI. Not black boxes. Not magic buttons. But transparent, reproducible, node-by-node control over every step of the creative process.',
-    'zh-CN':
-      '我们相信应赋予创作者对 AI 的真正控制权。没有黑箱，没有魔法按钮，而是对创作过程每一步的透明、可复现、逐节点控制。'
+  'getStarted.step3.description': {
+    en: "Run, adjust, scale when you're ready.",
+    'zh-CN': '运行、调整，准备好了就扩展。'
   },
 
-  // AcademySection
-  'academy.badge': { en: 'COMFY ACADEMY', 'zh-CN': 'COMFY 学院' },
-  'academy.heading': {
-    en: 'Master AI Workflows',
-    'zh-CN': '掌握 AI 工作流'
+  // ProductCardsSection
+  'products.label': {
+    en: 'Comfy UI',
+    'zh-CN': 'Comfy UI'
   },
-  'academy.body': {
-    en: 'Learn to build professional AI workflows with guided tutorials, video courses, and hands-on projects.',
-    'zh-CN': '通过指导教程、视频课程和实践项目，学习构建专业的 AI 工作流。'
+  'products.heading': {
+    en: 'The AI creation\nengine for complete control',
+    'zh-CN': '完全掌控的\nAI 创作引擎'
   },
-  'academy.tutorials': { en: 'Guided Tutorials', 'zh-CN': '指导教程' },
-  'academy.videos': { en: 'Video Courses', 'zh-CN': '视频课程' },
-  'academy.projects': { en: 'Hands-on Projects', 'zh-CN': '实践项目' },
-  'academy.cta': { en: 'EXPLORE ACADEMY', 'zh-CN': '探索学院' },
+  'products.subheading': {
+    en: 'Over every model, every node, every step, every output.',
+    'zh-CN': '掌控每个模型、每个节点、每个步骤、每个输出。'
+  },
+  'products.local.title': {
+    en: 'Comfy\nLocal',
+    'zh-CN': 'Comfy\n本地版'
+  },
+  'products.local.description': {
+    en: 'Run ComfyUI on your own hardware.',
+    'zh-CN': '在您自己的硬件上运行 ComfyUI。'
+  },
+  'products.local.cta': {
+    en: 'SEE LOCAL FEATURES',
+    'zh-CN': '查看本地版特性'
+  },
+  'products.cloud.title': {
+    en: 'Comfy\nCloud',
+    'zh-CN': 'Comfy\nCloud'
+  },
+  'products.cloud.description': {
+    en: 'The full power of ComfyUI from anywhere.',
+    'zh-CN': '随时随地使用 ComfyUI 的全部能力。'
+  },
+  'products.cloud.cta': {
+    en: 'SEE CLOUD FEATURES',
+    'zh-CN': '查看云端特性'
+  },
+  'products.api.title': {
+    en: 'Comfy\nAPI',
+    'zh-CN': 'Comfy\nAPI'
+  },
+  'products.api.description': {
+    en: 'Turn workflows into production endpoints.',
+    'zh-CN': '将工作流转化为生产级 API 端点。'
+  },
+  'products.api.cta': {
+    en: 'SEE API FEATURES',
+    'zh-CN': '查看 API 特性'
+  },
+  'products.enterprise.title': {
+    en: 'Comfy\nEnterprise',
+    'zh-CN': 'Comfy\n企业版'
+  },
+  'products.enterprise.description': {
+    en: 'Enterprise-grade infrastructure for the creative engine inside your organization.',
+    'zh-CN': '为组织内的创作引擎提供企业级基础设施。'
+  },
+  'products.enterprise.cta': {
+    en: 'SEE ENTERPRISE FEATURES',
+    'zh-CN': '查看企业版特性'
+  },
+
+  // CaseStudySpotlightSection
+  'caseStudy.label': {
+    en: 'Customer Stories',
+    'zh-CN': '客户故事'
+  },
+  'caseStudy.heading': {
+    en: 'See Comfy\nin the real world',
+    'zh-CN': '看看 Comfy\n在真实世界中的应用'
+  },
+  'caseStudy.subheading': {
+    en: 'Videos & case studies from teams building with Comfy',
+    'zh-CN': '来自使用 Comfy 构建的团队的视频和案例研究'
+  },
+  'caseStudy.watchVideos': {
+    en: 'WATCH VIDEOS',
+    'zh-CN': '观看视频'
+  },
+  'caseStudy.seeAll': {
+    en: 'SEE ALL CASE STUDIES',
+    'zh-CN': '查看全部案例'
+  },
+
+  // BuildWhatSection
+  'buildWhat.subtitle': {
+    en: "Comfy gives you the building blocks to create workflows nobody's imagined yet — and share them with everyone.",
+    'zh-CN': 'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。'
+  },
+  'buildWhat.row1': { en: 'BUILD WHAT', 'zh-CN': '构建' },
+  'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的' },
+  'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
 
   // SiteNav
-  'nav.ariaLabel': { en: 'Main navigation', 'zh-CN': '主导航' },
+  'nav.products': { en: 'PRODUCTS', 'zh-CN': '产品' },
+  'nav.pricing': { en: 'PRICING', 'zh-CN': '价格' },
+  'nav.community': { en: 'COMMUNITY', 'zh-CN': '社区' },
+  'nav.resources': { en: 'RESOURCES', 'zh-CN': '资源' },
+  'nav.company': { en: 'COMPANY', 'zh-CN': '公司' },
+  'nav.comfyLocal': { en: 'Comfy Local', 'zh-CN': 'Comfy 本地版' },
+  'nav.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
+  'nav.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
+  'nav.comfyEnterprise': {
+    en: 'Comfy Enterprise',
+    'zh-CN': 'Comfy 企业版'
+  },
+  'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
+  'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
+  'nav.blogs': { en: 'Blogs', 'zh-CN': '博客' },
+  'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
+  'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
+  'nav.docs': { en: 'Docs', 'zh-CN': '文档' },
+  'nav.youtube': { en: 'YouTube', 'zh-CN': 'YouTube' },
+  'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
+  'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
+  'nav.downloadLocal': { en: 'DOWNLOAD LOCAL', 'zh-CN': '下载本地版' },
+  'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
+  'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
-  'nav.enterprise': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
-  'nav.gallery': { en: 'GALLERY', 'zh-CN': '画廊' },
-  'nav.about': { en: 'ABOUT', 'zh-CN': '关于' },
-  'nav.careers': { en: 'CAREERS', 'zh-CN': '招聘' },
-  'nav.cloud': { en: 'COMFY CLOUD', 'zh-CN': 'COMFY 云端' },
-  'nav.hub': { en: 'COMFY HUB', 'zh-CN': 'COMFY HUB' },
+  'nav.back': { en: 'BACK', 'zh-CN': '返回' },
+  'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
 
   // SiteFooter
   'footer.tagline': {
-    en: 'Professional control of visual AI.',
-    'zh-CN': '视觉 AI 的专业控制。'
+    en: 'The most powerful workflow engine for visual AI.',
+    'zh-CN': '最强大的视觉 AI 工作流引擎。'
   },
-  'footer.product': { en: 'Product', 'zh-CN': '产品' },
+  'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
-  'footer.legal': { en: 'Legal', 'zh-CN': '法律' },
-  'footer.copyright': {
-    en: 'Comfy Org. All rights reserved.',
-    'zh-CN': 'Comfy Org. 保留所有权利。'
-  },
-  'footer.comfyDesktop': { en: 'Comfy Desktop', 'zh-CN': 'Comfy Desktop' },
-  'footer.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
-  'footer.comfyHub': { en: 'ComfyHub', 'zh-CN': 'ComfyHub' },
-  'footer.pricing': { en: 'Pricing', 'zh-CN': '价格' },
-  'footer.documentation': { en: 'Documentation', 'zh-CN': '文档' },
-  'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
-  'footer.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
-  'footer.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
+  'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
-  'footer.careers': { en: 'Careers', 'zh-CN': '招聘' },
-  'footer.enterprise': { en: 'Enterprise', 'zh-CN': '企业版' },
-  'footer.terms': { en: 'Terms of Service', 'zh-CN': '服务条款' },
-  'footer.privacy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' }
+  'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
+  'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
+  'footer.support': { en: 'Support', 'zh-CN': '支持' },
+  'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
+  'footer.location': {
+    en: 'San Francisco, USA',
+    'zh-CN': '美国旧金山'
+  }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
-}
-
-export function localePath(path: string, locale: Locale): string {
-  return locale === 'en' ? path : `/${locale}${path}`
 }
 
 export type { Locale }

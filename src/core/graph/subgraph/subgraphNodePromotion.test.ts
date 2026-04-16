@@ -253,7 +253,7 @@ describe('Subgraph proxyWidgets', () => {
     expect(subgraphNode.widgets).toHaveLength(0)
   })
 
-  test('serialize does not produce widgets_values for promoted views', () => {
+  test('serialize stores widgets_values for promoted views', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
     usePromotionStore().setPromotions(
@@ -265,9 +265,7 @@ describe('Subgraph proxyWidgets', () => {
 
     const serialized = subgraphNode.serialize()
 
-    // SubgraphNode doesn't set serialize_widgets, so widgets_values is absent.
-    // Even if it were set, views have serialize: false and would be skipped.
-    expect(serialized.widgets_values).toBeUndefined()
+    expect(serialized.widgets_values).toEqual(['value'])
   })
 
   test('serialize preserves proxyWidgets in properties', () => {

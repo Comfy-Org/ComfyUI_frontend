@@ -9,7 +9,6 @@ import { cleanupFakeModel } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
@@ -213,6 +212,36 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
       await overlay.getByRole('button', { name: /close/i }).click()
 
       await expect(overlay).toBeHidden()
+    })
+  })
+
+  test.describe('Count independence from node selection', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
+    test('missing model count stays constant when a node is selected', async ({
+      comfyPage
+    }) => {
+      // Regression: ErrorOverlay previously read the selection-filtered
+      // missingModelGroups from useErrorGroups, so selecting one of two
+      // missing-model nodes would shrink the overlay label from
+      // "2 required models are missing" to "1". The overlay must show
+      // the workflow total regardless of canvas selection.
+      await comfyPage.workflow.loadWorkflow('missing/missing_models_distinct')
+
+      const overlay = getOverlay(comfyPage.page)
+      await expect(overlay).toBeVisible()
+      await expect(overlay).toContainText(/2 required models are missing/i)
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+
+      await expect(overlay).toContainText(/2 required models are missing/i)
     })
   })
 })

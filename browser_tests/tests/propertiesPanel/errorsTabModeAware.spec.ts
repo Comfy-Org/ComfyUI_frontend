@@ -113,6 +113,40 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingModelGroup).toBeVisible()
     })
 
+    test('Bypass/un-bypass cycle preserves Copy URL button on the restored row', async ({
+      comfyPage
+    }) => {
+      // Regression: on un-bypass, the realtime scan produced a fresh
+      // candidate without url/hash/directory — those fields were only
+      // attached by the full pipeline's enrichWithEmbeddedMetadata. The
+      // row's Copy URL button (v-if gated on representative.url) then
+      // disappeared. Per-node scan now enriches from node.properties.models
+      // which persists across mode toggles. Uses the `_from_node_properties`
+      // fixture because the enrichment source is per-node metadata, not
+      // the workflow-level `models[]` array (which the realtime scan
+      // path does not see).
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/missing_models_from_node_properties'
+      )
+
+      const copyUrlButton = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelCopyUrl
+      )
+      await expect(copyUrlButton.first()).toBeVisible()
+
+      const node = await comfyPage.nodeOps.getNodeRefById('1')
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeTruthy()
+
+      await node.click('title')
+      await comfyPage.keyboard.bypass()
+      await expect.poll(() => node.isBypassed()).toBeFalsy()
+      await openErrorsTab(comfyPage)
+      await expect(copyUrlButton.first()).toBeVisible()
+    })
+
     test('Pasting a node with missing model increases referencing node count', async ({
       comfyPage
     }) => {
@@ -475,6 +509,52 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await comfyPage.keyboard.bypass()
       await openErrorsTab(comfyPage)
       await expect(missingModelGroup).toBeVisible()
+    })
+
+    test('Loading a workflow with bypassed subgraph suppresses interior missing model error', async ({
+      comfyPage
+    }) => {
+      // Regression: the initial scan pipeline only checked each node's
+      // own mode, so interior nodes of a bypassed subgraph container
+      // surfaced errors even though the container was excluded from
+      // execution. The pipeline now post-filters candidates whose
+      // ancestor path is not fully active.
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_in_bypassed_subgraph'
+      )
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeHidden()
+
+      await comfyPage.actionbar.propertiesButton.click()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.propertiesPanel.errorsTab)
+      ).toBeHidden()
+    })
+
+    test('Entering a bypassed subgraph does not resurface interior missing model error', async ({
+      comfyPage
+    }) => {
+      // Regression: useGraphNodeManager replays graph.onNodeAdded for
+      // each interior node on subgraph entry; without an ancestor-aware
+      // guard in scanSingleNodeErrors, that re-scan reintroduced the
+      // error that the initial pipeline had correctly suppressed.
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_in_bypassed_subgraph'
+      )
+
+      const errorsTab = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.errorsTab
+      )
+      await comfyPage.actionbar.propertiesButton.click()
+      await expect(errorsTab).toBeHidden()
+
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.navigateIntoSubgraph()
+
+      await expect(errorsTab).toBeHidden()
     })
   })
 

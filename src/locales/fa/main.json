@@ -1642,9 +1642,18 @@
     "exportRecording": "خروجی گرفتن ضبط",
     "exportingModel": "در حال خروجی گرفتن مدل...",
     "fov": "زاویه دید (FOV)",
+    "hdri": {
+      "changeFile": "تغییر HDRI",
+      "intensity": "شدت",
+      "label": "محیط HDRI",
+      "removeFile": "حذف HDRI",
+      "showAsBackground": "نمایش به عنوان پس‌زمینه",
+      "uploadFile": "بارگذاری HDRI (‏.hdr، ‏.exr)"
+    },
     "light": "نور",
     "lightIntensity": "شدت نور",
     "loadingBackgroundImage": "در حال بارگذاری تصویر پس‌زمینه",
+    "loadingHDRI": "در حال بارگذاری HDRI...",
     "loadingModel": "در حال بارگذاری مدل سه‌بعدی...",
     "materialMode": "حالت متریال",
     "materialModes": {
@@ -3443,6 +3452,7 @@
     "failedToInitiateCreditPurchase": "آغاز خرید اعتبار انجام نشد: {error}",
     "failedToInitiateSubscription": "آغاز اشتراک انجام نشد: {error}",
     "failedToLoadBackgroundImage": "بارگذاری تصویر پس‌زمینه انجام نشد",
+    "failedToLoadHDRI": "بارگذاری فایل HDRI ناموفق بود",
     "failedToLoadModel": "بارگذاری مدل سه‌بعدی انجام نشد",
     "failedToPurchaseCredits": "خرید اعتبار انجام نشد: {error}",
     "failedToQueue": "صف‌بندی انجام نشد",
@@ -3478,6 +3488,7 @@
     "pleaseSelectOutputNodes": "لطفاً nodeهای خروجی را انتخاب کنید",
     "unableToGetModelFilePath": "امکان دریافت مسیر فایل مدل وجود ندارد",
     "unauthorizedDomain": "دامنه شما ({domain}) مجاز به استفاده از این سرویس نیست. لطفاً برای افزودن دامنه خود به لیست سفید با {email} تماس بگیرید.",
+    "unsupportedHDRIFormat": "فرمت فایل پشتیبانی نمی‌شود. لطفاً یک فایل .hdr یا .exr بارگذاری کنید.",
     "updateRequested": "درخواست به‌روزرسانی ثبت شد",
     "useApiKeyTip": "نکته: به ورود عادی دسترسی ندارید؟ از گزینه Comfy API Key استفاده کنید.",
     "userNotAuthenticated": "کاربر احراز هویت نشده است"
