@@ -72,7 +72,6 @@
       "
     />
     <div
-      data-node-body
       data-testid="node-inner-wrapper"
       :class="
         cn(

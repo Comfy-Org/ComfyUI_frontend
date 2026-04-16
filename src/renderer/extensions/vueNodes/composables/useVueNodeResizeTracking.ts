@@ -138,31 +138,6 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Collapsed nodes: preserve expanded size but store collapsed
-    // dimensions separately in layoutStore for selection bounds.
-    if (elementType === 'node' && element.dataset.collapsed != null) {
-      if (nodeId) {
-        markElementForFreshMeasurement(element)
-        const body = element.querySelector('[data-node-body]')
-        const collapsedWidth =
-          body instanceof HTMLElement ? body.offsetWidth : element.offsetWidth
-        const collapsedHeight = element.offsetHeight
-        const collapsedSize = { width: collapsedWidth, height: collapsedHeight }
-        if (collapsedWidth === 0 && collapsedHeight === 0) continue
-        const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
-        if (nodeLayout) {
-          layoutStore.updateNodeCollapsedSize(nodeId, collapsedSize)
-        }
-        nodesNeedingSlotResync.add(nodeId)
-      }
-      continue
-    }
-
-    // Clear stale collapsedSize on collapse→expand transition only
-    if (elementType === 'node' && nodeId) {
-      layoutStore.clearNodeCollapsedSize(nodeId)
-    }
-
     // Measure the full root element (including footer in flow).
     // min-height is applied to the root, so footer height in node.size
     // does not accumulate on Vue/legacy mode switching.

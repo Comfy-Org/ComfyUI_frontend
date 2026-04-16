@@ -155,7 +155,6 @@ LiteGraphGlobal {
   "dialog_close_on_mouse_leave_delay": 500,
   "distance": [Function],
   "do_add_triggers_slots": false,
-  "getCollapsedSize": undefined,
   "highlight_selected_group": true,
   "isInsideRectangle": [Function],
   "leftMouseClickBehavior": "panning",

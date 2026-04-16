@@ -655,70 +655,46 @@ describe('LGraphNode', () => {
     })
   })
 
-  describe('measure() collapsed with getCollapsedSize', () => {
+  describe('measure() collapsed branching', () => {
     let out: Rect
 
     beforeEach(() => {
       out = [0, 0, 0, 0] as unknown as Rect
       node.flags.collapsed = true
+      node.size[0] = 150
+      node.size[1] = 10
     })
 
     afterEach(() => {
-      LiteGraph.getCollapsedSize = undefined
+      LiteGraph.vueNodesMode = false
     })
 
-    test('uses getCollapsedSize when callback returns a value', () => {
-      LiteGraph.getCollapsedSize = () => ({ width: 200, height: 40 })
+    test('legacy mode uses NODE_TITLE_HEIGHT-based fallback when no ctx', () => {
+      LiteGraph.vueNodesMode = false
       node.measure(out)
 
-      expect(out[2]).toBe(200)
-      expect(out[3]).toBe(40)
-    })
-
-    test('falls back to legacy when getCollapsedSize returns undefined', () => {
-      LiteGraph.getCollapsedSize = () => undefined
-      node.measure(out)
-
+      // No ctx → legacy collapsed branch falls back to NODE_COLLAPSED_WIDTH
       expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('falls back to legacy when getCollapsedSize is not set', () => {
+    test('Vue mode uses this.size directly for collapsed nodes', () => {
+      LiteGraph.vueNodesMode = true
       node.measure(out)
 
-      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+      // Vue mode collapsed takes the expanded-style branch
+      expect(out[2]).toBe(150)
+      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
     })
 
-    test('reads fresh collapsed size on every call (no stale cache)', () => {
-      const spy = vi.fn(() => ({ width: 180, height: 36 }))
-      LiteGraph.getCollapsedSize = spy
-
-      node.measure(out)
-      expect(spy).toHaveBeenCalledTimes(1)
-      expect(out[2]).toBe(180)
-
-      // Simulate size change (e.g. bypass badge added/removed on collapsed node)
-      spy.mockReturnValue({ width: 240, height: 36 })
-      node.measure(out)
-      expect(spy).toHaveBeenCalledTimes(2)
-      expect(out[2]).toBe(240)
-    })
-
-    test('reflects updated size after expand→collapse cycle', () => {
-      const spy = vi.fn(() => ({ width: 180, height: 36 }))
-      LiteGraph.getCollapsedSize = spy
-
-      node.measure(out)
-      expect(out[2]).toBe(180)
-
+    test('Vue mode expanded behaves identically to legacy expanded', () => {
+      LiteGraph.vueNodesMode = true
       node.flags.collapsed = false
+      node.size[0] = 200
+      node.size[1] = 120
       node.measure(out)
-      expect(out[2]).toBe(node.size[0])
 
-      node.flags.collapsed = true
-      spy.mockReturnValue({ width: 200, height: 40 })
-      node.measure(out)
       expect(out[2]).toBe(200)
-      expect(out[3]).toBe(40)
+      expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
   })
 })

@@ -43,9 +43,7 @@ const testState = vi.hoisted(() => ({
   nodeLayouts: new Map<NodeId, NodeLayout>(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
-  syncNodeSlotLayoutsFromDOM: vi.fn(),
-  updateNodeCollapsedSize: vi.fn(),
-  clearNodeCollapsedSize: vi.fn()
+  syncNodeSlotLayoutsFromDOM: vi.fn()
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -70,9 +68,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
     setSource: testState.setSource,
     getNodeLayoutRef: (nodeId: NodeId): Ref<NodeLayout | null> =>
-      ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null),
-    clearNodeCollapsedSize: testState.clearNodeCollapsedSize,
-    updateNodeCollapsedSize: testState.updateNodeCollapsedSize
+      ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null)
   }
 }))
 
@@ -89,7 +85,6 @@ function createResizeEntry(options?: {
   left?: number
   top?: number
   collapsed?: boolean
-  bodyWidth?: number
 }) {
   const {
     nodeId = 'test-node',
@@ -97,20 +92,13 @@ function createResizeEntry(options?: {
     height = 180,
     left = 100,
     top = 200,
-    collapsed = false,
-    bodyWidth
+    collapsed = false
   } = options ?? {}
 
   const element = document.createElement('div')
   element.dataset.nodeId = nodeId
   if (collapsed) {
     element.dataset.collapsed = ''
-  }
-  if (bodyWidth !== undefined) {
-    const body = document.createElement('div')
-    body.setAttribute('data-node-body', '')
-    Object.defineProperty(body, 'offsetWidth', { value: bodyWidth })
-    element.appendChild(body)
   }
   Object.defineProperty(element, 'offsetWidth', { value: width })
   Object.defineProperty(element, 'offsetHeight', { value: height })
@@ -173,8 +161,6 @@ describe('useVueNodeResizeTracking', () => {
     testState.batchUpdateNodeBounds.mockReset()
     testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
-    testState.updateNodeCollapsedSize.mockReset()
-    testState.clearNodeCollapsedSize.mockReset()
     resizeObserverState.observe.mockReset()
     resizeObserverState.unobserve.mockReset()
     resizeObserverState.disconnect.mockReset()
@@ -281,64 +267,11 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
-  it('stores collapsed size and resyncs slots for collapsed nodes', () => {
-    const nodeId = 'test-node'
-    const width = 200
-    const height = 40
-    const { entry, rectSpy } = createResizeEntry({
-      nodeId,
-      width,
-      height,
-      collapsed: true
-    })
-
-    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-
-    resizeObserverState.callback?.([entry], createObserverMock())
-
-    expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
-    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
-    expect(testState.updateNodeCollapsedSize).toHaveBeenCalledWith(nodeId, {
-      width,
-      height
-    })
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
-  })
-
-  it('uses body element width for collapsed size when inner wrapper exists', () => {
-    const nodeId = 'test-node'
-    const rootWidth = 260
-    const bodyWidth = 200
-    const height = 40
-    const { entry } = createResizeEntry({
-      nodeId,
-      width: rootWidth,
-      height,
-      collapsed: true,
-      bodyWidth
-    })
-
-    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-
-    resizeObserverState.callback?.([entry], createObserverMock())
-
-    expect(testState.updateNodeCollapsedSize).toHaveBeenCalledWith(nodeId, {
-      width: bodyWidth,
-      height
-    })
-  })
-
-  it('clears collapsed size then updates bounds on collapse-to-expand transition', () => {
+  it('writes collapsed dimensions through the normal bounds path', () => {
     const nodeId = 'test-node'
     const collapsedWidth = 200
     const collapsedHeight = 40
-
-    // Seed with smaller size so expand triggers a real bounds update
-    seedNodeLayout({ nodeId, left: 100, top: 200, width: 220, height: 140 })
-
-    // Step 1: Collapse
-    const { entry: collapsedEntry } = createResizeEntry({
+    const { entry } = createResizeEntry({
       nodeId,
       width: collapsedWidth,
       height: collapsedHeight,
@@ -346,30 +279,43 @@ describe('useVueNodeResizeTracking', () => {
       top: 200,
       collapsed: true
     })
-    resizeObserverState.callback?.([collapsedEntry], createObserverMock())
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
 
-    expect(testState.updateNodeCollapsedSize).toHaveBeenCalledWith(nodeId, {
-      width: collapsedWidth,
-      height: collapsedHeight
-    })
+    // Seed with larger expanded size so the collapsed write is a real change
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
 
-    testState.updateNodeCollapsedSize.mockReset()
-    testState.clearNodeCollapsedSize.mockReset()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.setSource.mockReset()
+    resizeObserverState.callback?.([entry], createObserverMock())
 
-    // Step 2: Expand — same node, no collapsed attribute, larger size
-    const { entry: expandedEntry } = createResizeEntry({
+    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
+      {
+        nodeId,
+        bounds: {
+          x: 100,
+          y: 200 + titleHeight,
+          width: collapsedWidth,
+          height: collapsedHeight
+        }
+      }
+    ])
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
+    const nodeId = 'test-node'
+
+    // Seed with smaller (collapsed) size so expand triggers a real bounds update
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 200, height: 10 })
+
+    const { entry } = createResizeEntry({
       nodeId,
       width: 240,
       height: 180,
       left: 100,
       top: 200
     })
-    resizeObserverState.callback?.([expandedEntry], createObserverMock())
+    resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.clearNodeCollapsedSize).toHaveBeenCalledWith(nodeId)
-    expect(testState.updateNodeCollapsedSize).not.toHaveBeenCalled()
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalled()
   })

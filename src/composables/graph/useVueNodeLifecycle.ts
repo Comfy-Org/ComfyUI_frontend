@@ -5,7 +5,6 @@ import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -71,24 +70,6 @@ function useVueNodeLifecycleIndividual() {
     }
     nodeManager.value = null
   }
-
-  // Wire up LiteGraph.getCollapsedSize callback in the renderer layer
-  // (kept out of useVueFeatureFlags to avoid a platform → renderer import)
-  watch(
-    shouldRenderVueNodes,
-    () => {
-      LiteGraph.getCollapsedSize = shouldRenderVueNodes.value
-        ? (nodeId) => {
-            try {
-              return layoutStore.getNodeCollapsedSize(String(nodeId))
-            } catch {
-              return undefined
-            }
-          }
-        : undefined
-    },
-    { immediate: true }
-  )
 
   // Watch for Vue nodes enabled state changes
   watch(

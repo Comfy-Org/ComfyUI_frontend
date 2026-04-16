@@ -34,7 +34,6 @@ import type {
   NodeId,
   NodeLayout,
   Point,
-  Size,
   RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
@@ -1546,33 +1545,6 @@ class LayoutStoreImpl implements LayoutStore {
     this.applyOperation(operation)
 
     this.currentSource = originalSource
-  }
-
-  updateNodeCollapsedSize(nodeId: NodeId, size: Size): void {
-    const ynode = this.ynodes.get(nodeId)
-    if (!ynode) return
-    this.ydoc.transact(() => {
-      ynode.set('collapsedSize', size)
-    }, this.currentActor)
-    this.nodeTriggers.get(nodeId)?.()
-  }
-
-  getNodeCollapsedSize(nodeId: NodeId): Size | undefined {
-    const v = this.ynodes.get(nodeId)?.get('collapsedSize')
-    if (typeof v === 'object' && v !== null && 'width' in v && 'height' in v) {
-      return v as Size
-    }
-    return undefined
-  }
-
-  clearNodeCollapsedSize(nodeId: NodeId): void {
-    const ynode = this.ynodes.get(nodeId)
-    if (ynode?.has('collapsedSize')) {
-      this.ydoc.transact(() => {
-        ynode.delete('collapsedSize')
-      }, this.currentActor)
-      this.nodeTriggers.get(nodeId)?.()
-    }
   }
 }
 

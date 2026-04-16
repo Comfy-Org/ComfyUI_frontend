@@ -2084,34 +2084,27 @@ export class LGraphNode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
       titleMode != TitleMode.NO_TITLE
-    // NODE_TITLE_HEIGHT (30) is used in both legacy and Vue modes.
-    // Vue headers may be taller in CSS (e.g. 36px), but the canvas
-    // coordinate system positions nodes at pos.y - 30 via CSS transform
-    // (see LGraphNode.vue), so the bounding rect must match.
     const titleHeight = renderTitle ? LiteGraph.NODE_TITLE_HEIGHT : 0
 
     out[0] = this.pos[0]
-    out[1] = this.pos[1] - titleHeight
-    if (!this.flags?.collapsed) {
+    out[1] = this.pos[1] + -titleHeight
+    // In Vue mode, `this.size` is kept in sync with the DOM-measured
+    // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
+    // so the expanded branch produces correct bounds for collapsed nodes too.
+    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
-      const collapsedSize = LiteGraph.getCollapsedSize?.(this.id)
-      if (collapsedSize) {
-        out[2] = collapsedSize.width
-        out[3] = collapsedSize.height
-      } else {
-        if (ctx) ctx.font = this.innerFontStyle
-        this._collapsed_width = Math.min(
-          this.size[0],
-          ctx
-            ? cachedMeasureText(ctx, this.getTitle() ?? '') +
-                LiteGraph.NODE_TITLE_HEIGHT * 2
-            : 0
-        )
-        out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
-        out[3] = LiteGraph.NODE_TITLE_HEIGHT
-      }
+      if (ctx) ctx.font = this.innerFontStyle
+      this._collapsed_width = Math.min(
+        this.size[0],
+        ctx
+          ? cachedMeasureText(ctx, this.getTitle() ?? '') +
+              LiteGraph.NODE_TITLE_HEIGHT * 2
+          : 0
+      )
+      out[2] = this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH
+      out[3] = LiteGraph.NODE_TITLE_HEIGHT
     }
   }
 

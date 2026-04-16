@@ -31,23 +31,10 @@ export async function measureSelectionBounds(
       let maxY = -Infinity
       for (const item of selectedItems) {
         const rect = item.boundingRect
-        // For collapsed nodes, use DOM element size (matches selectionBorder.ts
-        // which reads layoutStore.collapsedSize in Vue mode)
-        const id = 'id' in item ? String(item.id) : null
-        const isCollapsed =
-          'flags' in item &&
-          !!(item as { flags?: { collapsed?: boolean } }).flags?.collapsed
-        const el =
-          id && isCollapsed
-            ? document.querySelector(`[data-node-id="${id}"]`)
-            : null
-        const w = el instanceof HTMLElement ? el.offsetWidth : rect[2]
-        const h = el instanceof HTMLElement ? el.offsetHeight : rect[3]
-
         minX = Math.min(minX, rect[0])
         minY = Math.min(minY, rect[1])
-        maxX = Math.max(maxX, rect[0] + w)
-        maxY = Math.max(maxY, rect[1] + h)
+        maxX = Math.max(maxX, rect[0] + rect[2])
+        maxY = Math.max(maxY, rect[1] + rect[3])
       }
       const selectionBounds =
         selectedItems.size > 0

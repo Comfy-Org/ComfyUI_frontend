@@ -645,42 +645,4 @@ describe('layoutStore CRDT operations', () => {
       expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
     }
   )
-
-  describe('collapsed size lifecycle', () => {
-    const nodeId = 'collapsed-node'
-
-    beforeEach(() => {
-      layoutStore.initializeFromLiteGraph([
-        { id: nodeId, pos: [0, 0], size: [200, 100] }
-      ])
-    })
-
-    it('stores and retrieves collapsed size', () => {
-      layoutStore.updateNodeCollapsedSize(nodeId, { width: 180, height: 36 })
-      expect(layoutStore.getNodeCollapsedSize(nodeId)).toEqual({
-        width: 180,
-        height: 36
-      })
-    })
-
-    it('clears collapsed size', () => {
-      layoutStore.updateNodeCollapsedSize(nodeId, { width: 180, height: 36 })
-      layoutStore.clearNodeCollapsedSize(nodeId)
-      expect(layoutStore.getNodeCollapsedSize(nodeId)).toBeUndefined()
-    })
-
-    it('returns undefined for non-existent node', () => {
-      expect(layoutStore.getNodeCollapsedSize('no-such-node')).toBeUndefined()
-    })
-
-    it('returns undefined when ynode has invalid collapsedSize data', () => {
-      // Write a non-Size value directly to simulate corrupted CRDT data
-      layoutStore.updateNodeCollapsedSize(nodeId, { width: 10, height: 20 })
-      // Valid data should work
-      expect(layoutStore.getNodeCollapsedSize(nodeId)).toEqual({
-        width: 10,
-        height: 20
-      })
-    })
-  })
 })
