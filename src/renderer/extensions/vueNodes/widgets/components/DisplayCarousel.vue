@@ -19,12 +19,7 @@
             v-if="activeItem"
             :src="getItemSrc(activeItem)"
             :alt="getItemAlt(activeItem, activeIndex)"
-            :class="
-              cn(
-                'h-auto w-full rounded-sm object-contain transition-opacity',
-                showControls && 'opacity-50'
-              )
-            "
+            class="h-auto w-full rounded-sm object-contain"
             @load="handleImageLoad"
           />
 
