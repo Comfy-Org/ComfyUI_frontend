@@ -72,7 +72,7 @@ function formatPct(value: number): string {
 }
 
 function formatDelta(delta: number): string {
-  const rounded = Math.abs(delta) < 0.05 ? 0 : delta
+  const rounded = Math.abs(delta) < MIN_DELTA ? 0 : delta
   const sign = rounded >= 0 ? '+' : ''
   return sign + rounded.toFixed(1) + '%'
 }
