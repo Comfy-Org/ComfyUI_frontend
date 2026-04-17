@@ -155,6 +155,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -169,7 +170,8 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { fetchStatus, isActiveSubscription } = useBillingContext()
+const { isActiveSubscription } = useBillingContext()
+const { syncStatusAfterCheckout } = useSubscription()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -190,48 +192,20 @@ const telemetry = useTelemetry()
 // Always show custom pricing table for cloud subscriptions
 const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 
-const POLL_INTERVAL_MS = 3000
-const MAX_POLL_ATTEMPTS = 3
-let pollInterval: number | null = null
-let pollAttempts = 0
-
-const stopPolling = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
+const refreshSubscriptionStatus = async () => {
+  try {
+    await syncStatusAfterCheckout()
+  } catch (error) {
+    console.error(
+      '[SubscriptionDialog] Failed to refresh subscription status',
+      error
+    )
   }
-}
-
-const startPolling = () => {
-  stopPolling()
-  pollAttempts = 0
-
-  const poll = async () => {
-    try {
-      await fetchStatus()
-      pollAttempts++
-
-      if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-        stopPolling()
-      }
-    } catch (error) {
-      console.error(
-        '[SubscriptionDialog] Failed to poll subscription status',
-        error
-      )
-      stopPolling()
-    }
-  }
-
-  void poll()
-  pollInterval = window.setInterval(() => {
-    void poll()
-  }, POLL_INTERVAL_MS)
 }
 
 const handleWindowFocus = () => {
   if (showCustomPricingTable.value) {
-    startPolling()
+    void refreshSubscriptionStatus()
   }
 }
 
@@ -242,7 +216,6 @@ watch(
       window.addEventListener('focus', handleWindowFocus)
     } else {
       window.removeEventListener('focus', handleWindowFocus)
-      stopPolling()
     }
   },
   { immediate: true }
@@ -252,7 +225,6 @@ watch(
   () => isActiveSubscription.value,
   (isActive) => {
     if (isActive && showCustomPricingTable.value) {
-      telemetry?.trackMonthlySubscriptionSucceeded()
       emit('close', true)
     }
   }
@@ -263,7 +235,6 @@ const handleSubscribed = () => {
 }
 
 const handleChooseTeam = () => {
-  stopPolling()
   if (onChooseTeam) {
     onChooseTeam()
   } else {
@@ -272,7 +243,6 @@ const handleChooseTeam = () => {
 }
 
 const handleClose = () => {
-  stopPolling()
   onClose()
 }
 
@@ -295,7 +265,6 @@ const handleViewEnterprise = () => {
 }
 
 onBeforeUnmount(() => {
-  stopPolling()
   window.removeEventListener('focus', handleWindowFocus)
 })
 </script>

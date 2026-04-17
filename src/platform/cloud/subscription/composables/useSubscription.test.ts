@@ -28,6 +28,7 @@ const {
   })),
   mockTelemetry: {
     trackSubscription: vi.fn(),
+    trackMonthlySubscriptionSucceeded: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn()
   },
   mockUserId: { value: 'user-123' }
@@ -134,20 +135,40 @@ describe('useSubscription', () => {
     vi.clearAllMocks()
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
+    mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        is_active: false,
-        subscription_id: '',
-        renewal_date: ''
-      })
-    } as Response)
+    localStorage.clear()
+    vi.mocked(global.fetch).mockImplementation(async (input) => {
+      const url = String(input)
+
+      if (url.includes('/customers/pending-subscription-success/')) {
+        return {
+          ok: true,
+          status: 204
+        } as Response
+      }
+
+      if (url.includes('/customers/pending-subscription-success')) {
+        return {
+          ok: true,
+          status: 204
+        } as Response
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          is_active: false,
+          subscription_id: '',
+          renewal_date: ''
+        })
+      } as Response
+    })
   })
 
   describe('computed properties', () => {
@@ -274,6 +295,146 @@ describe('useSubscription', () => {
       const { fetchStatus } = useSubscriptionWithScope()
 
       await expect(fetchStatus()).rejects.toThrow()
+    })
+
+    it('syncs and consumes pending subscription success when requested', async () => {
+      vi.mocked(global.fetch).mockImplementation(async (input) => {
+        const url = String(input)
+
+        if (url.includes('/customers/cloud-subscription-status')) {
+          return {
+            ok: true,
+            json: async () => ({
+              is_active: true,
+              subscription_id: 'sub_123',
+              renewal_date: '2025-11-16'
+            })
+          } as Response
+        }
+
+        if (url.endsWith('/customers/pending-subscription-success')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              id: 'event-123',
+              transaction_id: 'stripe-event-123',
+              value: 35,
+              currency: 'USD',
+              tier: 'creator',
+              cycle: 'monthly',
+              checkout_type: 'change',
+              previous_tier: 'standard'
+            })
+          } as Response
+        }
+
+        if (
+          url.endsWith(
+            '/customers/pending-subscription-success/event-123/consume'
+          )
+        ) {
+          return {
+            ok: true,
+            status: 204
+          } as Response
+        }
+
+        throw new Error(`Unexpected fetch URL: ${url}`)
+      })
+
+      const { syncStatusAfterCheckout } = useSubscriptionWithScope()
+
+      await syncStatusAfterCheckout()
+
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transaction_id: 'stripe-event-123',
+          value: 35,
+          currency: 'USD',
+          tier: 'creator',
+          cycle: 'monthly',
+          checkout_type: 'change',
+          previous_tier: 'standard'
+        })
+      )
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '/customers/pending-subscription-success/event-123/consume'
+        ),
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
+    })
+
+    it('does not retrack a subscription success already delivered in this browser', async () => {
+      localStorage.setItem(
+        'comfy.subscription_success.delivered_transactions',
+        JSON.stringify(['stripe-event-123'])
+      )
+
+      vi.mocked(global.fetch).mockImplementation(async (input) => {
+        const url = String(input)
+
+        if (url.includes('/customers/cloud-subscription-status')) {
+          return {
+            ok: true,
+            json: async () => ({
+              is_active: true,
+              subscription_id: 'sub_123',
+              renewal_date: '2025-11-16'
+            })
+          } as Response
+        }
+
+        if (url.endsWith('/customers/pending-subscription-success')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              id: 'event-123',
+              transaction_id: 'stripe-event-123',
+              value: 20,
+              currency: 'USD',
+              tier: 'standard',
+              cycle: 'monthly',
+              checkout_type: 'new'
+            })
+          } as Response
+        }
+
+        if (
+          url.endsWith(
+            '/customers/pending-subscription-success/event-123/consume'
+          )
+        ) {
+          return {
+            ok: true,
+            status: 204
+          } as Response
+        }
+
+        throw new Error(`Unexpected fetch URL: ${url}`)
+      })
+
+      const { syncStatusAfterCheckout } = useSubscriptionWithScope()
+
+      await syncStatusAfterCheckout()
+
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '/customers/pending-subscription-success/event-123/consume'
+        ),
+        expect.objectContaining({
+          method: 'POST'
+        })
+      )
     })
   })
 
