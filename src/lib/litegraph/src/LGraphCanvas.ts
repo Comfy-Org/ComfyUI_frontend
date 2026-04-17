@@ -677,6 +677,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * performant than {@link visible_nodes} for visibility checks.
    */
   private _visible_node_ids: Set<NodeId> = new Set()
+
+  /** Cached per-frame link render context to avoid rebuilding per-link. */
+  private _cachedLinkRenderContext: LinkRenderContext | null = null
   node_over?: LGraphNode
   node_capturing_input?: LGraphNode | null
   highlighted_links: Dictionary<boolean> = {}
@@ -4961,6 +4964,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!this.canvas || this.canvas.width == 0 || this.canvas.height == 0)
       return
 
+    // Reset per-frame caches so stale data is never used if a code path is skipped.
+    this._cachedLinkRenderContext = null
+
     // fps counting
     const now = LiteGraph.getTime()
     this.render_time = (now - this.last_draw_time) * 0.001
@@ -4971,10 +4977,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Compute node size before drawing links.
     if (this.dirty_canvas || force_canvas) {
       this.computeVisibleNodes(undefined, this.visible_nodes)
-      // Update visible node IDs
-      this._visible_node_ids = new Set(
-        this.visible_nodes.map((node) => node.id)
-      )
+      // Update visible node IDs (reuse existing Set to avoid allocation)
+      this._visible_node_ids.clear()
+      for (const node of this.visible_nodes) {
+        this._visible_node_ids.add(node.id)
+      }
 
       // Arrange subgraph IO nodes
       const { subgraph } = this
@@ -5170,10 +5177,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           colour,
           fromDirection,
           dragDirection,
-          {
-            ...this.buildLinkRenderContext(),
-            linkMarkerShape: LinkMarkerShape.None
-          }
+          this._cachedLinkRenderContext ?? this.buildLinkRenderContext()
         )
       }
       if (renderLink instanceof MovingInputLink) this.setDirty(false, true)
@@ -5939,6 +5943,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
+    // Cache the link render context once per frame
+    this._cachedLinkRenderContext = this.buildLinkRenderContext()
+
     // Skip link rendering while waiting for slot positions to sync after reconfigure
     if (LiteGraph.vueNodesMode && layoutStore.pendingSlotSync) {
       this._visibleReroutes.clear()
@@ -6205,19 +6212,28 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Get all points this link passes through
     const reroutes = LLink.getReroutes(graph, link)
-    const points: [Point, ...Point[], Point] = [
-      startPos,
-      ...reroutes.map((x) => x.pos),
-      endPos
-    ]
 
-    // Bounding box of all points (bezier overshoot on long links will be cut)
-    const pointsX = points.map((x) => x[0])
-    const pointsY = points.map((x) => x[1])
-    link_bounding[0] = Math.min(...pointsX)
-    link_bounding[1] = Math.min(...pointsY)
-    link_bounding[2] = Math.max(...pointsX) - link_bounding[0]
-    link_bounding[3] = Math.max(...pointsY) - link_bounding[1]
+    // Compute bounding box inline to avoid allocating temporary arrays
+    let minX = startPos[0]
+    let minY = startPos[1]
+    let maxX = minX
+    let maxY = minY
+    for (let i = 0; i < reroutes.length; i++) {
+      const pos = reroutes[i].pos
+      if (pos[0] < minX) minX = pos[0]
+      else if (pos[0] > maxX) maxX = pos[0]
+      if (pos[1] < minY) minY = pos[1]
+      else if (pos[1] > maxY) maxY = pos[1]
+    }
+    if (endPos[0] < minX) minX = endPos[0]
+    else if (endPos[0] > maxX) maxX = endPos[0]
+    if (endPos[1] < minY) minY = endPos[1]
+    else if (endPos[1] > maxY) maxY = endPos[1]
+
+    link_bounding[0] = minX
+    link_bounding[1] = minY
+    link_bounding[2] = maxX - minX
+    link_bounding[3] = maxY - minY
 
     // skip links outside of the visible area of the canvas
     if (!overlapBounding(link_bounding, margin_area)) return
@@ -6285,8 +6301,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Skip the last segment if it is being dragged
       if (link._dragging) return
 
-      // Use runtime fallback; TypeScript cannot evaluate this correctly.
-      const segmentStartPos = points.at(-2) ?? startPos
+      const segmentStartPos = reroutes.at(-1)?.pos ?? startPos
 
       // Render final link segment
       this.renderLink(
@@ -6407,7 +6422,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } = {}
   ): void {
     if (this.linkRenderer) {
-      const context = this.buildLinkRenderContext()
+      const context =
+        this._cachedLinkRenderContext ?? this.buildLinkRenderContext()
       this.linkRenderer.renderLinkDirect(
         ctx,
         a,

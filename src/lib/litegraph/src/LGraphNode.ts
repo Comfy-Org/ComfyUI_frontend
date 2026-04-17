@@ -280,6 +280,8 @@ export class LGraphNode
 
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
+  /** @internal Set when inputs/outputs change; cleared by {@link _setConcreteSlots}. */
+  _slotsDirty: boolean = true
 
   properties: Dictionary<NodeProperty | undefined> = {}
   properties_info: INodePropertyInfo[] = []
@@ -871,6 +873,7 @@ export class LGraphNode
     this.inputs = this.inputs.map((input) =>
       toClass(NodeInputSlot, input, this)
     )
+    this._slotsDirty = true
     for (const [i, input] of this.inputs.entries()) {
       const link =
         this.graph && input.link != null
@@ -1645,6 +1648,7 @@ export class LGraphNode
 
     this.outputs ||= []
     this.outputs.push(output)
+    this._slotsDirty = true
     this.onOutputAdded?.(output)
 
     if (LiteGraph.auto_load_slot_types)
@@ -1665,6 +1669,7 @@ export class LGraphNode
     }
     const { outputs } = this
     outputs.splice(slot, 1)
+    this._slotsDirty = true
 
     for (let i = slot; i < outputs.length; ++i) {
       const output = outputs[i]
@@ -1702,6 +1707,7 @@ export class LGraphNode
 
     this.inputs ||= []
     this.inputs.push(input)
+    this._slotsDirty = true
     this.expandToFitContent()
 
     this.onInputAdded?.(input)
@@ -1721,6 +1727,7 @@ export class LGraphNode
     }
     const { inputs } = this
     const slot_info = inputs.splice(slot, 1)
+    this._slotsDirty = true
 
     for (let i = slot; i < inputs.length; ++i) {
       const input = inputs[i]
@@ -4093,33 +4100,36 @@ export class LGraphNode
     ctx: CanvasRenderingContext2D,
     { fromSlot, colorContext, editorAlpha, lowQuality }: DrawSlotsOptions
   ) {
-    for (const slot of [...this._concreteInputs, ...this._concreteOutputs]) {
-      const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
-      const isMouseOverSlot = this._isMouseOverSlot(slot)
+    for (const slots of [this._concreteInputs, this._concreteOutputs]) {
+      for (let s = 0; s < slots.length; s++) {
+        const slot = slots[s]
+        const isValidTarget = fromSlot && slot.isValidTarget(fromSlot)
+        const isMouseOverSlot = this._isMouseOverSlot(slot)
 
-      // change opacity of incompatible slots when dragging a connection
-      const isValid = !fromSlot || isValidTarget
-      const highlight = isValid && isMouseOverSlot
+        // change opacity of incompatible slots when dragging a connection
+        const isValid = !fromSlot || isValidTarget
+        const highlight = isValid && isMouseOverSlot
 
-      // Show slot if it's not a widget input slot
-      // or if it's a widget input slot and satisfies one of the following:
-      // - the mouse is over the widget
-      // - the slot is valid during link drop
-      // - the slot is connected
-      if (
-        isMouseOverSlot ||
-        isValidTarget ||
-        !slot.isWidgetInputSlot ||
-        this._isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
-        slot.isConnected ||
-        slot.alwaysVisible
-      ) {
-        ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
-        slot.draw(ctx, {
-          colorContext,
-          lowQuality,
-          highlight
-        })
+        // Show slot if it's not a widget input slot
+        // or if it's a widget input slot and satisfies one of the following:
+        // - the mouse is over the widget
+        // - the slot is valid during link drop
+        // - the slot is connected
+        if (
+          isMouseOverSlot ||
+          isValidTarget ||
+          !slot.isWidgetInputSlot ||
+          this._isMouseOverWidget(this.getWidgetFromSlot(slot)) ||
+          slot.isConnected ||
+          slot.alwaysVisible
+        ) {
+          ctx.globalAlpha = isValid ? editorAlpha : 0.4 * editorAlpha
+          slot.draw(ctx, {
+            colorContext,
+            lowQuality,
+            highlight
+          })
+        }
       }
     }
   }
@@ -4249,12 +4259,15 @@ export class LGraphNode
    * have been removed from the ecosystem.
    */
   _setConcreteSlots(): void {
+    if (!this._slotsDirty) return
+
     this._concreteInputs = this.inputs.map((slot) =>
       toClass(NodeInputSlot, slot, this)
     )
     this._concreteOutputs = this.outputs.map((slot) =>
       toClass(NodeOutputSlot, slot, this)
     )
+    this._slotsDirty = false
   }
 
   /**
