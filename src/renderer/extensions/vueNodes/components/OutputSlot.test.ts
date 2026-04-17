@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -22,7 +22,8 @@ vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
 vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
   useNodeTooltips: () => ({
     getOutputSlotTooltip: () => '',
-    createTooltipConfig: (text: string) => ({ value: text })
+    tooltipsEnabled: computed(() => false),
+    tooltipDelay: computed(() => 0)
   })
 }))
 
@@ -53,6 +54,11 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+const BaseTooltipStub = defineComponent({
+  name: 'BaseTooltip',
+  template: '<slot />'
+})
+
 function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
   return render(OutputSlot, {
     props: {
@@ -62,8 +68,10 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: { SlotConnectionDot: SlotConnectionDotStub }
+      stubs: {
+        SlotConnectionDot: SlotConnectionDotStub,
+        BaseTooltip: BaseTooltipStub
+      }
     }
   })
 }

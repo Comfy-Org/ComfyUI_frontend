@@ -86,7 +86,8 @@ describe('NodeWidgets', () => {
       global: {
         plugins: [pinia],
         stubs: {
-          InputSlot: true
+          InputSlot: true,
+          BaseTooltip: { template: '<slot />' }
         },
         mocks: {
           $t: (key: string) => key
