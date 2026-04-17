@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { fetchModelMetadata, toBrowsableUrl } from './missingModelDownload'
+import {
+  fetchModelMetadata,
+  isModelDownloadable,
+  toBrowsableUrl
+} from './missingModelDownload'
 
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
@@ -176,5 +180,26 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl('https://civitai.com/api/v1/models/12345')).toBe(
       'https://civitai.com/models/12345'
     )
+  })
+
+  it('converts civitai.red URLs to model pages', () => {
+    expect(
+      toBrowsableUrl('https://civitai.red/api/download/models/12345')
+    ).toBe('https://civitai.red/models/12345')
+    expect(toBrowsableUrl('https://civitai.red/api/v1/models/12345')).toBe(
+      'https://civitai.red/models/12345'
+    )
+  })
+})
+
+describe('isModelDownloadable', () => {
+  it('allows civitai.red URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://civitai.red/api/download/models/12345',
+        directory: 'checkpoints'
+      })
+    ).toBe(true)
   })
 })

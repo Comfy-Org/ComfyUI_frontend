@@ -126,7 +126,8 @@ export function getAssetAdditionalTags(asset: AssetItem): string[] {
  * @returns Human-readable source name
  */
 export function getSourceName(url: string): string {
-  if (url.includes('civitai.com')) return 'Civitai'
+  if (url.includes('civitai.com') || url.includes('civitai.red'))
+    return 'Civitai'
   if (url.includes('huggingface.co')) return 'Hugging Face'
   return 'Source'
 }
