@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import ContentSection from '../../components/legal/ContentSection.vue'
+import ContentSection from '../../components/common/ContentSection.vue'
 import HeroSection from '../../components/legal/HeroSection.vue'
-import { termsOfServiceSections } from '../../components/legal/legalSections'
 ---
 
 <BaseLayout
@@ -11,5 +10,5 @@ import { termsOfServiceSections } from '../../components/legal/legalSections'
   noindex
 >
   <HeroSection title="服务条款" />
-  <ContentSection prefix="tos" sections={termsOfServiceSections} locale="zh-CN" client:load />
+  <ContentSection prefix="tos" locale="zh-CN" client:load />
 </BaseLayout>

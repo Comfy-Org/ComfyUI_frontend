@@ -2076,37 +2076,746 @@ const translations = {
     'zh-CN':
       '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
   },
-  'customers.story.card1.category': {
+  'customers.story.series-entertainment.category': {
     en: 'CASE STUDY',
     'zh-CN': '案例研究'
   },
-  'customers.story.card1.title': {
+  'customers.story.series-entertainment.title': {
     en: 'How Series Entertainment Rebuilt Game and Video Production with ComfyUI',
     'zh-CN': 'Series Entertainment 如何使用 ComfyUI 重塑游戏和视频制作'
   },
-  'customers.story.card2.category': {
+  'customers.story.series-entertainment.body': {
+    en: 'Series Entertainment transformed their game and video production pipeline by integrating ComfyUI into their creative workflow, enabling rapid iteration and unprecedented control over AI-generated assets.',
+    'zh-CN':
+      'Series Entertainment 通过将 ComfyUI 集成到创意工作流程中，彻底改变了游戏和视频制作管线，实现了快速迭代和对 AI 生成资产的前所未有的控制。'
+  },
+  'customers.story.open-story-movement.category': {
     en: 'CASE STUDY',
     'zh-CN': '案例研究'
   },
-  'customers.story.card2.title': {
+  'customers.story.open-story-movement.title': {
     en: 'How Open Source Is Fueling the Open Story Movement — and a Financially Successful Future for Artists in the Age of AI',
     'zh-CN': '开源如何推动 Open Story 运动——以及 AI 时代艺术家的财务成功未来'
   },
-  'customers.story.card3.category': {
+  'customers.story.open-story-movement.body': {
+    en: 'The Open Story Movement leverages ComfyUI and open-source tools to empower independent artists, creating new pathways to creative freedom and financial sustainability in the AI era.',
+    'zh-CN':
+      'Open Story 运动利用 ComfyUI 和开源工具赋能独立艺术家，在 AI 时代为创作自由和财务可持续性开辟新路径。'
+  },
+  'customers.story.moment-factory.category': {
     en: 'CASE STUDY',
     'zh-CN': '案例研究'
   },
-  'customers.story.card3.title': {
+  'customers.story.moment-factory.title': {
     en: 'How Moment Factory Reimagined 3D Projection Mapping at Architectural Scale with ComfyUI',
     'zh-CN': 'Moment Factory 如何使用 ComfyUI 在建筑尺度重新定义 3D 投影映射'
   },
-  'customers.story.card4.category': {
+  'customers.story.moment-factory.body': {
+    en: 'Moment Factory used ComfyUI to reimagine their 3D projection mapping pipeline, enabling architectural-scale visual experiences with AI-driven content generation and real-time iteration.',
+    'zh-CN':
+      'Moment Factory 使用 ComfyUI 重新定义了 3D 投影映射管线，通过 AI 驱动的内容生成和实时迭代，实现建筑尺度的视觉体验。'
+  },
+  'customers.story.ubisoft-chord.category': {
     en: 'USE CASE DEEP DIVE',
     'zh-CN': '深度用例'
   },
-  'customers.story.card4.title': {
+  'customers.story.ubisoft-chord.title': {
     en: 'How Ubisoft Open-Sources the CHORD Model and ComfyUI Nodes for End-to-End PBR Material Generation',
     'zh-CN': '育碧如何开源 CHORD 模型和 ComfyUI 节点，实现端到端 PBR 材质生成'
+  },
+  'customers.story.ubisoft-chord.body': {
+    en: 'Ubisoft open-sourced the CHORD model with custom ComfyUI nodes, enabling end-to-end PBR material generation that streamlines game asset creation across their studios.',
+    'zh-CN':
+      '育碧开源了 CHORD 模型及自定义 ComfyUI 节点，实现端到端 PBR 材质生成，简化了旗下各工作室的游戏资产创建流程。'
+  },
+  'customers.story.readMore': {
+    en: 'READ MORE ON THIS TOPIC',
+    'zh-CN': '阅读更多相关内容'
+  },
+
+  // Customer Detail: Series Entertainment
+  'customers.detail.series-entertainment.topic-1.label': {
+    en: 'THE STORY',
+    'zh-CN': '故事'
+  },
+  'customers.detail.series-entertainment.topic-1.title': {
+    en: 'Title Section: At Comfy UI',
+    'zh-CN': '标题章节：Comfy UI'
+  },
+  'customers.detail.series-entertainment.topic-1.block.0.heading': {
+    en: 'Title Section: At Comfy UI lorem ipsum',
+    'zh-CN': '标题章节：Comfy UI Lorem Ipsum'
+  },
+  'customers.detail.series-entertainment.topic-1.block.1': {
+    en: 'Series Entertainment transformed their game and video production pipeline by integrating ComfyUI into their creative workflow, enabling rapid iteration and unprecedented control over AI-generated assets.',
+    'zh-CN':
+      'Series Entertainment 通过将 ComfyUI 集成到创意工作流程中，彻底改变了游戏和视频制作管线，实现了快速迭代和对 AI 生成资产的前所未有的控制。'
+  },
+  'customers.detail.series-entertainment.topic-1.block.2': {
+    en: 'By combining node-based workflows with their existing tools, Series Entertainment achieved a seamless integration that reduced production time while maintaining full artistic control over the creative process.',
+    'zh-CN':
+      '通过将基于节点的工作流与现有工具相结合，Series Entertainment 实现了无缝集成，在保持对创作过程的完全艺术控制的同时减少了制作时间。'
+  },
+  'customers.detail.series-entertainment.topic-1.block.3.src': {
+    en: '/images/customers/detail-big-image.webp',
+    'zh-CN': '/images/customers/detail-big-image.webp'
+  },
+  'customers.detail.series-entertainment.topic-1.block.3.alt': {
+    en: 'Series Entertainment workflow',
+    'zh-CN': 'Series Entertainment 工作流'
+  },
+  'customers.detail.series-entertainment.topic-1.block.3.caption': {
+    en: 'Caption: lorem ipsum dolor sit amet consectetur.',
+    'zh-CN': '说明：图片描述文案。'
+  },
+  'customers.detail.series-entertainment.topic-1.block.4.text': {
+    en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it.',
+    'zh-CN':
+      'ComfyUI 对我们非常重要，因为它让我们始终站在技术最前沿。不仅因为技术本身，更因为它背后的整个社区。'
+  },
+  'customers.detail.series-entertainment.topic-1.block.4.name': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'customers.detail.series-entertainment.topic-1.block.5': {
+    en: 'Lorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.',
+    'zh-CN': '列表项一\n列表项二\n列表项三\n列表项四'
+  },
+  'customers.detail.series-entertainment.topic-1.block.6.ol': {
+    en: 'Lorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.',
+    'zh-CN': '有序列表项一\n有序列表项二\n有序列表项三\n有序列表项四'
+  },
+  'customers.detail.series-entertainment.topic-1.block.7': {
+    en: 'Series Entertainment transformed their game and video production pipeline by integrating ComfyUI into their creative workflow, enabling rapid iteration and unprecedented control over AI-generated assets.',
+    'zh-CN':
+      'Series Entertainment 通过将 ComfyUI 集成到创意工作流程中，彻底改变了游戏和视频制作管线，实现了快速迭代和对 AI 生成资产的前所未有的控制。'
+  },
+  'customers.detail.series-entertainment.topic-1.block.8': {
+    en: 'By combining node-based workflows with their existing tools, Series Entertainment achieved a seamless integration that reduced production time while maintaining full artistic control over the creative process.',
+    'zh-CN':
+      '通过将基于节点的工作流与现有工具相结合，Series Entertainment 实现了无缝集成，在保持对创作过程的完全艺术控制的同时减少了制作时间。'
+  },
+  'customers.detail.series-entertainment.topic-2.label': {
+    en: 'CUSTOM WORKFLOWS',
+    'zh-CN': '自定义工作流'
+  },
+  'customers.detail.series-entertainment.topic-2.title': {
+    en: 'Building Custom Workflows',
+    'zh-CN': '构建自定义工作流'
+  },
+  'customers.detail.series-entertainment.topic-2.block.0': {
+    en: 'The team at Series Entertainment developed custom ComfyUI workflows that integrated directly with their game engine, allowing artists to generate and iterate on assets in real-time during the production process.',
+    'zh-CN':
+      'Series Entertainment 团队开发了与游戏引擎直接集成的自定义 ComfyUI 工作流，使艺术家能够在制作过程中实时生成和迭代资产。'
+  },
+  'customers.detail.series-entertainment.topic-2.block.1': {
+    en: 'This approach eliminated the traditional bottleneck of waiting for renders and enabled a more fluid creative process where changes could be previewed instantly.',
+    'zh-CN':
+      '这种方法消除了等待渲染的传统瓶颈，实现了更流畅的创作过程，可以即时预览更改。'
+  },
+  'customers.detail.series-entertainment.topic-3.label': {
+    en: 'AI ASSETS',
+    'zh-CN': 'AI 资产'
+  },
+  'customers.detail.series-entertainment.topic-3.title': {
+    en: 'AI-Driven Asset Generation',
+    'zh-CN': 'AI 驱动的资产生成'
+  },
+  'customers.detail.series-entertainment.topic-3.block.0': {
+    en: "Using ComfyUI's node-based system, the team created pipelines for generating textures, concept art, and environmental assets that matched their specific art direction and quality standards.",
+    'zh-CN':
+      '利用 ComfyUI 基于节点的系统，团队创建了用于生成纹理、概念艺术和环境资产的管线，以匹配其特定的艺术方向和质量标准。'
+  },
+  'customers.detail.series-entertainment.topic-3.block.1': {
+    en: 'The flexibility of the node system meant that artists could experiment with different approaches without writing code, maintaining creative control throughout the process.',
+    'zh-CN':
+      '节点系统的灵活性意味着艺术家可以在不编写代码的情况下尝试不同的方法，在整个过程中保持创作控制。'
+  },
+  'customers.detail.series-entertainment.topic-4.label': {
+    en: 'PIPELINE',
+    'zh-CN': '管线集成'
+  },
+  'customers.detail.series-entertainment.topic-4.title': {
+    en: 'Production Pipeline Integration',
+    'zh-CN': '生产管线集成'
+  },
+  'customers.detail.series-entertainment.topic-4.block.0': {
+    en: 'ComfyUI was integrated into their existing production pipeline through custom nodes and API connections, enabling automated batch processing and consistent output across multiple projects.',
+    'zh-CN':
+      'ComfyUI 通过自定义节点和 API 连接集成到现有生产管线中，实现了自动化批处理和多个项目之间的一致输出。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.1': {
+    en: "The team built custom nodes for their specific needs, extending ComfyUI's capabilities to handle game-specific asset requirements and format conversions.",
+    'zh-CN':
+      '团队根据特定需求构建了自定义节点，扩展了 ComfyUI 的功能以处理特定于游戏的资产需求和格式转换。'
+  },
+  'customers.detail.series-entertainment.topic-5.label': {
+    en: 'COMMUNITY',
+    'zh-CN': '社区'
+  },
+  'customers.detail.series-entertainment.topic-5.title': {
+    en: 'Community and Collaboration',
+    'zh-CN': '社区与协作'
+  },
+  'customers.detail.series-entertainment.topic-5.block.0': {
+    en: 'Series Entertainment actively participates in the ComfyUI community, sharing custom nodes and workflows that benefit other studios and creators working on similar challenges.',
+    'zh-CN':
+      'Series Entertainment 积极参与 ComfyUI 社区，分享自定义节点和工作流，使面临类似挑战的其他工作室和创作者受益。'
+  },
+  'customers.detail.series-entertainment.topic-5.block.1': {
+    en: 'The open nature of ComfyUI enabled collaboration across teams, with shared workflows and custom nodes creating a standardized approach to AI-assisted content creation.',
+    'zh-CN':
+      'ComfyUI 的开放性使团队之间的协作成为可能，共享的工作流和自定义节点创建了一种标准化的 AI 辅助内容创作方法。'
+  },
+  'customers.detail.series-entertainment.topic-6.label': {
+    en: 'RESULTS',
+    'zh-CN': '成果'
+  },
+  'customers.detail.series-entertainment.topic-6.title': {
+    en: 'Results and Impact',
+    'zh-CN': '成果与影响'
+  },
+  'customers.detail.series-entertainment.topic-6.block.0': {
+    en: 'The integration of ComfyUI resulted in a significant reduction in production time and costs while simultaneously improving the quality and consistency of AI-generated assets across all their projects.',
+    'zh-CN':
+      'ComfyUI 的集成显著减少了制作时间和成本，同时提高了所有项目中 AI 生成资产的质量和一致性。'
+  },
+  'customers.detail.series-entertainment.topic-6.block.1.text': {
+    en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it. The community is what makes it so special.',
+    'zh-CN':
+      'ComfyUI 对我们非常重要，因为它让我们始终站在技术最前沿。不仅因为技术本身，更因为它背后的整个社区。社区才是让它如此特别的原因。'
+  },
+  'customers.detail.series-entertainment.topic-6.block.1.name': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'customers.detail.series-entertainment.topic-6.block.2.label': {
+    en: 'AUTHOR',
+    'zh-CN': '作者'
+  },
+  'customers.detail.series-entertainment.topic-6.block.2.name': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'customers.detail.series-entertainment.topic-6.block.2.role': {
+    en: 'Co-founder of Silverside AI',
+    'zh-CN': 'Silverside AI 联合创始人'
+  },
+
+  // Customer Detail: Open Story Movement
+  'customers.detail.open-story-movement.topic-1.label': {
+    en: 'THE STORY',
+    'zh-CN': '故事'
+  },
+  'customers.detail.open-story-movement.topic-1.title': {
+    en: 'Empowering Independent Artists',
+    'zh-CN': '赋能独立艺术家'
+  },
+  'customers.detail.open-story-movement.topic-1.block.0.heading': {
+    en: 'The Open Story Movement and ComfyUI',
+    'zh-CN': 'Open Story 运动与 ComfyUI'
+  },
+  'customers.detail.open-story-movement.topic-1.block.1': {
+    en: 'The Open Story Movement leverages ComfyUI and open-source tools to empower independent artists, creating new pathways to creative freedom and financial sustainability in the AI era.',
+    'zh-CN':
+      'Open Story 运动利用 ComfyUI 和开源工具赋能独立艺术家，在 AI 时代为创作自由和财务可持续性开辟新路径。'
+  },
+  'customers.detail.open-story-movement.topic-1.block.2': {
+    en: 'By making powerful AI tools accessible to everyone, the movement demonstrates how open-source technology can democratize creative production without sacrificing quality.',
+    'zh-CN':
+      '通过让强大的 AI 工具对每个人都可用，该运动展示了开源技术如何在不牺牲质量的情况下实现创意制作的民主化。'
+  },
+  'customers.detail.open-story-movement.topic-1.block.3.src': {
+    en: '/images/customers/detail-big-image.webp',
+    'zh-CN': '/images/customers/detail-big-image.webp'
+  },
+  'customers.detail.open-story-movement.topic-1.block.3.alt': {
+    en: 'Open Story Movement workflow',
+    'zh-CN': 'Open Story 运动工作流'
+  },
+  'customers.detail.open-story-movement.topic-1.block.3.caption': {
+    en: 'Artists collaborate on open-source AI workflows.',
+    'zh-CN': '艺术家们在开源 AI 工作流上协作。'
+  },
+  'customers.detail.open-story-movement.topic-1.block.4.text': {
+    en: "We've used many different tools, but using ComfyUI puts artist empowerment to the forefront. It makes artists feel like they have control over the process.",
+    'zh-CN':
+      '我们使用过许多不同的工具，但 ComfyUI 将艺术家赋能放在了首位。它让艺术家感到自己掌控着整个过程。'
+  },
+  'customers.detail.open-story-movement.topic-1.block.4.name': {
+    en: 'Jeremy Sahlman',
+    'zh-CN': 'Jeremy Sahlman'
+  },
+  'customers.detail.open-story-movement.topic-1.block.5': {
+    en: 'Open-source AI tools for creative production\nCommunity-driven workflow development\nAccessible to independent creators\nFinancially sustainable model for artists',
+    'zh-CN':
+      '用于创意制作的开源 AI 工具\n社区驱动的工作流开发\n独立创作者可访问\n艺术家的可持续财务模式'
+  },
+  'customers.detail.open-story-movement.topic-1.block.6.ol': {
+    en: 'Establish open-source creative pipelines\nBuild community around shared workflows\nDemocratize access to AI tools\nCreate sustainable revenue models',
+    'zh-CN':
+      '建立开源创意管线\n围绕共享工作流建立社区\n民主化 AI 工具访问\n创建可持续的收入模式'
+  },
+  'customers.detail.open-story-movement.topic-1.block.7': {
+    en: 'The movement has grown to include hundreds of independent artists who use ComfyUI as their primary creative tool, demonstrating the viability of open-source AI in professional production.',
+    'zh-CN':
+      '该运动已发展到包括数百名以 ComfyUI 为主要创作工具的独立艺术家，证明了开源 AI 在专业制作中的可行性。'
+  },
+  'customers.detail.open-story-movement.topic-1.block.8': {
+    en: 'By sharing workflows and custom nodes, the community continues to push the boundaries of what independent creators can achieve with AI-assisted tools.',
+    'zh-CN':
+      '通过共享工作流和自定义节点，社区继续推动独立创作者使用 AI 辅助工具所能实现的边界。'
+  },
+  'customers.detail.open-story-movement.topic-2.label': {
+    en: 'OPEN SOURCE',
+    'zh-CN': '开源'
+  },
+  'customers.detail.open-story-movement.topic-2.title': {
+    en: 'Creative Freedom Through Open Source',
+    'zh-CN': '通过开源实现创作自由'
+  },
+  'customers.detail.open-story-movement.topic-2.block.0': {
+    en: 'The open-source nature of ComfyUI allows artists to customize every aspect of their creative pipeline, from model selection to post-processing, without vendor lock-in.',
+    'zh-CN':
+      'ComfyUI 的开源特性允许艺术家自定义创意管线的每个方面，从模型选择到后处理，无需供应商锁定。'
+  },
+  'customers.detail.open-story-movement.topic-2.block.1': {
+    en: 'This freedom has led to unprecedented creative experimentation, with artists developing entirely new visual styles and techniques made possible by the flexibility of the node-based system.',
+    'zh-CN':
+      '这种自由带来了前所未有的创作实验，艺术家们利用基于节点系统的灵活性开发出全新的视觉风格和技术。'
+  },
+  'customers.detail.open-story-movement.topic-3.label': {
+    en: 'COMMUNITY',
+    'zh-CN': '社区'
+  },
+  'customers.detail.open-story-movement.topic-3.title': {
+    en: 'Community-Driven Development',
+    'zh-CN': '社区驱动的开发'
+  },
+  'customers.detail.open-story-movement.topic-3.block.0': {
+    en: 'The community around the Open Story Movement contributes custom nodes, shares workflows, and collaborates on improving the tools that make AI-assisted storytelling possible.',
+    'zh-CN':
+      'Open Story 运动周围的社区贡献自定义节点、共享工作流，并合作改进使 AI 辅助叙事成为可能的工具。'
+  },
+  'customers.detail.open-story-movement.topic-3.block.1': {
+    en: 'Regular community events and workshops help new artists get started with ComfyUI, lowering the barrier to entry for AI-assisted creative work.',
+    'zh-CN':
+      '定期的社区活动和工作坊帮助新艺术家开始使用 ComfyUI，降低了 AI 辅助创作工作的入门门槛。'
+  },
+  'customers.detail.open-story-movement.topic-4.label': {
+    en: 'SUSTAINABILITY',
+    'zh-CN': '可持续性'
+  },
+  'customers.detail.open-story-movement.topic-4.title': {
+    en: 'Financial Sustainability',
+    'zh-CN': '财务可持续性'
+  },
+  'customers.detail.open-story-movement.topic-4.block.0': {
+    en: 'The Open Story Movement has developed innovative models for artists to monetize their ComfyUI expertise, from selling custom workflows to offering AI-assisted creative services.',
+    'zh-CN':
+      'Open Story 运动为艺术家开发了创新的盈利模式，从出售自定义工作流到提供 AI 辅助创意服务。'
+  },
+  'customers.detail.open-story-movement.topic-4.block.1': {
+    en: 'These models demonstrate that open-source tools can support sustainable careers for independent artists in the AI era.',
+    'zh-CN': '这些模式证明，开源工具可以在 AI 时代支持独立艺术家的可持续职业。'
+  },
+  'customers.detail.open-story-movement.topic-5.label': {
+    en: 'EMPOWERMENT',
+    'zh-CN': '赋能'
+  },
+  'customers.detail.open-story-movement.topic-5.title': {
+    en: 'Artist Empowerment',
+    'zh-CN': '艺术家赋能'
+  },
+  'customers.detail.open-story-movement.topic-5.block.0': {
+    en: 'ComfyUI gives artists unprecedented control over AI generation, allowing them to maintain their unique creative voice while leveraging the power of AI models.',
+    'zh-CN':
+      'ComfyUI 赋予艺术家对 AI 生成的前所未有的控制力，使他们能够在利用 AI 模型的力量的同时保持独特的创作声音。'
+  },
+  'customers.detail.open-story-movement.topic-5.block.1': {
+    en: 'The node-based interface makes complex AI pipelines accessible to artists without programming backgrounds, democratizing access to cutting-edge technology.',
+    'zh-CN':
+      '基于节点的界面使没有编程背景的艺术家也能使用复杂的 AI 管线，使尖端技术的使用民主化。'
+  },
+  'customers.detail.open-story-movement.topic-6.label': {
+    en: 'LOOKING FORWARD',
+    'zh-CN': '展望未来'
+  },
+  'customers.detail.open-story-movement.topic-6.title': {
+    en: 'Looking Forward',
+    'zh-CN': '展望未来'
+  },
+  'customers.detail.open-story-movement.topic-6.block.0': {
+    en: 'The Open Story Movement continues to grow, with new artists and studios joining every month to build on the foundation of open-source AI creative tools.',
+    'zh-CN':
+      'Open Story 运动持续增长，每月都有新的艺术家和工作室加入，在开源 AI 创作工具的基础上进行建设。'
+  },
+  'customers.detail.open-story-movement.topic-6.block.1.text': {
+    en: "We've used many different tools, but using ComfyUI puts artist empowerment to the forefront. It makes artists feel like they have control over the process. The more transparent we can be to how the models work, the more we feel like we're making something that only we could make.",
+    'zh-CN':
+      '我们使用过许多不同的工具，但 ComfyUI 将艺术家赋能放在了首位。它让艺术家感到自己掌控着整个过程。我们对模型工作方式越透明，就越觉得我们在创造只有我们才能做出的东西。'
+  },
+  'customers.detail.open-story-movement.topic-6.block.1.name': {
+    en: 'Jeremy Sahlman',
+    'zh-CN': 'Jeremy Sahlman'
+  },
+  'customers.detail.open-story-movement.topic-6.block.2.label': {
+    en: 'AUTHOR',
+    'zh-CN': '作者'
+  },
+  'customers.detail.open-story-movement.topic-6.block.2.name': {
+    en: 'Jeremy Sahlman',
+    'zh-CN': 'Jeremy Sahlman'
+  },
+  'customers.detail.open-story-movement.topic-6.block.2.role': {
+    en: 'Co-founder and Chief Creative Officer at Black Math',
+    'zh-CN': 'Black Math 联合创始人兼首席创意官'
+  },
+
+  // Customer Detail: Moment Factory
+  'customers.detail.moment-factory.topic-1.label': {
+    en: 'THE STORY',
+    'zh-CN': '故事'
+  },
+  'customers.detail.moment-factory.topic-1.title': {
+    en: 'Reimagining Projection Mapping',
+    'zh-CN': '重新定义投影映射'
+  },
+  'customers.detail.moment-factory.topic-1.block.0.heading': {
+    en: 'Architectural-Scale Visual Experiences',
+    'zh-CN': '建筑尺度的视觉体验'
+  },
+  'customers.detail.moment-factory.topic-1.block.1': {
+    en: 'Moment Factory used ComfyUI to reimagine their 3D projection mapping pipeline, enabling architectural-scale visual experiences with AI-driven content generation and real-time iteration.',
+    'zh-CN':
+      'Moment Factory 使用 ComfyUI 重新定义了 3D 投影映射管线，通过 AI 驱动的内容生成和实时迭代，实现建筑尺度的视觉体验。'
+  },
+  'customers.detail.moment-factory.topic-1.block.2': {
+    en: 'The integration of ComfyUI into their creative pipeline allowed for unprecedented flexibility in generating and modifying projection content at massive scales.',
+    'zh-CN':
+      '将 ComfyUI 集成到创意管线中，使得在大规模上生成和修改投影内容具有前所未有的灵活性。'
+  },
+  'customers.detail.moment-factory.topic-1.block.3.src': {
+    en: '/images/customers/detail-big-image.webp',
+    'zh-CN': '/images/customers/detail-big-image.webp'
+  },
+  'customers.detail.moment-factory.topic-1.block.3.alt': {
+    en: 'Moment Factory projection mapping',
+    'zh-CN': 'Moment Factory 投影映射'
+  },
+  'customers.detail.moment-factory.topic-1.block.3.caption': {
+    en: 'AI-generated content projected onto architectural surfaces.',
+    'zh-CN': 'AI 生成的内容投影到建筑表面。'
+  },
+  'customers.detail.moment-factory.topic-1.block.4.text': {
+    en: 'ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.',
+    'zh-CN':
+      'ComfyUI 彻底改变了我们的创意管线。基于节点的工作流让我们能够快速实验，同时完全掌控流程的每一个步骤。'
+  },
+  'customers.detail.moment-factory.topic-1.block.4.name': {
+    en: 'Alex Chen',
+    'zh-CN': 'Alex Chen'
+  },
+  'customers.detail.moment-factory.topic-1.block.5': {
+    en: 'Real-time content generation\nArchitectural-scale projection mapping\nAI-driven visual effects\nSeamless pipeline integration',
+    'zh-CN': '实时内容生成\n建筑尺度投影映射\nAI 驱动的视觉效果\n无缝管线集成'
+  },
+  'customers.detail.moment-factory.topic-1.block.6.ol': {
+    en: 'Design AI-assisted projection workflows\nTest content at architectural scale\nIterate in real-time\nDeploy to projection systems',
+    'zh-CN':
+      '设计 AI 辅助投影工作流\n在建筑尺度测试内容\n实时迭代\n部署到投影系统'
+  },
+  'customers.detail.moment-factory.topic-1.block.7': {
+    en: 'The team developed custom workflows specifically designed for projection mapping, creating content that adapts to complex architectural surfaces and environments.',
+    'zh-CN':
+      '团队专门为投影映射开发了自定义工作流，创建了适应复杂建筑表面和环境的内容。'
+  },
+  'customers.detail.moment-factory.topic-1.block.8': {
+    en: 'This innovative approach has set new standards in the immersive experience industry, demonstrating how AI tools can enhance large-scale creative installations.',
+    'zh-CN':
+      '这种创新方法为沉浸式体验行业树立了新标准，展示了 AI 工具如何增强大规模创意装置。'
+  },
+  'customers.detail.moment-factory.topic-2.label': {
+    en: 'REAL-TIME',
+    'zh-CN': '实时迭代'
+  },
+  'customers.detail.moment-factory.topic-2.title': {
+    en: 'Real-Time Iteration',
+    'zh-CN': '实时迭代'
+  },
+  'customers.detail.moment-factory.topic-2.block.0': {
+    en: 'ComfyUI enabled Moment Factory to iterate on projection content in real-time, dramatically reducing the time from concept to deployment for large-scale installations.',
+    'zh-CN':
+      'ComfyUI 使 Moment Factory 能够实时迭代投影内容，大大缩短了大型装置从概念到部署的时间。'
+  },
+  'customers.detail.moment-factory.topic-2.block.1': {
+    en: 'The ability to preview and adjust AI-generated content directly on architectural surfaces transformed their creative process.',
+    'zh-CN':
+      '直接在建筑表面上预览和调整 AI 生成内容的能力改变了他们的创作过程。'
+  },
+  'customers.detail.moment-factory.topic-3.label': {
+    en: 'SCALING',
+    'zh-CN': '扩展'
+  },
+  'customers.detail.moment-factory.topic-3.title': {
+    en: 'Scaling Creative Content',
+    'zh-CN': '扩展创意内容'
+  },
+  'customers.detail.moment-factory.topic-3.block.0': {
+    en: 'With ComfyUI, Moment Factory can generate vast amounts of unique visual content needed for large-scale installations, maintaining consistency while ensuring each piece is unique.',
+    'zh-CN':
+      '借助 ComfyUI，Moment Factory 可以生成大型装置所需的大量独特视觉内容，在保持一致性的同时确保每件作品都是独一无二的。'
+  },
+  'customers.detail.moment-factory.topic-3.block.1': {
+    en: 'The automated pipeline processes content for specific architectural geometries, ensuring perfect alignment with physical surfaces.',
+    'zh-CN': '自动化管线处理特定建筑几何形状的内容，确保与物理表面完美对齐。'
+  },
+  'customers.detail.moment-factory.topic-4.label': {
+    en: 'INNOVATION',
+    'zh-CN': '创新'
+  },
+  'customers.detail.moment-factory.topic-4.title': {
+    en: 'Technical Innovation',
+    'zh-CN': '技术创新'
+  },
+  'customers.detail.moment-factory.topic-4.block.0': {
+    en: 'The team developed custom ComfyUI nodes specifically for projection mapping, handling complex geometric transformations and surface-aware content generation.',
+    'zh-CN':
+      '团队专门为投影映射开发了自定义 ComfyUI 节点，处理复杂的几何变换和表面感知内容生成。'
+  },
+  'customers.detail.moment-factory.topic-4.block.1': {
+    en: 'These technical innovations push the boundaries of what is possible with AI-assisted architectural projection.',
+    'zh-CN': '这些技术创新推动了 AI 辅助建筑投影的可能性边界。'
+  },
+  'customers.detail.moment-factory.topic-5.label': {
+    en: 'IMMERSIVE',
+    'zh-CN': '沉浸式'
+  },
+  'customers.detail.moment-factory.topic-5.title': {
+    en: 'Immersive Experiences',
+    'zh-CN': '沉浸式体验'
+  },
+  'customers.detail.moment-factory.topic-5.block.0': {
+    en: 'ComfyUI helps create immersive experiences that transform public spaces, combining AI-generated content with architectural surfaces to create memorable installations.',
+    'zh-CN':
+      'ComfyUI 帮助创建改变公共空间的沉浸式体验，将 AI 生成的内容与建筑表面结合，创造令人难忘的装置。'
+  },
+  'customers.detail.moment-factory.topic-5.block.1': {
+    en: 'The technology enables a new form of artistic expression that merges digital creativity with physical architecture.',
+    'zh-CN': '该技术实现了一种将数字创造力与物理建筑融合的新型艺术表达形式。'
+  },
+  'customers.detail.moment-factory.topic-6.label': {
+    en: 'THE FUTURE',
+    'zh-CN': '未来'
+  },
+  'customers.detail.moment-factory.topic-6.title': {
+    en: 'Future of Projection Art',
+    'zh-CN': '投影艺术的未来'
+  },
+  'customers.detail.moment-factory.topic-6.block.0': {
+    en: 'Moment Factory continues to push the boundaries of projection mapping with ComfyUI, exploring new ways to create immersive experiences at unprecedented scales.',
+    'zh-CN':
+      'Moment Factory 继续使用 ComfyUI 推动投影映射的边界，探索以前所未有的规模创造沉浸式体验的新方式。'
+  },
+  'customers.detail.moment-factory.topic-6.block.1.text': {
+    en: 'ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.',
+    'zh-CN':
+      'ComfyUI 彻底改变了我们的创意管线。基于节点的工作流让我们能够快速实验，同时完全掌控流程的每一个步骤。'
+  },
+  'customers.detail.moment-factory.topic-6.block.1.name': {
+    en: 'Alex Chen',
+    'zh-CN': 'Alex Chen'
+  },
+  'customers.detail.moment-factory.topic-6.block.2.label': {
+    en: 'AUTHOR',
+    'zh-CN': '作者'
+  },
+  'customers.detail.moment-factory.topic-6.block.2.name': {
+    en: 'Alex Chen',
+    'zh-CN': 'Alex Chen'
+  },
+  'customers.detail.moment-factory.topic-6.block.2.role': {
+    en: 'Head of AI at Creative Studios',
+    'zh-CN': 'Creative Studios AI 负责人'
+  },
+
+  // Customer Detail: Ubisoft CHORD
+  'customers.detail.ubisoft-chord.topic-1.label': {
+    en: 'THE STORY',
+    'zh-CN': '故事'
+  },
+  'customers.detail.ubisoft-chord.topic-1.title': {
+    en: 'End-to-End PBR Material Generation',
+    'zh-CN': '端到端 PBR 材质生成'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.0.heading': {
+    en: 'The CHORD Model and ComfyUI Integration',
+    'zh-CN': 'CHORD 模型与 ComfyUI 集成'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.1': {
+    en: 'Ubisoft open-sourced the CHORD model with custom ComfyUI nodes, enabling end-to-end PBR material generation that streamlines game asset creation across their studios.',
+    'zh-CN':
+      '育碧开源了 CHORD 模型及自定义 ComfyUI 节点，实现端到端 PBR 材质生成，简化了旗下各工作室的游戏资产创建流程。'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.2': {
+    en: 'The integration allows artists to generate physically-based rendering materials directly within ComfyUI, maintaining full control over texture quality and material properties.',
+    'zh-CN':
+      '该集成允许艺术家直接在 ComfyUI 中生成基于物理的渲染材质，完全控制纹理质量和材质属性。'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.3.src': {
+    en: '/images/customers/detail-big-image.webp',
+    'zh-CN': '/images/customers/detail-big-image.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.3.alt': {
+    en: 'CHORD PBR material generation',
+    'zh-CN': 'CHORD PBR 材质生成'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.3.caption': {
+    en: 'PBR materials generated using the CHORD model in ComfyUI.',
+    'zh-CN': '使用 ComfyUI 中的 CHORD 模型生成的 PBR 材质。'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.4.text': {
+    en: 'The CHORD model represents a breakthrough in AI-assisted material creation, enabling artists to generate production-quality PBR textures with unprecedented speed and control.',
+    'zh-CN':
+      'CHORD 模型代表了 AI 辅助材质创建的突破，使艺术家能够以前所未有的速度和控制力生成制作质量的 PBR 纹理。'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.4.name': {
+    en: 'Ubisoft La Forge Team',
+    'zh-CN': '育碧 La Forge 团队'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.5': {
+    en: 'Albedo map generation\nNormal map generation\nRoughness map generation\nMetallic map generation',
+    'zh-CN': '反照率贴图生成\n法线贴图生成\n粗糙度贴图生成\n金属度贴图生成'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.6.ol': {
+    en: 'Install CHORD ComfyUI nodes\nConfigure material generation pipeline\nGenerate PBR texture sets\nExport to game engine',
+    'zh-CN':
+      '安装 CHORD ComfyUI 节点\n配置材质生成管线\n生成 PBR 纹理集\n导出到游戏引擎'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.7': {
+    en: 'The CHORD model generates complete PBR material sets from simple text descriptions or reference images, dramatically accelerating the material creation process.',
+    'zh-CN':
+      'CHORD 模型从简单的文本描述或参考图像生成完整的 PBR 材质集，大大加速了材质创建过程。'
+  },
+  'customers.detail.ubisoft-chord.topic-1.block.8': {
+    en: 'By open-sourcing both the model and the ComfyUI integration, Ubisoft has contributed a powerful tool to the game development community.',
+    'zh-CN':
+      '通过开源模型和 ComfyUI 集成，育碧为游戏开发社区贡献了一个强大的工具。'
+  },
+  'customers.detail.ubisoft-chord.topic-2.label': {
+    en: 'OPEN SOURCE',
+    'zh-CN': '开源'
+  },
+  'customers.detail.ubisoft-chord.topic-2.title': {
+    en: 'Open-Source Contribution',
+    'zh-CN': '开源贡献'
+  },
+  'customers.detail.ubisoft-chord.topic-2.block.0': {
+    en: "Ubisoft's decision to open-source the CHORD model demonstrates the company's commitment to advancing the game development community through shared innovation.",
+    'zh-CN':
+      '育碧开源 CHORD 模型的决定展示了该公司致力于通过共享创新推进游戏开发社区的承诺。'
+  },
+  'customers.detail.ubisoft-chord.topic-2.block.1': {
+    en: 'The custom ComfyUI nodes make the CHORD model accessible to any developer or artist, regardless of their technical background.',
+    'zh-CN':
+      '自定义 ComfyUI 节点使 CHORD 模型对任何开发者或艺术家都可用，无论其技术背景如何。'
+  },
+  'customers.detail.ubisoft-chord.topic-3.label': {
+    en: 'PBR PIPELINE',
+    'zh-CN': 'PBR 管线'
+  },
+  'customers.detail.ubisoft-chord.topic-3.title': {
+    en: 'PBR Pipeline Integration',
+    'zh-CN': 'PBR 管线集成'
+  },
+  'customers.detail.ubisoft-chord.topic-3.block.0': {
+    en: 'The CHORD model integrates seamlessly with existing PBR pipelines, generating materials that are immediately usable in modern game engines like Unreal Engine and Unity.',
+    'zh-CN':
+      'CHORD 模型与现有 PBR 管线无缝集成，生成可直接在虚幻引擎和 Unity 等现代游戏引擎中使用的材质。'
+  },
+  'customers.detail.ubisoft-chord.topic-3.block.1': {
+    en: 'Artists can fine-tune generated materials through the ComfyUI interface, adjusting parameters to match specific art direction requirements.',
+    'zh-CN':
+      '艺术家可以通过 ComfyUI 界面微调生成的材质，调整参数以满足特定的艺术方向要求。'
+  },
+  'customers.detail.ubisoft-chord.topic-4.label': {
+    en: 'COLLABORATION',
+    'zh-CN': '协作'
+  },
+  'customers.detail.ubisoft-chord.topic-4.title': {
+    en: 'Cross-Studio Collaboration',
+    'zh-CN': '跨工作室协作'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.0': {
+    en: "The CHORD model and ComfyUI nodes enable consistent material generation across Ubisoft's global network of studios, ensuring unified visual quality.",
+    'zh-CN':
+      'CHORD 模型和 ComfyUI 节点在育碧全球工作室网络中实现了一致的材质生成，确保统一的视觉质量。'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.1': {
+    en: 'Shared workflows and configurations mean that teams across the world can produce materials that meet the same quality standards.',
+    'zh-CN':
+      '共享的工作流和配置意味着世界各地的团队可以制作符合相同质量标准的材质。'
+  },
+  'customers.detail.ubisoft-chord.topic-5.label': {
+    en: 'COMMUNITY',
+    'zh-CN': '社区'
+  },
+  'customers.detail.ubisoft-chord.topic-5.title': {
+    en: 'Community Impact',
+    'zh-CN': '社区影响'
+  },
+  'customers.detail.ubisoft-chord.topic-5.block.0': {
+    en: 'Since its release, the CHORD model has been adopted by independent developers and small studios, demonstrating the power of open-source tools in democratizing game development.',
+    'zh-CN':
+      '自发布以来，CHORD 模型已被独立开发者和小型工作室采用，展示了开源工具在民主化游戏开发中的力量。'
+  },
+  'customers.detail.ubisoft-chord.topic-5.block.1': {
+    en: 'The ComfyUI community has built upon the CHORD nodes, creating extended workflows that combine material generation with other AI-assisted tasks.',
+    'zh-CN':
+      'ComfyUI 社区在 CHORD 节点的基础上进行了扩展，创建了将材质生成与其他 AI 辅助任务相结合的扩展工作流。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.label': {
+    en: 'THE FUTURE',
+    'zh-CN': '未来'
+  },
+  'customers.detail.ubisoft-chord.topic-6.title': {
+    en: 'Future Development',
+    'zh-CN': '未来发展'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.0': {
+    en: "Ubisoft continues to develop and improve the CHORD model, with plans for additional material types and enhanced integration with ComfyUI's evolving ecosystem.",
+    'zh-CN':
+      '育碧继续开发和改进 CHORD 模型，计划增加更多材质类型并加强与 ComfyUI 不断发展的生态系统的集成。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.1.text': {
+    en: 'The CHORD model represents a breakthrough in AI-assisted material creation, enabling artists to generate production-quality PBR textures with unprecedented speed and control.',
+    'zh-CN':
+      'CHORD 模型代表了 AI 辅助材质创建的突破，使艺术家能够以前所未有的速度和控制力生成制作质量的 PBR 纹理。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.1.name': {
+    en: 'Ubisoft La Forge Team',
+    'zh-CN': '育碧 La Forge 团队'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.2.label': {
+    en: 'AUTHOR',
+    'zh-CN': '作者'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.2.name': {
+    en: 'Ubisoft La Forge Team',
+    'zh-CN': '育碧 La Forge 团队'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.2.role': {
+    en: 'Ubisoft Research & Development',
+    'zh-CN': '育碧研发'
+  },
+
+  'customers.story.whatsNext': {
+    en: "What's next?",
+    'zh-CN': '接下来看什么？'
+  },
+  'customers.story.backToStories': {
+    en: '← BACK TO CUSTOMER STORIES',
+    'zh-CN': '← 返回客户故事'
   },
   'customers.story.viewArticle': {
     en: 'VIEW ARTICLE',
@@ -2157,6 +2866,12 @@ type TranslationKey = keyof typeof translations
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
+}
+
+export const translationKeys = Object.keys(translations) as TranslationKey[]
+
+export function hasKey(key: string): boolean {
+  return key in translations
 }
 
 export type { Locale, TranslationKey }

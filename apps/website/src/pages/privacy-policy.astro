@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
-import ContentSection from '../components/legal/ContentSection.vue'
+import ContentSection from '../components/common/ContentSection.vue'
 import HeroSection from '../components/legal/HeroSection.vue'
-import { privacyPolicySections } from '../components/legal/legalSections'
 ---
 
 <BaseLayout
@@ -11,5 +10,5 @@ import { privacyPolicySections } from '../components/legal/legalSections'
   noindex
 >
   <HeroSection title="Privacy Policy" />
-  <ContentSection prefix="privacy" sections={privacyPolicySections} client:load />
+  <ContentSection prefix="privacy" client:load />
 </BaseLayout>

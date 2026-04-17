@@ -1,35 +1,11 @@
 <script setup lang="ts">
+import { customerStories } from '../../config/customerStories'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const stories = [
-  {
-    image: '/images/customers/story-series.webp',
-    category: 'customers.story.card1.category' as const,
-    title: 'customers.story.card1.title' as const,
-    href: '#'
-  },
-  {
-    image: '/images/customers/story-effortless.webp',
-    category: 'customers.story.card2.category' as const,
-    title: 'customers.story.card2.title' as const,
-    href: '#'
-  },
-  {
-    image: '/images/customers/story-moment.webp',
-    category: 'customers.story.card3.category' as const,
-    title: 'customers.story.card3.title' as const,
-    href: '#'
-  },
-  {
-    image: '/images/customers/story-ubisoft.webp',
-    category: 'customers.story.card4.category' as const,
-    title: 'customers.story.card4.title' as const,
-    href: '#'
-  }
-]
+const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
 </script>
 
 <template>
@@ -37,9 +13,9 @@ const stories = [
     class="grid grid-cols-1 gap-6 px-6 py-16 lg:grid-cols-2 lg:px-16 lg:py-24"
   >
     <a
-      v-for="(story, i) in stories"
-      :key="i"
-      :href="story.href"
+      v-for="story in customerStories"
+      :key="story.slug"
+      :href="`${prefix}/customers/${story.slug}`"
       class="bg-transparency-white-t4 group flex flex-col overflow-hidden rounded-3xl transition-colors hover:bg-white/8"
     >
       <!-- Image -->
