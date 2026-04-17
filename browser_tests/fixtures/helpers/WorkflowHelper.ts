@@ -60,14 +60,29 @@ export class WorkflowHelper {
     await this.comfyPage.nextFrame()
   }
 
-  async waitForDraftPersisted({ timeout = 5000 } = {}) {
-    await this.comfyPage.page.waitForFunction(
-      () =>
-        Object.keys(localStorage).some((k) =>
-          k.startsWith('Comfy.Workflow.Draft.v2:')
-        ),
-      { timeout }
+  async waitForDraftPersisted() {
+    await this.comfyPage.page.waitForFunction(() =>
+      Object.keys(localStorage).some((k) =>
+        k.startsWith('Comfy.Workflow.Draft.v2:')
+      )
     )
+  }
+
+  /**
+   * Reloads the current page and waits for the app to initialize.
+   * Unlike ComfyPage.setup(), this preserves localStorage (drafts) and
+   * the URL hash (subgraph navigation state), so the app restores
+   * exactly where the user left off.
+   */
+  async reloadAndWaitForApp() {
+    await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.comfyPage.page.waitForFunction(
+      () => window.app && window.app.extensionManager
+    )
+    await this.comfyPage.page.locator('.p-blockui-mask').waitFor({
+      state: 'hidden'
+    })
+    await this.comfyPage.nextFrame()
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {

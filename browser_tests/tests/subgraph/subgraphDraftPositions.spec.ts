@@ -2,82 +2,52 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+function getSubgraphNodePositions() {
+  const sg = [...window.app!.rootGraph.subgraphs.values()][0]
+  return sg.nodes.map((n) => ({
+    id: n.id,
+    x: n.pos[0],
+    y: n.pos[1]
+  }))
+}
+
 test.describe(
   'Subgraph node positions after draft reload',
-  { tag: ['@subgraph'] },
+  { tag: ['@subgraph', '@vue-nodes'] },
   () => {
     test('Node positions are preserved after draft reload with subgraph auto-entry', async ({
       comfyPage
     }) => {
       test.setTimeout(30000)
 
-      // Enable workflow persistence explicitly
       await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
-
-      // Load a workflow containing a subgraph
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
-
-      // Enter the subgraph programmatically (fixture node is too small for UI click)
-      await comfyPage.page.evaluate(() => {
-        const sg = [...window.app!.rootGraph.subgraphs.values()][0]
-        if (sg) window.app!.canvas.setGraph(sg)
-      })
-      await comfyPage.nextFrame()
+      await comfyPage.vueNodes.enterSubgraph()
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      const positionsBefore = await comfyPage.page.evaluate(() => {
-        const sg = [...window.app!.rootGraph.subgraphs.values()][0]
-        return sg.nodes.map((n) => ({
-          id: n.id,
-          x: n.pos[0],
-          y: n.pos[1]
-        }))
-      })
-
+      let positionsBefore: ReturnType<typeof getSubgraphNodePositions> = []
       await expect
         .poll(async () => {
-          const positions = await comfyPage.page.evaluate(() => {
-            const sg = [...window.app!.rootGraph.subgraphs.values()][0]
-            return sg.nodes.map((n) => ({
-              id: n.id,
-              x: n.pos[0],
-              y: n.pos[1]
-            }))
-          })
-          return positions.length
+          positionsBefore = await comfyPage.page.evaluate(
+            getSubgraphNodePositions
+          )
+          return positionsBefore.length
         })
         .toBeGreaterThan(0)
 
-      // Wait for the debounced draft persistence to flush to localStorage
       await comfyPage.workflow.waitForDraftPersisted()
+      await comfyPage.workflow.reloadAndWaitForApp()
 
-      // Reload the page (draft auto-loads with hash preserved)
-      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-      await comfyPage.page.waitForFunction(
-        () => window.app && window.app.extensionManager
-      )
-      await comfyPage.page.locator('.p-blockui-mask').waitFor({
-        state: 'hidden'
-      })
-      await comfyPage.nextFrame()
-
-      // Wait for subgraph auto-entry via hash navigation
       await expect
         .poll(() => comfyPage.subgraph.isInSubgraph(), { timeout: 10000 })
         .toBe(true)
 
-      // Verify all internal node positions are preserved
       for (const before of positionsBefore) {
         await expect
           .poll(async () => {
-            const positionsNow = await comfyPage.page.evaluate(() => {
-              const sg = [...window.app!.rootGraph.subgraphs.values()][0]
-              return sg.nodes.map((n) => ({
-                id: n.id,
-                x: n.pos[0],
-                y: n.pos[1]
-              }))
-            })
+            const positionsNow = await comfyPage.page.evaluate(
+              getSubgraphNodePositions
+            )
             const after = positionsNow.find((n) => n.id === before.id)
             if (!after) return null
             return { x: after.x, y: after.y }
