@@ -15951,40 +15951,35 @@ export interface components {
         QuiverTextToSVGRequest: {
             /**
              * @description Model identifier for SVG generation
-             * @default arrow-preview
+             * @example arrow-1.1
              */
             model: string;
             /** @description Text description of the desired SVG output */
             prompt: string;
             /** @description Additional style or formatting guidance */
             instructions?: string;
-            /** @description Up to 4 reference images (URL or base64) */
-            references?: components["schemas"]["QuiverImageObject"][];
+            /** @description Optional reference images to guide style/composition. Accepts URL object, base64 object, or URL string shorthand. Runtime limits are model-specific. */
+            references?: (components["schemas"]["QuiverImageObject"] | string)[];
             /**
              * @description Number of SVGs to generate
              * @default 1
              */
             n: number;
             /**
-             * @description Enable Server-Sent Events streaming
-             * @default false
-             */
-            stream: boolean;
-            /**
-             * @description Randomness control
+             * @description Sampling temperature
              * @default 1
              */
             temperature: number;
             /**
-             * @description Nucleus sampling parameter
+             * @description Nucleus sampling probability
              * @default 1
              */
             top_p: number;
             /**
-             * @description Token presence penalty
+             * @description Penalty for tokens already present in prior output
              * @default 0
              */
-            presence_penalty: number;
+            presence_penalty: number | null;
             /** @description Maximum number of output tokens */
             max_output_tokens?: number;
         };
@@ -15992,42 +15987,37 @@ export interface components {
         QuiverImageToSVGRequest: {
             /**
              * @description Model identifier for SVG vectorization
-             * @default arrow-preview
+             * @example arrow-1.1
              */
             model: string;
             image: components["schemas"]["QuiverImageObject"];
             /**
-             * @description Automatically crop to dominant subject
+             * @description Auto-crop image to the dominant subject before vectorization
              * @default false
              */
             auto_crop: boolean;
             /** @description Square resize target in pixels */
             target_size?: number;
             /**
-             * @description Number of SVGs to generate
-             * @default 1
-             */
-            n: number;
-            /**
              * @description Enable Server-Sent Events streaming
              * @default false
              */
             stream: boolean;
             /**
-             * @description Randomness control
+             * @description Sampling temperature
              * @default 1
              */
             temperature: number;
             /**
-             * @description Nucleus sampling parameter
+             * @description Nucleus sampling probability
              * @default 1
              */
             top_p: number;
             /**
-             * @description Token presence penalty
+             * @description Penalty for tokens already present in prior output
              * @default 0
              */
-            presence_penalty: number;
+            presence_penalty: number | null;
             /** @description Maximum number of output tokens */
             max_output_tokens?: number;
         };
@@ -16044,24 +16034,39 @@ export interface components {
         /** @description Response from Quiver AI SVG generation/vectorization */
         QuiverSVGResponse: {
             /** @description Unique identifier for the generation */
-            id?: string;
+            id: string;
             /** @description Unix timestamp of creation */
-            created?: number;
-            data?: {
-                /** @description Generated SVG content */
-                svg?: string;
+            created: number;
+            data: {
+                /** @description Raw SVG markup */
+                svg: string;
                 /**
                  * @description MIME type of the output
-                 * @default image/svg+xml
+                 * @enum {string}
                  */
-                mime_type: string;
+                mime_type: "image/svg+xml";
             }[];
+            /** @description Credit cost for this request. Use this for billing instead of usage tokens. */
+            credits?: number;
+            /**
+             * @deprecated
+             * @description Deprecated. Use credits for billing values.
+             */
             usage?: {
-                /** @description Total tokens used */
+                /**
+                 * @deprecated
+                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
+                 */
                 total_tokens?: number;
-                /** @description Input tokens used */
+                /**
+                 * @deprecated
+                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
+                 */
                 input_tokens?: number;
-                /** @description Output tokens used */
+                /**
+                 * @deprecated
+                 * @description Deprecated. Token counts are retained for compatibility and may be zeroed.
+                 */
                 output_tokens?: number;
             };
         };
