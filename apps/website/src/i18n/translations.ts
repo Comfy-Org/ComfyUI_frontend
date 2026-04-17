@@ -1352,6 +1352,132 @@ const translations = {
     'zh-CN': '没找到你理想的职位？'
   },
 
+  // CareersHeroSection
+  'careers.hero.label': { en: 'CAREERS', 'zh-CN': 'CAREERS' },
+  'careers.hero.heading': {
+    en: 'Building an operating\nsystem for Gen AI',
+    'zh-CN': '构建生成式 AI 的\n\u201C操作系统\u201D'
+  },
+  'careers.hero.body1': {
+    en: "We're building the world's leading visual AI platform \u2014 open, modular, and designed for those who want control, quality and scale in their creative process.",
+    'zh-CN':
+      '我们是全球领先的视觉 AI 平台\u2014\u2014一个开放、模块化的系统，任何人都可以精确地构建、定制和自动化 AI 工作流，并拥有完全的控制权。'
+  },
+  'careers.hero.body2': {
+    en: 'From solo creators to enterprise teams, millions of people rely on ComfyUI to push the boundaries of what creative AI can do.',
+    'zh-CN':
+      '从独立创作者到企业团队，数百万人依赖 ComfyUI 来突破创意 AI 的边界。'
+  },
+  'careers.hero.body3': {
+    en: "We're a team of builders. We raise the bar for each other, move fast, and care deeply about the open-source community that's grown alongside us.",
+    'zh-CN':
+      '我们是一支建设者团队。我们互相提高标准、快速迭代，并深切关心与我们一同成长的开源社区。'
+  },
+  'careers.hero.body4': {
+    en: 'If you want to shape the future of creativity, come build with us.',
+    'zh-CN': '如果你想塑造创意的未来，来和我们一起构建。'
+  },
+
+  // CareersWhyJoinSection
+  'careers.whyJoin.reason1': {
+    en: 'Want to build tools that empower others to create.',
+    'zh-CN': '想打造赋能他人创作的工具。'
+  },
+  'careers.whyJoin.reason2': {
+    en: "Like working on foundational tech that's already powering real-world videos, images, music, and apps.",
+    'zh-CN': '喜欢从事已经在驱动真实世界视频、图像、音乐和应用的基础技术。'
+  },
+  'careers.whyJoin.reason3': {
+    en: 'Care about open, free alternatives to closed AI platforms.',
+    'zh-CN': '关心开放、免费的替代方案，而非封闭的 AI 平台。'
+  },
+  'careers.whyJoin.reason4': {
+    en: 'Believe artists, hackers, and solo builders should have real control over their tools.',
+    'zh-CN': '相信艺术家、黑客和独立创作者应该真正掌控自己的工具。'
+  },
+  'careers.whyJoin.reason5': {
+    en: 'Want to work in a small, sharp, no-BS team that moves fast and ships often.',
+    'zh-CN': '想在一个精干、务实、快速迭代的小团队中工作。'
+  },
+
+  // CareersRolesSection
+  'careers.roles.heading': { en: 'Roles', 'zh-CN': '职位' },
+
+  // CareersFAQSection
+  'careers.faq.heading': { en: 'Q&A', 'zh-CN': 'Q&A' },
+  'careers.faq.1.q': {
+    en: 'What is the team culture?',
+    'zh-CN': '团队文化是什么样的？'
+  },
+  'careers.faq.1.a': {
+    en: "We're a small, intense team that values ownership, speed, and craft. Everyone ships real work, helps each other raise the bar, and cares deeply about the open-source community we serve. We move fast, communicate directly, and trust each other to do great work.",
+    'zh-CN':
+      '我们是一个精干、高效的团队，重视主人翁精神、速度和工匠精神。每个人都交付真实的成果，互相提高标准，并深切关心我们服务的开源社区。我们快速行动、直接沟通，彼此信任。'
+  },
+  'careers.faq.2.q': {
+    en: 'What kind of background do I need to have to apply?',
+    'zh-CN': '我需要什么样的背景才能申请？'
+  },
+  'careers.faq.2.a': {
+    en: 'We care about what you can do, not where you went to school. Show us your work — side projects, open-source contributions, or anything that demonstrates your skills and taste. We value builders who ship.',
+    'zh-CN':
+      '我们关心的是你能做什么，而不是你的学历背景。向我们展示你的作品——副项目、开源贡献，或任何能展示你技能和品味的东西。我们重视能交付成果的建设者。'
+  },
+  'careers.faq.3.q': {
+    en: 'How do I apply?',
+    'zh-CN': '如何申请？'
+  },
+  'careers.faq.3.a': {
+    en: 'Click on any open role above to apply through our job board. Include your resume and any relevant links to your work (GitHub, portfolio, etc.).',
+    'zh-CN':
+      '点击上方任何开放职位，通过我们的招聘页面申请。请附上你的简历以及任何相关的作品链接（GitHub、作品集等）。'
+  },
+  'careers.faq.4.q': {
+    en: 'What does the hiring process look like?',
+    'zh-CN': '招聘流程是什么样的？'
+  },
+  'careers.faq.4.a': {
+    en: 'Typically: application review → intro call → technical assessment or work sample → team interviews → offer. We try to move quickly and respect your time throughout the process.',
+    'zh-CN':
+      '通常是：简历筛选 → 初步电话沟通 → 技术评估或作品展示 → 团队面试 → 发放 offer。我们会尽快推进流程，尊重你的时间。'
+  },
+  'careers.faq.5.q': {
+    en: 'In-person vs remote?',
+    'zh-CN': '线下还是远程？'
+  },
+  'careers.faq.5.a': {
+    en: 'Most roles are based in San Francisco, but we have team members in other locations too. Each role listing specifies the location. We do regular team offsites to stay connected.',
+    'zh-CN':
+      '大多数职位在旧金山，但我们也有其他地区的团队成员。每个职位会标注具体地点。我们定期举办团队活动以保持紧密联系。'
+  },
+  'careers.faq.6.q': {
+    en: 'How can I increase my chances of getting the job?',
+    'zh-CN': '如何提高获得工作的机会？'
+  },
+  'careers.faq.6.a': {
+    en: "Use ComfyUI. Build something with it. Contribute to the open-source project. The best candidates are the ones who already understand the product and community because they're part of it.",
+    'zh-CN':
+      '使用 ComfyUI。用它构建一些东西。为开源项目做贡献。最好的候选人是那些已经了解产品和社区的人，因为他们本身就是社区的一部分。'
+  },
+  'careers.faq.7.q': {
+    en: 'What if I need visa sponsorship to work in the US?',
+    'zh-CN': '如果我需要签证担保在美国工作怎么办？'
+  },
+  'careers.faq.7.a': {
+    en: "We can sponsor visas for exceptional candidates. Let us know your situation in your application and we'll work through the details together.",
+    'zh-CN':
+      '对于优秀的候选人，我们可以提供签证担保。请在申请中说明你的情况，我们会一起解决细节问题。'
+  },
+  'careers.faq.8.q': {
+    en: 'Can I get feedback for my resume and interview?',
+    'zh-CN': '我能获得简历和面试的反馈吗？'
+  },
+  'careers.faq.8.a': {
+    en: 'We do our best to provide meaningful feedback to candidates who go through our interview process. Due to volume, we may not be able to provide detailed feedback at the application stage.',
+    'zh-CN':
+      '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
+  },
+
   // SiteNav
   'nav.products': { en: 'PRODUCTS', 'zh-CN': '产品' },
   'nav.pricing': { en: 'PRICING', 'zh-CN': '价格' },
