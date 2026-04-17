@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
-import type { AssetDownload } from '@/stores/assetDownloadStore'
+import type { MissingModelDownloadStatus } from '@/platform/missingModel/types'
 
 const {
   modelName,
@@ -96,7 +96,7 @@ const {
 } = defineProps<{
   modelName: string
   isDownloadActive: boolean
-  downloadStatus?: AssetDownload | null
+  downloadStatus?: MissingModelDownloadStatus | null
   categoryMismatch?: string | null
 }>()
 

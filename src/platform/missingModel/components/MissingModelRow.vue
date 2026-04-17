@@ -230,9 +230,13 @@ const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
 )
 
-const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
+const downloadStatus = computed(() =>
+  getDownloadStatus(modelKey.value, model.representative.url)
+)
 const comboOptions = computed(() => getComboOptions(model.representative))
-const canConfirm = computed(() => isSelectionConfirmable(modelKey.value))
+const canConfirm = computed(() =>
+  isSelectionConfirmable(modelKey.value, model.representative.url)
+)
 const expanded = computed(() => isModelExpanded(modelKey.value))
 const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
 const isDownloadActive = computed(
@@ -284,13 +288,17 @@ const downloadLabel = computed(() => {
   return size ? `${base} (${formatSize(size)})` : base
 })
 
-function handleDownload() {
+async function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
+    const started = await downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths
     )
+
+    if (started) {
+      handleComboSelect(modelKey.value, rep.name)
+    }
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }

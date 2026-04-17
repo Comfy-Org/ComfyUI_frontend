@@ -51,3 +51,9 @@ export interface MissingModelGroup {
   models: MissingModelViewModel[]
   isAssetSupported: boolean
 }
+
+export interface MissingModelDownloadStatus {
+  progress: number
+  status: 'created' | 'running' | 'completed' | 'failed'
+  error?: string
+}

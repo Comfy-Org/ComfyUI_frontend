@@ -58,7 +58,7 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
 export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
-): void {
+): Promise<boolean> {
   if (!isDesktop) {
     const link = document.createElement('a')
     link.href = model.url
@@ -66,17 +66,19 @@ export function downloadModel(
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
     link.click()
-    return
+    return Promise.resolve(true)
   }
 
   const modelPaths = paths[model.directory]
   if (modelPaths?.[0]) {
-    void useElectronDownloadStore().start({
+    return useElectronDownloadStore().start({
       url: model.url,
       savePath: modelPaths[0],
       filename: model.name
     })
   }
+
+  return Promise.resolve(false)
 }
 
 interface ModelMetadata {

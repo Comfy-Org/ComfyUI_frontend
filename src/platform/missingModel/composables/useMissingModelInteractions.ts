@@ -13,11 +13,13 @@ import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type {
   MissingModelCandidate,
+  MissingModelDownloadStatus,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -90,6 +92,7 @@ export function useMissingModelInteractions() {
   const store = useMissingModelStore()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
+  const electronDownloadStore = useElectronDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
 
   const _requestTokens: Record<string, symbol> = {}
@@ -126,18 +129,12 @@ export function useMissingModelInteractions() {
     }
   }
 
-  function isSelectionConfirmable(key: string): boolean {
+  function isSelectionConfirmable(key: string, downloadUrl?: string): boolean {
     if (!store.selectedLibraryModel[key]) return false
     if (store.importCategoryMismatch[key]) return false
 
-    const status = getDownloadStatus(key)
-    if (
-      status &&
-      (status.status === 'running' || status.status === 'created')
-    ) {
-      return false
-    }
-    return true
+    const status = getDownloadStatus(key, downloadUrl)
+    return !status || status.status === 'completed'
   }
 
   function cancelLibrarySelect(key: string) {
@@ -280,12 +277,53 @@ export function useMissingModelInteractions() {
     return null
   }
 
-  function getDownloadStatus(key: string) {
+  function normalizeElectronDownloadStatus(
+    downloadUrl?: string
+  ): MissingModelDownloadStatus | null {
+    if (!downloadUrl) return null
+
+    const download = electronDownloadStore.findByUrl(downloadUrl)
+    if (!download?.status) return null
+
+    const progress =
+      download.status === 'completed' ? 1 : (download.progress ?? 0)
+
+    switch (download.status) {
+      case 'pending':
+        return { progress, status: 'created' }
+      case 'in_progress':
+      case 'paused':
+        return { progress, status: 'running' }
+      case 'completed':
+        return { progress, status: 'completed' }
+      case 'cancelled':
+      case 'error':
+        return { progress, status: 'failed' }
+      default:
+        return null
+    }
+  }
+
+  function getDownloadStatus(
+    key: string,
+    downloadUrl?: string
+  ): MissingModelDownloadStatus | null {
     const taskId = store.importTaskIds[key]
-    if (!taskId) return null
-    return (
-      assetDownloadStore.downloadList.find((d) => d.taskId === taskId) ?? null
-    )
+    if (taskId) {
+      const assetDownload = assetDownloadStore.downloadList.find(
+        (download) => download.taskId === taskId
+      )
+
+      if (assetDownload) {
+        return {
+          progress: assetDownload.progress,
+          status: assetDownload.status,
+          error: assetDownload.error
+        }
+      }
+    }
+
+    return normalizeElectronDownloadStatus(downloadUrl)
   }
 
   function handleAsyncPending(

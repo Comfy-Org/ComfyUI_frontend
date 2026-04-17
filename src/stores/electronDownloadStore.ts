@@ -50,7 +50,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   void initialize()
 
-  const start = ({
+  const start = async ({
     url,
     savePath,
     filename
@@ -58,7 +58,25 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     url: string
     savePath: string
     filename: string
-  }) => DownloadManager!.startDownload(url, savePath, filename)
+  }) => {
+    const started = await DownloadManager!.startDownload(
+      url,
+      savePath,
+      filename
+    )
+
+    if (started && !findByUrl(url)) {
+      downloads.value.push({
+        url,
+        filename,
+        savePath,
+        progress: 0,
+        status: DownloadStatus.PENDING
+      })
+    }
+
+    return started
+  }
   const pause = (url: string) => DownloadManager!.pauseDownload(url)
   const resume = (url: string) => DownloadManager!.resumeDownload(url)
   const cancel = (url: string) => DownloadManager!.cancelDownload(url)

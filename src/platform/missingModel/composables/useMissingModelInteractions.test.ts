@@ -12,8 +12,14 @@ const mockGetAssetFilename = vi.fn((a: { name: string }) => a.name)
 const mockGetAssets = vi.fn()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetAllNodeProviders = vi.fn()
+const mockFindElectronDownloadByUrl = vi.fn()
 const mockDownloadList = vi.fn(
-  (): Array<{ taskId: string; status: string }> => []
+  (): Array<{
+    taskId: string
+    status: string
+    progress?: number
+    error?: string
+  }> => []
 )
 
 vi.mock('@/i18n', () => ({
@@ -65,6 +71,12 @@ vi.mock('@/stores/assetDownloadStore', () => ({
       return mockDownloadList()
     },
     trackDownload: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => ({
+    findByUrl: (...args: unknown[]) => mockFindElectronDownloadByUrl(...args)
   })
 }))
 
@@ -135,8 +147,15 @@ describe('useMissingModelInteractions', () => {
     mockGetAssetDisplayName.mockImplementation((a: { name: string }) => a.name)
     mockGetAssetFilename.mockImplementation((a: { name: string }) => a.name)
     mockDownloadList.mockImplementation(
-      (): Array<{ taskId: string; status: string }> => []
+      (): Array<{
+        taskId: string
+        status: string
+        progress?: number
+        error?: string
+      }> => []
     )
+    mockFindElectronDownloadByUrl.mockReset()
+    mockFindElectronDownloadByUrl.mockReturnValue(null)
     ;(app as { rootGraph: unknown }).rootGraph = null
   })
 
@@ -306,6 +325,40 @@ describe('useMissingModelInteractions', () => {
 
       const { isSelectionConfirmable } = useMissingModelInteractions()
       expect(isSelectionConfirmable('key1')).toBe(true)
+    })
+
+    it('returns false when a desktop download is still running', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        status: 'in_progress',
+        progress: 0.42
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(
+        isSelectionConfirmable(
+          'key1',
+          'https://huggingface.co/org/model/resolve/main/model.safetensors'
+        )
+      ).toBe(false)
+    })
+
+    it('returns true when a desktop download has completed', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        status: 'completed',
+        progress: 1
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(
+        isSelectionConfirmable(
+          'key1',
+          'https://huggingface.co/org/model/resolve/main/model.safetensors'
+        )
+      ).toBe(true)
     })
   })
 
@@ -511,6 +564,55 @@ describe('useMissingModelInteractions', () => {
 
       const { getTypeMismatch } = useMissingModelInteractions()
       expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
+    })
+  })
+
+  describe('getDownloadStatus', () => {
+    it('normalizes desktop download state for Missing Models UI', () => {
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        status: 'pending',
+        progress: 0
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(
+        getDownloadStatus(
+          'key1',
+          'https://huggingface.co/org/model/resolve/main/model.safetensors'
+        )
+      ).toEqual({
+        progress: 0,
+        status: 'created'
+      })
+    })
+
+    it('prefers asset import status when an import task exists', () => {
+      const store = useMissingModelStore()
+      store.importTaskIds['key1'] = 'task-123'
+      mockDownloadList.mockReturnValue([
+        {
+          taskId: 'task-123',
+          status: 'running',
+          progress: 0.3,
+          error: undefined
+        }
+      ])
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        status: 'completed',
+        progress: 1
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(
+        getDownloadStatus(
+          'key1',
+          'https://huggingface.co/org/model/resolve/main/model.safetensors'
+        )
+      ).toEqual({
+        progress: 0.3,
+        status: 'running',
+        error: undefined
+      })
     })
   })
 })
