@@ -27,7 +27,7 @@ const investors = [
         class="text-primary-comfy-canvas mt-6 text-3xl font-light lg:text-5xl"
       >
         {{ t('about.story.headingBefore', locale)
-        }}<span class="text-primary-comfy-yellow font-semibold">{{
+        }}<span class="text-primary-comfy-yellow">{{
           t('about.story.headingHighlight', locale)
         }}</span
         >{{ t('about.story.headingAfter', locale) }}

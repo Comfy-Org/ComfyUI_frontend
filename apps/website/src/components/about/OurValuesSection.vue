@@ -43,7 +43,7 @@ const values: {
         class="text-primary-comfy-canvas mt-6 text-3xl font-light lg:text-5xl"
       >
         {{ t('about.values.headingBefore', locale)
-        }}<span class="text-primary-comfy-yellow font-semibold">{{
+        }}<span class="text-primary-comfy-yellow">{{
           t('about.values.headingHighlight', locale)
         }}</span
         >{{ t('about.values.headingAfter', locale) }}
@@ -54,40 +54,78 @@ const values: {
       <!-- Desktop layout -->
       <div class="hidden lg:block">
         <!-- Row 1: SHIP IT + SHARE IT -->
-        <div class="grid grid-cols-2 gap-6">
+        <div class="flex items-center gap-0">
           <div
-            v-for="value in values.slice(0, 2)"
-            :key="value.segments[0].text"
-            class="rounded-3xl border border-white/10 bg-white/5 p-8"
+            class="border-primary-comfy-yellow flex-1 rounded-3xl border p-8"
           >
-            <NodeBadge :segments="value.segments" segment-class="px-3" />
+            <NodeBadge
+              :segments="values[0].segments"
+              segment-class="lg:py-3"
+              text-class="text-2xl lg:text-3xl"
+            />
             <p class="text-primary-warm-white mt-4 text-sm/relaxed">
-              {{ t(value.bodyKey, locale) }}
+              {{ t(values[0].bodyKey, locale) }}
+            </p>
+          </div>
+          <img
+            src="/icons/node-link.svg"
+            alt=""
+            class="shrink-0"
+            aria-hidden="true"
+          />
+          <div
+            class="border-primary-comfy-yellow flex-1 rounded-3xl border p-8"
+          >
+            <NodeBadge
+              :segments="values[1].segments"
+              segment-class="lg:py-3"
+              text-class="text-2xl lg:text-3xl"
+            />
+            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+              {{ t(values[1].bodyKey, locale) }}
             </p>
           </div>
         </div>
 
         <!-- Connector line -->
         <div class="flex justify-end pr-12">
-          <div class="bg-primary-comfy-yellow h-10 w-0.5" />
+          <img
+            src="/icons/node-link.svg"
+            alt=""
+            class="-my-1.5 rotate-90"
+            aria-hidden="true"
+          />
         </div>
 
         <!-- Row 2: OPEN-SOURCE IT -->
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-8">
-          <NodeBadge :segments="values[2].segments" segment-class="px-3" />
+        <div class="border-primary-comfy-yellow rounded-3xl border p-8">
+          <NodeBadge
+            :segments="values[2].segments"
+            segment-class="px-3"
+            text-class="text-2xl lg:text-3xl"
+          />
           <p class="text-primary-warm-white mt-4 text-sm/relaxed">
             {{ t(values[2].bodyKey, locale) }}
           </p>
         </div>
 
         <!-- Connector line -->
-        <div class="flex justify-center">
-          <div class="bg-primary-comfy-yellow h-10 w-0.5" />
+        <div class="flex justify-start pl-24">
+          <img
+            src="/icons/node-link.svg"
+            alt=""
+            class="-my-1.5 rotate-90"
+            aria-hidden="true"
+          />
         </div>
 
         <!-- Row 3: RESPECT THE CRAFT -->
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-8">
-          <NodeBadge :segments="values[3].segments" segment-class="px-3" />
+        <div class="border-primary-comfy-yellow rounded-3xl border p-8">
+          <NodeBadge
+            :segments="values[3].segments"
+            segment-class="px-3"
+            text-class="text-2xl lg:text-3xl"
+          />
           <p class="text-primary-warm-white mt-4 text-sm/relaxed">
             {{ t(values[3].bodyKey, locale) }}
           </p>
@@ -95,17 +133,33 @@ const values: {
       </div>
 
       <!-- Mobile: stacked cards -->
-      <div class="flex flex-col gap-6 lg:hidden">
-        <div
-          v-for="value in values"
-          :key="value.segments[0].text"
-          class="rounded-3xl border border-white/10 bg-white/5 p-8"
-        >
-          <NodeBadge :segments="value.segments" segment-class="px-3" />
-          <p class="text-primary-warm-white mt-4 text-sm/relaxed">
-            {{ t(value.bodyKey, locale) }}
-          </p>
-        </div>
+      <div class="flex flex-col items-center lg:hidden">
+        <template v-for="(value, i) in values" :key="value.segments[0].text">
+          <div
+            v-if="i > 0"
+            class="flex w-full"
+            :class="i % 2 === 1 ? 'justify-end pr-16' : 'justify-start pl-16'"
+          >
+            <img
+              src="/icons/node-link.svg"
+              alt=""
+              class="-my-1 w-3 shrink-0 rotate-90"
+              aria-hidden="true"
+            />
+          </div>
+          <div
+            class="border-primary-comfy-yellow w-full rounded-3xl border p-8"
+          >
+            <NodeBadge
+              :segments="value.segments"
+              segment-class="px-3"
+              text-class="text-2xl lg:text-3xl"
+            />
+            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+              {{ t(value.bodyKey, locale) }}
+            </p>
+          </div>
+        </template>
       </div>
     </div>
   </section>

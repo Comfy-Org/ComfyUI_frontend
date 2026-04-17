@@ -12,15 +12,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <div
       class="bg-transparency-white-t4 rounded-5xl mx-auto mt-20 flex flex-col gap-12 p-2 lg:flex-row lg:items-stretch lg:gap-8"
     >
-      <!-- Team photo placeholder -->
-      <div
-        class="aspect-video w-full overflow-hidden rounded-4xl bg-black/30 lg:w-1/2"
-      >
-        <div
-          class="flex h-full items-center justify-center rounded-4xl border border-white/10"
-        >
-          <span class="text-primary-warm-gray text-sm">Team photo</span>
-        </div>
+      <!-- Team photo -->
+      <div class="aspect-video w-full overflow-hidden rounded-4xl lg:w-1/2">
+        <img
+          src="/images/about/team.webp"
+          alt="Comfy team"
+          class="size-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
       </div>
 
       <!-- Join text -->

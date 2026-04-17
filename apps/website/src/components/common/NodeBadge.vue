@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { segments, segmentClass = 'px-6' } = defineProps<{
+const {
+  segments,
+  segmentClass = 'px-6',
+  textClass = 'text-2xl sm:text-3xl lg:text-5xl'
+} = defineProps<{
   segments: Array<{ text?: string; logoSrc?: string; logoAlt?: string }>
   segmentClass?: string
+  textClass?: string
 }>()
 </script>
 
@@ -45,7 +50,12 @@ const { segments, segmentClass = 'px-6' } = defineProps<{
         />
         <span
           v-else
-          class="inline-block translate-y-1 text-2xl font-bold whitespace-nowrap transition-all duration-300 sm:text-3xl lg:text-5xl"
+          :class="
+            cn(
+              'inline-block translate-y-1 font-bold whitespace-nowrap transition-all duration-300',
+              textClass
+            )
+          "
         >
           {{ segment.text }}
         </span>
