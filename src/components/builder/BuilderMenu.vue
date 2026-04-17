@@ -4,15 +4,15 @@
       <button
         :class="
           cn(
-            'absolute top-[calc(var(--workflow-tabs-height)+16px)] left-4 z-1000 inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border-none py-2 pr-2 pl-3 shadow-interface transition-colors',
-            'bg-secondary-background hover:bg-secondary-background-hover',
-            'data-[state=open]:bg-secondary-background-hover'
+            'builder-menu-trigger absolute z-1000 inline-flex cursor-pointer items-center gap-2 border-none transition-colors',
+            'hover:bg-(--layout-color-cell-hover)',
+            'data-[state=open]:bg-(--layout-color-cell-hover)'
           )
         "
         :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       >
-        <i class="icon-[lucide--hammer] size-4" />
-        <span class="text-sm font-medium">
+        <i class="icon-[lucide--hammer] size-5" />
+        <span class="text-base font-medium">
           {{ t('linearMode.appModeToolbar.appBuilder') }}
         </span>
         <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
@@ -98,3 +98,18 @@ function onExitBuilder(close: () => void) {
   close()
 }
 </script>
+
+<style scoped>
+/* Matches ModeToggleCell visual treatment in App Mode: flat cell fill,
+   4px radius, 48px tall. Sits just right of the SideToolbar using the
+   same --sidebar-width the graph-mode chrome reacts to. */
+.builder-menu-trigger {
+  top: calc(var(--workflow-tabs-height) + var(--layout-outer-padding));
+  left: calc(var(--sidebar-width, 0px) + var(--layout-outer-padding));
+  height: var(--layout-cell-size);
+  padding: 0 12px;
+  color: var(--layout-color-text);
+  background-color: var(--layout-color-cell-fill);
+  border-radius: var(--layout-cell-radius);
+}
+</style>

@@ -162,9 +162,10 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const showOffsideSplitter = computed(
-  () => rightSidePanelVisible.value || isSelectMode.value
-)
+/* Builder panel is now a FloatingPanel overlay (BuilderPanel.vue); it does
+ * not live in the splitter's offside slot anymore, so the splitter only
+ * force-opens when the graph-mode node-properties panel is visible. */
+const showOffsideSplitter = computed(() => rightSidePanelVisible.value)
 
 const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value

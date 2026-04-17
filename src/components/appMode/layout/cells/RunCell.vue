@@ -51,7 +51,7 @@ async function handleClick(e: Event) {
   justify-content: center;
   gap: 8px;
   border: none;
-  border-radius: var(--layout-cell-radius);
+  border-radius: 8px;
   background-color: var(--layout-color-accent);
   color: var(--layout-color-accent-foreground);
   font-size: var(--layout-font-xl);

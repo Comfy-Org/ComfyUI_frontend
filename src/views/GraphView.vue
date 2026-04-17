@@ -16,6 +16,8 @@
     <template v-if="isBuilderMode">
       <BuilderToolbar />
       <BuilderMenu />
+      <BuilderPanel />
+      <AppBuilder />
       <BuilderFooterToolbar />
     </template>
   </div>
@@ -92,8 +94,10 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 import BuilderMenu from '@/components/builder/BuilderMenu.vue'
+import BuilderPanel from '@/components/builder/BuilderPanel.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'

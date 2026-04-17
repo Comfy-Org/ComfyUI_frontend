@@ -3,9 +3,7 @@
     class="fixed top-[calc(var(--workflow-tabs-height)+var(--spacing)*1.5)] left-1/2 z-1000 -translate-x-1/2"
     :aria-label="t('builderToolbar.label')"
   >
-    <div
-      class="inline-flex items-center gap-1 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
-    >
+    <div class="panel-chrome inline-flex items-center gap-1 p-2">
       <template v-for="(step, index) in steps" :key="step.id">
         <button
           :class="

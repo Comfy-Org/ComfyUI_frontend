@@ -5,6 +5,7 @@ import { useEventListener } from '@vueuse/core'
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { PanelPreset } from '@/components/appMode/layout/panels/panelTypes'
 import type {
   InputWidgetConfig,
   LinearData,
@@ -35,6 +36,14 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
+
+  // Shared panel position + collapse state — single source of truth for
+  // the floating inputs panel across App Mode (runtime) and App Builder
+  // (edit). Moving or collapsing the panel in either view updates both,
+  // so the builder is WYSIWYG with App Mode by construction. In-memory
+  // only for now; persistence is Phase 4-B.
+  const panelPreset = ref<PanelPreset>('right-dock')
+  const panelCollapsed = ref(false)
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
@@ -182,6 +191,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     hasNodes,
     hasOutputs,
     loadSelections,
+    panelCollapsed,
+    panelPreset,
     pruneLinearData,
     removeSelectedInput,
     resetSelectedToWorkflow,

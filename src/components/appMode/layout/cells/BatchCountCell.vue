@@ -45,10 +45,13 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
   padding: 0 8px;
 }
 
-.batch-count-cell__label {
+.batch-count-cell .batch-count-cell__label {
   flex-shrink: 0;
   font-size: var(--layout-font-md);
-  color: var(--layout-color-text-muted);
+  /* Force the muted token — some PrimeVue themes set a brighter
+     `--p-text-muted-color`, so clamp the fallback here to guarantee
+     the label reads as the same gray used by widget subtitles. */
+  color: #a1a1a1;
   white-space: nowrap;
 }
 

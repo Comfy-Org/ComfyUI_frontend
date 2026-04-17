@@ -12,11 +12,15 @@
  * layout view inherits these variables automatically.
  */
 
-.layout-view {
+/* Tokens live on :root so they're available app-wide (App Mode layout,
+   App Builder chrome, anywhere else that wants the same visual language).
+   Previously scoped to .layout-view; moved up 2026-04-16 so the builder
+   redesign can share panel/cell tokens without duplicating constants. */
+:root {
   /* --- Type scale ------------------------------------------------------
      The entire App Mode layout uses 4 sizes. Resist adding a fifth
      without strong reason. */
-  --layout-font-md: 18px;    /* Default: labels + widget content (textareas, inputs) */
+  --layout-font-md: 15px;    /* Default: labels + widget content (textareas, inputs) */
   --layout-font-lg: 20px;    /* LinearWelcome body */
   --layout-font-xl: 24px;    /* Primary action (Run) */
   --layout-font-hero: 48px;  /* LinearWelcome heading */
@@ -35,6 +39,14 @@
   --layout-color-canvas: var(--p-content-background, #1a1a1a);
   --layout-color-cell-fill: var(--p-surface-800, #2a2a2a);
   --layout-color-cell-hover: var(--p-surface-700, #3a3a3a);
+  /* Header shade — halfway between cell-fill and canvas. Used by the
+     FloatingPanel header so the drag-grip region reads as visually
+     distinct from the panel body without needing a hard border. */
+  --layout-color-header-fill: color-mix(
+    in srgb,
+    var(--layout-color-cell-fill) 50%,
+    var(--layout-color-canvas) 50%
+  );
   --layout-color-text: var(--p-text-color, #fafafa);
   --layout-color-text-muted: var(--p-text-muted-color, #a1a1a1);
   --layout-color-accent: #2da44e;          /* GitHub Primer green */

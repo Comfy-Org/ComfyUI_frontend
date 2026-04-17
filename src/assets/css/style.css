@@ -1,4 +1,39 @@
 @import '@comfyorg/design-system/css/style.css';
+@import '../../components/appMode/layout/design-tokens.css';
+
+/* Panel chrome — surface treatment shared by FloatingPanel and the App
+   Builder toolbars so both read as the same floating surface. Matches
+   FloatingPanel's scoped values; intentional duplication kept in sync
+   via `--layout-color-cell-fill` + motion tokens above. */
+.panel-chrome {
+  background-color: var(--layout-color-cell-fill);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 10px;
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.4),
+    0 16px 48px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(8px);
+}
+
+/* Widget inputs inside floating panels read as recessed into the panel
+   surface, not popping out of it. Uses --layout-color-canvas (the same
+   dark the output-canvas background uses) so widgets + canvas share a
+   visual "depth layer" distinct from the panel chrome. Applies to both
+   App Mode (LayoutView → PanelBlockList → InputCell) and App Builder
+   (BuilderPanel → AppModeWidgetList) without either component opting
+   in — keeps the two surfaces WYSIWYG-coherent by default. */
+.floating-panel textarea,
+.floating-panel input {
+  background-color: var(--layout-color-canvas);
+}
+/* ScrubableNumberInput and other widget containers use the
+   component-node-widget-background token for their shell. Override
+   inside a panel so the ± buttons, center value, and container share
+   one continuous canvas-dark pill instead of a darker center bounded
+   by a lighter button strip. */
+.floating-panel .bg-component-node-widget-background {
+  background-color: var(--layout-color-canvas);
+}
 
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */

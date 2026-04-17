@@ -43,7 +43,7 @@ async function runFromPill(e: MouseEvent) {
     <div
       role="article"
       data-testid="linear-welcome"
-      class="mx-auto flex h-full max-w-2xl flex-col items-start justify-center gap-6 p-6 text-left"
+      class="flex h-full max-w-2xl flex-col items-start justify-center gap-6 py-6 pr-6 pl-(--layout-outer-padding,16px) text-left"
     >
       <div class="flex flex-col gap-2">
         <h2 class="sr-only">{{ t('linearMode.welcome.title') }}</h2>
@@ -53,12 +53,12 @@ async function runFromPill(e: MouseEvent) {
         />
       </div>
 
-      <div class="flex max-w-2xl flex-col gap-4 text-3xl text-muted-foreground">
+      <div class="flex max-w-2xl flex-col gap-4 text-2xl text-muted-foreground">
         <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
         <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
         <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
       </div>
-      <div v-if="hasOutputs" class="flex flex-row gap-2 text-3xl">
+      <div v-if="hasOutputs" class="flex flex-row gap-2 text-2xl">
         <p class="mt-0 text-base-foreground">
           <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
             <template #runButton>

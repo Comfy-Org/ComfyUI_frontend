@@ -22,15 +22,12 @@ import type { InputCellEntry } from './cells/InputCell.vue'
 import OutputThumbCell from './cells/OutputThumbCell.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
-import PanelDragPreview from './panels/PanelDragPreview.vue'
 import type {
   BlockConfig,
   BlockPos,
   BlockRow,
-  DropTarget,
-  PanelPreset
+  DropTarget
 } from './panels/panelTypes'
-import { usePanelDrag } from './panels/usePanelDrag'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
@@ -150,7 +147,9 @@ const panelTitle = computed(() => {
   return getPathDetails(path).filename
 })
 
-const panelPreset = ref<PanelPreset>('right-dock')
+// Panel preset + collapse state live in appModeStore so App Mode + App
+// Builder share them; moving or collapsing in either updates both.
+const { panelPreset, panelCollapsed } = storeToRefs(appModeStore)
 
 // Block list is a 2D grid (rows of columns) so 4-E (reorder) and 4-F
 // (multi-column) can both mutate it. Reconciliation preserves user
@@ -287,13 +286,6 @@ const inputRows = computed(() =>
 const runRow = computed(() =>
   panelRows.value.find((row) => row.some((b) => b.kind === 'run'))
 )
-
-const { isDragging, snapTarget, onHeaderPointerDown } = usePanelDrag({
-  currentPreset: panelPreset,
-  onCommit: (preset) => {
-    panelPreset.value = preset
-  }
-})
 
 // --- Output history (shared for thumbnails + action cells) -------------
 // IMPORTANT: call useOutputHistory() exactly once. Its constructor runs
@@ -577,10 +569,10 @@ const cells = computed<LayoutCellPlacement[]>(() => {
     <!-- Overlay layer: the floating panel(s). Phase 4-A: one panel;
          Phase 4-C: drag between presets. -->
     <FloatingPanel
-      :preset="panelPreset"
+      v-model:preset="panelPreset"
+      v-model:collapsed="panelCollapsed"
       :title="panelTitle"
-      :dragging="isDragging"
-      :on-header-pointer-down="onHeaderPointerDown"
+      movable
     >
       <PanelBlockList
         :rows="inputRows"
@@ -591,13 +583,11 @@ const cells = computed<LayoutCellPlacement[]>(() => {
         <PanelBlockList :rows="[runRow]" :input-entry-map="inputEntryMap" />
       </template>
     </FloatingPanel>
-
-    <PanelDragPreview v-if="isDragging" :preset="snapTarget" />
   </div>
 </template>
 
-<!-- Design tokens cascade to all cells + panels inside .layout-view. -->
-<style src="./design-tokens.css"></style>
+<!-- Design tokens are loaded globally via src/assets/css/style.css so the
+     builder chrome can reuse them — no per-component import needed. -->
 
 <style scoped>
 .layout-view {

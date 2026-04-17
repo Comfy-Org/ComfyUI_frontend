@@ -3353,7 +3353,16 @@
       "unknownWidget": "Widget not visible",
       "inputPlaceholder": "Inputs will show up here",
       "outputPlaceholder": "Output nodes will show up here",
-      "outputRequiredPlaceholder": "At least one node is required"
+      "outputRequiredPlaceholder": "At least one node is required",
+      "runDisabledHint": "Run is available once you open this in App Mode"
+    },
+    "floatingPanel": {
+      "collapse": "Collapse panel",
+      "expand": "Expand panel",
+      "menu": "Panel menu",
+      "hidePanel": "Hide panel",
+      "showPanel": "Show panel",
+      "resetLayout": "Reset layout"
     },
     "error": {
       "header": "This app encountered an error",

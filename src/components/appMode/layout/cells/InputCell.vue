@@ -10,13 +10,13 @@
  */
 import { provide } from 'vue'
 
+import type { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { friendlyNodeLabel } from '@/utils/nodeTitleUtil'
 
 export interface InputCellEntry {
   key: string
@@ -43,6 +43,14 @@ provide(HideLayoutFieldKey, true)
       <span class="input-cell__label">
         {{ entry.widget.label || entry.widget.name }}
       </span>
+      <!-- Node-title subtitle so users can disambiguate widgets that
+           share a label (e.g. two "text" inputs from positive + negative
+           prompt nodes). Strips the technical node class name via
+           friendlyNodeLabel — "CLIP Text Encode (Positive Prompt)"
+           becomes "Positive Prompt". Matches AppModeWidgetList. -->
+      <span class="input-cell__subtitle">
+        {{ friendlyNodeLabel(entry.node.title) }}
+      </span>
     </div>
     <div class="input-cell__body">
       <DropZone>
@@ -63,7 +71,9 @@ provide(HideLayoutFieldKey, true)
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  gap: 4px;
+  /* Matches the 10px gap between blocks (panel-block-list) so vertical
+     rhythm stays consistent: label→input equals input→next-label. */
+  gap: 10px;
   box-sizing: border-box;
 }
 
@@ -78,7 +88,21 @@ provide(HideLayoutFieldKey, true)
 
 .input-cell__label {
   font-size: var(--layout-font-md);
+  color: var(--layout-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Subtitle shares the label's base size; color alone (muted vs. primary)
+   creates the hierarchy. Same treatment used by AppModeWidgetList so
+   both rendering paths read identically. */
+.input-cell__subtitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--layout-font-md);
   color: var(--layout-color-text-muted);
+  text-align: right;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

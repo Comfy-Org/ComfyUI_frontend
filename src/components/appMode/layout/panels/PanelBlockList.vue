@@ -144,7 +144,10 @@ const showColIndicator = (rowIndex: number, colIndex: number) =>
 .panel-block-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  /* 10px matches the InputCell header→body gap so the rhythm is
+     uniform: the space between one widget's input and the next
+     widget's label equals the space between a label and its input. */
+  gap: 10px;
   list-style: none;
   margin: 0;
   padding: 0;
