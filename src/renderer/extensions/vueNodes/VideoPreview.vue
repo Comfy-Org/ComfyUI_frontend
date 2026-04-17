@@ -46,6 +46,7 @@
         v-if="!videoError"
         :src="currentVideoUrl"
         :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        preload="metadata"
         controls
         loop
         playsinline
@@ -101,7 +102,11 @@
 
     <!-- Video Dimensions -->
     <div class="mt-2 text-center text-xs text-muted-foreground">
-      <span v-if="videoError" class="text-red-400">
+      <span
+        v-if="videoError"
+        class="text-red-400"
+        data-testid="error-loading-video"
+      >
         {{ $t('g.errorLoadingVideo') }}
       </span>
       <span v-else-if="showLoader" class="text-smoke-400">

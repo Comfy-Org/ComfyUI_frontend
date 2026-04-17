@@ -5,7 +5,12 @@ import { useEventListener } from '@vueuse/core'
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type {
+  InputWidgetConfig,
+  LinearData,
+  LinearInput
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -21,11 +26,14 @@ export function nodeTypeValidForApp(type: string) {
 
 export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
+  const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
-  const selectedInputs = ref<[NodeId, string][]>([])
+  const showVueNodeSwitchPopup = ref(false)
+
+  const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
   const hasOutputs = computed(() => !!selectedOutputs.value.length)
   const hasNodes = computed(() => {
@@ -85,21 +93,38 @@ export const useAppModeStore = defineStore('appMode', () => {
         inputs: [...data.inputs],
         outputs: [...data.outputs]
       }
+      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
     },
     { deep: true }
   )
 
-  let unwatch: () => void | undefined
-  watch(isSelectMode, (inSelect) => {
+  let unwatchReadOnly: (() => void) | undefined
+  function enforceReadOnly(inSelect: boolean) {
     const { state } = getCanvas()
     if (!state) return
     state.readOnly = inSelect
-    unwatch?.()
+    unwatchReadOnly?.()
     if (inSelect)
-      unwatch = watch(
+      unwatchReadOnly = watch(
         () => state.readOnly,
         () => (state.readOnly = true)
       )
+  }
+
+  function autoEnableVueNodes(inSelect: boolean) {
+    if (!inSelect) return
+    if (!settingStore.get('Comfy.VueNodes.Enabled')) {
+      void settingStore.set('Comfy.VueNodes.Enabled', true)
+
+      if (!settingStore.get('Comfy.AppBuilder.VueNodeSwitchDismissed')) {
+        showVueNodeSwitchPopup.value = true
+      }
+    }
+  }
+
+  watch(isSelectMode, (inSelect) => {
+    enforceReadOnly(inSelect)
+    autoEnableVueNodes(inSelect)
   })
 
   function enterBuilder() {
@@ -110,6 +135,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       })
       return
     }
+
+    // Prune stale references
+    resetSelectedToWorkflow()
 
     useSidebarTabStore().activeSidebarTabId = null
 
@@ -136,6 +164,18 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
+  function updateInputConfig(
+    nodeId: NodeId,
+    widgetName: string,
+    config: InputWidgetConfig
+  ) {
+    const entry = selectedInputs.value.find(
+      ([id, name]) => nodeId == id && widgetName === name
+    )
+    if (!entry) return
+    entry[2] = { ...entry[2], ...config }
+  }
+
   return {
     enterBuilder,
     exitBuilder,
@@ -146,6 +186,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     removeSelectedInput,
     resetSelectedToWorkflow,
     selectedInputs,
-    selectedOutputs
+    selectedOutputs,
+    updateInputConfig,
+    showVueNodeSwitchPopup
   }
 })

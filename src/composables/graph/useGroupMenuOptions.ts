@@ -36,7 +36,7 @@ export function useGroupMenuOptions() {
       groupContext.resizeTo(groupContext.children, padding)
       groupContext.graph?.change()
       canvasStore.canvas?.setDirty(true, true)
-      workflowStore.activeWorkflow?.changeTracker?.checkState()
+      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
     }
   })
 
@@ -119,7 +119,7 @@ export function useGroupMenuOptions() {
         })
         canvasStore.canvas?.setDirty(true, true)
         groupContext.graph?.change()
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
         bump()
       }
     })

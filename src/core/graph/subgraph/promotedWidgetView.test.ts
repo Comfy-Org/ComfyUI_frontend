@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 // Barrel import must come first to avoid circular dependency
 // (promotedWidgetView → widgetMap → BaseWidget → LegacyWidget → barrel)
@@ -97,11 +98,12 @@ function promotedWidgets(node: SubgraphNode): PromotedWidgetView[] {
 }
 
 function callSyncPromotions(node: SubgraphNode) {
-  ;(
-    node as unknown as {
+  fromAny<
+    {
       _syncPromotions: () => void
-    }
-  )._syncPromotions()
+    },
+    unknown
+  >(node)._syncPromotions()
 }
 
 describe(createPromotedWidgetView, () => {
@@ -138,22 +140,27 @@ describe(createPromotedWidgetView, () => {
     expect(view.name).toBe('myWidget')
   })
 
-  test('name uses displayName when provided', () => {
+  test('name uses identityName when provided, label uses displayName', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(
       subgraphNode,
       '1',
       'myWidget',
-      'Custom Label'
+      'Custom Label',
+      undefined,
+      'my_slot'
     )
-    expect(view.name).toBe('Custom Label')
+    expect(view.name).toBe('my_slot')
+    expect(view.label).toBe('Custom Label')
   })
 
   test('node getter returns the subgraphNode', () => {
     const [subgraphNode] = setupSubgraph()
     const view = createPromotedWidgetView(subgraphNode, '1', 'myWidget')
     // node is defined via Object.defineProperty at runtime but not on the TS interface
-    expect((view as unknown as Record<string, unknown>).node).toBe(subgraphNode)
+    expect(fromAny<Record<string, unknown>, unknown>(view).node).toBe(
+      subgraphNode
+    )
   })
 
   test('serialize is false', () => {
@@ -286,7 +293,7 @@ describe(createPromotedWidgetView, () => {
       value: 'initial',
       options: {}
     } satisfies Pick<IBaseWidget, 'name' | 'type' | 'value' | 'options'>
-    const fallbackWidget = fallbackWidgetShape as unknown as IBaseWidget
+    const fallbackWidget = fromPartial<IBaseWidget>(fallbackWidgetShape)
     innerNode.widgets = [fallbackWidget]
 
     const widgetValueStore = useWidgetValueStore()
@@ -334,11 +341,11 @@ describe(createPromotedWidgetView, () => {
     innerNode.addWidget('text', 'myWidget', 'val', () => {})
     const bareId = String(innerNode.id)
 
-    // No displayName → falls back to widgetName
+    // No displayName → label is undefined (rendering uses widget.label ?? widget.name)
     const view1 = createPromotedWidgetView(subgraphNode, bareId, 'myWidget')
-    expect(view1.label).toBe('myWidget')
+    expect(view1.label).toBeUndefined()
 
-    // With displayName → falls back to displayName
+    // With displayName → label falls back to displayName
     const view2 = createPromotedWidgetView(
       subgraphNode,
       bareId,
@@ -395,13 +402,13 @@ describe(createPromotedWidgetView, () => {
     subgraphNode.pos = [10, 20]
     const innerNode = firstInnerNode(innerNodes)
     const mouse = vi.fn(() => true)
-    const legacyWidget = {
+    const legacyWidget = fromAny<IBaseWidget, unknown>({
       name: 'legacyMouse',
       type: 'mystery-legacy',
       value: 'val',
       options: {},
       mouse
-    } as unknown as IBaseWidget
+    })
     innerNode.widgets = [legacyWidget]
 
     const view = createPromotedWidgetView(
@@ -748,7 +755,7 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
-  test('full linked coverage does not prune unresolved independent fallback promotions', () => {
+  test('full linked coverage prunes promotions referencing non-existent nodes', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'widgetA', type: '*' }]
     })
@@ -773,9 +780,9 @@ describe('SubgraphNode.widgets getter', () => {
       subgraphNode.rootGraph.id,
       subgraphNode.id
     )
+    // Node 9999 does not exist in the subgraph, so its entry is pruned
     expect(promotions).toStrictEqual([
-      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' },
-      { sourceNodeId: '9999', sourceWidgetName: 'widgetA' }
+      { sourceNodeId: String(liveNode.id), sourceWidgetName: 'widgetA' }
     ])
   })
 
@@ -1012,7 +1019,9 @@ describe('SubgraphNode.widgets getter', () => {
 
     const afterRename = promotedWidgets(subgraphNode)[0]
     if (!afterRename) throw new Error('Expected linked promoted view')
-    expect(afterRename.name).toBe('seed_renamed')
+    // .name stays as identity (subgraph input name), .label updates for display
+    expect(afterRename.name).toBe('seed')
+    expect(afterRename.label).toBe('seed_renamed')
   })
 
   test('caches view objects across getter calls (stable references)', () => {
@@ -1443,17 +1452,20 @@ describe('widgets getter caching', () => {
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
     const reconcileSpy = vi.spyOn(
-      subgraphNode as unknown as {
-        _buildPromotionReconcileState: (
-          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
-          linkedEntries: Array<{
-            inputName: string
-            inputKey: string
-            sourceNodeId: string
-            sourceWidgetName: string
-          }>
-        ) => unknown
-      },
+      fromAny<
+        {
+          _buildPromotionReconcileState: (
+            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
+            linkedEntries: Array<{
+              inputName: string
+              inputKey: string
+              sourceNodeId: string
+              sourceWidgetName: string
+            }>
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
       '_buildPromotionReconcileState'
     )
 
@@ -1473,17 +1485,20 @@ describe('widgets getter caching', () => {
     subgraphNode.rootGraph.primaryCanvas = fakeCanvas as LGraphCanvas
 
     const reconcileSpy = vi.spyOn(
-      subgraphNode as unknown as {
-        _buildPromotionReconcileState: (
-          entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
-          linkedEntries: Array<{
-            inputName: string
-            inputKey: string
-            sourceNodeId: string
-            sourceWidgetName: string
-          }>
-        ) => unknown
-      },
+      fromAny<
+        {
+          _buildPromotionReconcileState: (
+            entries: Array<{ sourceNodeId: string; sourceWidgetName: string }>,
+            linkedEntries: Array<{
+              inputName: string
+              inputKey: string
+              sourceNodeId: string
+              sourceWidgetName: string
+            }>
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
       '_buildPromotionReconcileState'
     )
 
@@ -1517,9 +1532,14 @@ describe('widgets getter caching', () => {
     subgraph.inputNode.slots[0].connect(linkedInputB, linkedNodeB)
 
     const resolveSpy = vi.spyOn(
-      subgraphNode as unknown as {
-        _resolveLinkedPromotionBySubgraphInput: (...args: unknown[]) => unknown
-      },
+      fromAny<
+        {
+          _resolveLinkedPromotionBySubgraphInput: (
+            ...args: unknown[]
+          ) => unknown
+        },
+        unknown
+      >(subgraphNode),
       '_resolveLinkedPromotionBySubgraphInput'
     )
 
@@ -1918,32 +1938,34 @@ function createFakeCanvasContext() {
 
 function createInspectableCanvasContext(fillText = vi.fn()) {
   const fallback = vi.fn()
-  return new Proxy(
-    {
-      fillText,
-      beginPath: vi.fn(),
-      roundRect: vi.fn(),
-      rect: vi.fn(),
-      fill: vi.fn(),
-      stroke: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      arc: vi.fn(),
-      measureText: (text: string) => ({ width: text.length * 8 }),
-      fillStyle: '#fff',
-      strokeStyle: '#fff',
-      textAlign: 'left',
-      globalAlpha: 1,
-      lineWidth: 1
-    } as Record<string, unknown>,
-    {
-      get(target, key) {
-        if (typeof key === 'string' && key in target)
-          return target[key as keyof typeof target]
-        return fallback
+  return fromAny<CanvasRenderingContext2D, unknown>(
+    new Proxy(
+      {
+        fillText,
+        beginPath: vi.fn(),
+        roundRect: vi.fn(),
+        rect: vi.fn(),
+        fill: vi.fn(),
+        stroke: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        arc: vi.fn(),
+        measureText: (text: string) => ({ width: text.length * 8 }),
+        fillStyle: '#fff',
+        strokeStyle: '#fff',
+        textAlign: 'left',
+        globalAlpha: 1,
+        lineWidth: 1
+      } as Record<string, unknown>,
+      {
+        get(target, key) {
+          if (typeof key === 'string' && key in target)
+            return target[key as keyof typeof target]
+          return fallback
+        }
       }
-    }
-  ) as unknown as CanvasRenderingContext2D
+    )
+  )
 }
 
 function createTwoLevelNestedSubgraph() {

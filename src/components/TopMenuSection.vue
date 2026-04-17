@@ -47,7 +47,6 @@
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
-              :has-any-error="hasAnyError"
               @update:progress-target="updateProgressTarget"
             />
             <CurrentUserButton
@@ -77,14 +76,28 @@
               :text="t('rightSidePanel.togglePanel')"
               side="bottom"
             >
-              <Button
-                type="secondary"
-                size="icon"
-                :aria-label="t('rightSidePanel.togglePanel')"
-                @click="rightSidePanelStore.togglePanel"
-              >
-                <i class="icon-[lucide--panel-right] size-4" />
-              </Button>
+              <div class="relative">
+                <Button
+                  :class="
+                    cn(
+                      showErrorIndicatorOnPanelButton &&
+                        'outline-1 outline-destructive-background'
+                    )
+                  "
+                  variant="secondary"
+                  size="icon"
+                  :aria-label="t('rightSidePanel.togglePanel')"
+                  @click="rightSidePanelStore.togglePanel"
+                >
+                  <i class="icon-[lucide--panel-right] size-4" />
+                </Button>
+                <StatusBadge
+                  v-if="showErrorIndicatorOnPanelButton"
+                  variant="dot"
+                  severity="danger"
+                  class="absolute -top-1 -right-1"
+                />
+              </div>
             </BaseTooltip>
           </div>
         </div>
@@ -138,6 +151,7 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
@@ -215,12 +229,7 @@ const actionbarContainerClass = computed(() => {
     )
   }
 
-  const borderClass =
-    !isActionbarFloating.value && hasAnyError.value
-      ? 'border-destructive-background-hover'
-      : 'border-interface-stroke'
-
-  return cn(base, 'px-2', borderClass)
+  return cn(base, 'px-2', 'border-interface-stroke')
 })
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
@@ -257,7 +266,19 @@ const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
 })
 
-const { hasAnyError } = storeToRefs(executionErrorStore)
+const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
+
+const isErrorsTabEnabled = computed(() =>
+  settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
+)
+
+const showErrorIndicatorOnPanelButton = computed(
+  () =>
+    isErrorsTabEnabled.value &&
+    hasAnyError.value &&
+    !isRightSidePanelOpen.value &&
+    !isErrorOverlayOpen.value
+)
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)

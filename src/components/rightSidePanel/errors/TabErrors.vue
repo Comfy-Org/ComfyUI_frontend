@@ -15,6 +15,7 @@
     <div
       v-if="singleRuntimeErrorCard"
       data-testid="runtime-error-panel"
+      aria-live="polite"
       class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
     >
       <div
@@ -53,6 +54,7 @@
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
           :key="group.title"
+          :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
           :collapse="isSectionCollapsed(group.title) && !isSearching"
           class="border-b border-interface-stroke"
           :size="getGroupSize(group)"
@@ -102,7 +104,7 @@
               <Button
                 v-else-if="
                   group.type === 'missing_model' &&
-                  downloadableModels.length > 0
+                  downloadableModels.length > 1
                 "
                 variant="secondary"
                 size="sm"
@@ -167,7 +169,15 @@
             v-else-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
             :show-node-id-badge="showNodeIdBadge"
-            @locate-model="handleLocateModel"
+            @locate-model="handleLocateAssetNode"
+          />
+
+          <!-- Missing Media -->
+          <MissingMediaCard
+            v-else-if="group.type === 'missing_media'"
+            :missing-media-groups="missingMediaGroups"
+            :show-node-id-badge="showNodeIdBadge"
+            @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>
       </TransitionGroup>
@@ -209,12 +219,9 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCommandStore } from '@/stores/commandStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { useExternalLink } from '@/composables/useExternalLink'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -227,6 +234,7 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
+import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
 import {
   downloadModel,
@@ -238,6 +246,7 @@ import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useErrorActions } from './useErrorActions'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
@@ -246,7 +255,7 @@ import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacemen
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
-const { staticUrls } = useExternalLink()
+const { openGitHubIssues, contactSupport } = useErrorActions()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
@@ -262,7 +271,8 @@ const isSearching = computed(() => searchQuery.value.trim() !== '')
 const fullSizeGroupTypes = new Set([
   'missing_node',
   'swap_nodes',
-  'missing_model'
+  'missing_model',
+  'missing_media'
 ])
 function getGroupSize(group: ErrorGroup) {
   return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
@@ -283,7 +293,8 @@ const {
   errorNodeCache,
   missingNodeCache,
   missingPackGroups,
-  missingModelGroups,
+  filteredMissingModelGroups: missingModelGroups,
+  filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
 } = useErrorGroups(searchQuery, t)
 
@@ -372,13 +383,13 @@ watch(
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
     for (const group of allErrorGroups.value) {
-      const hasMatch =
-        group.type === 'execution' &&
-        group.cards.some(
-          (card) =>
-            card.graphNodeId === graphNodeId ||
-            (card.nodeId?.startsWith(prefix) ?? false)
-        )
+      if (group.type !== 'execution') continue
+
+      const hasMatch = group.cards.some(
+        (card) =>
+          card.graphNodeId === graphNodeId ||
+          (card.nodeId?.startsWith(prefix) ?? false)
+      )
       setSectionCollapsed(group.title, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
@@ -394,7 +405,7 @@ function handleLocateMissingNode(nodeId: string) {
   focusNode(nodeId, missingNodeCache.value)
 }
 
-function handleLocateModel(nodeId: string) {
+function handleLocateAssetNode(nodeId: string) {
   focusNode(nodeId)
 }
 
@@ -417,21 +428,5 @@ function handleReplaceAll() {
 
 function handleEnterSubgraph(nodeId: string) {
   enterSubgraph(nodeId, errorNodeCache.value)
-}
-
-function openGitHubIssues() {
-  useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_tab_github_issues_clicked'
-  })
-  window.open(staticUrls.githubIssues, '_blank', 'noopener,noreferrer')
-}
-
-async function contactSupport() {
-  useTelemetry()?.trackHelpResourceClicked({
-    resource_type: 'help_feedback',
-    is_external: true,
-    source: 'error_dialog'
-  })
-  useCommandStore().execute('Comfy.ContactSupport')
 }
 </script>

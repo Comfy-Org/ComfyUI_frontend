@@ -1,9 +1,12 @@
 import * as THREE from 'three'
 
+import { exceedsClickThreshold } from '@/composables/useClickDragGuard'
+
 import { AnimationManager } from './AnimationManager'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
+import { HDRIManager } from './HDRIManager'
 import { LightingManager } from './LightingManager'
 import { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
@@ -52,6 +55,7 @@ class Load3d {
   cameraManager: CameraManager
   controlsManager: ControlsManager
   lightingManager: LightingManager
+  hdriManager: HDRIManager
   viewHelperManager: ViewHelperManager
   loaderManager: LoaderManager
   modelManager: SceneModelManager
@@ -68,9 +72,7 @@ class Load3d {
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
-  // Context menu tracking
-  private rightMouseDownX: number = 0
-  private rightMouseDownY: number = 0
+  private rightMouseStart: { x: number; y: number } = { x: 0, y: 0 }
   private rightMouseMoved: boolean = false
   private readonly dragThreshold: number = 5
   private contextMenuAbortController: AbortController | null = null
@@ -123,6 +125,12 @@ class Load3d {
 
     this.lightingManager = new LightingManager(
       this.sceneManager.scene,
+      this.eventManager
+    )
+
+    this.hdriManager = new HDRIManager(
+      this.sceneManager.scene,
+      this.renderer,
       this.eventManager
     )
 
@@ -197,18 +205,20 @@ class Load3d {
 
     const mousedownHandler = (e: MouseEvent) => {
       if (e.button === 2) {
-        this.rightMouseDownX = e.clientX
-        this.rightMouseDownY = e.clientY
+        this.rightMouseStart = { x: e.clientX, y: e.clientY }
         this.rightMouseMoved = false
       }
     }
 
     const mousemoveHandler = (e: MouseEvent) => {
       if (e.buttons === 2) {
-        const dx = Math.abs(e.clientX - this.rightMouseDownX)
-        const dy = Math.abs(e.clientY - this.rightMouseDownY)
-
-        if (dx > this.dragThreshold || dy > this.dragThreshold) {
+        if (
+          exceedsClickThreshold(
+            this.rightMouseStart,
+            { x: e.clientX, y: e.clientY },
+            this.dragThreshold
+          )
+        ) {
           this.rightMouseMoved = true
         }
       }
@@ -217,12 +227,13 @@ class Load3d {
     const contextmenuHandler = (e: MouseEvent) => {
       if (this.isViewerMode) return
 
-      const dx = Math.abs(e.clientX - this.rightMouseDownX)
-      const dy = Math.abs(e.clientY - this.rightMouseDownY)
       const wasDragging =
         this.rightMouseMoved ||
-        dx > this.dragThreshold ||
-        dy > this.dragThreshold
+        exceedsClickThreshold(
+          this.rightMouseStart,
+          { x: e.clientX, y: e.clientY },
+          this.dragThreshold
+        )
 
       this.rightMouseMoved = false
 
@@ -632,6 +643,33 @@ class Load3d {
     this.forceRender()
   }
 
+  async loadHDRI(url: string): Promise<void> {
+    await this.hdriManager.loadHDRI(url)
+    this.forceRender()
+  }
+
+  setHDRIEnabled(enabled: boolean): void {
+    this.hdriManager.setEnabled(enabled)
+    this.lightingManager.setHDRIMode(enabled)
+    this.forceRender()
+  }
+
+  setHDRIAsBackground(show: boolean): void {
+    this.hdriManager.setShowAsBackground(show)
+    this.forceRender()
+  }
+
+  setHDRIIntensity(intensity: number): void {
+    this.hdriManager.setIntensity(intensity)
+    this.forceRender()
+  }
+
+  clearHDRI(): void {
+    this.hdriManager.clear()
+    this.lightingManager.setHDRIMode(false)
+    this.forceRender()
+  }
+
   setTargetSize(width: number, height: number): void {
     this.targetWidth = width
     this.targetHeight = height
@@ -855,6 +893,7 @@ class Load3d {
     this.cameraManager.dispose()
     this.controlsManager.dispose()
     this.lightingManager.dispose()
+    this.hdriManager.dispose()
     this.viewHelperManager.dispose()
     this.loaderManager.dispose()
     this.modelManager.dispose()

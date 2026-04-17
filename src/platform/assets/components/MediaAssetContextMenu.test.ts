@@ -1,7 +1,7 @@
-import { mount } from '@vue/test-utils'
+/* eslint-disable vue/one-component-per-file */
+import { render } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -84,60 +84,73 @@ const buttonStub = {
   template: '<div class="button-stub"><slot /></div>'
 }
 
-type MediaAssetContextMenuExposed = ComponentPublicInstance & {
+interface MediaAssetContextMenuExposed {
   show: (event: MouseEvent) => void
 }
 
-const mountComponent = () =>
-  mount(MediaAssetContextMenu, {
-    attachTo: document.body,
-    props: {
-      asset,
-      assetType: 'output',
-      fileKind: 'image'
-    },
-    global: {
-      stubs: {
-        ContextMenu: contextMenuStub,
-        Button: buttonStub
+let capturedRef: MediaAssetContextMenuExposed | null = null
+
+function mountComponent() {
+  const onHide = vi.fn()
+  const { container, unmount } = render(
+    defineComponent({
+      components: { MediaAssetContextMenu },
+      setup() {
+        const menuRef = ref<MediaAssetContextMenuExposed | null>(null)
+        onMounted(() => {
+          capturedRef = menuRef.value
+        })
+        return { menuRef, asset, onHide }
+      },
+      template:
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
+    }),
+    {
+      global: {
+        stubs: {
+          ContextMenu: contextMenuStub,
+          Button: buttonStub
+        }
       }
     }
-  })
+  )
+  return { container, unmount, onHide }
+}
 
-async function showMenu(
-  wrapper: ReturnType<typeof mountComponent>
-): Promise<HTMLElement> {
-  const exposed = wrapper.vm as MediaAssetContextMenuExposed
+async function showMenu(container: Element): Promise<HTMLElement> {
   const event = new MouseEvent('contextmenu', { bubbles: true })
-  exposed.show(event)
+  capturedRef!.show(event)
   await nextTick()
-
-  return wrapper.get('.context-menu-stub').element as HTMLElement
+  // eslint-disable-next-line testing-library/no-container
+  return container.querySelector('.context-menu-stub') as HTMLElement
 }
 
 afterEach(() => {
   vi.clearAllMocks()
+  capturedRef = null
   document.body.innerHTML = ''
 })
 
 describe('MediaAssetContextMenu', () => {
   it('dismisses outside pointerdown using the rendered root id', async () => {
-    const wrapper = mountComponent()
+    const { container, unmount, onHide } = mountComponent()
     const outside = document.createElement('div')
     document.body.append(outside)
 
-    const menu = await showMenu(wrapper)
+    const menu = await showMenu(container)
     const menuId = menu.id
 
     expect(menuId).not.toBe('')
+    // eslint-disable-next-line testing-library/no-node-access
     expect(document.getElementById(menuId)).toBe(menu)
 
     outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     await nextTick()
 
-    expect(wrapper.find('.context-menu-stub').exists()).toBe(false)
-    expect(wrapper.emitted('hide')).toEqual([[]])
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('.context-menu-stub')).toBeNull()
+    expect(onHide).toHaveBeenCalledOnce()
 
-    wrapper.unmount()
+    unmount()
   })
 })

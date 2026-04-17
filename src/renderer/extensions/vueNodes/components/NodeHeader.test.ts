@@ -1,9 +1,11 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -83,7 +85,7 @@ const setupMockStores = () => {
   return { settingStore, nodeDefStore, pinia }
 }
 
-const createMountConfig = () => {
+const createGlobalConfig = () => {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -105,96 +107,104 @@ const createMountConfig = () => {
   }
 }
 
-const mountHeader = (
-  props?: Partial<InstanceType<typeof NodeHeader>['$props']>
-) => {
-  const config = createMountConfig()
+const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
+  const { global } = createGlobalConfig()
+  const onCollapse = vi.fn()
+  const onUpdateTitle = vi.fn()
+  const user = userEvent.setup()
 
-  return mount(NodeHeader, {
-    ...config,
+  const result = render(NodeHeader, {
+    global,
     props: {
       nodeData: makeNodeData(),
       collapsed: false,
+      onCollapse,
+      'onUpdate:title': onUpdateTitle,
       ...props
     }
   })
+
+  return { ...result, user, onCollapse, onUpdateTitle }
 }
 
 describe('NodeHeader.vue', () => {
   it('emits collapse when collapse button is clicked', async () => {
-    const wrapper = mountHeader()
-    const btn = wrapper.get('[data-testid="node-collapse-button"]')
-    await btn.trigger('click')
-    expect(wrapper.emitted('collapse')).toBeTruthy()
+    const { user, onCollapse } = renderHeader()
+    await user.click(screen.getByTestId('node-collapse-button'))
+    expect(onCollapse).toHaveBeenCalled()
   })
 
   it('shows the current node title and updates when prop changes', async () => {
-    const wrapper = mountHeader({
+    const { rerender } = renderHeader({
       nodeData: makeNodeData({ title: 'Original' })
     })
-    // Title visible via EditableText in view mode
-    expect(wrapper.get('[data-testid="node-title"]').text()).toContain(
-      'Original'
-    )
+    expect(screen.getByTestId('node-title').textContent).toContain('Original')
 
-    // Update prop title; should sync displayTitle
-    await wrapper.setProps({ nodeData: makeNodeData({ title: 'Updated' }) })
-    expect(wrapper.get('[data-testid="node-title"]').text()).toContain(
-      'Updated'
-    )
+    await rerender({
+      nodeData: makeNodeData({ title: 'Updated' }),
+      collapsed: false
+    })
+    expect(screen.getByTestId('node-title').textContent).toContain('Updated')
   })
 
   it('allows renaming via double click and emits update:title on confirm', async () => {
-    const wrapper = mountHeader({ nodeData: makeNodeData({ title: 'Start' }) })
+    const { user, onUpdateTitle } = renderHeader({
+      nodeData: makeNodeData({ title: 'Start' })
+    })
 
     // Enter edit mode
-    await wrapper.get('[data-testid="node-header-1"]').trigger('dblclick')
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
-    // Edit and confirm (EditableText uses blur or enter to emit)
-    const input = wrapper.get('[data-testid="node-title-input"]')
-    await input.setValue('My Custom Sampler')
-    await input.trigger('keydown.enter')
-    await input.trigger('blur')
+    // Edit and confirm
+    const input = screen.getByTestId('node-title-input')
+    await user.clear(input)
+    await user.type(input, 'My Custom Sampler')
+    await user.keyboard('{Enter}')
 
-    // NodeHeader should emit update:title with trimmed value
-    const e = wrapper.emitted('update:title')
-    expect(e).toBeTruthy()
-    expect(e?.[0]).toEqual(['My Custom Sampler'])
+    expect(onUpdateTitle).toHaveBeenCalledWith('My Custom Sampler')
   })
 
   it('cancels rename on escape and keeps previous title', async () => {
-    const wrapper = mountHeader({ nodeData: makeNodeData({ title: 'KeepMe' }) })
+    const { user, onUpdateTitle } = renderHeader({
+      nodeData: makeNodeData({ title: 'KeepMe' })
+    })
 
-    await wrapper.get('[data-testid="node-header-1"]').trigger('dblclick')
-    const input = wrapper.get('[data-testid="node-title-input"]')
-    await input.setValue('Should Not Save')
-    await input.trigger('keydown.escape')
+    // eslint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(screen.getByTestId('node-header-1'))
+    const input = screen.getByTestId('node-title-input')
+    await user.clear(input)
+    await user.type(input, 'Should Not Save')
+    await user.keyboard('{Escape}')
 
-    // Should not emit update:title
-    expect(wrapper.emitted('update:title')).toBeFalsy()
+    expect(onUpdateTitle).not.toHaveBeenCalled()
 
-    // Title remains the original
-    expect(wrapper.get('[data-testid="node-title"]').text()).toContain('KeepMe')
+    expect(screen.getByTestId('node-title').textContent).toContain('KeepMe')
   })
 
   it('renders correct chevron icon based on collapsed prop', async () => {
-    const wrapper = mountHeader({ collapsed: false })
-    const expandedIcon = wrapper.get('i')
-    expect(expandedIcon.classes()).not.toContain('-rotate-90')
+    const { rerender } = renderHeader({ collapsed: false })
+    const collapseButton = screen.getByTestId('node-collapse-button')
+    // eslint-disable-next-line testing-library/no-node-access
+    const expandedIcon = collapseButton.querySelector('i')!
+    expect(expandedIcon.classList).not.toContain('-rotate-90')
 
-    await wrapper.setProps({ collapsed: true })
-    const collapsedIcon = wrapper.get('i')
-    expect(collapsedIcon.classes()).toContain('-rotate-90')
+    await rerender({
+      nodeData: makeNodeData(),
+      collapsed: true
+    })
+    // eslint-disable-next-line testing-library/no-node-access
+    const collapsedIcon = collapseButton.querySelector('i')!
+    expect(collapsedIcon.classList).toContain('-rotate-90')
   })
 
   describe('Tooltips', () => {
     it('renders node title inside a tooltip wrapper', () => {
-      const wrapper = mountHeader({
+      renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      const titleElement = wrapper.find('[data-testid="node-title"]')
-      expect(titleElement.exists()).toBe(true)
+      expect(screen.getByTestId('node-title')).toBeInTheDocument()
     })
   })
 })

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { recordMeasurement } from '../helpers/perfReporter'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { logMeasurement, recordMeasurement } from '@e2e/helpers/perfReporter'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -154,6 +154,55 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph zoom interaction', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    const canvas = comfyPage.canvas
+    const box = await canvas.boundingBox()
+    if (!box) throw new Error('Canvas bounding box not available')
+
+    // Position mouse at center so wheel events hit the canvas
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+    await comfyPage.page.mouse.move(centerX, centerY)
+
+    await comfyPage.perf.startMeasuring()
+
+    // Zoom in 30 steps then out 30 steps — each step triggers
+    // ResizeObserver for all ~245 node elements due to CSS scale change.
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.page.mouse.wheel(0, -100)
+      await comfyPage.nextFrame()
+    }
+    for (let i = 0; i < 30; i++) {
+      await comfyPage.page.mouse.wheel(0, 100)
+      await comfyPage.nextFrame()
+    }
+
+    const m = await comfyPage.perf.stopMeasuring('large-graph-zoom')
+    recordMeasurement(m)
+    console.log(
+      `Large graph zoom: ${m.layouts} layouts, ${m.layoutDurationMs.toFixed(1)}ms layout, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+    )
+  })
+
+  test('large graph viewport pan sweep', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    await comfyPage.perf.startMeasuring()
+    await comfyPage.canvasOps.panSweep()
+
+    const measurement = await comfyPage.perf.stopMeasuring('viewport-pan-sweep')
+    recordMeasurement(measurement)
+    logMeasurement('Viewport pan sweep', measurement, [
+      'styleRecalcs',
+      'layouts',
+      'taskDurationMs',
+      'heapDeltaBytes',
+      'domNodes'
+    ])
+  })
+
   test('subgraph DOM widget clipping during node selection', async ({
     comfyPage
   }) => {
@@ -279,8 +328,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       // Verify we actually entered the culling regime.
       // isNodeTooSmall triggers when max(width, height) * scale < 4px.
       // Typical nodes are ~200px wide, so scale must be < 0.02.
-      const scale = await comfyPage.canvasOps.getScale()
-      expect(scale).toBeLessThan(0.02)
+      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
 
       // Idle at extreme zoom-out — most nodes should be culled
       for (let i = 0; i < 60; i++) {
@@ -310,9 +358,11 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     // Wait for the output widget to populate (execution_success)
     const outputNode = await comfyPage.nodeOps.getNodeRefById(1)
-    await expect(async () => {
-      expect(await (await outputNode.getWidget(0)).getValue()).toBe('foo')
-    }).toPass({ timeout: 10000 })
+    await expect
+      .poll(async () => (await outputNode.getWidget(0)).getValue(), {
+        timeout: 10000
+      })
+      .toBe('foo')
 
     const m = await comfyPage.perf.stopMeasuring('workflow-execution')
     recordMeasurement(m)

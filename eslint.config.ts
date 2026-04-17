@@ -5,6 +5,7 @@ import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
+import testingLibrary from 'eslint-plugin-testing-library'
 // eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
 import { configs as storybookConfigs } from 'eslint-plugin-storybook'
@@ -61,6 +62,13 @@ const commonParserOptions = {
   ecmaVersion: 2020,
   sourceType: 'module',
   extraFileExtensions
+} as const
+
+const useVirtualListRestriction = {
+  name: '@vueuse/core',
+  importNames: ['useVirtualList'],
+  message:
+    'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
 export default defineConfig([
@@ -223,23 +231,31 @@ export default defineConfig([
     }
   },
   {
-    files: ['tests-ui/**/*'],
-    rules: {
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { disallowTypeAnnotations: false }
-      ]
-    }
-  },
-  {
     files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Program',
-          message: '.spec.ts files are only allowed under browser_tests/tests/'
+          message:
+            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
+        }
+      ]
+    }
+  },
+  // fixtures/data/ must contain only static data — no executable code or
+  // Playwright imports. This enforces the architectural separation documented
+  // in browser_tests/AGENTS.md.
+  {
+    files: ['browser_tests/fixtures/data/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[source.value=/^@playwright/]',
+          message:
+            'fixtures/data/ must contain only static data. No Playwright imports allowed.'
         }
       ]
     }
@@ -269,6 +285,20 @@ export default defineConfig([
             'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
         }
       ]
+    }
+  },
+  {
+    files: ['**/*.test.ts'],
+    plugins: { 'testing-library': testingLibrary },
+    rules: {
+      'testing-library/prefer-screen-queries': 'error',
+      'testing-library/no-container': 'error',
+      'testing-library/no-node-access': 'error',
+      'testing-library/no-wait-for-multiple-assertions': 'error',
+      'testing-library/prefer-find-by': 'error',
+      'testing-library/prefer-presence-queries': 'error',
+      'testing-library/prefer-user-event': 'error',
+      'testing-library/no-debugging-utils': 'error'
     }
   },
   {
@@ -341,6 +371,14 @@ export default defineConfig([
     }
   },
 
+  // The website app is a marketing site with no vue-i18n setup
+  {
+    files: ['apps/website/**/*.vue'],
+    rules: {
+      '@intlify/vue-i18n/no-raw-text': 'off'
+    }
+  },
+
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
@@ -355,7 +393,8 @@ export default defineConfig([
               importNames: ['t', 'd', 'te'],
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
-            }
+            },
+            useVirtualListRestriction
           ]
         }
       ]
@@ -375,6 +414,79 @@ export default defineConfig([
               importNames: ['useI18n'],
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
+            },
+            useVirtualListRestriction
+          ]
+        }
+      ]
+    }
+  },
+  // Preserve the useVirtualList ban for files excluded from the useI18n rule.
+  {
+    files: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [useVirtualListRestriction]
+        }
+      ]
+    }
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vue/test-utils',
+              message:
+                'Use @testing-library/vue with @testing-library/user-event instead.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Browser tests must use comfyPageFixture, not raw @playwright/test test
+  {
+    files: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test'],
+              message:
+                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
+            }
+          ],
+          patterns: [
+            {
+              group: ['./**', '../**'],
+              message: 'Use the @e2e/ path alias instead of relative imports.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  // Enforce @e2e/ alias — no relative imports in browser_tests (non-spec files)
+  {
+    files: ['browser_tests/**/*.ts'],
+    ignores: ['browser_tests/tests/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./**', '../**'],
+              message: 'Use the @e2e/ path alias instead of relative imports.'
             }
           ]
         }

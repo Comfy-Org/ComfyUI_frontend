@@ -11,15 +11,19 @@ export default {
 
   './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
 
-  './**/*.{ts,tsx,vue,mts}': (stagedFiles: string[]) => {
+  './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
     const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
 
-    const hasBrowserTestsChanges = stagedFiles
-      .map((f) => path.relative(process.cwd(), f).replace(/\\/g, '/'))
-      .some((f) => f.startsWith('browser_tests/'))
+    const relativePaths = stagedFiles.map((f) =>
+      path.relative(process.cwd(), f).replace(/\\/g, '/')
+    )
 
-    if (hasBrowserTestsChanges) {
+    if (relativePaths.some((f) => f.startsWith('browser_tests/'))) {
       commands.push('pnpm typecheck:browser')
+    }
+
+    if (relativePaths.some((f) => f.startsWith('apps/website/'))) {
+      commands.push('pnpm typecheck:website')
     }
 
     return commands

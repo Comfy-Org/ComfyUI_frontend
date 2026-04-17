@@ -73,6 +73,7 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
   'moonvalley-marey': '#DAD9C5',
   openai: '#B6B6B6',
   pixverse: ['#B465E6', '#E8632A'],
+  quiver: '#B6B6B6',
   recraft: '#B6B6B6',
   reve: '#B6B6B6',
   rodin: '#F7F7F7',
