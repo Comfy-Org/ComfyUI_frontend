@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { externalLinks } from '@/config/routes'
 
@@ -7,26 +7,33 @@ const downloadUrls = {
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
 
+export type DetectedPlatform = 'windows' | 'mac' | null
+
 function isMobile(ua: string): boolean {
   return /iphone|ipad|ipod|android/.test(ua)
 }
 
-// TODO: Only Windows x64 and macOS arm64 are available today.
-// When Linux and/or macIntel builds are added, extend detection and URLs here.
-function getDownloadUrl(): string {
-  const ua = navigator.userAgent.toLowerCase()
-  if (isMobile(ua)) return externalLinks.github
-  if (ua.includes('win')) return downloadUrls.windows
-  if (ua.includes('macintosh') || ua.includes('mac os x'))
-    return downloadUrls.macArm
-
-  return externalLinks.github
+function detectPlatform(ua: string): DetectedPlatform {
+  if (isMobile(ua)) return null
+  if (ua.includes('win')) return 'windows'
+  if (ua.includes('macintosh') || ua.includes('mac os x')) return 'mac'
+  return null
 }
 
+// TODO: Only Windows x64 and macOS arm64 are available today.
+// When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
-  const downloadUrl = ref<string>(externalLinks.github)
-  onMounted(() => {
-    downloadUrl.value = getDownloadUrl()
+  const platform = ref<DetectedPlatform>(null)
+
+  const downloadUrl = computed(() => {
+    if (platform.value === 'windows') return downloadUrls.windows
+    if (platform.value === 'mac') return downloadUrls.macArm
+    return externalLinks.github
   })
-  return { downloadUrl }
+
+  onMounted(() => {
+    platform.value = detectPlatform(navigator.userAgent.toLowerCase())
+  })
+
+  return { downloadUrl, platform }
 }

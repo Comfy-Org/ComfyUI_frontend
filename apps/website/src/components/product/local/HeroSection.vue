@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 
-import { useDownloadUrl } from '../../../composables/useDownloadUrl'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import DownloadLocalButton from './DownloadLocalButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const { downloadUrl } = useDownloadUrl()
 </script>
 
 <template>
@@ -32,12 +31,7 @@ const { downloadUrl } = useDownloadUrl()
         <div
           class="mt-10 flex w-full max-w-md flex-col gap-4 lg:w-auto lg:max-w-none lg:flex-row"
         >
-          <BrandButton
-            :href="downloadUrl"
-            :label="t('download.hero.downloadLocal', locale)"
-            size="lg"
-            class-name="text-center lg:min-w-60"
-          />
+          <DownloadLocalButton :locale class-name="lg:min-w-60" />
           <BrandButton
             :href="externalLinks.github"
             variant="outline"
