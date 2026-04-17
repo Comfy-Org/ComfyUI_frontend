@@ -52,7 +52,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
     await searchBoxV2.input.fill('KSampler')
     await expect(searchBoxV2.results.first()).toBeVisible()
     await comfyPage.page.keyboard.press('Enter')
-    await expect(searchBoxV2.input).not.toBeVisible()
+    await expect(searchBoxV2.input).toBeHidden()
 
     await searchBoxV2.open()
     await expect(searchBoxV2.input).toHaveValue('')
@@ -146,7 +146,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.input.fill('CLIP Text Encode')
       await expect(searchBoxV2.results.first()).toBeVisible()
       await comfyPage.page.keyboard.press('Enter')
-      await expect(searchBoxV2.input).not.toBeVisible()
+      await expect(searchBoxV2.input).toBeHidden()
 
       // A new node should have been added and auto-connected
       const nodeCountAfter = await comfyPage.nodeOps.getGraphNodesCount()
@@ -245,7 +245,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
       // Click sampling again to collapse
       await samplingBtn.click()
-      await expect(subcategory).not.toBeVisible()
+      await expect(subcategory).toBeHidden()
     })
 
     test('Subcategory narrows results to subset', async ({ comfyPage }) => {
@@ -295,7 +295,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await expect(searchBoxV2.results.first()).toBeVisible()
 
       await searchBoxV2.results.first().click()
-      await expect(searchBoxV2.input).not.toBeVisible()
+      await expect(searchBoxV2.input).toBeHidden()
 
       const newCount = await comfyPage.nodeOps.getGraphNodesCount()
       expect(newCount).toBe(initialCount + 1)
