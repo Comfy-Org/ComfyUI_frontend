@@ -129,6 +129,10 @@
   animation: ripple-effect 4s linear infinite;
 }
 
+@utility animate-delay-* {
+  animation-delay: --value([*]);
+}
+
 .crossfade-enter-active,
 .crossfade-leave-active {
   transition: opacity 0.3s ease;
