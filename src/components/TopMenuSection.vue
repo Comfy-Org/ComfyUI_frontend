@@ -71,12 +71,11 @@
                 </span>
               </Button>
             </BaseTooltip>
-            <BaseTooltip
-              v-if="!isRightSidePanelOpen"
-              :text="t('rightSidePanel.togglePanel')"
-              side="bottom"
-            >
-              <div class="relative">
+            <div v-if="!isRightSidePanelOpen" class="relative">
+              <BaseTooltip
+                :text="t('rightSidePanel.togglePanel')"
+                side="bottom"
+              >
                 <Button
                   :class="
                     cn(
@@ -91,14 +90,14 @@
                 >
                   <i class="icon-[lucide--panel-right] size-4" />
                 </Button>
-                <StatusBadge
-                  v-if="showErrorIndicatorOnPanelButton"
-                  variant="dot"
-                  severity="danger"
-                  class="absolute -top-1 -right-1"
-                />
-              </div>
-            </BaseTooltip>
+              </BaseTooltip>
+              <StatusBadge
+                v-if="showErrorIndicatorOnPanelButton"
+                variant="dot"
+                severity="danger"
+                class="absolute -top-1 -right-1"
+              />
+            </div>
           </div>
         </div>
         <ErrorOverlay />

@@ -18,6 +18,8 @@ const {
   side = 'top',
   sideOffset = 4,
   size = 'small',
+  keybind,
+  showIcon = false,
   delayDuration,
   disabled = false,
   class: className
@@ -26,6 +28,8 @@ const {
   side?: 'top' | 'bottom' | 'left' | 'right'
   sideOffset?: number
   size?: NonNullable<TooltipVariants['size']>
+  keybind?: string
+  showIcon?: boolean
   delayDuration?: number
   disabled?: boolean
   class?: HTMLAttributes['class']
@@ -43,11 +47,27 @@ const {
         :side-offset="sideOffset"
         :class="cn(tooltipVariants({ size }), className)"
       >
-        {{ text }}
+        <span
+          v-if="keybind || (showIcon && size === 'small')"
+          class="inline-flex items-center gap-2"
+        >
+          <span>{{ text }}</span>
+          <i
+            v-if="showIcon && size === 'small'"
+            class="icon-[lucide--chevron-right] size-4 shrink-0"
+          />
+          <span
+            v-if="keybind"
+            class="shrink-0 rounded-sm bg-interface-menu-keybind-surface-default px-1 text-xs leading-none"
+          >
+            {{ keybind }}
+          </span>
+        </span>
+        <template v-else>{{ text }}</template>
         <TooltipArrow
           :width="8"
           :height="5"
-          class="fill-node-component-tooltip-surface"
+          class="fill-node-component-tooltip-surface stroke-node-component-tooltip-border"
         />
       </TooltipContent>
     </TooltipPortal>

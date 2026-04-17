@@ -11,101 +11,105 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Popover :show-arrow="false">
-        <template #button>
-          <BaseTooltip
-            :text="t('sideToolbar.queueProgressOverlay.filterBy')"
-            side="top"
-          >
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
-            >
-              <i class="icon-[lucide--list-filter] size-4" />
-              <span
-                v-if="selectedWorkflowFilter !== 'all'"
-                class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
-              />
-            </Button>
-          </BaseTooltip>
-        </template>
-        <template #default="{ close }">
-          <div class="flex min-w-48 flex-col items-stretch">
-            <Button
-              class="w-full justify-between"
-              variant="textonly"
-              size="md"
-              @click="onSelectWorkflowFilter('all', close)"
-            >
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
-              }}</span>
-              <i
-                v-if="selectedWorkflowFilter === 'all'"
-                class="icon-[lucide--check] size-4"
-              />
-            </Button>
-            <div class="mx-2 mt-1 h-px" />
-            <Button
-              class="w-full justify-between"
-              variant="textonly"
-              size="md"
-              @click="onSelectWorkflowFilter('current', close)"
-            >
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
-              }}</span>
-              <i
-                v-if="selectedWorkflowFilter === 'current'"
-                class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
-              />
-            </Button>
-          </div>
-        </template>
-      </Popover>
-      <Popover :show-arrow="false">
-        <template #button>
-          <BaseTooltip
-            :text="t('sideToolbar.queueProgressOverlay.sortBy')"
-            side="top"
-          >
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
-            >
-              <i class="icon-[lucide--arrow-up-down] size-4" />
-              <span
-                v-if="selectedSortMode !== 'mostRecent'"
-                class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
-              />
-            </Button>
-          </BaseTooltip>
-        </template>
-        <template #default="{ close }">
-          <div class="flex min-w-48 flex-col items-stretch">
-            <template v-for="(mode, index) in jobSortModes" :key="mode">
+      <BaseTooltip
+        :text="t('sideToolbar.queueProgressOverlay.filterBy')"
+        side="top"
+      >
+        <div>
+          <Popover :show-arrow="false">
+            <template #button>
               <Button
-                class="w-full justify-between"
-                variant="textonly"
-                size="md"
-                @click="onSelectSortMode(mode, close)"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('sideToolbar.queueProgressOverlay.filterJobs')"
               >
-                <span>{{ sortLabel(mode) }}</span>
-                <i
-                  v-if="selectedSortMode === mode"
-                  class="icon-[lucide--check] size-4 text-text-secondary"
+                <i class="icon-[lucide--list-filter] size-4" />
+                <span
+                  v-if="selectedWorkflowFilter !== 'all'"
+                  class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
                 />
               </Button>
-              <div
-                v-if="index < jobSortModes.length - 1"
-                class="mx-2 mt-1 h-px"
-              />
             </template>
-          </div>
-        </template>
-      </Popover>
+            <template #default="{ close }">
+              <div class="flex min-w-48 flex-col items-stretch">
+                <Button
+                  class="w-full justify-between"
+                  variant="textonly"
+                  size="md"
+                  @click="onSelectWorkflowFilter('all', close)"
+                >
+                  <span>{{
+                    t('sideToolbar.queueProgressOverlay.filterAllWorkflows')
+                  }}</span>
+                  <i
+                    v-if="selectedWorkflowFilter === 'all'"
+                    class="icon-[lucide--check] size-4"
+                  />
+                </Button>
+                <div class="mx-2 mt-1 h-px" />
+                <Button
+                  class="w-full justify-between"
+                  variant="textonly"
+                  size="md"
+                  @click="onSelectWorkflowFilter('current', close)"
+                >
+                  <span>{{
+                    t('sideToolbar.queueProgressOverlay.filterCurrentWorkflow')
+                  }}</span>
+                  <i
+                    v-if="selectedWorkflowFilter === 'current'"
+                    class="icon-[lucide--check] block size-4 leading-none text-text-secondary"
+                  />
+                </Button>
+              </div>
+            </template>
+          </Popover>
+        </div>
+      </BaseTooltip>
+      <BaseTooltip
+        :text="t('sideToolbar.queueProgressOverlay.sortBy')"
+        side="top"
+      >
+        <div>
+          <Popover :show-arrow="false">
+            <template #button>
+              <Button
+                variant="secondary"
+                size="icon"
+                :aria-label="t('sideToolbar.queueProgressOverlay.sortJobs')"
+              >
+                <i class="icon-[lucide--arrow-up-down] size-4" />
+                <span
+                  v-if="selectedSortMode !== 'mostRecent'"
+                  class="pointer-events-none absolute -top-1 -right-1 inline-block size-2 rounded-full bg-base-foreground"
+                />
+              </Button>
+            </template>
+            <template #default="{ close }">
+              <div class="flex min-w-48 flex-col items-stretch">
+                <template v-for="(mode, index) in jobSortModes" :key="mode">
+                  <Button
+                    class="w-full justify-between"
+                    variant="textonly"
+                    size="md"
+                    @click="onSelectSortMode(mode, close)"
+                  >
+                    <span>{{ sortLabel(mode) }}</span>
+                    <i
+                      v-if="selectedSortMode === mode"
+                      class="icon-[lucide--check] size-4 text-text-secondary"
+                    />
+                  </Button>
+                  <div
+                    v-if="index < jobSortModes.length - 1"
+                    class="mx-2 mt-1 h-px"
+                  />
+                </template>
+              </div>
+            </template>
+          </Popover>
+        </div>
+      </BaseTooltip>
       <BaseTooltip
         v-if="showAssetsAction"
         :text="t('sideToolbar.queueProgressOverlay.showAssets')"
