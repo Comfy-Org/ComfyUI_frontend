@@ -29,22 +29,25 @@ const reportedInactiveCalls = new Set<string>()
 /**
  * Report a ChangeTracker method being called on an inactive tracker —
  * a lifecycle violation that usually indicates stale extension state or
- * an incorrect call ordering. Reports once per method per session so the
- * signal is not drowned out by hot-path invocations.
+ * an incorrect call ordering. Reports once per method per workflow per
+ * session so the signal is not drowned out by hot-path invocations while
+ * still distinguishing between workflows.
  */
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
-  if (reportedInactiveCalls.has(method)) return
-  reportedInactiveCalls.add(method)
+  const key = `${method}:${workflowPath}`
+  if (reportedInactiveCalls.has(key)) return
+  reportedInactiveCalls.add(key)
 
   console.warn(`${method}() called on inactive tracker for: ${workflowPath}`)
 
   if (isDesktop) {
-    Sentry.addBreadcrumb({
-      category: 'changeTracker',
-      message: `${method}() called on inactive tracker`,
-      level: 'warning',
-      data: { workflow: workflowPath }
-    })
+    Sentry.captureMessage(
+      `ChangeTracker.${method}() called on inactive tracker`,
+      {
+        level: 'warning',
+        tags: { workflow: workflowPath }
+      }
+    )
   }
 }
 
