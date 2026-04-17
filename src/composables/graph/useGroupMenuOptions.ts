@@ -1,10 +1,16 @@
 import { useI18n } from 'vue-i18n'
 
+import { useCustomNodeColorSettings } from '@/composables/graph/useCustomNodeColorSettings'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  applyCustomColorToItems,
+  getDefaultCustomNodeColor,
+  getSharedAppliedColor
+} from '@/utils/nodeColorCustomization'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
 import type { MenuOption } from './useMoreOptionsMenu'
@@ -19,7 +25,24 @@ export function useGroupMenuOptions() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const canvasRefresh = useCanvasRefresh()
-  const { shapeOptions, colorOptions, isLightTheme } = useNodeCustomization()
+  const { darkerHeader, favoriteColors, recentColors, rememberRecentColor } =
+    useCustomNodeColorSettings()
+  const {
+    colorOptions,
+    isLightTheme,
+    shapeOptions
+  } = useNodeCustomization()
+
+  const applyCustomColorToGroup = async (
+    groupContext: LGraphGroup,
+    color: string
+  ) => {
+    applyCustomColorToItems([groupContext], color, {
+      darkerHeader: darkerHeader.value
+    })
+    canvasRefresh.refreshCanvas()
+    await rememberRecentColor(color)
+  }
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
     label: 'Fit Group To Nodes',
@@ -65,19 +88,68 @@ export function useGroupMenuOptions() {
     label: t('contextMenu.Color'),
     icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
-    submenu: colorOptions.map((colorOption) => ({
-      label: colorOption.localizedName,
-      color: isLightTheme.value
-        ? colorOption.value.light
-        : colorOption.value.dark,
-      action: () => {
-        groupContext.color = isLightTheme.value
+    submenu: (() => {
+      const currentAppliedColor = getSharedAppliedColor([groupContext])
+      const presetEntries = colorOptions.map((colorOption) => ({
+        label: colorOption.localizedName,
+        color: isLightTheme.value
           ? colorOption.value.light
-          : colorOption.value.dark
-        canvasRefresh.refreshCanvas()
-        bump()
-      }
-    }))
+          : colorOption.value.dark,
+        action: () => {
+          groupContext.color = isLightTheme.value
+            ? colorOption.value.light
+            : colorOption.value.dark
+          canvasRefresh.refreshCanvas()
+          bump()
+        }
+      }))
+
+      const presetColors = new Set(
+        colorOptions.map((colorOption) => colorOption.value.dark.toLowerCase())
+      )
+      const customEntries = [
+        ...favoriteColors.value.map((color) => ({
+          label: `${t('g.favorites')}: ${color.toUpperCase()}`,
+          color
+        })),
+        ...recentColors.value.map((color) => ({
+          label: `${t('modelLibrary.sortRecent')}: ${color.toUpperCase()}`,
+          color
+        }))
+      ]
+        .filter((entry, index, entries) => {
+          return (
+            entries.findIndex((candidate) => candidate.color === entry.color) ===
+            index
+          )
+        })
+        .filter((entry) => !presetColors.has(entry.color.toLowerCase()))
+        .map((entry) => ({
+          ...entry,
+          action: async () => {
+            await applyCustomColorToGroup(groupContext, entry.color)
+            bump()
+          }
+        }))
+
+      return [
+        ...presetEntries,
+        ...customEntries,
+        {
+          label: t('g.custom'),
+          color: currentAppliedColor ?? undefined,
+          pickerValue: (currentAppliedColor ?? getDefaultCustomNodeColor()).replace(
+            '#',
+            ''
+          ),
+          onColorPick: async (color: string) => {
+            await applyCustomColorToGroup(groupContext, color)
+            bump()
+          },
+          action: () => {}
+        }
+      ]
+    })()
   })
 
   const getGroupModeOptions = (

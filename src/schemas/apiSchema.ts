@@ -297,6 +297,9 @@ export type PreviewMethod = z.infer<typeof zPreviewMethod>
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
+  'Comfy.NodeColor.Favorites': z.array(z.string()),
+  'Comfy.NodeColor.Recents': z.array(z.string()),
+  'Comfy.NodeColor.DarkerHeader': z.boolean(),
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),

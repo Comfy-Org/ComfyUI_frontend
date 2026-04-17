@@ -957,6 +957,27 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionModified: '1.6.7'
   },
   {
+    id: 'Comfy.NodeColor.Favorites',
+    name: 'Favorite node colors',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.25.0'
+  },
+  {
+    id: 'Comfy.NodeColor.Recents',
+    name: 'Recent node colors',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.25.0'
+  },
+  {
+    id: 'Comfy.NodeColor.DarkerHeader',
+    name: 'Use a darker node header for custom colors',
+    type: 'hidden',
+    defaultValue: true,
+    versionAdded: '1.25.0'
+  },
+  {
     id: 'Comfy.WidgetControlMode',
     category: ['Comfy', 'Node Widget', 'WidgetControlMode'],
     name: 'Widget control mode',

@@ -2,6 +2,7 @@ import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { st } from '@/i18n'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -160,6 +161,52 @@ interface ICreateDefaultNodeOptions extends ICreateNodeOptions {
   posAdd?: Point
   /** alpha, adjust the position x,y based on the new node size w,h */
   posSizeFix?: Point
+}
+
+type LegacyColorTarget = (LGraphNode | LGraphGroup) & IColorable & Positionable
+
+function isLegacyColorTarget(item: unknown): item is LegacyColorTarget {
+  return item instanceof LGraphNode || item instanceof LGraphGroup
+}
+
+function getLegacyColorTargets(target: LegacyColorTarget): LegacyColorTarget[] {
+  if (target instanceof LGraphGroup) {
+    return [target]
+  }
+
+  const selected = Array.from(LGraphCanvas.active_canvas.selectedItems).filter(
+    isLegacyColorTarget
+  )
+
+  return selected.length > 1 && selected.includes(target) ? selected : [target]
+}
+
+function createLegacyColorMenuContent(label: string, color?: string): string {
+  const escapedLabel = label
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+  const safeColor = getSafeLegacyMenuColor(color)
+
+  if (!safeColor) {
+    return `<span style='display: block; padding-left: 4px;'>${escapedLabel}</span>`
+  }
+
+  return (
+    `<span style='display: block; color: #fff; padding-left: 4px;` +
+    ` border-left: 8px solid ${safeColor}; background-color:${safeColor}'>${escapedLabel}</span>`
+  )
+}
+
+function getSafeLegacyMenuColor(color?: string): string | undefined {
+  if (!color) return undefined
+
+  const trimmed = color.trim()
+  return /^#(?:[\da-fA-F]{3,4}|[\da-fA-F]{6}|[\da-fA-F]{8})$/.test(trimmed)
+    ? trimmed
+    : undefined
 }
 
 interface HasShowSearchCallback {
@@ -1666,61 +1713,70 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** @param value Parameter is never used */
   static onMenuNodeColors(
-    value: IContextMenuValue<string | null>,
+    _value: IContextMenuValue<string | null>,
     _options: IContextMenuOptions,
     e: MouseEvent,
     menu: ContextMenu<string | null>,
-    node: LGraphNode
+    node: LGraphNode | LGraphGroup
   ): boolean {
-    if (!node) throw 'no node for color'
-
-    const values: IContextMenuValue<
-      string | null,
-      unknown,
-      { value: string | null }
-    >[] = []
-    values.push({
-      value: null,
-      content:
-        "<span style='display: block; padding-left: 4px;'>No color</span>"
-    })
-
-    for (const i in LGraphCanvas.node_colors) {
-      const color = LGraphCanvas.node_colors[i]
-      value = {
-        value: i,
-        content:
-          `<span style='display: block; color: #999; padding-left: 4px;` +
-          ` border-left: 8px solid ${color.color}; background-color:${color.bgcolor}'>${i}</span>`
+    if (!node || !isLegacyColorTarget(node)) throw 'no node for color'
+    const values: (IContextMenuValue<string | null> | null)[] = [
+      {
+        value: null,
+        content: createLegacyColorMenuContent(st('color.noColor', 'No color'))
       }
-      values.push(value)
+    ]
+
+    for (const [presetName, colorOption] of Object.entries(
+      LGraphCanvas.node_colors
+    )) {
+      values.push({
+        value: presetName,
+        content: createLegacyColorMenuContent(
+          st(`color.${presetName}`, presetName),
+          node instanceof LGraphGroup
+            ? (colorOption.groupcolor ?? colorOption.bgcolor)
+            : colorOption.bgcolor
+        )
+      })
     }
+
     new LiteGraph.ContextMenu<string | null>(values, {
       event: e,
-      callback: inner_clicked,
+      callback: (value) => {
+        try {
+          innerClicked(value)
+        } catch (error) {
+          console.error('Failed to apply legacy node color selection.', error)
+        }
+      },
       parentMenu: menu,
-      node
+      ...(node instanceof LGraphNode ? { node } : {})
     })
 
-    function inner_clicked(v: IContextMenuValue<string>) {
-      if (!node) return
-
-      const fApplyColor = function (item: IColorable) {
-        const colorOption = v.value ? LGraphCanvas.node_colors[v.value] : null
-        item.setColorOption(colorOption)
-      }
+    function innerClicked(
+      value: string | IContextMenuValue<string | null> | null | undefined
+    ) {
+      if (!node || !isLegacyColorTarget(node)) return
+      const presetName =
+        value == null ? null : typeof value === 'string' ? value : value.value
 
       const canvas = LGraphCanvas.active_canvas
-      if (
-        !canvas.selected_nodes ||
-        Object.keys(canvas.selected_nodes).length <= 1
-      ) {
-        fApplyColor(node)
-      } else {
-        for (const i in canvas.selected_nodes) {
-          fApplyColor(canvas.selected_nodes[i])
+      const targets = getLegacyColorTargets(node)
+      const graphInfo = node instanceof LGraphNode ? node : undefined
+
+      node.graph?.beforeChange(graphInfo)
+      try {
+        const colorOption = presetName
+          ? LGraphCanvas.node_colors[presetName]
+          : null
+        for (const target of targets) {
+          target.setColorOption(colorOption)
         }
+      } finally {
+        node.graph?.afterChange(graphInfo)
       }
+
       canvas.setDirty(true, true)
     }
 

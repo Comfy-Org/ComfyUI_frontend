@@ -11,7 +11,12 @@ import {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+import {
+  applyCustomColorToItems,
+  getSharedAppliedColor
+} from '@/utils/nodeColorCustomization'
 
+import { useCustomNodeColorSettings } from './useCustomNodeColorSettings'
 import { useCanvasRefresh } from './useCanvasRefresh'
 
 interface ColorOption {
@@ -36,6 +41,12 @@ export function useNodeCustomization() {
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
   const colorPaletteStore = useColorPaletteStore()
+  const {
+    favoriteColors,
+    recentColors,
+    darkerHeader,
+    rememberRecentColor
+  } = useCustomNodeColorSettings()
   const canvasRefresh = useCanvasRefresh()
   const isLightTheme = computed(
     () => colorPaletteStore.completedActivePalette.light_theme
@@ -101,6 +112,19 @@ export function useNodeCustomization() {
     canvasRefresh.refreshCanvas()
   }
 
+  const applyCustomColor = async (color: string) => {
+    const normalized = applyCustomColorToItems(
+      canvasStore.selectedItems,
+      color,
+      {
+        darkerHeader: darkerHeader.value
+      }
+    )
+
+    canvasRefresh.refreshCanvas()
+    await rememberRecentColor(normalized)
+  }
+
   const applyShape = (shapeOption: ShapeOption) => {
     const selectedNodes = Array.from(canvasStore.selectedItems).filter(
       (item): item is LGraphNode => item instanceof LGraphNode
@@ -155,13 +179,20 @@ export function useNodeCustomization() {
     )
   }
 
+  const getCurrentAppliedColor = (): string | null =>
+    getSharedAppliedColor(Array.from(canvasStore.selectedItems))
+
   return {
     colorOptions,
     shapeOptions,
     applyColor,
+    applyCustomColor,
     applyShape,
     getCurrentColor,
+    getCurrentAppliedColor,
     getCurrentShape,
+    favoriteColors,
+    recentColors,
     isLightTheme
   }
 }
