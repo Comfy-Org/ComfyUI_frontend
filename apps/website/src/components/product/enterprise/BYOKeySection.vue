@@ -3,7 +3,6 @@ import type { Locale } from '../../../i18n/translations'
 
 import { t } from '../../../i18n/translations'
 import CardGridSection from '../shared/CardGridSection.vue'
-import IsometricGrid from '../shared/IsometricGrid.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -30,8 +29,6 @@ const cards = [
       :key="i"
       class="bg-primary-comfy-ink flex aspect-square flex-col rounded-3xl border border-white/10 p-6"
     >
-      <IsometricGrid />
-
       <!-- Card content -->
       <h3 class="text-primary-comfy-canvas mt-2 text-xl font-semibold">
         {{ t(card.titleKey, locale) }}

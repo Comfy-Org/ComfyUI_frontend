@@ -4,7 +4,6 @@ import type { Locale } from '../../../i18n/translations'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import CardGridSection from '../shared/CardGridSection.vue'
-import IsometricGrid from '../shared/IsometricGrid.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -34,8 +33,6 @@ const steps = [
       :key="step.number"
       class="bg-primary-comfy-ink flex aspect-square flex-col rounded-3xl border border-white/10 p-6"
     >
-      <IsometricGrid />
-
       <!-- Step content -->
       <p class="text-primary-comfy-yellow text-sm font-bold tracking-wider">
         {{ step.number }}
