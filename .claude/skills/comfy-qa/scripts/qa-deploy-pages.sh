@@ -36,6 +36,11 @@ for os in Linux macOS Windows; do
       -vf "fps=8,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse=dither=bayer" \
       -loop 0 "$DEPLOY_DIR/qa-${os}-thumb.gif" 2>/dev/null \
     || echo "GIF generation failed for ${os} (non-fatal)"
+    # Also generate thumbnail.jpg (first interesting frame) for comfy-qa.pages.dev dashboard cards
+    ffmpeg -y -ss 10 -i "$THUMB_SRC" -vframes 1 \
+      -vf "scale=640:-1" -q:v 3 \
+      "$DEPLOY_DIR/thumbnail.jpg" 2>/dev/null \
+    || echo "thumbnail.jpg generation failed for ${os} (non-fatal)"
   fi
 done
 
