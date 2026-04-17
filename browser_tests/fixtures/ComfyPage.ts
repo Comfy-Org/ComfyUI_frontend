@@ -10,6 +10,11 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { sleep } from '@e2e/fixtures/utils/timing'
+import {
+  buildFallbackUsername,
+  findUserIdByUsername,
+  isDuplicateUserErrorMessage
+} from '@e2e/fixtures/utils/userSetup'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -242,17 +247,40 @@ export class ComfyPage {
   }
 
   async setupUser(username: string) {
+    const existingUserId = await this.findUserId(username)
+    if (existingUserId) {
+      return existingUserId
+    }
+
+    try {
+      return await this.createUser(username)
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !isDuplicateUserErrorMessage(error.message)
+      ) {
+        throw error
+      }
+
+      const recoveredUserId = await this.findUserId(username)
+      if (recoveredUserId) {
+        return recoveredUserId
+      }
+
+      const fallbackUsername = buildFallbackUsername(username)
+      console.warn(
+        `[e2e] Username "${username}" already exists but is not returned by /api/users. Falling back to "${fallbackUsername}".`
+      )
+      return await this.createUser(fallbackUsername)
+    }
+  }
+
+  private async findUserId(username: string) {
     const res = await this.request.get(`${this.url}/api/users`)
     if (res.status() !== 200)
       throw new Error(`Failed to retrieve users: ${await res.text()}`)
 
-    const apiRes = await res.json()
-    const user = Object.entries(apiRes?.users ?? {}).find(
-      ([, name]) => name === username
-    )
-    const id = user?.[0]
-
-    return id ? id : await this.createUser(username)
+    return findUserIdByUsername(await res.json(), username)
   }
 
   async createUser(username: string) {

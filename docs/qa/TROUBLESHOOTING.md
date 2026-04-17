@@ -82,6 +82,12 @@
 **Cause**: The `ANTHROPIC_API_KEY` secret in the repo has exhausted its credits.
 **Fix**: Top up the Anthropic API account linked to the key, or rotate to a new key in repo Settings → Secrets.
 
+## Duplicate Username During QA Reproduce
+
+**Symptom**: Reproduce tests fail before any assertions with `Failed to create user: {"error": "Duplicate username."}`.
+**Cause**: The backend can retain an old `playwright-test-*` user while `/api/users` does not report it in the format the fixture expects, so setup falls through to `POST /api/users` and collides.
+**Fix**: The Playwright fixture now retries lookup after a duplicate response and falls back to a unique username if the stale user still cannot be resolved. If this still appears, isolate the backend with `TEST_COMFYUI_DIR` or clear stale test users from the QA backend state.
+
 ## Agent Doesn't Perform Steps
 
 **Symptom**: Agent opens menus and settings but never interacts with the canvas.
