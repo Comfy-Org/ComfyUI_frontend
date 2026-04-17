@@ -67,15 +67,6 @@ function scrollToSection(id: string) {
 
 <template>
   <section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
-    <!-- Mobile nav -->
-    <div class="mb-8 lg:hidden">
-      <CategoryNav
-        :categories="categories"
-        :model-value="activeSection"
-        @update:model-value="scrollToSection"
-      />
-    </div>
-
     <div class="lg:flex lg:gap-16">
       <!-- Desktop sticky nav -->
       <aside class="hidden lg:block lg:w-48 lg:shrink-0">
