@@ -94,7 +94,7 @@ function scrollToSection(id: string) {
           v-for="section in sections"
           :id="section.id"
           :key="section.id"
-          class="mb-16"
+          class="mb-16 scroll-mt-24 lg:scroll-mt-36"
         >
           <h2
             v-if="section.hasTitle"
