@@ -68,6 +68,9 @@
   --radius-4xl: 2rem;
   --radius-4\.5xl: 2.25rem;
   --radius-5xl: 2.5rem;
+  --container-8xl: 88rem;
+  --container-9xl: 96rem;
+  --container-10xl: 100rem;
 }
 
 @keyframes border-spin {
@@ -104,6 +107,26 @@
 
 @utility animate-marquee-reverse {
   animation: marquee-reverse 30s linear infinite;
+}
+
+@keyframes ripple-effect {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+
+@utility animate-ripple {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: ripple-effect 4s linear infinite;
 }
 
 .crossfade-enter-active,
