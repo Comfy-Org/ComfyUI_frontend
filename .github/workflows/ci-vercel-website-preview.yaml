@@ -54,7 +54,6 @@ jobs:
         run: |
           mkdir -p temp/vercel-preview
           echo "${{ steps.deploy.outputs.url }}" > temp/vercel-preview/url.txt
-          echo "${{ github.event.number }}" > temp/vercel-preview/number.txt
 
       - name: Upload preview metadata
         uses: actions/upload-artifact@v6

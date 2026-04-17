@@ -29,20 +29,46 @@ jobs:
           run_id: ${{ github.event.workflow_run.id }}
           path: temp/vercel-preview
 
-      - name: Read preview metadata
+      - name: Resolve PR number from workflow_run context
+        id: pr-meta
+        uses: actions/github-script@v8
+        with:
+          script: |
+            let pr = context.payload.workflow_run.pull_requests?.[0];
+            if (!pr) {
+              const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.payload.workflow_run.head_sha,
+              });
+              pr = prs.find(p => p.state === 'open');
+            }
+
+            if (!pr) {
+              core.info('No open PR found for this workflow run — skipping.');
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            core.setOutput('skip', 'false');
+            core.setOutput('number', String(pr.number));
+
+      - name: Read preview URL
+        if: steps.pr-meta.outputs.skip != 'true'
         id: meta
         run: |
           echo "url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
-          echo "pr-number=$(cat temp/vercel-preview/number.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Write report
+        if: steps.pr-meta.outputs.skip != 'true'
         run: |
           echo "**Website Preview:** ${{ steps.meta.outputs.url }}" > preview-report.md
 
       - name: Post PR comment
+        if: steps.pr-meta.outputs.skip != 'true'
         uses: ./.github/actions/post-pr-report-comment
         with:
-          pr-number: ${{ steps.meta.outputs.pr-number }}
+          pr-number: ${{ steps.pr-meta.outputs.number }}
           report-file: ./preview-report.md
           comment-marker: '<!-- VERCEL_WEBSITE_PREVIEW -->'
           token: ${{ secrets.GITHUB_TOKEN }}
