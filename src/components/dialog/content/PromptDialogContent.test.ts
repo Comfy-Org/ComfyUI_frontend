@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -61,5 +61,13 @@ describe('PromptDialogContent', () => {
     await user.keyboard('{Enter}')
 
     expect(onConfirm).toHaveBeenCalledWith('via enter')
+  })
+
+  it('selects all text when the input is focused', async () => {
+    renderComponent({ defaultValue: 'pre-filled text', onConfirm: vi.fn() })
+    const input = screen.getByRole('textbox') as HTMLInputElement
+    const spy = vi.spyOn(input, 'setSelectionRange')
+    await fireEvent.focus(input)
+    expect(spy).toHaveBeenCalledWith(0, 'pre-filled text'.length)
   })
 })

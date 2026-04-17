@@ -1,16 +1,17 @@
 <template>
   <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
-    <div class="flex flex-col gap-1">
-      <label class="text-sm text-muted-foreground">{{ message }}</label>
+    <label class="flex flex-col gap-1 text-sm text-muted-foreground">
+      {{ message }}
       <Input
         ref="inputRef"
         v-model="inputValue"
+        type="text"
         :placeholder
         autofocus
         @keyup.enter="handleConfirm"
         @focus="selectAllText"
       />
-    </div>
+    </label>
     <Button @click="handleConfirm">
       {{ $t('g.confirm') }}
     </Button>

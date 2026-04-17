@@ -1,5 +1,5 @@
 <template>
-  <div class="inline">
+  <div class="editable-text inline">
     <component :is="labelType" v-if="!isEditing" :class="labelClass">
       {{ modelValue }}
     </component>
