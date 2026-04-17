@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import HeroSection from '../components/about/HeroSection.vue'
-import VideoSection from '../components/about/VideoSection.vue'
 import StorySection from '../components/about/StorySection.vue'
 import OurValuesSection from '../components/about/OurValuesSection.vue'
 import ValuesSection from '../components/about/ValuesSection.vue'
@@ -9,8 +8,7 @@ import CareersSection from '../components/about/CareersSection.vue'
 ---
 
 <BaseLayout title="About Us — Comfy">
-  <HeroSection />
-  <VideoSection />
+  <HeroSection client:load />
   <StorySection />
   <OurValuesSection />
   <ValuesSection client:visible />

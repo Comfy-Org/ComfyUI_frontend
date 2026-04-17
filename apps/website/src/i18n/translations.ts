@@ -2060,6 +2060,96 @@ const translations = {
     en: 'If you have questions about these Terms, please contact us at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.',
     'zh-CN':
       '如果您对本条款有任何疑问，请通过 <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a> 与我们联系。'
+  },
+
+  // Customers page
+  'customers.hero.label': {
+    en: 'CUSTOMER STORIES',
+    'zh-CN': '客户故事'
+  },
+  'customers.hero.heading': {
+    en: 'How the most innovative and creative companies use Comfy',
+    'zh-CN': '最具创新力和创造力的公司如何使用 Comfy'
+  },
+  'customers.hero.body': {
+    en: 'From solo artists to global studios — teams building the future of visual media run on ComfyUI.',
+    'zh-CN':
+      '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
+  },
+  'customers.story.card1.category': {
+    en: 'CASE STUDY',
+    'zh-CN': '案例研究'
+  },
+  'customers.story.card1.title': {
+    en: 'How Series Entertainment Rebuilt Game and Video Production with ComfyUI',
+    'zh-CN': 'Series Entertainment 如何使用 ComfyUI 重塑游戏和视频制作'
+  },
+  'customers.story.card2.category': {
+    en: 'CASE STUDY',
+    'zh-CN': '案例研究'
+  },
+  'customers.story.card2.title': {
+    en: 'How Open Source Is Fueling the Open Story Movement — and a Financially Successful Future for Artists in the Age of AI',
+    'zh-CN': '开源如何推动 Open Story 运动——以及 AI 时代艺术家的财务成功未来'
+  },
+  'customers.story.card3.category': {
+    en: 'CASE STUDY',
+    'zh-CN': '案例研究'
+  },
+  'customers.story.card3.title': {
+    en: 'How Moment Factory Reimagined 3D Projection Mapping at Architectural Scale with ComfyUI',
+    'zh-CN': 'Moment Factory 如何使用 ComfyUI 在建筑尺度重新定义 3D 投影映射'
+  },
+  'customers.story.card4.category': {
+    en: 'USE CASE DEEP DIVE',
+    'zh-CN': '深度用例'
+  },
+  'customers.story.card4.title': {
+    en: 'How Ubisoft Open-Sources the CHORD Model and ComfyUI Nodes for End-to-End PBR Material Generation',
+    'zh-CN': '育碧如何开源 CHORD 模型和 ComfyUI 节点，实现端到端 PBR 材质生成'
+  },
+  'customers.story.viewArticle': {
+    en: 'VIEW ARTICLE',
+    'zh-CN': '查看文章'
+  },
+  'customers.feedback.quote1': {
+    en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it. The community is what makes it so special.',
+    'zh-CN':
+      'ComfyUI 对我们非常重要，因为它让我们始终站在技术最前沿。不仅因为技术本身，更因为它背后的整个社区。社区才是让它如此特别的原因。'
+  },
+  'customers.feedback.name1': {
+    en: 'PJ Pereira',
+    'zh-CN': 'PJ Pereira'
+  },
+  'customers.feedback.role1': {
+    en: 'Co-founder of Silverside AI',
+    'zh-CN': 'Silverside AI 联合创始人'
+  },
+  'customers.feedback.quote2': {
+    en: "We've used many different tools, but using ComfyUI puts artist empowerment to the forefront. It makes artists feel like they have control over the process. The more transparent we can be to how the models work, the more we feel like we're making something that only we could make.",
+    'zh-CN':
+      '我们使用过许多不同的工具，但 ComfyUI 将艺术家赋能放在了首位。它让艺术家感到自己掌控着整个过程。我们对模型工作方式越透明，就越觉得我们在创造只有我们才能做出的东西。'
+  },
+  'customers.feedback.name2': {
+    en: 'Jeremy Sahlman',
+    'zh-CN': 'Jeremy Sahlman'
+  },
+  'customers.feedback.role2': {
+    en: 'Co-founder and Chief Creative Officer at Black Math',
+    'zh-CN': 'Black Math 联合创始人兼首席创意官'
+  },
+  'customers.feedback.quote3': {
+    en: 'ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.',
+    'zh-CN':
+      'ComfyUI 彻底改变了我们的创意管线。基于节点的工作流让我们能够快速实验，同时完全掌控流程的每一个步骤。'
+  },
+  'customers.feedback.name3': {
+    en: 'Alex Chen',
+    'zh-CN': 'Alex Chen'
+  },
+  'customers.feedback.role3': {
+    en: 'Head of AI at Creative Studios',
+    'zh-CN': 'Creative Studios AI 负责人'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

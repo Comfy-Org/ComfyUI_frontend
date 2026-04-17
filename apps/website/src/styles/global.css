@@ -154,6 +154,14 @@
   }
 }
 
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility icon-mask {
   background-color: currentColor;
   mask-size: contain;

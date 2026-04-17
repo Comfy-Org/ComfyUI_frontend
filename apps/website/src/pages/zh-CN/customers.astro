@@ -1,8 +1,14 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import ComingSoon from '../../components/common/ComingSoon.astro'
+import HeroSection from '../../components/customers/HeroSection.vue'
+import StorySection from '../../components/customers/StorySection.vue'
+import FeedbackSection from '../../components/customers/FeedbackSection.vue'
+import VideoSection from '../../components/customers/VideoSection.vue'
 ---
 
 <BaseLayout title="客户故事 — Comfy">
-  <ComingSoon />
+  <HeroSection locale="zh-CN" client:load />
+  <StorySection locale="zh-CN" />
+  <FeedbackSection locale="zh-CN" client:load />
+  <VideoSection locale="zh-CN" />
 </BaseLayout>
