@@ -167,10 +167,12 @@ export class ChangeTracker {
    * Calling this on an inactive tracker would capture the wrong graph.
    */
   captureCanvasState() {
+    const isUndoRedoing = this._restoringState
+    const isCurrentlySavingChange = this.changeCount > 0
     if (
       !app.graph ||
-      this.changeCount ||
-      this._restoringState ||
+      isCurrentlySavingChange ||
+      isUndoRedoing ||
       ChangeTracker.isLoadingGraph
     )
       return
