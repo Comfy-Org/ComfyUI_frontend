@@ -12,9 +12,9 @@ vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   }
 }))
 
-vi.mock('@/components/common/LazyImage.vue', () => ({
+vi.mock('@/components/templates/thumbnails/LazyMedia.vue', () => ({
   default: {
-    name: 'LazyImage',
+    name: 'LazyMedia',
     template:
       '<img :src="src" :alt="alt" :class="imageClass" :style="imageStyle" draggable="false" />',
     props: ['src', 'alt', 'imageClass', 'imageStyle']

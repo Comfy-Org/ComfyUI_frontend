@@ -5,6 +5,7 @@ import type {
   WorkflowTemplates
 } from '../types/template'
 import type { HubWorkflowIndexEntry } from '../schemas/hubWorkflowIndexSchema'
+import { rewriteHubAssetUrl } from '../utils/hubAssetUrl'
 
 const distributionValues = new Set(
   Object.values(TemplateIncludeOnDistributionEnum)
@@ -89,6 +90,12 @@ function mapIncludeOnDistributions(
 export function mapHubWorkflowIndexEntryToTemplate(
   entry: HubWorkflowIndexEntry
 ): TemplateInfo {
+  const thumbnailUrl = rewriteHubAssetUrl(entry.thumbnailUrl)
+  const thumbnailComparisonUrl = rewriteHubAssetUrl(
+    entry.thumbnailComparisonUrl
+  )
+  const tutorialUrl = rewriteHubAssetUrl(entry.tutorialUrl)
+
   return {
     name: entry.name,
     title: entry.title,
@@ -110,9 +117,9 @@ export function mapHubWorkflowIndexEntryToTemplate(
     vram: entry.vram,
     size: entry.size,
     openSource: entry.openSource,
-    thumbnailUrl: entry.thumbnailUrl,
-    thumbnailComparisonUrl: entry.thumbnailComparisonUrl,
-    tutorialUrl: entry.tutorialUrl,
+    thumbnailUrl,
+    thumbnailComparisonUrl,
+    tutorialUrl,
     requiresCustomNodes: entry.requiresCustomNodes,
     searchRank: entry.searchRank,
     usage: entry.usage,
