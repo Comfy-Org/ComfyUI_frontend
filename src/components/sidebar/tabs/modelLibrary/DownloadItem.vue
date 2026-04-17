@@ -3,7 +3,7 @@
     <div>
       {{ getDownloadLabel(download.savePath ?? '') }}
     </div>
-    <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
+    <div v-if="['cancelled', 'failed'].includes(download.status)">
       <Chip
         class="mt-2 h-6 bg-red-700 text-sm font-light"
         removable
@@ -13,9 +13,7 @@
       </Chip>
     </div>
     <div
-      v-if="
-        ['in_progress', 'paused', 'completed'].includes(download.status ?? '')
-      "
+      v-if="['running', 'paused', 'completed'].includes(download.status)"
       class="mt-2 flex flex-row items-center gap-2"
     >
       <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
@@ -28,7 +26,7 @@
       />
 
       <Button
-        v-if="download.status === 'in_progress'"
+        v-if="download.status === 'running'"
         v-tooltip.top="t('electronFileDownload.pause')"
         class="size-[22px] rounded-full"
         variant="secondary"
@@ -52,7 +50,7 @@
       </Button>
 
       <Button
-        v-if="['in_progress', 'paused'].includes(download.status ?? '')"
+        v-if="['running', 'paused'].includes(download.status)"
         v-tooltip.top="t('electronFileDownload.cancel')"
         class="size-[22px] rounded-full"
         variant="destructive"
