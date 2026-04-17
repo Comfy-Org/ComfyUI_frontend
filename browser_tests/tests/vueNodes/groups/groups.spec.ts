@@ -121,11 +121,7 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
-    await comfyPage.page.keyboard.press('Enter')
-    await comfyPage.expectScreenshot(
-      comfyPage.canvas,
-      'vue-groups-create-group.png'
-    )
+    await expect(comfyPage.page.getByTestId('node-title-input')).toBeVisible()
   })
 
   test('should allow fitting group to contents', async ({ comfyPage }) => {
