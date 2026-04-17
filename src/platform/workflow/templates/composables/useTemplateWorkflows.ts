@@ -137,8 +137,10 @@ export function useTemplateWorkflows() {
       // Regular case for normal categories
       json = await fetchTemplateJson(id, sourceModule)
 
-      const workflowName =
-        sourceModule === 'default'
+      const template = workflowTemplatesStore.getTemplateByName(id)
+      const workflowName = template?.shareId
+        ? (template.title ?? template.name)
+        : sourceModule === 'default'
           ? t(`templateWorkflows.template.${id}`, id)
           : id
 
