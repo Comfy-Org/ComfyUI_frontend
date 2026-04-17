@@ -10,26 +10,31 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 
+declare global {
+  interface Window {
+    LiteGraph: typeof LiteGraph
+    LGraph: typeof LGraph
+    LLink: typeof LLink
+    LGraphNode: typeof LGraphNode
+    LGraphGroup: typeof LGraphGroup
+    DragAndScale: typeof DragAndScale
+    LGraphCanvas: typeof LGraphCanvas
+    ContextMenu: typeof ContextMenu
+    LGraphBadge: typeof LGraphBadge
+  }
+}
+
 /**
  * Assign all properties of LiteGraph to window to make it backward compatible.
  */
 export const useGlobalLitegraph = () => {
-  // @ts-expect-error fixme ts strict error
   window['LiteGraph'] = LiteGraph
-  // @ts-expect-error fixme ts strict error
   window['LGraph'] = LGraph
-  // @ts-expect-error fixme ts strict error
   window['LLink'] = LLink
-  // @ts-expect-error fixme ts strict error
   window['LGraphNode'] = LGraphNode
-  // @ts-expect-error fixme ts strict error
   window['LGraphGroup'] = LGraphGroup
-  // @ts-expect-error fixme ts strict error
   window['DragAndScale'] = DragAndScale
-  // @ts-expect-error fixme ts strict error
   window['LGraphCanvas'] = LGraphCanvas
-  // @ts-expect-error fixme ts strict error
   window['ContextMenu'] = ContextMenu
-  // @ts-expect-error fixme ts strict error
   window['LGraphBadge'] = LGraphBadge
 }
