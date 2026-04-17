@@ -45,7 +45,10 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
 /* Mirror FloatingPanel's preset positions exactly so the preview lines
    up with where the panel will land. */
 .panel-drag-preview--right-dock {
-  top: var(--layout-outer-padding);
+  top: calc(
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
+  );
   right: var(--layout-outer-padding);
   bottom: var(--layout-outer-padding);
 }
@@ -61,7 +64,10 @@ const presetClass = computed(() => `panel-drag-preview--${props.preset}`)
   );
 }
 .panel-drag-preview--float-tr {
-  top: var(--layout-outer-padding);
+  top: calc(
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
+  );
   right: var(--layout-outer-padding);
   height: calc(50% - var(--layout-outer-padding) - 4px);
 }

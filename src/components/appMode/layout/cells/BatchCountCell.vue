@@ -41,6 +41,7 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
   width: 100%;
   height: 100%;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 0 8px;
 }
@@ -48,16 +49,14 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 .batch-count-cell .batch-count-cell__label {
   flex-shrink: 0;
   font-size: var(--layout-font-md);
-  /* Force the muted token — some PrimeVue themes set a brighter
-     `--p-text-muted-color`, so clamp the fallback here to guarantee
-     the label reads as the same gray used by widget subtitles. */
-  color: #a1a1a1;
+  color: var(--layout-color-text);
   white-space: nowrap;
 }
 
 .batch-count-cell__input {
-  min-width: 0;
-  flex: 1;
+  flex: 0 0 auto;
+  /* Sized for up to 3 digits between the − / + controls. */
+  width: 5rem;
 }
 
 /* Center the number value inside ScrubableNumberInput so it sits

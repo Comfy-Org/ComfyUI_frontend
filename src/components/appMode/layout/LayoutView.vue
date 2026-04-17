@@ -20,6 +20,9 @@ import FeedbackCell from './cells/FeedbackCell.vue'
 import ModeToggleCell from './cells/ModeToggleCell.vue'
 import type { InputCellEntry } from './cells/InputCell.vue'
 import OutputThumbCell from './cells/OutputThumbCell.vue'
+import BatchCountCell from './cells/BatchCountCell.vue'
+import JobQueueCell from './cells/JobQueueCell.vue'
+import RunCell from './cells/RunCell.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
 import type {
@@ -43,6 +46,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useQueueStore } from '@/stores/queueStore'
 import { isCloud } from '@/platform/distribution/types'
 import {
   openShareDialog,
@@ -66,6 +70,13 @@ const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 
 const showShare = computed(() => isCloud && flags.workflowSharingEnabled)
+
+// Drives the inline "N active" cell in the top-right cluster — mirrors
+// the graph-view job-queue button. Only renders when there are jobs
+// queued or running so the cluster stays compact while idle.
+const queueStore = useQueueStore()
+const { activeJobsCount } = storeToRefs(queueStore)
+const showJobQueue = computed(() => activeJobsCount.value > 0)
 
 function openShare() {
   openShareDialog().catch(toastErrorHandler)
@@ -151,6 +162,19 @@ const panelTitle = computed(() => {
 // Builder share them; moving or collapsing in either updates both.
 const { panelPreset, panelCollapsed } = storeToRefs(appModeStore)
 
+// Which viewport side the panel is docked against. Used to steer the
+// welcome-copy offset so the wordmark + body text stay visible on the
+// opposite side of the panel, regardless of preset.
+const panelSide = computed(() =>
+  panelPreset.value.endsWith('-dock')
+    ? panelPreset.value.startsWith('left')
+      ? 'left'
+      : 'right'
+    : panelPreset.value.endsWith('l')
+      ? 'left'
+      : 'right'
+)
+
 // Block list is a 2D grid (rows of columns) so 4-E (reorder) and 4-F
 // (multi-column) can both mutate it. Reconciliation preserves user
 // rows/columns across input changes.
@@ -191,25 +215,18 @@ watchEffect(() => {
     )
     .filter((row) => row.length > 0)
 
-  // Find (or create) the trailing run row.
-  let runRowIdx = preserved.findIndex((r) => r.some((b) => b.kind === 'run'))
-  if (runRowIdx === -1) {
-    preserved.push([{ id: 'run', kind: 'run', withBatchCount: true }])
-    runRowIdx = preserved.length - 1
-  }
-
-  // Append brand-new inputs as single-block rows, above the run row.
+  // Append brand-new inputs as single-block rows at the end.
   for (const entry of inputEntries.value) {
     const id = `input-${entry.key}`
     if (existingInputIds.has(id)) continue
-    const newBlock: BlockConfig = {
-      id,
-      kind: 'input',
-      entryKey: entry.key,
-      isMultiline: entry.isMultiline
-    }
-    preserved.splice(runRowIdx, 0, [newBlock])
-    runRowIdx += 1
+    preserved.push([
+      {
+        id,
+        kind: 'input',
+        entryKey: entry.key,
+        isMultiline: entry.isMultiline
+      }
+    ])
   }
 
   panelRows.value = preserved
@@ -278,14 +295,6 @@ function moveBlock(from: BlockPos, target: DropTarget) {
 
   panelRows.value = rows
 }
-
-// Separate input rows (scrollable body) from run rows (pinned footer).
-const inputRows = computed(() =>
-  panelRows.value.filter((row) => !row.some((b) => b.kind === 'run'))
-)
-const runRow = computed(() =>
-  panelRows.value.find((row) => row.some((b) => b.kind === 'run'))
-)
 
 // --- Output history (shared for thumbnails + action cells) -------------
 // IMPORTANT: call useOutputHistory() exactly once. Its constructor runs
@@ -431,10 +440,10 @@ const historyThumbMap = computed(
 const cells = computed<LayoutCellPlacement[]>(() => {
   const out: LayoutCellPlacement[] = []
 
-  // Row 1, left-to-right: App/Graph mode toggle, then optional builder +
-  // optional share. Toggle is anchored at col 1 so it doesn't shift when
-  // builder / share visibility changes; builder + share slot in to its
-  // right.
+  // Row 1, left side (left-to-right): App/Graph mode toggle, then optional
+  // builder. Toggle is anchored at col 1 so it doesn't shift when builder
+  // visibility changes. Share moved to the right-side group to mirror the
+  // graph-view top-right composition (Run + queue + share cluster there).
   out.push({
     id: 'mode-toggle',
     col: 1,
@@ -446,12 +455,9 @@ const cells = computed<LayoutCellPlacement[]>(() => {
   if (enableAppBuilder.value) {
     out.push({ id: 'builder', col: col++, row: 1, kind: 'system-builder' })
   }
-  if (showShare.value) {
-    out.push({ id: 'share', col: col++, row: 1, kind: 'system-share' })
-  }
 
-  // Action cells on row 1, right of builder/share. Only mount when
-  // a history item is selected (mirrors LinearPreview's top bar).
+  // Action cells on row 1, right of builder. Only mount when a history
+  // item is selected (mirrors LinearPreview's top bar).
   if (hasSelection.value) {
     out.push({ id: 'action-rerun', col: col++, row: 1, kind: 'action-rerun' })
     out.push({
@@ -484,6 +490,51 @@ const cells = computed<LayoutCellPlacement[]>(() => {
     kind: 'system-feedback'
   })
 
+  // Row 1, right side (right-to-left): Run button anchored at the right
+  // edge, "Number of runs" scrubber just to its left, Share (when
+  // available, labeled) on the far left of the cluster.
+  //
+  // Negative col + span anchors via CSS Grid's end-aligned line numbers:
+  // line -1 is the rightmost line (N+1 for N tracks), so a cell whose
+  // end line is -1 must start at `-1 - span` (e.g. rightmost 3 tracks =
+  // col: -4, colSpan: 3). Using -3 would overflow into an implicit
+  // track past the outer padding.
+  out.push({
+    id: 'system-run',
+    col: -4,
+    colSpan: 3,
+    row: 1,
+    kind: 'system-run'
+  })
+  // When jobs are queued/running, insert a 2-track queue indicator
+  // between BatchCount and Run — shifts BatchCount + Share left by 2.
+  if (showJobQueue.value) {
+    out.push({
+      id: 'system-job-queue',
+      col: -6,
+      colSpan: 2,
+      row: 1,
+      kind: 'system-job-queue'
+    })
+  }
+  const batchShift = showJobQueue.value ? -2 : 0
+  out.push({
+    id: 'system-batch-count',
+    col: -9 + batchShift,
+    colSpan: 5,
+    row: 1,
+    kind: 'system-batch-count'
+  })
+  if (showShare.value) {
+    out.push({
+      id: 'share',
+      col: -11 + batchShift,
+      colSpan: 2,
+      row: 1,
+      kind: 'system-share'
+    })
+  }
+
   // History thumbs sit on row 1, right of the action cells. Keeps column 1
   // clear so the left-dock panel snaps flush against the SideToolbar.
   for (let i = 0; i < historyThumbs.value.length; i++) {
@@ -500,7 +551,7 @@ const cells = computed<LayoutCellPlacement[]>(() => {
 </script>
 
 <template>
-  <div class="layout-view">
+  <div class="layout-view" :data-panel-side="panelSide">
     <!-- Background layer: output canvas fills the viewport. LinearPreview's
          built-in chrome (top actions + bottom history/feedback) is hidden;
          we render replacements as layout cells. -->
@@ -521,7 +572,8 @@ const cells = computed<LayoutCellPlacement[]>(() => {
         <IconCell
           v-else-if="cell.kind === 'system-share'"
           icon="icon-[lucide--send]"
-          :label="t('actionbar.shareTooltip')"
+          :label="t('actionbar.share')"
+          inline-label
           :on-activate="openShare"
           @pointerenter="prefetchShareDialog"
         />
@@ -556,6 +608,9 @@ const cells = computed<LayoutCellPlacement[]>(() => {
           <span class="info-cell__label">{{ infoLabel }}</span>
         </button>
         <FeedbackCell v-else-if="cell.kind === 'system-feedback'" />
+        <BatchCountCell v-else-if="cell.kind === 'system-batch-count'" />
+        <JobQueueCell v-else-if="cell.kind === 'system-job-queue'" />
+        <RunCell v-else-if="cell.kind === 'system-run'" />
         <OutputThumbCell
           v-else-if="
             cell.kind === 'output-thumb' && historyThumbMap.get(cell.id)
@@ -575,13 +630,10 @@ const cells = computed<LayoutCellPlacement[]>(() => {
       movable
     >
       <PanelBlockList
-        :rows="inputRows"
+        :rows="panelRows"
         :input-entry-map="inputEntryMap"
         :on-reorder="moveBlock"
       />
-      <template v-if="runRow" #footer>
-        <PanelBlockList :rows="[runRow]" :input-entry-map="inputEntryMap" />
-      </template>
     </FloatingPanel>
   </div>
 </template>
@@ -611,13 +663,23 @@ const cells = computed<LayoutCellPlacement[]>(() => {
   /* Own stacking context so our z-indexed children (background, grid,
      panel, drag preview) compose cleanly without reaching outside. */
   isolation: isolate;
-  /* Reserve the right-dock panel's footprint so centered children
-     (LinearWelcome) visually center in the panel-free area rather than
-     the raw viewport. Consumed as padding-right in LinearWelcome;
-     defaults to 0 outside .layout-view (old splitter App Mode). */
-  --welcome-panel-offset: calc(
+  /* Reserve the panel's footprint on whichever viewport side it's docked
+     against, so LinearWelcome's body copy stays visible on the opposite
+     side. LinearWelcome consumes both vars; the panel-free side is 0
+     and the panel side is panel-width + outer-padding. Default to
+     right-dock for legacy splitter App Mode where --data-panel-side is
+     unset. */
+  --welcome-panel-offset-left: 0;
+  --welcome-panel-offset-right: calc(
     var(--panel-dock-width, 420px) + var(--layout-outer-padding, 16px)
   );
+}
+
+.layout-view[data-panel-side='left'] {
+  --welcome-panel-offset-left: calc(
+    var(--panel-dock-width, 420px) + var(--layout-outer-padding, 16px)
+  );
+  --welcome-panel-offset-right: 0;
 }
 
 .layout-view__background {
@@ -645,6 +707,9 @@ const cells = computed<LayoutCellPlacement[]>(() => {
 .layout-view :deep(.layout-cell[data-cell-kind='system-builder']),
 .layout-view :deep(.layout-cell[data-cell-kind='system-share']),
 .layout-view :deep(.layout-cell[data-cell-kind='system-feedback']),
+.layout-view :deep(.layout-cell[data-cell-kind='system-batch-count']),
+.layout-view :deep(.layout-cell[data-cell-kind='system-job-queue']),
+.layout-view :deep(.layout-cell[data-cell-kind='system-run']),
 .layout-view :deep(.layout-cell[data-cell-kind='action-rerun']),
 .layout-view :deep(.layout-cell[data-cell-kind='action-reuse-params']),
 .layout-view :deep(.layout-cell[data-cell-kind='action-download']),
@@ -654,6 +719,14 @@ const cells = computed<LayoutCellPlacement[]>(() => {
   border: 1px solid rgb(255 255 255 / 0.08);
   border-radius: 10px;
   overflow: hidden;
+}
+
+/* Run cell hosts the accent-colored button directly — drop the chrome
+   fill so only the button paints and the cell radius matches the
+   button radius (8px inside 10px reads as a crisp pill). */
+.layout-view :deep(.layout-cell[data-cell-kind='system-run']) {
+  border: none;
+  background-color: transparent;
 }
 
 .info-cell {

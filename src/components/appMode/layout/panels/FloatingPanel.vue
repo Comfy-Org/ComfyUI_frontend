@@ -220,7 +220,10 @@ const menuEntries = computed<MenuItem[]>(() => [
 /* Preset positions — hard-coded for Phase 4-A. Drag commits these
    same values. */
 .floating-panel--right-dock {
-  top: var(--layout-outer-padding);
+  top: calc(
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
+  );
   right: var(--layout-outer-padding);
   bottom: var(--layout-outer-padding);
 }
@@ -236,7 +239,10 @@ const menuEntries = computed<MenuItem[]>(() => [
   );
 }
 .floating-panel--float-tr {
-  top: var(--layout-outer-padding);
+  top: calc(
+    var(--layout-outer-padding) + var(--layout-cell-size) +
+      var(--layout-gutter-min)
+  );
   right: var(--layout-outer-padding);
   height: calc(50% - var(--layout-outer-padding) - 4px);
 }

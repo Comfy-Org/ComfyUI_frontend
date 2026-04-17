@@ -10,6 +10,8 @@ defineProps<{
   icon: string
   /** Accessible label and tooltip text (already-translated string) */
   label: string
+  /** Render the label inline next to the icon (for multi-col cells). */
+  inlineLabel?: boolean
   /** Whether the cell shows an active/selected visual state */
   active?: boolean
   /** Whether the cell is disabled */
@@ -30,6 +32,7 @@ defineProps<{
     @click="() => onActivate?.()"
   >
     <i :class="[icon, 'icon-cell__icon']" />
+    <span v-if="inlineLabel" class="icon-cell__label">{{ label }}</span>
   </button>
 </template>
 
@@ -65,5 +68,12 @@ defineProps<{
 .icon-cell__icon {
   width: 20px;
   height: 20px;
+}
+
+.icon-cell__label {
+  margin-left: 8px;
+  font-size: var(--layout-font-md);
+  font-weight: 500;
+  white-space: nowrap;
 }
 </style>

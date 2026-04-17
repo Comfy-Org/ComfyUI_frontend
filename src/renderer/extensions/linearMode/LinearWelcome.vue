@@ -13,7 +13,16 @@ import AppModeWordmark from './AppModeWordmark.vue'
 const { t } = useI18n()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
-const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
+const { hasOutputs, hasNodes, panelPreset } = storeToRefs(appModeStore)
+
+// Which viewport side the panel is docked on. Mirror the welcome copy
+// to the opposite side so it stays fully visible — left panel → content
+// aligned right, right panel → content aligned left.
+const panelSide = computed(() => {
+  const p = panelPreset.value
+  if (p === 'left-dock' || p === 'float-tl' || p === 'float-bl') return 'left'
+  return 'right'
+})
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
   () => workflowStore.activeWorkflow?.initialMode === 'app'
@@ -38,12 +47,24 @@ async function runFromPill(e: MouseEvent) {
 <template>
   <div
     class="size-full"
-    :style="{ paddingRight: 'var(--welcome-panel-offset, 0px)' }"
+    :style="{
+      paddingLeft: 'var(--welcome-panel-offset-left, 0px)',
+      paddingRight: 'var(--welcome-panel-offset-right, 0px)'
+    }"
   >
     <div
       role="article"
       data-testid="linear-welcome"
-      class="flex h-full max-w-2xl flex-col items-start justify-center gap-6 py-6 pr-6 pl-(--layout-outer-padding,16px) text-left"
+      :class="[
+        'flex h-full max-w-2xl flex-col justify-start gap-6 pb-6',
+        panelSide === 'left'
+          ? 'ml-auto items-end pr-(--layout-outer-padding,16px) pl-6 text-right'
+          : 'items-start pr-6 pl-(--layout-outer-padding,16px) text-left'
+      ]"
+      :style="{
+        paddingTop:
+          'calc(var(--layout-outer-padding, 16px) + var(--layout-cell-size, 48px) + var(--layout-gutter-min, 8px))'
+      }"
     >
       <div class="flex flex-col gap-2">
         <h2 class="sr-only">{{ t('linearMode.welcome.title') }}</h2>
@@ -53,7 +74,9 @@ async function runFromPill(e: MouseEvent) {
         />
       </div>
 
-      <div class="flex max-w-2xl flex-col gap-4 text-2xl text-muted-foreground">
+      <div
+        class="mt-4 flex max-w-2xl flex-col gap-4 text-2xl text-muted-foreground"
+      >
         <p class="mt-0">{{ t('linearMode.welcome.message') }}</p>
         <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
         <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
