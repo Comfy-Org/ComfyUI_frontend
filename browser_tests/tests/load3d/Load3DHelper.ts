@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -38,6 +38,23 @@ export class Load3DHelper {
     await this.menuButton.click()
   }
 
+  async selectMenuCategory(name: string): Promise<void> {
+    await this.getMenuCategory(name).click()
+  }
+
+  async clickGridToggle(): Promise<void> {
+    await this.node.getByRole('button', { name: /show grid/i }).click()
+  }
+
+  async switchCameraType(): Promise<void> {
+    await this.node.getByRole('button', { name: /switch camera/i }).click()
+  }
+
+  async selectMaterialMode(mode: string): Promise<void> {
+    await this.node.getByRole('button', { name: /material mode/i }).click()
+    await this.node.getByRole('button', { name: mode, exact: true }).click()
+  }
+
   async setBackgroundColor(hex: string): Promise<void> {
     await this.colorInput.evaluate((el, value) => {
       ;(el as HTMLInputElement).value = value
@@ -50,4 +67,21 @@ export class Load3DHelper {
       timeout: 30000
     })
   }
+}
+
+export async function getNodeConfig<T>(
+  page: Page,
+  nodeId: string,
+  configKey: string
+): Promise<T | null> {
+  return page.evaluate(
+    ({ id, key }) => {
+      const node = window.app!.graph.getNodeById(Number(id))
+      if (!node?.properties) return null
+      return (
+        ((node.properties as Record<string, unknown>)[key] as T | null) ?? null
+      )
+    },
+    { id: nodeId, key: configKey }
+  )
 }

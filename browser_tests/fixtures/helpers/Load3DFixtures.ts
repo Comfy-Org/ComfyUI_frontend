@@ -23,3 +23,15 @@ export const load3dViewerTest = load3dTest.extend<{
     await use(new Load3DViewerHelper(comfyPage.page))
   }
 })
+
+export const load3dVueEnabledTest = comfyPageFixture.extend<{
+  enableVueNodes: void
+}>({
+  enableVueNodes: [
+    async ({ comfyPage }, use) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await use()
+    },
+    { auto: true }
+  ]
+})
