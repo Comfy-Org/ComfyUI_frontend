@@ -35,10 +35,12 @@ const categories = computed(() =>
 const activeSection = ref(sections[0]?.id ?? '')
 
 let observer: IntersectionObserver | null = null
+let isScrolling = false
 
 onMounted(() => {
   observer = new IntersectionObserver(
     (entries) => {
+      if (isScrolling) return
       for (const entry of entries) {
         if (entry.isIntersecting) {
           activeSection.value = entry.target.id
@@ -60,8 +62,12 @@ onUnmounted(() => {
 
 function scrollToSection(id: string) {
   activeSection.value = id
+  isScrolling = true
   const el = document.getElementById(id)
   el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  setTimeout(() => {
+    isScrolling = false
+  }, 800)
 }
 </script>
 
