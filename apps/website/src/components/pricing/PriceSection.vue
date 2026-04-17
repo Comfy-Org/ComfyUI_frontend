@@ -301,7 +301,7 @@ function getButtonVariantClass(variant: CtaVariant): string {
           </p>
 
           <a
-            href="mailto:contact@comfy.org"
+            href="/contact"
             class="border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink mt-8 inline-flex h-10 items-center justify-center rounded-xl border-2 px-6 text-xs font-bold tracking-wide uppercase transition-colors"
           >
             {{ t('pricing.enterprise.cta', locale) }}

@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import ComingSoon from '../../components/common/ComingSoon.astro'
+import FormSection from '../../components/contact/FormSection.vue'
+import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 ---
 
 <BaseLayout title="联系我们 — Comfy">
-  <ComingSoon />
+  <FormSection locale="zh-CN" client:load />
+  <SocialProofBarSection />
 </BaseLayout>

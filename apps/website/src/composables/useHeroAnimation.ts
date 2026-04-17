@@ -7,9 +7,11 @@ import { prefersReducedMotion } from './useReducedMotion'
 export function useHeroAnimation(refs: {
   section: Ref<HTMLElement | undefined>
   textEls: Ref<HTMLElement | undefined>[]
-  logo: Ref<HTMLElement | undefined>
-  video: Ref<HTMLElement | undefined>
+  logo?: Ref<HTMLElement | undefined>
+  video?: Ref<HTMLElement | undefined>
+  parallax?: boolean
 }) {
+  const { parallax = true } = refs
   let ctx: gsap.Context | undefined
 
   onMounted(() => {
@@ -17,8 +19,8 @@ export function useHeroAnimation(refs: {
 
     const section = refs.section.value
     const textEls = refs.textEls.map((r) => r.value).filter(Boolean)
-    const logo = refs.logo.value
-    const video = refs.video.value
+    const logo = refs.logo?.value
+    const video = refs.video?.value
     if (!section || !textEls.length) return
 
     ctx = gsap.context(() => {
@@ -50,16 +52,18 @@ export function useHeroAnimation(refs: {
           ease: 'power2.out'
         })
 
-        gsap.to(video, {
-          yPercent: -10,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: section,
-            start: 'top top',
-            end: 'bottom top',
-            scrub: 1
-          }
-        })
+        if (parallax) {
+          gsap.to(video, {
+            yPercent: -10,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top top',
+              end: 'bottom top',
+              scrub: 1
+            }
+          })
+        }
       }
     })
   })

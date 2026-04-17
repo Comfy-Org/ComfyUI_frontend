@@ -2809,6 +2809,106 @@ const translations = {
     'zh-CN': '育碧研发'
   },
 
+  // Contact – FormSection
+  'contact.form.badge': {
+    en: 'CONTACT SALES',
+    'zh-CN': '联系销售'
+  },
+  'contact.form.heading': {
+    en: 'Create powerful workflows,\nscale without limits.',
+    'zh-CN': '创建强大的工作流，\n无限扩展。'
+  },
+  'contact.form.description': {
+    en: "From design studios to production houses, we're building a platform that empowers your team with access to powerful creation on demand. Let's explore what might work for your needs.",
+    'zh-CN':
+      '从设计工作室到制作公司，我们正在构建一个平台，让您的团队按需获取强大的创作能力。让我们一起探索适合您需求的方案。'
+  },
+  'contact.form.supportLink': {
+    en: 'Looking for technical or product support?',
+    'zh-CN': '需要技术或产品支持？'
+  },
+  'contact.form.supportLinkCta': {
+    en: 'Find your answer here',
+    'zh-CN': '在这里找到答案'
+  },
+  'contact.form.firstName': {
+    en: 'First name',
+    'zh-CN': '名'
+  },
+  'contact.form.lastName': {
+    en: 'Last Name',
+    'zh-CN': '姓'
+  },
+  'contact.form.company': {
+    en: 'Company',
+    'zh-CN': '公司'
+  },
+  'contact.form.phone': {
+    en: 'Phone Number (optional)',
+    'zh-CN': '电话号码（可选）'
+  },
+  'contact.form.packageQuestion': {
+    en: 'Are you interested in learning more about our Enterprise Services, which start at $100K annually, our individual packages, or our team packages?',
+    'zh-CN':
+      '您是否有兴趣了解更多关于我们的企业服务（年费起价 $100K）、个人套餐或团队套餐？'
+  },
+  'contact.form.packageIndividual': {
+    en: 'INDIVIDUAL',
+    'zh-CN': '个人'
+  },
+  'contact.form.packageTeams': {
+    en: 'TEAMS',
+    'zh-CN': '团队'
+  },
+  'contact.form.packageEnterprise': {
+    en: 'ENTERPRISE',
+    'zh-CN': '企业'
+  },
+  'contact.form.usingComfy': {
+    en: 'Are you /your team currently using Comfy?',
+    'zh-CN': '您/您的团队目前是否在使用 Comfy？'
+  },
+  'contact.form.usingYesProduction': {
+    en: 'Yes, in production',
+    'zh-CN': '是，在生产环境中'
+  },
+  'contact.form.usingYesTesting': {
+    en: 'Yes, testing / experimenting',
+    'zh-CN': '是，测试/实验中'
+  },
+  'contact.form.usingNotYet': {
+    en: 'Not yet, evaluating',
+    'zh-CN': '尚未使用，评估中'
+  },
+  'contact.form.usingOtherTools': {
+    en: 'Not using Comfy yet, but using other GenAI tools',
+    'zh-CN': '尚未使用 Comfy，但在使用其他 GenAI 工具'
+  },
+  'contact.form.lookingFor': {
+    en: 'What are you looking for?',
+    'zh-CN': '您在寻找什么？'
+  },
+  'contact.form.lookingForPlaceholder': {
+    en: 'Tell us about your team needs, expected usage, or other specific requirements.',
+    'zh-CN': '请告诉我们您的团队需求、预期使用情况或其他具体要求。'
+  },
+  'contact.form.submit': {
+    en: 'SUBMIT',
+    'zh-CN': '提交'
+  },
+  'contact.form.firstNamePlaceholder': {
+    en: 'Jane',
+    'zh-CN': 'Jane'
+  },
+  'contact.form.lastNamePlaceholder': {
+    en: 'Smith',
+    'zh-CN': 'Smith'
+  },
+  'contact.form.companyPlaceholder': {
+    en: 'jane@acme.org',
+    'zh-CN': 'jane@acme.org'
+  },
+
   'customers.story.whatsNext': {
     en: "What's next?",
     'zh-CN': '接下来看什么？'
