@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { getDataFromJSON } from './json'
 
@@ -44,5 +44,43 @@ describe('getDataFromJSON', () => {
     const result = await getDataFromJSON(file)
 
     expect(result).toBeUndefined()
+  })
+
+  describe('FileReader failure modes', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('resolves undefined when the FileReader fires error', async () => {
+      vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(
+        function (this: FileReader) {
+          queueMicrotask(() =>
+            this.onerror?.(
+              new ProgressEvent('error') as ProgressEvent<FileReader>
+            )
+          )
+        }
+      )
+
+      const result = await getDataFromJSON(jsonFile({ nodes: [] }))
+
+      expect(result).toBeUndefined()
+    })
+
+    it('resolves undefined when the FileReader fires abort', async () => {
+      vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(
+        function (this: FileReader) {
+          queueMicrotask(() =>
+            this.onabort?.(
+              new ProgressEvent('abort') as ProgressEvent<FileReader>
+            )
+          )
+        }
+      )
+
+      const result = await getDataFromJSON(jsonFile({ nodes: [] }))
+
+      expect(result).toBeUndefined()
+    })
   })
 })

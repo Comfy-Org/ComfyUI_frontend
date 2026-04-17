@@ -22,6 +22,8 @@ export function getDataFromJSON(
         resolve(undefined)
       }
     }
+    reader.onerror = () => resolve(undefined)
+    reader.onabort = () => resolve(undefined)
     reader.readAsText(file)
     return
   })
