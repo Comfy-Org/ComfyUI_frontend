@@ -17,6 +17,9 @@ yarn.lock
 .prettiercache
 .stylelintcache
 
+# Local HTTPS dev certs (mkcert)
+.certs
+
 node_modules
 .pnpm-store
 dist

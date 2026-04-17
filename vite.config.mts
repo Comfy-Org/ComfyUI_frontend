@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { execSync } from 'child_process'
 import { config as dotenvConfig } from 'dotenv'
+import { existsSync, readFileSync } from 'fs'
 import type { IncomingMessage, ServerResponse } from 'http'
 import { Readable } from 'stream'
 import type { ReadableStream as NodeReadableStream } from 'stream/web'
@@ -91,6 +92,17 @@ const DEV_SERVER_COMFYUI_URL =
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
+const DEV_HOST = process.env.DEV_HOST
+const DEV_HTTPS_CONFIG = DEV_HOST
+  ? (() => {
+      const cert = `.certs/${DEV_HOST}.pem`
+      const key = `.certs/${DEV_HOST}-key.pem`
+      return existsSync(cert) && existsSync(key)
+        ? { cert: readFileSync(cert), key: readFileSync(key) }
+        : undefined
+    })()
+  : undefined
+
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   _req: IncomingMessage,
@@ -159,7 +171,8 @@ const gcsRedirectProxyConfig: ProxyOptions = {
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
-    host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    host: DEV_HOST ?? (VITE_REMOTE_DEV ? '0.0.0.0' : undefined),
+    https: DEV_HTTPS_CONFIG,
     watch: {
       ignored: [
         './browser_tests/**',
@@ -186,7 +199,13 @@ export default defineConfig({
       ...(DISTRIBUTION === 'cloud'
         ? {
             '/api/view': gcsRedirectProxyConfig,
-            '/api/viewvideo': gcsRedirectProxyConfig
+            '/api/viewvideo': gcsRedirectProxyConfig,
+            '/__hub_assets': {
+              target: 'https://comfy-hub-assets.comfy.org',
+              changeOrigin: true,
+              secure: true,
+              rewrite: (path) => path.replace(/^\/__hub_assets/, '')
+            }
           }
         : {}),
 
