@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
+import {
+  draggable,
+  dropTargetForElements
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -19,7 +23,6 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
@@ -51,7 +54,6 @@ const isAllCollapsed = computed({
     advancedInputsCollapsed.value = collapse
   }
 })
-const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
@@ -146,65 +148,57 @@ async function searcher(query: string) {
   searchedWidgetsList.value = searchWidgets(widgetsList.value, query)
 }
 
-const isMounted = useMounted()
+let cleanupDragAndDrop = () => {}
 
 function setDraggableState() {
-  if (!isMounted.value) return
+  cleanupDragAndDrop()
+  cleanupDragAndDrop = () => {}
 
-  draggableList.value?.dispose()
   const container = sectionWidgetsRef.value?.widgetsContainer
   if (isSearching.value || !container?.children?.length) return
 
-  draggableList.value = new DraggableList(container, '.draggable-item')
+  const items = Array.from(
+    container.querySelectorAll('.draggable-item')
+  ) as HTMLElement[]
+  if (items.length === 0) return
 
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
+  const cleanups: Array<() => void> = []
 
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    if (oldPosition === -1) {
-      console.error('[TabSubgraphInputs] draggableItem not found in items')
-      return
-    }
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
+  items.forEach((item, index) => {
+    cleanups.push(
+      draggable({
+        element: item,
+        getInitialData: () => ({ index }),
+        onDragStart: () => item.classList.add('is-draggable'),
+        onDrop: () => item.classList.remove('is-draggable')
+      })
     )
-
-    promotionStore.movePromotion(
-      node.rootGraph.id,
-      node.id,
-      oldPosition,
-      newPosition
+    cleanups.push(
+      dropTargetForElements({
+        element: item,
+        onDrop: ({ source }) => {
+          const fromIndex = source.data.index as number
+          if (fromIndex === index) return
+          promotionStore.movePromotion(
+            node.rootGraph.id,
+            node.id,
+            fromIndex,
+            index
+          )
+          canvasStore.canvas?.setDirty(true, true)
+        }
+      })
     )
-    canvasStore.canvas?.setDirty(true, true)
-  }
+  })
+
+  cleanupDragAndDrop = () => cleanups.forEach((c) => c())
 }
 
 watchDebounced(searchedWidgetsList, () => setDraggableState(), {
   debounce: 100
 })
 onMounted(() => setDraggableState())
-onBeforeUnmount(() => draggableList.value?.dispose())
+onBeforeUnmount(() => cleanupDragAndDrop())
 
 const label = computed(() => {
   return searchedWidgetsList.value.length !== 0
