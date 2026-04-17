@@ -1,0 +1,76 @@
+name: Resolve PR from workflow_run
+description: >
+  Resolves the PR number from a workflow_run event using pull_requests[0]
+  with a listPullRequestsAssociatedWithCommit fallback.
+  Optionally verifies the workflow_run head SHA still matches the live PR head.
+
+inputs:
+  check-staleness:
+    description: >
+      When 'true', fetches the live PR and compares its head SHA against the
+      workflow_run head SHA. Sets skip=true if they differ.
+      Also outputs 'base' and 'head-sha'.
+    required: false
+    default: 'false'
+
+outputs:
+  skip:
+    description: "'true' when no open PR was found or the run is stale"
+    value: ${{ steps.resolve.outputs.skip }}
+  number:
+    description: The PR number (empty when skip is true)
+    value: ${{ steps.resolve.outputs.number }}
+  base:
+    description: The PR base branch (only set when check-staleness is true)
+    value: ${{ steps.resolve.outputs.base }}
+  head-sha:
+    description: The PR head SHA (only set when check-staleness is true)
+    value: ${{ steps.resolve.outputs.head-sha }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve PR
+      id: resolve
+      uses: actions/github-script@v8
+      env:
+        CHECK_STALENESS: ${{ inputs.check-staleness }}
+      with:
+        script: |
+          let pr = context.payload.workflow_run.pull_requests?.[0];
+          if (!pr) {
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.payload.workflow_run.head_sha,
+            });
+            pr = prs.find(p => p.state === 'open');
+          }
+
+          if (!pr) {
+            core.info('No open PR found for this workflow run — skipping.');
+            core.setOutput('skip', 'true');
+            return;
+          }
+
+          if (process.env.CHECK_STALENESS === 'true') {
+            const { data: livePr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+
+            if (livePr.head.sha !== context.payload.workflow_run.head_sha) {
+              core.info(
+                `Stale run: workflow SHA ${context.payload.workflow_run.head_sha} != PR head ${livePr.head.sha}`
+              );
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            core.setOutput('base', livePr.base.ref);
+            core.setOutput('head-sha', livePr.head.sha);
+          }
+
+          core.setOutput('skip', 'false');
+          core.setOutput('number', String(pr.number));
