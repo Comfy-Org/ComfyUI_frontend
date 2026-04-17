@@ -24,6 +24,30 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+const reportedInactiveCalls = new Set<string>()
+
+/**
+ * Report a ChangeTracker method being called on an inactive tracker —
+ * a lifecycle violation that usually indicates stale extension state or
+ * an incorrect call ordering. Reports once per method per session so the
+ * signal is not drowned out by hot-path invocations.
+ */
+function reportInactiveTrackerCall(method: string, workflowPath: string) {
+  if (reportedInactiveCalls.has(method)) return
+  reportedInactiveCalls.add(method)
+
+  console.warn(`${method}() called on inactive tracker for: ${workflowPath}`)
+
+  if (isDesktop) {
+    Sentry.addBreadcrumb({
+      category: 'changeTracker',
+      message: `${method}() called on inactive tracker`,
+      level: 'warning',
+      data: { workflow: workflowPath }
+    })
+  }
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -102,23 +126,7 @@ export class ChangeTracker {
    */
   deactivate() {
     if (!isActiveTracker(this)) {
-      if (import.meta.env.DEV) {
-        console.assert(
-          isActiveTracker(this),
-          'deactivate() called on inactive tracker:',
-          this.workflow.path
-        )
-      }
-      if (isDesktop) {
-        Sentry.captureMessage(
-          'ChangeTracker.deactivate() called on inactive tracker',
-          { tags: { workflow: this.workflow.path } }
-        )
-      }
-      console.warn(
-        'deactivate() called on inactive tracker for:',
-        this.workflow.path
-      )
+      reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
     if (!this._restoringState) this.captureCanvasState()
@@ -183,20 +191,17 @@ export class ChangeTracker {
    */
   captureCanvasState() {
     const isUndoRedoing = this._restoringState
-    const isCurrentlySavingChange = this.changeCount > 0
+    const isInsideChangeTransaction = this.changeCount > 0
     if (
       !app.graph ||
-      isCurrentlySavingChange ||
+      isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
     )
       return
 
     if (!isActiveTracker(this)) {
-      console.warn(
-        'captureCanvasState called on inactive tracker for:',
-        this.workflow.path
-      )
+      reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
 
