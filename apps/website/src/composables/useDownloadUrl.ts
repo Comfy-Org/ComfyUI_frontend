@@ -7,7 +7,7 @@ const downloadUrls = {
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
 
-export type DetectedPlatform = 'windows' | 'mac' | null
+type DetectedPlatform = 'windows' | 'mac' | null
 
 function isMobile(ua: string): boolean {
   return /iphone|ipad|ipod|android/.test(ua)
