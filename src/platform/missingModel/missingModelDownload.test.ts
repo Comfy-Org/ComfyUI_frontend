@@ -202,4 +202,14 @@ describe('isModelDownloadable', () => {
       })
     ).toBe(true)
   })
+
+  it('rejects non-allowlisted URLs', () => {
+    expect(
+      isModelDownloadable({
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        directory: 'checkpoints'
+      })
+    ).toBe(false)
+  })
 })
