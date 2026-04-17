@@ -31,8 +31,6 @@ jobs:
       - name: Resolve PR from workflow_run context
         id: pr-meta
         uses: ./.github/actions/resolve-pr-from-workflow-run
-        with:
-          check-staleness: 'true'
 
       - name: Find size workflow run
         if: steps.pr-meta.outputs.skip != 'true'
