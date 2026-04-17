@@ -175,7 +175,7 @@
             :model-value="getComboValue(model.representative)"
             :options="comboOptions"
             :show-divider="isAssetSupported || downloadable"
-            @select="handleComboSelect(modelKey, $event)"
+            @select="handleLibraryModelSelect"
           />
         </TransitionCollapse>
       </div>
@@ -284,16 +284,29 @@ const downloadLabel = computed(() => {
   return size ? `${base} (${formatSize(size)})` : base
 })
 
-function handleDownload() {
+async function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
+    const started = await downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths
     )
+
+    if (started) {
+      store.downloadRefs[modelKey.value] = {
+        kind: 'electron-download',
+        url: rep.url
+      }
+      handleComboSelect(modelKey.value, rep.name)
+    }
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }
+}
+
+function handleLibraryModelSelect(value: string | undefined) {
+  delete store.downloadRefs[modelKey.value]
+  handleComboSelect(modelKey.value, value)
 }
 
 const {
