@@ -12,7 +12,7 @@ const cards = [
     labelKey: 'cloud.audience.creators.label' as const,
     titleKey: 'cloud.audience.creators.title' as const,
     descriptionKey: 'cloud.audience.creators.description' as const,
-    image: '/images/cloud/audience-creator.jpg'
+    image: '/images/cloud/audience-creator.webp'
   },
   {
     labelKey: 'cloud.audience.teams.label' as const,
