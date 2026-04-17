@@ -792,24 +792,24 @@ const translations = {
     'zh-CN': '新模型发布后会第一时间上线。'
   },
   'cloud.aiModels.card.grokImagine': {
-    en: 'Grok Imagine',
-    'zh-CN': 'Grok Imagine'
+    en: 'Grok Video',
+    'zh-CN': 'Grok Video'
   },
   'cloud.aiModels.card.nanoBananaPro': {
     en: 'Nano Banana Pro',
     'zh-CN': 'Nano Banana Pro'
   },
-  'cloud.aiModels.card.ltx23': {
-    en: 'LTX 2.3',
-    'zh-CN': 'LTX 2.3'
+  'cloud.aiModels.card.seendance20': {
+    en: 'Seendance 2.0',
+    'zh-CN': 'Seendance 2.0'
   },
   'cloud.aiModels.card.qwenImageEdit': {
-    en: 'Advanced image\nediting with Qwen',
-    'zh-CN': 'Qwen 高级\n图像编辑'
+    en: 'Qwen\nImage Edit',
+    'zh-CN': 'Qwen\n图像编辑'
   },
   'cloud.aiModels.card.wan22TextToVideo': {
-    en: 'Wan 2.2\ntext to video',
-    'zh-CN': 'Wan 2.2\n文生视频'
+    en: 'Wan 2.2',
+    'zh-CN': 'Wan 2.2'
   },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',

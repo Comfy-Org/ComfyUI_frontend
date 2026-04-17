@@ -18,7 +18,7 @@ const cards = [
     labelKey: 'cloud.audience.teams.label' as const,
     titleKey: 'cloud.audience.teams.title' as const,
     descriptionKey: 'cloud.audience.teams.description' as const,
-    image: '/images/cloud/audience-team.jpg'
+    image: '/images/cloud/audience-team.webp'
   }
 ]
 </script>

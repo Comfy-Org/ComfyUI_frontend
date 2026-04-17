@@ -11,13 +11,14 @@ type ModelCard = {
   titleKey:
     | 'cloud.aiModels.card.grokImagine'
     | 'cloud.aiModels.card.nanoBananaPro'
-    | 'cloud.aiModels.card.ltx23'
+    | 'cloud.aiModels.card.seendance20'
     | 'cloud.aiModels.card.qwenImageEdit'
     | 'cloud.aiModels.card.wan22TextToVideo'
   imageSrc: string
   badgeIcon: string
   badgeClass: string
   layoutClass: string
+  objectPosition?: string
 }
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -27,9 +28,9 @@ const badgeBase =
 
 const modelCards: ModelCard[] = [
   {
-    titleKey: 'cloud.aiModels.card.grokImagine',
-    imageSrc: '/images/cloud/ai-models/grok-imagine.webp',
-    badgeIcon: '/icons/ai-models/grok.svg',
+    titleKey: 'cloud.aiModels.card.seendance20',
+    imageSrc: '/images/cloud/ai-models/seedance-20.webm',
+    badgeIcon: '/icons/ai-models/bytedance.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
   },
@@ -37,28 +38,29 @@ const modelCards: ModelCard[] = [
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
     imageSrc: '/images/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
-    badgeClass: `${badgeBase} rounded-full`,
-    layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
+    badgeClass: `${badgeBase} rounded-2xl`,
+    layoutClass: 'lg:col-span-6 lg:aspect-[16/7]',
+    objectPosition: 'center 20%'
   },
   {
-    titleKey: 'cloud.aiModels.card.ltx23',
-    imageSrc: '/images/cloud/ai-models/ltx-23.webp',
-    badgeIcon: '/icons/ai-models/ltx.svg',
-    badgeClass: `${badgeBase} rounded-full`,
+    titleKey: 'cloud.aiModels.card.grokImagine',
+    imageSrc: '/images/cloud/ai-models/grok-video.webm',
+    badgeIcon: '/icons/ai-models/grok.svg',
+    badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
     imageSrc: '/images/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
-    badgeClass: `${badgeBase} rounded-full`,
+    badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
-    imageSrc: '/images/cloud/ai-models/wan-22.webp',
+    imageSrc: '/images/cloud/ai-models/wan-22.webm',
     badgeIcon: '/icons/ai-models/wan.svg',
-    badgeClass: `${badgeBase} rounded-full`,
+    badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   }
 ]
@@ -101,9 +103,37 @@ function getCardClass(layoutClass: string): string {
               :href="externalLinks.workflows"
               :class="getCardClass(card.layoutClass)"
             >
+              <video
+                v-if="card.imageSrc.endsWith('.webm')"
+                :src="card.imageSrc"
+                :aria-label="t(card.titleKey, locale)"
+                :style="
+                  card.objectPosition
+                    ? { objectPosition: card.objectPosition }
+                    : undefined
+                "
+                class="size-full object-cover"
+                autoplay
+                loop
+                muted
+                playsinline
+              >
+                <track
+                  kind="descriptions"
+                  :src="card.imageSrc.replace('.webm', '.vtt')"
+                  srclang="en"
+                  default
+                />
+              </video>
               <img
+                v-else
                 :src="card.imageSrc"
                 :alt="t(card.titleKey, locale)"
+                :style="
+                  card.objectPosition
+                    ? { objectPosition: card.objectPosition }
+                    : undefined
+                "
                 class="size-full object-cover"
                 loading="lazy"
                 decoding="async"

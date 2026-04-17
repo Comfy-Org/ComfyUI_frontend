@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import HeroSection from '../components/product/local/HeroSection.vue'
 import CloudBannerSection from '../components/product/shared/CloudBannerSection.vue'
+import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
 import ReasonSection from '../components/product/local/ReasonSection.vue'
 import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
 import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
@@ -13,6 +14,7 @@ import FAQSection from '../components/product/local/FAQSection.vue'
   <HeroSection client:load />
   <ReasonSection />
   <EcoSystemSection client:visible />
+  <AIModelsSection />
   <ProductCardsSection />
   <FAQSection client:visible />
 </BaseLayout>
