@@ -903,6 +903,11 @@ describe('useWorkflowService', () => {
         'workflows/test.app.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(copy)
+      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+        is_app: true,
+        is_new: true
+      })
     })
 
     it('self-overwrites when saving same name with same mode', async () => {
