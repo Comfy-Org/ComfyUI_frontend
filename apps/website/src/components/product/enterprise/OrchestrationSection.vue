@@ -294,9 +294,9 @@ onBeforeUnmount(() => {
       class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-8 p-2 lg:flex-row lg:items-stretch lg:gap-16"
     >
       <!-- Image -->
-      <div class="lg:w-1/2">
+      <div class="lg:flex lg:w-1/2">
         <div
-          class="aspect-square w-full overflow-hidden rounded-4xl"
+          class="aspect-square w-full overflow-hidden rounded-4xl lg:aspect-auto lg:h-full"
           :aria-label="t('enterprise.orchestration.heading', locale)"
           role="img"
         >
