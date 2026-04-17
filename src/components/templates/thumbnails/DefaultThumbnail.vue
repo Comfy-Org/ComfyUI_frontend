@@ -1,6 +1,6 @@
 <template>
   <BaseThumbnail :hover-zoom="hoverZoom" :is-hovered="isHovered">
-    <LazyImage
+    <LazyMedia
       :src="src"
       :alt="alt"
       :image-class="[
@@ -17,8 +17,9 @@
 </template>
 
 <script setup lang="ts">
-import LazyImage from '@/components/common/LazyImage.vue'
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import LazyMedia from '@/components/templates/thumbnails/LazyMedia.vue'
+import { isVideoSrc } from '@/platform/workflow/templates/utils/hubAssetUrl'
 
 const { src, isVideo } = defineProps<{
   src: string
@@ -28,5 +29,6 @@ const { src, isVideo } = defineProps<{
   isVideo?: boolean
 }>()
 
-const isVideoType = isVideo ?? (src?.toLowerCase().endsWith('.webp') || false)
+const isVideoType =
+  isVideo ?? (isVideoSrc(src) || src?.toLowerCase().endsWith('.webp') || false)
 </script>
