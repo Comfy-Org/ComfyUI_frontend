@@ -14,7 +14,10 @@ const inputRef = useTemplateRef<HTMLInputElement>('inputEl')
 
 defineExpose({
   focus: () => inputRef.value?.focus(),
-  select: () => inputRef.value?.select()
+  select: () => inputRef.value?.select(),
+  blur: () => inputRef.value?.blur(),
+  setSelectionRange: (start: number, end: number) =>
+    inputRef.value?.setSelectionRange(start, end)
 })
 </script>
 

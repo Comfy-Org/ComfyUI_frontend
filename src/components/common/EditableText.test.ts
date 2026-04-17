@@ -1,7 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
 
 import EditableText from './EditableText.vue'
@@ -17,10 +15,6 @@ describe('EditableText', () => {
     const user = userEvent.setup()
 
     render(EditableText, {
-      global: {
-        plugins: [PrimeVue],
-        components: { InputText }
-      },
       props: {
         ...props,
         ...(callbacks.onEdit && { onEdit: callbacks.onEdit }),

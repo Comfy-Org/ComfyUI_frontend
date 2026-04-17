@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
+import { useTemplateRef } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const { class: className, ...restAttrs } = defineProps<{
+const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
 const modelValue = defineModel<string | number>()
+
+const textareaEl = useTemplateRef<HTMLTextAreaElement>('textareaEl')
+
+defineExpose({
+  focus: () => textareaEl.value?.focus()
+})
 </script>
 
 <template>
   <textarea
-    v-bind="restAttrs"
+    ref="textareaEl"
     v-model="modelValue"
     :class="
       cn(
