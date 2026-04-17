@@ -1525,6 +1525,541 @@ const translations = {
   'footer.location': {
     en: 'San Francisco, USA',
     'zh-CN': '美国旧金山'
+  },
+
+  // ── Privacy Policy ────────────────────────────────────────────────
+  'privacy.intro.label': { en: 'INTRO', 'zh-CN': '简介' },
+  'privacy.intro.block.0': {
+    en: 'Your privacy is important to us. It is Comfy Organization Inc\'s policy to respect your privacy and comply with any applicable law and regulation regarding any personal information we may collect about you, including across our website, <a href="https://www.comfy.org" class="text-white underline">https://www.comfy.org</a>, and other sites we own and operate.',
+    'zh-CN':
+      '您的隐私对我们非常重要。Comfy Organization Inc 的政策是尊重您的隐私，并遵守有关我们可能收集的您的个人信息的任何适用法律和法规，包括在我们的网站 <a href="https://www.comfy.org" class="text-white underline">https://www.comfy.org</a> 以及我们拥有和运营的其他网站上。'
+  },
+  'privacy.intro.block.1': {
+    en: 'Personal information is any information about you which can be used to identify you. This includes information about you as a person (such as name, address, and date of birth), your devices, payment details, and even information about how you use a website or online service.',
+    'zh-CN':
+      '个人信息是指可以用于识别您身份的任何信息。这包括关于您个人的信息（如姓名、地址和出生日期）、您的设备、付款信息，甚至包括您如何使用网站或在线服务的信息。'
+  },
+  'privacy.intro.block.2': {
+    en: 'In the event our site contains links to third-party sites and services, please be aware that those sites and services have their own privacy policies. After following a link to any third-party content, you should read their posted privacy policy information about how they collect and use personal information. This Privacy Policy does not apply to any of your activities after you leave our site.',
+    'zh-CN':
+      '如果我们的网站包含指向第三方网站和服务的链接，请注意这些网站和服务有自己的隐私政策。在访问任何第三方内容的链接后，您应阅读其发布的关于如何收集和使用个人信息的隐私政策信息。本隐私政策不适用于您离开我们网站后的任何活动。'
+  },
+  'privacy.intro.block.3': {
+    en: 'This policy is effective as of April 18, 2025.',
+    'zh-CN': '本政策自 2025 年 4 月 18 日起生效。'
+  },
+  'privacy.information-we-collect.label': {
+    en: 'INFORMATION',
+    'zh-CN': '信息收集'
+  },
+  'privacy.information-we-collect.title': {
+    en: 'Information We Collect',
+    'zh-CN': '我们收集的信息'
+  },
+  'privacy.information-we-collect.block.0': {
+    en: 'Information we collect falls into one of two categories: "voluntarily provided" information and "automatically collected" information.',
+    'zh-CN': '我们收集的信息分为两类："自愿提供"的信息和"自动收集"的信息。'
+  },
+  'privacy.information-we-collect.block.1': {
+    en: '"Voluntarily provided" information refers to any information you knowingly and actively provide us when using or participating in any of our services and promotions.',
+    'zh-CN':
+      '"自愿提供"的信息是指您在使用或参与我们的任何服务和促销活动时，有意识地主动提供给我们的任何信息。'
+  },
+  'privacy.information-we-collect.block.2': {
+    en: '"Automatically collected" information refers to any information automatically sent by your devices in the course of accessing our products and services.',
+    'zh-CN':
+      '"自动收集"的信息是指您的设备在访问我们的产品和服务过程中自动发送的任何信息。'
+  },
+  'privacy.personal-information.label': {
+    en: 'PERSONAL INFO',
+    'zh-CN': '个人信息'
+  },
+  'privacy.personal-information.title': {
+    en: 'Personal Information',
+    'zh-CN': '个人信息'
+  },
+  'privacy.personal-information.block.0': {
+    en: 'We may ask for personal information — for example when you register an account — which may include one or more of the following:',
+    'zh-CN':
+      '我们可能会要求您提供个人信息——例如当您注册账户时——可能包括以下一项或多项：'
+  },
+  'privacy.personal-information.block.1': {
+    en: 'Name\nEmail',
+    'zh-CN': '姓名\n电子邮件'
+  },
+  'privacy.legitimate-reasons.label': { en: 'PROCESSING', 'zh-CN': '处理理由' },
+  'privacy.legitimate-reasons.title': {
+    en: 'Legitimate Reasons for Processing Your Personal Information',
+    'zh-CN': '处理您个人信息的合法理由'
+  },
+  'privacy.legitimate-reasons.block.0': {
+    en: 'We only collect and use your personal information when we have a legitimate reason for doing so. In which instance, we only collect personal information that is reasonably necessary to provide our services to you.',
+    'zh-CN':
+      '我们仅在有合法理由时才收集和使用您的个人信息。在这种情况下，我们仅收集为向您提供服务而合理必要的个人信息。'
+  },
+  'privacy.collection-and-use.label': {
+    en: 'COLLECTION',
+    'zh-CN': '收集与使用'
+  },
+  'privacy.collection-and-use.title': {
+    en: 'Collection and Use of Information',
+    'zh-CN': '信息的收集和使用'
+  },
+  'privacy.collection-and-use.block.0': {
+    en: 'We may collect personal information from you when you do any of the following on our website:',
+    'zh-CN': '当您在我们的网站上进行以下操作时，我们可能会向您收集个人信息：'
+  },
+  'privacy.collection-and-use.block.1': {
+    en: 'Register for an account\nPurchase a subscription\nUse a mobile device or web browser to access our content\nContact us via email, social media, or on any similar technologies\nWhen you mention us on social media',
+    'zh-CN':
+      '注册账户\n购买订阅\n使用移动设备或网络浏览器访问我们的内容\n通过电子邮件、社交媒体或任何类似技术联系我们\n在社交媒体上提及我们'
+  },
+  'privacy.collection-and-use.block.2': {
+    en: 'We may collect, hold, use, and disclose information for the following purposes, and personal information will not be further processed in a manner that is incompatible with these purposes:',
+    'zh-CN':
+      '我们可能出于以下目的收集、持有、使用和披露信息，且个人信息不会以与这些目的不相容的方式进一步处理：'
+  },
+  'privacy.collection-and-use.block.3': {
+    en: "to provide you with our platform's core features and services\nto contact and communicate with you\nto enable you to access and use our website, associated applications, and associated social media platforms",
+    'zh-CN':
+      '为您提供我们平台的核心功能和服务\n与您联系和沟通\n使您能够访问和使用我们的网站、相关应用程序和相关社交媒体平台'
+  },
+  'privacy.collection-and-use.block.4': {
+    en: 'We may combine voluntarily provided and automatically collected personal information with general information or research data we receive from other trusted sources. For example, if you provide us with your location, we may combine this with general information about currency and language to provide you with an enhanced experience of our site and service.',
+    'zh-CN':
+      '我们可能会将自愿提供和自动收集的个人信息与我们从其他可信来源获得的一般信息或研究数据相结合。例如，如果您向我们提供您的位置信息，我们可能会将其与有关货币和语言的一般信息结合，为您提供更好的网站和服务体验。'
+  },
+  'privacy.security.label': { en: 'SECURITY', 'zh-CN': '安全' },
+  'privacy.security.title': {
+    en: 'Security of Your Personal Information',
+    'zh-CN': '您个人信息的安全'
+  },
+  'privacy.security.block.0': {
+    en: 'When we collect and process personal information, and while we retain this information, we will protect it within commercially acceptable means to prevent loss and theft, as well as unauthorized access, disclosure, copying, use or modification.',
+    'zh-CN':
+      '当我们收集和处理个人信息时，在保留这些信息期间，我们将在商业上可接受的范围内保护这些信息，以防止丢失和盗窃，以及未经授权的访问、披露、复制、使用或修改。'
+  },
+  'privacy.security.block.1': {
+    en: 'Although we will do our best to protect the personal information you provide to us, we advise that no method of electronic transmission or storage is 100% secure and no one can guarantee absolute data security.',
+    'zh-CN':
+      '尽管我们会尽最大努力保护您提供给我们的个人信息，但我们建议您注意，没有任何电子传输或存储方法是 100% 安全的，没有人能保证绝对的数据安全。'
+  },
+  'privacy.security.block.2': {
+    en: 'You are responsible for selecting any password and its overall security strength, ensuring the security of your own information within the bounds of our services. For example, ensuring any passwords associated with accessing your personal information and accounts are secure and confidential.',
+    'zh-CN':
+      '您有责任选择任何密码及其整体安全强度，确保您自己信息在我们服务范围内的安全。例如，确保与访问您个人信息和账户相关的任何密码是安全和保密的。'
+  },
+  'privacy.retention.label': { en: 'RETENTION', 'zh-CN': '保留' },
+  'privacy.retention.title': {
+    en: 'How Long We Keep Your Personal Information',
+    'zh-CN': '我们保留您个人信息的时间'
+  },
+  'privacy.retention.block.0': {
+    en: 'We keep your personal information only for as long as we need to. This time period may depend on what we are using your information for, in accordance with this privacy policy. If your personal information is no longer required, we will delete it or make it anonymous by removing all details that identify you.',
+    'zh-CN':
+      '我们仅在需要的时间内保留您的个人信息。此时间段可能取决于我们根据本隐私政策使用您信息的目的。如果不再需要您的个人信息，我们将删除它或通过删除所有识别您身份的详细信息使其匿名化。'
+  },
+  'privacy.retention.block.1': {
+    en: 'However, if necessary, we may retain your personal information for our compliance with a legal, accounting, or reporting obligation or for archiving purposes in the public interest, scientific, or historical research purposes or statistical purposes.',
+    'zh-CN':
+      '但是，如果有必要，我们可能会为了遵守法律、会计或报告义务，或出于公共利益、科学或历史研究目的或统计目的的存档需要而保留您的个人信息。'
+  },
+  'privacy.children.label': { en: 'CHILDREN', 'zh-CN': '儿童' },
+  'privacy.children.title': { en: "Children's Privacy", 'zh-CN': '儿童隐私' },
+  'privacy.children.block.0': {
+    en: 'We do not aim any of our products or services directly at children under the age of 13 and we do not knowingly collect personal information about children under 13.',
+    'zh-CN':
+      '我们不会将我们的任何产品或服务直接面向 13 岁以下的儿童，也不会故意收集 13 岁以下儿童的个人信息。'
+  },
+  'privacy.third-parties.label': { en: 'THIRD PARTIES', 'zh-CN': '第三方' },
+  'privacy.third-parties.title': {
+    en: 'Disclosure of Personal Information to Third Parties',
+    'zh-CN': '向第三方披露个人信息'
+  },
+  'privacy.third-parties.block.0': {
+    en: 'We may disclose personal information to third-party service providers that assist us in operating our services. This includes payment processors such as Stripe, cloud hosting providers, and analytics services. We require these parties to handle your data in accordance with this policy and applicable law.',
+    'zh-CN':
+      '我们可能会向协助我们运营服务的第三方服务提供商披露个人信息。这包括 Stripe 等支付处理商、云托管提供商和分析服务。我们要求这些方按照本政策和适用法律处理您的数据。'
+  },
+  'privacy.your-rights.label': { en: 'YOUR RIGHTS', 'zh-CN': '您的权利' },
+  'privacy.your-rights.title': {
+    en: 'Your Rights and Controlling Your Personal Information',
+    'zh-CN': '您的权利及控制您的个人信息'
+  },
+  'privacy.your-rights.block.0': {
+    en: 'Depending on your location, you may have the following rights regarding your personal information:',
+    'zh-CN': '根据您所在的地区，您可能拥有以下关于您个人信息的权利：'
+  },
+  'privacy.your-rights.block.1': {
+    en: 'The right to access the personal information we hold about you.\nThe right to request correction of inaccurate personal information.\nThe right to request deletion of your personal information.\nThe right to object to or restrict processing.\nThe right to data portability.\nThe right to withdraw consent at any time.',
+    'zh-CN':
+      '访问我们持有的关于您的个人信息的权利。\n请求更正不准确的个人信息的权利。\n请求删除您的个人信息的权利。\n反对或限制处理的权利。\n数据可携带权。\n随时撤回同意的权利。'
+  },
+  'privacy.your-rights.block.2': {
+    en: 'To exercise any of these rights, please contact us at <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      '如需行使任何这些权利，请通过 <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> 与我们联系。'
+  },
+  'privacy.limits.label': { en: 'LIMITS', 'zh-CN': '局限' },
+  'privacy.limits.title': {
+    en: 'Limits of Our Policy',
+    'zh-CN': '本政策的局限性'
+  },
+  'privacy.limits.block.0': {
+    en: 'Our website may link to external sites that are not operated by us. Please be aware that we have no control over the content and practices of these sites and cannot accept responsibility for their respective privacy policies.',
+    'zh-CN':
+      '我们的网站可能链接到非我们运营的外部网站。请注意，我们无法控制这些网站的内容和做法，也无法对其各自的隐私政策承担责任。'
+  },
+  'privacy.changes.label': { en: 'CHANGES', 'zh-CN': '变更' },
+  'privacy.changes.title': {
+    en: 'Changes to This Policy',
+    'zh-CN': '本政策的变更'
+  },
+  'privacy.changes.block.0': {
+    en: 'We may update this Privacy Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the updated policy on our website with a revised effective date.',
+    'zh-CN':
+      '我们可能会不时更新本隐私政策，以反映我们做法的变化或出于其他运营、法律或监管原因。我们将通过在网站上发布更新后的政策并注明修订后的生效日期来通知您任何重大变更。'
+  },
+  'privacy.us-state-privacy.label': { en: 'US STATES', 'zh-CN': '美国各州' },
+  'privacy.us-state-privacy.title': {
+    en: 'U.S. State Privacy Compliance',
+    'zh-CN': '美国各州隐私合规'
+  },
+  'privacy.us-state-privacy.block.0': {
+    en: 'We comply with privacy laws in the following U.S. states, where applicable:',
+    'zh-CN': '我们在适用的情况下遵守以下美国各州的隐私法：'
+  },
+  'privacy.us-state-privacy.block.1': {
+    en: 'California (CCPA / CPRA)\nColorado (CPA)\nDelaware (DPDPA)\nFlorida (FDBR)\nVirginia (VCDPA)\nUtah (UCPA)',
+    'zh-CN':
+      '加利福尼亚州（CCPA / CPRA）\n科罗拉多州（CPA）\n特拉华州（DPDPA）\n佛罗里达州（FDBR）\n弗吉尼亚州（VCDPA）\n犹他州（UCPA）'
+  },
+  'privacy.us-state-privacy.block.2': {
+    en: 'Residents of these states may have additional rights, including the right to know what personal information is collected, the right to delete personal information, and the right to opt out of the sale of personal information. To exercise these rights, contact us at <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      '这些州的居民可能拥有额外的权利，包括了解收集了哪些个人信息的权利、删除个人信息的权利以及选择退出出售个人信息的权利。如需行使这些权利，请通过 <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> 与我们联系。'
+  },
+  'privacy.do-not-track.label': { en: 'DNT', 'zh-CN': 'DNT' },
+  'privacy.do-not-track.title': {
+    en: 'Do Not Track',
+    'zh-CN': '请勿追踪（Do Not Track）'
+  },
+  'privacy.do-not-track.block.0': {
+    en: 'Some browsers include a "Do Not Track" (DNT) feature that signals to websites that you do not wish to be tracked. There is currently no uniform standard for how companies should respond to DNT signals. At this time, we do not respond to DNT signals.',
+    'zh-CN':
+      '某些浏览器包含"请勿追踪"（DNT）功能，向网站发出您不希望被追踪的信号。目前尚无关于公司应如何回应 DNT 信号的统一标准。目前，我们不会回应 DNT 信号。'
+  },
+  'privacy.ccpa.label': { en: 'CCPA', 'zh-CN': 'CCPA' },
+  'privacy.ccpa.title': { en: 'CCPA / CPPA', 'zh-CN': 'CCPA / CPPA' },
+  'privacy.ccpa.block.0': {
+    en: 'Under the California Consumer Privacy Act (CCPA) and the California Privacy Protection Agency (CPPA) regulations, California residents have the right to know what personal information we collect, request deletion of their data, and opt out of the sale of their personal information. We do not sell personal information. To make a request, contact us at <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      '根据加利福尼亚消费者隐私法（CCPA）和加利福尼亚隐私保护局（CPPA）的规定，加利福尼亚州居民有权了解我们收集的个人信息、请求删除其数据以及选择退出出售其个人信息。我们不会出售个人信息。如需提出请求，请通过 <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> 与我们联系。'
+  },
+  'privacy.gdpr.label': { en: 'GDPR', 'zh-CN': 'GDPR' },
+  'privacy.gdpr.title': {
+    en: 'GDPR — European Economic Area',
+    'zh-CN': 'GDPR — 欧洲经济区'
+  },
+  'privacy.gdpr.block.0': {
+    en: 'If you are located in the European Economic Area (EEA), the General Data Protection Regulation (GDPR) grants you certain rights regarding your personal data, including the right to access, rectify, erase, restrict processing, data portability, and to object to processing. Our legal bases for processing include consent, contract performance, and legitimate interests. To exercise your GDPR rights, contact us at <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      '如果您位于欧洲经济区（EEA），《通用数据保护条例》（GDPR）赋予您有关个人数据的某些权利，包括访问权、更正权、删除权、限制处理权、数据可携带权以及反对处理权。我们处理的法律依据包括同意、合同履行和合法利益。如需行使您的 GDPR 权利，请通过 <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> 与我们联系。'
+  },
+  'privacy.uk-gdpr.label': { en: 'UK GDPR', 'zh-CN': 'UK GDPR' },
+  'privacy.uk-gdpr.title': { en: 'UK GDPR', 'zh-CN': '英国 GDPR' },
+  'privacy.uk-gdpr.block.0': {
+    en: 'If you are located in the United Kingdom, the UK General Data Protection Regulation (UK GDPR) provides you with similar rights to those under the EU GDPR, including the right to access, rectify, erase, and port your data. To exercise your rights under the UK GDPR, please contact us at <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      '如果您位于英国，英国《通用数据保护条例》（UK GDPR）为您提供与欧盟 GDPR 类似的权利，包括访问、更正、删除和传输数据的权利。如需行使您在英国 GDPR 下的权利，请通过 <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> 与我们联系。'
+  },
+  'privacy.australian-privacy.label': { en: 'AUSTRALIA', 'zh-CN': '澳大利亚' },
+  'privacy.australian-privacy.title': {
+    en: 'Australian Privacy',
+    'zh-CN': '澳大利亚隐私'
+  },
+  'privacy.australian-privacy.block.0': {
+    en: 'If you are located in Australia, the Australian Privacy Principles (APPs) under the Privacy Act 1988 apply to our handling of your personal information. You have the right to request access to and correction of your personal information. If you believe we have breached the APPs, you may lodge a complaint with us or with the Office of the Australian Information Commissioner (OAIC).',
+    'zh-CN':
+      '如果您位于澳大利亚，《1988年隐私法》下的澳大利亚隐私原则（APPs）适用于我们对您个人信息的处理。您有权请求访问和更正您的个人信息。如果您认为我们违反了 APPs，您可以向我们或澳大利亚信息专员办公室（OAIC）提出投诉。'
+  },
+  'privacy.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
+  'privacy.contact.title': { en: 'Contact Us', 'zh-CN': '联系我们' },
+  'privacy.contact.block.0': {
+    en: 'If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:',
+    'zh-CN':
+      '如果您对本隐私政策或我们的数据处理方式有任何疑问或顾虑，请通过以下方式联系我们：'
+  },
+  'privacy.contact.block.1': {
+    en: '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>',
+    'zh-CN':
+      '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>'
+  },
+
+  // ── Terms of Service ──────────────────────────────────────────────
+  'tos.intro.label': { en: 'INTRO', 'zh-CN': '简介' },
+  'tos.intro.block.0': {
+    en: 'Welcome to the ComfyUI offering, provided by Comfy Organization, Inc.',
+    'zh-CN': '欢迎使用由 Comfy Organization, Inc. 提供的 ComfyUI 产品。'
+  },
+  'tos.intro.block.1': {
+    en: 'Please read these Terms of Service (these "Terms") carefully, as they constitute a legally binding agreement between Comfy Organization, Inc., a Delaware corporation ("Comfy Org," "We," "Us," or "Our"), and an end-user ("You" and "Your") and apply to Your use of the Services (as defined below). In case You are subscribing to the Services as a representative of or on behalf of an entity (e.g., Your employer, the "Client" or "Entity"), Your acceptance of these Terms also binds the Client or Entity, and any reference in these Terms to "You" shall also mean the "Client" or "Entity" and its affiliates.',
+    'zh-CN':
+      '请仔细阅读本服务条款（以下简称"条款"），因为它们构成 Comfy Organization, Inc.（一家特拉华州公司，以下简称"Comfy Org"、"我们"）与最终用户（"您"）之间具有法律约束力的协议，并适用于您对服务（定义见下文）的使用。如果您以实体（例如您的雇主，即"客户"或"实体"）的代表身份或代表其订阅服务，您对本条款的接受也约束该客户或实体，本条款中对"您"的任何引用也应指"客户"或"实体"及其关联方。'
+  },
+  'tos.intro.block.2': {
+    en: 'You hereby agree to accept these Terms by (a) either using the Services, or (b) by opening an account under a username. BEFORE YOU DO EITHER OF THOSE, PLEASE READ THESE TERMS CAREFULLY. IF YOU DO NOT WANT TO AGREE TO THESE TERMS, YOU MUST NOT USE THE SERVICES OR SET UP AN ACCOUNT.',
+    'zh-CN':
+      '您特此同意通过以下方式接受本条款：(a) 使用服务，或 (b) 以用户名开设账户。在您执行上述任何操作之前，请仔细阅读本条款。如果您不同意本条款，则不得使用服务或设置账户。'
+  },
+  'tos.intro.block.3': {
+    en: 'You also agree to abide by other Comfy Org rules and policies, including our Privacy Policy https://www.comfy.org/privacy-policy (which explains what information we collect from You and how we protect it) that are expressly incorporated into and are a part of these Terms. Please read them carefully.',
+    'zh-CN':
+      '您还同意遵守 Comfy Org 的其他规则和政策，包括我们的隐私政策 https://www.comfy.org/privacy-policy（该政策说明了我们从您处收集的信息以及如何保护这些信息），这些规则和政策明确纳入本条款并构成其组成部分。请仔细阅读。'
+  },
+  'tos.intro.block.4': {
+    en: 'Once you accept these Terms You are bound by them until they are terminated. See Section 10 (Term and Termination).',
+    'zh-CN':
+      '一旦您接受本条款，您将受其约束，直至条款终止。请参阅第 10 条（期限和终止）。'
+  },
+  'tos.intro.block.5': {
+    en: 'By accessing or using the Software or Services in any way, You represent that (1) You have read, understand, and hereby agree to be bound by these Terms, (2) You are of legal age to form a binding contract with Comfy Org, and (3) You have the authority to enter into these Terms personally or on behalf of the Client Entity. If You do not agree to be bound by, or cannot conform with, these Terms, You may not use the Services. You will be legally and financially responsible for all actions using or accessing the Services, including the actions of anyone You allow to access Your Account.',
+    'zh-CN':
+      '通过以任何方式访问或使用软件或服务，您声明：(1) 您已阅读、理解并特此同意受本条款的约束，(2) 您已达到与 Comfy Org 签订具有约束力的合同的法定年龄，(3) 您有权以个人身份或代表客户实体签订本条款。如果您不同意受本条款约束或无法遵守本条款，则不得使用服务。您将对使用或访问服务的所有行为承担法律和财务责任，包括您允许访问您账户的任何人的行为。'
+  },
+  'tos.intro.block.6': {
+    en: 'IF YOU ACCEPT THESE TERMS, YOU AND COMFY ORG AGREE TO RESOLVE DISPUTES IN BINDING, INDIVIDUAL ARBITRATION AND GIVE UP THE RIGHT TO GO TO COURT INDIVIDUALLY OR AS PART OF A CLASS ACTION.',
+    'zh-CN':
+      '如果您接受本条款，您和 COMFY ORG 同意通过具有约束力的个人仲裁解决争议，并放弃以个人身份或作为集体诉讼一部分提起诉讼的权利。'
+  },
+  'tos.definitions.label': { en: 'DEFINITIONS', 'zh-CN': '定义' },
+  'tos.definitions.title': { en: '1. Definitions', 'zh-CN': '1. 定义' },
+  'tos.definitions.block.0': {
+    en: '"Business User" mean an entity or individual using the Software or Services primarily for business, commercial, or professional purposes.',
+    'zh-CN':
+      '"商业用户"指主要出于商业、贸易或专业目的使用软件或服务的实体或个人。'
+  },
+  'tos.definitions.block.1': {
+    en: '"ComfyUI Branding" means the names, logos, and associated trademarks owned or in progress of being owned by Comfy Org, Inc.',
+    'zh-CN':
+      '"ComfyUI 品牌"指 Comfy Org, Inc. 拥有或正在申请拥有的名称、标志和相关商标。'
+  },
+  'tos.definitions.block.2': {
+    en: '"ComfyUI Software" or "Software" means the open-source software product named "ComfyUI," including its desktop applications, source code, and user interface elements.',
+    'zh-CN':
+      '"ComfyUI 软件"或"软件"指名为"ComfyUI"的开源软件产品，包括其桌面应用程序、源代码和用户界面元素。'
+  },
+  'tos.definitions.block.3': {
+    en: '"Customer Data" means any data, content, information, prompts, or workflows that You submit, upload, transmit, or process through the Software or Services.',
+    'zh-CN':
+      '"客户数据"指您通过软件或服务提交、上传、传输或处理的任何数据、内容、信息、提示词或工作流。'
+  },
+  'tos.definitions.block.4': {
+    en: '"Consumer User" means an individual using the Software or Services primarily for personal, family, or household purposes.',
+    'zh-CN': '"消费者用户"指主要出于个人、家庭或家用目的使用软件或服务的个人。'
+  },
+  'tos.definitions.block.5': {
+    en: '"Intellectual Property Rights" means all (i) patents, patent disclosures, and inventions (whether patentable or not), (ii) trademarks, (iii) copyrights and copyrightable works (including computer programs), and rights in data and databases, and (iv) all other intellectual property rights, in each case whether registered or unregistered and including all applications for, and renewals or extensions of, such rights, and all similar or equivalent rights or forms of protection in any part of the world.',
+    'zh-CN':
+      '"知识产权"指所有 (i) 专利、专利披露和发明（无论是否可获得专利），(ii) 商标，(iii) 版权和可受版权保护的作品（包括计算机程序）以及数据和数据库权利，(iv) 所有其他知识产权，在每种情况下无论已注册或未注册，包括所有此类权利的申请、续展或延期，以及世界任何地区的所有类似或等同的权利或保护形式。'
+  },
+  'tos.definitions.block.6': {
+    en: '"Open Source License" means the specific open-source license(s) governing the ComfyUI Software, primarily the GNU General Public License v3 (GPLv3) for its UI elements and potentially other components.',
+    'zh-CN':
+      '"开源许可证"指管辖 ComfyUI 软件的特定开源许可证，主要是用于其 UI 元素的 GNU 通用公共许可证第 3 版 (GPLv3) 以及可能适用于其他组件的许可证。'
+  },
+  'tos.definitions.block.7': {
+    en: '"Providers" means certain third-party service providers utilized by Comfy Org for certain functionality, including hosting and payment processing.',
+    'zh-CN':
+      '"提供商"指 Comfy Org 用于某些功能的特定第三方服务提供商，包括托管和支付处理。'
+  },
+  'tos.definitions.block.8': {
+    en: '"Services" means all current and future commercial and auxiliary services provided by Comfy Org in connection with the ComfyUI Software, including but not limited to:',
+    'zh-CN':
+      '"服务"指 Comfy Org 与 ComfyUI 软件相关的所有当前和未来的商业及辅助服务，包括但不限于：'
+  },
+  'tos.definitions.block.9': {
+    en: 'Commercial services:',
+    'zh-CN': '商业服务：'
+  },
+  'tos.definitions.block.10': {
+    en: 'Comfy Cloud — paid and fully managed cloud based ComfyUI hosted in our data centers\nAPI Nodes — paid integrations with third-party API services available within ComfyUI\nSupport, Training, Consulting — paid services related to ComfyUI',
+    'zh-CN':
+      'Comfy Cloud——付费的、完全托管的、基于云的 ComfyUI，托管在我们的数据中心\nAPI 节点——ComfyUI 中可用的与第三方 API 服务的付费集成\n支持、培训、咨询——与 ComfyUI 相关的付费服务'
+  },
+  'tos.definitions.block.11': {
+    en: 'Open source services:',
+    'zh-CN': '开源服务：'
+  },
+  'tos.definitions.block.12': {
+    en: 'Custom Node Registry — marketplace of custom nodes freely available to ComfyUI users\nAny other hosted experiences or tools offered by Comfy Org.',
+    'zh-CN':
+      '自定义节点 Registry——ComfyUI 用户免费使用的自定义节点市场\nComfy Org 提供的任何其他托管体验或工具。'
+  },
+  'tos.license.label': { en: 'LICENSE', 'zh-CN': '许可' },
+  'tos.license.title': {
+    en: '2. ComfyUI Software License',
+    'zh-CN': '2. ComfyUI 软件许可'
+  },
+  'tos.license.block.0': {
+    en: 'Open Source Nature. The ComfyUI Software itself is open-source and distributed under the terms of the GNU General Public License v3 (GPLv3), or other specific open-source licenses for particular components, as applicable. Your rights to use, modify, and distribute the ComfyUI Software are governed by the respective Open Source Licenses.',
+    'zh-CN':
+      '开源性质。ComfyUI 软件本身是开源的，根据 GNU 通用公共许可证第 3 版 (GPLv3) 或其他适用于特定组件的开源许可证的条款进行分发。您使用、修改和分发 ComfyUI 软件的权利受相应开源许可证的约束。'
+  },
+  'tos.license.block.1': {
+    en: 'No Charge for Software. Comfy Org explicitly acknowledges that we do not charge for the ComfyUI Software itself. The fees outlined in these Terms are solely for the Services we provide around the Software, such as hosting, compute, and additional functionalities.',
+    'zh-CN':
+      '软件免费。Comfy Org 明确承认我们不对 ComfyUI 软件本身收费。本条款中列出的费用仅用于我们围绕软件提供的服务，例如托管、计算和附加功能。'
+  },
+  'tos.license.block.2': {
+    en: 'Service Updates. You understand that the Software is evolving, and features and benefits You receive upon Your initial use may change. You acknowledge and agree that Comfy Org may update the Software with or without notifying You, including adding or removing features, products, or functionalities.',
+    'zh-CN':
+      '服务更新。您理解软件在不断发展，您初次使用时获得的功能和优势可能会发生变化。您承认并同意 Comfy Org 可能会在通知或不通知您的情况下更新软件，包括添加或删除功能、产品或特性。'
+  },
+  'tos.using-services.label': { en: 'USAGE', 'zh-CN': '使用服务' },
+  'tos.using-services.title': {
+    en: '3. Using the Services',
+    'zh-CN': '3. 使用服务'
+  },
+  'tos.using-services.block.0': {
+    en: 'Open Source Nature. The ComfyUI Software itself is open-source and distributed under the terms of the GNU General Public License v3 (GPLv3), or other specific open-source licenses for particular components, as applicable. Your rights to use, modify, and distribute the ComfyUI Software are governed by the respective Open Source Licenses.',
+    'zh-CN':
+      '开源性质。ComfyUI 软件本身是开源的，根据 GNU 通用公共许可证第 3 版 (GPLv3) 或其他适用于特定组件的开源许可证的条款进行分发。您使用、修改和分发 ComfyUI 软件的权利受相应开源许可证的约束。'
+  },
+  'tos.using-services.block.1': {
+    en: 'No Charge for Software. Comfy Org explicitly acknowledges that we do not charge for the ComfyUI Software itself. The fees outlined in these Terms are solely for the Services we provide around the Software, such as hosting, compute, and additional functionalities.',
+    'zh-CN':
+      '软件免费。Comfy Org 明确承认我们不对 ComfyUI 软件本身收费。本条款中列出的费用仅用于我们围绕软件提供的服务，例如托管、计算和附加功能。'
+  },
+  'tos.using-services.block.2': {
+    en: 'Service Updates. You understand that the Software is evolving, and features and benefits You receive upon Your initial use may change. You acknowledge and agree that Comfy Org may update the Software with or without notifying You, including adding or removing features, products, or functionalities.',
+    'zh-CN':
+      '服务更新。您理解软件在不断发展，您初次使用时获得的功能和优势可能会发生变化。您承认并同意 Comfy Org 可能会在通知或不通知您的情况下更新软件，包括添加或删除功能、产品或特性。'
+  },
+  'tos.responsibilities.label': { en: 'RESPONSIBILITIES', 'zh-CN': '您的责任' },
+  'tos.responsibilities.title': {
+    en: '4. Your Responsibilities',
+    'zh-CN': '4. 您的责任'
+  },
+  'tos.responsibilities.block.0': {
+    en: 'You are responsible for your use of the Services and any content you create, share, or distribute through them. You agree to use the Services in a manner that is lawful, respectful, and consistent with these Terms. You are solely responsible for maintaining the security of your account credentials.',
+    'zh-CN':
+      '您应对使用服务以及通过服务创建、共享或分发的任何内容负责。您同意以合法、尊重他人且符合本条款的方式使用服务。您全权负责维护账户凭据的安全。'
+  },
+  'tos.restrictions.label': { en: 'RESTRICTIONS', 'zh-CN': '限制' },
+  'tos.restrictions.title': {
+    en: '5. Use Restrictions',
+    'zh-CN': '5. 使用限制'
+  },
+  'tos.restrictions.block.0': {
+    en: 'You agree not to misuse the Services. This includes, but is not limited to:',
+    'zh-CN': '您同意不滥用服务，包括但不限于：'
+  },
+  'tos.restrictions.block.1': {
+    en: 'Attempting to gain unauthorized access to any part of the Services\nUsing the Services to distribute malware, viruses, or harmful code\nInterfering with or disrupting the integrity or performance of the Services\nScraping, crawling, or using automated means to access the Services without permission\nPublishing custom nodes or workflows that contain malicious code or violate third-party rights',
+    'zh-CN':
+      '试图未经授权访问服务的任何部分\n利用服务传播恶意软件、病毒或有害代码\n干扰或破坏服务的完整性或性能\n未经许可使用自动化手段抓取或爬取服务\n发布包含恶意代码或侵犯第三方权利的自定义节点或工作流'
+  },
+  'tos.accounts.label': { en: 'ACCOUNTS', 'zh-CN': '账户' },
+  'tos.accounts.title': {
+    en: '6. Accounts and User Information',
+    'zh-CN': '6. 账户和用户信息'
+  },
+  'tos.accounts.block.0': {
+    en: 'Certain features of the Services may require you to create an account. You agree to provide accurate and complete information when creating your account and to keep this information up to date. You are responsible for all activity that occurs under your account. We reserve the right to suspend or terminate accounts that violate these Terms.',
+    'zh-CN':
+      '服务的某些功能可能要求您创建账户。您同意在创建账户时提供准确、完整的信息，并及时更新。您对账户下发生的所有活动负责。我们保留暂停或终止违反本条款的账户的权利。'
+  },
+  'tos.ip.label': { en: 'IP RIGHTS', 'zh-CN': '知识产权' },
+  'tos.ip.title': {
+    en: '7. Intellectual Property Rights',
+    'zh-CN': '7. 知识产权'
+  },
+  'tos.ip.block.0': {
+    en: 'The Services, excluding open-source components, are owned by Comfy and are protected by intellectual property laws. The Comfy name, logo, and branding are trademarks of Comfy Org, Inc. You retain ownership of any User Content you create. By submitting User Content to the Services, you grant Comfy a non-exclusive, worldwide, royalty-free license to host, display, and distribute such content as necessary to operate the Services.',
+    'zh-CN':
+      '除开源组件外，服务归 Comfy 所有并受知识产权法保护。Comfy 名称、标志和品牌是 Comfy Org, Inc. 的商标。您保留您创建的任何用户内容的所有权。向服务提交用户内容即表示您授予 Comfy 一项非排他性、全球性、免版税的许可，以在运营服务所需的范围内托管、展示和分发此类内容。'
+  },
+  'tos.distribution.label': { en: 'DISTRIBUTION', 'zh-CN': '分发' },
+  'tos.distribution.title': {
+    en: '8. Model and Workflow Distribution',
+    'zh-CN': '8. 模型和工作流分发'
+  },
+  'tos.distribution.block.0': {
+    en: 'When you distribute models, workflows, or custom nodes through the Registry or Services, you represent that you have the right to distribute such content and that it does not infringe any third-party rights. You are responsible for specifying an appropriate license for any content you distribute. Comfy does not claim ownership of content distributed through the Registry.',
+    'zh-CN':
+      '当您通过 Registry 或服务分发模型、工作流或自定义节点时，您声明您有权分发此类内容且其不侵犯任何第三方权利。您有责任为分发的内容指定适当的许可证。Comfy 不主张对通过 Registry 分发的内容的所有权。'
+  },
+  'tos.fees.label': { en: 'FEES', 'zh-CN': '费用' },
+  'tos.fees.title': { en: '9. Fees and Payment', 'zh-CN': '9. 费用和付款' },
+  'tos.fees.block.0': {
+    en: 'Certain Services may be offered for a fee. If you choose to use paid features, you agree to pay all applicable fees as described at the time of purchase. Fees are non-refundable except as required by law or as expressly stated in these Terms. Comfy reserves the right to change pricing with reasonable notice.',
+    'zh-CN':
+      '某些服务可能需要付费。如果您选择使用付费功能，则同意支付购买时所述的所有适用费用。除法律要求或本条款明确规定外，费用不予退还。Comfy 保留在合理通知后变更定价的权利。'
+  },
+  'tos.termination.label': { en: 'TERMINATION', 'zh-CN': '终止' },
+  'tos.termination.title': {
+    en: '10. Term and Termination',
+    'zh-CN': '10. 期限和终止'
+  },
+  'tos.termination.block.0': {
+    en: 'These Terms remain in effect while you use the Services. You may stop using the Services at any time. Comfy may suspend or terminate your access to the Services at any time, with or without cause and with or without notice. Upon termination, your right to use the Services will immediately cease. Sections that by their nature should survive termination will continue to apply.',
+    'zh-CN':
+      '在您使用服务期间，本条款持续有效。您可随时停止使用服务。Comfy 可随时暂停或终止您对服务的访问，无论是否有原因，也无论是否事先通知。终止后，您使用服务的权利将立即终止。按其性质应在终止后继续有效的条款将继续适用。'
+  },
+  'tos.warranties.label': { en: 'WARRANTIES', 'zh-CN': '免责' },
+  'tos.warranties.title': {
+    en: '11. Disclaimer of Warranties',
+    'zh-CN': '11. 免责声明'
+  },
+  'tos.warranties.block.0': {
+    en: 'THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. COMFY DOES NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE.',
+    'zh-CN':
+      '服务按"现状"和"可用"基础提供，不附带任何形式的明示或暗示保证，包括但不限于对适销性、特定用途适用性和非侵权性的暗示保证。Comfy 不保证服务将不间断、无错误或安全。'
+  },
+  'tos.liability.label': { en: 'LIABILITY', 'zh-CN': '责任限制' },
+  'tos.liability.title': {
+    en: '12. Limitation of Liability',
+    'zh-CN': '12. 责任限制'
+  },
+  'tos.liability.block.0': {
+    en: "TO THE MAXIMUM EXTENT PERMITTED BY LAW, COMFY SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES RESULTING FROM YOUR USE OF THE SERVICES. COMFY'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNTS PAID BY YOU TO COMFY IN THE TWELVE MONTHS PRECEDING THE CLAIM.",
+    'zh-CN':
+      '在法律允许的最大范围内，Comfy 不对任何间接、附带、特殊、后果性或惩罚性损害，或任何利润或收入损失（无论是直接还是间接产生的），或任何数据、使用、商誉或其他无形损失承担责任。Comfy 的总责任不超过您在索赔前十二个月内向 Comfy 支付的金额。'
+  },
+  'tos.indemnification.label': { en: 'INDEMNIFICATION', 'zh-CN': '赔偿' },
+  'tos.indemnification.title': {
+    en: '13. Indemnification',
+    'zh-CN': '13. 赔偿'
+  },
+  'tos.indemnification.block.0': {
+    en: 'You agree to indemnify, defend, and hold harmless Comfy, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses arising out of or in any way connected with your access to or use of the Services, your User Content, or your violation of these Terms.',
+    'zh-CN':
+      '您同意赔偿、辩护并使 Comfy 及其管理人员、董事、员工和代理人免受因您访问或使用服务、您的用户内容或您违反本条款而产生的或与之相关的任何索赔、责任、损害、损失和费用。'
+  },
+  'tos.governing-law.label': { en: 'GOVERNING LAW', 'zh-CN': '适用法律' },
+  'tos.governing-law.title': {
+    en: '14. Governing Law and Dispute Resolution',
+    'zh-CN': '14. 适用法律和争议解决'
+  },
+  'tos.governing-law.block.0': {
+    en: 'These Terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of laws principles. Any disputes arising under these Terms shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association, except that either party may seek injunctive relief in any court of competent jurisdiction.',
+    'zh-CN':
+      '本条款受特拉华州法律管辖并据其解释，不适用其冲突法原则。因本条款引起的任何争议应根据美国仲裁协会的规则通过有约束力的仲裁解决，但任何一方均可在有管辖权的法院寻求禁令救济。'
+  },
+  'tos.miscellaneous.label': { en: 'MISCELLANEOUS', 'zh-CN': '其他' },
+  'tos.miscellaneous.title': { en: '15. Miscellaneous', 'zh-CN': '15. 其他' },
+  'tos.miscellaneous.block.0': {
+    en: 'These Terms constitute the entire agreement between you and Comfy regarding the Services. If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in effect. Our failure to enforce any right or provision of these Terms will not be considered a waiver. We may assign our rights under these Terms. You may not assign your rights without our prior written consent.',
+    'zh-CN':
+      '本条款构成您与 Comfy 之间关于服务的完整协议。如果本条款的任何条款被认定为不可执行，其余条款将继续有效。我们未能执行本条款的任何权利或条款不构成放弃。我们可以转让本条款下的权利。未经我们事先书面同意，您不得转让您的权利。'
+  },
+  'tos.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
+  'tos.contact.title': { en: 'Contact Us', 'zh-CN': '联系我们' },
+  'tos.contact.block.0': {
+    en: 'If you have questions about these Terms, please contact us at <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.',
+    'zh-CN':
+      '如果您对本条款有任何疑问，请通过 <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a> 与我们联系。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
