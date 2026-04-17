@@ -152,7 +152,7 @@ onMounted(() => {
           >
             <span
               ref="comfyDotRef"
-              class="bg-primary-comfy-ink size-1.5 rounded-full"
+              class="bg-primary-comfy-ink relative z-10 size-1.5 rounded-full"
             />
             <span
               class="bg-primary-comfy-ink h-4 w-20"

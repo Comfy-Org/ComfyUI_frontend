@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 <template>
   <section class="bg-transparency-white-t4 p-4 text-center lg:px-20 lg:py-8">
     <p
-      class="text-primary-comfy-canvas text-lg font-semibold lg:text-sm lg:font-normal"
+      class="text-primary-comfy-canvas relative z-10 text-lg font-semibold lg:text-sm lg:font-normal"
     >
       {{ t('download.cloud.prefix', locale) }}
       <a
