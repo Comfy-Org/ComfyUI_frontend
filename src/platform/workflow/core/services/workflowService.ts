@@ -141,7 +141,8 @@ export const useWorkflowService = () => {
 
     if (isSelfOverwrite) {
       workflow.changeTracker?.prepareForSave()
-      await saveWorkflow(workflow)
+      // Bypass saveWorkflow() wrapper to avoid a duplicate prepareForSave and a conflicting is_new:false telemetry event.
+      await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {

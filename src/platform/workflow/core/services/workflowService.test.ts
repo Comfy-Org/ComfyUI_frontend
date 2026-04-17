@@ -60,8 +60,9 @@ function makeWorkflowData(
   }
 }
 
-const { mockConfirm } = vi.hoisted(() => ({
-  mockConfirm: vi.fn()
+const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
+  mockConfirm: vi.fn(),
+  mockTrackWorkflowSaved: vi.fn()
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -98,7 +99,7 @@ vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
-    trackWorkflowSaved: vi.fn(),
+    trackWorkflowSaved: mockTrackWorkflowSaved,
     trackEnterLinear: vi.fn()
   })
 }))
@@ -765,6 +766,7 @@ describe('useWorkflowService', () => {
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      mockTrackWorkflowSaved.mockClear()
       app.rootGraph.extra = {}
     })
 
@@ -919,6 +921,42 @@ describe('useWorkflowService', () => {
       // Same path → self-overwrite: saves in place via saveWorkflow, no copy
       expect(workflowStore.saveAs).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(source)
+    })
+
+    it('emits a single is_new:true telemetry event on self-overwrite', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/test.app.json',
+        initialMode: 'app'
+      })
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
+      mockConfirm.mockResolvedValue(true)
+
+      await service.saveWorkflowAs(source, {
+        filename: 'test',
+        isApp: true
+      })
+
+      expect(mockTrackWorkflowSaved).toHaveBeenCalledTimes(1)
+      expect(mockTrackWorkflowSaved).toHaveBeenCalledWith({
+        is_app: true,
+        is_new: true
+      })
+    })
+
+    it('calls prepareForSave once on self-overwrite', async () => {
+      const source = createModeTestWorkflow({
+        path: 'workflows/test.app.json',
+        initialMode: 'app'
+      })
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(source)
+      mockConfirm.mockResolvedValue(true)
+
+      await service.saveWorkflowAs(source, {
+        filename: 'test',
+        isApp: true
+      })
+
+      expect(source.changeTracker!.prepareForSave).toHaveBeenCalledTimes(1)
     })
 
     it('does not modify source workflow mode when saving persisted workflow as different mode', async () => {
