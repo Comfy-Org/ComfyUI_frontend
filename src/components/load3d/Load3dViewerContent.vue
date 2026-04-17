@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div class="flex w-72 flex-col">
+    <div class="flex w-72 flex-col" data-testid="load3d-viewer-sidebar">
       <div class="flex-1 overflow-y-auto p-4">
         <div class="space-y-2">
           <div class="space-y-4 p-2">
@@ -196,5 +196,16 @@ onBeforeUnmount(() => {
 <style scoped>
 :deep(.p-panel-content) {
   padding: 0;
+}
+
+:deep(.p-slider) {
+  height: 6px;
+}
+
+:deep(.p-slider-handle) {
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  margin-left: -7px;
 }
 </style>

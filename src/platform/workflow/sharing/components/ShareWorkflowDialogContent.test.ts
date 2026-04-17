@@ -1,4 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -131,6 +132,10 @@ const i18n = createI18n({
   }
 })
 
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
+
 describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
@@ -181,8 +186,8 @@ describe('ShareWorkflowDialogContent', () => {
     mockGetShareableAssets.mockResolvedValue(mockShareServiceData.items)
   })
 
-  function createWrapper() {
-    return mount(ShareWorkflowDialogContent, {
+  function renderComponent() {
+    return render(ShareWorkflowDialogContent, {
       props: { onClose },
       global: {
         plugins: [i18n],
@@ -216,84 +221,74 @@ describe('ShareWorkflowDialogContent', () => {
       isModified: true,
       lastModified: 1000
     }
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain(
+    expect(container.textContent).toContain(
       'You must save your workflow before sharing.'
     )
-    expect(wrapper.text()).toContain('Save workflow')
+    expect(container.textContent).toContain('Save workflow')
   })
 
   it('renders share-link and publish tabs when comfy hub upload is enabled', async () => {
     mockFlags.comfyHubUploadEnabled = true
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Share')
-    expect(wrapper.text()).toContain('Publish')
-    const publishTabPanel = wrapper.find('[data-testid="publish-tab-panel"]')
-    expect(publishTabPanel.exists()).toBe(true)
-    expect(publishTabPanel.attributes('style')).toContain('display: none')
+    expect(container.textContent).toContain('Share')
+    expect(container.textContent).toContain('Publish')
+    const publishTabPanel = screen.getByTestId('publish-tab-panel')
+    expect(publishTabPanel).not.toBeVisible()
   })
 
   it('hides the publish tab when comfy hub upload is disabled', async () => {
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Share')
-    expect(wrapper.text()).not.toContain('Publish')
-    expect(wrapper.find('[data-testid="publish-intro"]').exists()).toBe(false)
+    expect(container.textContent).toContain('Share')
+    expect(container.textContent).not.toContain('Publish')
+    expect(screen.queryByTestId('publish-intro')).not.toBeInTheDocument()
   })
 
   it('shows publish intro panel in the share dialog', async () => {
     mockFlags.comfyHubUploadEnabled = true
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const publishTab = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Publish'))
+    const publishTab = screen.getByRole('tab', { name: /Publish/ })
 
-    expect(publishTab).toBeDefined()
-    await publishTab!.trigger('click')
+    await userEvent.click(publishTab)
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="publish-intro"]').exists()).toBe(true)
+    expect(screen.getByTestId('publish-intro')).toBeTruthy()
   })
 
   it('shows start publishing CTA in the publish intro panel', async () => {
     mockFlags.comfyHubUploadEnabled = true
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const publishTab = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Publish'))
-    expect(publishTab).toBeDefined()
+    const publishTab = screen.getByRole('tab', { name: /Publish/ })
 
-    await publishTab!.trigger('click')
+    await userEvent.click(publishTab)
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="publish-intro-cta"]').text()).toBe(
+    expect(screen.getByTestId('publish-intro-cta').textContent).toBe(
       'Start publishing'
     )
   })
 
   it('opens publish dialog from intro cta and closes share dialog', async () => {
     mockFlags.comfyHubUploadEnabled = true
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const publishTab = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Publish'))
+    const publishTab = screen.getByRole('tab', { name: /Publish/ })
 
-    expect(publishTab).toBeDefined()
-    await publishTab!.trigger('click')
+    await userEvent.click(publishTab)
     await flushPromises()
 
-    await wrapper.find('[data-testid="publish-intro-cta"]').trigger('click')
+    await userEvent.click(screen.getByTestId('publish-intro-cta'))
     await nextTick()
 
     expect(onClose).toHaveBeenCalledOnce()
@@ -301,37 +296,37 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('disables publish button when acknowledgment is unchecked', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const publishButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Create link'))
+    const publishButton = screen.getByRole('button', {
+      name: /Create link/i
+    })
 
-    expect(publishButton?.attributes('disabled')).toBeDefined()
+    expect(publishButton).toBeDisabled()
   })
 
   it('enables publish button when acknowledgment is checked', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const checkbox = wrapper.find('input[type="checkbox"]')
-    await checkbox.setValue(true)
+    const checkbox = screen.getByRole('checkbox')
+    await userEvent.click(checkbox)
     await nextTick()
 
-    const publishButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Create link'))
+    const publishButton = screen.getByRole('button', {
+      name: /Create link/i
+    })
 
-    expect(publishButton?.attributes('disabled')).toBeUndefined()
+    expect(publishButton).toBeEnabled()
   })
 
   it('calls onClose when close button is clicked', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const closeButton = wrapper.find('[aria-label="Close"]')
-    await closeButton.trigger('click')
+    const closeButton = screen.getByRole('button', { name: 'Close' })
+    await userEvent.click(closeButton)
 
     expect(onClose).toHaveBeenCalled()
   })
@@ -360,19 +355,18 @@ describe('ShareWorkflowDialogContent', () => {
 
     mockGetShareableAssets.mockResolvedValueOnce(initialShareableAssets)
 
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    const checkbox = wrapper.find('input[type="checkbox"]')
-    await checkbox.setValue(true)
+    const checkbox = screen.getByRole('checkbox')
+    await userEvent.click(checkbox)
     await nextTick()
 
-    const publishButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Create link'))
-    expect(publishButton).toBeDefined()
+    const publishButton = screen.getByRole('button', {
+      name: /Create link/i
+    })
 
-    await publishButton!.trigger('click')
+    await userEvent.click(publishButton)
     await flushPromises()
 
     expect(mockGetShareableAssets).toHaveBeenCalledTimes(1)
@@ -401,11 +395,11 @@ describe('ShareWorkflowDialogContent', () => {
       publishedAt
     })
 
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('You have made changes...')
-    expect(wrapper.text()).toContain('Update link')
+    expect(container.textContent).toContain('You have made changes...')
+    expect(container.textContent).toContain('Update link')
   })
 
   it('shows copy URL when workflow has not changed since publish', async () => {
@@ -427,11 +421,11 @@ describe('ShareWorkflowDialogContent', () => {
       publishedAt
     })
 
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Anyone with this link...')
-    expect(wrapper.text()).not.toContain('Update link')
+    expect(container.textContent).toContain('Anyone with this link...')
+    expect(container.textContent).not.toContain('Update link')
   })
 
   describe('error and edge cases', () => {
@@ -444,22 +438,22 @@ describe('ShareWorkflowDialogContent', () => {
         isModified: false,
         lastModified: 1000
       }
-      const wrapper = createWrapper()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).toContain(
+      expect(container.textContent).toContain(
         'You must save your workflow before sharing.'
       )
-      expect(wrapper.text()).toContain('Workflow name')
+      expect(container.textContent).toContain('Workflow name')
     })
 
     it('shows error toast when getPublishStatus rejects', async () => {
       mockGetPublishStatus.mockRejectedValue(new Error('Server down'))
 
-      const wrapper = createWrapper()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).toContain('Create link')
+      expect(container.textContent).toContain('Create link')
       expect(mockToast.add).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Failed to load publish status'
@@ -469,19 +463,18 @@ describe('ShareWorkflowDialogContent', () => {
     it('shows error toast when publishWorkflow rejects', async () => {
       mockGetShareableAssets.mockResolvedValue([])
 
-      const wrapper = createWrapper()
+      const { container } = renderComponent()
       await flushPromises()
 
       mockPublishWorkflow.mockRejectedValue(new Error('Publish failed'))
 
-      const publishButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Create link'))
-      expect(publishButton).toBeDefined()
-      await publishButton!.trigger('click')
+      const publishButton = screen.getByRole('button', {
+        name: /Create link/i
+      })
+      await userEvent.click(publishButton)
       await flushPromises()
 
-      expect(wrapper.text()).not.toContain('Anyone with this link...')
+      expect(container.textContent).not.toContain('Anyone with this link...')
       expect(mockToast.add).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Error',
@@ -491,10 +484,10 @@ describe('ShareWorkflowDialogContent', () => {
 
     it('renders unsaved state when no active workflow exists', async () => {
       mockWorkflowStore.activeWorkflow = null
-      const wrapper = createWrapper()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.text()).toContain(
+      expect(container.textContent).toContain(
         'You must save your workflow before sharing.'
       )
     })
@@ -502,31 +495,27 @@ describe('ShareWorkflowDialogContent', () => {
     it('does not call publishWorkflow when workflow is null during publish', async () => {
       mockGetShareableAssets.mockResolvedValue([])
 
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
       mockWorkflowStore.activeWorkflow = null
 
-      const publishButton = wrapper
-        .findAll('button')
-        .find((btn) => btn.text().includes('Create link'))
-      if (publishButton) {
-        await publishButton.trigger('click')
-        await flushPromises()
-      }
+      const publishButton = screen.getByRole('button', {
+        name: /Create link/i
+      })
+      await userEvent.click(publishButton)
+      await flushPromises()
 
       expect(mockPublishWorkflow).not.toHaveBeenCalled()
     })
 
     it('does not switch to publishToHub mode when flag is disabled', async () => {
       mockFlags.comfyHubUploadEnabled = false
-      const wrapper = createWrapper()
+      const { container } = renderComponent()
       await flushPromises()
 
-      expect(wrapper.find('[data-testid="publish-tab-panel"]').exists()).toBe(
-        false
-      )
-      expect(wrapper.text()).not.toContain('Publish')
+      expect(screen.queryByTestId('publish-tab-panel')).not.toBeInTheDocument()
+      expect(container.textContent).not.toContain('Publish')
     })
   })
 })

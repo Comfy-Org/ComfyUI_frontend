@@ -2190,6 +2190,10 @@
       "image": {
         "name": "image"
       },
+      "keep_aspect": {
+        "name": "保持宽高比",
+        "tooltip": "选择是否拉伸裁剪区域以适应输出尺寸，或用黑色像素填充以保持宽高比。"
+      },
       "output_height": {
         "name": "output_height",
         "tooltip": "每个裁剪区域调整后的高度。"
@@ -2309,6 +2313,23 @@
     "display_name": "禁用噪波",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "绘制边界框",
+    "inputs": {
+      "bboxes": {
+        "name": "边界框"
+      },
+      "image": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "输出图像",
         "tooltip": null
       }
     }
@@ -3645,6 +3666,14 @@
     "description": "对图像应用 GLSL ES 片段着色器。u_resolution（vec2）始终可用。",
     "display_name": "GLSL 着色器",
     "inputs": {
+      "bools": {
+        "name": "布尔值",
+        "tooltip": "布尔值在着色器代码中以 u_bool0-9（bool）形式提供"
+      },
+      "curves": {
+        "name": "曲线",
+        "tooltip": "曲线在着色器代码中以 u_curve0-3（sampler2D，1D LUT）形式提供。可通过 texture(u_curve0, vec2(x, 0.5)).r 采样"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "浮点数在着色器代码中以 u_float0-4 形式可用"
@@ -4974,6 +5003,36 @@
       "0": {
         "name": "图像",
         "tooltip": "处理后的图像"
+      }
+    }
+  },
+  "ImageHistogram": {
+    "display_name": "图像直方图",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "亮度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "红色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "绿色",
+        "tooltip": null
+      },
+      "4": {
+        "name": "蓝色",
+        "tooltip": null
       }
     }
   },
@@ -12218,6 +12277,34 @@
       }
     }
   },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR 检测",
+    "inputs": {
+      "class_name": {
+        "name": "类别名称",
+        "tooltip": "按类别筛选检测结果。设置为 'all' 可禁用筛选。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_detections": {
+        "name": "最大检测数",
+        "tooltip": "每张图像返回的最大检测数量，按置信度从高到低排序。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "threshold": {
+        "name": "阈值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "边界框",
+        "tooltip": null
+      }
+    }
+  },
   "RandomCropImages": {
     "display_name": "裁剪图像（随机）",
     "inputs": {
@@ -15623,6 +15710,10 @@
       "1": {
         "name": "FBX",
         "tooltip": null
+      },
+      "2": {
+        "name": "uv_image",
+        "tooltip": null
       }
     }
   },
@@ -17882,6 +17973,241 @@
       },
       "width": {
         "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ImageToVideoApi": {
+    "description": "根据首帧图像生成视频，可选末帧图像和音频。",
+    "display_name": "Wan 2.7 图像转视频",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用于驱动视频生成的音频（如对口型、节奏匹配动作）。时长：2秒-30秒。如未提供，模型会自动生成匹配的背景音乐或音效。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "首帧图像。输出的宽高比由该图像决定。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "末帧图像。模型将生成从首帧到末帧的过渡视频。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 辅助增强提示词。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "根据参考素材生成包含人物或物体的视频。支持单角色表演和多角色互动。",
+    "display_name": "Wan 2.7 参考生成视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "使用 Wan 2.7 模型根据文本提示生成视频。",
+    "display_name": "Wan 2.7 文本转视频",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用于驱动视频生成的音频（如对口型、节奏匹配动作）。时长：3秒-30秒。如未提供，模型会自动生成匹配的背景音乐或音效。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 辅助增强提示词。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "从视频结束处继续生成视频，可选用最后一帧进行控制。",
+    "display_name": "Wan 2.7 视频续写",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_clip": {
+        "name": "first_clip",
+        "tooltip": "要续写的视频。时长：2秒-10秒。输出宽高比将根据该视频确定。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最后一帧图像。续写内容将过渡到该帧。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "是否使用 AI 辅助增强提示词。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "通过文本指令、参考图像或风格迁移编辑视频。",
+    "display_name": "Wan 2.7 视频编辑",
+    "inputs": {
+      "audio_setting": {
+        "name": "audio_setting",
+        "tooltip": "“auto”：模型根据提示词决定是否重新生成音频。“origin”：保留输入视频的原始音频。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成的种子。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要编辑的视频。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
       }
     },
     "outputs": {

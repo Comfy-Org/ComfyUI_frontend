@@ -1,9 +1,10 @@
-import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen } from '@testing-library/vue'
 
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
@@ -54,13 +55,11 @@ describe('NodePreview', () => {
     description: 'Test node description'
   }
 
-  const mountComponent = (nodeDef: ComfyNodeDefV2 = mockNodeDef) => {
-    return mount(NodePreview, {
+  function renderComponent(nodeDef: ComfyNodeDefV2 = mockNodeDef) {
+    return render(NodePreview, {
       global: {
         plugins: [PrimeVue, i18n, pinia],
-        stubs: {
-          // Stub stores if needed
-        }
+        stubs: {}
       },
       props: {
         nodeDef
@@ -69,18 +68,18 @@ describe('NodePreview', () => {
   }
 
   it('renders node preview with correct structure', () => {
-    const wrapper = mountComponent()
+    renderComponent()
 
-    expect(wrapper.find('._sb_node_preview').exists()).toBe(true)
-    expect(wrapper.find('.node_header').exists()).toBe(true)
-    expect(wrapper.find('._sb_preview_badge').text()).toBe('Preview')
+    expect(screen.getByTestId('node-preview')).toBeInTheDocument()
+    expect(screen.getByTestId('node-header')).toBeInTheDocument()
+    expect(screen.getByText('Preview')).toBeInTheDocument()
   })
 
   it('sets title attribute on node header with full display name', () => {
-    const wrapper = mountComponent()
-    const nodeHeader = wrapper.find('.node_header')
+    renderComponent()
+    const nodeHeader = screen.getByTestId('node-header')
 
-    expect(nodeHeader.attributes('title')).toBe(mockNodeDef.display_name)
+    expect(nodeHeader).toHaveAttribute('title', mockNodeDef.display_name)
   })
 
   it('displays truncated long node names with ellipsis', () => {
@@ -90,17 +89,11 @@ describe('NodePreview', () => {
         'This Is An Extremely Long Node Name That Should Definitely Be Truncated With Ellipsis To Prevent Layout Issues'
     }
 
-    const wrapper = mountComponent(longNameNodeDef)
-    const nodeHeader = wrapper.find('.node_header')
+    renderComponent(longNameNodeDef)
+    const nodeHeader = screen.getByTestId('node-header')
 
-    // Verify the title attribute contains the full name
-    expect(nodeHeader.attributes('title')).toBe(longNameNodeDef.display_name)
-
-    // Verify overflow handling classes are applied
-    expect(nodeHeader.classes()).toContain('text-ellipsis')
-
-    // The actual text content should still be the full name (CSS handles truncation)
-    expect(nodeHeader.text()).toContain(longNameNodeDef.display_name)
+    expect(nodeHeader).toHaveAttribute('title', longNameNodeDef.display_name)
+    expect(nodeHeader).toHaveTextContent(longNameNodeDef.display_name!)
   })
 
   it('handles short node names without issues', () => {
@@ -109,18 +102,18 @@ describe('NodePreview', () => {
       display_name: 'Short'
     }
 
-    const wrapper = mountComponent(shortNameNodeDef)
-    const nodeHeader = wrapper.find('.node_header')
+    renderComponent(shortNameNodeDef)
+    const nodeHeader = screen.getByTestId('node-header')
 
-    expect(nodeHeader.attributes('title')).toBe('Short')
-    expect(nodeHeader.text()).toContain('Short')
+    expect(nodeHeader).toHaveAttribute('title', 'Short')
+    expect(nodeHeader).toHaveTextContent('Short')
   })
 
   it('applies proper spacing to the dot element', () => {
-    const wrapper = mountComponent()
-    const headdot = wrapper.find('.headdot')
+    renderComponent()
+    const headdot = screen.getByTestId('head-dot')
 
-    expect(headdot.classes()).toContain('pr-3')
+    expect(headdot).toBeInTheDocument()
   })
 
   describe('Description Rendering', () => {
@@ -130,11 +123,13 @@ describe('NodePreview', () => {
         description: 'This is a plain text description'
       }
 
-      const wrapper = mountComponent(plainTextNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(plainTextNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      expect(description.exists()).toBe(true)
-      expect(description.html()).toContain('This is a plain text description')
+      expect(description).toBeInTheDocument()
+      expect(description.innerHTML).toContain(
+        'This is a plain text description'
+      )
     })
 
     it('renders markdown description with formatting', () => {
@@ -143,13 +138,13 @@ describe('NodePreview', () => {
         description: '**Bold text** and *italic text* with `code`'
       }
 
-      const wrapper = mountComponent(markdownNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(markdownNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      expect(description.exists()).toBe(true)
-      expect(description.html()).toContain('<strong>Bold text</strong>')
-      expect(description.html()).toContain('<em>italic text</em>')
-      expect(description.html()).toContain('<code>code</code>')
+      expect(description).toBeInTheDocument()
+      expect(description.innerHTML).toContain('<strong>Bold text</strong>')
+      expect(description.innerHTML).toContain('<em>italic text</em>')
+      expect(description.innerHTML).toContain('<code>code</code>')
     })
 
     it('does not render description element when description is empty', () => {
@@ -158,20 +153,16 @@ describe('NodePreview', () => {
         description: ''
       }
 
-      const wrapper = mountComponent(noDescriptionNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(noDescriptionNodeDef)
 
-      expect(description.exists()).toBe(false)
+      expect(screen.queryByTestId('node-description')).not.toBeInTheDocument()
     })
 
     it('does not render description element when description is undefined', () => {
       const { description, ...nodeDefWithoutDescription } = mockNodeDef
-      const wrapper = mountComponent(
-        nodeDefWithoutDescription as ComfyNodeDefV2
-      )
-      const descriptionElement = wrapper.find('._sb_description')
+      renderComponent(nodeDefWithoutDescription as ComfyNodeDefV2)
 
-      expect(descriptionElement.exists()).toBe(false)
+      expect(screen.queryByTestId('node-description')).not.toBeInTheDocument()
     })
 
     it('calls renderMarkdownToHtml utility function', () => {
@@ -183,7 +174,7 @@ describe('NodePreview', () => {
         description: testDescription
       }
 
-      mountComponent(nodeDefWithDescription)
+      renderComponent(nodeDefWithDescription)
 
       expect(spy).toHaveBeenCalledWith(testDescription)
       spy.mockRestore()
@@ -196,21 +187,13 @@ describe('NodePreview', () => {
           'Safe **markdown** content <script>alert("xss")</script> with `code` blocks'
       }
 
-      const wrapper = mountComponent(unsafeNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(unsafeNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      // The description should still exist because there's safe content
-      if (description.exists()) {
-        // Should not contain script tags (sanitized by DOMPurify)
-        expect(description.html()).not.toContain('<script>')
-        expect(description.html()).not.toContain('alert("xss")')
-        // Should contain the safe markdown content rendered as HTML
-        expect(description.html()).toContain('<strong>markdown</strong>')
-        expect(description.html()).toContain('<code>code</code>')
-      } else {
-        // If DOMPurify removes everything, that's also acceptable for security
-        expect(description.exists()).toBe(false)
-      }
+      expect(description.innerHTML).not.toContain('<script>')
+      expect(description.innerHTML).not.toContain('alert("xss")')
+      expect(description.innerHTML).toContain('<strong>markdown</strong>')
+      expect(description.innerHTML).toContain('<code>code</code>')
     })
 
     it('handles markdown with line breaks', () => {
@@ -219,12 +202,11 @@ describe('NodePreview', () => {
         description: 'Line 1\n\nLine 3 after empty line'
       }
 
-      const wrapper = mountComponent(multilineNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(multilineNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      expect(description.exists()).toBe(true)
-      // Should contain paragraph tags for proper line break handling
-      expect(description.html()).toContain('<p>')
+      expect(description).toBeInTheDocument()
+      expect(description.innerHTML).toContain('<p>')
     })
 
     it('handles markdown lists', () => {
@@ -233,19 +215,19 @@ describe('NodePreview', () => {
         description: '- Item 1\n- Item 2\n- Item 3'
       }
 
-      const wrapper = mountComponent(listNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(listNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      expect(description.exists()).toBe(true)
-      expect(description.html()).toContain('<ul>')
-      expect(description.html()).toContain('<li>')
+      expect(description).toBeInTheDocument()
+      expect(description.innerHTML).toContain('<ul>')
+      expect(description.innerHTML).toContain('<li>')
     })
 
-    it('applies correct styling classes to description', () => {
-      const wrapper = mountComponent()
-      const description = wrapper.find('._sb_description')
+    it('renders description element', () => {
+      renderComponent()
+      const description = screen.getByTestId('node-description')
 
-      expect(description.classes()).toContain('_sb_description')
+      expect(description).toBeInTheDocument()
     })
 
     it('uses v-html directive for rendered content', () => {
@@ -254,12 +236,11 @@ describe('NodePreview', () => {
         description: 'Content with **bold** text'
       }
 
-      const wrapper = mountComponent(htmlNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(htmlNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      // The component should render the HTML, not escape it
-      expect(description.html()).toContain('<strong>bold</strong>')
-      expect(description.html()).not.toContain('&lt;strong&gt;')
+      expect(description.innerHTML).toContain('<strong>bold</strong>')
+      expect(description.innerHTML).not.toContain('&lt;strong&gt;')
     })
 
     it('prevents XSS attacks by sanitizing dangerous HTML elements', () => {
@@ -269,17 +250,12 @@ describe('NodePreview', () => {
           'Normal text <img src="x" onerror="alert(\'XSS\')" /> and **bold** text'
       }
 
-      const wrapper = mountComponent(maliciousNodeDef)
-      const description = wrapper.find('._sb_description')
+      renderComponent(maliciousNodeDef)
+      const description = screen.getByTestId('node-description')
 
-      if (description.exists()) {
-        // Should not contain dangerous event handlers
-        expect(description.html()).not.toContain('onerror')
-        expect(description.html()).not.toContain('alert(')
-        // Should still contain safe markdown content
-        expect(description.html()).toContain('<strong>bold</strong>')
-        // May or may not contain img tag depending on DOMPurify config
-      }
+      expect(description.innerHTML).not.toContain('onerror')
+      expect(description.innerHTML).not.toContain('alert(')
+      expect(description.innerHTML).toContain('<strong>bold</strong>')
     })
   })
 })

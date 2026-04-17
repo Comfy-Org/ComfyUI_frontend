@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+const departments = [
+  {
+    name: '工程',
+    roles: [
+      { title: 'Design Engineer', id: 'abc787b9-ad85-421c-8218-debd23bea096' },
+      { title: 'Software Engineer, ComfyUI Desktop', id: 'ad2f76cb-a787-47d8-81c5-7e7f917747c0' },
+      { title: 'Product Manager, ComfyUI (open-source)', id: '12dbc26e-9f6d-49bf-83c6-130f7566d03c' },
+      { title: 'Senior Software Engineer, Frontend Generalist', id: 'c3e0584d-5490-491f-aae4-b5922ef63fd2' },
+      { title: 'Software Engineer, Frontend Generalist', id: '99dc26c7-51ca-43cd-a1ba-7d475a0f4a40' },
+      { title: 'Tech Lead Manager, Frontend', id: 'a0665088-3314-457a-aa7b-12ca5c3eb261' },
+      { title: 'Senior Software Engineer, Comfy Cloud', id: '27cdf4ce-69a4-44da-b0ec-d54875fd14a1' },
+      { title: 'Senior Applied AI/ML Engineer', id: '5cc4d0bc-97b0-463b-8466-3ec1d07f6ac0' },
+      { title: 'Senior Engineer, Backend Generalist', id: '732f8b39-076d-4847-afe3-f54d4451607e' },
+      { title: 'Software Engineer, Core ComfyUI Contributor', id: '7d4062d6-d500-445a-9a5f-014971af259f' },
+    ],
+  },
+  {
+    name: '设计',
+    roles: [
+      { title: 'Graphic Designer', id: '49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f' },
+      { title: 'Creative Artist', id: '19ba10aa-4961-45e8-8473-66a8a7a8079d' },
+      { title: 'Senior Product Designer', id: 'b2e864c6-4754-4e04-8f46-1022baa103c3' },
+      { title: 'Freelance Motion Designer', id: 'a7ccc2b4-4d9d-4e04-b39c-28a711995b5b' },
+    ],
+  },
+  {
+    name: '市场营销',
+    roles: [
+      { title: 'Partnership & Events Marketing Manager', id: '89d3ff75-2055-4e92-9c69-81feff55627c' },
+      { title: 'Lifecycle Growth Marketer', id: 'be74d210-3b50-408c-9f61-8fee8833ce64' },
+      { title: 'Social Media Manager', id: '28dea965-662b-4786-b024-c9a1b6bc1f23' },
+    ],
+  },
+  {
+    name: '商务运营/增长',
+    roles: [
+      { title: 'Founding Account Executive', id: '061ff83a-fe18-40f7-a5c4-4ce7da7086a6' },
+      { title: 'Senior Technical Recruiter', id: 'd5008532-c45d-46e6-ba2c-20489d364362' },
+    ],
+  },
+]
+
+const whyJoinUs = [
+  '你想打造赋能他人创作的工具。',
+  '你喜欢从事已经在驱动真实世界视频、图像、音乐和应用的基础技术。',
+  '你关心开放、免费的替代方案，而非封闭的 AI 平台。',
+  '你相信艺术家、黑客和独立创作者应该真正掌控自己的工具。',
+  '你想在一个精干、务实、快速迭代的小团队中工作。',
+]
+
+const notAFit = [
+  '你需要一切都计划好。我们边做边摸索，方向变化很快。如果不确定性让你焦虑，你可能不会喜欢这里。',
+  '你只把自己定位为程序员/[某个职位]。在这里，每个人都会做各种事情——和用户交流、写文档，什么需要做就做什么。我们需要主动补位的人。',
+  '你需要完善的流程。我们在做一件革命性的事情，这意味着要自己写规则。如果你需要清晰的结构，这可能会让你抓狂。',
+  '你喜欢经理来检查你的工作。我们信任每个人端到端地负责自己的工作。看到问题就修复——不需要请示。',
+  '你倾向于等到掌握所有信息再行动。我们经常需要在信息不完整的情况下做决定，然后在过程中调整。分析瘫痪在这里行不通。',
+  '你有很大的自我。我们追求突破边界和解决难题，而不是个人英雄主义。如果你无法接受直接的反馈或从错误中学习，这里不适合你。',
+]
+
+const questions = [
+  '团队文化是什么样的？',
+  '我需要什么样的背景才能申请？',
+  '如何申请？',
+  '招聘流程是什么样的？',
+  '线下还是远程？',
+  '如何提高获得工作的机会？',
+  '如果我需要签证担保在美国工作怎么办？',
+  '我能获得简历和面试的反馈吗？',
+]
+---
+
+<BaseLayout
+  title="招聘 — Comfy"
+  description="加入构建生成式 AI 操作系统的团队。工程、设计、市场营销等岗位开放招聘中。"
+>
+  <div>
+    <!-- Hero -->
+    <section class="px-6 pb-24 pt-40">
+      <div class="mx-auto max-w-4xl text-center">
+        <h1 class="text-4xl font-bold tracking-tight md:text-6xl">
+          构建生成式 AI 的
+          <br />
+          <span class="text-brand-yellow">&ldquo;操作系统&rdquo;</span>
+        </h1>
+        <p class="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-smoke-700">
+          我们是全球领先的<strong class="text-white">视觉 AI 平台</strong>——一个开放、模块化的系统，任何人都可以精确地构建、
+          定制和自动化 AI 工作流，并拥有完全的控制权。与大多数将内部机制隐藏在简单提示框后面的 AI 工具不同，我们赋予专业人士
+          <strong class="text-white">设计自己管线的自由</strong>——像积木一样将模型、工具和逻辑可视化地连接起来。
+        </p>
+        <p class="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-smoke-700">
+          ComfyUI 被<strong class="text-white">艺术家、电影人、游戏创作者、设计师、研究人员、视效公司</strong>等使用，
+          其中包括 <strong class="text-white">OpenAI、Netflix、Amazon Studios、育碧、EA 和腾讯</strong>的团队——他们都想超越预设，
+          真正塑造 AI 的创作方式。
+        </p>
+      </div>
+    </section>
+
+    <!-- Job Listings -->
+    <section class="border-t border-white/10 px-6 py-24">
+      <div class="mx-auto max-w-4xl">
+        {departments.map((dept) => (
+          <div class="mb-16 last:mb-0">
+            <h2 class="mb-6 text-sm font-semibold uppercase tracking-widest text-brand-yellow">
+              {dept.name}
+            </h2>
+            <div class="space-y-3">
+              {dept.roles.map((role) => (
+                <a
+                  href={`https://jobs.ashbyhq.com/comfy-org/${role.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center justify-between rounded-lg border border-white/10 px-5 py-4 transition-colors hover:border-brand-yellow"
+                >
+                  <span class="font-medium">{role.title}</span>
+                  <span class="text-sm text-smoke-700">→</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Why Join Us / When It's Not a Fit — 2-column layout -->
+    <section class="border-t border-white/10 bg-charcoal-800 px-6 py-24">
+      <div class="mx-auto grid max-w-5xl gap-16 md:grid-cols-2">
+        <!-- Why Join Us -->
+        <div>
+          <h2 class="mb-8 text-sm font-semibold uppercase tracking-widest text-brand-yellow">
+            为什么加入我们？
+          </h2>
+          <ul class="space-y-4">
+            {whyJoinUs.map((item) => (
+              <li class="flex gap-3 text-smoke-700">
+                <span class="mt-1 text-brand-yellow">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- When It's Not a Fit -->
+        <div>
+          <h2 class="mb-4 text-sm font-semibold uppercase tracking-widest text-white">
+            不太适合的情况
+          </h2>
+          <p class="mb-8 text-sm text-smoke-700">
+            在 Comfy Org 工作并不适合所有人，这完全没问题。如果以下情况符合你，你可能需要考虑其他机会：
+          </p>
+          <ul class="space-y-4">
+            {notAFit.map((item) => (
+              <li class="flex gap-3 text-sm text-smoke-700">
+                <span class="mt-0.5 text-white/40">—</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Q&A -->
+    <section class="border-t border-white/10 px-6 py-24">
+      <div class="mx-auto max-w-4xl">
+        <h2 class="mb-10 text-sm font-semibold uppercase tracking-widest text-brand-yellow">
+          常见问题
+        </h2>
+        <ul class="space-y-4">
+          {questions.map((q) => (
+            <li class="rounded-lg border border-white/10 px-5 py-4 font-medium">
+              {q}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="border-t border-white/10 px-6 py-24">
+      <div class="mx-auto max-w-4xl text-center">
+        <h2 class="text-3xl font-bold">有问题？联系我们！</h2>
+        <a
+          href="https://support.comfy.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-8 inline-block rounded-full bg-brand-yellow px-8 py-3 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+        >
+          联系我们
+        </a>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 function tooltipLocator(page: Page): Locator {
   return page.locator('[role="tooltip"]')

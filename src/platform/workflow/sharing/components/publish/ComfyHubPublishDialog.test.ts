@@ -1,4 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -10,8 +11,10 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
+const mockToastAdd = vi.hoisted(() => vi.fn())
+
 vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
+  useToast: () => ({ add: mockToastAdd })
 }))
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
@@ -105,6 +108,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
+
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
@@ -122,8 +129,8 @@ describe('ComfyHubPublishDialog', () => {
     })
   })
 
-  function createWrapper() {
-    return mount(ComfyHubPublishDialog, {
+  function renderComponent() {
+    return render(ComfyHubPublishDialog, {
       props: { onClose },
       global: {
         mocks: {
@@ -165,27 +172,27 @@ describe('ComfyHubPublishDialog', () => {
   }
 
   it('starts in publish wizard mode and prefetches profile asynchronously', async () => {
-    createWrapper()
+    renderComponent()
     await flushPromises()
 
     expect(mockFetchProfile).toHaveBeenCalledWith()
   })
 
   it('switches to profile creation step when final-step publish requires profile', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="require-profile"]').trigger('click')
+    await userEvent.click(screen.getByTestId('require-profile'))
 
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
   })
 
   it('returns to finish state after gate complete and does not auto-close', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="require-profile"]').trigger('click')
-    await wrapper.find('[data-testid="gate-complete"]').trigger('click')
+    await userEvent.click(screen.getByTestId('require-profile'))
+    await userEvent.click(screen.getByTestId('gate-complete'))
 
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
     expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
@@ -194,11 +201,11 @@ describe('ComfyHubPublishDialog', () => {
   })
 
   it('returns to finish state when profile gate is closed', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="require-profile"]').trigger('click')
-    await wrapper.find('[data-testid="gate-close"]').trigger('click')
+    await userEvent.click(screen.getByTestId('require-profile'))
+    await userEvent.click(screen.getByTestId('gate-close'))
 
     expect(mockOpenProfileCreationStep).toHaveBeenCalledOnce()
     expect(mockCloseProfileCreationStep).toHaveBeenCalledOnce()
@@ -206,13 +213,16 @@ describe('ComfyHubPublishDialog', () => {
   })
 
   it('closes dialog after successful publish', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
     await flushPromises()
 
-    await wrapper.find('[data-testid="publish"]').trigger('click')
+    await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -230,7 +240,7 @@ describe('ComfyHubPublishDialog', () => {
       }
     })
 
-    createWrapper()
+    renderComponent()
     await flushPromises()
 
     expect(mockApplyPrefill).toHaveBeenCalledWith({
@@ -242,7 +252,7 @@ describe('ComfyHubPublishDialog', () => {
   })
 
   it('does not apply prefill when workflow is not published', async () => {
-    createWrapper()
+    renderComponent()
     await flushPromises()
 
     expect(mockApplyPrefill).not.toHaveBeenCalled()
@@ -257,7 +267,7 @@ describe('ComfyHubPublishDialog', () => {
       prefill: null
     })
 
-    createWrapper()
+    renderComponent()
     await flushPromises()
 
     expect(mockApplyPrefill).not.toHaveBeenCalled()
@@ -266,7 +276,7 @@ describe('ComfyHubPublishDialog', () => {
   it('silently ignores prefill fetch errors', async () => {
     mockGetPublishStatus.mockRejectedValue(new Error('Network error'))
 
-    createWrapper()
+    renderComponent()
     await flushPromises()
 
     expect(mockApplyPrefill).not.toHaveBeenCalled()

@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -46,14 +47,14 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn()
 }))
 
-function mountComponent() {
+function renderComponent() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
     messages: { en: enMessages }
   })
 
-  return mount(TopbarSubscribeButton, {
+  return render(TopbarSubscribeButton, {
     global: {
       plugins: [i18n]
     }
@@ -63,17 +64,15 @@ function mountComponent() {
 describe('TopbarSubscribeButton', () => {
   it('renders on cloud when isFreeTier is true', () => {
     mockIsCloud.value = true
-    const wrapper = mountComponent()
-    expect(
-      wrapper.find('[data-testid="topbar-subscribe-button"]').exists()
-    ).toBe(true)
+    renderComponent()
+    expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 
   it('hides on non-cloud distribution', () => {
     mockIsCloud.value = false
-    const wrapper = mountComponent()
+    renderComponent()
     expect(
-      wrapper.find('[data-testid="topbar-subscribe-button"]').exists()
-    ).toBe(false)
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
   })
 })

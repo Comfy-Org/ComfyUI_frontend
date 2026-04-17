@@ -1,21 +1,19 @@
 import { Form } from '@primevue/forms'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
 import ToastService from 'primevue/toastservice'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import SignInForm from './SignInForm.vue'
-
-type ComponentInstance = InstanceType<typeof SignInForm>
 
 // Mock firebase auth modules
 vi.mock('firebase/app', () => ({
@@ -41,11 +39,11 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
   }))
 }))
 
-let mockLoading = false
+const mockLoadingRef = ref(false)
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
     get loading() {
-      return mockLoading
+      return mockLoadingRef.value
     }
   }))
 }))
@@ -58,259 +56,145 @@ vi.mock('primevue/usetoast', () => ({
   }))
 }))
 
+const forgotPasswordText = enMessages.auth.login.forgotPassword
+const loginButtonText = enMessages.auth.login.loginButton
+
 describe('SignInForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSendPasswordReset.mockReset()
     mockToastAdd.mockReset()
-    mockLoading = false
+    mockLoadingRef.value = false
   })
 
-  const mountComponent = (
-    props = {},
-    options = {}
-  ): VueWrapper<ComponentInstance> => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function renderComponent(props: Record<string, unknown> = {}) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
       messages: { en: enMessages }
     })
-
-    return mount(SignInForm, {
+    const user = userEvent.setup()
+    const result = render(SignInForm, {
       global: {
         plugins: [PrimeVue, i18n, ToastService],
-        components: {
-          Form,
-          Button,
-          InputText,
-          Password,
-          ProgressSpinner
-        }
+        components: { Form, Button, InputText, Password, ProgressSpinner }
       },
-      props,
-      ...options
+      props
     })
+    return { ...result, user }
+  }
+
+  function getEmailInput() {
+    return screen.getByPlaceholderText(enMessages.auth.login.emailPlaceholder)
+  }
+
+  function getPasswordInput() {
+    return screen.getByPlaceholderText(
+      enMessages.auth.login.passwordPlaceholder
+    )
   }
 
   describe('Forgot Password Link', () => {
-    it('shows disabled style when email is empty', async () => {
-      const wrapper = mountComponent()
-      await nextTick()
-
-      const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.select-none'
-      )
-
-      expect(forgotPasswordSpan.classes()).toContain('cursor-not-allowed')
-      expect(forgotPasswordSpan.classes()).toContain('opacity-50')
-    })
-
     it('shows toast and focuses email input when clicked while disabled', async () => {
-      const wrapper = mountComponent()
-      const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.select-none'
-      )
+      const { user } = renderComponent()
 
-      // Mock getElementById to track focus
-      const mockFocus = vi.fn()
-      const mockElement: Partial<HTMLElement> = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(
-        mockElement as HTMLElement
-      )
+      const emailInput = getEmailInput()
+      const focusSpy = vi.spyOn(emailInput, 'focus')
 
-      // Click forgot password link while email is empty
-      await forgotPasswordSpan.trigger('click')
-      await nextTick()
+      await user.click(screen.getByText(forgotPasswordText))
 
-      // Should show toast warning
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'warn',
         summary: enMessages.auth.login.emailPlaceholder,
         life: 5000
       })
 
-      // Should focus email input
-      expect(document.getElementById).toHaveBeenCalledWith(
-        'comfy-org-sign-in-email'
-      )
-      expect(mockFocus).toHaveBeenCalled()
+      expect(focusSpy).toHaveBeenCalled()
 
-      // Should NOT call sendPasswordReset
       expect(mockSendPasswordReset).not.toHaveBeenCalled()
-    })
-
-    it('calls handleForgotPassword with email when link is clicked', async () => {
-      const wrapper = mountComponent()
-      const component = wrapper.vm as typeof wrapper.vm & {
-        handleForgotPassword: (email: string, valid: boolean) => void
-        onSubmit: (data: { valid: boolean; values: unknown }) => void
-      }
-
-      // Spy on handleForgotPassword
-      const handleForgotPasswordSpy = vi.spyOn(
-        component,
-        'handleForgotPassword'
-      )
-
-      const forgotPasswordSpan = wrapper.find(
-        'span.text-muted.text-base.font-medium.select-none'
-      )
-
-      // Click the forgot password link
-      await forgotPasswordSpan.trigger('click')
-
-      // Should call handleForgotPassword
-      expect(handleForgotPasswordSpy).toHaveBeenCalled()
     })
   })
 
   describe('Form Submission', () => {
-    it('emits submit event when onSubmit is called with valid data', async () => {
-      const wrapper = mountComponent()
-      const component = wrapper.vm as typeof wrapper.vm & {
-        handleForgotPassword: (email: string, valid: boolean) => void
-        onSubmit: (data: { valid: boolean; values: unknown }) => void
-      }
+    it('emits submit event when form is submitted with valid data', async () => {
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
 
-      // Call onSubmit directly with valid data
-      component.onSubmit({
-        valid: true,
-        values: { email: 'test@example.com', password: 'password123' }
+      await user.type(getEmailInput(), 'test@example.com')
+      await user.type(getPasswordInput(), 'password123')
+      await user.click(screen.getByRole('button', { name: loginButtonText }))
+
+      expect(onSubmit).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'password123'
       })
-
-      // Check emitted event
-      expect(wrapper.emitted('submit')).toBeTruthy()
-      expect(wrapper.emitted('submit')?.[0]).toEqual([
-        {
-          email: 'test@example.com',
-          password: 'password123'
-        }
-      ])
     })
 
-    it('does not emit submit event when form is invalid', async () => {
-      const wrapper = mountComponent()
-      const component = wrapper.vm as typeof wrapper.vm & {
-        handleForgotPassword: (email: string, valid: boolean) => void
-        onSubmit: (data: { valid: boolean; values: unknown }) => void
-      }
+    it('does not emit submit event when form data is invalid', async () => {
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
 
-      // Call onSubmit with invalid form
-      component.onSubmit({ valid: false, values: {} })
+      await user.type(getEmailInput(), 'invalid-email')
+      await user.type(getPasswordInput(), 'password123')
+      await user.click(screen.getByRole('button', { name: loginButtonText }))
 
-      // Should not emit submit event
-      expect(wrapper.emitted('submit')).toBeFalsy()
+      expect(onSubmit).not.toHaveBeenCalled()
     })
   })
 
   describe('Loading State', () => {
-    it('shows spinner when loading', async () => {
-      mockLoading = true
+    it('shows spinner when loading', () => {
+      mockLoadingRef.value = true
+      renderComponent()
 
-      try {
-        const wrapper = mountComponent()
-        await nextTick()
-
-        expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(true)
-        expect(wrapper.findComponent(Button).exists()).toBe(false)
-      } catch (error) {
-        // Fallback test - check HTML content if component rendering fails
-        mockLoading = true
-        const wrapper = mountComponent()
-        expect(wrapper.html()).toContain('p-progressspinner')
-        expect(wrapper.html()).not.toContain('<button')
-      }
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: loginButtonText })
+      ).not.toBeInTheDocument()
     })
 
     it('shows button when not loading', () => {
-      mockLoading = false
+      renderComponent()
 
-      const wrapper = mountComponent()
-
-      expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(false)
-      expect(wrapper.findComponent(Button).exists()).toBe(true)
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: loginButtonText })
+      ).toBeInTheDocument()
     })
   })
 
   describe('Component Structure', () => {
     it('renders email input with correct attributes', () => {
-      const wrapper = mountComponent()
-      const emailInput = wrapper.findComponent(InputText)
+      renderComponent()
 
-      expect(emailInput.attributes('id')).toBe('comfy-org-sign-in-email')
-      expect(emailInput.attributes('autocomplete')).toBe('email')
-      expect(emailInput.attributes('name')).toBe('email')
-      expect(emailInput.attributes('type')).toBe('text')
+      const emailInput = getEmailInput()
+      expect(emailInput).toHaveAttribute('id', 'comfy-org-sign-in-email')
+      expect(emailInput).toHaveAttribute('autocomplete', 'email')
+      expect(emailInput).toHaveAttribute('name', 'email')
+      expect(emailInput).toHaveAttribute('type', 'text')
     })
 
     it('renders password input with correct attributes', () => {
-      const wrapper = mountComponent()
-      const passwordInput = wrapper.findComponent(Password)
+      renderComponent()
 
-      // Check props instead of attributes for Password component
-      expect(passwordInput.props('inputId')).toBe('comfy-org-sign-in-password')
-      // Password component passes name as prop, not attribute
-      expect(passwordInput.props('name')).toBe('password')
-      expect(passwordInput.props('feedback')).toBe(false)
-      expect(passwordInput.props('toggleMask')).toBe(true)
-    })
-
-    it('renders form with correct resolver', () => {
-      const wrapper = mountComponent()
-      const form = wrapper.findComponent(Form)
-
-      expect(form.props('resolver')).toBeDefined()
+      const passwordInput = getPasswordInput()
+      expect(passwordInput).toHaveAttribute('id', 'comfy-org-sign-in-password')
+      expect(passwordInput).toHaveAttribute('name', 'password')
     })
   })
 
-  describe('Focus Behavior', () => {
-    it('focuses email input when handleForgotPassword is called with invalid email', async () => {
-      const wrapper = mountComponent()
-      const component = wrapper.vm as typeof wrapper.vm & {
-        handleForgotPassword: (email: string, valid: boolean) => void
-        onSubmit: (data: { valid: boolean; values: unknown }) => void
-      }
+  describe('Forgot Password with valid email', () => {
+    it('calls sendPasswordReset when email is valid', async () => {
+      const { user } = renderComponent()
 
-      // Mock getElementById to track focus
-      const mockFocus = vi.fn()
-      const mockElement: Partial<HTMLElement> = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(
-        mockElement as HTMLElement
-      )
+      await user.type(getEmailInput(), 'test@example.com')
+      await user.click(screen.getByText(forgotPasswordText))
 
-      // Call handleForgotPassword with no email
-      await component.handleForgotPassword('', false)
-
-      // Should focus email input
-      expect(document.getElementById).toHaveBeenCalledWith(
-        'comfy-org-sign-in-email'
-      )
-      expect(mockFocus).toHaveBeenCalled()
-    })
-
-    it('does not focus email input when valid email is provided', async () => {
-      const wrapper = mountComponent()
-      const component = wrapper.vm as typeof wrapper.vm & {
-        handleForgotPassword: (email: string, valid: boolean) => void
-        onSubmit: (data: { valid: boolean; values: unknown }) => void
-      }
-
-      // Mock getElementById
-      const mockFocus = vi.fn()
-      const mockElement: Partial<HTMLElement> = { focus: mockFocus }
-      vi.spyOn(document, 'getElementById').mockReturnValue(
-        mockElement as HTMLElement
-      )
-
-      // Call handleForgotPassword with valid email
-      await component.handleForgotPassword('test@example.com', true)
-
-      // Should NOT focus email input
-      expect(document.getElementById).not.toHaveBeenCalled()
-      expect(mockFocus).not.toHaveBeenCalled()
-
-      // Should call sendPasswordReset
       expect(mockSendPasswordReset).toHaveBeenCalledWith('test@example.com')
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 })

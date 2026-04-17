@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,11 +32,11 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  ({
+  fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
     ...overrides
-  }) as Partial<LGraphNode> as LGraphNode
+  })
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -623,7 +624,7 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   it('should return early for null node', () => {
     const store = useNodeOutputStore()
 
-    store.setNodeOutputs(null as unknown as LGraphNode, 'test.png')
+    store.setNodeOutputs(fromAny<LGraphNode, unknown>(null), 'test.png')
 
     expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
   })

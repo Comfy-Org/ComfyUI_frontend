@@ -347,9 +347,19 @@
     "share": "Поделиться",
     "workflowActions": "Действия с рабочим процессом"
   },
+  "builderFooter": {
+    "opensAsApp": "Открыть как {mode}",
+    "opensAsGraph": "Открыть как {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Войти в режим приложения",
     "exitAppBuilder": "Выйти из конструктора приложений"
+  },
+  "builderSave": {
+    "successBody": "Хотите просмотреть сейчас?",
+    "successBodyApp": "Этот рабочий процесс теперь будет открываться в режиме приложения по умолчанию.\n\nХотите просмотреть сейчас?",
+    "successBodyGraph": "Этот рабочий процесс будет открыт как граф узлов.",
+    "successTitle": "Успешно сохранено"
   },
   "builderToolbar": {
     "app": "Приложение",
@@ -359,18 +369,10 @@
     "connectOutput": "Подключить выход",
     "connectOutputBody1": "Вашему приложению необходимо подключить хотя бы один выход перед сохранением.",
     "connectOutputBody2": "Переключитесь на шаг «Выбрать» и кликните по выходным узлам, чтобы добавить их сюда.",
-    "defaultModeAppliedAppBody": "Этот рабочий процесс теперь будет открываться в режиме приложения по умолчанию.",
-    "defaultModeAppliedAppPrompt": "Хотите просмотреть его сейчас?",
-    "defaultModeAppliedGraphBody": "Этот рабочий процесс теперь будет открываться как граф узлов по умолчанию.",
-    "defaultModeAppliedGraphPrompt": "Хотите всё равно просмотреть приложение?",
-    "defaultModeAppliedTitle": "Успешно установлено",
-    "defaultView": "Установить вид по умолчанию",
-    "defaultViewDescription": "Выберите, как это будет открываться",
     "defaultViewLabel": "По умолчанию этот рабочий процесс будет открываться как:",
-    "defaultViewTitle": "Установить вид по умолчанию для этого рабочего процесса",
     "emptyWorkflowPrompt": "Хотите начать с шаблона?",
     "emptyWorkflowTitle": "В этом рабочем процессе нет узлов",
-    "exitToWorkflow": "Выйти к рабочему процессу",
+    "filename": "Имя файла",
     "inputs": "Входы",
     "inputsDescription": "Выберите входные данные",
     "label": "Конструктор приложений",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Открывается как граф узлов по умолчанию",
     "outputs": "Выходы",
     "outputsDescription": "Выберите выходные данные",
+    "saveAs": "Сохранить как",
     "switchToOutputs": "Перейти к выводам",
     "viewApp": "Просмотреть приложение"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
-    "seeErrors": "Посмотреть ошибки"
+    "missingMedia": "Некоторым узлам не хватает необходимых входных данных",
+    "missingModels": "{count} необходимая модель отсутствует | {count} необходимых моделей отсутствуют",
+    "missingNodes": "Некоторые узлы отсутствуют и требуют установки",
+    "seeErrors": "Посмотреть ошибки",
+    "showMissingMedia": "Показать отсутствующие входные данные",
+    "showMissingModels": "Показать отсутствующие модели",
+    "showMissingNodes": "Показать отсутствующие узлы",
+    "showSwapNodes": "Показать заменяемые узлы",
+    "swapNodes": "Некоторые узлы можно заменить альтернативами"
   },
   "essentials": {
     "batchImage": "Пакетная обработка изображений",
@@ -1320,6 +1331,7 @@
     "updating": "Обновление",
     "upload": "Загрузить",
     "uploadAlreadyInProgress": "Загрузка уже выполняется",
+    "uploadTimedOut": "Время загрузки истекло. Пожалуйста, попробуйте еще раз.",
     "usageHint": "Подсказка по использованию",
     "use": "Использовать",
     "user": "Пользователь",
@@ -1630,9 +1642,18 @@
     "exportRecording": "Экспортировать запись",
     "exportingModel": "Экспорт модели...",
     "fov": "Угол обзора",
+    "hdri": {
+      "changeFile": "Сменить HDRI",
+      "intensity": "Интенсивность",
+      "label": "HDRI-окружение",
+      "removeFile": "Удалить HDRI",
+      "showAsBackground": "Показать как фон",
+      "uploadFile": "Загрузить HDRI (.hdr, .exr)"
+    },
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
     "loadingBackgroundImage": "Загрузка фонового изображения",
+    "loadingHDRI": "Загрузка HDRI...",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
@@ -2247,6 +2268,7 @@
     "dataset": "dataset",
     "debug": "отладка",
     "deprecated": "устаревший",
+    "detection": "детекция",
     "edit_models": "редактировать_модели",
     "flux": "flux",
     "gligen": "gligen",
@@ -2515,6 +2537,23 @@
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
+    "missingMedia": {
+      "audio": "Аудио",
+      "cancelSelection": "Отменить выбор",
+      "collapseNodes": "Скрыть ссылающиеся узлы",
+      "confirmSelection": "Подтвердить выбор",
+      "expandNodes": "Показать ссылающиеся узлы",
+      "image": "Изображения",
+      "locateNode": "Найти узел",
+      "missingMediaTitle": "Отсутствующие входные данные",
+      "or": "ИЛИ",
+      "selectedFromLibrary": "Выбрано из библиотеки",
+      "uploadFile": "Загрузить {type}",
+      "uploaded": "Загружено",
+      "uploading": "Загрузка...",
+      "useFromLibrary": "Использовать из библиотеки",
+      "video": "Видео"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Эта модель уже существует в «{category}»",
       "assetLoadTimeout": "Время ожидания обнаружения модели истекло. Попробуйте перезагрузить рабочий процесс.",
@@ -3228,6 +3267,7 @@
       "termsAgreement": "Продолжая, вы соглашаетесь с {terms} и {privacy} Comfy Org.",
       "totalDueToday": "Итого к оплате сегодня"
     },
+    "refreshCredits": "Обновить кредиты",
     "renewsDate": "Обновляется {date}",
     "required": {
       "pollingFailed": "Не удалось активировать подписку",
@@ -3400,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToInitiateSubscription": "Не удалось инициировать подписку: {error}",
     "failedToLoadBackgroundImage": "Не удалось загрузить фоновое изображение",
+    "failedToLoadHDRI": "Не удалось загрузить файл HDRI",
     "failedToLoadModel": "Не удалось загрузить 3D-модель",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "failedToQueue": "Не удалось поставить в очередь",
@@ -3435,6 +3476,7 @@
     "pleaseSelectOutputNodes": "Пожалуйста, выберите выходные узлы",
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
+    "unsupportedHDRIFormat": "Неподдерживаемый формат файла. Пожалуйста, загрузите файл .hdr или .exr.",
     "updateRequested": "Запрошено обновление",
     "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
     "userNotAuthenticated": "Пользователь не аутентифицирован"

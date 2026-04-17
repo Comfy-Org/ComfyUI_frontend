@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
@@ -60,12 +61,16 @@ const BaseTooltipStub = {
 
 describe('JobFiltersBar', () => {
   it('emits showAssets when the assets icon button is clicked', async () => {
-    const wrapper = mount(JobFiltersBar, {
+    const user = userEvent.setup()
+    const showAssetsSpy = vi.fn()
+
+    render(JobFiltersBar, {
       props: {
         selectedJobTab: 'All',
         selectedWorkflowFilter: 'all',
         selectedSortMode: 'mostRecent',
-        hasFailedJobs: false
+        hasFailedJobs: false,
+        onShowAssets: showAssetsSpy
       },
       global: {
         plugins: [i18n],
@@ -75,16 +80,13 @@ describe('JobFiltersBar', () => {
       }
     })
 
-    const showAssetsButton = wrapper.get(
-      'button[aria-label="Show assets panel"]'
-    )
-    await showAssetsButton.trigger('click')
+    await user.click(screen.getByRole('button', { name: 'Show assets panel' }))
 
-    expect(wrapper.emitted('showAssets')).toHaveLength(1)
+    expect(showAssetsSpy).toHaveBeenCalledOnce()
   })
 
   it('hides the assets icon button when hideShowAssetsAction is true', () => {
-    const wrapper = mount(JobFiltersBar, {
+    render(JobFiltersBar, {
       props: {
         selectedJobTab: 'All',
         selectedWorkflowFilter: 'all',
@@ -101,7 +103,7 @@ describe('JobFiltersBar', () => {
     })
 
     expect(
-      wrapper.find('button[aria-label="Show assets panel"]').exists()
-    ).toBe(false)
+      screen.queryByRole('button', { name: 'Show assets panel' })
+    ).not.toBeInTheDocument()
   })
 })

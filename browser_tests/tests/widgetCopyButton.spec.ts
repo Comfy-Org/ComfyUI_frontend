@@ -1,14 +1,10 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
-test.describe('Widget copy button', { tag: '@ui' }, () => {
+test.describe('Widget copy button', { tag: ['@ui', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-
     // Add a PreviewAny node which has a read-only textarea with a copy button
     await comfyPage.page.evaluate(() => {
       const node = window.LiteGraph!.createNode('PreviewAny')

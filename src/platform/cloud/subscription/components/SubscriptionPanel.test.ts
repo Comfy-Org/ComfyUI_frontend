@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -126,6 +127,7 @@ const i18n = createI18n({
         viewMoreDetailsPlans: 'View more details about plans & pricing',
         learnMore: 'Learn More',
         messageSupport: 'Message Support',
+        refreshCredits: 'Refresh credits',
         invoiceHistory: 'Invoice History',
         partnerNodesCredits: 'Partner nodes pricing',
         renewsDate: 'Renews {date}',
@@ -189,8 +191,8 @@ const i18n = createI18n({
   }
 })
 
-function createWrapper(overrides = {}) {
-  return mount(SubscriptionPanel, {
+function createComponent(overrides = {}) {
+  return render(SubscriptionPanel, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
 
@@ -200,17 +202,25 @@ function createWrapper(overrides = {}) {
         SubscriptionBenefits: true,
         Button: {
           template:
-            '<button @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
-          props: ['variant', 'size'],
+            '<button v-bind="$attrs" @click="$emit(\'click\')" :disabled="loading" :data-testid="label" :data-icon="icon"><slot/></button>',
+          props: ['variant', 'size', 'loading', 'label', 'icon'],
           emits: ['click']
         },
         Skeleton: {
-          template: '<div class="skeleton"></div>'
+          template: '<div role="status" aria-label="Loading"></div>'
         }
       }
     },
     ...overrides
   })
+}
+
+function findButtonByText(text: string) {
+  const button = screen
+    .getAllByRole('button')
+    .find((b) => b.textContent?.includes(text))
+  if (!button) throw new Error(`Button with text "${text}" not found`)
+  return button
 }
 
 describe('SubscriptionPanel', () => {
@@ -221,120 +231,136 @@ describe('SubscriptionPanel', () => {
     mockIsCancelled.value = false
     mockSubscriptionTier.value = 'CREATOR'
     mockIsYearlySubscription.value = false
+    mockCreditsData.isLoadingBalance = false
+    mockActionsData.isLoadingSupport = false
   })
 
   describe('subscription state functionality', () => {
     it('shows correct UI for active subscription', () => {
       mockIsActiveSubscription.value = true
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Manage Subscription')
-      expect(wrapper.text()).toContain('Add Credits')
+      const { container } = createComponent()
+      expect(container.textContent).toContain('Manage Subscription')
+      expect(container.textContent).toContain('Add Credits')
     })
 
     it('shows correct UI for inactive subscription', () => {
       mockIsActiveSubscription.value = false
-      const wrapper = createWrapper()
-      expect(wrapper.findComponent({ name: 'SubscribeButton' }).exists()).toBe(
-        true
-      )
-      expect(wrapper.text()).not.toContain('Manage Subscription')
-      expect(wrapper.text()).not.toContain('Add Credits')
+      const { container } = createComponent()
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('subscribe-button-stub')).not.toBeNull()
+      expect(container.textContent).not.toContain('Manage Subscription')
+      expect(container.textContent).not.toContain('Add Credits')
     })
 
     it('shows renewal date for active non-cancelled subscription', () => {
       mockIsActiveSubscription.value = true
       mockIsCancelled.value = false
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Renews 2024-12-31')
+      const { container } = createComponent()
+      expect(container.textContent).toContain('Renews 2024-12-31')
     })
 
     it('shows expiry date for cancelled subscription', () => {
       mockIsActiveSubscription.value = true
       mockIsCancelled.value = true
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Expires 2024-12-31')
+      const { container } = createComponent()
+      expect(container.textContent).toContain('Expires 2024-12-31')
     })
 
     it('displays FOUNDERS_EDITION tier correctly', () => {
       mockSubscriptionTier.value = 'FOUNDERS_EDITION'
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain("Founder's Edition")
-      expect(wrapper.text()).toContain('5,460')
+      const { container } = createComponent()
+      expect(container.textContent).toContain("Founder's Edition")
+      expect(container.textContent).toContain('5,460')
     })
 
     it('displays CREATOR tier correctly', () => {
       mockSubscriptionTier.value = 'CREATOR'
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Creator')
-      expect(wrapper.text()).toContain('7,400')
+      const { container } = createComponent()
+      expect(container.textContent).toContain('Creator')
+      expect(container.textContent).toContain('7,400')
     })
   })
 
   describe('credit display functionality', () => {
     it('displays dynamic credit values correctly', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('10.00 Credits')
-      expect(wrapper.text()).toContain('5.00 Credits')
+      const { container } = createComponent()
+      expect(container.textContent).toContain('10.00 Credits')
+      expect(container.textContent).toContain('5.00 Credits')
     })
 
     it('shows loading skeleton when fetching balance', () => {
       mockCreditsData.isLoadingBalance = true
-      const wrapper = createWrapper()
-      expect(wrapper.findAll('.skeleton').length).toBeGreaterThan(0)
+      createComponent()
+      expect(
+        screen.getAllByRole('status', { name: 'Loading' }).length
+      ).toBeGreaterThan(0)
     })
 
     it('hides skeleton when balance loaded', () => {
       mockCreditsData.isLoadingBalance = false
-      const wrapper = createWrapper()
-      expect(wrapper.findAll('.skeleton').length).toBe(0)
+      createComponent()
+      expect(screen.queryAllByRole('status', { name: 'Loading' })).toHaveLength(
+        0
+      )
     })
 
     it('renders refill date with literal slashes', () => {
-      mockIsActiveSubscription.value = true
-      const wrapper = createWrapper()
-      expect(wrapper.text()).toContain('Included (Refills 12/31/24)')
-      expect(wrapper.text()).not.toContain('&#x2F;')
+      vi.useFakeTimers()
+      vi.stubEnv('TZ', 'UTC')
+      try {
+        mockIsActiveSubscription.value = true
+        const { container } = createComponent()
+        expect(container.textContent).toMatch(
+          /Included \(Refills \d{2}\/\d{2}\/\d{2}\)/
+        )
+        expect(container.textContent).not.toContain('&#x2F;')
+      } finally {
+        vi.useRealTimers()
+        vi.unstubAllEnvs()
+      }
     })
   })
 
-  // TODO: Re-enable when migrating to VTL so we can find by user visible content.
-  describe.skip('action buttons', () => {
+  describe('action buttons', () => {
     it('should call handleLearnMoreClick when learn more is clicked', async () => {
-      const wrapper = createWrapper()
-      const learnMoreButton = wrapper.find('[data-testid="Learn More"]')
-      await learnMoreButton.trigger('click')
+      createComponent()
+      const learnMoreButton = findButtonByText('Learn More')
+      await userEvent.click(learnMoreButton)
       expect(mockActionsData.handleLearnMoreClick).toHaveBeenCalledOnce()
     })
 
     it('should call handleMessageSupport when message support is clicked', async () => {
-      const wrapper = createWrapper()
-      const supportButton = wrapper.find('[data-testid="Message Support"]')
-      await supportButton.trigger('click')
+      createComponent()
+      const supportButton = findButtonByText('Message Support')
+      await userEvent.click(supportButton)
       expect(mockActionsData.handleMessageSupport).toHaveBeenCalledOnce()
     })
 
     it('should call handleRefresh when refresh button is clicked', async () => {
-      const wrapper = createWrapper()
-      // Find the refresh button by icon
-      const refreshButton = wrapper.find('[data-icon="pi pi-sync"]')
-      await refreshButton.trigger('click')
+      createComponent()
+      const refreshButton = screen.getByRole('button', {
+        name: 'Refresh credits'
+      })
+      await userEvent.click(refreshButton)
       expect(mockActionsData.handleRefresh).toHaveBeenCalledOnce()
     })
   })
 
-  describe.skip('loading states', () => {
+  describe('loading states', () => {
     it('should show loading state on support button when loading', () => {
       mockActionsData.isLoadingSupport = true
-      const wrapper = createWrapper()
-      const supportButton = wrapper.find('[data-testid="Message Support"]')
-      expect(supportButton.attributes('disabled')).toBeDefined()
+      createComponent()
+      const supportButton = findButtonByText('Message Support')
+      expect(supportButton).toBeDisabled()
     })
 
     it('should show loading state on refresh button when loading balance', () => {
       mockCreditsData.isLoadingBalance = true
-      const wrapper = createWrapper()
-      const refreshButton = wrapper.find('[data-icon="pi pi-sync"]')
-      expect(refreshButton.attributes('disabled')).toBeDefined()
+      createComponent()
+      const refreshButton = screen.getByRole('button', {
+        name: 'Refresh credits'
+      })
+      expect(refreshButton).toBeDisabled()
     })
   })
 })

@@ -347,9 +347,19 @@
     "share": "Compartir",
     "workflowActions": "Acciones del flujo de trabajo"
   },
+  "builderFooter": {
+    "opensAsApp": "Abrir como {mode}",
+    "opensAsGraph": "Abrir como {mode}"
+  },
   "builderMenu": {
     "enterAppMode": "Entrar en modo aplicación",
     "exitAppBuilder": "Salir del constructor de aplicaciones"
+  },
+  "builderSave": {
+    "successBody": "¿Te gustaría verlo ahora?",
+    "successBodyApp": "Este flujo de trabajo se abrirá en Modo App por defecto de ahora en adelante.\n\n¿Te gustaría verlo ahora?",
+    "successBodyGraph": "Este flujo de trabajo se abrirá como un grafo de nodos.",
+    "successTitle": "Guardado exitosamente"
   },
   "builderToolbar": {
     "app": "Aplicación",
@@ -359,18 +369,10 @@
     "connectOutput": "Conectar una salida",
     "connectOutputBody1": "Tu aplicación necesita al menos una salida conectada antes de poder guardarse.",
     "connectOutputBody2": "Cambia al paso 'Seleccionar' y haz clic en los nodos de salida para agregarlos aquí.",
-    "defaultModeAppliedAppBody": "Este flujo de trabajo se abrirá en Modo de Aplicación por defecto a partir de ahora.",
-    "defaultModeAppliedAppPrompt": "¿Te gustaría verlo ahora?",
-    "defaultModeAppliedGraphBody": "Este flujo de trabajo se abrirá como un grafo de nodos por defecto a partir de ahora.",
-    "defaultModeAppliedGraphPrompt": "¿Aún quieres ver la aplicación?",
-    "defaultModeAppliedTitle": "Configurado correctamente",
-    "defaultView": "Establecer vista predeterminada",
-    "defaultViewDescription": "Elige cómo se abre esto",
     "defaultViewLabel": "Por defecto, este flujo de trabajo se abrirá como:",
-    "defaultViewTitle": "Establecer la vista predeterminada para este flujo de trabajo",
     "emptyWorkflowPrompt": "¿Quieres empezar con una plantilla?",
     "emptyWorkflowTitle": "Este flujo de trabajo no tiene nodos",
-    "exitToWorkflow": "Salir al flujo de trabajo",
+    "filename": "Nombre de archivo",
     "inputs": "Entradas",
     "inputsDescription": "Elige entradas",
     "label": "Constructor de aplicaciones",
@@ -378,6 +380,7 @@
     "nodeGraphDescription": "Se abre como grafo de nodos por defecto",
     "outputs": "Salidas",
     "outputsDescription": "Elige salidas",
+    "saveAs": "Guardar como",
     "switchToOutputs": "Cambiar a Salidas",
     "viewApp": "Ver aplicación"
   },
@@ -898,7 +901,15 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORES",
-    "seeErrors": "Ver errores"
+    "missingMedia": "A algunos nodos les faltan entradas requeridas",
+    "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
+    "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
+    "seeErrors": "Ver errores",
+    "showMissingMedia": "Mostrar entradas faltantes",
+    "showMissingModels": "Mostrar modelos faltantes",
+    "showMissingNodes": "Mostrar nodos faltantes",
+    "showSwapNodes": "Mostrar nodos intercambiables",
+    "swapNodes": "Algunos nodos pueden ser reemplazados por alternativas"
   },
   "essentials": {
     "batchImage": "Procesar imágenes por lotes",
@@ -1320,6 +1331,7 @@
     "updating": "Actualizando",
     "upload": "Subir",
     "uploadAlreadyInProgress": "La carga ya está en curso",
+    "uploadTimedOut": "La carga ha excedido el tiempo de espera. Por favor, inténtalo de nuevo.",
     "usageHint": "Sugerencia de uso",
     "use": "Usar",
     "user": "Usuario",
@@ -1630,9 +1642,18 @@
     "exportRecording": "Exportar grabación",
     "exportingModel": "Exportando modelo...",
     "fov": "FOV",
+    "hdri": {
+      "changeFile": "Cambiar HDRI",
+      "intensity": "Intensidad",
+      "label": "Entorno HDRI",
+      "removeFile": "Eliminar HDRI",
+      "showAsBackground": "Mostrar como fondo",
+      "uploadFile": "Subir HDRI (.hdr, .exr)"
+    },
     "light": "Luz",
     "lightIntensity": "Intensidad de luz",
     "loadingBackgroundImage": "Cargando imagen de fondo",
+    "loadingHDRI": "Cargando HDRI...",
     "loadingModel": "Cargando modelo 3D...",
     "materialMode": "Modo de material",
     "materialModes": {
@@ -2247,6 +2268,7 @@
     "dataset": "conjunto de datos",
     "debug": "depurar",
     "deprecated": "obsoleto",
+    "detection": "detección",
     "edit_models": "editar_modelos",
     "flux": "flux",
     "gligen": "gligen",
@@ -2515,6 +2537,23 @@
     "inputsNone": "SIN ENTRADAS",
     "inputsNoneTooltip": "El nodo no tiene entradas",
     "locateNode": "Localizar nodo en el lienzo",
+    "missingMedia": {
+      "audio": "Audio",
+      "cancelSelection": "Cancelar selección",
+      "collapseNodes": "Ocultar nodos de referencia",
+      "confirmSelection": "Confirmar selección",
+      "expandNodes": "Mostrar nodos de referencia",
+      "image": "Imágenes",
+      "locateNode": "Localizar nodo",
+      "missingMediaTitle": "Entradas faltantes",
+      "or": "O",
+      "selectedFromLibrary": "Seleccionado de la biblioteca",
+      "uploadFile": "Subir {type}",
+      "uploaded": "Subido",
+      "uploading": "Subiendo...",
+      "useFromLibrary": "Usar de la biblioteca",
+      "video": "Videos"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Este modelo ya existe en \"{category}\"",
       "assetLoadTimeout": "El tiempo de detección del modelo se agotó. Intenta recargar el flujo de trabajo.",
@@ -3228,6 +3267,7 @@
       "termsAgreement": "Al continuar, aceptas los {terms} y la {privacy} de Comfy Org.",
       "totalDueToday": "Total a pagar hoy"
     },
+    "refreshCredits": "Actualizar créditos",
     "renewsDate": "Se renueva el {date}",
     "required": {
       "pollingFailed": "Error al activar la suscripción",
@@ -3400,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
     "failedToInitiateSubscription": "Error al iniciar la suscripción: {error}",
     "failedToLoadBackgroundImage": "Error al cargar la imagen de fondo",
+    "failedToLoadHDRI": "No se pudo cargar el archivo HDRI",
     "failedToLoadModel": "Error al cargar el modelo 3D",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "failedToQueue": "Error al encolar",
@@ -3435,6 +3476,7 @@
     "pleaseSelectOutputNodes": "Por favor, selecciona los nodos de salida",
     "unableToGetModelFilePath": "No se puede obtener la ruta del archivo del modelo",
     "unauthorizedDomain": "Tu dominio {domain} no está autorizado para usar este servicio. Por favor, contacta a {email} para agregar tu dominio a la lista blanca.",
+    "unsupportedHDRIFormat": "Formato de archivo no compatible. Por favor, sube un archivo .hdr o .exr.",
     "updateRequested": "Actualización solicitada",
     "useApiKeyTip": "Consejo: ¿No puedes acceder al inicio de sesión normal? Usa la opción de clave API de Comfy.",
     "userNotAuthenticated": "Usuario no autenticado"
