@@ -11,6 +11,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     )[0]
+    expect(loadImageNode, 'Expected at least one LoadImage node').toBeTruthy()
     const { x, y } = await loadImageNode.getPosition()
 
     await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
@@ -273,12 +274,14 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await drawStrokeAndExpectPixels(comfyPage, dialog)
 
     let maskUploadHit = false
+    let imageUploadHit = false
     await comfyPage.page.route('**/upload/mask', (route) => {
       maskUploadHit = true
       return route.fulfill({ status: 500 })
     })
-    await comfyPage.page.route('**/upload/image', (route) =>
-      route.fulfill({
+    await comfyPage.page.route('**/upload/image', (route) => {
+      imageUploadHit = true
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
@@ -287,12 +290,13 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
           type: 'input'
         })
       })
-    )
+    })
 
     const saveButton = dialog.getByRole('button', { name: 'Save' })
     await saveButton.click()
 
     await expect.poll(() => maskUploadHit).toBe(true)
+    await expect.poll(() => imageUploadHit).toBe(true)
     await expect(dialog).toBeVisible()
     await expect(saveButton).toBeVisible()
   })
