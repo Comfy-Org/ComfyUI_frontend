@@ -76,41 +76,48 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    const nodeTypes: NodeType[] = ['subgraph', 'regular']
-    const nodeStates: NodeState[] = ['expanded', 'collapsed']
-    const positions: Position[] = ['bottom-left', 'bottom-right']
+    const vueCases: ReadonlyArray<{
+      type: NodeType
+      state: NodeState
+      pos: Position
+    }> = [
+      { type: 'subgraph', state: 'expanded', pos: 'bottom-left' },
+      { type: 'subgraph', state: 'expanded', pos: 'bottom-right' },
+      { type: 'subgraph', state: 'collapsed', pos: 'bottom-left' },
+      { type: 'subgraph', state: 'collapsed', pos: 'bottom-right' },
+      { type: 'regular', state: 'expanded', pos: 'bottom-left' },
+      { type: 'regular', state: 'expanded', pos: 'bottom-right' },
+      { type: 'regular', state: 'collapsed', pos: 'bottom-left' },
+      { type: 'regular', state: 'collapsed', pos: 'bottom-right' }
+    ]
 
-    for (const type of nodeTypes) {
-      for (const state of nodeStates) {
-        for (const pos of positions) {
-          test(`${type} node (${state}) at ${pos}: selection bounds encompass node`, async ({
-            comfyPage
-          }) => {
-            const targetId = getTargetId(type)
-            const refId = getRefId(type)
+    for (const { type, state, pos } of vueCases) {
+      test(`${type} node (${state}) at ${pos}: selection bounds encompass node`, async ({
+        comfyPage
+      }) => {
+        const targetId = getTargetId(type)
+        const refId = getRefId(type)
 
-            await comfyPage.nodeOps.repositionNodes({
-              [refId]: LAYOUTS[pos].ref,
-              [targetId]: LAYOUTS[pos].target
-            })
-            await comfyPage.nextFrame()
-            await comfyPage.vueNodes.waitForNodes()
-            await comfyPage.vueNodes.getNodeLocator(targetId).waitFor()
-            await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
+        await comfyPage.nodeOps.repositionNodes({
+          [refId]: LAYOUTS[pos].ref,
+          [targetId]: LAYOUTS[pos].target
+        })
+        await comfyPage.nextFrame()
+        await comfyPage.vueNodes.waitForNodes()
+        await comfyPage.vueNodes.getNodeLocator(targetId).waitFor()
+        await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
 
-            if (state === 'collapsed') {
-              const nodeRef = await comfyPage.nodeOps.getNodeRefById(targetId)
-              await nodeRef.toggleCollapse()
-              await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
-            }
-
-            await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
-              refId,
-              targetId
-            ])
-          })
+        if (state === 'collapsed') {
+          const nodeRef = await comfyPage.nodeOps.getNodeRefById(targetId)
+          await nodeRef.toggleCollapse()
+          await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
         }
-      }
+
+        await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
+          refId,
+          targetId
+        ])
+      })
     }
   }
 )
@@ -195,32 +202,34 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    const nodeStates: NodeState[] = ['expanded', 'collapsed']
-    const positions: Position[] = ['bottom-left', 'bottom-right']
+    const legacyCases: ReadonlyArray<{ state: NodeState; pos: Position }> = [
+      { state: 'expanded', pos: 'bottom-left' },
+      { state: 'expanded', pos: 'bottom-right' },
+      { state: 'collapsed', pos: 'bottom-left' },
+      { state: 'collapsed', pos: 'bottom-right' }
+    ]
 
-    for (const state of nodeStates) {
-      for (const pos of positions) {
-        test(`legacy node (${state}) at ${pos}: selection bounds encompass node`, async ({
-          comfyPage
-        }) => {
-          await comfyPage.nodeOps.repositionNodes({
-            [SUBGRAPH_ID]: LAYOUTS[pos].ref,
-            [REGULAR_ID]: LAYOUTS[pos].target
-          })
-          await comfyPage.nextFrame()
-
-          if (state === 'collapsed') {
-            const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
-            await nodeRef.toggleCollapse()
-            await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
-          }
-
-          await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
-            SUBGRAPH_ID,
-            REGULAR_ID
-          ])
+    for (const { state, pos } of legacyCases) {
+      test(`legacy node (${state}) at ${pos}: selection bounds encompass node`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.repositionNodes({
+          [SUBGRAPH_ID]: LAYOUTS[pos].ref,
+          [REGULAR_ID]: LAYOUTS[pos].target
         })
-      }
+        await comfyPage.nextFrame()
+
+        if (state === 'collapsed') {
+          const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
+          await nodeRef.toggleCollapse()
+          await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
+        }
+
+        await assertSelectionEncompassesNodes(comfyPage.page, comfyPage, [
+          SUBGRAPH_ID,
+          REGULAR_ID
+        ])
+      })
     }
   }
 )
