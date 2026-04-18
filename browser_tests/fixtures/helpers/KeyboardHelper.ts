@@ -27,25 +27,12 @@ export class KeyboardHelper {
     await nextFrame(this.page)
   }
 
-  async altSend(
-    keyToPress: string,
-    locator: Locator | null = this.canvas
-  ): Promise<void> {
-    const target = locator ?? this.page.keyboard
-    await target.press(`Alt+${keyToPress}`)
-    await nextFrame(this.page)
-  }
-
   async selectAll(locator?: Locator | null): Promise<void> {
     await this.ctrlSend('KeyA', locator)
   }
 
   async bypass(locator?: Locator | null): Promise<void> {
     await this.ctrlSend('KeyB', locator)
-  }
-
-  async collapse(locator?: Locator | null): Promise<void> {
-    await this.altSend('KeyC', locator)
   }
 
   async undo(locator?: Locator | null): Promise<void> {

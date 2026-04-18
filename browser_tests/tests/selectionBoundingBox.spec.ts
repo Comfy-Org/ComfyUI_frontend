@@ -10,10 +10,10 @@ const SUBGRAPH_ID = '2'
 const REGULAR_ID = '3'
 const WORKFLOW = 'selection/subgraph-with-regular-node'
 
-const REF_POS: [number, number] = [100, 100]
-const TARGET_POSITIONS: Record<string, [number, number]> = {
-  'bottom-left': [50, 500],
-  'bottom-right': [600, 500]
+type Layout = { ref: [number, number]; target: [number, number] }
+const LAYOUTS: Record<string, Layout> = {
+  'bottom-left': { ref: [200, 100], target: [150, 500] },
+  'bottom-right': { ref: [100, 100], target: [600, 500] }
 }
 
 type NodeType = 'subgraph' | 'regular'
@@ -26,14 +26,6 @@ function getTargetId(type: NodeType): string {
 
 function getRefId(type: NodeType): string {
   return type === 'subgraph' ? REGULAR_ID : SUBGRAPH_ID
-}
-
-async function userToggleCollapse(
-  comfyPage: ComfyPage,
-  nodeRef: NodeReference
-) {
-  await nodeRef.click('title')
-  await comfyPage.keyboard.collapse()
 }
 
 async function userToggleBypass(comfyPage: ComfyPage, nodeRef: NodeReference) {
@@ -98,8 +90,8 @@ test.describe(
             const refId = getRefId(type)
 
             await comfyPage.nodeOps.repositionNodes({
-              [refId]: REF_POS,
-              [targetId]: TARGET_POSITIONS[pos]
+              [refId]: LAYOUTS[pos].ref,
+              [targetId]: LAYOUTS[pos].target
             })
             await comfyPage.nextFrame()
             await comfyPage.vueNodes.waitForNodes()
@@ -108,7 +100,7 @@ test.describe(
 
             if (state === 'collapsed') {
               const nodeRef = await comfyPage.nodeOps.getNodeRefById(targetId)
-              await userToggleCollapse(comfyPage, nodeRef)
+              await nodeRef.toggleCollapse()
               await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
             }
 
@@ -141,8 +133,8 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.nodeOps.repositionNodes({
-        [SUBGRAPH_ID]: REF_POS,
-        [REGULAR_ID]: TARGET_POSITIONS['bottom-right']
+        [SUBGRAPH_ID]: LAYOUTS['bottom-right'].ref,
+        [REGULAR_ID]: LAYOUTS['bottom-right'].target
       })
       await comfyPage.nextFrame()
       await comfyPage.vueNodes.waitForNodes()
@@ -150,7 +142,7 @@ test.describe(
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
       await userToggleBypass(comfyPage, nodeRef)
       await expect.poll(() => nodeRef.isBypassed()).toBe(true)
-      await userToggleCollapse(comfyPage, nodeRef)
+      await nodeRef.toggleCollapse()
       await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
 
       await userToggleBypass(comfyPage, nodeRef)
@@ -167,14 +159,14 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.nodeOps.repositionNodes({
-        [SUBGRAPH_ID]: REF_POS,
-        [REGULAR_ID]: TARGET_POSITIONS['bottom-right']
+        [SUBGRAPH_ID]: LAYOUTS['bottom-right'].ref,
+        [REGULAR_ID]: LAYOUTS['bottom-right'].target
       })
       await comfyPage.nextFrame()
       await comfyPage.vueNodes.waitForNodes()
 
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
-      await userToggleCollapse(comfyPage, nodeRef)
+      await nodeRef.toggleCollapse()
       await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
 
       await userToggleBypass(comfyPage, nodeRef)
@@ -212,14 +204,14 @@ test.describe(
           comfyPage
         }) => {
           await comfyPage.nodeOps.repositionNodes({
-            [SUBGRAPH_ID]: REF_POS,
-            [REGULAR_ID]: TARGET_POSITIONS[pos]
+            [SUBGRAPH_ID]: LAYOUTS[pos].ref,
+            [REGULAR_ID]: LAYOUTS[pos].target
           })
           await comfyPage.nextFrame()
 
           if (state === 'collapsed') {
             const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
-            await userToggleCollapse(comfyPage, nodeRef)
+            await nodeRef.toggleCollapse()
             await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
           }
 
