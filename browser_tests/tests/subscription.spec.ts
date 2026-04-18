@@ -1,252 +1,205 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
   createSubscriptionHelper,
   withActiveSubscription,
   withFreeTier,
-  withSubscriptionStatus,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { SubscriptionOperator } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
 
-const SUBSCRIPTION_DIALOG_SELECTOR =
-  '[aria-labelledby="subscription-required"], [aria-labelledby="free-tier-info"]'
-
-async function setupSubscriptionMocks(
-  comfyPage: ComfyPage,
-  ...operators: SubscriptionOperator[]
+// Installs subscription mocks BEFORE comfyPage's first navigation via an
+// auto-fixture that depends on `page` (resolved before `comfyPage`).
+function createSubscriptionTest(
+  ...defaultOps: Parameters<typeof createSubscriptionHelper>[1][]
 ) {
-  const helper = createSubscriptionHelper(comfyPage.page, ...operators)
-  await helper.mock()
-  await comfyPage.setup({ clearStorage: false })
-  return helper
-}
-
-async function openUserPopover(
-  page: Parameters<typeof createSubscriptionHelper>[0]
-) {
-  await page.getByRole('button', { name: /current user/i }).click()
-}
-
-test.describe('Subscription buttons', { tag: '@cloud' }, () => {
-  test('SubscribeToRun visible when unsubscribed', async ({ comfyPage }) => {
-    const helper = await setupSubscriptionMocks(comfyPage, withUnsubscribed())
-
-    await expect
-      .poll(
-        () => comfyPage.page.getByTestId('subscribe-to-run-button').isVisible(),
-        { timeout: 10_000 }
-      )
-      .toBe(true)
-
-    await helper.clearMocks()
-  })
-
-  test('SubscribeToRun hidden when subscribed', async ({ comfyPage }) => {
-    const helper = await setupSubscriptionMocks(
-      comfyPage,
-      withActiveSubscription('CREATOR')
-    )
-
-    await expect
-      .poll(
-        () => comfyPage.page.getByTestId('subscribe-to-run-button').count(),
-        { timeout: 10_000 }
-      )
-      .toBe(0)
-
-    await helper.clearMocks()
-  })
-
-  test('SubscribeToRun click opens subscription dialog', async ({
-    comfyPage
-  }) => {
-    const helper = await setupSubscriptionMocks(comfyPage, withUnsubscribed())
-
-    await comfyPage.page.getByTestId('subscribe-to-run-button').click()
-
-    await expect
-      .poll(
-        () => comfyPage.page.locator(SUBSCRIPTION_DIALOG_SELECTOR).count(),
-        { timeout: 10_000 }
-      )
-      .toBeGreaterThan(0)
-
-    await helper.clearMocks()
-  })
-
-  test(
-    'SubscribeToRun shows short label on mobile',
-    { tag: '@mobile' },
-    async ({ comfyPage }) => {
-      const helper = await setupSubscriptionMocks(comfyPage, withUnsubscribed())
-      const subscribeToRunButton = comfyPage.page.getByTestId(
-        'subscribe-to-run-button'
-      )
-
-      await expect(subscribeToRunButton).toBeVisible()
-      await expect(subscribeToRunButton).not.toContainText(/to run/i)
-
+  return comfyPageFixture.extend<{
+    subscriptionHelper: SubscriptionHelper
+    _subscriptionMocks: void
+  }>({
+    subscriptionHelper: async ({ page }, use) => {
+      const helper = createSubscriptionHelper(page, ...defaultOps)
+      await use(helper)
       await helper.clearMocks()
-    }
-  )
-
-  test('User popover shows subscribe when unsubscribed', async ({
-    comfyPage
-  }) => {
-    const helper = await setupSubscriptionMocks(comfyPage, withUnsubscribed())
-
-    await openUserPopover(comfyPage.page)
-
-    const popover = comfyPage.page.locator('.current-user-popover')
-    await expect
-      .poll(() => popover.getByRole('button', { name: /subscribe/i }).count(), {
-        timeout: 10_000
-      })
-      .toBeGreaterThan(0)
-
-    await helper.clearMocks()
+    },
+    _subscriptionMocks: [
+      async ({ subscriptionHelper }, use) => {
+        await subscriptionHelper.mock()
+        await use()
+      },
+      { auto: true }
+    ]
   })
+}
 
-  test('User popover subscribe click opens dialog', async ({ comfyPage }) => {
-    const helper = await setupSubscriptionMocks(comfyPage, withUnsubscribed())
+const unsubscribedTest = createSubscriptionTest(withUnsubscribed())
+const subscribedTest = createSubscriptionTest(withActiveSubscription('CREATOR'))
+const freeTierTest = createSubscriptionTest(withFreeTier())
 
-    await openUserPopover(comfyPage.page)
-    const popover = comfyPage.page.locator('.current-user-popover')
-    await popover
-      .getByRole('button', { name: /subscribe/i })
-      .first()
-      .click()
-
-    await expect
-      .poll(
-        () => comfyPage.page.locator(SUBSCRIPTION_DIALOG_SELECTOR).count(),
-        { timeout: 10_000 }
-      )
-      .toBeGreaterThan(0)
-
-    await helper.clearMocks()
-  })
-
-  test('Topbar subscribe button visible for free tier', async ({
-    comfyPage
-  }) => {
-    const helper = await setupSubscriptionMocks(comfyPage, withFreeTier())
-
-    await expect
-      .poll(
-        () =>
-          comfyPage.page
-            .getByTestId(TestIds.topbar.subscribeButton)
-            .isVisible(),
-        { timeout: 10_000 }
-      )
-      .toBe(true)
-
-    await helper.clearMocks()
-  })
-
-  test('Topbar subscribe button hidden for paid tier', async ({
-    comfyPage
-  }) => {
-    const helper = await setupSubscriptionMocks(
-      comfyPage,
-      withActiveSubscription('PRO')
+unsubscribedTest.describe(
+  'Subscription buttons — unsubscribed',
+  { tag: '@cloud' },
+  () => {
+    unsubscribedTest(
+      'SubscribeToRun visible when unsubscribed',
+      async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId('subscribe-to-run-button')
+        ).toBeVisible({ timeout: 10_000 })
+      }
     )
 
-    await expect
-      .poll(
-        () =>
-          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton).count(),
-        { timeout: 10_000 }
-      )
-      .toBe(0)
-
-    await helper.clearMocks()
-  })
-
-  test('Subscription state transition closes dialog', async ({ comfyPage }) => {
-    const helper = await setupSubscriptionMocks(
-      comfyPage,
-      withSubscriptionStatus({
-        is_active: false,
-        subscription_tier: 'CREATOR',
-        end_date: null
-      })
+    unsubscribedTest(
+      'SubscribeToRun click opens subscription dialog',
+      async ({ comfyPage }) => {
+        await comfyPage.page.getByTestId('subscribe-to-run-button').click()
+        await expect(comfyPage.page.getByRole('dialog')).toBeVisible({
+          timeout: 10_000
+        })
+      }
     )
 
-    await openUserPopover(comfyPage.page)
-    const popover = comfyPage.page.locator('.current-user-popover')
-    await popover
-      .getByRole('button', { name: /subscribe/i })
-      .first()
-      .click()
-
-    const subscriptionDialog = comfyPage.page.locator(
-      SUBSCRIPTION_DIALOG_SELECTOR
-    )
-    await expect
-      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
-      .toBeGreaterThan(0)
-
-    helper.setStatus({ is_active: true })
-    await comfyPage.page.evaluate(() => {
-      document.dispatchEvent(new Event('visibilitychange'))
-    })
-
-    await expect
-      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
-      .toBe(0)
-
-    await helper.clearMocks()
-  })
-
-  test('Cleanup prevents false subscribed after unmount', async ({
-    comfyPage
-  }) => {
-    const helper = await setupSubscriptionMocks(
-      comfyPage,
-      withSubscriptionStatus({
-        is_active: false,
-        subscription_tier: 'CREATOR',
-        end_date: null
-      })
+    unsubscribedTest(
+      'SubscribeToRun shows short label on mobile',
+      { tag: '@mobile' },
+      async ({ comfyPage }) => {
+        const btn = comfyPage.page.getByTestId('subscribe-to-run-button')
+        await expect(btn).toBeVisible({ timeout: 10_000 })
+        await expect(btn).not.toContainText(/to run/i)
+      }
     )
 
-    await openUserPopover(comfyPage.page)
-    const popover = comfyPage.page.locator('.current-user-popover')
-    await popover
-      .getByRole('button', { name: /subscribe/i })
-      .first()
-      .click()
-
-    const subscriptionDialog = comfyPage.page.locator(
-      SUBSCRIPTION_DIALOG_SELECTOR
+    unsubscribedTest(
+      'User popover shows subscribe when unsubscribed',
+      async ({ comfyPage }) => {
+        await comfyPage.page
+          .getByTestId(TestIds.user.currentUserIndicator)
+          .click()
+        const popover = comfyPage.page.locator('.current-user-popover')
+        await expect(
+          popover.getByRole('button', { name: /subscribe/i })
+        ).toBeVisible({ timeout: 10_000 })
+      }
     )
-    await expect
-      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
-      .toBeGreaterThan(0)
 
-    await comfyPage.page
-      .locator('.global-dialog')
-      .getByRole('button', { name: /close/i })
-      .first()
-      .click()
-    await expect
-      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
-      .toBe(0)
+    unsubscribedTest(
+      'User popover subscribe click opens dialog',
+      async ({ comfyPage }) => {
+        await comfyPage.page
+          .getByTestId(TestIds.user.currentUserIndicator)
+          .click()
+        const popover = comfyPage.page.locator('.current-user-popover')
+        await popover
+          .getByRole('button', { name: /subscribe/i })
+          .first()
+          .click()
+        await expect(comfyPage.page.getByRole('dialog')).toBeVisible({
+          timeout: 10_000
+        })
+      }
+    )
 
-    helper.setStatus({ is_active: true })
-    await comfyPage.page.evaluate(() => {
-      document.dispatchEvent(new Event('visibilitychange'))
-    })
+    unsubscribedTest(
+      'Subscription state transition updates UI after re-fetch',
+      async ({ comfyPage, subscriptionHelper }) => {
+        await expect(
+          comfyPage.page.getByTestId('subscribe-to-run-button')
+        ).toBeVisible({ timeout: 10_000 })
 
-    await expect
-      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
-      .toBe(0)
+        // Simulate returning from Stripe checkout: seed pending checkout,
+        // mutate mock to return active subscription, trigger re-fetch.
+        await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
+        subscriptionHelper.setStatus({
+          is_active: true,
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY'
+        })
+        await subscriptionHelper.triggerSubscriptionRefetch()
 
-    await helper.clearMocks()
-  })
-})
+        await expect(
+          comfyPage.page.getByTestId('subscribe-to-run-button')
+        ).not.toBeVisible({ timeout: 10_000 })
+      }
+    )
+
+    unsubscribedTest(
+      'Cleanup prevents stale subscription state after dialog close',
+      async ({ comfyPage, subscriptionHelper }) => {
+        // Open popover → click subscribe → dialog opens, isAwaitingStripeSubscription = true
+        await comfyPage.page
+          .getByTestId(TestIds.user.currentUserIndicator)
+          .click()
+        const popover = comfyPage.page.locator('.current-user-popover')
+        await popover
+          .getByRole('button', { name: /subscribe/i })
+          .first()
+          .click()
+        const dialog = comfyPage.page.getByRole('dialog')
+        await expect(dialog).toBeVisible({ timeout: 10_000 })
+
+        // Close dialog → SubscribeButton unmounts → onBeforeUnmount resets ref
+        await dialog.getByRole('button', { name: /close/i }).first().click()
+        await expect(dialog).not.toBeVisible({ timeout: 10_000 })
+
+        // Now change subscription state — the unmounted SubscribeButton's watcher
+        // should not fire because isAwaitingStripeSubscription was reset.
+        await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
+        subscriptionHelper.setStatus({
+          is_active: true,
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY'
+        })
+        await subscriptionHelper.triggerSubscriptionRefetch()
+
+        // No dialog should reappear from the stale SubscribeButton state
+        await expect(dialog).not.toBeVisible({ timeout: 2_000 })
+      }
+    )
+  }
+)
+
+subscribedTest.describe(
+  'Subscription buttons — subscribed',
+  { tag: '@cloud' },
+  () => {
+    subscribedTest(
+      'SubscribeToRun hidden when subscribed',
+      async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.queueButton)
+        ).toBeVisible({ timeout: 10_000 })
+        await expect(
+          comfyPage.page.getByTestId('subscribe-to-run-button')
+        ).toBeHidden()
+      }
+    )
+
+    subscribedTest(
+      'Topbar subscribe button hidden for paid tier',
+      async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.queueButton)
+        ).toBeVisible({ timeout: 10_000 })
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeHidden()
+      }
+    )
+  }
+)
+
+freeTierTest.describe(
+  'Subscription buttons — free tier',
+  { tag: '@cloud' },
+  () => {
+    freeTierTest(
+      'Topbar subscribe button visible for free tier',
+      async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeVisible({ timeout: 10_000 })
+      }
+    )
+  }
+)
