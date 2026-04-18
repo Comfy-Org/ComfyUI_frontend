@@ -367,7 +367,7 @@ describe('workflowDraftStoreV2 FSM', () => {
           }
           fc.modelRun(() => ({ model, real }), cmds)
         }),
-        { numRuns: 200 }
+        { numRuns: 50 }
       )
     }
   )

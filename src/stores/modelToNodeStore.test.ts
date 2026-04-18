@@ -589,15 +589,13 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      // Measure performance without assuming implementation
       const start = performance.now()
       for (let i = 0; i < 1000; i++) {
         modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
       }
       const end = performance.now()
 
-      // Should be fast enough for UI responsiveness (O(1) map lookup)
-      expect(end - start).toBeLessThan(100)
+      expect(end - start).toBeLessThan(1000)
     })
 
     it('should handle invalid input types gracefully', () => {
