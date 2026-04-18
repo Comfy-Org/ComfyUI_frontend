@@ -24,6 +24,15 @@ const modelValue = defineModel<T>()
 const controlModel = ref(props.widget.controlWidget.value)
 
 watch(controlModel, props.widget.controlWidget.update)
+
+// Sync litegraph → Vue when the external control widget value changes
+// (e.g. when a workflow is loaded with a specific control mode set)
+watch(
+  () => props.widget.controlWidget.value,
+  (newVal) => {
+    if (controlModel.value !== newVal) controlModel.value = newVal
+  }
+)
 </script>
 <template>
   <div class="relative grid grid-cols-subgrid">

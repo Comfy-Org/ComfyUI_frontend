@@ -26,6 +26,7 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
+import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 
 import type {
   LGraph,
@@ -150,15 +151,31 @@ function isPromotedDOMWidget(widget: IBaseWidget): boolean {
 }
 
 export function getControlWidget(
-  widget: IBaseWidget
+  widget: IBaseWidget,
+  node?: LGraphNode
 ): SafeControlWidget | undefined {
-  const cagWidget = widget.linkedWidgets?.find(
-    (w) => w.name == 'control_after_generate'
-  )
+  // Prefer the marker symbol so group/primitive nodes that prefix the widget
+  // name (e.g. "KSampler control_after_generate") still resolve.
+  const cagWidget =
+    widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET]) ??
+    widget.linkedWidgets?.find((w) => w.name === 'control_after_generate')
   if (!cagWidget) return
+
+  // For API nodes: an explicit user-visible control_after_generate COMBO widget
+  // exists alongside the hidden ACW. Use it as the source of truth for display
+  // and write-through so changes the user makes actually take effect.
+  const externalControl = node?.widgets?.find(
+    (w) => w.name === cagWidget.name && w !== cagWidget && !w[IS_CONTROL_WIDGET]
+  )
+  const displayWidget = externalControl ?? cagWidget
+
   return {
-    value: normalizeControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = normalizeControlOption(value))
+    value: normalizeControlOption(displayWidget.value),
+    update: (value) => {
+      const normalized = normalizeControlOption(value)
+      cagWidget.value = normalized
+      if (externalControl) externalControl.value = normalized
+    }
   }
 }
 
@@ -174,7 +191,7 @@ function getSharedWidgetEnhancements(
   const nodeDefStore = useNodeDefStore()
 
   return {
-    controlWidget: getControlWidget(widget),
+    controlWidget: getControlWidget(widget, node),
     spec: nodeDefStore.getInputSpecForWidget(node, widget.name)
   }
 }
