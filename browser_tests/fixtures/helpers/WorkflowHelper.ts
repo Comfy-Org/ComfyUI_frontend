@@ -76,13 +76,7 @@ export class WorkflowHelper {
    */
   async reloadAndWaitForApp() {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-    await this.comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager
-    )
-    await this.comfyPage.page.locator('.p-blockui-mask').waitFor({
-      state: 'hidden'
-    })
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.waitForAppReady()
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {

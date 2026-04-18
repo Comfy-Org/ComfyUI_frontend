@@ -1,8 +1,15 @@
 import { expect } from '@playwright/test'
 
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-function getSubgraphNodePositions() {
+interface SubgraphNodePosition {
+  id: NodeId
+  x: number
+  y: number
+}
+
+function getSubgraphNodePositions(): SubgraphNodePosition[] {
   const sg = [...window.app!.rootGraph.subgraphs.values()][0]
   return sg.nodes.map((n) => ({
     id: n.id,
@@ -25,7 +32,7 @@ test.describe(
       await comfyPage.vueNodes.enterSubgraph()
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      let positionsBefore: ReturnType<typeof getSubgraphNodePositions> = []
+      let positionsBefore: SubgraphNodePosition[] = []
       await expect
         .poll(async () => {
           positionsBefore = await comfyPage.page.evaluate(
@@ -34,6 +41,11 @@ test.describe(
           return positionsBefore.length
         })
         .toBeGreaterThan(0)
+
+      expect(
+        positionsBefore.length,
+        'Expected nodes before reload'
+      ).toBeGreaterThan(0)
 
       await comfyPage.workflow.waitForDraftPersisted()
       await comfyPage.workflow.reloadAndWaitForApp()

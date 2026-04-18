@@ -316,11 +316,20 @@ export class ComfyPage {
     await this.goto()
 
     await this.page.waitForFunction(() => document.fonts.ready)
+    await this.waitForAppReady()
+  }
+
+  /**
+   * Wait for the app to finish initializing after navigation/reload:
+   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
+   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `WorkflowHelper.reloadAndWaitForApp()`.
+   */
+  async waitForAppReady() {
     await this.page.waitForFunction(
-      () =>
-        // window.app => GraphCanvas ready
-        // window.app.extensionManager => GraphView ready
-        window.app && window.app.extensionManager
+      // window.app => GraphCanvas ready
+      // window.app.extensionManager => GraphView ready
+      () => window.app?.extensionManager
     )
     await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
