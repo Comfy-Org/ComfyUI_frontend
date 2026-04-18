@@ -112,7 +112,7 @@ function getCardClass(layoutClass: string): string {
                     ? { objectPosition: card.objectPosition }
                     : undefined
                 "
-                class="size-full object-cover"
+                class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 autoplay
                 loop
                 muted
@@ -134,7 +134,7 @@ function getCardClass(layoutClass: string): string {
                     ? { objectPosition: card.objectPosition }
                     : undefined
                 "
-                class="size-full object-cover"
+                class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
               />
@@ -163,7 +163,7 @@ function getCardClass(layoutClass: string): string {
               </div>
 
               <p
-                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-5xl/tight font-light whitespace-pre-line lg:top-6 lg:right-auto lg:bottom-auto lg:text-4xl"
+                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-2xl/tight font-light whitespace-pre-line lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
                 {{ t(card.titleKey, locale) }}
               </p>

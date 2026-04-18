@@ -8,6 +8,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section class="px-6 py-16 lg:px-20 lg:py-40">
-    <VideoPlayer :locale />
+    <VideoPlayer src="" :locale />
   </section>
 </template>
