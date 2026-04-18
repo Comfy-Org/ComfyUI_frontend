@@ -150,17 +150,16 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       children,
       draggable: node.leaf,
       handleClick(e: MouseEvent) {
-        if (this.leaf) {
-          // @ts-expect-error fixme ts strict error
+        if (this.leaf && model) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
-            // @ts-expect-error fixme ts strict error
-            const widget = node.widgets.find(
+            const graphNode = useLitegraphService().addNodeOnGraph(
+              provider.nodeDef
+            )
+            const widget = graphNode?.widgets?.find(
               (widget) => widget.name === provider.key
             )
             if (widget) {
-              // @ts-expect-error fixme ts strict error
               widget.value = model.file_name
             }
           }
