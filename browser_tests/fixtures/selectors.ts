@@ -187,7 +187,8 @@ export const TestIds = {
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
-    clearHistoryAction: 'clear-history-action'
+    clearHistoryAction: 'clear-history-action',
+    notificationBanner: 'queue-notification-banner'
   },
   errors: {
     imageLoadError: 'error-loading-image',

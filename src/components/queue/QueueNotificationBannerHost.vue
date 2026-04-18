@@ -5,6 +5,7 @@
     role="status"
     aria-live="polite"
     aria-atomic="true"
+    data-testid="queue-notification-banner"
   >
     <QueueNotificationBanner :notification="currentNotification" />
   </div>
