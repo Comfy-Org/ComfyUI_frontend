@@ -2473,170 +2473,329 @@ const translations = {
   },
 
   // Customer Detail: Moment Factory
+  // Topic 1: INTRO
   'customers.detail.moment-factory.topic-1.label': {
-    en: 'THE STORY',
-    'zh-CN': '故事'
+    en: 'INTRO',
+    'zh-CN': '简介'
   },
-  'customers.detail.moment-factory.topic-1.title': {
-    en: 'Reimagining Projection Mapping',
-    'zh-CN': '重新定义投影映射'
-  },
-  'customers.detail.moment-factory.topic-1.block.0.heading': {
-    en: 'Architectural-Scale Visual Experiences',
-    'zh-CN': '建筑尺度的视觉体验'
+  'customers.detail.moment-factory.topic-1.block.0': {
+    en: 'How do you make generative AI work at architectural scale? Moment Factory used ComfyUI to fundamentally transform how they handle early concept, look development, and design exploration for architectural projection mapping.',
+    'zh-CN':
+      '如何让生成式 AI 在建筑尺度下发挥作用？Moment Factory 使用 ComfyUI 从根本上改变了他们在建筑投影映射中处理早期概念、外观开发和设计探索的方式。'
   },
   'customers.detail.moment-factory.topic-1.block.1': {
-    en: 'Moment Factory used ComfyUI to reimagine their 3D projection mapping pipeline, enabling architectural-scale visual experiences with AI-driven content generation and real-time iteration.',
+    en: 'Before ComfyUI, this phase was slower, more abstract, and carried greater risk. After ComfyUI, it became faster, more concrete, and spatially grounded from the start.',
     'zh-CN':
-      'Moment Factory 使用 ComfyUI 重新定义了 3D 投影映射管线，通过 AI 驱动的内容生成和实时迭代，实现建筑尺度的视觉体验。'
+      '在使用 ComfyUI 之前，这一阶段更慢、更抽象，风险也更大。使用 ComfyUI 之后，它变得更快、更具体，从一开始就在空间上有了坚实的基础。'
   },
-  'customers.detail.moment-factory.topic-1.block.2': {
-    en: 'The integration of ComfyUI into their creative pipeline allowed for unprecedented flexibility in generating and modifying projection content at massive scales.',
-    'zh-CN':
-      '将 ComfyUI 集成到创意管线中，使得在大规模上生成和修改投影内容具有前所未有的灵活性。'
+  'customers.detail.moment-factory.topic-1.block.2.src': {
+    en: '/images/customers/moment-factory-hero.webp',
+    'zh-CN': '/images/customers/moment-factory-hero.webp'
   },
-  'customers.detail.moment-factory.topic-1.block.3.src': {
-    en: '/images/customers/detail-big-image.webp',
-    'zh-CN': '/images/customers/detail-big-image.webp'
+  'customers.detail.moment-factory.topic-1.block.2.alt': {
+    en: 'Moment Factory architectural projection mapping',
+    'zh-CN': 'Moment Factory 建筑投影映射'
   },
-  'customers.detail.moment-factory.topic-1.block.3.alt': {
-    en: 'Moment Factory projection mapping',
-    'zh-CN': 'Moment Factory 投影映射'
+  'customers.detail.moment-factory.topic-1.block.2.caption': {
+    en: 'Arched interior architectural projection by Moment Factory.',
+    'zh-CN': 'Moment Factory 的拱形室内建筑投影。'
   },
-  'customers.detail.moment-factory.topic-1.block.3.caption': {
-    en: 'AI-generated content projected onto architectural surfaces.',
-    'zh-CN': 'AI 生成的内容投影到建筑表面。'
-  },
-  'customers.detail.moment-factory.topic-1.block.4.text': {
-    en: 'ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.',
-    'zh-CN':
-      'ComfyUI 彻底改变了我们的创意管线。基于节点的工作流让我们能够快速实验，同时完全掌控流程的每一个步骤。'
-  },
-  'customers.detail.moment-factory.topic-1.block.4.name': {
-    en: 'Alex Chen',
-    'zh-CN': 'Alex Chen'
-  },
-  'customers.detail.moment-factory.topic-1.block.5': {
-    en: 'Real-time content generation\nArchitectural-scale projection mapping\nAI-driven visual effects\nSeamless pipeline integration',
-    'zh-CN': '实时内容生成\n建筑尺度投影映射\nAI 驱动的视觉效果\n无缝管线集成'
-  },
-  'customers.detail.moment-factory.topic-1.block.6.ol': {
-    en: 'Design AI-assisted projection workflows\nTest content at architectural scale\nIterate in real-time\nDeploy to projection systems',
-    'zh-CN':
-      '设计 AI 辅助投影工作流\n在建筑尺度测试内容\n实时迭代\n部署到投影系统'
-  },
-  'customers.detail.moment-factory.topic-1.block.7': {
-    en: 'The team developed custom workflows specifically designed for projection mapping, creating content that adapts to complex architectural surfaces and environments.',
-    'zh-CN':
-      '团队专门为投影映射开发了自定义工作流，创建了适应复杂建筑表面和环境的内容。'
-  },
-  'customers.detail.moment-factory.topic-1.block.8': {
-    en: 'This innovative approach has set new standards in the immersive experience industry, demonstrating how AI tools can enhance large-scale creative installations.',
-    'zh-CN':
-      '这种创新方法为沉浸式体验行业树立了新标准，展示了 AI 工具如何增强大规模创意装置。'
-  },
+  // Topic 2: BEFORE COMFY
   'customers.detail.moment-factory.topic-2.label': {
-    en: 'REAL-TIME',
-    'zh-CN': '实时迭代'
+    en: 'BEFORE COMFY',
+    'zh-CN': '使用前'
   },
   'customers.detail.moment-factory.topic-2.title': {
-    en: 'Real-Time Iteration',
-    'zh-CN': '实时迭代'
+    en: 'Before ComfyUI: Slow Iteration, Abstract Decisions, Late Risk',
+    'zh-CN': '使用 ComfyUI 之前：迭代缓慢、决策抽象、风险滞后'
   },
   'customers.detail.moment-factory.topic-2.block.0': {
-    en: 'ComfyUI enabled Moment Factory to iterate on projection content in real-time, dramatically reducing the time from concept to deployment for large-scale installations.',
-    'zh-CN':
-      'ComfyUI 使 Moment Factory 能够实时迭代投影内容，大大缩短了大型装置从概念到部署的时间。'
+    en: 'Early concept and look development traditionally relied on:',
+    'zh-CN': '早期概念和外观开发传统上依赖于：'
   },
   'customers.detail.moment-factory.topic-2.block.1': {
-    en: 'The ability to preview and adjust AI-generated content directly on architectural surfaces transformed their creative process.',
-    'zh-CN':
-      '直接在建筑表面上预览和调整 AI 生成内容的能力改变了他们的创作过程。'
+    en: 'Static sketches\nReference decks\nMoodboards\nAbstract discussions about intent',
+    'zh-CN': '静态草图\n参考资料集\n情绪板\n关于意图的抽象讨论'
   },
+  'customers.detail.moment-factory.topic-2.block.2': {
+    en: 'For architectural projection mapping, this creates a problem. You do not really know if something works until it is projected at scale. Seams, pixel density, spatial drift, and composition issues usually reveal themselves later in the process, when changes have a massive impact on production.',
+    'zh-CN':
+      '对于建筑投影映射来说，这带来了一个问题。在实际投影到建筑上之前，你无法真正知道某个方案是否可行。接缝、像素密度、空间偏移和构图问题通常在流程后期才暴露出来，而此时的修改对制作的影响是巨大的。'
+  },
+  'customers.detail.moment-factory.topic-2.block.3': {
+    en: 'Traditionally, this means:',
+    'zh-CN': '传统上，这意味着：'
+  },
+  'customers.detail.moment-factory.topic-2.block.4': {
+    en: 'Fewer directions explored\nLonger back-and-forth cycles\nCreative decisions made without spatial proof\nRisk pushed downstream into production',
+    'zh-CN':
+      '探索的方向更少\n反复沟通的周期更长\n创意决策缺乏空间验证\n风险被推迟到制作阶段'
+  },
+  // Topic 3: WHAT CHANGED
   'customers.detail.moment-factory.topic-3.label': {
-    en: 'SCALING',
-    'zh-CN': '扩展'
+    en: 'WHAT CHANGED?',
+    'zh-CN': '发生了什么变化？'
   },
   'customers.detail.moment-factory.topic-3.title': {
-    en: 'Scaling Creative Content',
-    'zh-CN': '扩展创意内容'
+    en: 'What Changed with ComfyUI',
+    'zh-CN': '使用 ComfyUI 后发生了什么变化'
   },
   'customers.detail.moment-factory.topic-3.block.0': {
-    en: 'With ComfyUI, Moment Factory can generate vast amounts of unique visual content needed for large-scale installations, maintaining consistency while ensuring each piece is unique.',
+    en: 'Moment Factory built a custom ComfyUI workflow and used it to enhance and accelerate large parts of early concept sketching, look-dev exploration, and part of the design phase.',
     'zh-CN':
-      '借助 ComfyUI，Moment Factory 可以生成大型装置所需的大量独特视觉内容，在保持一致性的同时确保每件作品都是独一无二的。'
+      'Moment Factory 构建了自定义的 ComfyUI 工作流，并将其用于增强和加速早期概念草图、外观开发探索以及部分设计阶段。'
   },
   'customers.detail.moment-factory.topic-3.block.1': {
-    en: 'The automated pipeline processes content for specific architectural geometries, ensuring perfect alignment with physical surfaces.',
-    'zh-CN': '自动化管线处理特定建筑几何形状的内容，确保与物理表面完美对齐。'
+    en: 'They did not just generate images. They changed how decisions were made.',
+    'zh-CN': '他们不仅仅是生成图像，而是改变了决策方式。'
   },
+  'customers.detail.moment-factory.topic-3.block.2.heading': {
+    en: '1. Iteration stopped being the bottleneck',
+    'zh-CN': '1. 迭代不再是瓶颈'
+  },
+  'customers.detail.moment-factory.topic-3.block.3': {
+    en: 'ComfyUI transformed the iteration process, making it faster, sharper, and more intentional. Grounded in real production parameters, they explored:',
+    'zh-CN':
+      'ComfyUI 改变了迭代过程，使其更快、更精准、更有目的性。基于真实的制作参数，他们探索了：'
+  },
+  'customers.detail.moment-factory.topic-3.block.4': {
+    en: 'Over 20 main artistic directions\n20 to 40 iterations per direction\nStyles ranging from hyper-realism to illustrative engraving',
+    'zh-CN':
+      '20 多个主要艺术方向\n每个方向 20 到 40 次迭代\n风格从超写实到插画版画不等'
+  },
+  'customers.detail.moment-factory.topic-3.block.5.src': {
+    en: '/images/customers/moment-factory-variations.webp',
+    'zh-CN': '/images/customers/moment-factory-variations.webp'
+  },
+  'customers.detail.moment-factory.topic-3.block.5.alt': {
+    en: 'Grid of generated artistic variations',
+    'zh-CN': '生成的艺术变体网格'
+  },
+  'customers.detail.moment-factory.topic-3.block.5.caption': {
+    en: 'A grid of generated variations exploring different artistic directions.',
+    'zh-CN': '探索不同艺术方向的生成变体网格。'
+  },
+  'customers.detail.moment-factory.topic-3.block.6': {
+    en: 'The studio used batching and parameter tweaks to move quickly, while intentionally stress-testing the system to understand its limits.',
+    'zh-CN':
+      '工作室通过批处理和参数调整快速推进，同时有意地对系统进行压力测试以了解其极限。'
+  },
+  'customers.detail.moment-factory.topic-3.block.7.text': {
+    en: "With any GenAI tool, it's easy to over-iterate, to believe the best result is always one click away. Imposing real production constraints, whether financial or time-based, was essential to ensure these explorations remained meaningful and truly impacted our pipelines.",
+    'zh-CN':
+      '使用任何生成式 AI 工具，都很容易过度迭代，认为最佳结果总是只差一次点击。施加真实的制作约束，无论是财务上还是时间上的，对于确保这些探索保持有意义并真正影响我们的管线至关重要。'
+  },
+  'customers.detail.moment-factory.topic-3.block.7.name': {
+    en: 'Guillaume Borgomano | Senior Multimedia Director & Innovation Creative Lead @ Moment Factory',
+    'zh-CN':
+      'Guillaume Borgomano | Moment Factory 高级多媒体总监 & 创新创意负责人'
+  },
+  'customers.detail.moment-factory.topic-3.block.8': {
+    en: 'That volume of exploration would not have been realistic in their previous workflow.',
+    'zh-CN': '在他们之前的工作流中，如此大量的探索是不现实的。'
+  },
+  'customers.detail.moment-factory.topic-3.block.9.heading': {
+    en: '2. Concept work moved from days to hours',
+    'zh-CN': '2. 概念工作从数天缩短到数小时'
+  },
+  'customers.detail.moment-factory.topic-3.block.10': {
+    en: 'The biggest acceleration happened early. What would normally involve days of back-and-forth between static concepts and reference decks could happen within a few hours.',
+    'zh-CN':
+      '最大的加速发生在早期阶段。通常需要在静态概念和参考资料集之间来回数天的工作，现在可以在几个小时内完成。'
+  },
+  'customers.detail.moment-factory.topic-3.block.11': {
+    en: 'They generated intentionally low-resolution outputs around 2K, reviewed them quickly, and even generated new variations live on site. Those outputs could be checked directly in the media server timeline minutes later.',
+    'zh-CN':
+      '他们有意生成约 2K 的低分辨率输出，快速审查，甚至在现场实时生成新的变体。这些输出可以在几分钟后直接在媒体服务器时间线中查看。'
+  },
+  'customers.detail.moment-factory.topic-3.block.12': {
+    en: 'This low-resolution stage was not about polish. It was about validation and decision-making. That shift alone changed the pace of the entire project.',
+    'zh-CN':
+      '这个低分辨率阶段不是关于打磨，而是关于验证和决策。仅这一转变就改变了整个项目的节奏。'
+  },
+  'customers.detail.moment-factory.topic-3.block.13.heading': {
+    en: '3. Spatial credibility came first, not last',
+    'zh-CN': '3. 空间可信度优先，而非滞后'
+  },
+  'customers.detail.moment-factory.topic-3.block.14': {
+    en: 'A major reason this worked is that every generation was already spatially constrained. Moment Factory built the entire workflow around architectural surface templates, so outputs were pre-mapped from the start. The pipeline supported multiple template types in parallel, including flat UVs, 360 layouts, and camera-projection setups.',
+    'zh-CN':
+      '这之所以有效的一个主要原因是，每次生成已经在空间上受到约束。Moment Factory 围绕建筑表面模板构建了整个工作流，因此输出从一开始就是预映射的。管线同时支持多种模板类型，包括平面 UV、360 布局和相机投影设置。'
+  },
+  'customers.detail.moment-factory.topic-3.block.15': {
+    en: 'ControlNet injected structural information from those templates directly into the diffusion process, enforcing scale, layout, and spatial logic early.',
+    'zh-CN':
+      'ControlNet 将这些模板的结构信息直接注入扩散过程，提前强制执行比例、布局和空间逻辑。'
+  },
+  'customers.detail.moment-factory.topic-3.block.16': {
+    en: 'Because of this, visuals were already spatially credible during the concept phase. Abstract intent turned into shared reference points. The team could react to something grounded instead of imagining how it might look later.',
+    'zh-CN':
+      '因此，视觉效果在概念阶段就已经具有空间可信度。抽象的意图转变为共享的参考点。团队可以对有据可依的东西做出反应，而不是想象它以后可能的样子。'
+  },
+  'customers.detail.moment-factory.topic-3.block.17.heading': {
+    en: '4. Approval no longer meant starting over',
+    'zh-CN': '4. 审批不再意味着重新开始'
+  },
+  'customers.detail.moment-factory.topic-3.block.18': {
+    en: 'Once a direction was approved, the workflow did not reset. They could:',
+    'zh-CN': '一旦方向获批，工作流不会重置。他们可以：'
+  },
+  'customers.detail.moment-factory.topic-3.block.19': {
+    en: 'Inpaint specific regions\nPreserve composition\nUpscale selected outputs to 18K in ~20 minutes',
+    'zh-CN': '局部修复特定区域\n保留构图\n在约 20 分钟内将选定的输出放大到 18K'
+  },
+  'customers.detail.moment-factory.topic-3.block.20': {
+    en: 'This completely changed how fast ideas moved from concept to projection-ready content. Previously, approval often meant rebuilding work. With ComfyUI, approval meant pushing forward.',
+    'zh-CN':
+      '这完全改变了创意从概念到投影就绪内容的速度。以前，审批通常意味着重新制作。有了 ComfyUI，审批意味着继续推进。'
+  },
+  'customers.detail.moment-factory.topic-3.block.21.heading': {
+    en: '5. Fewer people, better collaboration',
+    'zh-CN': '5. 更少的人，更好的协作'
+  },
+  'customers.detail.moment-factory.topic-3.block.22': {
+    en: 'Once the system was stable, one main artist operated inside ComfyUI. Around that setup, two additional team members were continuously involved in art direction, prompt tuning, selection, and alignment discussions.',
+    'zh-CN':
+      '一旦系统稳定，一名主要艺术家在 ComfyUI 中操作。在此设置周围，另外两名团队成员持续参与艺术指导、提示词调优、选择和对齐讨论。'
+  },
+  'customers.detail.moment-factory.topic-3.block.23': {
+    en: 'They had to define a new working methodology to keep creative intent at the center, but in practice, ComfyUI functioned as a shared exploration tool, not a solo technical setup.',
+    'zh-CN':
+      '他们必须定义新的工作方法以保持创意意图在核心位置，但在实践中，ComfyUI 作为共享的探索工具运作，而非单独的技术设置。'
+  },
+  'customers.detail.moment-factory.topic-3.block.24.heading': {
+    en: '6. The moment it became undeniable',
+    'zh-CN': '6. 不可否认的时刻'
+  },
+  'customers.detail.moment-factory.topic-3.block.25': {
+    en: "Within Moment Factory's innovation team, it felt like a breakthrough early on — the level of malleability and control simply wasn't achievable with more rigid tools. But the real turning point came during an in-situ live demo, held at 25 Broadway. Late in the process, Moment Factory swapped the surface template and reran the entire pipeline without re-authoring a single asset. The composition held and the spatial logic remained intact. The content dropped straight into the media server timeline.",
+    'zh-CN':
+      '在 Moment Factory 的创新团队中，这在早期就感觉像是一个突破——这种程度的可塑性和控制力在更僵化的工具中根本无法实现。但真正的转折点出现在百老汇 25 号的一次现场演示中。在流程后期，Moment Factory 更换了表面模板，并重新运行了整个管线，没有重新制作任何资产。构图保持不变，空间逻辑完好无损。内容直接进入媒体服务器时间线。'
+  },
+  'customers.detail.moment-factory.topic-3.block.26': {
+    en: 'The room went quiet.',
+    'zh-CN': '全场安静了。'
+  },
+  'customers.detail.moment-factory.topic-3.block.27': {
+    en: 'In that moment, it stopped being a promising experiment and became a shared realization. People weren\'t asking "what if" anymore — they were asking how to prompt, and in what other context it could apply.',
+    'zh-CN':
+      '在那一刻，它不再是一个有前景的实验，而成为一种共识。人们不再问"如果怎样"——他们在问如何编写提示词，以及它还能应用在哪些场景中。'
+  },
+  'customers.detail.moment-factory.topic-3.block.28': {
+    en: "That's when it became undeniable: this wasn't just a powerful tool for R&D. It was a shift in how teams across Moment Factory could think, iterate, and produce.",
+    'zh-CN':
+      '那时它变得不可否认：这不仅仅是研发的强大工具，而是 Moment Factory 各团队思考、迭代和制作方式的一次转变。'
+  },
+  'customers.detail.moment-factory.topic-3.block.29.src': {
+    en: '/images/customers/moment-factory-demo.webp',
+    'zh-CN': '/images/customers/moment-factory-demo.webp'
+  },
+  'customers.detail.moment-factory.topic-3.block.29.alt': {
+    en: 'Moment Factory live projection mapping demo',
+    'zh-CN': 'Moment Factory 现场投影映射演示'
+  },
+  'customers.detail.moment-factory.topic-3.block.29.caption': {
+    en: 'Interior crowd view with projection mapping at architectural scale.',
+    'zh-CN': '建筑尺度投影映射的室内观众视角。'
+  },
+  // Topic 4: WHY COMFYUI WAS CRITICAL
   'customers.detail.moment-factory.topic-4.label': {
-    en: 'INNOVATION',
-    'zh-CN': '创新'
+    en: 'WHY COMFYUI WAS CRITICAL',
+    'zh-CN': '为什么 ComfyUI 至关重要'
   },
   'customers.detail.moment-factory.topic-4.title': {
-    en: 'Technical Innovation',
-    'zh-CN': '技术创新'
+    en: 'Why ComfyUI Was Critical at Architectural Scale',
+    'zh-CN': '为什么 ComfyUI 在建筑尺度至关重要'
   },
   'customers.detail.moment-factory.topic-4.block.0': {
-    en: 'The team developed custom ComfyUI nodes specifically for projection mapping, handling complex geometric transformations and surface-aware content generation.',
+    en: 'Moment Factory had been exploring diffusion-based workflows for projection mapping for years. The ambition was clear: use generative systems not just for images, but as structured spatial material within complex, large-scale environments.',
     'zh-CN':
-      '团队专门为投影映射开发了自定义 ComfyUI 节点，处理复杂的几何变换和表面感知内容生成。'
+      'Moment Factory 多年来一直在探索基于扩散的投影映射工作流。目标很明确：将生成系统不仅用于图像，还作为复杂大规模环境中的结构化空间素材。'
   },
   'customers.detail.moment-factory.topic-4.block.1': {
-    en: 'These technical innovations push the boundaries of what is possible with AI-assisted architectural projection.',
-    'zh-CN': '这些技术创新推动了 AI 辅助建筑投影的可能性边界。'
+    en: 'What architectural scale demanded, however, was not just image generation. It required:',
+    'zh-CN': '然而，建筑尺度所要求的不仅仅是图像生成，还需要：'
   },
+  'customers.detail.moment-factory.topic-4.block.2': {
+    en: 'Precise control over spatial conditioning\nThe ability to inject UV layouts and depth constraints directly into inference\nRapid template switching without breaking composition\nIterative refinement without rebuilding from scratch\nA pipeline that could evolve as constraints changed',
+    'zh-CN':
+      '对空间条件的精确控制\n将 UV 布局和深度约束直接注入推理的能力\n不破坏构图的快速模板切换\n无需从头重建的迭代优化\n可以随约束变化而发展的管线'
+  },
+  'customers.detail.moment-factory.topic-4.block.3': {
+    en: 'This level of structural malleability was essential.',
+    'zh-CN': '这种程度的结构可塑性是必不可少的。'
+  },
+  'customers.detail.moment-factory.topic-4.block.4': {
+    en: "ComfyUI's node-based architecture allowed the team to design and reshape the workflow itself, not just the outputs. Conditioning logic, batching strategies, template inputs, and upscaling stages could be reconfigured as the project evolved.",
+    'zh-CN':
+      'ComfyUI 基于节点的架构使团队能够设计和重塑工作流本身，而不仅仅是输出。条件逻辑、批处理策略、模板输入和放大阶段可以随着项目的发展而重新配置。'
+  },
+  'customers.detail.moment-factory.topic-4.block.5': {
+    en: 'Rather than adapting the project to fit a tool, the tool could be adapted to fit the architecture.',
+    'zh-CN': '项目无需适应工具，工具可以适应建筑。'
+  },
+  'customers.detail.moment-factory.topic-4.block.6': {
+    en: 'At that point, it became clear: achieving reliable architectural-scale generative workflows required a system flexible enough to be re-authored alongside the creative process. ComfyUI provided that flexibility.',
+    'zh-CN':
+      '在那一刻变得清晰：实现可靠的建筑尺度生成式工作流需要一个足够灵活的系统，可以在创意过程中被重新构建。ComfyUI 提供了这种灵活性。'
+  },
+  'customers.detail.moment-factory.topic-4.block.7.src': {
+    en: '/images/customers/moment-factory-workflow.webp',
+    'zh-CN': '/images/customers/moment-factory-workflow.webp'
+  },
+  'customers.detail.moment-factory.topic-4.block.7.alt': {
+    en: 'ComfyUI node-based workflow',
+    'zh-CN': 'ComfyUI 基于节点的工作流'
+  },
+  'customers.detail.moment-factory.topic-4.block.7.caption': {
+    en: 'Screenshot of the ComfyUI node-based workflow used by Moment Factory.',
+    'zh-CN': 'Moment Factory 使用的 ComfyUI 基于节点工作流截图。'
+  },
+  // Topic 5: THE TAKEAWAY
   'customers.detail.moment-factory.topic-5.label': {
-    en: 'IMMERSIVE',
-    'zh-CN': '沉浸式'
+    en: 'THE TAKEAWAY',
+    'zh-CN': '总结'
   },
   'customers.detail.moment-factory.topic-5.title': {
-    en: 'Immersive Experiences',
-    'zh-CN': '沉浸式体验'
+    en: 'The Takeaway',
+    'zh-CN': '总结'
   },
   'customers.detail.moment-factory.topic-5.block.0': {
-    en: 'ComfyUI helps create immersive experiences that transform public spaces, combining AI-generated content with architectural surfaces to create memorable installations.',
+    en: 'ComfyUI did not make the creative decisions. The vision stayed human. The constraints were architectural, and the expectations were production-level from the start.',
     'zh-CN':
-      'ComfyUI 帮助创建改变公共空间的沉浸式体验，将 AI 生成的内容与建筑表面结合，创造令人难忘的装置。'
+      'ComfyUI 没有做出创意决策。愿景始终是人类的。约束是建筑性的，期望从一开始就是制作级别的。'
   },
   'customers.detail.moment-factory.topic-5.block.1': {
-    en: 'The technology enables a new form of artistic expression that merges digital creativity with physical architecture.',
-    'zh-CN': '该技术实现了一种将数字创造力与物理建筑融合的新型艺术表达形式。'
-  },
-  'customers.detail.moment-factory.topic-6.label': {
-    en: 'THE FUTURE',
-    'zh-CN': '未来'
-  },
-  'customers.detail.moment-factory.topic-6.title': {
-    en: 'Future of Projection Art',
-    'zh-CN': '投影艺术的未来'
-  },
-  'customers.detail.moment-factory.topic-6.block.0': {
-    en: 'Moment Factory continues to push the boundaries of projection mapping with ComfyUI, exploring new ways to create immersive experiences at unprecedented scales.',
+    en: 'What ComfyUI brought to the table was structural flexibility. It allowed the workflow itself to be shaped and reshaped as the project evolved. Spatial inputs could be injected directly into inference. Templates could be swapped without collapsing the composition. Refinements could happen without rebuilding entire directions.',
     'zh-CN':
-      'Moment Factory 继续使用 ComfyUI 推动投影映射的边界，探索以前所未有的规模创造沉浸式体验的新方式。'
+      'ComfyUI 带来的是结构灵活性。它允许工作流本身随着项目的发展而被塑造和重塑。空间输入可以直接注入推理。模板可以在不破坏构图的情况下切换。优化可以在不重建整个方向的情况下进行。'
   },
-  'customers.detail.moment-factory.topic-6.block.1.text': {
-    en: 'ComfyUI is a game changer for our creative pipeline. The node-based workflow gives us the flexibility to experiment rapidly while maintaining full control over every step of the process.',
+  'customers.detail.moment-factory.topic-5.block.2': {
+    en: 'Generative systems stopped behaving like black boxes and started behaving like controllable material. Spatial logic was embedded early, and scaling to architectural resolution became a managed step rather than a gamble.',
     'zh-CN':
-      'ComfyUI 彻底改变了我们的创意管线。基于节点的工作流让我们能够快速实验，同时完全掌控流程的每一个步骤。'
+      '生成系统不再像黑箱一样运作，而开始像可控材料一样行为。空间逻辑被提前嵌入，扩展到建筑分辨率成为一个可管理的步骤，而非赌博。'
   },
-  'customers.detail.moment-factory.topic-6.block.1.name': {
-    en: 'Alex Chen',
-    'zh-CN': 'Alex Chen'
+  'customers.detail.moment-factory.topic-5.block.3': {
+    en: 'The impact was not just speed. Decisions could be validated earlier, directly against geometry and projection conditions. Spatial alignment became part of concept development instead of a late-stage correction. That shift reduced uncertainty before entering production.',
+    'zh-CN':
+      '影响不仅仅是速度。决策可以更早地得到验证，直接针对几何形状和投影条件。空间对齐成为概念开发的一部分，而不是后期修正。这种转变减少了进入制作前的不确定性。'
   },
-  'customers.detail.moment-factory.topic-6.block.2.label': {
-    en: 'AUTHOR',
-    'zh-CN': '作者'
+  'customers.detail.moment-factory.topic-5.block.4': {
+    en: 'In that sense, ComfyUI did more than accelerate exploration. It made architectural-scale generative workflows structurally viable within real production constraints.',
+    'zh-CN':
+      '从这个意义上说，ComfyUI 不仅加速了探索，还使建筑尺度的生成式工作流在真实制作约束下具有结构可行性。'
   },
-  'customers.detail.moment-factory.topic-6.block.2.name': {
-    en: 'Alex Chen',
-    'zh-CN': 'Alex Chen'
+  'customers.detail.moment-factory.topic-5.block.5.label': {
+    en: 'MOMENT FACTORY CONTRIBUTORS',
+    'zh-CN': 'MOMENT FACTORY 贡献者'
   },
-  'customers.detail.moment-factory.topic-6.block.2.role': {
-    en: 'Head of AI at Creative Studios',
-    'zh-CN': 'Creative Studios AI 负责人'
+  'customers.detail.moment-factory.topic-5.block.5.name': {
+    en: 'Guillaume Borgomano',
+    'zh-CN': 'Guillaume Borgomano'
+  },
+  'customers.detail.moment-factory.topic-5.block.5.role': {
+    en: 'Senior Multimedia Director & Innovation Creative Lead',
+    'zh-CN': '高级多媒体总监 & 创新创意负责人'
   },
 
   // Customer Detail: Ubisoft CHORD
