@@ -169,6 +169,46 @@ export class SubscriptionHelper {
     }
   }
 
+  /**
+   * Seed localStorage with a pending checkout attempt.
+   * Required for `visibilitychange` to trigger a subscription re-fetch,
+   * because `recoverPendingSubscriptionCheckout` checks
+   * `hasPendingSubscriptionCheckoutAttempt()` before fetching.
+   *
+   * Call AFTER page navigation (localStorage needs a page context).
+   */
+  async seedPendingCheckout(
+    tier: string = 'standard',
+    cycle: string = 'monthly'
+  ): Promise<void> {
+    await this.page.evaluate(
+      ([t, c]) => {
+        localStorage.setItem(
+          'comfy.subscription.pending_checkout_attempt',
+          JSON.stringify({
+            attempt_id: `test-${Date.now()}`,
+            started_at_ms: Date.now(),
+            tier: t,
+            cycle: c,
+            checkout_type: 'new'
+          })
+        )
+      },
+      [tier, cycle] as const
+    )
+  }
+
+  /**
+   * Dispatch `visibilitychange` to trigger pending-checkout recovery.
+   * The app listens for this event and re-fetches subscription status
+   * when a pending checkout attempt exists in localStorage.
+   */
+  async triggerSubscriptionRefetch(): Promise<void> {
+    await this.page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+  }
+
   async clearMocks(): Promise<void> {
     for (const { pattern, handler } of this.routeHandlers) {
       await this.page.unroute(pattern, handler)
