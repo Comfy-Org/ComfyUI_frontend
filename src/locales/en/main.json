@@ -199,6 +199,7 @@
     "control_before_generate": "control before generate",
     "choose_file_to_upload": "choose file to upload",
     "uploadAlreadyInProgress": "Upload already in progress",
+    "uploadTimedOut": "Upload timed out. Please try again.",
     "capture": "capture",
     "nodes": "Nodes",
     "nodesCount": "{count} node | {count} nodes",
@@ -1743,8 +1744,8 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
-    "camera": "camera",
     "Wan": "Wan",
+    "camera": "camera",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
@@ -1987,7 +1988,16 @@
     "openIn3DViewer": "Open in 3D Viewer",
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
-    "uploadingModel": "Uploading 3D model..."
+    "uploadingModel": "Uploading 3D model...",
+    "loadingHDRI": "Loading HDRI...",
+    "hdri": {
+      "label": "HDRI Environment",
+      "uploadFile": "Upload HDRI (.hdr, .exr)",
+      "changeFile": "Change HDRI",
+      "removeFile": "Remove HDRI",
+      "showAsBackground": "Show as Background",
+      "intensity": "Intensity"
+    }
   },
   "imageCrop": {
     "loading": "Loading...",
@@ -2082,7 +2092,9 @@
     "failedToUpdateMaterialMode": "Failed to update material mode",
     "failedToUpdateEdgeThreshold": "Failed to update edge threshold",
     "failedToUploadBackgroundImage": "Failed to upload background image",
-    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}"
+    "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
+    "failedToLoadHDRI": "Failed to load HDRI file",
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file."
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -3213,7 +3225,9 @@
     "createProfileToPublish": "Create a profile to publish to ComfyHub",
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
-    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again."
+    "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishSuccessTitle": "Published successfully",
+    "publishSuccessDescription": "Your workflow is now live on ComfyHub."
   },
   "comfyHubProfile": {
     "checkingAccess": "Checking your publishing access...",
@@ -3402,6 +3416,8 @@
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
+    "editTitle": "Edit title",
+    "editSubgraph": "Edit subgraph",
     "noSelection": "Select a node to see its properties and info.",
     "workflowOverview": "Workflow Overview",
     "title": "No item(s) selected | 1 item selected | {count} items selected",

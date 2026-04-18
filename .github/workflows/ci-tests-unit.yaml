@@ -8,6 +8,7 @@ on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
     paths-ignore: ['**/*.md']
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,9 +27,20 @@ jobs:
       - name: Run Vitest tests with coverage
         run: pnpm test:coverage
 
+      - name: Upload unit coverage artifact
+        if: always() && github.event_name == 'push'
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-coverage
+          path: coverage/lcov.info
+          retention-days: 30
+          if-no-files-found: warn
+
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
         with:
           files: coverage/lcov.info
+          flags: unit
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false

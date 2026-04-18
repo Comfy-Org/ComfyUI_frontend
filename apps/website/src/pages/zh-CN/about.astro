@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/about/HeroSection.vue'
+import StorySection from '../../components/about/StorySection.vue'
+import OurValuesSection from '../../components/about/OurValuesSection.vue'
+import ValuesSection from '../../components/about/ValuesSection.vue'
+import CareersSection from '../../components/about/CareersSection.vue'
+---
+
+<BaseLayout title="关于我们 — Comfy" description="了解 ComfyUI 背后的团队和使命——开源的生成式 AI 平台。">
+  <HeroSection locale="zh-CN" client:load />
+  <StorySection locale="zh-CN" />
+  <OurValuesSection locale="zh-CN" />
+  <ValuesSection locale="zh-CN" client:visible />
+  <CareersSection locale="zh-CN" />
+</BaseLayout>
