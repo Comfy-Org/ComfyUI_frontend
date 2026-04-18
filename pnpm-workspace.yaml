@@ -41,6 +41,7 @@ catalog:
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
   '@testing-library/vue': ^8.1.0
+  '@vue/test-utils': ^2.4.6
   '@tiptap/core': ^2.27.2
   '@tiptap/extension-link': ^2.27.2
   '@tiptap/extension-table': ^2.27.2
