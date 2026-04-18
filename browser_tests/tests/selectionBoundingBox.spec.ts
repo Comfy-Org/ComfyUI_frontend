@@ -28,7 +28,7 @@ function getRefId(type: NodeType): string {
   return type === 'subgraph' ? REGULAR_ID : SUBGRAPH_ID
 }
 
-async function userToggleBypass(comfyPage: ComfyPage, nodeRef: NodeReference) {
+async function toggleBypass(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
   await comfyPage.keyboard.bypass()
 }
@@ -147,12 +147,12 @@ test.describe(
       await comfyPage.vueNodes.waitForNodes()
 
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
-      await userToggleBypass(comfyPage, nodeRef)
+      await toggleBypass(comfyPage, nodeRef)
       await expect.poll(() => nodeRef.isBypassed()).toBe(true)
       await nodeRef.toggleCollapse()
       await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
 
-      await userToggleBypass(comfyPage, nodeRef)
+      await toggleBypass(comfyPage, nodeRef)
       await expect.poll(() => nodeRef.isBypassed()).toBe(false)
       await comfyPage.nextFrame()
 
@@ -176,7 +176,7 @@ test.describe(
       await nodeRef.toggleCollapse()
       await expect.poll(() => nodeRef.isCollapsed()).toBe(true)
 
-      await userToggleBypass(comfyPage, nodeRef)
+      await toggleBypass(comfyPage, nodeRef)
       await expect.poll(() => nodeRef.isBypassed()).toBe(true)
       await comfyPage.nextFrame()
 
