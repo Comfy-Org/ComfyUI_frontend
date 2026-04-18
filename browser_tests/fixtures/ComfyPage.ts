@@ -3,6 +3,7 @@ import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
+import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyActionbar } from '@e2e/helpers/actionbar'
 import { ComfyTemplates } from '@e2e/helpers/templates'
@@ -438,7 +439,7 @@ export const comfyPageFixture = base.extend<{
     const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
-      outputDir: './coverage/playwright',
+      outputDir: COVERAGE_OUTPUT_DIR,
       reports: []
     })
     await mcr.add(coverage)
