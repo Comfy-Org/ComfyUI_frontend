@@ -129,7 +129,7 @@ export class SubscriptionHelper {
     })
     await this.page.route(balancePattern, balanceHandler)
 
-    const checkoutPattern = '**/customers/cloud-subscription-checkout'
+    const checkoutPattern = '**/customers/cloud-subscription-checkout**'
     const checkoutHandler = async (route: Route) => {
       await route.fulfill({
         json: { checkout_url: 'https://checkout.stripe.com/mock' }
