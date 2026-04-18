@@ -21,9 +21,8 @@ useFrameScrub(canvasRef, {
   scrollTrigger: (canvas) => ({
     trigger: canvas,
     start: 'top bottom',
-    endTrigger: footerRef.value,
-    end: 'bottom bottom',
-    scrub: true
+    end: 'top bottom',
+    scrub: 1
   })
 })
 
