@@ -138,11 +138,16 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Measure the full root element (including footer in flow).
-    // min-height is applied to the root, so footer height in node.size
-    // does not accumulate on Vue/legacy mode switching.
-    const width = Math.max(0, element.offsetWidth)
-    const height = Math.max(0, element.offsetHeight)
+    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
+    // Border box is the border included FULL wxh DOM value.
+    const borderBox = Array.isArray(entry.borderBoxSize)
+      ? entry.borderBoxSize[0]
+      : {
+          inlineSize: entry.contentRect.width,
+          blockSize: entry.contentRect.height
+        }
+    const width = Math.max(0, borderBox.inlineSize)
+    const height = Math.max(0, borderBox.blockSize)
 
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value

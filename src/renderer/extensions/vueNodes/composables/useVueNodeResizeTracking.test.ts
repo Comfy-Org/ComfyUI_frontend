@@ -100,8 +100,6 @@ function createResizeEntry(options?: {
   if (collapsed) {
     element.dataset.collapsed = ''
   }
-  Object.defineProperty(element, 'offsetWidth', { value: width })
-  Object.defineProperty(element, 'offsetHeight', { value: height })
   const rectSpy = vi.fn(() => new DOMRect(left, top, width, height))
   element.getBoundingClientRect = rectSpy
   const boxSizes = [{ inlineSize: width, blockSize: height }]
