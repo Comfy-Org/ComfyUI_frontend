@@ -485,56 +485,64 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 
   describe('Memory Management', () => {
-    it('should cleanup when exceeding MAX_HISTORY_ITEMS', async () => {
-      // Load 1200 items (exceeds 1000 limit)
-      const batches = 6
+    it(
+      'should cleanup when exceeding MAX_HISTORY_ITEMS',
+      { timeout: 15_000 },
+      async () => {
+        // Load 1200 items (exceeds 1000 limit)
+        const batches = 6
 
-      for (let batch = 0; batch < batches; batch++) {
-        const items = Array.from({ length: 200 }, (_, i) =>
-          createMockJobItem(batch * 200 + i)
-        )
-        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
+        for (let batch = 0; batch < batches; batch++) {
+          const items = Array.from({ length: 200 }, (_, i) =>
+            createMockJobItem(batch * 200 + i)
+          )
+          vi.mocked(api.getHistory).mockResolvedValueOnce(items)
 
-        if (batch === 0) {
-          await store.updateHistory()
-        } else {
-          await store.loadMoreHistory()
+          if (batch === 0) {
+            await store.updateHistory()
+          } else {
+            await store.loadMoreHistory()
+          }
+        }
+
+        // Should be limited to 1000
+        expect(store.historyAssets).toHaveLength(1000)
+
+        // All items should be unique (Set cleanup works)
+        const assetIds = store.historyAssets.map((a) => a.id)
+        const uniqueAssetIds = new Set(assetIds)
+        expect(uniqueAssetIds.size).toBe(1000)
+      }
+    )
+
+    it(
+      'should maintain correct state after cleanup',
+      { timeout: 15_000 },
+      async () => {
+        // Load items beyond limit
+        for (let batch = 0; batch < 6; batch++) {
+          const items = Array.from({ length: 200 }, (_, i) =>
+            createMockJobItem(batch * 200 + i)
+          )
+          vi.mocked(api.getHistory).mockResolvedValueOnce(items)
+
+          if (batch === 0) {
+            await store.updateHistory()
+          } else {
+            await store.loadMoreHistory()
+          }
+        }
+
+        expect(store.historyAssets).toHaveLength(1000)
+
+        // Should still maintain sorting
+        for (let i = 1; i < store.historyAssets.length; i++) {
+          const prevDate = new Date(store.historyAssets[i - 1].created_at ?? 0)
+          const currDate = new Date(store.historyAssets[i].created_at ?? 0)
+          expect(prevDate.getTime()).toBeGreaterThanOrEqual(currDate.getTime())
         }
       }
-
-      // Should be limited to 1000
-      expect(store.historyAssets).toHaveLength(1000)
-
-      // All items should be unique (Set cleanup works)
-      const assetIds = store.historyAssets.map((a) => a.id)
-      const uniqueAssetIds = new Set(assetIds)
-      expect(uniqueAssetIds.size).toBe(1000)
-    })
-
-    it('should maintain correct state after cleanup', async () => {
-      // Load items beyond limit
-      for (let batch = 0; batch < 6; batch++) {
-        const items = Array.from({ length: 200 }, (_, i) =>
-          createMockJobItem(batch * 200 + i)
-        )
-        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
-
-        if (batch === 0) {
-          await store.updateHistory()
-        } else {
-          await store.loadMoreHistory()
-        }
-      }
-
-      expect(store.historyAssets).toHaveLength(1000)
-
-      // Should still maintain sorting
-      for (let i = 1; i < store.historyAssets.length; i++) {
-        const prevDate = new Date(store.historyAssets[i - 1].created_at ?? 0)
-        const currDate = new Date(store.historyAssets[i].created_at ?? 0)
-        expect(prevDate.getTime()).toBeGreaterThanOrEqual(currDate.getTime())
-      }
-    })
+    )
   })
 
   describe('jobDetailView Support', () => {

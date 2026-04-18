@@ -358,14 +358,23 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
     expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(5)
   })
 
+  function makeFullState(): Record<string, Record<string, NodeProgressState>> {
+    const state: Record<string, Record<string, NodeProgressState>> = {}
+    for (let i = 0; i < MAX_PROGRESS_JOBS; i++) {
+      state[`job-${i}`] = makeProgressNodes(`${i}`, `job-${i}`)
+    }
+    return state
+  }
+
   it('should evict oldest entries when exceeding MAX_PROGRESS_JOBS', () => {
-    for (let i = 0; i < MAX_PROGRESS_JOBS + 10; i++) {
+    store.nodeProgressStatesByJob = makeFullState()
+
+    for (let i = MAX_PROGRESS_JOBS; i < MAX_PROGRESS_JOBS + 10; i++) {
       fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
     }
 
     const keys = Object.keys(store.nodeProgressStatesByJob)
     expect(keys).toHaveLength(MAX_PROGRESS_JOBS)
-    // Oldest jobs (0-9) should be evicted; newest should remain
     expect(keys).not.toContain('job-0')
     expect(keys).not.toContain('job-9')
     expect(keys).toContain(`job-${MAX_PROGRESS_JOBS + 9}`)
@@ -373,23 +382,23 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
   })
 
   it('should keep the most recently added job after eviction', () => {
-    for (let i = 0; i < MAX_PROGRESS_JOBS + 1; i++) {
-      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
-    }
+    store.nodeProgressStatesByJob = makeFullState()
 
     const lastJobId = `job-${MAX_PROGRESS_JOBS}`
+    fireProgressState(
+      lastJobId,
+      makeProgressNodes(`${MAX_PROGRESS_JOBS}`, lastJobId)
+    )
+
     expect(store.nodeProgressStatesByJob).toHaveProperty(lastJobId)
   })
 
   it('should not evict when updating an existing job', () => {
-    for (let i = 0; i < MAX_PROGRESS_JOBS; i++) {
-      fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
-    }
+    store.nodeProgressStatesByJob = makeFullState()
     expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
       MAX_PROGRESS_JOBS
     )
 
-    // Update an existing job — should not trigger eviction
     fireProgressState('job-0', makeProgressNodes('0', 'job-0'))
     expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
       MAX_PROGRESS_JOBS
