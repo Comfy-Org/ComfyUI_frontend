@@ -47,27 +47,26 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     return dialog
   }
 
-  function getMaskCanvasPixelData(page: Page) {
-    return page.evaluate(() => {
+  function getCanvasPixelData(page: Page, canvasIndex: number) {
+    return page.evaluate((idx) => {
       const canvases = document.querySelectorAll(
         '#maskEditorCanvasContainer canvas'
       )
-      const maskCanvas = canvases[2] as HTMLCanvasElement
-      if (!maskCanvas) return null
-      const ctx = maskCanvas.getContext('2d')
+      const canvas = canvases[idx] as HTMLCanvasElement
+      if (!canvas) return null
+      const ctx = canvas.getContext('2d')
       if (!ctx) return null
-      const data = ctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height)
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
       let nonTransparentPixels = 0
       for (let i = 3; i < data.data.length; i += 4) {
         if (data.data[i] > 0) nonTransparentPixels++
       }
       return { nonTransparentPixels, totalPixels: data.data.length / 4 }
-    })
+    }, canvasIndex)
   }
 
-  async function pollMaskPixelCount(page: Page): Promise<number> {
-    const data = await getMaskCanvasPixelData(page)
-    return data?.nonTransparentPixels ?? 0
+  function pollMaskPixelCount(page: Page): Promise<number> {
+    return getCanvasPixelData(page, 2).then((d) => d?.nonTransparentPixels ?? 0)
   }
 
   async function drawStrokeOnPointerZone(
@@ -125,22 +124,13 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     }, index)
   }
 
-  async function getCanvasNonTransparentPixels(page: Page, index: number) {
-    return page.evaluate((canvasIndex) => {
-      const canvases = document.querySelectorAll(
-        '#maskEditorCanvasContainer canvas'
-      )
-      const canvas = canvases[canvasIndex] as HTMLCanvasElement
-      if (!canvas) return null
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return null
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      let nonTransparentPixels = 0
-      for (let i = 3; i < data.data.length; i += 4) {
-        if (data.data[i] > 0) nonTransparentPixels++
-      }
-      return nonTransparentPixels
-    }, index)
+  function getCanvasNonTransparentPixels(
+    page: Page,
+    index: number
+  ): Promise<number | null> {
+    return getCanvasPixelData(page, index).then(
+      (d) => d?.nonTransparentPixels ?? null
+    )
   }
 
   test('Save with drawn mask uploads non-empty mask data', async ({
@@ -238,7 +228,8 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
 
     await dialog.getByRole('button', { name: 'Save' }).click()
     await expect(dialog).toBeHidden()
-    expect(maskUploadCount + imageUploadCount).toBeGreaterThan(0)
+    expect(maskUploadCount).toBeGreaterThanOrEqual(1)
+    expect(imageUploadCount).toBeGreaterThanOrEqual(1)
 
     const reopenedDialog = await openDialogFromImagePreview(comfyPage)
     await expect
@@ -275,7 +266,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeVisible()
   })
 
-  test('Save failure on partial upload keeps dialog open with error indication', async ({
+  test('Save failure on partial upload keeps dialog open', async ({
     comfyPage
   }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
