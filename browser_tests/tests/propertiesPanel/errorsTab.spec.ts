@@ -6,7 +6,6 @@ import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPane
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
@@ -17,7 +16,6 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
     test('Should show Errors tab when errors exist', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
       await comfyPage.actionbar.propertiesButton.click()
-      await comfyPage.nextFrame()
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await expect(panel.errorsTabIcon).toBeVisible()
@@ -32,10 +30,9 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
         false
       )
       await comfyPage.actionbar.propertiesButton.click()
-      await comfyPage.nextFrame()
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
-      await expect(panel.errorsTabIcon).not.toBeVisible()
+      await expect(panel.errorsTabIcon).toBeHidden()
     })
   })
 
@@ -49,7 +46,6 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/execution_error')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-      await comfyPage.nextFrame()
 
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -58,6 +54,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       await errorOverlay
         .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
         .click()
+      await expect(errorOverlay).toBeHidden()
 
       const runtimePanel = comfyPage.page.getByTestId(
         TestIds.dialogs.runtimeErrorPanel
@@ -67,7 +64,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       const searchInput = comfyPage.page.getByPlaceholder(/^Search/)
       await searchInput.fill('nonexistent_query_xyz_12345')
 
-      await expect(runtimePanel).not.toBeVisible()
+      await expect(runtimePanel).toHaveCount(0)
     })
   })
 })

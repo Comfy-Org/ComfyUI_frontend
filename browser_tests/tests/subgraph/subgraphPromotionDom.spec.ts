@@ -22,13 +22,11 @@ async function openSubgraphById(comfyPage: ComfyPage, nodeId: string) {
   }, nodeId)
 
   await expect
-    .poll(
-      () =>
-        comfyPage.page.evaluate(() => {
-          const graph = window.app!.canvas.graph
-          return !!graph && 'inputNode' in graph
-        }),
-      { timeout: 5_000 }
+    .poll(() =>
+      comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph
+        return !!graph && 'inputNode' in graph
+      })
     )
     .toBe(true)
 }
@@ -48,11 +46,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
     const subgraphNodeId = String(subgraphNode.id)
-    const promotedNames = await getPromotedWidgetNames(
-      comfyPage,
-      subgraphNodeId
-    )
-    expect(promotedNames).toContain('seed')
+    await expect
+      .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+      .toContain('seed')
 
     await comfyPage.vueNodes.waitForNodes()
 
@@ -72,7 +68,6 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
-      await comfyPage.nextFrame()
 
       const parentTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(parentTextarea).toBeVisible()
@@ -80,7 +75,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await parentTextarea.fill(TEST_WIDGET_CONTENT)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect
+        .poll(() => subgraphNode.exists(), 'Subgraph node 11 should exist')
+        .toBe(true)
 
       await openSubgraphById(comfyPage, '11')
 
@@ -90,8 +87,7 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
 
       await expect(subgraphTextarea).toHaveValue(TEST_WIDGET_CONTENT)
 
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
 
       const backToParentTextarea = comfyPage.page.locator(DOM_WIDGET_SELECTOR)
       await expect(backToParentTextarea).toBeVisible()
@@ -117,8 +113,6 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
     test('DOM elements are cleaned up when widget is disconnected from I/O', async ({
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
@@ -126,7 +120,9 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
       await expect(comfyPage.page.locator(DOM_WIDGET_SELECTOR)).toHaveCount(1)
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect
+        .poll(() => subgraphNode.exists(), 'Subgraph node 11 should exist')
+        .toBe(true)
 
       await openSubgraphById(comfyPage, '11')
 
@@ -146,25 +142,22 @@ test.describe('Subgraph Promotion DOM', { tag: ['@subgraph'] }, () => {
         'subgraphs/subgraph-with-multiple-promoted-widgets'
       )
 
-      const parentCount = await comfyPage.page
-        .locator(VISIBLE_DOM_WIDGET_SELECTOR)
-        .count()
-      expect(parentCount).toBeGreaterThan(1)
+      const visibleWidgets = comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      await expect(visibleWidgets).toHaveCount(2)
+      const parentCount = await visibleWidgets.count()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect
+        .poll(() => subgraphNode.exists(), 'Subgraph node 11 should exist')
+        .toBe(true)
 
       await openSubgraphById(comfyPage, '11')
 
-      await expect(
-        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
-      ).toHaveCount(parentCount)
+      await expect(visibleWidgets).toHaveCount(parentCount)
 
       await comfyPage.subgraph.exitViaBreadcrumb()
 
-      await expect(
-        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
-      ).toHaveCount(parentCount)
+      await expect(visibleWidgets).toHaveCount(parentCount)
     })
 
     test('Promoted DOM widget is visible after graph → app → graph round-trip', async ({

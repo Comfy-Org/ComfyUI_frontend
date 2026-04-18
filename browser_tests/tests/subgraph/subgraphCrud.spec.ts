@@ -88,7 +88,7 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
-      expect(await subgraphNode.exists()).toBe(true)
+      await expect.poll(() => subgraphNode.exists()).toBe(true)
 
       const initialNodeCount = await comfyPage.subgraph.getNodeCount()
 

@@ -2,8 +2,8 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   builderSaveAs,
   openWorkflowFromSidebar,
@@ -21,7 +21,7 @@ async function saveCloseAndReopenAsApp(
   await appMode.steps.goToPreview()
   await builderSaveAs(appMode, workflowName)
   await appMode.saveAs.closeButton.click()
-  await comfyPage.nextFrame()
+  await expect(appMode.saveAs.successDialog).toBeHidden()
 
   await appMode.footer.exitBuilder()
   await openWorkflowFromSidebar(comfyPage, workflowName)
@@ -122,7 +122,7 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     const workflowName = `${Date.now()} reorder-preview`
     await saveCloseAndReopenAsApp(comfyPage, appMode, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.select.previewWidgetLabels).toHaveText([
       'steps',
       'cfg',
@@ -147,11 +147,53 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     const workflowName = `${Date.now()} reorder-persist`
     await saveCloseAndReopenAsApp(comfyPage, appMode, workflowName)
 
-    await expect(appMode.linearWidgets).toBeVisible({ timeout: 5000 })
+    await expect(appMode.linearWidgets).toBeVisible()
     await expect(appMode.select.previewWidgetLabels).toHaveText([
       'steps',
       'cfg',
       'seed'
     ])
+  })
+
+  test('Reordering inputs in one app does not corrupt another app', async ({
+    comfyPage
+  }, testInfo) => {
+    // This test creates 2 apps, switches tabs 3 times, and enters builder 3
+    // times — the default 15s timeout is insufficient in CI.
+    testInfo.setTimeout(45_000)
+    const { appMode } = comfyPage
+    const app2Widgets = ['seed', 'steps']
+    const app1Reordered = ['steps', 'cfg', 'seed']
+
+    await test.step('Load both apps', async () => {
+      await comfyPage.workflow.loadWorkflow('linear-basic-app-1')
+      await comfyPage.workflow.loadWorkflow('linear-basic-app-2')
+    })
+
+    await test.step('Reorder app1 inputs', async () => {
+      await comfyPage.workflow.switchToTab('linear-basic-app-1')
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await expect(appMode.select.inputItemTitles).toHaveText(WIDGETS)
+
+      await appMode.select.dragInputItem(0, 2)
+      await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
+    })
+
+    await test.step('Verify app2 inputs are not corrupted', async () => {
+      await appMode.footer.exitBuilder()
+      await comfyPage.workflow.switchToTab('linear-basic-app-2')
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await expect(appMode.select.inputItemTitles).toHaveText(app2Widgets)
+    })
+
+    await test.step('Verify app1 reorder persisted', async () => {
+      await appMode.footer.exitBuilder()
+      await comfyPage.workflow.switchToTab('linear-basic-app-1')
+      await appMode.enterBuilder()
+      await appMode.steps.goToInputs()
+      await expect(appMode.select.inputItemTitles).toHaveText(app1Reordered)
+    })
   })
 })

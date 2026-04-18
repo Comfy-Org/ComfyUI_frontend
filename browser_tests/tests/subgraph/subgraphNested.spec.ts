@@ -18,7 +18,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
       try {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.nextFrame()
 
         const responsePromise = comfyPage.page.waitForResponse('**/api/prompt')
         await comfyPage.command.executeCommand('Comfy.QueuePrompt')
@@ -46,36 +45,37 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.nextFrame()
 
-        const widgetValues = await comfyPage.page.evaluate(() => {
-          const graph = window.app!.canvas.graph!
-          const outerNode = graph.getNodeById('4')
-          if (
-            !outerNode ||
-            typeof outerNode.isSubgraphNode !== 'function' ||
-            !outerNode.isSubgraphNode()
-          ) {
-            return []
-          }
+        await comfyExpect(async () => {
+          const widgetValues = await comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            const outerNode = graph.getNodeById('4')
+            if (
+              !outerNode ||
+              typeof outerNode.isSubgraphNode !== 'function' ||
+              !outerNode.isSubgraphNode()
+            ) {
+              return []
+            }
 
-          const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
-          if (!innerSubgraphNode) return []
+            const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
+            if (!innerSubgraphNode) return []
 
-          return (innerSubgraphNode.widgets ?? []).map((w) => ({
-            name: w.name,
-            value: w.value
-          }))
-        })
+            return (innerSubgraphNode.widgets ?? []).map((w) => ({
+              name: w.name,
+              value: w.value
+            }))
+          })
 
-        const textWidgets = widgetValues.filter((w) =>
-          w.name.startsWith('text')
-        )
-        comfyExpect(textWidgets).toHaveLength(2)
+          const textWidgets = widgetValues.filter((w) =>
+            w.name.startsWith('text')
+          )
+          comfyExpect(textWidgets).toHaveLength(2)
 
-        const values = textWidgets.map((w) => w.value)
-        comfyExpect(values).toContain('11111111111')
-        comfyExpect(values).toContain('22222222222')
+          const values = textWidgets.map((w) => w.value)
+          comfyExpect(values).toContain('11111111111')
+          comfyExpect(values).toContain('22222222222')
+        }).toPass({ timeout: 5_000 })
       })
     }
   )

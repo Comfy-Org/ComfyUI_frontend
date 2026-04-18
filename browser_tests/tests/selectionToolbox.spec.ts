@@ -9,6 +9,7 @@ const test = comfyPageFixture
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
@@ -30,7 +31,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('shows selection toolbox', async ({ comfyPage }) => {
     // By default, selection toolbox should be enabled
-    await expect(comfyPage.selectionToolbox).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeHidden()
 
     // Select multiple nodes
     await comfyPage.nodeOps.selectNodes([
@@ -59,12 +60,19 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await expect(toolboxContainer).toBeVisible()
 
     // Verify toolbox is positioned (canvas-based positioning has different coordinates)
-    const boundingBox = await toolboxContainer.boundingBox()
-    expect(boundingBox).not.toBeNull()
+    await expect
+      .poll(async () => await toolboxContainer.boundingBox())
+      .not.toBeNull()
     // Canvas-based positioning can vary, just verify toolbox appears in reasonable bounds
-    expect(boundingBox!.x).toBeGreaterThan(-200) // Not too far off-screen left
-    expect(boundingBox!.x).toBeLessThan(1000) // Not too far off-screen right
-    expect(boundingBox!.y).toBeGreaterThan(-100) // Not too far off-screen top
+    await expect
+      .poll(async () => (await toolboxContainer.boundingBox())?.x)
+      .toBeGreaterThan(-200) // Not too far off-screen left
+    await expect
+      .poll(async () => (await toolboxContainer.boundingBox())?.x)
+      .toBeLessThan(1000) // Not too far off-screen right
+    await expect
+      .poll(async () => (await toolboxContainer.boundingBox())?.y)
+      .toBeGreaterThan(-100) // Not too far off-screen top
   })
 
   test('hide when select and drag happen at the same time', async ({
@@ -79,7 +87,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.mouse.down()
     await comfyPage.page.mouse.move(nodePos.x + 200, nodePos.y + 200)
     await comfyPage.nextFrame()
-    await expect(comfyPage.selectionToolbox).not.toBeVisible()
+    await expect(comfyPage.selectionToolbox).toBeHidden()
   })
 
   test('shows border only with multiple selections', async ({ comfyPage }) => {
@@ -120,7 +128,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.workflow.loadWorkflow('groups/single_group')
 
     // Select group + node should show bypass button
-    await comfyPage.page.focus('canvas')
+    await comfyPage.canvas.focus()
     await comfyPage.page.keyboard.press('Control+A')
     await expect(
       comfyPage.page.locator(
@@ -134,7 +142,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       comfyPage.page.locator(
         '.selection-toolbox *[data-testid="bypass-button"]'
       )
-    ).not.toBeVisible()
+    ).toBeHidden()
   })
 
   test.describe('Color Picker', () => {
@@ -162,14 +170,14 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
       await blueColorOption.click()
 
       // Dropdown should close after selection
-      await expect(colorPickerGroup).not.toBeVisible()
+      await expect(colorPickerGroup).toBeHidden()
 
       // Node should have the selected color class/style
       // Note: Exact verification method depends on how color is applied to nodes
       const selectedNode = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      expect(await selectedNode.getProperty('color')).not.toBeNull()
+      await expect.poll(() => selectedNode.getProperty('color')).toBeDefined()
     })
 
     test('color picker shows current color of selected nodes', async ({
@@ -259,14 +267,13 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
         .click()
 
       // Undo the colorization
-      await comfyPage.page.keyboard.press('Control+Z')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+Z')
 
       // Node should be uncolored again
       const selectedNode = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       )[0]
-      expect(await selectedNode.getProperty('color')).toBeUndefined()
+      await expect.poll(() => selectedNode.getProperty('color')).toBeUndefined()
     })
   })
 })

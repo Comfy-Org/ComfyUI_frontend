@@ -1642,9 +1642,18 @@
     "exportRecording": "Экспортировать запись",
     "exportingModel": "Экспорт модели...",
     "fov": "Угол обзора",
+    "hdri": {
+      "changeFile": "Сменить HDRI",
+      "intensity": "Интенсивность",
+      "label": "HDRI-окружение",
+      "removeFile": "Удалить HDRI",
+      "showAsBackground": "Показать как фон",
+      "uploadFile": "Загрузить HDRI (.hdr, .exr)"
+    },
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
     "loadingBackgroundImage": "Загрузка фонового изображения",
+    "loadingHDRI": "Загрузка HDRI...",
     "loadingModel": "Загрузка 3D модели...",
     "materialMode": "Режим Материала",
     "materialModes": {
@@ -3431,6 +3440,7 @@
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToInitiateSubscription": "Не удалось инициировать подписку: {error}",
     "failedToLoadBackgroundImage": "Не удалось загрузить фоновое изображение",
+    "failedToLoadHDRI": "Не удалось загрузить файл HDRI",
     "failedToLoadModel": "Не удалось загрузить 3D-модель",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "failedToQueue": "Не удалось поставить в очередь",
@@ -3466,6 +3476,7 @@
     "pleaseSelectOutputNodes": "Пожалуйста, выберите выходные узлы",
     "unableToGetModelFilePath": "Не удалось получить путь к файлу модели",
     "unauthorizedDomain": "Ваш домен {domain} не авторизован для использования этого сервиса. Пожалуйста, свяжитесь с {email}, чтобы добавить ваш домен в белый список.",
+    "unsupportedHDRIFormat": "Неподдерживаемый формат файла. Пожалуйста, загрузите файл .hdr или .exr.",
     "updateRequested": "Запрошено обновление",
     "useApiKeyTip": "Совет: Нет доступа к обычному входу? Используйте опцию Comfy API Key.",
     "userNotAuthenticated": "Пользователь не аутентифицирован"
