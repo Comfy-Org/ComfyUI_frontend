@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import HeroSection from '../components/customers/HeroSection.vue'
+import StorySection from '../components/customers/StorySection.vue'
+import FeedbackSection from '../components/customers/FeedbackSection.vue'
+import VideoSection from '../components/customers/VideoSection.vue'
+---
+
+<BaseLayout title="Customer Stories — Comfy">
+  <HeroSection client:load />
+  <StorySection />
+  <FeedbackSection client:load />
+  <VideoSection />
+</BaseLayout>

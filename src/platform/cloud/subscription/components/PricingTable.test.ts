@@ -7,9 +7,19 @@ import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
+}
+
+function createDeferredPromise<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+
+  return { promise, resolve }
 }
 
 const mockIsActiveSubscription = ref(false)
@@ -25,6 +35,35 @@ const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
+const mockLocalStorage = vi.hoisted(() => {
+  const store = new Map<string, string>()
+
+  return {
+    getItem: vi.fn((key: string) => store.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store.set(key, value)
+    }),
+    removeItem: vi.fn((key: string) => {
+      store.delete(key)
+    }),
+    clear: vi.fn(() => {
+      store.clear()
+    }),
+    __reset: () => {
+      store.clear()
+    }
+  }
+})
+
+Object.defineProperty(window, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: mockLocalStorage,
+  writable: true
+})
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
@@ -148,7 +187,20 @@ function renderComponent() {
       },
       stubs: {
         SelectButton: {
-          template: '<div><slot /></div>',
+          template: `
+            <div>
+              <button
+                v-for="option in options"
+                :key="option.value"
+                type="button"
+                @click="$emit('update:modelValue', option.value)"
+              >
+                <slot name="option" :option="option">
+                  {{ option.label }}
+                </slot>
+              </button>
+            </div>
+          `,
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
         },
@@ -167,7 +219,10 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
     mockUserId.value = 'user-123'
+    mockAccessBillingPortal.mockReset()
+    mockAccessBillingPortal.mockResolvedValue(true)
     mockTrackBeginCheckout.mockReset()
+    mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
@@ -215,6 +270,66 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('pro-yearly')
+    })
+
+    it('records the plan snapshot that was actually opened', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+
+      const portalOpen = createDeferredPromise<boolean>()
+      mockAccessBillingPortal.mockReturnValueOnce(portalOpen.promise)
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
+
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      const monthlyToggle = screen.getByRole('button', { name: 'Monthly' })
+      await userEvent.click(monthlyToggle)
+      await flushPromises()
+
+      portalOpen.resolve(true)
+      await flushPromises()
+
+      expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
+      expect(
+        JSON.parse(
+          window.localStorage.getItem(
+            PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
+          ) ?? '{}'
+        )
+      ).toMatchObject({
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'change',
+        previous_tier: 'standard',
+        previous_cycle: 'monthly'
+      })
+    })
+
+    it('does not record a pending upgrade when the billing portal does not open', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+      mockAccessBillingPortal.mockResolvedValueOnce(false)
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
+
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      expect(
+        window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
     })
 
     it('should use the latest userId value when it changes after mount', async () => {

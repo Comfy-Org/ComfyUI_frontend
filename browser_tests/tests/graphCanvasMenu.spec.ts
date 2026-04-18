@@ -24,8 +24,8 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         TestIds.canvas.toggleLinkVisibilityButton
       )
       await button.click()
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'canvas-with-hidden-links.png'
       )
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
@@ -36,8 +36,8 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         .toBe(hiddenLinkRenderMode)
 
       await button.click()
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'canvas-with-visible-links.png'
       )
       await expect
@@ -94,6 +94,6 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     await backdrop.click()
 
     // Modal should be hidden
-    await expect(zoomModal).not.toBeVisible()
+    await expect(zoomModal).toBeHidden()
   })
 })

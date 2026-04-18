@@ -112,7 +112,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     await dialog.open()
 
     await comfyPage.page.keyboard.press('Escape')
-    await expect(dialog.root).not.toBeVisible()
+    await expect(dialog.root).toBeHidden()
   })
 
   test('search box has proper debouncing behavior', async ({ comfyPage }) => {

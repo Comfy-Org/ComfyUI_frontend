@@ -247,9 +247,9 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
     await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
@@ -260,11 +260,7 @@ test.describe('Workflow Persistence', () => {
     await tab.switchToWorkflow('outputs-test')
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    await expect
-      .poll(() => getNodeOutputImageCount(comfyPage, nodeId), {
-        timeout: 5_000
-      })
-      .toBe(1)
+    await expect.poll(() => getNodeOutputImageCount(comfyPage, nodeId)).toBe(1)
   })
 
   test('Loading a new workflow cleanly replaces the previous graph', async ({
@@ -279,7 +275,6 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBeGreaterThan(1)
 
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.nextFrame()
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
@@ -315,9 +310,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
 
     await expect
-      .poll(() => getWidgetValueSnapshot(comfyPage), {
-        timeout: 5_000
-      })
+      .poll(() => getWidgetValueSnapshot(comfyPage))
       .toEqual(widgetValuesBefore)
   })
 
@@ -418,10 +411,8 @@ test.describe('Workflow Persistence', () => {
     const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.nextFrame()
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'en')
-    await comfyPage.nextFrame()
 
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
@@ -477,7 +468,6 @@ test.describe('Workflow Persistence', () => {
 
     // Create B: duplicate, add a node, then save (unmodified after save)
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
@@ -565,7 +555,7 @@ test.describe('Workflow Persistence', () => {
     test.info().annotations.push({
       type: 'regression',
       description:
-        'PR #10745 — saveWorkflow called checkState on inactive tab, serializing the active graph instead'
+        'PR #10745 — saveWorkflow called captureCanvasState on inactive tab, serializing the active graph instead'
     })
 
     await comfyPage.settings.setSetting(
@@ -581,7 +571,6 @@ test.describe('Workflow Persistence', () => {
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
-    await comfyPage.nextFrame()
     await comfyPage.menu.topbar.saveWorkflow(nameB)
 
     await comfyPage.page.evaluate(() => {
@@ -594,12 +583,13 @@ test.describe('Workflow Persistence', () => {
       .toBe(nodeCountA + 1)
     const nodeCountB = await comfyPage.nodeOps.getNodeCount()
 
+    // Trigger captureCanvasState so isModified is set
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
@@ -632,7 +622,7 @@ test.describe('Workflow Persistence', () => {
     test.info().annotations.push({
       type: 'regression',
       description:
-        'PR #10745 — saveWorkflowAs called checkState on inactive temp tab, serializing the active graph'
+        'PR #10745 — saveWorkflowAs called captureCanvasState on inactive temp tab, serializing the active graph'
     })
 
     await comfyPage.settings.setSetting(
@@ -648,19 +638,19 @@ test.describe('Workflow Persistence', () => {
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.nextFrame()
 
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
     })
     await comfyPage.nextFrame()
 
+    // Trigger captureCanvasState so isModified is set
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
-        { activeWorkflow?: { changeTracker?: { checkState(): void } } }
+        { activeWorkflow?: { changeTracker?: { captureCanvasState(): void } } }
       >
-      em.workflow?.activeWorkflow?.changeTracker?.checkState()
+      em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)

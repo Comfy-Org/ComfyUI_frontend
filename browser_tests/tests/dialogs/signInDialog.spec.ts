@@ -7,7 +7,6 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   let dialog: SignInDialog
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     dialog = new SignInDialog(comfyPage.page)
     await dialog.open()
   })

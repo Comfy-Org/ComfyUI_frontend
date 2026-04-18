@@ -31,7 +31,7 @@ function createMockWorkflow(
   const changeTracker = Object.assign(
     new ChangeTracker(workflow, structuredClone(defaultGraph)),
     {
-      checkState: vi.fn() as Mock
+      captureCanvasState: vi.fn() as Mock
     }
   )
 

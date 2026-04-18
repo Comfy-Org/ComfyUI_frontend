@@ -9,10 +9,10 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
-import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
@@ -139,20 +139,17 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // Cache miss — fit to content only if no nodes are currently visible.
-      // loadGraphData may have already restored extra.ds or called fitView
-      // for templates, so only intervene when the viewport is truly empty.
+      // First visit — fit to content so subgraph nodes are visible
       requestAnimationFrame(() => {
         if (getActiveGraphId() !== graphId) return
-        if (!canvas.graph) return
-
-        const nodes = canvas.graph.nodes
-        if (!nodes?.length) return
-
-        canvas.ds.computeVisibleArea(canvas.viewport)
-        if (anyItemOverlapsRect(nodes, canvas.ds.visible_area)) return
-
+        if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
+        // fitView changes scale/offset, so re-sync slot positions for
+        // collapsed nodes whose DOM-relative measurement is now stale.
+        requestAnimationFrame(() => {
+          if (getActiveGraphId() !== graphId) return
+          requestSlotLayoutSyncForAllNodes()
+        })
       })
     }
 
