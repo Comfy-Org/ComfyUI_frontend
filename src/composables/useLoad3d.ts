@@ -4,6 +4,7 @@ import { toRef } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
@@ -123,30 +124,32 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       await restoreConfigurationsFromNode(node)
 
-      node.onMouseEnter = function () {
+      node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
-
         load3d?.updateStatusMouseOnNode(true)
-      }
+      })
 
-      node.onMouseLeave = function () {
+      node.onMouseLeave = useChainCallback(node.onMouseLeave, () => {
         load3d?.updateStatusMouseOnNode(false)
-      }
+      })
 
-      node.onResize = function () {
+      node.onResize = useChainCallback(node.onResize, () => {
         load3d?.handleResize()
-      }
+      })
 
-      node.onDrawBackground = function () {
-        if (load3d) {
-          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+      node.onDrawBackground = useChainCallback(
+        node.onDrawBackground,
+        function (this: LGraphNode) {
+          if (load3d) {
+            load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+          }
         }
-      }
+      )
 
-      node.onRemoved = function () {
+      node.onRemoved = useChainCallback(node.onRemoved, () => {
         useLoad3dService().removeLoad3d(node)
         pendingCallbacks.delete(node)
-      }
+      })
 
       nodeToLoad3dMap.set(node, load3d)
 
