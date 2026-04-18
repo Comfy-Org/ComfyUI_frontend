@@ -227,7 +227,6 @@ defineEmits<{
   toggleAdvanced: []
 }>()
 
-// Static lookup to keep class names scannable by Tailwind
 const RADIUS_CLASS = {
   'rounded-b-17': 'rounded-b-[17px]',
   'rounded-b-20': 'rounded-b-[20px]',

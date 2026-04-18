@@ -1,19 +1,14 @@
 import type { Page } from '@playwright/test'
 
-export interface CanvasRect {
-  x: number
-  y: number
-  w: number
-  h: number
-}
+import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
+import type { CanvasRect } from '@/base/common/selectionBounds'
+
+export type { CanvasRect }
 
 export interface MeasureResult {
   selectionBounds: CanvasRect | null
   nodeVisualBounds: Record<string, CanvasRect>
 }
-
-// Must match createBounds(selectedItems, 10) in src/extensions/core/selectionBorder.ts:19
-const SELECTION_PADDING = 10
 
 export async function measureSelectionBounds(
   page: Page,
@@ -57,20 +52,21 @@ export async function measureSelectionBounds(
         const nodeEl = document.querySelector(
           `[data-node-id="${id}"]`
         ) as HTMLElement | null
+        const isLegacyCanvasNodeWithoutVueDom = !nodeEl
 
-        // Legacy mode: no Vue DOM element, use boundingRect directly
-        if (!nodeEl) {
+        if (isLegacyCanvasNodeWithoutVueDom) {
           const node = window.app!.graph._nodes.find(
             (n: { id: number | string }) => String(n.id) === id
           )
-          if (node) {
-            const rect = node.boundingRect
-            nodeVisualBounds[id] = {
-              x: rect[0],
-              y: rect[1],
-              w: rect[2],
-              h: rect[3]
-            }
+          if (!node) {
+            throw new Error(`Node ${id} not found in graph`)
+          }
+          const rect = node.boundingRect
+          nodeVisualBounds[id] = {
+            x: rect[0],
+            y: rect[1],
+            w: rect[2],
+            h: rect[3]
           }
           continue
         }
@@ -94,6 +90,6 @@ export async function measureSelectionBounds(
 
       return { selectionBounds, nodeVisualBounds }
     },
-    { ids: nodeIds, padding: SELECTION_PADDING }
+    { ids: nodeIds, padding: SELECTION_BOUNDS_PADDING }
   ) as Promise<MeasureResult>
 }
