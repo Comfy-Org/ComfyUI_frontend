@@ -108,9 +108,15 @@ class Load3DConfiguration {
   private setupDefaultProperties(bgImagePath?: string) {
     const sceneConfig = this.loadSceneConfig()
     this.applySceneConfig(sceneConfig, bgImagePath)
+    if (this.properties && !('Scene Config' in this.properties)) {
+      this.properties['Scene Config'] = sceneConfig
+    }
 
     const cameraConfig = this.loadCameraConfig()
     this.applyCameraConfig(cameraConfig)
+    if (this.properties && !('Camera Config' in this.properties)) {
+      this.properties['Camera Config'] = cameraConfig
+    }
 
     const lightConfig = this.loadLightConfig()
     this.applyLightConfig(lightConfig)
