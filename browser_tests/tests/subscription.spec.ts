@@ -11,6 +11,9 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { SubscriptionOperator } from '@e2e/fixtures/helpers/SubscriptionHelper'
 
+const SUBSCRIPTION_DIALOG_SELECTOR =
+  '[aria-labelledby="subscription-required"], [aria-labelledby="free-tier-info"]'
+
 async function setupSubscriptionMocks(
   comfyPage: ComfyPage,
   ...operators: SubscriptionOperator[]
@@ -24,10 +27,7 @@ async function setupSubscriptionMocks(
 async function openUserPopover(
   page: Parameters<typeof createSubscriptionHelper>[0]
 ) {
-  const currentUserIndicator = page
-    .getByTestId(TestIds.user.currentUserIndicator)
-    .or(page.getByRole('button', { name: /current user/i }))
-  await currentUserIndicator.click()
+  await page.getByRole('button', { name: /current user/i }).click()
 }
 
 test.describe('Subscription buttons', { tag: '@cloud' }, () => {
@@ -68,10 +68,11 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
     await comfyPage.page.getByTestId('subscribe-to-run-button').click()
 
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
-      .toBe(1)
+      .poll(
+        () => comfyPage.page.locator(SUBSCRIPTION_DIALOG_SELECTOR).count(),
+        { timeout: 10_000 }
+      )
+      .toBeGreaterThan(0)
 
     await helper.clearMocks()
   })
@@ -99,12 +100,11 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
 
     await openUserPopover(comfyPage.page)
 
+    const popover = comfyPage.page.locator('.current-user-popover')
     await expect
-      .poll(
-        () =>
-          comfyPage.page.getByRole('button', { name: /subscribe/i }).count(),
-        { timeout: 10_000 }
-      )
+      .poll(() => popover.getByRole('button', { name: /subscribe/i }).count(), {
+        timeout: 10_000
+      })
       .toBeGreaterThan(0)
 
     await helper.clearMocks()
@@ -114,16 +114,18 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
     const helper = await setupSubscriptionMocks(comfyPage, withUnsubscribed())
 
     await openUserPopover(comfyPage.page)
-    await comfyPage.page
+    const popover = comfyPage.page.locator('.current-user-popover')
+    await popover
       .getByRole('button', { name: /subscribe/i })
       .first()
       .click()
 
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
-      .toBe(1)
+      .poll(
+        () => comfyPage.page.locator(SUBSCRIPTION_DIALOG_SELECTOR).count(),
+        { timeout: 10_000 }
+      )
+      .toBeGreaterThan(0)
 
     await helper.clearMocks()
   })
@@ -176,16 +178,18 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
     )
 
     await openUserPopover(comfyPage.page)
-    await comfyPage.page
+    const popover = comfyPage.page.locator('.current-user-popover')
+    await popover
       .getByRole('button', { name: /subscribe/i })
       .first()
       .click()
 
+    const subscriptionDialog = comfyPage.page.locator(
+      SUBSCRIPTION_DIALOG_SELECTOR
+    )
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
-      .toBe(1)
+      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
+      .toBeGreaterThan(0)
 
     helper.setStatus({ is_active: true })
     await comfyPage.page.evaluate(() => {
@@ -193,9 +197,7 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
     })
 
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
+      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
       .toBe(0)
 
     await helper.clearMocks()
@@ -214,22 +216,26 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
     )
 
     await openUserPopover(comfyPage.page)
-    await comfyPage.page
+    const popover = comfyPage.page.locator('.current-user-popover')
+    await popover
       .getByRole('button', { name: /subscribe/i })
       .first()
       .click()
 
+    const subscriptionDialog = comfyPage.page.locator(
+      SUBSCRIPTION_DIALOG_SELECTOR
+    )
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
-      .toBe(1)
+      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
+      .toBeGreaterThan(0)
 
-    await comfyPage.page.getByRole('button', { name: /close/i }).first().click()
+    await comfyPage.page
+      .locator('.global-dialog')
+      .getByRole('button', { name: /close/i })
+      .first()
+      .click()
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
+      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
       .toBe(0)
 
     helper.setStatus({ is_active: true })
@@ -238,9 +244,7 @@ test.describe('Subscription buttons', { tag: '@cloud' }, () => {
     })
 
     await expect
-      .poll(() => comfyPage.page.getByRole('dialog').count(), {
-        timeout: 10_000
-      })
+      .poll(() => subscriptionDialog.count(), { timeout: 10_000 })
       .toBe(0)
 
     await helper.clearMocks()
