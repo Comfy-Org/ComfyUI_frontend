@@ -23,7 +23,6 @@
       "destination": "https://blog.comfy.org/",
       "permanent": true
     },
-    { "source": "/contact", "destination": "/about", "permanent": true },
     { "source": "/press", "destination": "/about", "permanent": true }
   ]
 }
