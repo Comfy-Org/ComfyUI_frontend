@@ -81,14 +81,17 @@ test.describe(
         await clipNodes[0].delete()
 
         await expect
+          .poll(
+            async () => (await evaluateGraphLinks(comfyPage.page)).totalLinks
+          )
+          .toBeLessThan(before.totalLinks)
+
+        await expect
           .poll(() => evaluateGraphLinks(comfyPage.page))
           .toMatchObject({
             orphanedInputRefs: 0,
             orphanedOutputRefs: 0
           })
-
-        const after = await evaluateGraphLinks(comfyPage.page)
-        expect(after.totalLinks).toBeLessThan(before.totalLinks)
       })
 
       test('Deleting a hub node with multiple output links removes all of them', async ({
@@ -112,16 +115,17 @@ test.describe(
         await checkpointNodes[0].delete()
 
         await expect
+          .poll(
+            async () => (await evaluateGraphLinks(comfyPage.page)).totalLinks
+          )
+          .toBeLessThanOrEqual(before.totalLinks - totalOutputLinks)
+
+        await expect
           .poll(() => evaluateGraphLinks(comfyPage.page))
           .toMatchObject({
             orphanedInputRefs: 0,
             orphanedOutputRefs: 0
           })
-
-        const after = await evaluateGraphLinks(comfyPage.page)
-        expect(after.totalLinks).toBeLessThanOrEqual(
-          before.totalLinks - totalOutputLinks
-        )
       })
     })
 
@@ -268,10 +272,10 @@ test.describe(
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() => {
-              const graph = window.app!.graph!
-              const subgraph = graph.subgraphs.values().next().value
-              if (!subgraph)
-                return { error: 'no subgraph', uniqueTuples: 0, totalLinks: 0 }
+              const subgraph = window
+                .app!.graph!.subgraphs.values()
+                .next().value
+              if (!subgraph) return false
 
               const tuples = new Set<string>()
               for (const [, link] of subgraph.links) {
@@ -279,32 +283,10 @@ test.describe(
                   `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
                 )
               }
-              return {
-                uniqueTuples: tuples.size,
-                totalLinks: subgraph.links.size
-              }
+              return subgraph.links.size === tuples.size
             })
           )
-          .toMatchObject({
-            uniqueTuples: expect.any(Number),
-            totalLinks: expect.any(Number)
-          })
-
-        const result = await comfyPage.page.evaluate(() => {
-          const subgraph = window.app!.graph!.subgraphs.values().next().value!
-          const tuples = new Set<string>()
-          for (const [, link] of subgraph.links) {
-            tuples.add(
-              `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
-            )
-          }
-          return {
-            uniqueTuples: tuples.size,
-            totalLinks: subgraph.links.size
-          }
-        })
-
-        expect(result.totalLinks).toBe(result.uniqueTuples)
+          .toBe(true)
       })
 
       test('Programmatically injected duplicate links are deduplicated on configure', async ({
