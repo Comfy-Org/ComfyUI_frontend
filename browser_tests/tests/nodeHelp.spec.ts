@@ -29,7 +29,7 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
 
   const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
   await expect(helpButton).toBeVisible()
-  await helpButton.click({ force: true })
+  await helpButton.click()
   await comfyPage.nextFrame()
 
   return comfyPage.page.getByTestId('properties-panel')
@@ -87,8 +87,6 @@ async function setLocaleAndWaitForWorkflowReload(
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
   })
 
@@ -191,7 +189,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       ).toBeVisible()
 
       // Verify help page is no longer visible
-      await expect(helpPage.locator('.node-help-content')).not.toBeVisible()
+      await expect(helpPage.locator('.node-help-content')).toBeHidden()
     })
   })
 
@@ -505,7 +503,7 @@ This is English documentation.
 
       // Should show fallback content (node description)
       await expect(helpPage).toBeVisible()
-      await expect(helpPage.locator('.p-progressspinner')).not.toBeVisible()
+      await expect(helpPage.locator('.p-progressspinner')).toBeHidden()
 
       // Should show some content even on error
       await expect(helpPage).not.toHaveText('')

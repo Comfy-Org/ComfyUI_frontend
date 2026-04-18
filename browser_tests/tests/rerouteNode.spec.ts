@@ -4,10 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })

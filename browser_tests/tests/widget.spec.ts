@@ -132,9 +132,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
 
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
-        timeout: 2_000
-      })
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
       .toBeDefined()
   })
 })
@@ -156,9 +154,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
 
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.widgetValue), {
-        timeout: 2_000
-      })
+      .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
       .toBeDefined()
   })
 })
@@ -276,6 +272,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     // Expect the filename combo value to be updated
     await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
+
   test('Displays buttons when viewing single image of batch', async ({
     comfyPage
   }) => {

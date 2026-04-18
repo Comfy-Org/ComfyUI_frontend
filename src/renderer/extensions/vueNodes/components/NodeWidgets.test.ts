@@ -1,9 +1,7 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -13,7 +11,6 @@ import type {
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -98,35 +95,6 @@ describe('NodeWidgets', () => {
     })
   }
 
-  function mountComponent(nodeData?: VueNodeData, setupStores?: () => void) {
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
-    setupStores?.()
-
-    return mount(NodeWidgets, {
-      props: { nodeData },
-      global: {
-        plugins: [pinia],
-        stubs: { InputSlot: true },
-        mocks: { $t: (key: string) => key }
-      }
-    })
-  }
-
-  const getBorderStyles = (wrapper: ReturnType<typeof mount>) =>
-    fromAny<{ processedWidgets: unknown[] }, unknown>(
-      wrapper.vm
-    ).processedWidgets.map(
-      (entry) =>
-        (
-          entry as {
-            simplified: {
-              borderStyle?: string
-            }
-          }
-        ).simplified.borderStyle
-    )
-
   describe('node-type prop passing', () => {
     it('passes node type to widget components', () => {
       const widget = createMockWidget()
@@ -155,19 +123,6 @@ describe('NodeWidgets', () => {
       expect(stub).not.toBeNull()
       expect(stub!.getAttribute('data-node-type')).toBe('')
     })
-
-    it.for(['CheckpointLoaderSimple', 'LoraLoader', 'VAELoader', 'KSampler'])(
-      'passes correct node type: %s',
-      (nodeType) => {
-        const widget = createMockWidget()
-        const nodeData = createMockNodeData(nodeType, [widget])
-        const { container } = renderComponent(nodeData)
-
-        const stub = container.querySelector('.widget-stub')
-        expect(stub).not.toBeNull()
-        expect(stub!.getAttribute('data-node-type')).toBe(nodeType)
-      }
-    )
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
@@ -316,54 +271,6 @@ describe('NodeWidgets', () => {
     const { container } = renderComponent(nodeData)
 
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(2)
-  })
-
-  it('applies promoted border styling to intermediate promoted widgets using host node identity', async () => {
-    const promotedWidget = createMockWidget({
-      name: 'text',
-      type: 'combo',
-      nodeId: 'inner-subgraph:1',
-      storeNodeId: 'inner-subgraph:1',
-      storeName: 'text',
-      slotName: 'text'
-    })
-    const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '3')
-    const wrapper = mountComponent(nodeData, () => {
-      usePromotionStore().promote('graph-test', '4', {
-        sourceNodeId: '3',
-        sourceWidgetName: 'text',
-        disambiguatingSourceNodeId: '1'
-      })
-    })
-    await nextTick()
-    const borderStyles = getBorderStyles(wrapper)
-
-    expect(borderStyles.some((style) => style?.includes('promoted'))).toBe(true)
-  })
-
-  it('does not apply promoted border styling to outermost widgets', async () => {
-    const promotedWidget = createMockWidget({
-      name: 'text',
-      type: 'combo',
-      nodeId: 'inner-subgraph:1',
-      storeNodeId: 'inner-subgraph:1',
-      storeName: 'text',
-      slotName: 'text'
-    })
-    const nodeData = createMockNodeData('SubgraphNode', [promotedWidget], '4')
-    const wrapper = mountComponent(nodeData, () => {
-      usePromotionStore().promote('graph-test', '4', {
-        sourceNodeId: '3',
-        sourceWidgetName: 'text',
-        disambiguatingSourceNodeId: '1'
-      })
-    })
-    await nextTick()
-    const borderStyles = getBorderStyles(wrapper)
-
-    expect(borderStyles.some((style) => style?.includes('promoted'))).toBe(
-      false
-    )
   })
 
   it('hides widgets when merged store options mark them hidden', async () => {

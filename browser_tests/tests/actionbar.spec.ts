@@ -1,7 +1,6 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '@/schemas/apiSchema'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import type { WorkspaceStore } from '@e2e/types/globals'
@@ -9,17 +8,15 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Actionbar', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   /**
    * This test ensures that the autoqueue change mode can only queue one change at a time
    */
   test('Does not auto-queue multiple changes at a time', async ({
     comfyPage,
-    ws
+    getWebSocket
   }) => {
+    const ws = await getWebSocket()
+
     // Enable change auto-queue mode
     const queueOpts = await comfyPage.actionbar.queueButton.toggleOptions()
     await expect.poll(() => queueOpts.getMode()).toBe('disabled')
@@ -57,22 +54,24 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
 
         ;(
           window.app!.extensionManager as WorkspaceStore
-        ).workflow.activeWorkflow?.changeTracker.checkState()
+        ).workflow.activeWorkflow?.changeTracker.captureCanvasState()
       }, value)
     }
 
     // Trigger a status websocket message
-    const triggerStatus = async (queueSize: number) => {
-      await ws.trigger({
-        type: 'status',
-        data: {
-          status: {
-            exec_info: {
-              queue_remaining: queueSize
+    const triggerStatus = (queueSize: number) => {
+      ws.send(
+        JSON.stringify({
+          type: 'status',
+          data: {
+            status: {
+              exec_info: {
+                queue_remaining: queueSize
+              }
             }
           }
-        }
-      } as StatusWsMessage)
+        })
+      )
     }
 
     // Extract the width from the queue response
@@ -104,8 +103,8 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     ).toBe(1)
 
     // Trigger a status update so auto-queue re-runs
-    await triggerStatus(1)
-    await triggerStatus(0)
+    triggerStatus(1)
+    triggerStatus(0)
 
     // Ensure the queued width is the last queued value
     expect(

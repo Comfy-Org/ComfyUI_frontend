@@ -5,10 +5,6 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.describe('Browser tab title', { tag: '@smoke' }, () => {
   test.describe('Beta Menu', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return (window.app!.extensionManager as WorkspaceStore).workflow
@@ -34,7 +30,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
         window.app!.graph!.setDirtyCanvas(true, true)
         ;(
           window.app!.extensionManager as WorkspaceStore
-        ).workflow.activeWorkflow?.changeTracker?.checkState()
+        ).workflow.activeWorkflow?.changeTracker?.captureCanvasState()
       })
       await expect
         .poll(() => comfyPage.page.title())
