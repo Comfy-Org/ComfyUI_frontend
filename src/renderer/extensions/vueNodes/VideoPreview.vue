@@ -64,9 +64,16 @@
           :class="actionButtonClass"
           :title="$t('g.downloadVideo')"
           :aria-label="$t('g.downloadVideo')"
+          :disabled="downloading"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i
+            :class="
+              downloading
+                ? 'icon-[lucide--loader-circle] size-4 animate-spin'
+                : 'icon-[lucide--download] size-4'
+            "
+          />
         </button>
 
         <!-- Close Button -->
@@ -125,7 +132,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { useDownload } from '@/composables/useDownload'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -140,6 +147,7 @@ const props = defineProps<VideoPreviewProps>()
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
+const { loading: downloading, download } = useDownload()
 
 const actionButtonClass =
   'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
@@ -201,9 +209,7 @@ const handleVideoError = () => {
 }
 
 const handleDownload = () => {
-  try {
-    downloadFile(currentVideoUrl.value)
-  } catch (error) {
+  void download(currentVideoUrl.value).catch(() => {
     useToast().add({
       severity: 'error',
       summary: 'Error',
@@ -211,7 +217,7 @@ const handleDownload = () => {
       life: 3000,
       group: 'video-preview'
     })
-  }
+  })
 }
 
 const handleRemove = () => {

@@ -82,10 +82,17 @@
           variant="textonly"
           :aria-label="$t('g.downloadAudio')"
           :title="$t('g.downloadAudio')"
+          :disabled="downloading"
           class="size-6 hover:bg-interface-menu-component-surface-hovered"
           @click="handleDownload"
         >
-          <i class="text-secondary icon-[lucide--download] size-4" />
+          <i
+            :class="
+              downloading
+                ? 'text-secondary icon-[lucide--loader-circle] size-4 animate-spin'
+                : 'text-secondary icon-[lucide--download] size-4'
+            "
+          />
         </Button>
 
         <!-- Options Button -->
@@ -152,14 +159,15 @@ import { whenever } from '@vueuse/core'
 
 import { useToast } from 'primevue/usetoast'
 
-import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
+import { useDownload } from '@/composables/useDownload'
 import { cn } from '@/utils/tailwindUtil'
 
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 const toast = useToast()
+const { loading: downloading, download } = useDownload()
 
 const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
   hideWhenEmpty?: boolean
@@ -202,15 +210,13 @@ const togglePlayPause = () => {
 
 const handleDownload = () => {
   if (!modelValue.value) return
-  try {
-    downloadFile(modelValue.value)
-  } catch {
+  void download(modelValue.value).catch(() => {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
       detail: t('g.failedToDownloadFile')
     })
-  }
+  })
 }
 
 const toggleMute = () => {

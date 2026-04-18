@@ -94,9 +94,16 @@
           :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
+          :disabled="downloading"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i
+            :class="
+              downloading
+                ? 'icon-[lucide--loader-circle] size-4 animate-spin'
+                : 'icon-[lucide--download] size-4'
+            "
+          />
         </button>
 
         <!-- Back to Grid Button -->
@@ -170,8 +177,8 @@ import { useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useDownload } from '@/composables/useDownload'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -191,6 +198,7 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
+const { loading: downloading, download } = useDownload()
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -288,15 +296,13 @@ function handleEditMask() {
 }
 
 function handleDownload() {
-  try {
-    downloadFile(currentImageUrl.value)
-  } catch {
+  void download(currentImageUrl.value).catch(() => {
     toastStore.add({
       severity: 'error',
       summary: t('g.error'),
       detail: t('g.failedToDownloadImage')
     })
-  }
+  })
 }
 
 function setCurrentIndex(index: number) {

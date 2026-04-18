@@ -27,7 +27,9 @@ function triggerLinkDownload(href: string, filename: string): void {
 }
 
 /**
- * Download a file from a URL by creating a temporary anchor element
+ * Download a file from a URL by creating a temporary anchor element.
+ * Fire-and-forget: errors on cloud blob fetches are logged but not thrown.
+ * Use {@link downloadFileAsync} when you need to await completion or track loading state.
  * @param url - The URL of the file to download (must be a valid URL string)
  * @param filename - Optional filename override (will use URL filename or default if not provided)
  * @throws {Error} If the URL is invalid or empty
@@ -45,6 +47,34 @@ export function downloadFile(url: string, filename?: string): void {
     void downloadViaBlobFetch(url, inferredFilename).catch((error) => {
       console.error('Failed to download file', error)
     })
+    return
+  }
+
+  triggerLinkDownload(url, inferredFilename)
+}
+
+/**
+ * Async version of {@link downloadFile} that returns a Promise.
+ * On cloud, the promise resolves after the blob fetch and browser download trigger complete.
+ * On non-cloud, resolves immediately after triggering the anchor download.
+ * Use this when you need to track download completion (e.g. for loading spinners).
+ * @param url - The URL of the file to download (must be a valid URL string)
+ * @param filename - Optional filename override
+ * @throws {Error} If the URL is invalid or empty, or if the cloud blob fetch fails
+ */
+export async function downloadFileAsync(
+  url: string,
+  filename?: string
+): Promise<void> {
+  if (!url || typeof url !== 'string' || url.trim().length === 0) {
+    throw new Error('Invalid URL provided for download')
+  }
+
+  const inferredFilename =
+    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+
+  if (isCloud) {
+    await downloadViaBlobFetch(url, inferredFilename)
     return
   }
 

@@ -7,12 +7,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
+import { downloadFileAsync } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
-// Mock downloadFile to avoid DOM errors
 vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: vi.fn()
+  downloadFileAsync: vi.fn().mockResolvedValue(undefined)
 }))
 
 const i18n = createI18n({
@@ -145,7 +144,10 @@ describe('ImagePreview', () => {
     })
     await user.click(downloadButton)
 
-    expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
+    expect(downloadFileAsync).toHaveBeenCalledWith(
+      defaultProps.imageUrls[0],
+      undefined
+    )
   })
 
   it('switches images when navigation dots are clicked', async () => {
