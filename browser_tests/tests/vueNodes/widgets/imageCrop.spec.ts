@@ -167,7 +167,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
     )
 
     test(
-      'Empty state matches screenshot baseline',
+      'Empty state matches the screenshot baseline',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
         const node = comfyPage.vueNodes.getNodeLocator('1')
