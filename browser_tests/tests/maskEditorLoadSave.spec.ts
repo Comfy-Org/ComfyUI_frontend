@@ -270,10 +270,13 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     comfyPage
   }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
+    await drawStrokeAndExpectPixels(comfyPage, dialog)
 
-    await comfyPage.page.route('**/upload/mask', (route) =>
-      route.fulfill({ status: 500 })
-    )
+    let maskUploadHit = false
+    await comfyPage.page.route('**/upload/mask', (route) => {
+      maskUploadHit = true
+      return route.fulfill({ status: 500 })
+    })
     await comfyPage.page.route('**/upload/image', (route) =>
       route.fulfill({
         status: 200,
@@ -289,6 +292,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const saveButton = dialog.getByRole('button', { name: 'Save' })
     await saveButton.click()
 
+    await expect.poll(() => maskUploadHit).toBe(true)
     await expect(dialog).toBeVisible()
     await expect(saveButton).toBeVisible()
   })
