@@ -5,8 +5,6 @@
     <div class="min-h-full w-full">
       <SettingsPanelContainer />
 
-      <div class="mt-6 mb-1.5 h-0.5 w-full bg-(--border-color)" />
-
       <ImageLayerSettingsPanel :tool-manager="toolManager" />
     </div>
   </div>

@@ -1,127 +1,95 @@
 <template>
-  <div class="flex w-full items-center justify-between gap-3">
-    <div class="flex items-center gap-3">
-      <h3 class="m-0 text-lg font-semibold">{{ t('maskEditor.title') }}</h3>
+  <div class="flex w-full items-center justify-between gap-8">
+    <div class="flex items-center gap-2">
+      <h3 class="m-0 mr-8 text-lg font-semibold">
+        {{ t('maskEditor.title') }}
+      </h3>
 
-      <div class="flex items-center gap-4">
-        <button
-          :class="iconButtonClass"
-          :title="t('maskEditor.undo')"
-          @click="onUndo"
-        >
-          <svg
-            viewBox="0 0 15 15"
-            class="pointer-events-none h-6.25 w-6.25 fill-current"
+      <button
+        type="button"
+        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary-background px-2.5 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+        @click="onUndo"
+      >
+        <i class="icon-[lucide--undo-2] size-4" />
+        {{ t('maskEditor.undo') }}
+      </button>
+
+      <button
+        type="button"
+        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary-background px-2.5 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+        @click="onRedo"
+      >
+        <i class="icon-[lucide--redo-2] size-4" />
+        {{ t('maskEditor.redo') }}
+      </button>
+
+      <DropdownMenuRoot
+        v-model:open="imageDropdownOpen"
+        :modal="false"
+        :dismissible="false"
+      >
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            :aria-label="t('maskEditor.imageTransformations')"
+            class="relative flex h-8 items-center justify-center gap-1 rounded-lg border-none bg-secondary-background px-2 text-center transition-colors duration-100 hover:bg-secondary-background-hover"
+            @pointerdown.stop
           >
-            <path
-              d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"
+            <span class="text-sm font-medium">{{ t('maskEditor.image') }}</span>
+            <i
+              class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
             />
-          </svg>
-        </button>
-
-        <button
-          :class="iconButtonClass"
-          :title="t('maskEditor.redo')"
-          @click="onRedo"
-        >
-          <svg
-            viewBox="0 0 15 15"
-            class="pointer-events-none h-6.25 w-6.25 fill-(--input-text)"
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal to="body">
+          <DropdownMenuContent
+            align="start"
+            :side-offset="5"
+            :collision-padding="10"
+            class="z-2102 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
           >
-            <path
-              class="cls-1"
-              d="M6.23,12.18c-1.97,0-3.58-1.61-3.58-3.58,0-2.11,1.71-3.58,4.17-3.58h3.98l-1.43-1.43c-.18-.18-.18-.47,0-.64.18-.18.46-.18.64,0l2.21,2.21c.09.09.13.2.13.32s-.05.24-.13.32l-2.21,2.21c-.18.18-.47.18-.64,0-.18-.18-.18-.47,0-.64l1.43-1.43h-3.98c-1.92,0-3.26,1.1-3.26,2.67,0,1.47,1.2,2.67,2.67,2.67.25,0,.46.2.46.46s-.2.46-.46.46Z"
-            />
-          </svg>
-        </button>
+            <WorkflowActionsList :items="imageMenuItems" />
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
 
-        <div class="border-border h-5 border-l" />
+      <button
+        type="button"
+        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary-background px-2.5 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+        @click="onInvert"
+      >
+        <i class="icon-[lucide--flip-vertical-2] size-4" />
+        {{ t('maskEditor.invertMask') }}
+      </button>
 
-        <button
-          :class="iconButtonClass"
-          :title="t('maskEditor.rotateLeft')"
-          @click="onRotateLeft"
-        >
-          <svg
-            viewBox="-6 -7 15 15"
-            class="pointer-events-none h-6.25 w-6.25 fill-(--input-text)"
-          >
-            <path
-              d="m2.25-2.625c.3452 0 .625.2798.625.625v5c0 .3452-.2798.625-.625.625h-5c-.3452 0-.625-.2798-.625-.625v-5c0-.3452.2798-.625.625-.625h5zm1.25.625v5c0 .6904-.5596 1.25-1.25 1.25h-5c-.6904 0-1.25-.5596-1.25-1.25v-5c0-.6904.5596-1.25 1.25-1.25h5c.6904 0 1.25.5596 1.25 1.25zm-.1673-2.3757-.4419.4419-1.5246-1.5246 1.5416-1.5417.442.4419-.7871.7872h.9373c1.3807 0 2.5 1.1193 2.5 2.5h-.625c0-1.0355-.8395-1.875-1.875-1.875h-.9375l.7702.7702z"
-            />
-          </svg>
-        </button>
-
-        <button
-          :class="iconButtonClass"
-          :title="t('maskEditor.rotateRight')"
-          @click="onRotateRight"
-        >
-          <svg
-            viewBox="-9 -7 15 15"
-            class="pointer-events-none h-6.25 w-6.25 fill-(--input-text)"
-          >
-            <g transform="scale(-1, 1)">
-              <path
-                d="m2.25-2.625c.3452 0 .625.2798.625.625v5c0 .3452-.2798.625-.625.625h-5c-.3452 0-.625-.2798-.625-.625v-5c0-.3452.2798-.625.625-.625h5zm1.25.625v5c0 .6904-.5596 1.25-1.25 1.25h-5c-.6904 0-1.25-.5596-1.25-1.25v-5c0-.6904.5596-1.25 1.25-1.25h5c.6904 0 1.25.5596 1.25 1.25zm-.1673-2.3757-.4419.4419-1.5246-1.5246 1.5416-1.5417.442.4419-.7871.7872h.9373c1.3807 0 2.5 1.1193 2.5 2.5h-.625c0-1.0355-.8395-1.875-1.875-1.875h-.9375l.7702.7702z"
-              />
-            </g>
-          </svg>
-        </button>
-
-        <button
-          :class="iconButtonClass"
-          :title="t('maskEditor.mirrorHorizontal')"
-          @click="onMirrorHorizontal"
-        >
-          <svg
-            viewBox="0 0 15 15"
-            class="pointer-events-none h-6.25 w-6.25 fill-(--input-text)"
-          >
-            <path
-              d="M7.5,1.5c-.28,0-.5.22-.5.5v11c0,.28.22.5.5.5s.5-.22.5-.5v-11c0-.28-.22-.5-.5-.5Z"
-            />
-            <path d="M3.5,4.5l-2,3,2,3v-6ZM11.5,4.5v6l2-3-2-3Z" />
-          </svg>
-        </button>
-
-        <button
-          :class="iconButtonClass"
-          :title="t('maskEditor.mirrorVertical')"
-          @click="onMirrorVertical"
-        >
-          <svg
-            viewBox="0 0 15 15"
-            class="pointer-events-none h-6.25 w-6.25 fill-(--input-text)"
-          >
-            <path
-              d="M2,7.5c0-.28.22-.5.5-.5h11c.28,0,.5.22.5.5s-.22.5-.5.5h-11c-.28,0-.5-.22-.5-.5Z"
-            />
-            <path d="M4.5,4.5l3-2,3,2h-6ZM4.5,10.5h6l-3,2-3-2Z" />
-          </svg>
-        </button>
-
-        <div class="h-5 w-px bg-(--p-form-field-border-color)" />
-
-        <button :class="textButtonClass" @click="onInvert">
-          {{ t('maskEditor.invert') }}
-        </button>
-
-        <button :class="textButtonClass" @click="onClear">
-          {{ t('maskEditor.clear') }}
-        </button>
-      </div>
+      <button
+        type="button"
+        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary-background px-2.5 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+        @click="onClear"
+      >
+        <i class="icon-[lucide--trash-2] size-4" />
+        {{ t('maskEditor.clear') }}
+      </button>
     </div>
 
-    <div class="flex gap-3">
-      <Button variant="primary" :disabled="!saveEnabled" @click="handleSave">
-        <i class="pi pi-check" />
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="text-primary-background-fg flex h-8 items-center gap-1.5 rounded-lg border-none bg-primary-background px-3 text-sm font-medium transition-colors duration-100 hover:bg-primary-background-hover disabled:opacity-50"
+        :disabled="!saveEnabled"
+        @click="handleSave"
+      >
+        <i class="icon-[lucide--check] size-4" />
         {{ saveButtonText }}
-      </Button>
-      <Button variant="secondary" @click="handleCancel">
-        <i class="pi pi-times" />
+      </button>
+      <button
+        type="button"
+        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary-background px-3 text-sm transition-colors duration-100 hover:bg-secondary-background-hover"
+        @click="handleCancel"
+      >
+        <i class="icon-[lucide--x] size-4" />
         {{ t('g.cancel') }}
-      </Button>
+      </button>
     </div>
   </div>
 </template>
@@ -129,8 +97,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import {
+  DropdownMenuContent,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 
-import Button from '@/components/ui/button/Button.vue'
+import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
@@ -146,12 +120,7 @@ const saver = useMaskEditorSaver()
 
 const saveButtonText = ref(t('g.save'))
 const saveEnabled = ref(true)
-
-const iconButtonClass =
-  'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-border-default pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
-
-const textButtonClass =
-  'h-7.5 w-15 rounded-[10px] border border-border-default text-current font-sans pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
+const imageDropdownOpen = ref(false)
 
 const onUndo = () => {
   store.canvasHistory.undo()
@@ -221,4 +190,38 @@ const handleSave = async () => {
 const handleCancel = () => {
   dialogStore.closeDialog({ key: 'global-mask-editor' })
 }
+
+const imageMenuItems = [
+  {
+    id: 'rotate-left',
+    label: t('maskEditor.rotateLeft'),
+    icon: 'icon-[lucide--rotate-ccw]',
+    command: onRotateLeft
+  },
+  {
+    id: 'rotate-right',
+    label: t('maskEditor.rotateRight'),
+    icon: 'icon-[lucide--rotate-cw]',
+    command: onRotateRight
+  },
+  {
+    id: 'mirror-horizontal',
+    label: t('maskEditor.mirrorHorizontal'),
+    icon: 'icon-[lucide--flip-horizontal]',
+    command: onMirrorHorizontal
+  },
+  {
+    id: 'mirror-vertical',
+    label: t('maskEditor.mirrorVertical'),
+    icon: 'icon-[lucide--flip-vertical]',
+    command: onMirrorVertical
+  }
+]
 </script>
+
+<style scoped>
+:deep(.workflow-actions-list-item span) {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+</style>
