@@ -211,7 +211,8 @@ export const TestIds = {
   queue: {
     overlayToggle: 'queue-overlay-toggle',
     clearHistoryAction: 'clear-history-action',
-    jobAssetsList: 'job-assets-list'
+    jobAssetsList: 'job-assets-list',
+    notificationBanner: 'queue-notification-banner'
   },
   errors: {
     imageLoadError: 'error-loading-image',
