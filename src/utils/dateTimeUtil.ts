@@ -1,4 +1,21 @@
 /**
+ * Parse an ISO 8601 date string tolerantly. The native Date constructor rejects
+ * fractional-second precision > 3 digits on older Safari and Firefox versions,
+ * which turns values like "2026-04-18T10:04:55.6513Z" into Invalid Date.
+ * This helper trims the fractional portion to millisecond precision first.
+ *
+ * @returns Parsed Date, or null if the string is missing or unparseable.
+ */
+export const parseIsoDateSafe = (
+  input: string | null | undefined
+): Date | null => {
+  if (!input) return null
+  const normalized = input.replace(/(\.\d{3})\d+(?=Z|[+-]\d{2}:?\d{2}|$)/, '$1')
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+/**
  * Return a local date key in YYYY-MM-DD format for grouping.
  *
  * @param ts Unix timestamp in milliseconds

@@ -105,6 +105,24 @@ describe('SecretListItem', () => {
 
       expect(screen.queryByText(/secrets\.lastUsed/)).not.toBeInTheDocument()
     })
+
+    it('renders created date for ISO string with 4-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        created_at: '2026-04-18T10:04:55.6513Z'
+      })
+      renderComponent({ secret })
+
+      expect(screen.getByText(/secrets\.createdAt/)).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('hides created line when the timestamp is unparseable', () => {
+      const secret = createMockSecret({ created_at: 'not-a-date' })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/secrets\.createdAt/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
   })
 
   describe('loading state', () => {
