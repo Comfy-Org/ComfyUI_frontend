@@ -14,8 +14,11 @@ const logos = [
   'Ubisoft'
 ]
 
+const desktopLogos = Array.from({ length: 4 }, () => logos).flat()
 const row1 = logos.slice(0, 6)
+const mobileRow1 = [...row1, ...row1]
 const row2 = logos.slice(6)
+const mobileRow2 = [...row2, ...row2]
 </script>
 
 <template>
@@ -23,7 +26,7 @@ const row2 = logos.slice(6)
     <!-- Single row on desktop -->
     <div class="animate-marquee hidden items-center gap-2 md:flex">
       <div
-        v-for="(logo, i) in [...logos, ...logos]"
+        v-for="(logo, i) in desktopLogos"
         :key="`${logo}-${i}`"
         class="flex h-20 w-50 shrink-0 items-center justify-center"
       >
@@ -38,7 +41,7 @@ const row2 = logos.slice(6)
     >
       <div class="animate-marquee flex items-center gap-8">
         <div
-          v-for="(logo, i) in [...row1, ...row1]"
+          v-for="(logo, i) in mobileRow1"
           :key="`${logo}-${i}`"
           class="flex h-14 w-40 shrink-0 items-center justify-center"
         >
@@ -47,7 +50,7 @@ const row2 = logos.slice(6)
       </div>
       <div class="animate-marquee-reverse flex items-center gap-8">
         <div
-          v-for="(logo, i) in [...row2, ...row2]"
+          v-for="(logo, i) in mobileRow2"
           :key="`${logo}-${i}`"
           class="flex h-14 w-40 shrink-0 items-center justify-center"
         >

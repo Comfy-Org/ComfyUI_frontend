@@ -140,8 +140,9 @@ export const useWorkflowService = () => {
     }
 
     if (isSelfOverwrite) {
-      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
-      await saveWorkflow(workflow)
+      workflow.changeTracker?.prepareForSave()
+      // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
+      await workflowStore.saveWorkflow(workflow)
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
@@ -157,8 +158,7 @@ export const useWorkflowService = () => {
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
-      if (workflowStore.isActive(target)) target.changeTracker?.checkState()
-
+      target.changeTracker?.prepareForSave()
       await workflowStore.saveWorkflow(target)
     }
 
@@ -174,8 +174,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      if (workflowStore.isActive(workflow)) workflow.changeTracker?.checkState()
-
+      workflow.changeTracker?.prepareForSave()
       const isApp = workflow.initialMode === 'app'
       const expectedPath =
         workflow.directory +
@@ -370,7 +369,7 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker.store()
+      activeWorkflow.changeTracker?.deactivate()
       if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
         const activeState = activeWorkflow.activeState
         if (activeState) {

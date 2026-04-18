@@ -7,6 +7,10 @@ interface ParallaxOptions {
   /** Vertical offset in pixels (default: 200) */
   y?: number
   trigger?: Ref<HTMLElement | undefined>
+  /** ScrollTrigger start value (default: 'top bottom') */
+  start?: string
+  /** ScrollTrigger end value (default: 'bottom top') */
+  end?: string
 }
 
 export function useParallax(
@@ -28,8 +32,8 @@ export function useParallax(
           ease: 'none',
           scrollTrigger: {
             trigger: trigger ?? el,
-            start: 'top bottom',
-            end: 'bottom top',
+            start: options.start ?? 'top bottom',
+            end: options.end ?? 'bottom top',
             scrub: 1
           }
         })
