@@ -1,43 +1,205 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+type VideoTrack = {
+  src: string
+  kind: 'subtitles' | 'captions' | 'descriptions'
+  srclang: string
+  label: string
+}
+
+const {
+  locale = 'en',
+  src,
+  tracks = [],
+  autoplay = false
+} = defineProps<{
+  locale?: Locale
+  src: string
+  tracks?: VideoTrack[]
+  autoplay?: boolean
+}>()
+
+const videoEl = ref<HTMLVideoElement>()
+const playing = ref(false)
+const muted = ref(true)
+const ccEnabled = ref(false)
+const currentTime = ref(0)
+const duration = ref(0)
+
+const hasSubtitles = computed(() =>
+  tracks.some((t) => t.kind === 'subtitles' || t.kind === 'captions')
+)
+
+const progress = computed(() =>
+  duration.value ? currentTime.value / duration.value : 0
+)
+
+const timestamp = computed(() => {
+  const t = Math.floor(currentTime.value)
+  const m = String(Math.floor(t / 60)).padStart(2, '0')
+  const s = String(t % 60).padStart(2, '0')
+  return `${m}:${s}`
+})
+
+function togglePlay() {
+  const v = videoEl.value
+  if (!v) return
+  if (v.paused) {
+    v.play()
+  } else {
+    v.pause()
+  }
+}
+
+function toggleCC() {
+  const v = videoEl.value
+  if (!v) return
+  ccEnabled.value = !ccEnabled.value
+  for (const track of v.textTracks) {
+    if (track.kind === 'subtitles' || track.kind === 'captions') {
+      track.mode = ccEnabled.value ? 'showing' : 'hidden'
+    }
+  }
+}
+
+function toggleMute() {
+  const v = videoEl.value
+  if (!v) return
+  v.muted = !v.muted
+  muted.value = v.muted
+}
+
+function toggleFullscreen() {
+  const v = videoEl.value
+  if (!v) return
+  if (document.fullscreenElement) {
+    document.exitFullscreen()
+  } else {
+    v.requestFullscreen()
+  }
+}
+
+function hideAllSubtitles() {
+  const v = videoEl.value
+  if (!v) return
+  for (const track of v.textTracks) {
+    if (track.kind === 'subtitles' || track.kind === 'captions') {
+      track.mode = 'hidden'
+    }
+  }
+}
+
+function onTimeUpdate() {
+  const v = videoEl.value
+  if (!v) return
+  currentTime.value = v.currentTime
+  duration.value = v.duration || 0
+}
+
+function seek(e: MouseEvent) {
+  const v = videoEl.value
+  const bar = e.currentTarget as HTMLElement
+  if (!v || !bar) return
+  const ratio = e.offsetX / bar.clientWidth
+  v.currentTime = ratio * (v.duration || 0)
+}
 </script>
 
 <template>
   <div
     class="relative aspect-video overflow-hidden rounded-4xl border border-white/10 bg-black"
   >
-    <div class="size-full" />
+    <video
+      ref="videoEl"
+      class="size-full object-cover"
+      :src
+      :preload="autoplay ? 'auto' : 'metadata'"
+      playsinline
+      :autoplay
+      muted
+      @timeupdate="onTimeUpdate"
+      @loadedmetadata="
+        onTimeUpdate()
+        hideAllSubtitles()
+      "
+      @play="playing = true"
+      @pause="playing = false"
+      @ended="playing = false"
+    >
+      <track
+        v-for="track in tracks"
+        :key="track.src"
+        :src="track.src"
+        :kind="track.kind"
+        :srclang="track.srclang"
+        :label="track.label"
+      />
+      <track v-if="tracks.length === 0" kind="descriptions" />
+    </video>
 
     <!-- Bottom control bar -->
     <div
       class="absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 lg:px-6 lg:py-5"
     >
-      <!-- Play button -->
+      <!-- Play / Pause button -->
       <button
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-full lg:size-10"
-        :aria-label="locale === 'zh-CN' ? '播放' : 'Play'"
+        :aria-label="
+          playing
+            ? locale === 'zh-CN'
+              ? '暂停'
+              : 'Pause'
+            : locale === 'zh-CN'
+              ? '播放'
+              : 'Play'
+        "
+        @click="togglePlay"
       >
-        <svg class="ml-0.5 size-3 lg:size-4" viewBox="0 0 24 24" fill="#211927">
+        <!-- Pause icon -->
+        <svg
+          v-if="playing"
+          class="size-3 lg:size-4"
+          viewBox="0 0 24 24"
+          fill="#211927"
+        >
+          <rect x="6" y="4" width="4" height="16" />
+          <rect x="14" y="4" width="4" height="16" />
+        </svg>
+        <!-- Play icon -->
+        <svg
+          v-else
+          class="ml-0.5 size-3 lg:size-4"
+          viewBox="0 0 24 24"
+          fill="#211927"
+        >
           <path d="M8 5v14l11-7z" />
         </svg>
       </button>
 
       <!-- Progress bar -->
-      <div class="flex flex-1 items-center">
+      <div class="flex flex-1 cursor-pointer items-center" @click="seek">
         <div class="h-1 w-full rounded-full bg-white/20">
-          <div class="bg-primary-comfy-yellow h-full w-1/6 rounded-full" />
+          <div
+            class="bg-primary-comfy-yellow h-full rounded-full transition-[width] duration-150"
+            :style="{ width: `${progress * 100}%` }"
+          />
         </div>
       </div>
 
       <!-- Timestamp -->
-      <span class="shrink-0 text-xs text-white/80 lg:text-sm">00:13</span>
+      <span class="shrink-0 text-xs text-white/80 lg:text-sm">{{
+        timestamp
+      }}</span>
 
       <!-- Fullscreen button -->
       <button
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
         :aria-label="locale === 'zh-CN' ? '全屏' : 'Fullscreen'"
+        @click="toggleFullscreen"
       >
         <svg
           class="size-3.5 lg:size-4"
@@ -53,12 +215,48 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         </svg>
       </button>
 
-      <!-- Mute button -->
+      <!-- CC button -->
+      <button
+        v-if="hasSubtitles"
+        :class="
+          cn(
+            'flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold lg:size-10 lg:text-sm',
+            ccEnabled
+              ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+              : 'bg-white/20 text-white'
+          )
+        "
+        :aria-label="
+          ccEnabled
+            ? locale === 'zh-CN'
+              ? '关闭字幕'
+              : 'Subtitles off'
+            : locale === 'zh-CN'
+              ? '开启字幕'
+              : 'Subtitles on'
+        "
+        @click="toggleCC"
+      >
+        CC
+      </button>
+
+      <!-- Mute / Unmute button -->
       <button
         class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
-        :aria-label="locale === 'zh-CN' ? '静音' : 'Mute'"
+        :aria-label="
+          muted
+            ? locale === 'zh-CN'
+              ? '取消静音'
+              : 'Unmute'
+            : locale === 'zh-CN'
+              ? '静音'
+              : 'Mute'
+        "
+        @click="toggleMute"
       >
+        <!-- Muted icon -->
         <svg
+          v-if="muted"
           class="size-3.5 lg:size-4"
           viewBox="0 0 24 24"
           fill="#211927"
@@ -72,6 +270,33 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           />
           <line x1="23" y1="9" x2="17" y2="15" stroke-width="2.5" />
           <line x1="17" y1="9" x2="23" y2="15" stroke-width="2.5" />
+        </svg>
+        <!-- Unmuted icon -->
+        <svg
+          v-else
+          class="size-3.5 lg:size-4"
+          viewBox="0 0 24 24"
+          fill="#211927"
+          stroke="#211927"
+          stroke-width="1.5"
+        >
+          <path
+            d="M11 5L6 9H2v6h4l5 4V5z"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M15.54 8.46a5 5 0 0 1 0 7.07"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M19.07 4.93a10 10 0 0 1 0 14.14"
+            fill="none"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
         </svg>
       </button>
     </div>
