@@ -50,26 +50,26 @@ test.describe(
       return dialog
     }
 
-    async function getMaskCanvasPixelData(page: Page) {
-      return page.evaluate(() => {
+    function getCanvasPixelData(page: Page, canvasIndex: number) {
+      return page.evaluate((idx) => {
         const canvases = document.querySelectorAll(
           '#maskEditorCanvasContainer canvas'
         )
-        const maskCanvas = canvases[2] as HTMLCanvasElement
-        if (!maskCanvas) return null
-        const ctx = maskCanvas.getContext('2d')
+        const canvas = canvases[idx] as HTMLCanvasElement
+        if (!canvas) return null
+        const ctx = canvas.getContext('2d')
         if (!ctx) return null
-        const data = ctx.getImageData(0, 0, maskCanvas.width, maskCanvas.height)
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
         let nonTransparentPixels = 0
         for (let i = 3; i < data.data.length; i += 4) {
           if (data.data[i] > 0) nonTransparentPixels++
         }
         return { nonTransparentPixels, totalPixels: data.data.length / 4 }
-      })
+      }, canvasIndex)
     }
 
     function pollMaskPixelCount(page: Page): Promise<number> {
-      return getMaskCanvasPixelData(page).then(
+      return getCanvasPixelData(page, 2).then(
         (d) => d?.nonTransparentPixels ?? 0
       )
     }
@@ -99,26 +99,8 @@ test.describe(
       return { startX, startY, endX, endY, box }
     }
 
-    async function getRgbCanvasPixelData(page: Page) {
-      return page.evaluate(() => {
-        const canvases = document.querySelectorAll(
-          '#maskEditorCanvasContainer canvas'
-        )
-        const rgbCanvas = canvases[1] as HTMLCanvasElement
-        if (!rgbCanvas) return null
-        const ctx = rgbCanvas.getContext('2d')
-        if (!ctx) return null
-        const data = ctx.getImageData(0, 0, rgbCanvas.width, rgbCanvas.height)
-        let nonTransparentPixels = 0
-        for (let i = 3; i < data.data.length; i += 4) {
-          if (data.data[i] > 0) nonTransparentPixels++
-        }
-        return { nonTransparentPixels, totalPixels: data.data.length / 4 }
-      })
-    }
-
     function pollRgbPixelCount(page: Page): Promise<number> {
-      return getRgbCanvasPixelData(page).then(
+      return getCanvasPixelData(page, 1).then(
         (d) => d?.nonTransparentPixels ?? 0
       )
     }
@@ -128,7 +110,7 @@ test.describe(
       label: string,
       value: number
     ) {
-      await page.evaluate(
+      const didUpdate = await page.evaluate(
         ({ targetLabel, nextValue }) => {
           const labels = Array.from(
             document.querySelectorAll('.mask-editor-dialog span')
@@ -136,9 +118,7 @@ test.describe(
           const labelElement = labels.find(
             (element) => element.textContent?.trim() === targetLabel
           )
-          if (!labelElement) {
-            return false
-          }
+          if (!labelElement) return false
 
           let container: HTMLElement | null = labelElement.parentElement
           while (container && !container.querySelector('input[type="range"]')) {
@@ -148,9 +128,7 @@ test.describe(
           const slider = container?.querySelector(
             'input[type="range"]'
           ) as HTMLInputElement | null
-          if (!slider) {
-            return false
-          }
+          if (!slider) return false
 
           slider.value = String(nextValue)
           slider.dispatchEvent(new Event('input', { bubbles: true }))
@@ -158,6 +136,7 @@ test.describe(
         },
         { targetLabel: label, nextValue: value }
       )
+      expect(didUpdate, `Slider "${label}" not found`).toBe(true)
     }
 
     function pollBrushSliderValue(page: Page, label: string): Promise<string> {
