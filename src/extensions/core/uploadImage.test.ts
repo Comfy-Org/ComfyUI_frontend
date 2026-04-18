@@ -74,11 +74,92 @@ describe('Comfy.UploadImage extension', () => {
 
     const upload = (nodeData.input.required as Record<string, unknown>).upload
     expect(upload).toBeDefined()
-    expect((upload as [string, { imageInputName: string }])[0]).toBe(
-      'IMAGEUPLOAD'
-    )
     expect(
-      (upload as [string, { imageInputName: string }])[1].imageInputName
-    ).toBe('image')
+      (upload as [string, { imageInputName: string; image_upload: boolean }])[0]
+    ).toBe('IMAGEUPLOAD')
+    const opts = (
+      upload as [string, { imageInputName: string; image_upload: boolean }]
+    )[1]
+    expect(opts.imageInputName).toBe('image')
+    expect(opts.image_upload).toBe(true)
+  })
+
+  it('attaches an IMAGEUPLOAD widget for LoadVideo with video_upload synthesized', () => {
+    // Without injecting video_upload, useImageUploadWidget would default to
+    // image-only filters and reject pasted/dropped video files on cloud.
+    const nodeData = {
+      name: 'LoadVideo',
+      input: {
+        required: {
+          file: ['COMBO', {}]
+        }
+      }
+    }
+
+    uploadImageExtension!.beforeRegisterNodeDef!(
+      undefined as unknown as typeof LGraphNode,
+      nodeData as never,
+      undefined as never
+    )
+
+    const upload = (nodeData.input.required as Record<string, unknown>).upload
+    expect(upload).toBeDefined()
+    expect(
+      (upload as [string, { imageInputName: string; video_upload: boolean }])[0]
+    ).toBe('IMAGEUPLOAD')
+    const opts = (
+      upload as [string, { imageInputName: string; video_upload: boolean }]
+    )[1]
+    expect(opts.imageInputName).toBe('file')
+    expect(opts.video_upload).toBe(true)
+  })
+
+  it('does not touch LoadAudio — audio is handled by Comfy.UploadAudio', () => {
+    // Routing audio through the IMAGEUPLOAD widget would reject every pasted
+    // or dropped audio file. Comfy.UploadImage must stay out of LoadAudio.
+    const nodeData = {
+      name: 'LoadAudio',
+      input: {
+        required: {
+          audio: ['COMBO', {}]
+        }
+      }
+    }
+
+    uploadImageExtension!.beforeRegisterNodeDef!(
+      undefined as unknown as typeof LGraphNode,
+      nodeData as never,
+      undefined as never
+    )
+
+    expect(
+      (nodeData.input.required as Record<string, unknown>).upload
+    ).toBeUndefined()
+  })
+
+  it('never overwrites an upload widget another extension already attached', () => {
+    // Comfy.UploadAudio is imported before Comfy.UploadImage and may have
+    // already set required.upload = ['AUDIOUPLOAD', {}]. The fallback must
+    // not clobber it on LoadAudio (or any future sibling uploader).
+    const existingUpload = ['AUDIOUPLOAD', {}]
+    const nodeData = {
+      name: 'LoadAudio',
+      input: {
+        required: {
+          audio: ['COMBO', {}],
+          upload: existingUpload
+        }
+      }
+    }
+
+    uploadImageExtension!.beforeRegisterNodeDef!(
+      undefined as unknown as typeof LGraphNode,
+      nodeData as never,
+      undefined as never
+    )
+
+    expect((nodeData.input.required as Record<string, unknown>).upload).toBe(
+      existingUpload
+    )
   })
 })
