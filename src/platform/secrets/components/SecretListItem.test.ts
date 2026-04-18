@@ -123,6 +123,24 @@ describe('SecretListItem', () => {
       expect(screen.queryByText(/secrets\.createdAt/)).not.toBeInTheDocument()
       expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
+
+    it('hides last used line when the timestamp is unparseable', () => {
+      const secret = createMockSecret({ last_used_at: 'not-a-date' })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/secrets\.lastUsed/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('renders last used date for 4-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        last_used_at: '2026-04-18T11:00:00.6513Z'
+      })
+      renderComponent({ secret })
+
+      expect(screen.getByText(/secrets\.lastUsed/)).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
   })
 
   describe('loading state', () => {
