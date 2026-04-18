@@ -105,6 +105,18 @@ test.describe(
       )
     }
 
+    function getCanvasSnapshot(
+      page: Page,
+      canvasIndex: number
+    ): Promise<string> {
+      return page.evaluate((idx) => {
+        const canvas = document.querySelectorAll(
+          '#maskEditorCanvasContainer canvas'
+        )[idx] as HTMLCanvasElement | undefined
+        return canvas?.toDataURL() ?? ''
+      }, canvasIndex)
+    }
+
     async function setBrushSliderValue(
       page: Page,
       label: string,
@@ -164,16 +176,34 @@ test.describe(
     }
 
     test.describe('Brush settings interaction', () => {
-      test('Adjusting brush thickness slider changes brush size', async ({
+      test('Adjusting brush thickness slider changes stroke output', async ({
         comfyPage
       }) => {
-        await openMaskEditorDialog(comfyPage)
+        const dialog = await openMaskEditorDialog(comfyPage)
 
-        await setBrushSliderValue(comfyPage.page, 'Thickness', 0.85)
-
+        await setBrushSliderValue(comfyPage.page, 'Thickness', 0.1)
         await expect
           .poll(() => pollBrushSliderValue(comfyPage.page, 'Thickness'))
-          .toBe('0.85')
+          .toBe('0.1')
+
+        await drawStrokeOnPointerZone(comfyPage.page, dialog)
+        await expect
+          .poll(() => pollMaskPixelCount(comfyPage.page))
+          .toBeGreaterThan(0)
+        const thinPixels = await pollMaskPixelCount(comfyPage.page)
+
+        await comfyPage.page.keyboard.press('Control+z')
+        await expect.poll(() => pollMaskPixelCount(comfyPage.page)).toBe(0)
+
+        await setBrushSliderValue(comfyPage.page, 'Thickness', 0.95)
+        await expect
+          .poll(() => pollBrushSliderValue(comfyPage.page, 'Thickness'))
+          .toBe('0.95')
+
+        await drawStrokeOnPointerZone(comfyPage.page, dialog)
+        await expect
+          .poll(() => pollMaskPixelCount(comfyPage.page))
+          .toBeGreaterThan(thinPixels)
       })
 
       test('Adjusting opacity slider changes brush opacity', async ({
@@ -211,7 +241,7 @@ test.describe(
         await expect
           .poll(() => pollMaskPixelCount(comfyPage.page))
           .toBeGreaterThan(0)
-        const maskPixelsAfterMaskPen = await pollMaskPixelCount(comfyPage.page)
+        const maskSnapshotAfterPen = await getCanvasSnapshot(comfyPage.page, 2)
 
         const toolEntries = dialog.locator('.maskEditor_toolPanelContainer')
         await expect(toolEntries).toHaveCount(5)
@@ -224,8 +254,8 @@ test.describe(
           .toBeGreaterThan(0)
 
         await expect
-          .poll(() => pollMaskPixelCount(comfyPage.page))
-          .toBe(maskPixelsAfterMaskPen)
+          .poll(() => getCanvasSnapshot(comfyPage.page, 2))
+          .toBe(maskSnapshotAfterPen)
       })
 
       test("Switching between tools preserves previous tool's mask data", async ({
@@ -238,7 +268,7 @@ test.describe(
           .poll(() => pollMaskPixelCount(comfyPage.page))
           .toBeGreaterThan(0)
 
-        const initialMaskPixels = await pollMaskPixelCount(comfyPage.page)
+        const maskSnapshot = await getCanvasSnapshot(comfyPage.page, 2)
 
         const toolEntries = dialog.locator('.maskEditor_toolPanelContainer')
         await expect(toolEntries).toHaveCount(5)
@@ -250,8 +280,8 @@ test.describe(
         await expect(toolEntries.nth(0)).toHaveClass(/Selected/)
 
         await expect
-          .poll(() => pollMaskPixelCount(comfyPage.page))
-          .toBe(initialMaskPixels)
+          .poll(() => getCanvasSnapshot(comfyPage.page, 2))
+          .toBe(maskSnapshot)
       })
     })
   }
