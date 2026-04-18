@@ -2,6 +2,7 @@ import type {
   ModelFile,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { DownloadLifecycleState } from '@/platform/downloads/types'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.
@@ -51,3 +52,15 @@ export interface MissingModelGroup {
   models: MissingModelViewModel[]
   isAssetSupported: boolean
 }
+
+export type MissingModelDownloadRef =
+  | {
+      kind: 'asset-import'
+      taskId: string
+    }
+  | {
+      kind: 'electron-download'
+      url: string
+    }
+
+export type MissingModelDownloadStatus = DownloadLifecycleState

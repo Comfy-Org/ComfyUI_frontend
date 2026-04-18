@@ -1,18 +1,35 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { fetchModelMetadata, toBrowsableUrl } from './missingModelDownload'
+const mockIsDesktop = vi.hoisted(() => ({ value: false }))
+const mockStartElectronDownload = vi.hoisted(() => vi.fn())
+
+import {
+  downloadModel,
+  fetchModelMetadata,
+  toBrowsableUrl
+} from './missingModelDownload'
 
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
-vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
-vi.mock('@/stores/electronDownloadStore', () => ({}))
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockIsDesktop.value
+  }
+}))
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => ({
+    start: (...args: unknown[]) => mockStartElectronDownload(...args)
+  })
+}))
 
 let testId = 0
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
     fetchMock.mockReset()
+    mockIsDesktop.value = false
+    mockStartElectronDownload.mockReset()
     testId++
   })
 
@@ -176,5 +193,77 @@ describe('toBrowsableUrl', () => {
     expect(toBrowsableUrl('https://civitai.com/api/v1/models/12345')).toBe(
       'https://civitai.com/models/12345'
     )
+  })
+})
+
+describe('downloadModel', () => {
+  beforeEach(() => {
+    mockIsDesktop.value = false
+    mockStartElectronDownload.mockReset()
+  })
+
+  it('opens the source URL directly outside desktop builds', async () => {
+    const click = vi.fn()
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockReturnValue({
+        click,
+        download: '',
+        href: '',
+        rel: '',
+        target: ''
+      } as unknown as HTMLAnchorElement)
+
+    const started = await downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(started).toBe(true)
+    expect(click).toHaveBeenCalledOnce()
+
+    createElementSpy.mockRestore()
+  })
+
+  it('starts an Electron download when a desktop save path exists', async () => {
+    mockIsDesktop.value = true
+    mockStartElectronDownload.mockResolvedValue(true)
+
+    const started = await downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://example.com/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(started).toBe(true)
+    expect(mockStartElectronDownload).toHaveBeenCalledWith({
+      url: 'https://example.com/model.safetensors',
+      savePath: '/models/checkpoints',
+      filename: 'model.safetensors'
+    })
+  })
+
+  it('returns false on desktop when no save path exists for the model directory', async () => {
+    mockIsDesktop.value = true
+
+    await expect(
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model.safetensors',
+          directory: 'checkpoints'
+        },
+        {}
+      )
+    ).resolves.toBe(false)
+
+    expect(mockStartElectronDownload).not.toHaveBeenCalled()
   })
 })

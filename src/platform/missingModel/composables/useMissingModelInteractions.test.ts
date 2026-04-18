@@ -12,8 +12,14 @@ const mockGetAssetFilename = vi.fn((a: { name: string }) => a.name)
 const mockGetAssets = vi.fn()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetAllNodeProviders = vi.fn()
+const mockFindElectronDownloadByUrl = vi.fn()
 const mockDownloadList = vi.fn(
-  (): Array<{ taskId: string; status: string }> => []
+  (): Array<{
+    taskId: string
+    status: string
+    progress?: number
+    error?: string
+  }> => []
 )
 
 vi.mock('@/i18n', () => ({
@@ -21,7 +27,8 @@ vi.mock('@/i18n', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  isCloud: false,
+  isDesktop: false
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -65,6 +72,12 @@ vi.mock('@/stores/assetDownloadStore', () => ({
       return mockDownloadList()
     },
     trackDownload: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => ({
+    findByUrl: (...args: unknown[]) => mockFindElectronDownloadByUrl(...args)
   })
 }))
 
@@ -137,6 +150,8 @@ describe('useMissingModelInteractions', () => {
     mockDownloadList.mockImplementation(
       (): Array<{ taskId: string; status: string }> => []
     )
+    mockFindElectronDownloadByUrl.mockReset()
+    mockFindElectronDownloadByUrl.mockReturnValue(null)
     ;(app as { rootGraph: unknown }).rootGraph = null
   })
 
@@ -281,7 +296,7 @@ describe('useMissingModelInteractions', () => {
     it('returns false when download is running', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importTaskIds['key1'] = 'task-123'
+      store.downloadRefs['key1'] = { kind: 'asset-import', taskId: 'task-123' }
       mockDownloadList.mockReturnValue([
         { taskId: 'task-123', status: 'running' }
       ])
@@ -307,19 +322,103 @@ describe('useMissingModelInteractions', () => {
       const { isSelectionConfirmable } = useMissingModelInteractions()
       expect(isSelectionConfirmable('key1')).toBe(true)
     })
+
+    it('returns true when a tracked download is completed', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 1,
+        status: 'completed'
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(true)
+    })
+
+    it('returns false when a tracked download failed', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 0.3,
+        status: 'failed'
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(false)
+    })
+  })
+
+  describe('getDownloadStatus', () => {
+    it('returns the tracked asset import status for asset-import refs', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = { kind: 'asset-import', taskId: 'task-123' }
+      mockDownloadList.mockReturnValue([
+        {
+          taskId: 'task-123',
+          status: 'running',
+          progress: 0.5,
+          error: undefined
+        }
+      ])
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        progress: 0.5,
+        status: 'running',
+        error: undefined
+      })
+    })
+
+    it('returns the tracked Electron download status for electron refs', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 0.4,
+        status: 'paused',
+        error: 'network stalled'
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        progress: 0.4,
+        status: 'paused',
+        error: 'network stalled'
+      })
+    })
+
+    it('returns null when no tracked download ref exists', () => {
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toBeNull()
+    })
   })
 
   describe('cancelLibrarySelect', () => {
-    it('clears selectedLibraryModel and importCategoryMismatch', () => {
+    it('clears selectedLibraryModel, importCategoryMismatch, and download refs', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'model.safetensors'
       store.importCategoryMismatch['key1'] = 'loras'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
 
       const { cancelLibrarySelect } = useMissingModelInteractions()
       cancelLibrarySelect('key1')
 
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
       expect(store.importCategoryMismatch['key1']).toBeUndefined()
+      expect(store.downloadRefs['key1']).toBeUndefined()
     })
   })
 
@@ -343,6 +442,10 @@ describe('useMissingModelInteractions', () => {
 
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new_model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/old_model.safetensors'
+      }
       store.setMissingModels([
         makeCandidate({ name: 'old_model.safetensors', nodeId: '10' }),
         makeCandidate({ name: 'old_model.safetensors', nodeId: '20' })
@@ -367,6 +470,7 @@ describe('useMissingModelInteractions', () => {
         'old_model.safetensors',
         new Set(['10', '20'])
       )
+      expect(store.downloadRefs['key1']).toBeUndefined()
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
     })
 

@@ -4,7 +4,10 @@ import { computed, onScopeDispose, ref } from 'vue'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelDownloadRef
+} from '@/platform/missingModel/types'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
@@ -79,7 +82,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const modelExpandState = ref<Record<string, boolean>>({})
   const selectedLibraryModel = ref<Record<string, string>>({})
   const importCategoryMismatch = ref<Record<string, string>>({})
-  const importTaskIds = ref<Record<string, string>>({})
+  const downloadRefs = ref<Record<string, MissingModelDownloadRef>>({})
   const urlInputs = ref<Record<string, string>>({})
   const urlMetadata = ref<Record<string, AssetMetadata | null>>({})
   const urlFetching = ref<Record<string, boolean>>({})
@@ -132,7 +135,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     delete modelExpandState.value[name]
     delete selectedLibraryModel.value[name]
     delete importCategoryMismatch.value[name]
-    delete importTaskIds.value[name]
+    delete downloadRefs.value[name]
     delete urlInputs.value[name]
     delete urlMetadata.value[name]
     delete urlFetching.value[name]
@@ -260,7 +263,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     modelExpandState.value = {}
     selectedLibraryModel.value = {}
     importCategoryMismatch.value = {}
-    importTaskIds.value = {}
+    downloadRefs.value = {}
     urlInputs.value = {}
     urlMetadata.value = {}
     urlFetching.value = {}
@@ -293,7 +296,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     modelExpandState,
     selectedLibraryModel,
-    importTaskIds,
+    downloadRefs,
     importCategoryMismatch,
     urlInputs,
     urlMetadata,
