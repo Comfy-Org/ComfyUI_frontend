@@ -46,7 +46,6 @@ export const useWorkflowService = () => {
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
-  const executionErrorStore = useExecutionErrorStore()
   const workflowDraftStore = useWorkflowDraftStoreV2()
   const missingNodesErrorStore = useMissingNodesErrorStore()
 
