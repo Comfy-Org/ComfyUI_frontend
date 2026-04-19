@@ -1,6 +1,11 @@
 import type { DownloadProgressUpdate } from '@comfyorg/comfyui-electron-types'
 
-import type { DownloadEntry, DownloadService, DownloadStatus } from '../types'
+import type {
+  DownloadEntry,
+  DownloadService,
+  DownloadStartParams,
+  DownloadStatus
+} from '../types'
 
 import { electronAPI } from '@/utils/envUtil'
 
@@ -32,7 +37,12 @@ export function createElectronDownloadService(): DownloadService & {
     notifyListeners(update.url, entry)
   }
 
+  let initialized = false
+
   async function initialize() {
+    if (initialized) return
+    initialized = true
+
     const existingDownloads = await downloadManager.getAllDownloads()
     for (const download of existingDownloads) {
       entries.set(download.url, {
@@ -49,11 +59,7 @@ export function createElectronDownloadService(): DownloadService & {
     downloadManager.onDownloadProgress(upsertFromProgress)
   }
 
-  async function start(params: {
-    url: string
-    savePath: string
-    filename: string
-  }): Promise<DownloadEntry> {
+  async function start(params: DownloadStartParams): Promise<DownloadEntry> {
     await downloadManager.startDownload(
       params.url,
       params.savePath,

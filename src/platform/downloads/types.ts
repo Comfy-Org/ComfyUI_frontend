@@ -26,13 +26,17 @@ export interface DownloadEntry {
   error?: string
 }
 
+export interface DownloadStartParams {
+  url: string
+  savePath: string
+  filename: string
+  /** Cloud-specific metadata tags (e.g. ['models', 'checkpoints']). */
+  tags?: string[]
+}
+
 export interface DownloadService {
   /** Resolves once the download is accepted, not when it completes. */
-  start(params: {
-    url: string
-    savePath: string
-    filename: string
-  }): Promise<DownloadEntry>
+  start(params: DownloadStartParams): Promise<DownloadEntry>
 
   pause(id: string): Promise<void>
   resume(id: string): Promise<void>

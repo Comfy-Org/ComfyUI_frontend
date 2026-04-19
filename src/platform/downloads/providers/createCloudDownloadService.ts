@@ -1,4 +1,8 @@
-import type { DownloadEntry, DownloadService } from '../types'
+import type {
+  DownloadEntry,
+  DownloadService,
+  DownloadStartParams
+} from '../types'
 
 export function createCloudDownloadService(): DownloadService {
   const entries = new Map<string, DownloadEntry>()
@@ -7,17 +11,13 @@ export function createCloudDownloadService(): DownloadService {
     Set<(entry: DownloadEntry) => void>
   >()
 
-  async function start(params: {
-    url: string
-    savePath: string
-    filename: string
-  }): Promise<DownloadEntry> {
+  async function start(params: DownloadStartParams): Promise<DownloadEntry> {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
 
     const result = await assetService.uploadAssetAsync({
       source_url: params.url,
-      tags: ['models']
+      tags: params.tags ?? ['models']
     })
 
     const id = result.type === 'async' ? result.task.task_id : params.url
