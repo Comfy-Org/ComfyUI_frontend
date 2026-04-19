@@ -17,20 +17,19 @@ vi.mock('primevue/usetoast', () => ({
   })
 }))
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        reconnecting: 'Reconnecting',
-        reconnected: 'Reconnected'
+function setupComposable(): ReturnType<typeof useReconnectingNotification> {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        g: {
+          reconnecting: 'Reconnecting',
+          reconnected: 'Reconnected'
+        }
       }
     }
-  }
-})
-
-function setupComposable(): ReturnType<typeof useReconnectingNotification> {
+  })
   let result!: ReturnType<typeof useReconnectingNotification>
   const Wrapper = defineComponent({
     setup() {
