@@ -63,6 +63,26 @@ describe('getNodeSource', () => {
     })
   })
 
+  it('should return empty badgeText for frontend_only custom nodes', () => {
+    const result = getNodeSource('custom_nodes.frontend_only')
+    expect(result).toEqual({
+      type: NodeSourceType.CustomNodes,
+      className: 'comfy-frontend-only',
+      displayText: 'Frontend Only',
+      badgeText: ''
+    })
+  })
+
+  it('should return empty badgeText for version-suffixed frontend_only', () => {
+    const result = getNodeSource('custom_nodes.frontend_only@1.0.0')
+    expect(result).toEqual({
+      type: NodeSourceType.CustomNodes,
+      className: 'comfy-frontend-only',
+      displayText: 'Frontend Only',
+      badgeText: ''
+    })
+  })
+
   it('should return UNKNOWN_NODE_SOURCE for unrecognized modules', () => {
     const result = getNodeSource('unknown_module.something')
     expect(result).toEqual({
