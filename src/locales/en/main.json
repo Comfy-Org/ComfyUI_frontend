@@ -129,6 +129,8 @@
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
     "no": "No",
+    "on": "On",
+    "off": "Off",
     "cancel": "Cancel",
     "close": "Close",
     "closeDialog": "Close dialog",
@@ -1668,6 +1670,7 @@
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
+    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "math": "math",
@@ -1699,7 +1702,6 @@
     "HitPaw": "HitPaw",
     "sd": "sd",
     "Ideogram": "Ideogram",
-    "postprocessing": "postprocessing",
     "transform": "transform",
     "batch": "batch",
     "upscaling": "upscaling",
@@ -1734,10 +1736,12 @@
     "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
+    "Sonilo": "Sonilo",
     "Stability AI": "Stability AI",
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "supir": "supir",
     "Tencent": "Tencent",
     "textgen": "textgen",
     "Topaz": "Topaz",
@@ -1941,6 +1945,7 @@
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
+    "fitToViewer": "Fit to Viewer",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -1997,6 +2002,14 @@
       "removeFile": "Remove HDRI",
       "showAsBackground": "Show as Background",
       "intensity": "Intensity"
+    },
+    "gizmo": {
+      "label": "Gizmo",
+      "toggle": "Gizmo",
+      "translate": "Translate",
+      "rotate": "Rotate",
+      "scale": "Scale",
+      "reset": "Reset Transform"
     }
   },
   "imageCrop": {
@@ -2094,7 +2107,9 @@
     "failedToUploadBackgroundImage": "Failed to upload background image",
     "failedToUpdateBackgroundRenderMode": "Failed to update background render mode to {mode}",
     "failedToLoadHDRI": "Failed to load HDRI file",
-    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file."
+    "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
+    "failedToToggleGizmo": "Failed to toggle gizmo",
+    "failedToSetGizmoMode": "Failed to set gizmo mode"
   },
   "nodeErrors": {
     "render": "Node Render Error",
