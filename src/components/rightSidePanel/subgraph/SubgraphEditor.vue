@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DraggableList from '@/components/common/DraggableList.vue'
@@ -23,7 +22,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -31,8 +29,7 @@ import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const promotionStore = usePromotionStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const promotionEntries = computed(() => {
   const node = activeNode.value

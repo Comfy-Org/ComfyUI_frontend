@@ -71,6 +71,36 @@ describe('searchWidgets', () => {
   })
 })
 
+describe('searchWidgets — context independence', () => {
+  const createWidget = (
+    name: string,
+    type: string,
+    value?: string,
+    label?: string
+  ): { widget: IBaseWidget } => ({
+    widget: {
+      name,
+      type,
+      value,
+      label
+    } as IBaseWidget
+  })
+
+  it('returns empty when query from previous context has no matches in new context', () => {
+    const newWidgets = [createWidget('strength', 'slider', '0.8')]
+    const result = searchWidgets(newWidgets, 'seed')
+    expect(result).toHaveLength(0)
+  })
+
+  it('returns all widgets when fresh empty query is applied', () => {
+    const widgets = [
+      createWidget('strength', 'slider', '0.8'),
+      createWidget('steps', 'number', '20')
+    ]
+    expect(searchWidgets(widgets, '')).toEqual(widgets)
+  })
+})
+
 describe('flatAndCategorizeSelectedItems', () => {
   let testGroup1: LGraphGroup
   let testGroup2: LGraphGroup

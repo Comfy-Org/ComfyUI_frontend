@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useMounted, watchDebounced } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import {
   computed,
   nextTick,
@@ -15,14 +14,12 @@ import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/f
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 const { t } = useI18n()
 
 const draggableList = ref<DraggableList | undefined>(undefined)
