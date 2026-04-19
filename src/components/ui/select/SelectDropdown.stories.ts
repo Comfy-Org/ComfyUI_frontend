@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import MultiSelect from './MultiSelect.vue'
-import SingleSelect from './SingleSelect.vue'
+import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+
 import type { SelectOption } from './types'
 
 const meta: Meta = {
