@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+  <div class="h-full flex-1 overflow-y-auto">
     <div v-for="(section, index) in sections" :key="section.title ?? index">
       <h3
         v-if="section.title"

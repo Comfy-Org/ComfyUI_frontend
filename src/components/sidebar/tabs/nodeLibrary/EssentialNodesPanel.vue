@@ -1,8 +1,5 @@
 <template>
-  <div
-    ref="panelEl"
-    class="h-full flex-1 overflow-y-auto px-3 [scrollbar-gutter:stable]"
-  >
+  <div ref="panelEl" class="h-full flex-1 overflow-y-auto px-3">
     <div class="flex flex-col gap-2 pb-6">
       <!-- Flat sorted grid when alphabetical -->
       <div
