@@ -14,11 +14,13 @@ type VideoTrack = {
 const {
   locale = 'en',
   src,
+  poster,
   tracks = [],
   autoplay = false
 } = defineProps<{
   locale?: Locale
   src?: string
+  poster?: string
   tracks?: VideoTrack[]
   autoplay?: boolean
 }>()
@@ -128,6 +130,7 @@ function seek(e: MouseEvent) {
       ref="videoEl"
       class="size-full object-cover"
       :src
+      :poster
       :preload="autoplay ? 'auto' : 'metadata'"
       playsinline
       :autoplay
