@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "هماهنگ‌سازی رنگ‌های یک تصویر با تصویر دیگر با استفاده از الگوریتم‌های مختلف.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "تصویر(ها)ی مرجع برای هماهنگ‌سازی رنگ‌ها. در صورت عدم ارائه، پردازش انجام نمی‌شود."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "تصویر(ها)یی که تبدیل رنگ باید بر روی آن‌ها اعمال شود."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: هر فریم به صورت جداگانه با image_ref هماهنگ می‌شود. uniform: آمار تمام فریم‌های منبع به عنوان مبنا جمع‌آوری شده و با image_ref هماهنگ می‌شود. target_frame: یک فریم انتخابی به عنوان مبنا برای تبدیل به image_ref استفاده می‌شود و به طور یکنواخت بر همه فریم‌ها اعمال می‌گردد (تفاوت‌های نسبی حفظ می‌شوند)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "ترکیب هوک‌ها [۲]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "خروجی نویززدایی‌شده را به سمت ورودی latent می‌کشاند. مقدار بالاتر = وفاداری بیشتر به ورودی. ۰ برای غیرفعال‌سازی."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "آستانه سیگما که زیر آن restore_cfg غیرفعال می‌شود."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "کنترل شدت در انتهای نمونه‌گیری (سیگما پایین). به صورت خطی از مقدار ابتدایی میان‌یابی می‌شود."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "کنترل شدت در ابتدای نمونه‌گیری (سیگما بالا)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

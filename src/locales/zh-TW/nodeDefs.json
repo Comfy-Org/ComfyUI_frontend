@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "使用各種演算法將一張圖片的色彩匹配到另一張圖片。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "要匹配色彩的參考圖片。如果未提供，將跳過處理。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "要套用色彩轉換的圖片。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：每一幀分別與 image_ref 匹配。uniform：將所有來源幀的統計數據合併作為基準，並與 image_ref 匹配。target_frame：選擇一幀作為轉換到 image_ref 的基準，並均勻套用到所有幀（保留相對差異）"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "合併 Hooks [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "潛在空間",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "將去噪後的輸出拉回輸入 latent。數值越高，越忠於輸入。設為 0 則停用。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "低於此 sigma 閾值時，restore_cfg 會停用。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "控制取樣結束時（低 sigma）的強度。從開始值線性插值。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "控制取樣開始時（高 sigma）的強度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

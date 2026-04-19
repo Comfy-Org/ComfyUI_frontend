@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "使用多种算法将一张图像的颜色匹配到另一张图像。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "要匹配颜色的参考图像。如果未提供，则跳过处理。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "要应用颜色变换的图像。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：每一帧分别与 image_ref 匹配。uniform：将所有源帧的统计数据汇总作为基线，与 image_ref 匹配。target_frame：选择一帧作为变换到 image_ref 的基线，统一应用到所有帧（保留相对差异）。"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "组合约束 [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "Latent",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "将去噪输出拉向输入 latent。数值越高，对输入的保真度越强。0 表示禁用。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "低于该 sigma 阈值时，restore_cfg 被禁用。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "控制采样结束时（低 sigma）的强度。从开始值线性插值。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "控制采样开始时（高 sigma）的强度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

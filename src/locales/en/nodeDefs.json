@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "display_name": "ColorTransfer",
+    "description": "Match the colors of one image to another using various algorithms.",
+    "inputs": {
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Image(s) to apply the color transform to."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: each frame matched to image_ref individually. uniform: pool stats across all source frames as baseline, match to image_ref. target_frame: use one chosen frame as the baseline for the transform to image_ref, applied uniformly to all frames (preserves relative differences)"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Reference image(s) to match colors to. If not provided, processing is skipped"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combine Hooks [2]",
     "inputs": {
@@ -15617,6 +15647,44 @@
     "inputs": {
       "style_model_name": {
         "name": "style_model_name"
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Control strength at the start of sampling (high sigma)."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Control strength at the end of sampling (low sigma). Linearly interpolated from start."
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Pulls denoised output toward the input latent. Higher = stronger fidelity to input. 0 to disable."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Sigma threshold below which restore_cfg is disabled."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

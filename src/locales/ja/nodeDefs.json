@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "さまざまなアルゴリズムを使用して、ある画像の色を別の画像に合わせます。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "色を合わせる参照画像。指定しない場合は処理をスキップします。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "色変換を適用する画像。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：各フレームを個別にimage_refに合わせます。uniform：すべてのソースフレームの統計をまとめて基準とし、image_refに合わせます。target_frame：選択した1フレームを変換の基準として使用し、すべてのフレームに均一に適用します（相対的な違いを保持）。"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "フックを組み合わせる [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "ノイズ除去後の出力を入力のlatentに近づけます。値が高いほど入力への忠実度が強くなります。0で無効化。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "このシグマ閾値未満ではrestore_cfgが無効になります。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "サンプリング終了時（低シグマ）の強度を制御します。開始値から線形補間されます。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "サンプリング開始時（高シグマ）の強度を制御します。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

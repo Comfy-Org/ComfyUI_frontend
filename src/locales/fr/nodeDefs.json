@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "Faire correspondre les couleurs d'une image à une autre en utilisant divers algorithmes.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Image(s) de référence à laquelle faire correspondre les couleurs. Si non fourni, le traitement est ignoré."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Image(s) auxquelles appliquer la transformation de couleur."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame : chaque image est ajustée individuellement à image_ref. uniform : les statistiques de toutes les images sources sont regroupées comme référence, puis ajustées à image_ref. target_frame : une image choisie sert de référence pour la transformation vers image_ref, appliquée uniformément à toutes les images (préserve les différences relatives)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combiner Hooks [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Ramène la sortie débruitée vers le latent d'entrée. Plus la valeur est élevée, plus la fidélité à l'entrée est forte. 0 pour désactiver."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Seuil sigma en dessous duquel restore_cfg est désactivé."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Contrôle la force à la fin de l'échantillonnage (sigma faible). Interpolé linéairement depuis le début."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Contrôle la force au début de l'échantillonnage (sigma élevé)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

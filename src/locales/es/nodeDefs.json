@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "Iguala los colores de una imagen con otra utilizando varios algoritmos.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Imagen(es) de referencia para igualar los colores. Si no se proporciona, se omite el procesamiento."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Imagen(es) a las que se aplicará la transferencia de color."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: cada fotograma se iguala individualmente a image_ref. uniform: agrupa estadísticas de todos los fotogramas fuente como referencia, iguala a image_ref. target_frame: usa un fotograma elegido como referencia para la transformación a image_ref, aplicado uniformemente a todos los fotogramas (preserva las diferencias relativas)"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combinar Hooks [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "latente",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Atrae la salida denoised hacia el latent de entrada. Un valor más alto = mayor fidelidad a la entrada. 0 para desactivar."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Umbral de sigma por debajo del cual restore_cfg se desactiva."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Controla la intensidad al final del muestreo (sigma baja). Interpolado linealmente desde el inicio."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Controla la intensidad al inicio del muestreo (sigma alta)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "مطابقة ألوان صورة مع أخرى باستخدام خوارزميات متنوعة.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "الصورة أو الصور المرجعية لمطابقة الألوان معها. إذا لم يتم توفيرها، سيتم تخطي المعالجة."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "الصورة أو الصور التي سيتم تطبيق تحويل الألوان عليها."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: كل إطار يُطابق مع image_ref بشكل فردي. uniform: تجميع إحصائيات جميع الإطارات المصدرية كأساس، والمطابقة مع image_ref. target_frame: استخدام إطار محدد كأساس للتحويل إلى image_ref، ويُطبق بشكل موحد على جميع الإطارات (يحافظ على الفروقات النسبية)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "دمج الخطافات [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "كامن",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "يسحب المخرجات المنزوعة الضوضاء نحو الإدخال الكامن. قيمة أعلى = تطابق أقوى مع الإدخال. ۰ لتعطيل الميزة."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "عتبة سيغما التي دونها يتم تعطيل restore_cfg."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "التحكم في قوة التأثير في نهاية العينة (سيغما منخفضة). يتم الاستيفاء خطياً من البداية."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "التحكم في قوة التأثير في بداية العينة (سيغما عالية)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

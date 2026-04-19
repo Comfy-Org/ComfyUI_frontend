@@ -1493,6 +1493,36 @@
       }
     }
   },
+  "ColorTransfer": {
+    "description": "여러 알고리즘을 사용하여 한 이미지의 색상을 다른 이미지와 일치시킵니다.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "색상을 맞출 기준 이미지(들)입니다. 제공되지 않으면 처리가 건너뜁니다."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "색상 변환을 적용할 이미지(들)입니다."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: 각 프레임을 image_ref에 개별적으로 맞춥니다. uniform: 모든 소스 프레임의 통계를 풀링하여 기준선으로 사용하고, image_ref에 맞춥니다. target_frame: 선택한 한 프레임을 변환의 기준선으로 사용하여 image_ref에 일괄 적용합니다(상대적 차이 유지)."
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "후크 결합 [2]",
     "inputs": {
@@ -13898,6 +13928,44 @@
       },
       "2": {
         "name": "잠재 이미지",
+        "tooltip": null
+      }
+    }
+  },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "디노이즈된 출력을 입력 latent로 끌어당깁니다. 값이 높을수록 입력에 더 충실합니다. 0은 비활성화."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "restore_cfg가 비활성화되는 시그마 임계값입니다."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "샘플링 종료 시(낮은 시그마) 강도 제어. 시작값에서 선형 보간됩니다."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "샘플링 시작 시(높은 시그마) 강도 제어."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
