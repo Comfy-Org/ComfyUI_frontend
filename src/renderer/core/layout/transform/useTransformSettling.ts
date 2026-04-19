@@ -1,4 +1,6 @@
 import { useDebounceFn, useEventListener } from '@vueuse/core'
+
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { ref } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -84,8 +86,7 @@ function usePointerDrag(
     target,
     'pointerdown',
     (e: PointerEvent) => {
-      // Only primary (0) and middle (1) buttons trigger canvas pan.
-      if (e.button === 0 || e.button === 1) pointerCount.value++
+      if (e.button === 0 || isMiddlePointerInput(e)) pointerCount.value++
     },
     eventOptions
   )

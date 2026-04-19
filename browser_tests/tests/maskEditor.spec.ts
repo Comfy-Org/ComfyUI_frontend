@@ -176,6 +176,37 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await drawStrokeAndExpectPixels(comfyPage, dialog)
   })
 
+  test('Middle-click drag should pan the mask editor canvas', async ({
+    comfyPage
+  }) => {
+    const dialog = await openMaskEditorDialog(comfyPage)
+    const canvasContainer = dialog.locator('#maskEditorCanvasContainer')
+    await expect(canvasContainer).toBeVisible()
+
+    const pointerBox = await canvasContainer.boundingBox()
+    if (!pointerBox) throw new Error('Canvas container bounding box not found')
+
+    const getTransform = () =>
+      comfyPage.page.evaluate(() => {
+        const container = document.querySelector('#maskEditorCanvasContainer')
+        return container instanceof HTMLElement ? container.style.transform : ''
+      })
+
+    const transformBefore = await getTransform()
+    const start = {
+      x: pointerBox.x + pointerBox.width / 2,
+      y: pointerBox.y + pointerBox.height / 2
+    }
+
+    await comfyPage.page.mouse.move(start.x, start.y)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.mouse.move(start.x + 140, start.y + 90, { steps: 10 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
+
+    await expect.poll(() => getTransform()).not.toBe(transformBefore)
+  })
+
   test('undo reverts a brush stroke', async ({ comfyPage }) => {
     const dialog = await openMaskEditorDialog(comfyPage)
 

@@ -1,6 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -1973,7 +1974,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** Prevents default for middle-click auxclick only. */
   _preventMiddleAuxClick(e: MouseEvent): void {
-    if (e.button === 1) e.preventDefault()
+    if (isMiddlePointerInput(e)) e.preventDefault()
   }
 
   /** Captures an event and prevents default - returns true. */
@@ -2299,7 +2300,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
-    } else if (e.button === 1) {
+    } else if (isMiddlePointerInput(e)) {
       this._processMiddleButton(e, node)
     } else if (
       (e.button === 2 || pointer.isDouble) &&
@@ -3848,8 +3849,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this
         )
       }
-    } else if (e.button === 1) {
-      // middle button
+    } else if (isMiddlePointerInput(e)) {
       this.dirty_canvas = true
       this.dragging_canvas = false
     } else if (e.button === 2) {
