@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, effectScope, h } from 'vue'
+import { createApp, defineComponent, effectScope, h } from 'vue'
 
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import type { BillingActions, BillingState } from '@/composables/billing/types'
@@ -102,6 +102,7 @@ describe('useWorkspaceBilling', () => {
     scope?.stop()
     scope = undefined
     vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 
   describe('initialize', () => {
@@ -161,6 +162,13 @@ describe('useWorkspaceBilling', () => {
   })
 
   describe('fetchStatus / computed subscription', () => {
+    it('exposes a null subscription before any status fetch', () => {
+      const billing = setupBilling()
+      expect(billing.subscription.value).toBeNull()
+      expect(billing.isActiveSubscription.value).toBe(false)
+      expect(billing.isFreeTier.value).toBe(false)
+    })
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
@@ -233,25 +241,36 @@ describe('useWorkspaceBilling', () => {
   })
 
   describe('subscribe', () => {
-    it('refreshes status and balance after successful subscribe', async () => {
+    it('exposes refreshed status and balance after a successful subscribe', async () => {
       mockWorkspaceApi.subscribe.mockResolvedValue({
         billing_op_id: 'op-1',
         status: 'subscribed'
       })
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
-      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+      // Pre-subscribe state: free tier with zero balance.
+      mockWorkspaceApi.getBillingStatus
+        .mockResolvedValueOnce(freeStatus)
+        .mockResolvedValueOnce(activeStatus)
+      mockWorkspaceApi.getBillingBalance
+        .mockResolvedValueOnce(zeroBalance)
+        .mockResolvedValueOnce(positiveBalance)
 
       const billing = setupBilling()
-      const response = await billing.subscribe('pro', 'return', 'cancel')
+      await billing.fetchStatus()
+      await billing.fetchBalance()
+      expect(billing.isFreeTier.value).toBe(true)
+      expect(billing.balance.value?.amountMicros).toBe(0)
+
+      await billing.subscribe('pro', 'return', 'cancel')
 
       expect(mockWorkspaceApi.subscribe).toHaveBeenCalledWith(
         'pro',
         'return',
         'cancel'
       )
-      expect(response).toEqual({ billing_op_id: 'op-1', status: 'subscribed' })
-      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
-      expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
+      // State reflects the refreshed post-subscribe responses.
+      expect(billing.subscription.value?.tier).toBe('CREATOR')
+      expect(billing.isFreeTier.value).toBe(false)
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
     })
 
     it('propagates error and records message when subscribe fails', async () => {
@@ -262,6 +281,15 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.subscribe('pro')).rejects.toThrow('denied')
       expect(billing.error.value).toBe('denied')
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+    })
+
+    it('falls back to a generic error message for non-Error rejections', async () => {
+      mockWorkspaceApi.subscribe.mockRejectedValue('string failure')
+
+      const billing = setupBilling()
+
+      await expect(billing.subscribe('pro')).rejects.toBe('string failure')
+      expect(billing.error.value).toBe('Failed to subscribe')
     })
   })
 
@@ -302,8 +330,26 @@ describe('useWorkspaceBilling', () => {
   })
 
   describe('manageSubscription', () => {
+    let originalLocation: Location
+
+    beforeEach(() => {
+      originalLocation = window.location
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        writable: true,
+        value: { ...originalLocation, href: 'https://app.example/settings' }
+      })
+    })
+
+    afterEach(() => {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        writable: true,
+        value: originalLocation
+      })
+    })
+
     it('opens the payment portal URL returned by the API', async () => {
-      vi.stubGlobal('location', { href: 'https://app.example/settings' })
       const openSpy = vi.fn()
       vi.stubGlobal('open', openSpy)
 
@@ -323,17 +369,25 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
-    it('does not open a window when API returns no url', async () => {
-      const openSpy = vi.fn()
-      vi.stubGlobal('open', openSpy)
+    it.each([
+      ['empty string', ''],
+      ['null', null]
+    ])(
+      'does not open a window when API returns %s url',
+      async (_label, url) => {
+        const openSpy = vi.fn()
+        vi.stubGlobal('open', openSpy)
 
-      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({ url: '' })
+        mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+          url: url as string
+        })
 
-      const billing = setupBilling()
-      await billing.manageSubscription()
+        const billing = setupBilling()
+        await billing.manageSubscription()
 
-      expect(openSpy).not.toHaveBeenCalled()
-    })
+        expect(openSpy).not.toHaveBeenCalled()
+      }
+    )
 
     it('records error when API call fails', async () => {
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
@@ -405,17 +459,18 @@ describe('useWorkspaceBilling', () => {
       expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
     })
 
-    it('polls with backoff until the op resolves', async () => {
+    it('schedules the second poll at the 2000ms backoff boundary', async () => {
       mockWorkspaceApi.cancelSubscription.mockResolvedValue({
         billing_op_id: 'op-slow',
         cancel_at: '2026-06-01T00:00:00Z'
       })
+      const pendingResponse = {
+        id: 'op-slow',
+        status: 'pending' as const,
+        started_at: '2026-04-01T00:00:00Z'
+      }
       mockWorkspaceApi.getBillingOpStatus
-        .mockResolvedValueOnce({
-          id: 'op-slow',
-          status: 'pending',
-          started_at: '2026-04-01T00:00:00Z'
-        })
+        .mockResolvedValueOnce(pendingResponse)
         .mockResolvedValueOnce({
           id: 'op-slow',
           status: 'succeeded',
@@ -429,13 +484,102 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       const cancelPromise = billing.cancelSubscription()
 
-      await vi.advanceTimersByTimeAsync(2000)
+      // First poll runs synchronously inside cancelSubscription.
       await cancelPromise
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
 
+      // Boundary check: still only 1 call just before the 2000ms mark.
+      await vi.advanceTimersByTimeAsync(1999)
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
+
+      // Crossing 2000ms total fires the scheduled retry.
+      await vi.advanceTimersByTimeAsync(1)
       expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
       expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
         isSubscribed: false
       })
+    })
+
+    it('caps the backoff at 5000ms once 2^attempt exceeds the cap', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-cap',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      const pending = {
+        id: 'op-cap',
+        status: 'pending' as const,
+        started_at: '2026-04-01T00:00:00Z'
+      }
+      mockWorkspaceApi.getBillingOpStatus
+        .mockResolvedValueOnce(pending) // #1, schedules +2000ms
+        .mockResolvedValueOnce(pending) // #2 at t=2000, schedules +4000ms
+        .mockResolvedValueOnce(pending) // #3 at t=6000, schedules capped +5000ms
+        .mockResolvedValueOnce({
+          id: 'op-cap',
+          status: 'succeeded',
+          started_at: '2026-04-01T00:00:00Z'
+        })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      await vi.advanceTimersByTimeAsync(2000) // fires #2
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(4000) // fires #3 at t=6000
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(3)
+
+      // After #3 attempt=3, next delay should be capped at 5000ms (not 8000).
+      await vi.advanceTimersByTimeAsync(4999)
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(3)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(4)
+    })
+
+    it('propagates error before polling when the cancel API itself fails', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue(
+        new Error('API down')
+      )
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toThrow('API down')
+      expect(billing.error.value).toBe('API down')
+      expect(mockWorkspaceApi.getBillingOpStatus).not.toHaveBeenCalled()
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
+      mockWorkspaceApi.cancelSubscription.mockRejectedValue('boom')
+
+      const billing = setupBilling()
+
+      await expect(billing.cancelSubscription()).rejects.toBe('boom')
+      expect(billing.error.value).toBe('Failed to cancel subscription')
+    })
+
+    it('stops polling after 30 attempts and refreshes status without marking unsubscribed', async () => {
+      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
+        billing_op_id: 'op-stuck',
+        cancel_at: '2026-06-01T00:00:00Z'
+      })
+      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
+        id: 'op-stuck',
+        status: 'pending',
+        started_at: '2026-04-01T00:00:00Z'
+      })
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+      const billing = setupBilling()
+      await billing.cancelSubscription()
+
+      // Advance well past all scheduled polls (worst-case ~146s).
+      await vi.advanceTimersByTimeAsync(200_000)
+
+      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(30)
+      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
     })
 
     it('stops polling when the host component is unmounted', async () => {
@@ -449,7 +593,6 @@ describe('useWorkspaceBilling', () => {
         started_at: '2026-04-01T00:00:00Z'
       })
 
-      const { createApp } = await import('vue')
       let billing: (BillingState & BillingActions) | undefined
       const HostComponent = defineComponent({
         setup() {
@@ -463,19 +606,52 @@ describe('useWorkspaceBilling', () => {
 
       if (!billing) throw new Error('composable not initialized')
       const cancelPromise = billing.cancelSubscription().catch(() => undefined)
+      await cancelPromise
 
-      await vi.advanceTimersByTimeAsync(0)
+      // Cross one backoff interval so the second poll is actually scheduled
+      // and then confirm that unmount freezes the counter across subsequent ticks.
+      await vi.advanceTimersByTimeAsync(2000)
       const callsBeforeUnmount =
         mockWorkspaceApi.getBillingOpStatus.mock.calls.length
+      expect(callsBeforeUnmount).toBeGreaterThanOrEqual(2)
 
       app.unmount()
 
-      await vi.advanceTimersByTimeAsync(10_000)
-      await cancelPromise
+      await vi.advanceTimersByTimeAsync(20_000)
 
       expect(mockWorkspaceApi.getBillingOpStatus.mock.calls.length).toBe(
         callsBeforeUnmount
       )
+    })
+  })
+
+  describe('plans / currentPlanSlug / fetchPlans', () => {
+    it('prefers the plan slug from status over the billingPlans fallback', async () => {
+      mockBillingPlans.currentPlanSlug.value = 'plans-fallback'
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.currentPlanSlug.value).toBe('creator-monthly')
+    })
+
+    it('falls back to billingPlans.currentPlanSlug when status has no plan slug', async () => {
+      mockBillingPlans.currentPlanSlug.value = 'plans-fallback'
+
+      const billing = setupBilling()
+
+      expect(billing.currentPlanSlug.value).toBe('plans-fallback')
+    })
+
+    it('propagates a soft error from billingPlans into billing.error', async () => {
+      mockBillingPlans.fetchPlans.mockResolvedValue(undefined)
+      mockBillingPlans.error.value = 'plans lookup failed'
+
+      const billing = setupBilling()
+      await billing.fetchPlans()
+
+      expect(billing.error.value).toBe('plans lookup failed')
     })
   })
 

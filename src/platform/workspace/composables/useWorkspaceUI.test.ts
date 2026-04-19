@@ -105,6 +105,16 @@ describe('useWorkspaceUI', () => {
         workspaceMenuDisabledTooltip: null
       })
     })
+
+    it('uses single-column grids for the collapsed personal layout', async () => {
+      const ui = await loadComposable()
+
+      expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-1')
+      expect(ui.uiConfig.value.headerGridCols).toBe('grid-cols-1')
+      expect(ui.uiConfig.value.pendingGridCols).toBe(
+        'grid-cols-[50%_20%_20%_10%]'
+      )
+    })
   })
 
   describe('team workspace as owner', () => {
@@ -140,6 +150,10 @@ describe('useWorkspaceUI', () => {
         'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
       )
       expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[50%_40%_10%]')
+      expect(ui.uiConfig.value.headerGridCols).toBe('grid-cols-[50%_40%_10%]')
+      expect(ui.uiConfig.value.pendingGridCols).toBe(
+        'grid-cols-[50%_20%_20%_10%]'
+      )
     })
   })
 
@@ -174,6 +188,10 @@ describe('useWorkspaceUI', () => {
       expect(ui.uiConfig.value.workspaceMenuAction).toBe('leave')
       expect(ui.uiConfig.value.workspaceMenuDisabledTooltip).toBeNull()
       expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[1fr_auto]')
+      expect(ui.uiConfig.value.headerGridCols).toBe('grid-cols-[1fr_auto]')
+      expect(ui.uiConfig.value.pendingGridCols).toBe(
+        'grid-cols-[50%_20%_20%_10%]'
+      )
     })
   })
 
