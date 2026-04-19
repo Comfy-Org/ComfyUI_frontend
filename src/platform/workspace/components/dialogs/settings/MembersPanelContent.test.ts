@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -663,12 +663,12 @@ describe('MembersPanelContent', () => {
         name: 'workspacePanel.members.actions.copyLink'
       })
       await userEvent.click(copyBtn)
-      await nextTick()
-      await new Promise((r) => setTimeout(r, 0))
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      await waitFor(() => {
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      })
     })
 
     it('filters pending invites by search query', async () => {
