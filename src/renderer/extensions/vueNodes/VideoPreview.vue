@@ -212,7 +212,7 @@ const handleDownload = () => {
   void download(currentVideoUrl.value).catch(() => {
     useToast().add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('g.error'),
       detail: t('g.failedToDownloadVideo'),
       life: 3000,
       group: 'video-preview'

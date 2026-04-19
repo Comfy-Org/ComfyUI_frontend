@@ -67,6 +67,27 @@ describe('useDownload', () => {
     )
   })
 
+  it('ignores concurrent calls while download is in progress', async () => {
+    let resolveDownload!: () => void
+    mockDownloadFileAsync.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveDownload = resolve
+      })
+    )
+
+    const { loading, download } = useDownload()
+    const promise = download('https://example.com/a.png')
+    await nextTick()
+    expect(loading.value).toBe(true)
+
+    await download('https://example.com/b.png')
+    expect(mockDownloadFileAsync).toHaveBeenCalledTimes(1)
+
+    resolveDownload()
+    await promise
+    expect(loading.value).toBe(false)
+  })
+
   it('tracks loading independently per instance', async () => {
     let resolveFirst!: () => void
     mockDownloadFileAsync

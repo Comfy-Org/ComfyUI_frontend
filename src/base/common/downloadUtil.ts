@@ -74,7 +74,11 @@ export async function downloadFileAsync(
     filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
 
   if (isCloud) {
-    await downloadViaBlobFetch(url, inferredFilename)
+    try {
+      await downloadViaBlobFetch(url, inferredFilename)
+    } catch {
+      throw new Error('Failed to download file')
+    }
     return
   }
 

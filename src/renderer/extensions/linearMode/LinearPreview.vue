@@ -9,6 +9,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useDownload } from '@/composables/useDownload'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
@@ -24,6 +25,7 @@ import { app } from '@/scripts/app'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { t } = useI18n()
+const toastStore = useToastStore()
 const mediaActions = useMediaAssetActions()
 const { loading: downloading, download } = useDownload()
 const { isBuilderMode, isArrangeMode } = useAppMode()
@@ -52,14 +54,24 @@ function handleSelection(sel: OutputSelection) {
 const downloadingAll = ref(false)
 
 async function downloadAsset(item?: AssetItem) {
+  if (downloadingAll.value) return
+
   const outputs = allOutputs(item)
   if (outputs.length === 0) return
 
   downloadingAll.value = true
   try {
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       outputs.map((output) => downloadFileAsync(output.url, output.filename))
     )
+    const failCount = results.filter((r) => r.status === 'rejected').length
+    if (failCount > 0) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.failedToDownloadImage')
+      })
+    }
   } finally {
     downloadingAll.value = false
   }
@@ -67,7 +79,13 @@ async function downloadAsset(item?: AssetItem) {
 
 function handleSingleDownload() {
   if (!selectedOutput.value?.url) return
-  void download(selectedOutput.value.url).catch(() => {})
+  void download(selectedOutput.value.url).catch(() => {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadImage')
+    })
+  })
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
