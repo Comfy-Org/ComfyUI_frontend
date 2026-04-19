@@ -75,11 +75,20 @@ export function useTemplateFiltering(
     return Array.isArray(templateData) ? templateData : []
   })
 
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions.value))
+  const visibleTemplates = computed(() => {
+    if (!distributionFilter?.value?.length) return templatesArray.value
+    return templatesArray.value.filter((t) =>
+      isTemplateVisibleForDistributions(t, distributionFilter.value)
+    )
+  })
+
+  const fuse = computed(
+    () => new Fuse(visibleTemplates.value, fuseOptions.value)
+  )
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
-    templatesArray.value.forEach((template) => {
+    visibleTemplates.value.forEach((template) => {
       if (Array.isArray(template.models)) {
         template.models.forEach((model) => modelSet.add(model))
       }
@@ -89,7 +98,7 @@ export function useTemplateFiltering(
 
   const availableUseCases = computed(() => {
     const tagSet = new Set<string>()
-    templatesArray.value.forEach((template) => {
+    visibleTemplates.value.forEach((template) => {
       if (template.tags && Array.isArray(template.tags)) {
         template.tags.forEach((tag) => tagSet.add(tag))
       }
@@ -139,7 +148,7 @@ export function useTemplateFiltering(
 
   const filteredBySearch = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
-      return templatesArray.value
+      return visibleTemplates.value
     }
 
     const results = fuse.value.search(debouncedSearchQuery.value)
@@ -202,15 +211,6 @@ export function useTemplateFiltering(
     })
   })
 
-  const filteredByDistribution = computed(() => {
-    if (!distributionFilter?.value?.length) {
-      return filteredByRunsOn.value
-    }
-    return filteredByRunsOn.value.filter((template) =>
-      isTemplateVisibleForDistributions(template, distributionFilter.value)
-    )
-  })
-
   const getVramMetric = (template: TemplateInfo) => {
     if (
       typeof template.vram === 'number' &&
@@ -223,7 +223,7 @@ export function useTemplateFiltering(
   }
 
   watch(
-    filteredByDistribution,
+    filteredByRunsOn,
     (templates) => {
       rankingStore.largestUsageScore = Math.max(
         ...templates.map((t) => t.usage || 0)
@@ -233,7 +233,7 @@ export function useTemplateFiltering(
   )
 
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByDistribution.value]
+    const templates = [...filteredByRunsOn.value]
 
     switch (sortBy.value) {
       case 'recommended':
@@ -324,12 +324,7 @@ export function useTemplateFiltering(
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
-  const totalCount = computed(() => {
-    if (!distributionFilter?.value?.length) return templatesArray.value.length
-    return templatesArray.value.filter((t) =>
-      isTemplateVisibleForDistributions(t, distributionFilter.value)
-    ).length
-  })
+  const totalCount = computed(() => visibleTemplates.value.length)
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {

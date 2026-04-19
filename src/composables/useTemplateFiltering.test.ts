@@ -623,17 +623,39 @@ describe('useTemplateFiltering', () => {
       expect(totalCount.value).toBe(2)
     })
 
-    it('applies distribution filter before search so available models reflect visible templates only', () => {
-      const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
+    it('excludes desktop-only models and use cases from filter options on cloud', () => {
+      const cloudFlux: TemplateInfo = {
+        name: 'cloud-flux',
+        description: 'Flux on cloud',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['Flux'],
+        tags: ['Image Gen'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+      const desktopSD: TemplateInfo = {
+        name: 'desktop-sd',
+        description: 'SD on desktop',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['SD 1.5'],
+        tags: ['Inpainting'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+      }
+
+      const templates = ref([cloudFlux, desktopSD])
       const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
-      const { availableModels } = useTemplateFiltering(
+      const { availableModels, availableUseCases } = useTemplateFiltering(
         templates,
         undefined,
         distributionFilter
       )
 
-      expect(availableModels.value).toContain('Wan 2.2')
+      expect(availableModels.value).toEqual(['Flux'])
+      expect(availableModels.value).not.toContain('SD 1.5')
+      expect(availableUseCases.value).toEqual(['Image Gen'])
+      expect(availableUseCases.value).not.toContain('Inpainting')
     })
 
     it('distribution filter composes with search filter', async () => {
