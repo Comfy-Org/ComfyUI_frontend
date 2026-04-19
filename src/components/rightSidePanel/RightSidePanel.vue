@@ -110,7 +110,7 @@ const isSingleSubgraphNode = computed(() => {
 const selectedNodesKey = computed(() => {
   const nodeIds = selectedNodes.value.map((n) => n.id).join(',')
   const groupIds = selectedGroups.value.map((g) => g.id).join(',')
-  return `${nodeIds}|${groupIds}`
+  return `${workflowKey.value}|${nodeIds}|${groupIds}`
 })
 
 const workflowKey = computed(() => workflowStore.activeWorkflow?.path ?? '')
@@ -387,13 +387,13 @@ function handleTitleCancel() {
       </template>
       <SubgraphEditor
         v-else-if="isSingleSubgraphNode && isEditingSubgraph"
-        :key="selectedSingleNode!.id"
+        :key="`${workflowKey}:${selectedSingleNode!.id}`"
         :node="selectedSingleNode"
       />
       <template v-else>
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
-          :key="selectedSingleNode!.id"
+          :key="`${workflowKey}:${selectedSingleNode!.id}`"
           :node="selectedSingleNode as SubgraphNode"
         />
         <TabNormalInputs

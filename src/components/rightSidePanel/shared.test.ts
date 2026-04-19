@@ -5,21 +5,21 @@ import { describe, expect, it, beforeEach } from 'vitest'
 import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-describe('searchWidgets', () => {
-  const createWidget = (
-    name: string,
-    type: string,
-    value?: string,
-    label?: string
-  ): { widget: IBaseWidget } => ({
-    widget: {
-      name,
-      type,
-      value,
-      label
-    } as IBaseWidget
-  })
+const createWidget = (
+  name: string,
+  type: string,
+  value?: string,
+  label?: string
+): { widget: IBaseWidget } => ({
+  widget: {
+    name,
+    type,
+    value,
+    label
+  } as IBaseWidget
+})
 
+describe('searchWidgets', () => {
   it('should return all widgets when query is empty', () => {
     const widgets = [
       createWidget('width', 'number', '100'),
@@ -72,20 +72,6 @@ describe('searchWidgets', () => {
 })
 
 describe('searchWidgets — context independence', () => {
-  const createWidget = (
-    name: string,
-    type: string,
-    value?: string,
-    label?: string
-  ): { widget: IBaseWidget } => ({
-    widget: {
-      name,
-      type,
-      value,
-      label
-    } as IBaseWidget
-  })
-
   it('returns empty when query from previous context has no matches in new context', () => {
     const newWidgets = [createWidget('strength', 'slider', '0.8')]
     const result = searchWidgets(newWidgets, 'seed')
