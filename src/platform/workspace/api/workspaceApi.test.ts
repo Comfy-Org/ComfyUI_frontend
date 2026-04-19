@@ -69,9 +69,7 @@ describe('workspaceApi', () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
       mockGetFirebaseAuthHeaderOrThrow.mockRejectedValue(authError)
 
-      await expect(workspaceApi.acceptInvite('token')).rejects.toBe(
-        authError
-      )
+      await expect(workspaceApi.acceptInvite('token')).rejects.toBe(authError)
     })
   })
 
