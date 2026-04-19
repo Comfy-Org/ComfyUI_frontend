@@ -50,6 +50,16 @@ test.describe('Vue Node Resizing', { tag: '@vue-nodes' }, () => {
 
   // Derive test cases from production RESIZE_HANDLES config.
   // W in corner → X moves (left edge shifts); N → Y moves (top edge shifts).
+  const allCorners = RESIZE_HANDLES.map((h) => h.corner)
+  const expectedCorners = ['SE', 'NE', 'SW', 'NW']
+  expectedCorners.forEach((c) => {
+    if (!allCorners.includes(c as (typeof allCorners)[number])) {
+      throw new Error(
+        `RESIZE_HANDLES is missing corner "${c}" — tests will silently lose coverage`
+      )
+    }
+  })
+
   const nonSeCornerCases = RESIZE_HANDLES.filter((h) => h.corner !== 'SE').map(
     (h) => ({
       corner: h.corner,
