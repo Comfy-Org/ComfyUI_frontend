@@ -99,13 +99,21 @@ test.describe('WidgetControlMode setting', { tag: '@widget' }, () => {
     await expect
       .poll(() =>
         comfyPage.page.evaluate(() => {
-          return window
-            .app!.graph!.nodes.filter((n) => n.type === 'KSampler')
-            .every((n) =>
-              (n.widgets ?? [])
+          const ksamplers = window.app!.graph!.nodes.filter(
+            (n) => n.type === 'KSampler'
+          )
+          return (
+            ksamplers.length === 2 &&
+            ksamplers.every((n) => {
+              const controlLabels = (n.widgets ?? [])
                 .filter((w) => (w.label ?? '').includes('control'))
-                .every((w) => w.label!.includes('before'))
-            )
+                .map((w) => w.label ?? '')
+              return (
+                controlLabels.length > 0 &&
+                controlLabels.every((label) => label.includes('before'))
+              )
+            })
+          )
         })
       )
       .toBe(true)
