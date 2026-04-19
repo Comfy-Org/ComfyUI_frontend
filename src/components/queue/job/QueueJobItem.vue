@@ -9,10 +9,11 @@
     <Teleport to="body">
       <div
         v-if="!isPreviewVisible && showDetails && popoverPosition"
-        class="fixed z-50"
+        class="fixed z-50 overflow-y-auto"
         :style="{
           top: `${popoverPosition.top}px`,
-          left: `${popoverPosition.left}px`
+          left: `${popoverPosition.left}px`,
+          maxHeight: `${popoverPosition.maxHeight}px`
         }"
         @mouseenter="onPopoverEnter"
         @mouseleave="onPopoverLeave"
@@ -299,13 +300,21 @@ const onIconLeave = () => scheduleHidePreview()
 const onPreviewEnter = () => scheduleShowPreview()
 const onPreviewLeave = () => scheduleHidePreview()
 
-const popoverPosition = ref<{ top: number; left: number } | null>(null)
+const popoverPosition = ref<{
+  top: number
+  left: number
+  maxHeight: number
+} | null>(null)
 
 const updatePopoverPosition = () => {
   const el = rowRef.value
   if (!el) return
   const rect = el.getBoundingClientRect()
-  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
+  popoverPosition.value = getHoverPopoverPosition(
+    rect,
+    window.innerWidth,
+    window.innerHeight
+  )
 }
 
 const isAnyPopoverVisible = computed(

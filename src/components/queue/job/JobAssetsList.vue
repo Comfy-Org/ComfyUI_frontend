@@ -93,10 +93,11 @@
   <Teleport to="body">
     <div
       v-if="activeDetails && popoverPosition"
-      class="job-details-popover fixed z-50"
+      class="job-details-popover fixed z-50 overflow-y-auto"
       :style="{
         top: `${popoverPosition.top}px`,
-        left: `${popoverPosition.left}px`
+        left: `${popoverPosition.left}px`,
+        maxHeight: `${popoverPosition.maxHeight}px`
       }"
       @mouseenter="onPopoverEnter"
       @mouseleave="onPopoverLeave"
@@ -150,7 +151,11 @@ const { t } = useI18n()
 const scrollContainer = ref<HTMLElement | null>(null)
 const hoveredJobId = ref<string | null>(null)
 const activeRowElement = ref<HTMLElement | null>(null)
-const popoverPosition = ref<{ top: number; left: number } | null>(null)
+const popoverPosition = ref<{
+  top: number
+  left: number
+  maxHeight: number
+} | null>(null)
 const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
 const virtualizer = useVirtualizer({
   get count(): number {
@@ -237,7 +242,11 @@ function updatePopoverPosition() {
   if (!rowElement) return
 
   const rect = rowElement.getBoundingClientRect()
-  popoverPosition.value = getHoverPopoverPosition(rect, window.innerWidth)
+  popoverPosition.value = getHoverPopoverPosition(
+    rect,
+    window.innerWidth,
+    window.innerHeight
+  )
 }
 
 function onJobLeave(jobId: string) {
