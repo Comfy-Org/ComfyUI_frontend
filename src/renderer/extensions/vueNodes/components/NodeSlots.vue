@@ -23,7 +23,7 @@
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
-        :key="`output-${output.name}`"
+        :key="`output-${output.name}-${index}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData?.id != null ? String(nodeData.id) : ''"

@@ -197,6 +197,76 @@ describe('NodeSlots.vue', () => {
     ])
   })
 
+  it('remounts OutputSlot when index shifts due to output removal', async () => {
+    const mountCounts = new Map<string, number>()
+
+    const TrackingOutputSlotStub = defineComponent({
+      name: 'OutputSlot',
+      props: {
+        slotData: { type: Object as PropType<StubSlotData>, required: true },
+        nodeId: { type: String, required: false, default: '' },
+        index: { type: Number, required: true }
+      },
+      setup(props) {
+        const key = `${props.slotData?.name ?? ''}`
+        mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
+      },
+      template: `
+        <div
+          class="stub-output-slot"
+          :data-index="index"
+          :data-name="slotData && slotData.name ? slotData.name : ''"
+        />
+      `
+    })
+
+    const outA: INodeOutputSlot = {
+      name: 'outA',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0],
+      links: []
+    }
+    const outB: INodeOutputSlot = {
+      name: 'outB',
+      type: 'VIDEO',
+      boundingRect: [0, 0, 0, 0],
+      links: []
+    }
+    const outC: INodeOutputSlot = {
+      name: 'outC',
+      type: 'AUDIO',
+      boundingRect: [0, 0, 0, 0],
+      links: []
+    }
+
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
+    const { container, rerender } = render(NodeSlots, {
+      global: {
+        plugins: [i18n, createTestingPinia({ stubActions: false })],
+        stubs: { InputSlot: InputSlotStub, OutputSlot: TrackingOutputSlotStub }
+      },
+      props: { nodeData: makeNodeData({ outputs: [outA, outB, outC] }) }
+    })
+
+    expect(mountCounts.get('outC')).toBe(1)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    let outCEl = container.querySelector('[data-name="outC"]') as HTMLElement
+    expect(Number(outCEl.dataset.index)).toBe(2)
+
+    await rerender({
+      nodeData: makeNodeData({ outputs: [outA, outC] })
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    outCEl = container.querySelector('[data-name="outC"]') as HTMLElement
+    expect(Number(outCEl.dataset.index)).toBe(1)
+    expect(mountCounts.get('outC')).toBe(2)
+  })
+
   it('renders nothing when there are no inputs/outputs', () => {
     const { container } = mountSlots(makeNodeData({ inputs: [], outputs: [] }))
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
