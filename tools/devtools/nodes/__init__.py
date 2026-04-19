@@ -11,6 +11,7 @@ from .errors import (
 from .inputs import (
     LongComboDropdown,
     NodeWithBooleanInput,
+    NodeWithComboControlWidget,
     NodeWithDefaultInput,
     NodeWithForceInput,
     NodeWithOptionalComboInput,
@@ -69,6 +70,7 @@ __all__ = [
     "LongComboDropdown",
     "MultiSelectNode",
     "NodeWithBooleanInput",
+    "NodeWithComboControlWidget",
     "NodeWithDefaultInput",
     "NodeWithForceInput",
     "NodeWithOptionalComboInput",
