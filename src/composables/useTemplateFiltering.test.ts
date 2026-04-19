@@ -31,12 +31,24 @@ const defaultRankingStore = {
   isLoaded: { value: false }
 }
 
+const mockSystemStatsStore = {
+  systemStats: {
+    system: {
+      os: 'linux'
+    }
+  }
+}
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
 }))
 
 vi.mock('@/stores/templateRankingStore', () => ({
   useTemplateRankingStore: vi.fn(() => defaultRankingStore)
+}))
+
+vi.mock('@/stores/systemStatsStore', () => ({
+  useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -56,11 +68,14 @@ describe('useTemplateFiltering', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+    mockSystemStatsStore.systemStats.system.os = 'linux'
     mockGetFuseOptions.mockResolvedValue(null)
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllGlobals()
   })
 
   it('sorts templates by VRAM from low to high and pushes missing values last', () => {
@@ -408,14 +423,12 @@ describe('useTemplateFiltering', () => {
         }
       ])
 
-      const currentScope = ref('image')
-
       const {
         selectedModels,
         activeModels,
         inactiveModels,
         filteredTemplates
-      } = useTemplateFiltering(templates, currentScope)
+      } = useTemplateFiltering(templates)
 
       // Select models from both image and video domains
       selectedModels.value = ['Flux', 'Luma']
@@ -426,8 +439,6 @@ describe('useTemplateFiltering', () => {
       expect(filteredTemplates.value).toHaveLength(1)
       expect(filteredTemplates.value[0].name).toBe('flux-template')
 
-      // Switch to video scope with only video templates
-      currentScope.value = 'video'
       templates.value = [
         {
           name: 'luma-template',
@@ -456,11 +467,7 @@ describe('useTemplateFiltering', () => {
         }
       ])
 
-      const currentScope = ref('image')
-      const { selectedModels, activeModels } = useTemplateFiltering(
-        templates,
-        currentScope
-      )
+      const { selectedModels, activeModels } = useTemplateFiltering(templates)
 
       // Select a model
       selectedModels.value = ['Model1', 'Model2']
@@ -469,8 +476,6 @@ describe('useTemplateFiltering', () => {
       expect(activeModels.value).toEqual(['Model1'])
       expect(selectedModels.value).toEqual(['Model1', 'Model2'])
 
-      // Change scope - selected models should persist
-      currentScope.value = 'video'
       templates.value = []
 
       expect(selectedModels.value).toEqual(['Model1', 'Model2'])
@@ -479,6 +484,9 @@ describe('useTemplateFiltering', () => {
   })
 
   describe('Distribution filtering', () => {
+    const setDistribution = (distribution: 'desktop' | 'localhost' | 'cloud') =>
+      vi.stubGlobal('__DISTRIBUTION__', distribution)
+
     const cloudTemplate: TemplateInfo = {
       name: 'cloud-only',
       description: 'Cloud template',
@@ -517,11 +525,11 @@ describe('useTemplateFiltering', () => {
     }
 
     it('excludes templates not matching the distribution filter', () => {
+      setDistribution('cloud')
       const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
       const { filteredTemplates, filteredCount, totalCount } =
-        useTemplateFiltering(templates, undefined, distributionFilter)
+        useTemplateFiltering(templates)
 
       expect(filteredTemplates.value.map((t) => t.name)).toEqual([
         'cloud-only',
@@ -532,6 +540,7 @@ describe('useTemplateFiltering', () => {
     })
 
     it('keeps filteredCount and totalCount consistent with model + distribution filters', () => {
+      setDistribution('cloud')
       const fluxCloudTemplate: TemplateInfo = {
         name: 'flux-cloud',
         description: 'Flux on cloud',
@@ -542,10 +551,9 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([cloudTemplate, desktopTemplate, fluxCloudTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
       const { selectedModels, filteredTemplates, filteredCount, totalCount } =
-        useTemplateFiltering(templates, undefined, distributionFilter)
+        useTemplateFiltering(templates)
 
       expect(totalCount.value).toBe(2)
 
@@ -555,8 +563,22 @@ describe('useTemplateFiltering', () => {
       expect(filteredTemplates.value[0].name).toBe('cloud-only')
     })
 
-    it('shows all templates when no distribution filter is provided', () => {
-      const templates = ref([cloudTemplate, desktopTemplate])
+    it('shows all templates when templates have no distribution constraints', () => {
+      setDistribution('localhost')
+      const templates = ref([
+        {
+          name: 'template-a',
+          description: 'Template A',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        },
+        {
+          name: 'template-b',
+          description: 'Template B',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
 
       const { filteredCount, totalCount } = useTemplateFiltering(templates)
 
@@ -564,52 +586,51 @@ describe('useTemplateFiltering', () => {
       expect(totalCount.value).toBe(2)
     })
 
-    it('shows all templates when distribution filter is an empty array', () => {
-      const templates = ref([cloudTemplate, desktopTemplate])
-      const distributionFilter = ref<TemplateIncludeOnDistributionEnum[]>([])
+    it('shows local templates on localhost distribution', () => {
+      setDistribution('localhost')
+      const localTemplate: TemplateInfo = {
+        name: 'local-only',
+        description: 'Local template',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+      }
 
-      const { filteredCount, totalCount } = useTemplateFiltering(
-        templates,
-        undefined,
-        distributionFilter
-      )
+      const templates = ref([localTemplate, cloudTemplate, desktopTemplate])
 
-      expect(filteredCount.value).toBe(2)
-      expect(totalCount.value).toBe(2)
+      const { filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(totalCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-only')
     })
 
     it('includes templates with multiple distributions when any match', () => {
+      setDistribution('cloud')
       const templates = ref([multiDistTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
-      const { filteredCount } = useTemplateFiltering(
-        templates,
-        undefined,
-        distributionFilter
-      )
+      const { filteredCount } = useTemplateFiltering(templates)
 
       expect(filteredCount.value).toBe(1)
     })
 
     it('excludes templates with multiple distributions when none match', () => {
+      setDistribution('localhost')
       const templates = ref([multiDistTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Local])
 
-      const { filteredCount } = useTemplateFiltering(
-        templates,
-        undefined,
-        distributionFilter
-      )
+      const { filteredCount } = useTemplateFiltering(templates)
 
       expect(filteredCount.value).toBe(0)
     })
 
-    it('reacts to distribution filter changes', () => {
+    it('reflects distribution changes after re-creating the composable', () => {
       const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      setDistribution('cloud')
 
       const { filteredTemplates, filteredCount, totalCount } =
-        useTemplateFiltering(templates, undefined, distributionFilter)
+        useTemplateFiltering(templates)
 
       expect(filteredTemplates.value.map((t) => t.name)).toEqual([
         'cloud-only',
@@ -618,17 +639,24 @@ describe('useTemplateFiltering', () => {
       expect(filteredCount.value).toBe(2)
       expect(totalCount.value).toBe(2)
 
-      distributionFilter.value = [TemplateIncludeOnDistributionEnum.Desktop]
+      setDistribution('desktop')
 
-      expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+      const {
+        filteredTemplates: desktopFilteredTemplates,
+        filteredCount: desktopFilteredCount,
+        totalCount: desktopTotalCount
+      } = useTemplateFiltering(templates)
+
+      expect(desktopFilteredTemplates.value.map((t) => t.name)).toEqual([
         'desktop-only',
         'universal'
       ])
-      expect(filteredCount.value).toBe(2)
-      expect(totalCount.value).toBe(2)
+      expect(desktopFilteredCount.value).toBe(2)
+      expect(desktopTotalCount.value).toBe(2)
     })
 
     it('excludes desktop-only models and use cases from filter options on cloud', () => {
+      setDistribution('cloud')
       const cloudFlux: TemplateInfo = {
         name: 'cloud-flux',
         description: 'Flux on cloud',
@@ -649,13 +677,9 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([cloudFlux, desktopSD])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
-      const { availableModels, availableUseCases } = useTemplateFiltering(
-        templates,
-        undefined,
-        distributionFilter
-      )
+      const { availableModels, availableUseCases } =
+        useTemplateFiltering(templates)
 
       expect(availableModels.value).toEqual(['Flux'])
       expect(availableModels.value).not.toContain('SD 1.5')
@@ -665,6 +689,7 @@ describe('useTemplateFiltering', () => {
 
     it('distribution filter composes with search filter', async () => {
       vi.useFakeTimers()
+      setDistribution('cloud')
 
       const searchableTemplate: TemplateInfo = {
         name: 'searchable-cloud',
@@ -682,10 +707,9 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([searchableTemplate, searchableDesktopTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
       const { searchQuery, filteredTemplates, filteredCount } =
-        useTemplateFiltering(templates, undefined, distributionFilter)
+        useTemplateFiltering(templates)
 
       searchQuery.value = 'unique searchable'
       await nextTick()
@@ -697,6 +721,7 @@ describe('useTemplateFiltering', () => {
     })
 
     it('distribution filter composes with use case filter', () => {
+      setDistribution('cloud')
       const taggedCloudTemplate: TemplateInfo = {
         name: 'tagged-cloud',
         description: 'Tagged cloud',
@@ -715,10 +740,9 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([taggedCloudTemplate, taggedDesktopTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
       const { selectedUseCases, filteredTemplates, filteredCount } =
-        useTemplateFiltering(templates, undefined, distributionFilter)
+        useTemplateFiltering(templates)
 
       selectedUseCases.value = ['Video']
 
@@ -727,6 +751,7 @@ describe('useTemplateFiltering', () => {
     })
 
     it('distribution filter composes with runsOn filter', () => {
+      setDistribution('cloud')
       const apiCloudTemplate: TemplateInfo = {
         name: 'api-cloud',
         description: 'API cloud',
@@ -745,10 +770,9 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([apiCloudTemplate, apiDesktopTemplate])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
       const { selectedRunsOn, filteredTemplates, filteredCount } =
-        useTemplateFiltering(templates, undefined, distributionFilter)
+        useTemplateFiltering(templates)
 
       selectedRunsOn.value = ['External or Remote API']
 
@@ -757,6 +781,7 @@ describe('useTemplateFiltering', () => {
     })
 
     it('stale persisted model selection does not cause zero results', () => {
+      setDistribution('cloud')
       const cloudFlux: TemplateInfo = {
         name: 'cloud-flux',
         description: 'Flux on cloud',
@@ -767,7 +792,6 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([cloudFlux])
-      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
       const {
         selectedModels,
@@ -775,7 +799,7 @@ describe('useTemplateFiltering', () => {
         inactiveModels,
         filteredTemplates,
         filteredCount
-      } = useTemplateFiltering(templates, undefined, distributionFilter)
+      } = useTemplateFiltering(templates)
 
       selectedModels.value = ['SD 1.5']
 
@@ -786,6 +810,9 @@ describe('useTemplateFiltering', () => {
     })
 
     it('mac distribution matches templates with mac includeOnDistributions', () => {
+      setDistribution('desktop')
+      mockSystemStatsStore.systemStats.system.os = 'darwin'
+
       const macTemplate: TemplateInfo = {
         name: 'mac-template',
         description: 'Mac only',
@@ -795,16 +822,9 @@ describe('useTemplateFiltering', () => {
       }
 
       const templates = ref([macTemplate, cloudTemplate])
-      const distributionFilter = ref([
-        TemplateIncludeOnDistributionEnum.Desktop,
-        TemplateIncludeOnDistributionEnum.Mac
-      ])
 
-      const { filteredTemplates, filteredCount } = useTemplateFiltering(
-        templates,
-        undefined,
-        distributionFilter
-      )
+      const { filteredTemplates, filteredCount } =
+        useTemplateFiltering(templates)
 
       expect(filteredCount.value).toBe(1)
       expect(filteredTemplates.value[0].name).toBe('mac-template')

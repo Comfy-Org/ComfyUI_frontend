@@ -1,38 +1,17 @@
 import { expect } from '@playwright/test'
 
-import type {
-  TemplateInfo,
-  WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  makeTemplate,
+  mockTemplateIndex
+} from '@e2e/fixtures/data/templateFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const Cloud = TemplateIncludeOnDistributionEnum.Cloud
 const Desktop = TemplateIncludeOnDistributionEnum.Desktop
 const Local = TemplateIncludeOnDistributionEnum.Local
-
-function makeTemplate(
-  overrides: Partial<TemplateInfo> & Pick<TemplateInfo, 'name'>
-): TemplateInfo {
-  return {
-    description: overrides.name,
-    mediaType: 'image',
-    mediaSubtype: 'webp',
-    ...overrides
-  }
-}
-
-function mockTemplateIndex(templates: TemplateInfo[]): WorkflowTemplates[] {
-  return [
-    {
-      moduleName: 'default',
-      title: 'Test Templates',
-      type: 'image',
-      templates
-    }
-  ]
-}
 
 test.describe(
   'Template distribution filtering count',
@@ -92,7 +71,7 @@ test.describe(
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(3)
 
-      const desktopCard = comfyPage.page.getByTestId(
+      const desktopCard = comfyPage.templatesDialog.root.getByTestId(
         TestIds.templates.workflowCard('desktop-hidden')
       )
       await expect(desktopCard).toHaveCount(0)
@@ -142,20 +121,18 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
-      const modelFilter = comfyPage.templatesDialog.getCombobox(/Model/)
-      await modelFilter.click()
-      await comfyPage.page.getByRole('option', { name: 'Wan 2.2' }).click()
-      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.templatesDialog.selectModelOption('Wan 2.2')
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 
-      const wanDesktopCard = comfyPage.page.getByTestId(
+      const wanDesktopCard = comfyPage.templatesDialog.root.getByTestId(
         TestIds.templates.workflowCard('wan-desktop')
       )
       await expect(wanDesktopCard).toHaveCount(0)
 
-      const resultsText = comfyPage.page.getByText(/Showing.*of.*templates/i)
-      await expect(resultsText).toHaveText(/Showing 2 of 3 templates/i)
+      await expect(comfyPage.templatesDialog.resultsCount).toHaveText(
+        /Showing 2 of 3 templates/i
+      )
     })
 
     test('desktop-only templates never leak into DOM on cloud distribution', async ({
@@ -196,19 +173,19 @@ test.describe(
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
 
       await expect(
-        comfyPage.page.getByTestId(
+        comfyPage.templatesDialog.root.getByTestId(
           TestIds.templates.workflowCard('cloud-visible')
         )
       ).toBeVisible()
 
       await expect(
-        comfyPage.page.getByTestId(
+        comfyPage.templatesDialog.root.getByTestId(
           TestIds.templates.workflowCard('desktop-leak-check')
         )
       ).toHaveCount(0)
 
       await expect(
-        comfyPage.page.getByTestId(
+        comfyPage.templatesDialog.root.getByTestId(
           TestIds.templates.workflowCard('local-leak-check')
         )
       ).toHaveCount(0)
@@ -243,8 +220,9 @@ test.describe(
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(3)
 
-      const resultsText = comfyPage.page.getByText(/Showing.*of.*templates/i)
-      await expect(resultsText).toHaveText(/Showing 3 of 3 templates/i)
+      await expect(comfyPage.templatesDialog.resultsCount).toHaveText(
+        /Showing 3 of 3 templates/i
+      )
     })
 
     test('clear filters button resets to correct distribution-filtered total', async ({
@@ -285,22 +263,20 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
-      const modelFilter = comfyPage.templatesDialog.getCombobox(/Model/)
-      await modelFilter.click()
-      await comfyPage.page.getByRole('option', { name: 'Wan 2.2' }).click()
-      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.templatesDialog.selectModelOption('Wan 2.2')
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
 
-      const clearButton = comfyPage.page.getByRole('button', {
+      const clearButton = comfyPage.templatesDialog.root.getByRole('button', {
         name: /Clear Filters/i
       })
       await clearButton.click()
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 
-      const resultsText = comfyPage.page.getByText(/Showing.*of.*templates/i)
-      await expect(resultsText).toHaveText(/Showing 2 of 2 templates/i)
+      await expect(comfyPage.templatesDialog.resultsCount).toHaveText(
+        /Showing 2 of 2 templates/i
+      )
     })
   }
 )

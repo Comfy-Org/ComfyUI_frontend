@@ -6,10 +6,9 @@ import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type {
-  TemplateIncludeOnDistributionEnum,
-  TemplateInfo
-} from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
@@ -41,11 +40,10 @@ const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
 }
 
 export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[],
-  _currentScope?: Ref<string | null>,
-  distributionFilter?: Ref<TemplateIncludeOnDistributionEnum[]>
+  templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
   const settingStore = useSettingStore()
+  const systemStatsStore = useSystemStatsStore()
   const rankingStore = useTemplateRankingStore()
 
   const searchQuery = ref('')
@@ -75,10 +73,30 @@ export function useTemplateFiltering(
     return Array.isArray(templateData) ? templateData : []
   })
 
+  const distributions = computed<TemplateIncludeOnDistributionEnum[]>(() => {
+    switch (__DISTRIBUTION__) {
+      case 'cloud':
+        return [TemplateIncludeOnDistributionEnum.Cloud]
+      case 'localhost':
+        return [TemplateIncludeOnDistributionEnum.Local]
+      case 'desktop':
+      default:
+        if (systemStatsStore.systemStats?.system.os === 'darwin') {
+          return [
+            TemplateIncludeOnDistributionEnum.Desktop,
+            TemplateIncludeOnDistributionEnum.Mac
+          ]
+        }
+        return [
+          TemplateIncludeOnDistributionEnum.Desktop,
+          TemplateIncludeOnDistributionEnum.Windows
+        ]
+    }
+  })
+
   const visibleTemplates = computed(() => {
-    if (!distributionFilter?.value?.length) return templatesArray.value
     return templatesArray.value.filter((t) =>
-      isTemplateVisibleForDistributions(t, distributionFilter.value)
+      isTemplateVisibleForDistributions(t, distributions.value)
     )
   })
 
