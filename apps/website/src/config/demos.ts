@@ -9,6 +9,7 @@ export interface Demo {
   ogImage: string
   thumbnail: string
   estimatedTime: string
+  durationIso: string
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
   transcript?: TranslationKey
@@ -27,6 +28,7 @@ export const demos: Demo[] = [
     ogImage: '/images/demos/image-to-video-og.png',
     thumbnail: '/images/demos/image-to-video-thumb.webp',
     estimatedTime: '~2 min',
+    durationIso: 'PT2M',
     difficulty: 'beginner',
     tags: ['templates', 'image', 'video'],
     publishedDate: '2026-04-19',
@@ -42,6 +44,7 @@ export const demos: Demo[] = [
     ogImage: '/images/demos/workflow-templates-og.png',
     thumbnail: '/images/demos/workflow-templates-thumb.webp',
     estimatedTime: '~2 min',
+    durationIso: 'PT2M',
     difficulty: 'beginner',
     tags: ['getting-started', 'templates', 'workflow'],
     publishedDate: '2026-04-19',

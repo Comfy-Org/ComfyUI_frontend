@@ -14,6 +14,9 @@ const {
   nextThumbnail: string
   locale?: Locale
 }>()
+
+const localePrefix = locale === 'en' ? '' : `/${locale}`
+const nextHref = `${localePrefix}/demos/${nextSlug}`
 </script>
 
 <template>
@@ -25,7 +28,7 @@ const {
     <div
       class="bg-transparency-white-t4 rounded-5xl mx-auto flex flex-col gap-8 p-2 lg:max-w-237.5 lg:flex-row lg:items-center"
     >
-      <a :href="`/demos/${nextSlug}`" class="shrink-0 lg:w-1/2">
+      <a :href="nextHref" class="shrink-0 lg:w-1/2">
         <img
           :src="nextThumbnail"
           :alt="nextTitle"
@@ -38,7 +41,7 @@ const {
           {{ nextTitle }}
         </h3>
 
-        <a :href="`/demos/${nextSlug}`" class="flex items-center gap-3">
+        <a :href="nextHref" class="flex items-center gap-3">
           <span
             class="bg-primary-comfy-yellow text-primary-comfy-ink flex size-10 items-center justify-center rounded-full"
           >

@@ -27,7 +27,7 @@ const howToJsonLd = {
   name: title,
   description,
   image: new URL(demo.ogImage, Astro.site).href,
-  totalTime: demo.estimatedTime,
+  totalTime: demo.durationIso,
   datePublished: demo.publishedDate,
   dateModified: demo.modifiedDate,
   author: {

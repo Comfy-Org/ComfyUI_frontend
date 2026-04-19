@@ -32,4 +32,13 @@ test.describe('Demo pages @smoke', () => {
     const response = await page.goto('/demos/nonexistent')
     expect(response?.status()).toBe(404)
   })
+
+  test('zh-CN demo page renders localized content', async ({ page }) => {
+    await page.goto('/zh-CN/demos/image-to-video')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      '从图片创建视频'
+    )
+    const nextDemoLink = page.locator('a[href*="/zh-CN/demos/"]').first()
+    await expect(nextDemoLink).toBeAttached()
+  })
 })
