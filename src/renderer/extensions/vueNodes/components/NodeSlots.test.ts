@@ -260,7 +260,29 @@ describe('NodeSlots.vue', () => {
     ])
   })
 
-  it('updates InputSlot index after autogrow inserts new inputs', async () => {
+  it('remounts InputSlot when index shifts due to autogrow insertion', async () => {
+    const mountCounts = new Map<string, number>()
+
+    const TrackingInputSlotStub = defineComponent({
+      name: 'InputSlot',
+      props: {
+        slotData: { type: Object as PropType<StubSlotData>, required: true },
+        nodeId: { type: String, required: false, default: '' },
+        index: { type: Number, required: true }
+      },
+      setup(props) {
+        const key = `${props.slotData?.name ?? ''}`
+        mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
+      },
+      template: `
+        <div
+          class="stub-input-slot"
+          :data-index="index"
+          :data-name="slotData && slotData.name ? slotData.name : ''"
+        />
+      `
+    })
+
     const img0: INodeInputSlot = {
       name: 'ref_images.img0',
       type: 'IMAGE',
@@ -274,13 +296,26 @@ describe('NodeSlots.vue', () => {
       link: null
     }
 
-    const nodeData = makeNodeData({ inputs: [img0, vid0] })
-    const { container, rerender } = mountSlots(nodeData)
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
+    const { container, rerender } = render(NodeSlots, {
+      global: {
+        plugins: [i18n, createTestingPinia({ stubActions: false })],
+        stubs: { InputSlot: TrackingInputSlotStub, OutputSlot: OutputSlotStub }
+      },
+      props: { nodeData: makeNodeData({ inputs: [img0, vid0] }) }
+    })
+
+    expect(mountCounts.get('ref_videos.vid0')).toBe(1)
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    let vidEl = container.querySelector('[data-name="ref_videos.vid0"]')
-    expect(vidEl).not.toBeNull()
-    expect(Number((vidEl as HTMLElement).dataset.index)).toBe(1)
+    let vidEl = container.querySelector(
+      '[data-name="ref_videos.vid0"]'
+    ) as HTMLElement
+    expect(Number(vidEl.dataset.index)).toBe(1)
 
     const img1: INodeInputSlot = {
       name: 'ref_images.img1',
@@ -293,8 +328,10 @@ describe('NodeSlots.vue', () => {
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    vidEl = container.querySelector('[data-name="ref_videos.vid0"]')
-    expect(vidEl).not.toBeNull()
-    expect(Number((vidEl as HTMLElement).dataset.index)).toBe(2)
+    vidEl = container.querySelector(
+      '[data-name="ref_videos.vid0"]'
+    ) as HTMLElement
+    expect(Number(vidEl.dataset.index)).toBe(2)
+    expect(mountCounts.get('ref_videos.vid0')).toBe(2)
   })
 })
