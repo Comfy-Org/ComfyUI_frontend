@@ -36,16 +36,18 @@ test.describe(
 
       await subgraphNode.navigateIntoSubgraph()
 
-      const previewNodes = await comfyPage.nodeOps.getNodeRefsByType(
-        'PreviewAny',
-        true
-      )
-      expect(previewNodes).toHaveLength(1)
-
       await expect
-        .poll(async () => (await previewNodes[0].getWidget(0)).getValue(), {
-          timeout: 15_000
-        })
+        .poll(
+          async () => {
+            const nodes = await comfyPage.nodeOps.getNodeRefsByType(
+              'PreviewAny',
+              true
+            )
+            if (nodes.length !== 1) return ''
+            return (await nodes[0].getWidget(0)).getValue()
+          },
+          { timeout: 15_000 }
+        )
         .toContain('DynamicCombo output')
     })
   }
