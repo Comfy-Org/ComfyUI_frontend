@@ -2797,6 +2797,14 @@ const translations = {
     en: 'Senior Multimedia Director & Innovation Creative Lead',
     'zh-CN': '高级多媒体总监 & 创新创意负责人'
   },
+  'customers.detail.moment-factory.topic-5.block.5.name2': {
+    en: 'Conner Tozier',
+    'zh-CN': 'Conner Tozier'
+  },
+  'customers.detail.moment-factory.topic-5.block.5.role2': {
+    en: 'Lead Motion Designer & Generative AI Lead',
+    'zh-CN': '首席动效设计师 & 生成式 AI 负责人'
+  },
 
   // Customer Detail: Ubisoft CHORD
   'customers.detail.ubisoft-chord.topic-1.label': {

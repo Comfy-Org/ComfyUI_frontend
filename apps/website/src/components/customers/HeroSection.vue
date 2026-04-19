@@ -67,7 +67,7 @@ useHeroAnimation({
 
     <!-- Video overlapping the hero graphic -->
     <div ref="videoRef" class="-mt-16 px-20 pb-40 lg:-mt-72">
-      <VideoPlayer src="" :locale />
+      <VideoPlayer :locale />
     </div>
   </section>
 </template>
