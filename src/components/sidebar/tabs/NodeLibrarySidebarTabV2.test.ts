@@ -1,9 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
-import { ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -81,6 +85,29 @@ vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   }
 }))
 
+const mockCurrentHelpNode = ref<ComfyNodeDefImpl | null>(null)
+const mockIsHelpOpen = ref(false)
+const mockCloseHelp = vi.fn()
+
+vi.mock('@/stores/workspace/nodeHelpStore', () => ({
+  useNodeHelpStore: () => ({
+    currentHelpNode: mockCurrentHelpNode,
+    isHelpOpen: mockIsHelpOpen,
+    openHelp: vi.fn(),
+    closeHelp: mockCloseHelp
+  })
+}))
+
+vi.mock('./nodeLibrary/NodeHelpPage.vue', () => ({
+  default: {
+    name: 'NodeHelpPage',
+    template:
+      '<div data-testid="node-help-page">{{ node.display_name }}<button data-testid="help-close-btn" @click="$emit(\'close\')">Close</button></div>',
+    props: ['node'],
+    emits: ['close']
+  }
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -122,5 +149,69 @@ describe('NodeLibrarySidebarTabV2', () => {
     expect(screen.getByTestId('essential-panel')).toBeInTheDocument()
     expect(screen.queryByTestId('all-panel')).not.toBeInTheDocument()
     expect(screen.queryByTestId('blueprints-panel')).not.toBeInTheDocument()
+  })
+
+  describe('Node Help Integration', () => {
+    beforeEach(() => {
+      mockCurrentHelpNode.value = null
+      mockIsHelpOpen.value = false
+    })
+
+    it('should show node help page when currentHelpNode is set', async () => {
+      mockCurrentHelpNode.value = fromPartial<ComfyNodeDefImpl>({
+        name: 'KSampler',
+        display_name: 'KSampler'
+      })
+      mockIsHelpOpen.value = true
+
+      renderComponent()
+      await nextTick()
+
+      expect(screen.getByTestId('node-help-page')).toBeInTheDocument()
+      expect(screen.getByTestId('node-help-page')).toHaveTextContent('KSampler')
+      expect(screen.queryByTestId('search-box')).not.toBeInTheDocument()
+    })
+
+    it('should show normal node library when currentHelpNode is null', async () => {
+      renderComponent()
+      await nextTick()
+
+      expect(screen.queryByTestId('node-help-page')).not.toBeInTheDocument()
+      expect(screen.getByTestId('search-box')).toBeInTheDocument()
+    })
+
+    it('should switch from help to library when closeHelp clears currentHelpNode', async () => {
+      mockCurrentHelpNode.value = fromPartial<ComfyNodeDefImpl>({
+        name: 'KSampler',
+        display_name: 'KSampler'
+      })
+      mockIsHelpOpen.value = true
+
+      renderComponent()
+      await nextTick()
+      expect(screen.getByTestId('node-help-page')).toBeInTheDocument()
+
+      mockCurrentHelpNode.value = null
+      mockIsHelpOpen.value = false
+      await nextTick()
+
+      expect(screen.queryByTestId('node-help-page')).not.toBeInTheDocument()
+      expect(screen.getByTestId('search-box')).toBeInTheDocument()
+    })
+
+    it('should call closeHelp when NodeHelpPage emits close', async () => {
+      const user = userEvent.setup()
+      mockCurrentHelpNode.value = fromPartial<ComfyNodeDefImpl>({
+        name: 'KSampler',
+        display_name: 'KSampler'
+      })
+      mockIsHelpOpen.value = true
+
+      renderComponent()
+      await nextTick()
+
+      await user.click(screen.getByTestId('help-close-btn'))
+      expect(mockCloseHelp).toHaveBeenCalledOnce()
+    })
   })
 })
