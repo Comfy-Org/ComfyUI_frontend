@@ -107,8 +107,6 @@ describe('DomWidgets collapsed node visibility', () => {
     const node = createNode(graph, 1, 'collapsible', [100, 200])
 
     const widget = createWidget('w-collapse-own', node, 14)
-    const mutableWidget = widget as unknown as { isVisible: () => boolean }
-    mutableWidget.isVisible = () => !node.flags.collapsed
 
     domWidgetStore.registerWidget(widget)
 
@@ -123,6 +121,10 @@ describe('DomWidgets collapsed node visibility', () => {
     node.flags.collapsed = true
     drawFrame(canvas)
     expect(state.visible).toBe(false)
+
+    node.flags.collapsed = false
+    drawFrame(canvas)
+    expect(state.visible).toBe(true)
   })
 })
 
