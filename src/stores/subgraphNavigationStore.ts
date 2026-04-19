@@ -9,6 +9,7 @@ import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -27,6 +28,7 @@ export const useSubgraphNavigationStore = defineStore(
   () => {
     const workflowStore = useWorkflowStore()
     const canvasStore = useCanvasStore()
+    const canvasScheduler = useCanvasScheduler()
     const router = useRouter()
     const routeHash = useRouteHash()
 
@@ -140,12 +142,12 @@ export const useSubgraphNavigationStore = defineStore(
       }
 
       // First visit — fit to content so subgraph nodes are visible
-      requestAnimationFrame(() => {
+      canvasScheduler.schedule(() => {
         if (getActiveGraphId() !== graphId) return
         if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
-        // fitView changes scale/offset, so re-sync slot positions for
-        // collapsed nodes whose DOM-relative measurement is now stale.
+        // Defer slot sync to the next frame so the browser paints the
+        // new scale/offset from fitView before slot geometry is measured.
         requestAnimationFrame(() => {
           if (getActiveGraphId() !== graphId) return
           requestSlotLayoutSyncForAllNodes()

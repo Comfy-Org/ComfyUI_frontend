@@ -7,6 +7,7 @@ import { shallowRef } from 'vue'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
+import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { st, t } from '@/i18n'
@@ -1137,6 +1138,9 @@ export class ComfyApp {
       silentAssetErrors?: boolean
     } = {}
   ) {
+    const canvasScheduler = useCanvasScheduler()
+    canvasScheduler.clear()
+
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1284,7 +1288,6 @@ export class ComfyApp {
       }
     }
 
-    const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
     const fitView = () => {
       if (
         restore_view &&
@@ -1307,7 +1310,7 @@ export class ComfyApp {
               this.canvas.visible_area
             )
           ) {
-            requestAnimationFrame(() => useLitegraphService().fitView())
+            canvasScheduler.schedule(() => useLitegraphService().fitView())
           }
         } else {
           useLitegraphService().fitView()
@@ -1341,7 +1344,10 @@ export class ComfyApp {
           )
         }
 
-        if (canvasVisible) fitView()
+        canvasScheduler.schedule(() => {
+          this.canvas.resize()
+          fitView()
+        })
       } catch (error) {
         useDialogService().showErrorDialog(error, {
           title: t('errorDialog.loadWorkflowTitle'),
@@ -1430,13 +1436,6 @@ export class ComfyApp {
         workflow,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
-
-      // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
-      // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
-      if (!canvasVisible && (!workflow || typeof workflow === 'string')) {
-        this.canvas.resize()
-        requestAnimationFrame(() => fitView())
-      }
 
       // Drop missing-node entries whose enclosing subgraph is
       // muted/bypassed. The initial JSON scan only checks each node's
