@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
+import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
@@ -14,8 +15,22 @@ const routes = getRoutes(locale)
     <div
       class="bg-transparency-white-t4 rounded-5xl flex flex-col gap-12 p-2 lg:flex-row lg:items-stretch lg:gap-8"
     >
-      <!-- Left: video / image placeholder -->
-      <div class="bg-primary-comfy-canvas/20 aspect-4/3 flex-1 rounded-4xl" />
+      <!-- Left: video -->
+      <div class="flex-1 overflow-hidden rounded-4xl">
+        <VideoPlayer
+          src="/videos/customers/blackmath.webm"
+          poster="/videos/customers/blackmath-poster.webp"
+          :tracks="[
+            {
+              src: '/videos/customers/blackmath.vtt',
+              kind: 'subtitles',
+              srclang: 'en',
+              label: 'English'
+            }
+          ]"
+          :locale
+        />
+      </div>
 
       <!-- Right: content -->
       <div class="flex flex-col justify-between p-6 lg:flex-1">
@@ -37,13 +52,13 @@ const routes = getRoutes(locale)
 
         <div class="flex flex-col gap-3 sm:flex-row">
           <BrandButton
-            :href="routes.videos"
+            :href="routes.customers"
             :label="t('caseStudy.watchVideos', locale)"
             variant="solid"
             class-name="flex-1 text-center"
           />
           <BrandButton
-            :href="routes.caseStudies"
+            :href="routes.customers"
             :label="t('caseStudy.seeAll', locale)"
             variant="outline"
             class-name="flex-1 text-center"

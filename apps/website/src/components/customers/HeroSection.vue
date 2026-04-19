@@ -67,7 +67,19 @@ useHeroAnimation({
 
     <!-- Video overlapping the hero graphic -->
     <div ref="videoRef" class="-mt-16 px-20 pb-40 lg:-mt-72">
-      <VideoPlayer :locale />
+      <VideoPlayer
+        src="/videos/customers/blackmath.webm"
+        poster="/videos/customers/blackmath-poster.webp"
+        :tracks="[
+          {
+            src: '/videos/customers/blackmath.vtt',
+            kind: 'subtitles',
+            srclang: 'en',
+            label: 'English'
+          }
+        ]"
+        :locale
+      />
     </div>
   </section>
 </template>
