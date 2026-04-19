@@ -1,5 +1,10 @@
 <template>
-  <SidebarTabTemplate hide-toolbar :title="$t('sideToolbar.nodes')">
+  <div class="h-full">
+    <SidebarTabTemplate
+      v-if="!isHelpOpen"
+      hide-toolbar
+      :title="$t('sideToolbar.nodes')"
+    >
     <template #body>
       <div class="flex h-full flex-col">
         <div class="shrink-0 overflow-hidden bg-comfy-menu-bg">
@@ -112,13 +117,20 @@
           </TabPanel>
         </div>
       </div>
-    </template>
-  </SidebarTabTemplate>
+      </template>
+    </SidebarTabTemplate>
+    <NodeHelpPage
+      v-else-if="currentHelpNode"
+      :node="currentHelpNode"
+      @close="closeHelp"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
+import { storeToRefs } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
 import {
@@ -150,6 +162,7 @@ import {
 } from '@/services/nodeOrganizationService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 import type {
   NodeCategoryId,
   NodeSection,
@@ -166,9 +179,14 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
+import NodeHelpPage from './nodeLibrary/NodeHelpPage.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
 const { flags } = useFeatureFlags()
+
+const nodeHelpStore = useNodeHelpStore()
+const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
+const { closeHelp } = nodeHelpStore
 
 const scrollContainerRef = useTemplateRef('scrollContainerRef')
 const titleTabsRef = useTemplateRef('titleTabsRef')
