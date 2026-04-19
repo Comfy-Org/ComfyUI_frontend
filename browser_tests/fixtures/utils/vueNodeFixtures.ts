@@ -1,6 +1,16 @@
 import type { Locator } from '@playwright/test'
 
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+
 import { TestIds } from '@e2e/fixtures/selectors'
+
+/** Maps corners to their English aria-labels (from resizeHandleConfig i18n) */
+const RESIZE_HANDLE_LABELS: Record<CompassCorners, string> = {
+  SE: 'Resize from bottom-right corner',
+  NE: 'Resize from top-right corner',
+  SW: 'Resize from bottom-left corner',
+  NW: 'Resize from top-left corner'
+}
 
 /** DOM-centric helper for a single Vue-rendered node on the canvas. */
 export class VueNodeFixture {
@@ -53,5 +63,36 @@ export class VueNodeFixture {
 
   boundingBox(): ReturnType<Locator['boundingBox']> {
     return this.locator.boundingBox()
+  }
+
+  getResizeHandle(corner: CompassCorners): Locator {
+    return this.root.getByRole('button', {
+      name: RESIZE_HANDLE_LABELS[corner]
+    })
+  }
+
+  async resizeFromCorner(
+    corner: CompassCorners,
+    deltaX: number,
+    deltaY: number
+  ): Promise<void> {
+    const handle = this.getResizeHandle(corner)
+    const box = await handle.boundingBox()
+    if (!box) {
+      throw new Error(
+        `Resize handle for corner "${corner}" has no bounding box`
+      )
+    }
+
+    const page = this.locator.page()
+    const centerX = box.x + box.width / 2
+    const centerY = box.y + box.height / 2
+
+    await page.mouse.move(centerX, centerY)
+    await page.mouse.down()
+    await page.mouse.move(centerX + deltaX, centerY + deltaY, {
+      steps: 5
+    })
+    await page.mouse.up()
   }
 }
