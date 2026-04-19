@@ -175,7 +175,6 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="template in isLoading ? [] : displayTemplates"
-            v-show="isTemplateVisibleOnDistribution(template)"
             :key="template.name"
             ref="cardRefs"
             size="tall"
@@ -586,7 +585,11 @@ const {
   totalCount,
   resetFilters,
   loadFuseOptions
-} = useTemplateFiltering(navigationFilteredTemplates, selectedNavItem)
+} = useTemplateFiltering(
+  navigationFilteredTemplates,
+  selectedNavItem,
+  distributions
+)
 
 /**
  * Coordinates state between the selected navigation item and the sort order to
@@ -851,14 +854,6 @@ const { isLoading } = useAsyncState(
     immediate: true // Start loading immediately
   }
 )
-
-const isTemplateVisibleOnDistribution = (template: TemplateInfo) => {
-  return (template.includeOnDistributions?.length ?? 0) > 0
-    ? distributions.value.some((d) =>
-        template.includeOnDistributions?.includes(d)
-      )
-    : true
-}
 
 onBeforeUnmount(() => {
   cardRefs.value = [] // Release DOM refs

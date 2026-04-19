@@ -6,10 +6,25 @@ import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type {
+  TemplateIncludeOnDistributionEnum,
+  TemplateInfo
+} from '@/platform/workflow/templates/types/template'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
+
+/**
+ * Checks whether a template is visible for the given set of distributions.
+ * Templates without `includeOnDistributions` are visible everywhere.
+ */
+function isTemplateVisibleForDistributions(
+  template: TemplateInfo,
+  distributions: TemplateIncludeOnDistributionEnum[]
+): boolean {
+  if (!template.includeOnDistributions?.length) return true
+  return distributions.some((d) => template.includeOnDistributions!.includes(d))
+}
 
 // Fuse.js configuration for fuzzy search
 const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
@@ -27,7 +42,8 @@ const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[],
-  currentScope?: Ref<string | null>
+  currentScope?: Ref<string | null>,
+  distributionFilter?: Ref<TemplateIncludeOnDistributionEnum[]>
 ) {
   const settingStore = useSettingStore()
   const rankingStore = useTemplateRankingStore()
@@ -186,6 +202,15 @@ export function useTemplateFiltering(
     })
   })
 
+  const filteredByDistribution = computed(() => {
+    if (!distributionFilter?.value?.length) {
+      return filteredByRunsOn.value
+    }
+    return filteredByRunsOn.value.filter((template) =>
+      isTemplateVisibleForDistributions(template, distributionFilter.value)
+    )
+  })
+
   const getVramMetric = (template: TemplateInfo) => {
     if (
       typeof template.vram === 'number' &&
@@ -198,7 +223,7 @@ export function useTemplateFiltering(
   }
 
   watch(
-    filteredByRunsOn,
+    filteredByDistribution,
     (templates) => {
       rankingStore.largestUsageScore = Math.max(
         ...templates.map((t) => t.usage || 0)
@@ -208,7 +233,7 @@ export function useTemplateFiltering(
   )
 
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByRunsOn.value]
+    const templates = [...filteredByDistribution.value]
 
     switch (sortBy.value) {
       case 'recommended':
@@ -299,7 +324,12 @@ export function useTemplateFiltering(
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
-  const totalCount = computed(() => templatesArray.value.length)
+  const totalCount = computed(() => {
+    if (!distributionFilter?.value?.length) return templatesArray.value.length
+    return templatesArray.value.filter((t) =>
+      isTemplateVisibleForDistributions(t, distributionFilter.value)
+    ).length
+  })
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {

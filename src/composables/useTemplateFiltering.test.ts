@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import type { IFuseOptions } from 'fuse.js'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 
 const defaultSettingStore = {
@@ -474,6 +475,283 @@ describe('useTemplateFiltering', () => {
 
       expect(selectedModels.value).toEqual(['Model1', 'Model2'])
       expect(activeModels.value).toEqual([])
+    })
+  })
+
+  describe('Distribution filtering', () => {
+    const cloudTemplate: TemplateInfo = {
+      name: 'cloud-only',
+      description: 'Cloud template',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      models: ['Wan 2.2'],
+      includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+    }
+
+    const desktopTemplate: TemplateInfo = {
+      name: 'desktop-only',
+      description: 'Desktop template',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      models: ['Wan 2.2'],
+      includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+    }
+
+    const universalTemplate: TemplateInfo = {
+      name: 'universal',
+      description: 'Universal template',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      models: ['Wan 2.2']
+    }
+
+    const multiDistTemplate: TemplateInfo = {
+      name: 'multi-dist',
+      description: 'Multi-distribution',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      includeOnDistributions: [
+        TemplateIncludeOnDistributionEnum.Cloud,
+        TemplateIncludeOnDistributionEnum.Desktop
+      ]
+    }
+
+    it('excludes templates not matching the distribution filter', () => {
+      const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates, undefined, distributionFilter)
+
+      expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+        'cloud-only',
+        'universal'
+      ])
+      expect(filteredCount.value).toBe(2)
+      expect(totalCount.value).toBe(2)
+    })
+
+    it('keeps filteredCount and totalCount consistent with model + distribution filters', () => {
+      const fluxCloudTemplate: TemplateInfo = {
+        name: 'flux-cloud',
+        description: 'Flux on cloud',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['Flux'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+
+      const templates = ref([cloudTemplate, desktopTemplate, fluxCloudTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { selectedModels, filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates, undefined, distributionFilter)
+
+      expect(totalCount.value).toBe(2)
+
+      selectedModels.value = ['Wan 2.2']
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('cloud-only')
+    })
+
+    it('shows all templates when no distribution filter is provided', () => {
+      const templates = ref([cloudTemplate, desktopTemplate])
+
+      const { filteredCount, totalCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(2)
+      expect(totalCount.value).toBe(2)
+    })
+
+    it('shows all templates when distribution filter is an empty array', () => {
+      const templates = ref([cloudTemplate, desktopTemplate])
+      const distributionFilter = ref<TemplateIncludeOnDistributionEnum[]>([])
+
+      const { filteredCount, totalCount } = useTemplateFiltering(
+        templates,
+        undefined,
+        distributionFilter
+      )
+
+      expect(filteredCount.value).toBe(2)
+      expect(totalCount.value).toBe(2)
+    })
+
+    it('includes templates with multiple distributions when any match', () => {
+      const templates = ref([multiDistTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { filteredCount } = useTemplateFiltering(
+        templates,
+        undefined,
+        distributionFilter
+      )
+
+      expect(filteredCount.value).toBe(1)
+    })
+
+    it('excludes templates with multiple distributions when none match', () => {
+      const templates = ref([multiDistTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Local])
+
+      const { filteredCount } = useTemplateFiltering(
+        templates,
+        undefined,
+        distributionFilter
+      )
+
+      expect(filteredCount.value).toBe(0)
+    })
+
+    it('reacts to distribution filter changes', () => {
+      const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { filteredCount, totalCount } = useTemplateFiltering(
+        templates,
+        undefined,
+        distributionFilter
+      )
+
+      expect(filteredCount.value).toBe(2)
+      expect(totalCount.value).toBe(2)
+
+      distributionFilter.value = [TemplateIncludeOnDistributionEnum.Desktop]
+
+      expect(filteredCount.value).toBe(2)
+      expect(totalCount.value).toBe(2)
+    })
+
+    it('applies distribution filter before search so available models reflect visible templates only', () => {
+      const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { availableModels } = useTemplateFiltering(
+        templates,
+        undefined,
+        distributionFilter
+      )
+
+      expect(availableModels.value).toContain('Wan 2.2')
+    })
+
+    it('distribution filter composes with search filter', async () => {
+      vi.useFakeTimers()
+
+      const searchableTemplate: TemplateInfo = {
+        name: 'searchable-cloud',
+        description: 'A very unique searchable description',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+      const searchableDesktopTemplate: TemplateInfo = {
+        name: 'searchable-desktop',
+        description: 'A very unique searchable description',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+      }
+
+      const templates = ref([searchableTemplate, searchableDesktopTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { searchQuery, filteredTemplates, filteredCount } =
+        useTemplateFiltering(templates, undefined, distributionFilter)
+
+      searchQuery.value = 'unique searchable'
+      await nextTick()
+      await vi.runOnlyPendingTimersAsync()
+      await nextTick()
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('searchable-cloud')
+    })
+
+    it('distribution filter composes with use case filter', () => {
+      const taggedCloudTemplate: TemplateInfo = {
+        name: 'tagged-cloud',
+        description: 'Tagged cloud',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tags: ['Video'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+      const taggedDesktopTemplate: TemplateInfo = {
+        name: 'tagged-desktop',
+        description: 'Tagged desktop',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tags: ['Video'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+      }
+
+      const templates = ref([taggedCloudTemplate, taggedDesktopTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { selectedUseCases, filteredTemplates, filteredCount } =
+        useTemplateFiltering(templates, undefined, distributionFilter)
+
+      selectedUseCases.value = ['Video']
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('tagged-cloud')
+    })
+
+    it('distribution filter composes with runsOn filter', () => {
+      const apiCloudTemplate: TemplateInfo = {
+        name: 'api-cloud',
+        description: 'API cloud',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: false,
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+      const apiDesktopTemplate: TemplateInfo = {
+        name: 'api-desktop',
+        description: 'API desktop',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        openSource: false,
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+      }
+
+      const templates = ref([apiCloudTemplate, apiDesktopTemplate])
+      const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
+
+      const { selectedRunsOn, filteredTemplates, filteredCount } =
+        useTemplateFiltering(templates, undefined, distributionFilter)
+
+      selectedRunsOn.value = ['External or Remote API']
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('api-cloud')
+    })
+
+    it('mac distribution matches templates with mac includeOnDistributions', () => {
+      const macTemplate: TemplateInfo = {
+        name: 'mac-template',
+        description: 'Mac only',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Mac]
+      }
+
+      const templates = ref([macTemplate, cloudTemplate])
+      const distributionFilter = ref([
+        TemplateIncludeOnDistributionEnum.Desktop,
+        TemplateIncludeOnDistributionEnum.Mac
+      ])
+
+      const { filteredTemplates, filteredCount } = useTemplateFiltering(
+        templates,
+        undefined,
+        distributionFilter
+      )
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('mac-template')
     })
   })
 })
