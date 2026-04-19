@@ -75,10 +75,11 @@ const updateWidgets = () => {
 
     const isInCorrectGraph = posNode.graph === currentGraph
     const nodeVisible = lgCanvas.isNodeVisible(posNode)
+    const shouldBeVisible = nodeVisible && !posNode.collapsed
 
     widgetState.visible =
+      shouldBeVisible &&
       isInCorrectGraph &&
-      nodeVisible &&
       !(widget.options.hideOnZoom && lowQuality)
 
     if (widgetState.visible) {

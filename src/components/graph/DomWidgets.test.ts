@@ -57,6 +57,75 @@ function drawFrame(canvas: LGraphCanvas) {
   canvas.onDrawForeground?.({} as CanvasRenderingContext2D, new Rectangle())
 }
 
+describe('DomWidgets collapsed node visibility', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('hides widget when position-override node is collapsed', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const interiorNode = createNode(graph, 1, 'interior', [100, 200])
+    const overrideNode = createNode(graph, 2, 'subgraphHost', [300, 400])
+
+    const widget = createWidget('w-collapse-override', interiorNode, 14)
+    const overrideWidget = createWidget('w-override-pos', overrideNode, 22)
+
+    domWidgetStore.registerWidget(widget)
+    domWidgetStore.setPositionOverride(widget.id, {
+      node: overrideNode,
+      widget: overrideWidget
+    })
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+    render(DomWidgets, { global: { stubs: { DomWidget: true } } })
+
+    // Expanded — widget visible
+    drawFrame(canvas)
+    const state = domWidgetStore.widgetStates.get(widget.id)!
+    expect(state.visible).toBe(true)
+
+    // Collapse override node — widget hidden
+    overrideNode.flags.collapsed = true
+    drawFrame(canvas)
+    expect(state.visible).toBe(false)
+
+    // Expand — widget restored
+    overrideNode.flags.collapsed = false
+    drawFrame(canvas)
+    expect(state.visible).toBe(true)
+  })
+
+  it('hides widget when own node (no override) is collapsed', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'collapsible', [100, 200])
+
+    const widget = createWidget('w-collapse-own', node, 14)
+    const mutableWidget = widget as unknown as { isVisible: () => boolean }
+    mutableWidget.isVisible = () => !node.flags.collapsed
+
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+    render(DomWidgets, { global: { stubs: { DomWidget: true } } })
+
+    drawFrame(canvas)
+    const state = domWidgetStore.widgetStates.get(widget.id)!
+    expect(state.visible).toBe(true)
+
+    node.flags.collapsed = true
+    drawFrame(canvas)
+    expect(state.visible).toBe(false)
+  })
+})
+
 describe('DomWidgets transition grace characterization', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
