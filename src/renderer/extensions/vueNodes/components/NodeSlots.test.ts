@@ -204,4 +204,97 @@ describe('NodeSlots.vue', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelectorAll('.stub-output-slot')).toHaveLength(0)
   })
+
+  it('maps correct actual indices when autogrow inserts inputs between groups', () => {
+    const img0: INodeInputSlot = {
+      name: 'ref_images.img0',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const img1: INodeInputSlot = {
+      name: 'ref_images.img1',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const img2: INodeInputSlot = {
+      name: 'ref_images.img2',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const vid0: INodeInputSlot = {
+      name: 'ref_videos.vid0',
+      type: 'VIDEO',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const vid1: INodeInputSlot = {
+      name: 'ref_videos.vid1',
+      type: 'VIDEO',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const inputs: INodeInputSlot[] = [img0, img1, img2, vid0, vid1]
+
+    const { container } = mountSlots(makeNodeData({ inputs }))
+
+    const inputEls = Array.from(
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      container.querySelectorAll('.stub-input-slot')
+    ) as HTMLElement[]
+
+    expect(inputEls).toHaveLength(5)
+
+    const info = inputEls.map((el) => ({
+      index: Number(el.dataset.index),
+      name: el.dataset.name ?? ''
+    }))
+    expect(info).toEqual([
+      { index: 0, name: 'ref_images.img0' },
+      { index: 1, name: 'ref_images.img1' },
+      { index: 2, name: 'ref_images.img2' },
+      { index: 3, name: 'ref_videos.vid0' },
+      { index: 4, name: 'ref_videos.vid1' }
+    ])
+  })
+
+  it('updates InputSlot index after autogrow inserts new inputs', async () => {
+    const img0: INodeInputSlot = {
+      name: 'ref_images.img0',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    const vid0: INodeInputSlot = {
+      name: 'ref_videos.vid0',
+      type: 'VIDEO',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+
+    const nodeData = makeNodeData({ inputs: [img0, vid0] })
+    const { container, rerender } = mountSlots(nodeData)
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    let vidEl = container.querySelector('[data-name="ref_videos.vid0"]')
+    expect(vidEl).not.toBeNull()
+    expect(Number((vidEl as HTMLElement).dataset.index)).toBe(1)
+
+    const img1: INodeInputSlot = {
+      name: 'ref_images.img1',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0],
+      link: null
+    }
+    await rerender({
+      nodeData: makeNodeData({ inputs: [img0, img1, vid0] })
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    vidEl = container.querySelector('[data-name="ref_videos.vid0"]')
+    expect(vidEl).not.toBeNull()
+    expect(Number((vidEl as HTMLElement).dataset.index)).toBe(2)
+  })
 })
