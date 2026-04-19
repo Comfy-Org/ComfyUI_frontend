@@ -608,17 +608,22 @@ describe('useTemplateFiltering', () => {
       const templates = ref([cloudTemplate, desktopTemplate, universalTemplate])
       const distributionFilter = ref([TemplateIncludeOnDistributionEnum.Cloud])
 
-      const { filteredCount, totalCount } = useTemplateFiltering(
-        templates,
-        undefined,
-        distributionFilter
-      )
+      const { filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates, undefined, distributionFilter)
 
+      expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+        'cloud-only',
+        'universal'
+      ])
       expect(filteredCount.value).toBe(2)
       expect(totalCount.value).toBe(2)
 
       distributionFilter.value = [TemplateIncludeOnDistributionEnum.Desktop]
 
+      expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+        'desktop-only',
+        'universal'
+      ])
       expect(filteredCount.value).toBe(2)
       expect(totalCount.value).toBe(2)
     })

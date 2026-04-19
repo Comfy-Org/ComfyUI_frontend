@@ -155,7 +155,7 @@ test.describe(
       await expect(wanDesktopCard).toHaveCount(0)
 
       const resultsText = comfyPage.page.getByText(/Showing.*of.*templates/i)
-      await expect(resultsText).toContainText('2')
+      await expect(resultsText).toHaveText(/Showing 2 of 3 templates/i)
     })
 
     test('desktop-only templates never leak into DOM on cloud distribution', async ({
@@ -244,7 +244,7 @@ test.describe(
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(3)
 
       const resultsText = comfyPage.page.getByText(/Showing.*of.*templates/i)
-      await expect(resultsText).toContainText('3')
+      await expect(resultsText).toHaveText(/Showing 3 of 3 templates/i)
     })
 
     test('clear filters button resets to correct distribution-filtered total', async ({
@@ -300,7 +300,7 @@ test.describe(
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 
       const resultsText = comfyPage.page.getByText(/Showing.*of.*templates/i)
-      await expect(resultsText).toContainText('2')
+      await expect(resultsText).toHaveText(/Showing 2 of 2 templates/i)
     })
   }
 )
