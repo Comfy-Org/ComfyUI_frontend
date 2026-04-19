@@ -13,7 +13,7 @@ test.describe(
 
       const previewNode = await comfyPage.nodeOps.getNodeRefById('2')
 
-      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      await comfyPage.runButton.click()
 
       await expect
         .poll(async () => (await previewNode.getWidget(0)).getValue(), {
@@ -32,7 +32,7 @@ test.describe(
       await comfyPage.page.keyboard.press('Control+a')
       const subgraphNode = await sourceNode.convertToSubgraph()
 
-      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      await comfyPage.runButton.click()
 
       await subgraphNode.navigateIntoSubgraph()
 
