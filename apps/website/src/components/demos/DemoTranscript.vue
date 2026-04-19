@@ -15,7 +15,10 @@ const expanded = ref(false)
 </script>
 
 <template>
-  <section class="px-4 py-8 lg:px-20 lg:py-12" aria-label="Demo transcript">
+  <section
+    class="px-4 py-8 lg:px-20 lg:py-12"
+    :aria-label="t('demos.transcript.label', locale)"
+  >
     <div class="mx-auto max-w-4xl">
       <button
         type="button"

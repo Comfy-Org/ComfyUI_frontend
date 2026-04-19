@@ -2961,6 +2961,26 @@ const translations = {
     en: 'View on Arcade →',
     'zh-CN': '在 Arcade 上查看 →'
   },
+  'demos.difficulty.beginner': { en: 'Beginner', 'zh-CN': '入门' },
+  'demos.difficulty.intermediate': {
+    en: 'Intermediate',
+    'zh-CN': '中级'
+  },
+  'demos.difficulty.advanced': { en: 'Advanced', 'zh-CN': '高级' },
+  'demos.embed.label': {
+    en: 'Interactive demo',
+    'zh-CN': '互动演示'
+  },
+  'demos.comingSoon.title': {
+    en: 'Coming Soon',
+    'zh-CN': '即将推出'
+  },
+  'demos.comingSoon.body': {
+    en: 'This page is being redesigned. Check back soon.',
+    'zh-CN': '此页面正在重新设计中，请稍后再来。'
+  },
+  'demos.breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
+  'demos.breadcrumb.demos': { en: 'Demos', 'zh-CN': '演示' },
 
   'customers.story.whatsNext': {
     en: "What's next?",

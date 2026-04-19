@@ -19,7 +19,10 @@ const loaded = ref(false)
 </script>
 
 <template>
-  <section class="px-4 py-8 lg:px-20 lg:py-16" aria-label="Interactive demo">
+  <section
+    class="px-4 py-8 lg:px-20 lg:py-16"
+    :aria-label="t('demos.embed.label', locale)"
+  >
     <div
       class="relative mx-auto aspect-video max-w-6xl overflow-hidden rounded-4xl border border-white/10"
     >

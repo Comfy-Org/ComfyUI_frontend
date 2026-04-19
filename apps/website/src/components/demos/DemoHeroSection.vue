@@ -1,11 +1,25 @@
 <script setup lang="ts">
-const { label, title, description, difficulty, estimatedTime } = defineProps<{
+import type { Locale, TranslationKey } from '../../i18n/translations'
+
+import { t } from '../../i18n/translations'
+
+const {
+  label,
+  title,
+  description,
+  difficulty,
+  estimatedTime,
+  locale = 'en'
+} = defineProps<{
   label: string
   title: string
   description: string
-  difficulty: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
   estimatedTime: string
+  locale?: Locale
 }>()
+
+const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
 </script>
 
 <template>
@@ -33,7 +47,7 @@ const { label, title, description, difficulty, estimatedTime } = defineProps<{
         <span
           class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase"
         >
-          {{ difficulty }}
+          {{ t(difficultyKey, locale) }}
         </span>
         <span
           class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold"

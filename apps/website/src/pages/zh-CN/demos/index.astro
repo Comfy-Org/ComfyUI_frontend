@@ -1,8 +1,17 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
-import ComingSoon from '../../../components/common/ComingSoon.astro'
+import { t } from '../../../i18n/translations'
 ---
 
 <BaseLayout title="演示 — Comfy" description="ComfyUI 的互动演示和教程。">
-  <ComingSoon />
+  <section class="flex min-h-[60vh] items-center justify-center px-6">
+    <div class="text-center">
+      <h1 class="text-primary-comfy-canvas text-4xl font-light">
+        {t('demos.comingSoon.title', 'zh-CN')}
+      </h1>
+      <p class="text-primary-warm-gray mt-4 text-sm">
+        {t('demos.comingSoon.body', 'zh-CN')}
+      </p>
+    </div>
+  </section>
 </BaseLayout>
