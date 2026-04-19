@@ -3,7 +3,7 @@
     <div
       v-for="(section, index) in sections"
       :key="section.title ?? index"
-      class="h-full flex-1 overflow-y-auto"
+      class="h-full flex-1 overflow-y-auto [scrollbar-gutter:stable]"
     >
       <!-- Section header -->
       <h3

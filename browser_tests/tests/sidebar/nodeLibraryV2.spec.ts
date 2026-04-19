@@ -120,4 +120,89 @@ test.describe('Node library sidebar V2', () => {
     await expect(options.first()).toBeVisible()
     await expect.poll(() => options.count()).toBeGreaterThanOrEqual(2)
   })
+
+  test.describe('Bookmark button scrollbar overlap', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
+    })
+
+    test('Bookmark button right edge is within the visible panel area', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.nodeLibraryTabV2
+
+      await tab.expandFolder('sampling')
+      const node = tab.getNode('KSampler (Advanced)')
+      await expect(node).toBeVisible()
+
+      // Hover required: bookmark button uses opacity-0 → group-hover:opacity-100
+      await node.hover()
+
+      const bookmarkButton = node.getByRole('button', { name: 'Bookmark' })
+      await expect(bookmarkButton).toBeVisible()
+
+      await expect
+        .poll(async () => {
+          const buttonBox = await bookmarkButton.boundingBox()
+          const containerBox = await tab.sidebarContent.boundingBox()
+          if (!buttonBox || !containerBox) return false
+          return (
+            buttonBox.x + buttonBox.width <= containerBox.x + containerBox.width
+          )
+        })
+        .toBe(true)
+    })
+
+    test('Bookmark button is clickable and toggles bookmark state', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.nodeLibraryTabV2
+
+      await tab.expandFolder('sampling')
+      const node = tab.getNode('KSampler (Advanced)')
+      await expect(node).toBeVisible()
+
+      await node.hover()
+      const bookmarkButton = node.getByRole('button', { name: 'Bookmark' })
+      await bookmarkButton.click()
+
+      await expect
+        .poll(() =>
+          comfyPage.settings.getSetting<string[]>(
+            'Comfy.NodeLibrary.Bookmarks.V2'
+          )
+        )
+        .toContain('KSamplerAdvanced')
+    })
+
+    test('Bookmark button remains accessible after search populates results', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.nodeLibraryTabV2
+
+      await tab.searchInput.fill('e')
+      await tab.searchInput.press('Enter')
+
+      const firstResult = tab.sidebarContent.getByRole('treeitem').first()
+      await expect(firstResult).toBeVisible()
+
+      await firstResult.hover()
+
+      const bookmarkButton = firstResult.getByRole('button', {
+        name: 'Bookmark'
+      })
+      await expect(bookmarkButton).toBeVisible()
+
+      await expect
+        .poll(async () => {
+          const buttonBox = await bookmarkButton.boundingBox()
+          const containerBox = await tab.sidebarContent.boundingBox()
+          if (!buttonBox || !containerBox) return false
+          return (
+            buttonBox.x + buttonBox.width <= containerBox.x + containerBox.width
+          )
+        })
+        .toBe(true)
+    })
+  })
 })
