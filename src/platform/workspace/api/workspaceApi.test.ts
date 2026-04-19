@@ -261,6 +261,7 @@ describe('workspaceApi', () => {
       const result = await workspaceApi.acceptInvite('abc-token')
 
       expect(mockGetFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
+      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
