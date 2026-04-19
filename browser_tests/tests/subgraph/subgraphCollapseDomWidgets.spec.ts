@@ -18,6 +18,17 @@ async function toggleSubgraphCollapse(
   await comfyPage.nextFrame()
 }
 
+async function setVueMode(
+  comfyPage: ComfyPage,
+  enabled: boolean
+): Promise<void> {
+  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', enabled)
+  if (enabled) {
+    await comfyPage.vueNodes.waitForNodes()
+  }
+  await comfyPage.nextFrame()
+}
+
 test.describe(
   'Subgraph collapse hides DOM widgets',
   { tag: ['@subgraph'] },
@@ -96,6 +107,62 @@ test.describe(
       await expect(
         comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
       ).toHaveCount(0)
+    })
+
+    test('no ghost DOM widgets on collapsed subgraph after Vue-to-Legacy toggle', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      const visibleWidgets = comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      await expect(visibleWidgets).toHaveCount(1)
+
+      await toggleSubgraphCollapse(comfyPage, '11')
+      await expect(visibleWidgets).toHaveCount(0)
+
+      await setVueMode(comfyPage, true)
+      await setVueMode(comfyPage, false)
+
+      await expect(visibleWidgets).toHaveCount(0)
+    })
+
+    test('no ghost DOM widgets after repeated renderer toggles on collapsed subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      await toggleSubgraphCollapse(comfyPage, '11')
+      const visibleWidgets = comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+
+      for (let i = 0; i < 3; i++) {
+        await setVueMode(comfyPage, true)
+        await setVueMode(comfyPage, false)
+      }
+
+      await expect(visibleWidgets).toHaveCount(0)
+    })
+
+    test('widgets reappear after mode toggle then expand on collapsed subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      await toggleSubgraphCollapse(comfyPage, '11')
+
+      await setVueMode(comfyPage, true)
+      await setVueMode(comfyPage, false)
+
+      await toggleSubgraphCollapse(comfyPage, '11')
+
+      await expect(
+        comfyPage.page.locator(VISIBLE_DOM_WIDGET_SELECTOR)
+      ).toHaveCount(1)
     })
   }
 )

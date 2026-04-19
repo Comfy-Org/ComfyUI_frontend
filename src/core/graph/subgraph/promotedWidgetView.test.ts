@@ -2419,6 +2419,51 @@ describe('DOM widget promotion', () => {
     )
   })
 
+  test('syncDomOverride skips override when subgraphNode is collapsed', () => {
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
+    createMockDOMWidget(innerNodes[0], 'textarea')
+    setPromotions(subgraphNode, [[innerIds[0], 'textarea']])
+
+    subgraphNode.flags.collapsed = true
+    mockDomWidgetStore.setPositionOverride.mockClear()
+
+    const view = subgraphNode.widgets[0]
+    view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
+
+    expect(mockDomWidgetStore.setPositionOverride).not.toHaveBeenCalled()
+  })
+
+  test('syncDomOverride sets override when subgraphNode is expanded', () => {
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
+    createMockDOMWidget(innerNodes[0], 'textarea')
+    setPromotions(subgraphNode, [[innerIds[0], 'textarea']])
+
+    subgraphNode.flags.collapsed = false
+    mockDomWidgetStore.setPositionOverride.mockClear()
+
+    const view = subgraphNode.widgets[0]
+    view.draw!(createFakeCanvasContext(), subgraphNode, 200, 0, 30)
+
+    expect(mockDomWidgetStore.setPositionOverride).toHaveBeenCalledWith(
+      'dom-widget-textarea',
+      { node: subgraphNode, widget: view }
+    )
+  })
+
+  test('y setter does not trigger override when subgraphNode is collapsed', () => {
+    const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
+    createMockDOMWidget(innerNodes[0], 'textarea')
+    setPromotions(subgraphNode, [[innerIds[0], 'textarea']])
+
+    subgraphNode.flags.collapsed = true
+    mockDomWidgetStore.setPositionOverride.mockClear()
+
+    const view = subgraphNode.widgets[0]
+    view.y = 100
+
+    expect(mockDomWidgetStore.setPositionOverride).not.toHaveBeenCalled()
+  })
+
   test('onRemoved clears position overrides for all promoted DOM widgets', () => {
     const [subgraphNode, innerNodes, innerIds] = setupSubgraph(1)
     createMockDOMWidget(innerNodes[0], 'widgetA')

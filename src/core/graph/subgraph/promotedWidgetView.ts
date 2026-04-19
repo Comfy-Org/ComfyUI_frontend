@@ -680,6 +680,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       | undefined = this.resolveAtHost()
   ) {
     if (!resolved || !isBaseDOMWidget(resolved.widget)) return
+    if (this.subgraphNode.flags?.collapsed) return
     useDomWidgetStore().setPositionOverride(resolved.widget.id, {
       node: this.subgraphNode,
       widget: this
