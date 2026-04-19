@@ -143,6 +143,7 @@ export class GizmoManager {
     this.targetObject.position.copy(this.initialPosition)
     this.targetObject.rotation.copy(this.initialRotation)
     this.targetObject.scale.copy(this.initialScale)
+    this.onTransformChange?.()
   }
 
   applyTransform(

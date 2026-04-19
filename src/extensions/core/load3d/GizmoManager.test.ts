@@ -232,6 +232,19 @@ describe('GizmoManager', () => {
       manager.init()
       expect(() => manager.reset()).not.toThrow()
     })
+
+    it('invokes onTransformChange after resetting', () => {
+      manager.init()
+      const model = new THREE.Object3D()
+      model.position.set(1, 2, 3)
+      manager.setupForModel(model)
+
+      expect(onTransformChange).not.toHaveBeenCalled()
+
+      manager.reset()
+
+      expect(onTransformChange).toHaveBeenCalledOnce()
+    })
   })
 
   describe('applyTransform', () => {
