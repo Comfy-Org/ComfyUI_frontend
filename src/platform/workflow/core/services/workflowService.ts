@@ -296,15 +296,33 @@ export const useWorkflowService = () => {
     if (workflowStore.openWorkflows.length === 1) {
       await loadDefaultWorkflow()
     }
-    // If this is the active workflow, load the most recent workflow from history
+    // If this is the active workflow, switch to another before closing
     if (workflowStore.isActive(workflow)) {
-      const mostRecentWorkflow = workflowStore.getMostRecentWorkflow()
-      if (mostRecentWorkflow) {
-        await openWorkflow(mostRecentWorkflow)
-      } else {
-        // Fallback to next workflow if no history
-        await loadNextOpenedWorkflow()
+      let switched = false
+
+      const replacement =
+        workflowStore.getMostRecentWorkflow() ??
+        workflowStore.openedWorkflowIndexShift(1)
+
+      if (replacement) {
+        try {
+          await openWorkflow(replacement)
+          switched = !workflowStore.isActive(workflow)
+        } catch (error) {
+          console.error('Failed to open replacement workflow', error)
+        }
       }
+
+      if (!switched) {
+        try {
+          await loadDefaultWorkflow()
+          switched = !workflowStore.isActive(workflow)
+        } catch (error) {
+          console.error('Failed to load default workflow fallback', error)
+        }
+      }
+
+      if (!switched) return false
     }
 
     await workflowStore.closeWorkflow(workflow)
