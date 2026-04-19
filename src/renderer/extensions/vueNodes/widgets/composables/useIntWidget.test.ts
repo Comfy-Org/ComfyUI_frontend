@@ -1,19 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+
+const mockAddValueControlWidget = vi.fn()
 
 vi.mock('@/scripts/widgets', () => ({
+  addValueControlWidget: (...args: unknown[]) =>
+    mockAddValueControlWidget(...args),
   addValueControlWidgets: vi.fn()
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    settings: {}
+    get: () => false
   })
 }))
 
-const { onValueChange } = _for_testing
+vi.mock('@/schemas/nodeDef/migration', () => ({
+  transformInputSpecV2ToV1: (spec: unknown) => spec
+}))
+
+const {
+  _for_testing: { onValueChange },
+  useIntWidget
+} =
+  await import('@/renderer/extensions/vueNodes/widgets/composables/useIntWidget')
 
 describe('useIntWidget', () => {
   describe('onValueChange', () => {
@@ -71,6 +84,76 @@ describe('useIntWidget', () => {
       widget.options.min = 1
       onValueChange.call(widget, 5.7)
       expect(widget.value).toBe(6)
+    })
+  })
+
+  describe('control_after_generate', () => {
+    function createMockNode(): LGraphNode {
+      return {
+        addWidget: vi.fn((_type, _name, _value, _callback, _options) => ({
+          type: _type,
+          name: _name,
+          value: _value,
+          options: _options ?? {},
+          linkedWidgets: undefined
+        }))
+      } as unknown as LGraphNode
+    }
+
+    beforeEach(() => {
+      mockAddValueControlWidget.mockReset()
+      mockAddValueControlWidget.mockReturnValue({ type: 'combo' })
+    })
+
+    it('should not add control widget for INT named "seed" without control_after_generate', () => {
+      const node = createMockNode()
+      const inputSpec: InputSpec = {
+        type: 'INT',
+        name: 'seed',
+        default: 0
+      }
+
+      const constructor = useIntWidget()
+      constructor(node, inputSpec)
+
+      expect(mockAddValueControlWidget).not.toHaveBeenCalled()
+    })
+
+    it('should add control widget when control_after_generate is explicitly true', () => {
+      const node = createMockNode()
+      const inputSpec: InputSpec = {
+        type: 'INT',
+        name: 'seed',
+        default: 0,
+        control_after_generate: true
+      }
+
+      const constructor = useIntWidget()
+      constructor(node, inputSpec)
+
+      expect(mockAddValueControlWidget).toHaveBeenCalled()
+    })
+
+    it('should pass string control_after_generate as the default type', () => {
+      const node = createMockNode()
+      const inputSpec: InputSpec = {
+        type: 'INT',
+        name: 'seed',
+        default: 0,
+        control_after_generate: 'increment'
+      }
+
+      const constructor = useIntWidget()
+      constructor(node, inputSpec)
+
+      expect(mockAddValueControlWidget).toHaveBeenCalledWith(
+        node,
+        expect.anything(),
+        'increment',
+        undefined,
+        undefined,
+        expect.anything()
+      )
     })
   })
 })
