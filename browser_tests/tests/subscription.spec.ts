@@ -45,7 +45,7 @@ unsubscribedTest.describe(
       'SubscribeToRun visible when unsubscribed',
       async ({ comfyPage }) => {
         await expect(
-          comfyPage.page.getByTestId('subscribe-to-run-button')
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible({ timeout: 10_000 })
       }
     )
@@ -53,7 +53,9 @@ unsubscribedTest.describe(
     unsubscribedTest(
       'SubscribeToRun click opens subscription dialog',
       async ({ comfyPage }) => {
-        await comfyPage.page.getByTestId('subscribe-to-run-button').click()
+        await comfyPage.page
+          .getByTestId(TestIds.topbar.subscribeToRunButton)
+          .click()
         await expect(comfyPage.page.getByRole('dialog')).toBeVisible({
           timeout: 10_000
         })
@@ -64,7 +66,9 @@ unsubscribedTest.describe(
       'SubscribeToRun shows short label on mobile',
       { tag: '@mobile' },
       async ({ comfyPage }) => {
-        const btn = comfyPage.page.getByTestId('subscribe-to-run-button')
+        const btn = comfyPage.page.getByTestId(
+          TestIds.topbar.subscribeToRunButton
+        )
         await expect(btn).toBeVisible({ timeout: 10_000 })
         await expect(btn).not.toContainText(/to run/i)
       }
@@ -104,7 +108,7 @@ unsubscribedTest.describe(
       'Subscription state transition updates UI after re-fetch',
       async ({ comfyPage, subscriptionHelper }) => {
         await expect(
-          comfyPage.page.getByTestId('subscribe-to-run-button')
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible({ timeout: 10_000 })
 
         // Simulate returning from Stripe checkout: seed pending checkout,
@@ -118,7 +122,7 @@ unsubscribedTest.describe(
         await subscriptionHelper.triggerSubscriptionRefetch()
 
         await expect(
-          comfyPage.page.getByTestId('subscribe-to-run-button')
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).not.toBeVisible({ timeout: 10_000 })
       }
     )
@@ -170,7 +174,7 @@ subscribedTest.describe(
           comfyPage.page.getByTestId(TestIds.topbar.queueButton)
         ).toBeVisible({ timeout: 10_000 })
         await expect(
-          comfyPage.page.getByTestId('subscribe-to-run-button')
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeHidden()
       }
     )
