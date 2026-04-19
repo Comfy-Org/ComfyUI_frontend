@@ -14,30 +14,34 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const categories = [
   {
     label: t('useCase.vfx', locale),
-    leftImg: '/images/homepage/use-case-left-1.webp',
-    rightImg: '/images/homepage/use-case-right-1.webp'
+    leftSrc: '/images/homepage/use-case/left1.webm',
+    rightSrc: '/images/homepage/use-case/right1.webp'
   },
   {
     label: t('useCase.advertising', locale),
-    leftImg: '/images/homepage/use-case-left-2.webp',
-    rightImg: '/images/homepage/use-case-right-2.webp'
+    leftSrc: '/images/homepage/use-case/left2.webm',
+    rightSrc: '/images/homepage/use-case/right2.webm'
   },
   {
     label: t('useCase.gaming', locale),
-    leftImg: '/images/homepage/use-case-left-3.webp',
-    rightImg: '/images/homepage/use-case-right-3.webp'
+    leftSrc: '/images/homepage/use-case/left3.webm',
+    rightSrc: '/images/homepage/use-case/right3.webp'
   },
   {
     label: t('useCase.ecommerce', locale),
-    leftImg: '/images/homepage/use-case-left-4.webp',
-    rightImg: '/images/homepage/use-case-right-4.webp'
+    leftSrc: '/images/homepage/use-case/left4.webm',
+    rightSrc: '/images/homepage/use-case/right4.webm'
   },
   {
     label: t('useCase.more', locale),
-    leftImg: '/images/homepage/use-case-left-5.webp',
-    rightImg: '/images/homepage/use-case-right-5.webp'
+    leftSrc: '/images/homepage/use-case/left5.webm',
+    rightSrc: '/images/homepage/use-case/right5.webm'
   }
 ]
+
+function isVideo(src: string): boolean {
+  return src.endsWith('.webm')
+}
 
 const sectionRef = ref<HTMLElement>()
 const contentRef = ref<HTMLElement>()
@@ -50,8 +54,8 @@ const { activeIndex: activeCategory, scrollToIndex } = usePinScrub(
   { itemCount: categories.length }
 )
 
-const activeLeft = computed(() => categories[activeCategory.value].leftImg)
-const activeRight = computed(() => categories[activeCategory.value].rightImg)
+const activeLeft = computed(() => categories[activeCategory.value].leftSrc)
+const activeRight = computed(() => categories[activeCategory.value].rightSrc)
 
 const uid = useId()
 const leftBlobId = `left-blob-${uid}`
@@ -117,7 +121,19 @@ useParallax([leftImgRef], {
             :style="`clip-path: url(#${leftBlobId})`"
           >
             <Transition name="crossfade">
+              <video
+                v-if="isVideo(activeLeft)"
+                :key="activeLeft"
+                :src="activeLeft"
+                autoplay
+                muted
+                loop
+                playsinline
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+              />
               <img
+                v-else
                 :key="activeLeft"
                 :src="activeLeft"
                 alt=""
@@ -185,7 +201,19 @@ useParallax([leftImgRef], {
             :style="`clip-path: url(#${rightBlobId})`"
           >
             <Transition name="crossfade">
+              <video
+                v-if="isVideo(activeRight)"
+                :key="activeRight"
+                :src="activeRight"
+                autoplay
+                muted
+                loop
+                playsinline
+                aria-hidden="true"
+                class="absolute inset-0 size-full object-cover"
+              />
               <img
+                v-else
                 :key="activeRight"
                 :src="activeRight"
                 alt=""
