@@ -1,3 +1,4 @@
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
@@ -58,21 +59,20 @@ function addMultilineWidget(
     widget.callback?.(widget.value)
   })
 
-  // Allow middle mouse button panning
   inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
+    if (isMiddlePointerInput(event)) {
       app.canvas.processMouseDown(event)
     }
   })
 
   inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
+    if (isMiddlePointerInput(event)) {
       app.canvas.processMouseMove(event)
     }
   })
 
   inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
+    if (isMiddlePointerInput(event)) {
       app.canvas.processMouseUp(event)
     }
   })

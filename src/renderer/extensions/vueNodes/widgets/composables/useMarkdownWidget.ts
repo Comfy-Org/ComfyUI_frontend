@@ -7,6 +7,7 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -92,19 +93,19 @@ function addMarkdownWidget(
   })
 
   inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
+    if (isMiddlePointerInput(event)) {
       app.canvas.processMouseDown(event)
     }
   })
 
   inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
+    if (isMiddlePointerInput(event)) {
       app.canvas.processMouseMove(event)
     }
   })
 
   inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
+    if (isMiddlePointerInput(event)) {
       app.canvas.processMouseUp(event)
     }
   })

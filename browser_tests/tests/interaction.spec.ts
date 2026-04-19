@@ -216,6 +216,65 @@ test.describe('Node Interaction', () => {
     })
   })
 
+  test('Middle-click on output slot should create default node when setting enabled', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.settings.setSetting(
+      'Comfy.Node.MiddleClickRerouteNode',
+      true
+    )
+    await comfyPage.nextFrame()
+
+    try {
+      const [nodeRef] =
+        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+      expect(
+        nodeRef,
+        'Expected CLIPTextEncode node in default workflow'
+      ).toBeTruthy()
+
+      const nodeId = nodeRef.id
+      const slotPos = await comfyPage.page.evaluate((targetNodeId) => {
+        const node = window.app!.graph!.getNodeById(targetNodeId)
+        if (!node) return null
+        const pos = node.getOutputPos(0)
+        const canvas = window.app!.canvas!
+        const converted = canvas.convertCanvasToOffset(pos)
+        return { x: converted[0], y: converted[1] }
+      }, nodeId)
+      expect(slotPos).not.toBeNull()
+
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      await comfyPage.page.mouse.move(slotPos!.x, slotPos!.y)
+      await comfyPage.page.mouse.down({ button: 'middle' })
+      await comfyPage.page.mouse.up({ button: 'middle' })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBeGreaterThan(initialNodeCount)
+
+      await expect
+        .poll(async () => {
+          return comfyPage.page.evaluate((srcNodeId) => {
+            const node = window.app!.graph!.getNodeById(srcNodeId)
+            if (!node) return false
+            const output = node.outputs?.[0]
+            return (output?.links?.length ?? 0) > 0
+          }, nodeId)
+        })
+        .toBe(true)
+    } finally {
+      await comfyPage.settings.setSetting(
+        'Comfy.Node.MiddleClickRerouteNode',
+        false
+      )
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    }
+  })
+
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(

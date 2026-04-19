@@ -1,3 +1,4 @@
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 
 /**
@@ -71,7 +72,7 @@ export class InputIndicators implements Disposable {
   private _onPointerDownOrMove = this.onPointerDownOrMove.bind(this)
   onPointerDownOrMove(e: MouseEvent): void {
     this.mouse0Down = (e.buttons & 1) === 1
-    this.mouse1Down = (e.buttons & 4) === 4
+    this.mouse1Down = isMiddlePointerInput(e)
     this.mouse2Down = (e.buttons & 2) === 2
 
     this.x = e.clientX
