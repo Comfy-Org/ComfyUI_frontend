@@ -1,11 +1,11 @@
-import type { DownloadEntry, DownloadService } from '../types'
+import type {
+  DownloadEntry,
+  DownloadService,
+  DownloadStartParams
+} from '../types'
 
 export function createBrowserDownloadService(): DownloadService {
-  async function start(params: {
-    url: string
-    savePath: string
-    filename: string
-  }): Promise<DownloadEntry> {
+  async function start(params: DownloadStartParams): Promise<DownloadEntry> {
     const anchorElement = document.createElement('a')
     anchorElement.href = params.url
     anchorElement.download = params.filename
