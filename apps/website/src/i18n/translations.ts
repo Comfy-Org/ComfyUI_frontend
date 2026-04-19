@@ -2077,30 +2077,30 @@ const translations = {
       '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
   },
   'customers.story.series-entertainment.category': {
-    en: 'CASE STUDY',
-    'zh-CN': '案例研究'
+    en: 'GAME & VIDEO PRODUCTION',
+    'zh-CN': '游戏与视频制作'
   },
   'customers.story.series-entertainment.title': {
     en: 'How Series Entertainment Rebuilt Game and Video Production with ComfyUI',
     'zh-CN': 'Series Entertainment 如何使用 ComfyUI 重塑游戏和视频制作'
   },
   'customers.story.series-entertainment.body': {
-    en: 'Series Entertainment transformed their game and video production pipeline by integrating ComfyUI into their creative workflow, enabling rapid iteration and unprecedented control over AI-generated assets.',
+    en: 'Scaling emotional storytelling across 100,000+ assets and multiple Netflix titles, using repeatable ComfyUI production systems.',
     'zh-CN':
-      'Series Entertainment 通过将 ComfyUI 集成到创意工作流程中，彻底改变了游戏和视频制作管线，实现了快速迭代和对 AI 生成资产的前所未有的控制。'
+      '使用可复用的 ComfyUI 生产系统，在 100,000+ 资产和多部 Netflix 作品中实现情感叙事的规模化。'
   },
   'customers.story.open-story-movement.category': {
-    en: 'CASE STUDY',
-    'zh-CN': '案例研究'
+    en: 'OPEN SOURCE × BRAND',
+    'zh-CN': '开源 × 品牌'
   },
   'customers.story.open-story-movement.title': {
-    en: 'How Open Source Is Fueling the Open Story Movement — and a Financially Successful Future for Artists in the Age of AI',
-    'zh-CN': '开源如何推动 Open Story 运动——以及 AI 时代艺术家的财务成功未来'
+    en: 'How Doodles, SYSTMS, and Open-Source Tools Like ComfyUI Are Rewriting the Rules for Artists',
+    'zh-CN': 'Doodles、SYSTMS 和 ComfyUI 等开源工具如何重写艺术家的规则'
   },
   'customers.story.open-story-movement.body': {
-    en: 'The Open Story Movement leverages ComfyUI and open-source tools to empower independent artists, creating new pathways to creative freedom and financial sustainability in the AI era.',
+    en: 'Doodles and SYSTMS built Doodles AI — a generative platform powered by PRISM 1.0 — on open-source infrastructure including ComfyUI, proving that open-source workflows can power brand-quality, commercially successful products.',
     'zh-CN':
-      'Open Story 运动利用 ComfyUI 和开源工具赋能独立艺术家，在 AI 时代为创作自由和财务可持续性开辟新路径。'
+      'Doodles 和 SYSTMS 在包括 ComfyUI 在内的开源基础设施上构建了 Doodles AI——一个由 PRISM 1.0 驱动的生成平台，证明了开源工作流可以支撑品牌级、商业成功的产品。'
   },
   'customers.story.moment-factory.category': {
     en: 'CASE STUDY',
@@ -2116,17 +2116,17 @@ const translations = {
       'Moment Factory 使用 ComfyUI 重新定义了 3D 投影映射管线，通过 AI 驱动的内容生成和实时迭代，实现建筑尺度的视觉体验。'
   },
   'customers.story.ubisoft-chord.category': {
-    en: 'USE CASE DEEP DIVE',
-    'zh-CN': '深度用例'
+    en: 'AAA GAME PRODUCTION',
+    'zh-CN': 'AAA 游戏制作'
   },
   'customers.story.ubisoft-chord.title': {
-    en: 'How Ubisoft Open-Sources the CHORD Model and ComfyUI Nodes for End-to-End PBR Material Generation',
-    'zh-CN': '育碧如何开源 CHORD 模型和 ComfyUI 节点，实现端到端 PBR 材质生成'
+    en: 'Ubisoft Open-Sources the CHORD Model with ComfyUI for AAA PBR Material Generation',
+    'zh-CN': '育碧开源 CHORD 模型，通过 ComfyUI 实现 AAA 级 PBR 材质生成'
   },
   'customers.story.ubisoft-chord.body': {
-    en: 'Ubisoft open-sourced the CHORD model with custom ComfyUI nodes, enabling end-to-end PBR material generation that streamlines game asset creation across their studios.',
+    en: 'Ubisoft La Forge open-sourced its CHORD PBR material estimation model with ComfyUI custom nodes, enabling end-to-end texture generation workflows for AAA game production.',
     'zh-CN':
-      '育碧开源了 CHORD 模型及自定义 ComfyUI 节点，实现端到端 PBR 材质生成，简化了旗下各工作室的游戏资产创建流程。'
+      '育碧 La Forge 开源了 CHORD PBR 材质估算模型及 ComfyUI 自定义节点，为 AAA 游戏制作实现了端到端的纹理生成工作流。'
   },
   'customers.story.readMore': {
     en: 'READ MORE ON THIS TOPIC',
@@ -2134,342 +2134,419 @@ const translations = {
   },
 
   // Customer Detail: Series Entertainment
+  // Topic 1: Intro
   'customers.detail.series-entertainment.topic-1.label': {
-    en: 'THE STORY',
-    'zh-CN': '故事'
+    en: 'INTRO',
+    'zh-CN': '简介'
   },
-  'customers.detail.series-entertainment.topic-1.title': {
-    en: 'Title Section: At Comfy UI',
-    'zh-CN': '标题章节：Comfy UI'
-  },
-  'customers.detail.series-entertainment.topic-1.block.0.heading': {
-    en: 'Title Section: At Comfy UI lorem ipsum',
-    'zh-CN': '标题章节：Comfy UI Lorem Ipsum'
+  'customers.detail.series-entertainment.topic-1.block.0': {
+    en: 'Series Entertainment builds story-driven games and short-form video experiences where characters, emotion, and visual consistency matter. As the scope of their work expanded across internal projects, partner collaborations, and Netflix titles, the team faced a growing challenge: they needed to produce more content, across more projects, without slowing down or losing consistency.',
+    'zh-CN':
+      'Series Entertainment 构建以故事为驱动的游戏和短视频体验，其中角色、情感和视觉一致性至关重要。随着工作范围扩展到内部项目、合作伙伴协作和 Netflix 作品，团队面临日益增长的挑战：他们需要在更多项目中生产更多内容，同时不能放慢速度或失去一致性。'
   },
   'customers.detail.series-entertainment.topic-1.block.1': {
-    en: 'Series Entertainment transformed their game and video production pipeline by integrating ComfyUI into their creative workflow, enabling rapid iteration and unprecedented control over AI-generated assets.',
+    en: 'To meet that challenge, Series leveraged ComfyUI to scale their workflows. By building custom, repeatable workflows on top of ComfyUI, Series changed how they create characters, emotions, and video. The result was a scalable production system that supported over 100,000 assets, shipped Netflix games, and continues to power multiple projects in active development.',
     'zh-CN':
-      'Series Entertainment 通过将 ComfyUI 集成到创意工作流程中，彻底改变了游戏和视频制作管线，实现了快速迭代和对 AI 生成资产的前所未有的控制。'
+      '为了应对这一挑战，Series 利用 ComfyUI 扩展了工作流。通过在 ComfyUI 之上构建自定义的可复用工作流，Series 改变了创建角色、情感和视频的方式。最终打造出一个支持超过 100,000 个资产、交付 Netflix 游戏并持续为多个在研项目提供动力的可扩展生产系统。'
   },
-  'customers.detail.series-entertainment.topic-1.block.2': {
-    en: 'By combining node-based workflows with their existing tools, Series Entertainment achieved a seamless integration that reduced production time while maintaining full artistic control over the creative process.',
+  'customers.detail.series-entertainment.topic-1.block.2.src': {
+    en: '/images/customers/series-entertainment/series.webp',
+    'zh-CN': '/images/customers/series-entertainment/series.webp'
+  },
+  'customers.detail.series-entertainment.topic-1.block.2.alt': {
+    en: 'Series Entertainment game titles including Olympus Rising, Gilded Scales, Evergrove, and The Wandering Teahouse',
     'zh-CN':
-      '通过将基于节点的工作流与现有工具相结合，Series Entertainment 实现了无缝集成，在保持对创作过程的完全艺术控制的同时减少了制作时间。'
+      'Series Entertainment 游戏作品，包括 Olympus Rising、Gilded Scales、Evergrove 和 The Wandering Teahouse'
   },
-  'customers.detail.series-entertainment.topic-1.block.3.src': {
-    en: '/images/customers/detail-big-image.webp',
-    'zh-CN': '/images/customers/detail-big-image.webp'
-  },
-  'customers.detail.series-entertainment.topic-1.block.3.alt': {
-    en: 'Series Entertainment workflow',
-    'zh-CN': 'Series Entertainment 工作流'
-  },
-  'customers.detail.series-entertainment.topic-1.block.3.caption': {
-    en: 'Caption: lorem ipsum dolor sit amet consectetur.',
-    'zh-CN': '说明：图片描述文案。'
-  },
-  'customers.detail.series-entertainment.topic-1.block.4.text': {
-    en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it.',
+  'customers.detail.series-entertainment.topic-1.block.2.caption': {
+    en: 'Series Entertainment produces story-driven games and video experiences across multiple titles and visual styles.',
     'zh-CN':
-      'ComfyUI 对我们非常重要，因为它让我们始终站在技术最前沿。不仅因为技术本身，更因为它背后的整个社区。'
+      'Series Entertainment 制作跨多个作品和视觉风格的故事驱动游戏和视频体验。'
   },
-  'customers.detail.series-entertainment.topic-1.block.4.name': {
-    en: 'PJ Pereira',
-    'zh-CN': 'PJ Pereira'
-  },
-  'customers.detail.series-entertainment.topic-1.block.5': {
-    en: 'Lorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.',
-    'zh-CN': '列表项一\n列表项二\n列表项三\n列表项四'
-  },
-  'customers.detail.series-entertainment.topic-1.block.6.ol': {
-    en: 'Lorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.\nLorem ipsum dolor sit amet consectetur.',
-    'zh-CN': '有序列表项一\n有序列表项二\n有序列表项三\n有序列表项四'
-  },
-  'customers.detail.series-entertainment.topic-1.block.7': {
-    en: 'Series Entertainment transformed their game and video production pipeline by integrating ComfyUI into their creative workflow, enabling rapid iteration and unprecedented control over AI-generated assets.',
-    'zh-CN':
-      'Series Entertainment 通过将 ComfyUI 集成到创意工作流程中，彻底改变了游戏和视频制作管线，实现了快速迭代和对 AI 生成资产的前所未有的控制。'
-  },
-  'customers.detail.series-entertainment.topic-1.block.8': {
-    en: 'By combining node-based workflows with their existing tools, Series Entertainment achieved a seamless integration that reduced production time while maintaining full artistic control over the creative process.',
-    'zh-CN':
-      '通过将基于节点的工作流与现有工具相结合，Series Entertainment 实现了无缝集成，在保持对创作过程的完全艺术控制的同时减少了制作时间。'
-  },
+  // Topic 2: The Output
   'customers.detail.series-entertainment.topic-2.label': {
-    en: 'CUSTOM WORKFLOWS',
-    'zh-CN': '自定义工作流'
+    en: 'THE OUTPUT',
+    'zh-CN': '产出成果'
   },
   'customers.detail.series-entertainment.topic-2.title': {
-    en: 'Building Custom Workflows',
-    'zh-CN': '构建自定义工作流'
+    en: 'The Output Series Achieved Using ComfyUI',
+    'zh-CN': 'Series 使用 ComfyUI 达成的产出成果'
   },
   'customers.detail.series-entertainment.topic-2.block.0': {
-    en: 'The team at Series Entertainment developed custom ComfyUI workflows that integrated directly with their game engine, allowing artists to generate and iterate on assets in real-time during the production process.',
-    'zh-CN':
-      'Series Entertainment 团队开发了与游戏引擎直接集成的自定义 ComfyUI 工作流，使艺术家能够在制作过程中实时生成和迭代资产。'
+    en: 'With ComfyUI integrated into its production workflows, Series achieved:',
+    'zh-CN': '将 ComfyUI 集成到生产工作流后，Series 实现了：'
   },
   'customers.detail.series-entertainment.topic-2.block.1': {
-    en: 'This approach eliminated the traditional bottleneck of waiting for renders and enabled a more fluid creative process where changes could be previewed instantly.',
+    en: '100,000+ assets generated across games and video\n180× faster production speed\nSix distinct character emotions generated in seconds\n15 minutes of final video per creator per week\nMultiple Netflix titles shipped, with many more experiences in active development',
     'zh-CN':
-      '这种方法消除了等待渲染的传统瓶颈，实现了更流畅的创作过程，可以即时预览更改。'
+      '在游戏和视频中生成超过 100,000 个资产\n180 倍的生产速度提升\n数秒内生成六种不同的角色情感\n每位创作者每周生产 15 分钟的最终视频\n多部 Netflix 作品交付，更多体验正在积极开发中'
   },
+  'customers.detail.series-entertainment.topic-2.block.2': {
+    en: 'These outputs span character assets, emotional variations, background consistency, and short-form video — all created through repeatable ComfyUI-powered workflows.',
+    'zh-CN':
+      '这些产出涵盖角色资产、情感变体、背景一致性和短视频——全部通过可复用的 ComfyUI 工作流创建。'
+  },
+  // Topic 3: The Problem
   'customers.detail.series-entertainment.topic-3.label': {
-    en: 'AI ASSETS',
-    'zh-CN': 'AI 资产'
+    en: 'THE PROBLEM',
+    'zh-CN': '面临的问题'
   },
   'customers.detail.series-entertainment.topic-3.title': {
-    en: 'AI-Driven Asset Generation',
-    'zh-CN': 'AI 驱动的资产生成'
+    en: 'The Problem Series Was Trying to Solve',
+    'zh-CN': 'Series 试图解决的问题'
   },
   'customers.detail.series-entertainment.topic-3.block.0': {
-    en: "Using ComfyUI's node-based system, the team created pipelines for generating textures, concept art, and environmental assets that matched their specific art direction and quality standards.",
+    en: "Series' work depends on expressive characters and consistent visual identity. As projects grew in size and complexity, the team needed a way to scale content creation without breaking timelines.",
     'zh-CN':
-      '利用 ComfyUI 基于节点的系统，团队创建了用于生成纹理、概念艺术和环境资产的管线，以匹配其特定的艺术方向和质量标准。'
+      'Series 的工作依赖于富有表现力的角色和一致的视觉标识。随着项目规模和复杂度的增长，团队需要一种在不打破时间线的前提下扩展内容创作的方法。'
   },
   'customers.detail.series-entertainment.topic-3.block.1': {
-    en: 'The flexibility of the node system meant that artists could experiment with different approaches without writing code, maintaining creative control throughout the process.',
+    en: 'Traditional animation workflows rely on manual keyframing, multiple disconnected tools, and long production cycles that can stretch into weeks per video. Producing variations often means redoing work from scratch, and experimentation can be slow and expensive.',
     'zh-CN':
-      '节点系统的灵活性意味着艺术家可以在不编写代码的情况下尝试不同的方法，在整个过程中保持创作控制。'
+      '传统动画工作流依赖手动关键帧、多个断开的工具和漫长的制作周期——每个视频可能需要数周。制作变体通常意味着从头返工，实验过程缓慢且昂贵。'
   },
+  'customers.detail.series-entertainment.topic-3.block.2': {
+    en: 'Series needed workflows that could be reused across teams and projects, while still supporting emotional storytelling, character consistency, and fast iteration.',
+    'zh-CN':
+      'Series 需要能够在团队和项目间复用的工作流，同时仍然支持情感叙事、角色一致性和快速迭代。'
+  },
+  // Topic 4: The Solution
   'customers.detail.series-entertainment.topic-4.label': {
-    en: 'PIPELINE',
-    'zh-CN': '管线集成'
+    en: 'THE SOLUTION',
+    'zh-CN': '解决方案'
   },
   'customers.detail.series-entertainment.topic-4.title': {
-    en: 'Production Pipeline Integration',
-    'zh-CN': '生产管线集成'
+    en: 'How Series Used ComfyUI to Solve the Problem',
+    'zh-CN': 'Series 如何使用 ComfyUI 解决问题'
   },
   'customers.detail.series-entertainment.topic-4.block.0': {
-    en: 'ComfyUI was integrated into their existing production pipeline through custom nodes and API connections, enabling automated batch processing and consistent output across multiple projects.',
+    en: "Series rebuilt their production process around ComfyUI's node-based workflow system. Instead of treating generation as a one-off step, they treated workflows as long-term production assets. ComfyUI became the place where creative structure lived — from character creation to emotion generation to video output.",
     'zh-CN':
-      'ComfyUI 通过自定义节点和 API 连接集成到现有生产管线中，实现了自动化批处理和多个项目之间的一致输出。'
+      'Series 围绕 ComfyUI 的节点式工作流系统重建了制作流程。他们不再将生成视为一次性步骤，而是将工作流作为长期生产资产。ComfyUI 成为了创意结构的所在——从角色创建到情感生成再到视频输出。'
   },
-  'customers.detail.series-entertainment.topic-4.block.1': {
-    en: "The team built custom nodes for their specific needs, extending ComfyUI's capabilities to handle game-specific asset requirements and format conversions.",
+  'customers.detail.series-entertainment.topic-4.block.1.heading': {
+    en: 'Emotion Generation at Scale',
+    'zh-CN': '规模化情感生成'
+  },
+  'customers.detail.series-entertainment.topic-4.block.2': {
+    en: 'Series built a custom avatar system using ComfyUI that generates six distinct emotions in seconds: Happy, Sad, Serious, Snarky, Thinking, and Surprised. This made it possible to create expressive characters with multiple emotional states without manually recreating each variation.',
     'zh-CN':
-      '团队根据特定需求构建了自定义节点，扩展了 ComfyUI 的功能以处理特定于游戏的资产需求和格式转换。'
+      'Series 使用 ComfyUI 构建了一个自定义头像系统，可在数秒内生成六种不同的情感：开心、悲伤、严肃、讽刺、思考和惊讶。这使得创建具有多种情感状态的表现力角色成为可能，而无需手动重新创建每个变体。'
   },
+  'customers.detail.series-entertainment.topic-4.block.3.src': {
+    en: '/images/customers/series-entertainment/panel.webp',
+    'zh-CN': '/images/customers/series-entertainment/panel.webp'
+  },
+  'customers.detail.series-entertainment.topic-4.block.3.alt': {
+    en: 'ComfyUI Expression Editor node for facial expression manipulation',
+    'zh-CN': 'ComfyUI 表情编辑器节点，用于面部表情操控'
+  },
+  'customers.detail.series-entertainment.topic-4.block.3.caption': {
+    en: 'The Expression Editor node in ComfyUI enables fine-grained control over character emotions.',
+    'zh-CN': 'ComfyUI 中的表情编辑器节点实现了对角色情感的精细控制。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.4.heading': {
+    en: 'Replicable Pipelines from Test to Production',
+    'zh-CN': '从测试到生产的可复用管线'
+  },
+  'customers.detail.series-entertainment.topic-4.block.5': {
+    en: "Using ComfyUI's modular node system, Series built four streamlined pipelines that support the full production cycle — from early exploration to final output. These workflows deliver results up to <strong>180× faster</strong> than traditional manual processes that can take six hours or more per asset, while maintaining production quality.",
+    'zh-CN':
+      '利用 ComfyUI 的模块化节点系统，Series 构建了四条精简管线，支持从早期探索到最终输出的完整生产周期。这些工作流的效率比传统手工流程（每个资产可能需要六小时以上）<strong>提高了 180 倍</strong>，同时保持生产品质。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.6': {
+    en: 'The pipelines range from quick 512×512 single-emotion tests to high-resolution batch generation, allowing teams to experiment quickly and move directly into production using the same workflows.',
+    'zh-CN':
+      '管线范围从快速的 512×512 单情感测试到高分辨率批量生成，使团队能够快速实验并使用相同的工作流直接进入生产。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.7.src': {
+    en: '/images/customers/series-entertainment/workflows.webp',
+    'zh-CN': '/images/customers/series-entertainment/workflows.webp'
+  },
+  'customers.detail.series-entertainment.topic-4.block.7.alt': {
+    en: 'ComfyUI workflow for facial expression manipulation and upscaling pipeline',
+    'zh-CN': 'ComfyUI 面部表情操控和放大管线工作流'
+  },
+  'customers.detail.series-entertainment.topic-4.block.7.caption': {
+    en: 'A ComfyUI workflow showing parallel expression editing, upscaling, and face detailing pipelines.',
+    'zh-CN': 'ComfyUI 工作流展示了并行的表情编辑、放大和面部细化管线。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.8.heading': {
+    en: 'Consistency Across Games and Branching Stories',
+    'zh-CN': '跨游戏和分支叙事的一致性'
+  },
+  'customers.detail.series-entertainment.topic-4.block.9': {
+    en: 'For multiple Netflix titles, Series used ComfyUI to build workflows that keep characters and backgrounds consistent across complex, branching narratives. Styling and consistency pipelines help ensure that characters stay visually aligned across scenes, emotions, and story paths — even as asset counts grow.',
+    'zh-CN':
+      '在多部 Netflix 作品中，Series 使用 ComfyUI 构建了工作流，确保角色和背景在复杂的分支叙事中保持一致。风格化和一致性管线帮助确保角色在场景、情感和故事路径之间保持视觉统一——即使资产数量不断增长。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.10.src': {
+    en: '/images/customers/series-entertainment/consistency.webp',
+    'zh-CN': '/images/customers/series-entertainment/consistency.webp'
+  },
+  'customers.detail.series-entertainment.topic-4.block.10.alt': {
+    en: 'Consistent character across multiple scenes and emotional states',
+    'zh-CN': '角色在多个场景和情感状态中保持一致'
+  },
+  'customers.detail.series-entertainment.topic-4.block.10.caption': {
+    en: 'A single character maintained across six different scenes and emotional states using ComfyUI consistency pipelines.',
+    'zh-CN': '使用 ComfyUI 一致性管线在六个不同场景和情感状态中保持同一角色。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.11.heading': {
+    en: 'Production at Scale with ComfyUI',
+    'zh-CN': '使用 ComfyUI 实现规模化生产'
+  },
+  'customers.detail.series-entertainment.topic-4.block.12': {
+    en: 'Series also uses ComfyUI as part of an AI-assisted animation pipeline that connects story development directly to image and video generation. This pipeline includes bot-assisted video generation, allowing creators to repeatedly run the same workflows to produce video efficiently. Using this approach, each creator can generate Lorespark videos at scale, delivering over <strong>15 minutes of final video per week</strong>.',
+    'zh-CN':
+      'Series 还将 ComfyUI 作为 AI 辅助动画管线的一部分，将故事开发直接连接到图像和视频生成。该管线包含机器人辅助视频生成，允许创作者反复运行相同的工作流以高效生产视频。使用这种方法，每位创作者可以规模化生成 Lorespark 视频，每周交付超过 <strong>15 分钟的最终视频</strong>。'
+  },
+  'customers.detail.series-entertainment.topic-4.block.13.src': {
+    en: '/images/customers/series-entertainment/batch.webp',
+    'zh-CN': '/images/customers/series-entertainment/batch.webp'
+  },
+  'customers.detail.series-entertainment.topic-4.block.13.alt': {
+    en: 'ComfyUI batch processing workflow using Nano Banana and Google Gemini',
+    'zh-CN': 'ComfyUI 使用 Nano Banana 和 Google Gemini 的批处理工作流'
+  },
+  'customers.detail.series-entertainment.topic-4.block.13.caption': {
+    en: 'A batch processing workflow connecting multiple character images to Nano Banana for style-consistent generation.',
+    'zh-CN':
+      '批处理工作流将多个角色图像连接到 Nano Banana，实现风格一致的生成。'
+  },
+  // Topic 5: Why ComfyUI
   'customers.detail.series-entertainment.topic-5.label': {
-    en: 'COMMUNITY',
-    'zh-CN': '社区'
+    en: 'WHY COMFYUI',
+    'zh-CN': '为何选择 ComfyUI'
   },
   'customers.detail.series-entertainment.topic-5.title': {
-    en: 'Community and Collaboration',
-    'zh-CN': '社区与协作'
+    en: 'Why ComfyUI Worked for Series',
+    'zh-CN': '为什么 ComfyUI 适合 Series'
   },
   'customers.detail.series-entertainment.topic-5.block.0': {
-    en: 'Series Entertainment actively participates in the ComfyUI community, sharing custom nodes and workflows that benefit other studios and creators working on similar challenges.',
+    en: 'ComfyUI worked well because its node-based structure makes workflows explicit and reusable — once a workflow is built, it can be refined and shared across projects. This allowed Series to turn video generation into a repeatable system rather than a one-off process.',
     'zh-CN':
-      'Series Entertainment 积极参与 ComfyUI 社区，分享自定义节点和工作流，使面临类似挑战的其他工作室和创作者受益。'
+      'ComfyUI 之所以有效，是因为其节点式结构使工作流显式且可复用——一旦构建了工作流，就可以在项目间优化和共享。这使 Series 能够将视频生成从一次性过程转变为可重复的系统。'
   },
   'customers.detail.series-entertainment.topic-5.block.1': {
-    en: 'The open nature of ComfyUI enabled collaboration across teams, with shared workflows and custom nodes creating a standardized approach to AI-assisted content creation.',
+    en: 'Batch execution and bot integration allow those workflows to run at scale. Because the same workflows support both low-resolution testing and high-resolution final output, teams can move from exploration to delivery without switching tools or rebuilding pipelines.',
     'zh-CN':
-      'ComfyUI 的开放性使团队之间的协作成为可能，共享的工作流和自定义节点创建了一种标准化的 AI 辅助内容创作方法。'
+      '批量执行和机器人集成使这些工作流能够大规模运行。由于相同的工作流同时支持低分辨率测试和高分辨率最终输出，团队可以从探索无缝过渡到交付，无需切换工具或重建管线。'
   },
+  'customers.detail.series-entertainment.topic-5.block.2': {
+    en: 'Most importantly, ComfyUI let Series focus on building structure instead of relying on trial-and-error prompting. Emotions, consistency, and production logic live inside the workflows themselves.',
+    'zh-CN':
+      '最重要的是，ComfyUI 让 Series 专注于构建结构，而非依赖试错式提示。情感、一致性和生产逻辑都存在于工作流本身之中。'
+  },
+  'customers.detail.series-entertainment.topic-5.block.3.src': {
+    en: '/images/customers/series-entertainment/scale.webp',
+    'zh-CN': '/images/customers/series-entertainment/scale.webp'
+  },
+  'customers.detail.series-entertainment.topic-5.block.3.alt': {
+    en: 'Six variations of the same character generated with consistent style',
+    'zh-CN': '以一致风格生成的同一角色的六个变体'
+  },
+  'customers.detail.series-entertainment.topic-5.block.3.caption': {
+    en: 'Multiple pose and expression variations of a single character, generated at scale while maintaining visual consistency.',
+    'zh-CN':
+      '同一角色的多个姿态和表情变体，在保持视觉一致性的同时实现规模化生成。'
+  },
+  // Topic 6: Conclusion
   'customers.detail.series-entertainment.topic-6.label': {
-    en: 'RESULTS',
-    'zh-CN': '成果'
+    en: 'CONCLUSION',
+    'zh-CN': '总结'
   },
   'customers.detail.series-entertainment.topic-6.title': {
-    en: 'Results and Impact',
-    'zh-CN': '成果与影响'
+    en: 'Conclusion',
+    'zh-CN': '总结'
   },
   'customers.detail.series-entertainment.topic-6.block.0': {
-    en: 'The integration of ComfyUI resulted in a significant reduction in production time and costs while simultaneously improving the quality and consistency of AI-generated assets across all their projects.',
+    en: 'By making ComfyUI a core creative platform, Series Entertainment transformed how it produces games and video. What started as a need for scale and consistency became a workflow-driven production system that supports emotional storytelling, large asset volumes, and ongoing development across multiple teams.',
     'zh-CN':
-      'ComfyUI 的集成显著减少了制作时间和成本，同时提高了所有项目中 AI 生成资产的质量和一致性。'
+      '通过将 ComfyUI 作为核心创意平台，Series Entertainment 彻底改变了游戏和视频的制作方式。最初只是对规模和一致性的需求，最终演变成一个以工作流驱动的生产系统，支持情感叙事、大规模资产和多团队的持续开发。'
   },
   'customers.detail.series-entertainment.topic-6.block.1.text': {
-    en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it. The community is what makes it so special.',
-    'zh-CN':
-      'ComfyUI 对我们非常重要，因为它让我们始终站在技术最前沿。不仅因为技术本身，更因为它背后的整个社区。社区才是让它如此特别的原因。'
+    en: 'For Series, ComfyUI is not an experiment. It is how entertainment gets made.',
+    'zh-CN': '对 Series 来说，ComfyUI 不是实验。它就是娱乐内容的制作方式。'
   },
   'customers.detail.series-entertainment.topic-6.block.1.name': {
-    en: 'PJ Pereira',
-    'zh-CN': 'PJ Pereira'
-  },
-  'customers.detail.series-entertainment.topic-6.block.2.label': {
-    en: 'AUTHOR',
-    'zh-CN': '作者'
-  },
-  'customers.detail.series-entertainment.topic-6.block.2.name': {
-    en: 'PJ Pereira',
-    'zh-CN': 'PJ Pereira'
-  },
-  'customers.detail.series-entertainment.topic-6.block.2.role': {
-    en: 'Co-founder of Silverside AI',
-    'zh-CN': 'Silverside AI 联合创始人'
+    en: 'Series Entertainment',
+    'zh-CN': 'Series Entertainment'
   },
 
   // Customer Detail: Open Story Movement
+  // Topic 1: Intro
   'customers.detail.open-story-movement.topic-1.label': {
-    en: 'THE STORY',
-    'zh-CN': '故事'
+    en: 'INTRO',
+    'zh-CN': '简介'
   },
-  'customers.detail.open-story-movement.topic-1.title': {
-    en: 'Empowering Independent Artists',
-    'zh-CN': '赋能独立艺术家'
-  },
-  'customers.detail.open-story-movement.topic-1.block.0.heading': {
-    en: 'The Open Story Movement and ComfyUI',
-    'zh-CN': 'Open Story 运动与 ComfyUI'
+  'customers.detail.open-story-movement.topic-1.block.0': {
+    en: "Doodles, the entertainment brand built around the iconic pastel-palette artwork of Canadian illustrator Scott Martin (known as Burnt Toast), is about to launch <strong>Doodles AI</strong> — a generative platform powered by <strong>PRISM 1.0</strong>, a generative image model trained on Doodles' extensive body of work that can reimagine people and objects in the unmistakable Doodles visual language.",
+    'zh-CN':
+      'Doodles 是一个围绕加拿大插画师 Scott Martin（又名 Burnt Toast）标志性柔和色彩作品构建的娱乐品牌，即将推出 <strong>Doodles AI</strong>——一个由 <strong>PRISM 1.0</strong> 驱动的生成平台，这是一个基于 Doodles 大量作品训练的生成图像模型，能够以标志性的 Doodles 视觉语言重新想象人物和物体。'
   },
   'customers.detail.open-story-movement.topic-1.block.1': {
-    en: 'The Open Story Movement leverages ComfyUI and open-source tools to empower independent artists, creating new pathways to creative freedom and financial sustainability in the AI era.',
+    en: 'Behind the scenes, the engineering is being handled by <strong>SYSTMS</strong>, an AI studio whose tagline — "Engineering the Impossible" — reflects their approach to building bespoke creative pipelines using open-source infrastructure, including node-based workflow tools like ComfyUI.',
     'zh-CN':
-      'Open Story 运动利用 ComfyUI 和开源工具赋能独立艺术家，在 AI 时代为创作自由和财务可持续性开辟新路径。'
+      '幕后的工程由 <strong>SYSTMS</strong> 负责，这是一家 AI 工作室，其口号"Engineering the Impossible"反映了他们使用开源基础设施构建定制创意管线的方法，包括像 ComfyUI 这样的基于节点的工作流工具。'
   },
-  'customers.detail.open-story-movement.topic-1.block.2': {
-    en: 'By making powerful AI tools accessible to everyone, the movement demonstrates how open-source technology can democratize creative production without sacrificing quality.',
+  'customers.detail.open-story-movement.topic-1.block.2.src': {
+    en: '/images/customers/open-story-movement/cover.webp',
+    'zh-CN': '/images/customers/open-story-movement/cover.webp'
+  },
+  'customers.detail.open-story-movement.topic-1.block.2.alt': {
+    en: 'Doodles AI generative platform powered by PRISM 1.0',
+    'zh-CN': '由 PRISM 1.0 驱动的 Doodles AI 生成平台'
+  },
+  'customers.detail.open-story-movement.topic-1.block.2.caption': {
+    en: 'The Doodles AI platform reimagines people and objects in the Doodles visual language.',
+    'zh-CN': 'Doodles AI 平台以 Doodles 视觉语言重新想象人物和物体。'
+  },
+  'customers.detail.open-story-movement.topic-1.block.3': {
+    en: 'The story of how these pieces came together offers a compelling blueprint for anyone watching the intersection of open-source, AI, artist-driven brands, and the emerging concept the Doodles team is calling "open story."',
     'zh-CN':
-      '通过让强大的 AI 工具对每个人都可用，该运动展示了开源技术如何在不牺牲质量的情况下实现创意制作的民主化。'
+      '这些部分如何整合在一起的故事，为关注开源、AI、艺术家驱动品牌以及 Doodles 团队所称的"开放叙事"这一新兴概念交汇点的所有人提供了一个引人注目的蓝图。'
   },
-  'customers.detail.open-story-movement.topic-1.block.3.src': {
-    en: '/images/customers/detail-big-image.webp',
-    'zh-CN': '/images/customers/detail-big-image.webp'
-  },
-  'customers.detail.open-story-movement.topic-1.block.3.alt': {
-    en: 'Open Story Movement workflow',
-    'zh-CN': 'Open Story 运动工作流'
-  },
-  'customers.detail.open-story-movement.topic-1.block.3.caption': {
-    en: 'Artists collaborate on open-source AI workflows.',
-    'zh-CN': '艺术家们在开源 AI 工作流上协作。'
-  },
-  'customers.detail.open-story-movement.topic-1.block.4.text': {
-    en: "We've used many different tools, but using ComfyUI puts artist empowerment to the forefront. It makes artists feel like they have control over the process.",
-    'zh-CN':
-      '我们使用过许多不同的工具，但 ComfyUI 将艺术家赋能放在了首位。它让艺术家感到自己掌控着整个过程。'
-  },
-  'customers.detail.open-story-movement.topic-1.block.4.name': {
-    en: 'Jeremy Sahlman',
-    'zh-CN': 'Jeremy Sahlman'
-  },
-  'customers.detail.open-story-movement.topic-1.block.5': {
-    en: 'Open-source AI tools for creative production\nCommunity-driven workflow development\nAccessible to independent creators\nFinancially sustainable model for artists',
-    'zh-CN':
-      '用于创意制作的开源 AI 工具\n社区驱动的工作流开发\n独立创作者可访问\n艺术家的可持续财务模式'
-  },
-  'customers.detail.open-story-movement.topic-1.block.6.ol': {
-    en: 'Establish open-source creative pipelines\nBuild community around shared workflows\nDemocratize access to AI tools\nCreate sustainable revenue models',
-    'zh-CN':
-      '建立开源创意管线\n围绕共享工作流建立社区\n民主化 AI 工具访问\n创建可持续的收入模式'
-  },
-  'customers.detail.open-story-movement.topic-1.block.7': {
-    en: 'The movement has grown to include hundreds of independent artists who use ComfyUI as their primary creative tool, demonstrating the viability of open-source AI in professional production.',
-    'zh-CN':
-      '该运动已发展到包括数百名以 ComfyUI 为主要创作工具的独立艺术家，证明了开源 AI 在专业制作中的可行性。'
-  },
-  'customers.detail.open-story-movement.topic-1.block.8': {
-    en: 'By sharing workflows and custom nodes, the community continues to push the boundaries of what independent creators can achieve with AI-assisted tools.',
-    'zh-CN':
-      '通过共享工作流和自定义节点，社区继续推动独立创作者使用 AI 辅助工具所能实现的边界。'
-  },
+  // Topic 2: IP Without Walls
   'customers.detail.open-story-movement.topic-2.label': {
-    en: 'OPEN SOURCE',
-    'zh-CN': '开源'
+    en: 'IP WITHOUT WALLS',
+    'zh-CN': '无墙 IP'
   },
   'customers.detail.open-story-movement.topic-2.title': {
-    en: 'Creative Freedom Through Open Source',
-    'zh-CN': '通过开源实现创作自由'
+    en: 'IP Without Walls',
+    'zh-CN': '无墙 IP'
   },
   'customers.detail.open-story-movement.topic-2.block.0': {
-    en: 'The open-source nature of ComfyUI allows artists to customize every aspect of their creative pipeline, from model selection to post-processing, without vendor lock-in.',
+    en: "Artists have traditionally been protective of their IP, and for good reason. But the Doodles team is exploring a new model where the community doesn't just consume the brand — they co-create it. Every generation a user produces on the Doodles AI platform makes the model stronger.",
     'zh-CN':
-      'ComfyUI 的开源特性允许艺术家自定义创意管线的每个方面，从模型选择到后处理，无需供应商锁定。'
+      '艺术家传统上一直保护自己的知识产权，这有充分的理由。但 Doodles 团队正在探索一种新模式，社区不仅仅是消费品牌——他们共同创造品牌。用户在 Doodles AI 平台上生成的每一次创作都会使模型更强大。'
   },
   'customers.detail.open-story-movement.topic-2.block.1': {
-    en: 'This freedom has led to unprecedented creative experimentation, with artists developing entirely new visual styles and techniques made possible by the flexibility of the node-based system.',
+    en: "Through reinforcement learning, user-generated content becomes part of the training data for future iterations of the PRISM. Users aren't just customers; they're collaborators shaping the brand's visual DNA.",
     'zh-CN':
-      '这种自由带来了前所未有的创作实验，艺术家们利用基于节点系统的灵活性开发出全新的视觉风格和技术。'
+      '通过强化学习，用户生成的内容成为 PRISM 未来迭代的训练数据的一部分。用户不仅仅是客户；他们是塑造品牌视觉 DNA 的协作者。'
   },
+  'customers.detail.open-story-movement.topic-2.block.2.src': {
+    en: '/images/customers/open-story-movement/walls.webp',
+    'zh-CN': '/images/customers/open-story-movement/walls.webp'
+  },
+  'customers.detail.open-story-movement.topic-2.block.2.alt': {
+    en: 'Doodles community co-creation',
+    'zh-CN': 'Doodles 社区共创'
+  },
+  'customers.detail.open-story-movement.topic-2.block.2.caption': {
+    en: 'Users become collaborators, co-creating the Doodles brand through AI-generated content.',
+    'zh-CN': '用户成为协作者，通过 AI 生成的内容共同创造 Doodles 品牌。'
+  },
+  'customers.detail.open-story-movement.topic-2.block.3': {
+    en: 'As Scott Martin put it when he returned as CEO in early 2025, the goal is to recalibrate — creativity first, community at the center, art driving everything. Martin, who built his career as an illustrator working with Google, Snapchat, Dropbox, and Adobe before co-founding Doodles in 2021 alongside Evan Keast and Jordan Castro, understands both the commercial and artistic sides of this equation.',
+    'zh-CN':
+      '正如 Scott Martin 在 2025 年初重新担任 CEO 时所说，目标是重新校准——创意优先、社区为中心、艺术驱动一切。Martin 在 2021 年与 Evan Keast 和 Jordan Castro 共同创立 Doodles 之前，曾与 Google、Snapchat、Dropbox 和 Adobe 合作建立了自己的插画师职业生涯，他深谙这个等式的商业和艺术两面。'
+  },
+  // Topic 3: The Last Mile
   'customers.detail.open-story-movement.topic-3.label': {
-    en: 'COMMUNITY',
-    'zh-CN': '社区'
+    en: 'THE LAST MILE',
+    'zh-CN': '最后一英里'
   },
   'customers.detail.open-story-movement.topic-3.title': {
-    en: 'Community-Driven Development',
-    'zh-CN': '社区驱动的开发'
+    en: 'The Last Mile Is the Whole Game',
+    'zh-CN': '最后一英里就是整个游戏'
   },
   'customers.detail.open-story-movement.topic-3.block.0': {
-    en: 'The community around the Open Story Movement contributes custom nodes, shares workflows, and collaborates on improving the tools that make AI-assisted storytelling possible.',
+    en: 'Doodles AI represents something powerful: proof that open-source tools can power commercially successful, brand-quality products.',
     'zh-CN':
-      'Open Story 运动周围的社区贡献自定义节点、共享工作流，并合作改进使 AI 辅助叙事成为可能的工具。'
+      'Doodles AI 代表着一种强大的证明：开源工具可以驱动商业成功、品牌级品质的产品。'
   },
   'customers.detail.open-story-movement.topic-3.block.1': {
-    en: 'Regular community events and workshops help new artists get started with ComfyUI, lowering the barrier to entry for AI-assisted creative work.',
+    en: 'The SYSTMS team uses open-source tools in their rawest form, prioritizing control and innovation at the bleeding edge of the space. The fact that these same tools are now producing output with the kind of brand fidelity that differentiates Doodles from generalized platforms like MidJourney or Sora is significant. It\'s the "last mile" problem in creative AI — getting from 85% to 100% fidelity — and it\'s where the real value lies.',
     'zh-CN':
-      '定期的社区活动和工作坊帮助新艺术家开始使用 ComfyUI，降低了 AI 辅助创作工作的入门门槛。'
+      'SYSTMS 团队以最原始的形式使用开源工具，在该领域的最前沿优先考虑控制和创新。这些工具现在能够生成具有品牌保真度的输出，使 Doodles 区别于 MidJourney 或 Sora 等通用平台，这一点意义重大。这就是创意 AI 中的"最后一英里"问题——从 85% 到 100% 的保真度——也是真正价值所在。'
   },
+  'customers.detail.open-story-movement.topic-3.block.2': {
+    en: "Doodles AI is a showcase of what's possible when open-source workflows meet professional creative direction. ComfyUI's powerful node-based platform allows users to package complex systems of open-source models, APIs, and other tools into consumer-facing applications, making it a natural fit for projects like this.",
+    'zh-CN':
+      'Doodles AI 展示了当开源工作流遇上专业创意方向时的可能性。ComfyUI 强大的基于节点的平台允许用户将开源模型、API 和其他工具的复杂系统打包成面向消费者的应用程序，使其成为此类项目的天然选择。'
+  },
+  'customers.detail.open-story-movement.topic-3.block.3.src': {
+    en: '/images/customers/open-story-movement/workflow.webp',
+    'zh-CN': '/images/customers/open-story-movement/workflow.webp'
+  },
+  'customers.detail.open-story-movement.topic-3.block.3.alt': {
+    en: 'ComfyUI workflow powering Doodles AI',
+    'zh-CN': '驱动 Doodles AI 的 ComfyUI 工作流'
+  },
+  'customers.detail.open-story-movement.topic-3.block.3.caption': {
+    en: 'Open-source workflows powering brand-quality generative output.',
+    'zh-CN': '开源工作流驱动品牌级生成输出。'
+  },
+  // Topic 4: Coded DNA
   'customers.detail.open-story-movement.topic-4.label': {
-    en: 'SUSTAINABILITY',
-    'zh-CN': '可持续性'
+    en: 'CODED DNA',
+    'zh-CN': '编码 DNA'
   },
   'customers.detail.open-story-movement.topic-4.title': {
-    en: 'Financial Sustainability',
-    'zh-CN': '财务可持续性'
+    en: 'Coded DNA',
+    'zh-CN': '编码 DNA'
   },
   'customers.detail.open-story-movement.topic-4.block.0': {
-    en: 'The Open Story Movement has developed innovative models for artists to monetize their ComfyUI expertise, from selling custom workflows to offering AI-assisted creative services.',
+    en: "Doodles AI launches with PRISM 1.0 as an image-to-image model, but the roadmap is ambitious: 2D and 3D output generation, video with sound, real-time AR, and gaming applications. Original Doodles holders receive 100 free generations on launch day — a deliberate move to seed the community and let them flood every timeline with the platform's output.",
     'zh-CN':
-      'Open Story 运动为艺术家开发了创新的盈利模式，从出售自定义工作流到提供 AI 辅助创意服务。'
+      'Doodles AI 以 PRISM 1.0 作为图像到图像模型推出，但路线图雄心勃勃：2D 和 3D 输出生成、带声音的视频、实时 AR 和游戏应用。原始 Doodles 持有者在发布当天获得 100 次免费生成——这是一个有意识的举措，旨在为社区注入活力，让他们用平台的输出刷遍每一条时间线。'
   },
-  'customers.detail.open-story-movement.topic-4.block.1': {
-    en: 'These models demonstrate that open-source tools can support sustainable careers for independent artists in the AI era.',
-    'zh-CN': '这些模式证明，开源工具可以在 AI 时代支持独立艺术家的可持续职业。'
+  'customers.detail.open-story-movement.topic-4.block.1.src': {
+    en: '/images/customers/open-story-movement/dna.webp',
+    'zh-CN': '/images/customers/open-story-movement/dna.webp'
   },
+  'customers.detail.open-story-movement.topic-4.block.1.alt': {
+    en: 'Doodles AI output examples',
+    'zh-CN': 'Doodles AI 输出示例'
+  },
+  'customers.detail.open-story-movement.topic-4.block.1.caption': {
+    en: 'Doodles AI output demonstrating brand-fidelity generative results.',
+    'zh-CN': 'Doodles AI 输出展示品牌保真的生成结果。'
+  },
+  'customers.detail.open-story-movement.topic-4.block.2': {
+    en: "The deeper play is alignment with the speed and scale of the entire AI industry. By building on open-source infrastructure and fostering a community of co-creators, Doodles has positioned itself to plug its \"coded DNA\" into future technologies that don't yet exist. It's a bet that openness — open source, open story, open creation — isn't just philosophically appealing but strategically sound.",
+    'zh-CN':
+      '更深层的布局是与整个 AI 行业的速度和规模保持一致。通过在开源基础设施上构建并培育共创者社区，Doodles 已将自己定位为可以将其"编码 DNA"接入尚未存在的未来技术。这是一个赌注：开放性——开源、开放叙事、开放创造——不仅在哲学上有吸引力，而且在战略上是明智的。'
+  },
+  // Topic 5: What It Means
   'customers.detail.open-story-movement.topic-5.label': {
-    en: 'EMPOWERMENT',
-    'zh-CN': '赋能'
+    en: 'TAKEAWAY',
+    'zh-CN': '要点'
   },
   'customers.detail.open-story-movement.topic-5.title': {
-    en: 'Artist Empowerment',
-    'zh-CN': '艺术家赋能'
+    en: 'What It Means for Artists',
+    'zh-CN': '对艺术家意味着什么'
   },
   'customers.detail.open-story-movement.topic-5.block.0': {
-    en: 'ComfyUI gives artists unprecedented control over AI generation, allowing them to maintain their unique creative voice while leveraging the power of AI models.',
+    en: "For artists watching from the sidelines, the message is clear: the building blocks are here, the community is building, and the line between creator and consumer is disappearing. The question isn't whether open source will reshape creative industries. It's whether you'll be building with it when it does.",
     'zh-CN':
-      'ComfyUI 赋予艺术家对 AI 生成的前所未有的控制力，使他们能够在利用 AI 模型的力量的同时保持独特的创作声音。'
+      '对于在场外观望的艺术家来说，信息很明确：构建模块已经就位，社区正在建设，创作者和消费者之间的界限正在消失。问题不在于开源是否会重塑创意产业。而在于当它发生时，你是否在用它构建。'
   },
-  'customers.detail.open-story-movement.topic-5.block.1': {
-    en: 'The node-based interface makes complex AI pipelines accessible to artists without programming backgrounds, democratizing access to cutting-edge technology.',
-    'zh-CN':
-      '基于节点的界面使没有编程背景的艺术家也能使用复杂的 AI 管线，使尖端技术的使用民主化。'
+  'customers.detail.open-story-movement.topic-5.block.1.src': {
+    en: '/images/customers/open-story-movement/output.webp',
+    'zh-CN': '/images/customers/open-story-movement/output.webp'
   },
-  'customers.detail.open-story-movement.topic-6.label': {
-    en: 'LOOKING FORWARD',
-    'zh-CN': '展望未来'
+  'customers.detail.open-story-movement.topic-5.block.1.alt': {
+    en: 'Doodles AI creative output',
+    'zh-CN': 'Doodles AI 创意输出'
   },
-  'customers.detail.open-story-movement.topic-6.title': {
-    en: 'Looking Forward',
-    'zh-CN': '展望未来'
+  'customers.detail.open-story-movement.topic-5.block.1.caption': {
+    en: 'Open-source tools powering brand-quality creative output at scale.',
+    'zh-CN': '开源工具大规模驱动品牌级创意输出。'
   },
-  'customers.detail.open-story-movement.topic-6.block.0': {
-    en: 'The Open Story Movement continues to grow, with new artists and studios joining every month to build on the foundation of open-source AI creative tools.',
-    'zh-CN':
-      'Open Story 运动持续增长，每月都有新的艺术家和工作室加入，在开源 AI 创作工具的基础上进行建设。'
+  'customers.detail.open-story-movement.topic-5.block.2.label': {
+    en: 'LINKS',
+    'zh-CN': '链接'
   },
-  'customers.detail.open-story-movement.topic-6.block.1.text': {
-    en: "We've used many different tools, but using ComfyUI puts artist empowerment to the forefront. It makes artists feel like they have control over the process. The more transparent we can be to how the models work, the more we feel like we're making something that only we could make.",
-    'zh-CN':
-      '我们使用过许多不同的工具，但 ComfyUI 将艺术家赋能放在了首位。它让艺术家感到自己掌控着整个过程。我们对模型工作方式越透明，就越觉得我们在创造只有我们才能做出的东西。'
+  'customers.detail.open-story-movement.topic-5.block.2.name': {
+    en: 'Doodles: doodles.app | SYSTMS: systms.ai | ComfyUI: comfy.org',
+    'zh-CN': 'Doodles: doodles.app | SYSTMS: systms.ai | ComfyUI: comfy.org'
   },
-  'customers.detail.open-story-movement.topic-6.block.1.name': {
-    en: 'Jeremy Sahlman',
-    'zh-CN': 'Jeremy Sahlman'
-  },
-  'customers.detail.open-story-movement.topic-6.block.2.label': {
-    en: 'AUTHOR',
-    'zh-CN': '作者'
-  },
-  'customers.detail.open-story-movement.topic-6.block.2.name': {
-    en: 'Jeremy Sahlman',
-    'zh-CN': 'Jeremy Sahlman'
-  },
-  'customers.detail.open-story-movement.topic-6.block.2.role': {
-    en: 'Co-founder and Chief Creative Officer at Black Math',
-    'zh-CN': 'Black Math 联合创始人兼首席创意官'
+  'customers.detail.open-story-movement.topic-5.block.2.role': {
+    en: 'Official websites',
+    'zh-CN': '官方网站'
   },
 
   // Customer Detail: Moment Factory
@@ -2489,8 +2566,8 @@ const translations = {
       '在使用 ComfyUI 之前，这一阶段更慢、更抽象，风险也更大。使用 ComfyUI 之后，它变得更快、更具体，从一开始就在空间上有了坚实的基础。'
   },
   'customers.detail.moment-factory.topic-1.block.2.src': {
-    en: '/images/customers/moment-factory-hero.webp',
-    'zh-CN': '/images/customers/moment-factory-hero.webp'
+    en: '/images/customers/moment-factory/hero.webp',
+    'zh-CN': '/images/customers/moment-factory/hero.webp'
   },
   'customers.detail.moment-factory.topic-1.block.2.alt': {
     en: 'Moment Factory architectural projection mapping',
@@ -2564,8 +2641,8 @@ const translations = {
       '20 多个主要艺术方向\n每个方向 20 到 40 次迭代\n风格从超写实到插画版画不等'
   },
   'customers.detail.moment-factory.topic-3.block.5.src': {
-    en: '/images/customers/moment-factory-variations.webp',
-    'zh-CN': '/images/customers/moment-factory-variations.webp'
+    en: '/images/customers/moment-factory/variations.webp',
+    'zh-CN': '/images/customers/moment-factory/variations.webp'
   },
   'customers.detail.moment-factory.topic-3.block.5.alt': {
     en: 'Grid of generated artistic variations',
@@ -2687,8 +2764,8 @@ const translations = {
       '那时它变得不可否认：这不仅仅是研发的强大工具，而是 Moment Factory 各团队思考、迭代和制作方式的一次转变。'
   },
   'customers.detail.moment-factory.topic-3.block.29.src': {
-    en: '/images/customers/moment-factory-demo.webp',
-    'zh-CN': '/images/customers/moment-factory-demo.webp'
+    en: '/images/customers/moment-factory/demo.webp',
+    'zh-CN': '/images/customers/moment-factory/demo.webp'
   },
   'customers.detail.moment-factory.topic-3.block.29.alt': {
     en: 'Moment Factory live projection mapping demo',
@@ -2740,8 +2817,8 @@ const translations = {
       '在那一刻变得清晰：实现可靠的建筑尺度生成式工作流需要一个足够灵活的系统，可以在创意过程中被重新构建。ComfyUI 提供了这种灵活性。'
   },
   'customers.detail.moment-factory.topic-4.block.7.src': {
-    en: '/images/customers/moment-factory-workflow.webp',
-    'zh-CN': '/images/customers/moment-factory-workflow.webp'
+    en: '/images/customers/moment-factory/workflow.webp',
+    'zh-CN': '/images/customers/moment-factory/workflow.webp'
   },
   'customers.detail.moment-factory.topic-4.block.7.alt': {
     en: 'ComfyUI node-based workflow',
@@ -2807,173 +2884,266 @@ const translations = {
   },
 
   // Customer Detail: Ubisoft CHORD
+  // Topic 1: Intro
   'customers.detail.ubisoft-chord.topic-1.label': {
-    en: 'THE STORY',
-    'zh-CN': '故事'
+    en: 'INTRO',
+    'zh-CN': '简介'
   },
-  'customers.detail.ubisoft-chord.topic-1.title': {
-    en: 'End-to-End PBR Material Generation',
-    'zh-CN': '端到端 PBR 材质生成'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.0.heading': {
-    en: 'The CHORD Model and ComfyUI Integration',
-    'zh-CN': 'CHORD 模型与 ComfyUI 集成'
+  'customers.detail.ubisoft-chord.topic-1.block.0': {
+    en: 'Ubisoft La Forge has open-sourced its PBR material estimation model, <strong>CHORD (Chain of Rendering Decomposition)</strong>, together with <strong>ComfyUI-Chord</strong> custom node implementation to build an end-to-end material generation workflow with AI.',
+    'zh-CN':
+      '育碧 La Forge 开源了其 PBR 材质估算模型 <strong>CHORD（Chain of Rendering Decomposition）</strong>，以及 <strong>ComfyUI-Chord</strong> 自定义节点实现，用于构建端到端的 AI 材质生成工作流。'
   },
   'customers.detail.ubisoft-chord.topic-1.block.1': {
-    en: 'Ubisoft open-sourced the CHORD model with custom ComfyUI nodes, enabling end-to-end PBR material generation that streamlines game asset creation across their studios.',
+    en: 'The model weights and code are released with a Research-Only license. Beyond research, this is a significant step toward integrating ComfyUI into AAA-scale video game production workflows.',
     'zh-CN':
-      '育碧开源了 CHORD 模型及自定义 ComfyUI 节点，实现端到端 PBR 材质生成，简化了旗下各工作室的游戏资产创建流程。'
+      '模型权重和代码以仅限研究的许可证发布。除了研究之外，这是将 ComfyUI 集成到 AAA 级视频游戏制作工作流中的重要一步。'
   },
-  'customers.detail.ubisoft-chord.topic-1.block.2': {
-    en: 'The integration allows artists to generate physically-based rendering materials directly within ComfyUI, maintaining full control over texture quality and material properties.',
-    'zh-CN':
-      '该集成允许艺术家直接在 ComfyUI 中生成基于物理的渲染材质，完全控制纹理质量和材质属性。'
+  'customers.detail.ubisoft-chord.topic-1.block.2.src': {
+    en: '/images/customers/ubisoft/cover.webp',
+    'zh-CN': '/images/customers/ubisoft/cover.webp'
   },
-  'customers.detail.ubisoft-chord.topic-1.block.3.src': {
-    en: '/images/customers/detail-big-image.webp',
-    'zh-CN': '/images/customers/detail-big-image.webp'
+  'customers.detail.ubisoft-chord.topic-1.block.2.alt': {
+    en: 'CHORD PBR material generation in ComfyUI',
+    'zh-CN': 'ComfyUI 中的 CHORD PBR 材质生成'
   },
-  'customers.detail.ubisoft-chord.topic-1.block.3.alt': {
-    en: 'CHORD PBR material generation',
-    'zh-CN': 'CHORD PBR 材质生成'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.3.caption': {
+  'customers.detail.ubisoft-chord.topic-1.block.2.caption': {
     en: 'PBR materials generated using the CHORD model in ComfyUI.',
     'zh-CN': '使用 ComfyUI 中的 CHORD 模型生成的 PBR 材质。'
   },
-  'customers.detail.ubisoft-chord.topic-1.block.4.text': {
-    en: 'The CHORD model represents a breakthrough in AI-assisted material creation, enabling artists to generate production-quality PBR textures with unprecedented speed and control.',
-    'zh-CN':
-      'CHORD 模型代表了 AI 辅助材质创建的突破，使艺术家能够以前所未有的速度和控制力生成制作质量的 PBR 纹理。'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.4.name': {
-    en: 'Ubisoft La Forge Team',
-    'zh-CN': '育碧 La Forge 团队'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.5': {
-    en: 'Albedo map generation\nNormal map generation\nRoughness map generation\nMetallic map generation',
-    'zh-CN': '反照率贴图生成\n法线贴图生成\n粗糙度贴图生成\n金属度贴图生成'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.6.ol': {
-    en: 'Install CHORD ComfyUI nodes\nConfigure material generation pipeline\nGenerate PBR texture sets\nExport to game engine',
-    'zh-CN':
-      '安装 CHORD ComfyUI 节点\n配置材质生成管线\n生成 PBR 纹理集\n导出到游戏引擎'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.7': {
-    en: 'The CHORD model generates complete PBR material sets from simple text descriptions or reference images, dramatically accelerating the material creation process.',
-    'zh-CN':
-      'CHORD 模型从简单的文本描述或参考图像生成完整的 PBR 材质集，大大加速了材质创建过程。'
-  },
-  'customers.detail.ubisoft-chord.topic-1.block.8': {
-    en: 'By open-sourcing both the model and the ComfyUI integration, Ubisoft has contributed a powerful tool to the game development community.',
-    'zh-CN':
-      '通过开源模型和 ComfyUI 集成，育碧为游戏开发社区贡献了一个强大的工具。'
-  },
+  // Topic 2: The Problem
   'customers.detail.ubisoft-chord.topic-2.label': {
-    en: 'OPEN SOURCE',
-    'zh-CN': '开源'
+    en: 'THE PROBLEM',
+    'zh-CN': '挑战'
   },
   'customers.detail.ubisoft-chord.topic-2.title': {
-    en: 'Open-Source Contribution',
-    'zh-CN': '开源贡献'
+    en: 'PBR Material Production in AAA Games Today',
+    'zh-CN': '当今 AAA 游戏中的 PBR 材质制作'
   },
   'customers.detail.ubisoft-chord.topic-2.block.0': {
-    en: "Ubisoft's decision to open-source the CHORD model demonstrates the company's commitment to advancing the game development community through shared innovation.",
+    en: 'In AAA game development, PBR materials are the foundation of visual realism. Large-scale titles require hundreds of reusable materials, each with full Base Color, Normal, Height, Roughness, and Metalness maps that meet strict svBRDF standards.',
     'zh-CN':
-      '育碧开源 CHORD 模型的决定展示了该公司致力于通过共享创新推进游戏开发社区的承诺。'
+      '在 AAA 游戏开发中，PBR 材质是视觉真实感的基础。大型游戏需要数百种可复用的材质，每种都包含完整的基础颜色、法线、高度、粗糙度和金属度贴图，并须满足严格的 svBRDF 标准。'
   },
   'customers.detail.ubisoft-chord.topic-2.block.1': {
-    en: 'The custom ComfyUI nodes make the CHORD model accessible to any developer or artist, regardless of their technical background.',
+    en: 'Traditionally, these assets are crafted by texture artists using photogrammetry, procedural tools, and extensive manual tuning — making the process time-consuming and highly expertise-dependent.',
     'zh-CN':
-      '自定义 ComfyUI 节点使 CHORD 模型对任何开发者或艺术家都可用，无论其技术背景如何。'
+      '传统上，这些资产由纹理艺术家使用摄影测量、程序化工具和大量手动调整来制作——这使得流程耗时且高度依赖专业知识。'
   },
+  'customers.detail.ubisoft-chord.topic-2.block.2': {
+    en: "Ubisoft's Generative Base Material prototype directly targets this production bottleneck. The ComfyUI workflow outputs PBR texture sets that integrate directly into DCC tools and game engines for prototyping and placeholder assets.",
+    'zh-CN':
+      '育碧的生成式基础材质原型直接针对这一制作瓶颈。ComfyUI 工作流输出的 PBR 纹理集可直接集成到 DCC 工具和游戏引擎中，用于原型制作和占位资产。'
+  },
+  // Topic 3: Why ComfyUI
   'customers.detail.ubisoft-chord.topic-3.label': {
-    en: 'PBR PIPELINE',
-    'zh-CN': 'PBR 管线'
+    en: 'WHY COMFYUI',
+    'zh-CN': '为什么选择 ComfyUI'
   },
   'customers.detail.ubisoft-chord.topic-3.title': {
-    en: 'PBR Pipeline Integration',
-    'zh-CN': 'PBR 管线集成'
+    en: 'Why Ubisoft Chose ComfyUI as The Workflow Platform',
+    'zh-CN': '育碧为何选择 ComfyUI 作为工作流平台'
   },
   'customers.detail.ubisoft-chord.topic-3.block.0': {
-    en: 'The CHORD model integrates seamlessly with existing PBR pipelines, generating materials that are immediately usable in modern game engines like Unreal Engine and Unity.',
+    en: "Ubisoft's choice of ComfyUI is rooted in production realities. For large studios, the requirement is not another image generator — it is a controllable and integratable AI workflow platform that can meet the bespoke requirements of game development.",
     'zh-CN':
-      'CHORD 模型与现有 PBR 管线无缝集成，生成可直接在虚幻引擎和 Unity 等现代游戏引擎中使用的材质。'
+      '育碧选择 ComfyUI 源于生产实际需求。对于大型工作室来说，需要的不是另一个图像生成器——而是一个可控且可集成的 AI 工作流平台，能够满足游戏开发的定制需求。'
   },
-  'customers.detail.ubisoft-chord.topic-3.block.1': {
-    en: 'Artists can fine-tune generated materials through the ComfyUI interface, adjusting parameters to match specific art direction requirements.',
+  'customers.detail.ubisoft-chord.topic-3.block.1.text': {
+    en: 'Considering the multi-stage nature of our prototype, ComfyUI provides us with an efficient framework to build integrated workflows doing texture image synthesis, material estimation and material upscaling. This also enables us to leverage state-of-the-art generative models and the powerful features of ComfyUI that provide fine-grain control to creators with ControlNets, image guidance, inpainting, and countless other options.',
     'zh-CN':
-      '艺术家可以通过 ComfyUI 界面微调生成的材质，调整参数以满足特定的艺术方向要求。'
+      '考虑到我们原型的多阶段特性，ComfyUI 为我们提供了一个高效的框架来构建集成工作流，涵盖纹理图像合成、材质估算和材质放大。这也使我们能够利用最先进的生成模型和 ComfyUI 的强大功能，通过 ControlNet、图像引导、修复等众多选项为创作者提供精细控制。'
   },
+  'customers.detail.ubisoft-chord.topic-3.block.1.name': {
+    en: 'Ubisoft La Forge Blog',
+    'zh-CN': '育碧 La Forge 博客'
+  },
+  // Topic 4: The Pipeline
   'customers.detail.ubisoft-chord.topic-4.label': {
-    en: 'COLLABORATION',
-    'zh-CN': '协作'
+    en: 'THE PIPELINE',
+    'zh-CN': '流水线'
   },
   'customers.detail.ubisoft-chord.topic-4.title': {
-    en: 'Cross-Studio Collaboration',
-    'zh-CN': '跨工作室协作'
+    en: '3 Stages of The Generative Base Material Pipeline',
+    'zh-CN': '生成式基础材质流水线的三个阶段'
   },
   'customers.detail.ubisoft-chord.topic-4.block.0': {
-    en: "The CHORD model and ComfyUI nodes enable consistent material generation across Ubisoft's global network of studios, ensuring unified visual quality.",
-    'zh-CN':
-      'CHORD 模型和 ComfyUI 节点在育碧全球工作室网络中实现了一致的材质生成，确保统一的视觉质量。'
+    en: 'The CHORD model is integrated into a broader pipeline consisting of 3 core stages.',
+    'zh-CN': 'CHORD 模型集成在一个更广泛的流水线中，由三个核心阶段组成。'
   },
-  'customers.detail.ubisoft-chord.topic-4.block.1': {
-    en: 'Shared workflows and configurations mean that teams across the world can produce materials that meet the same quality standards.',
-    'zh-CN':
-      '共享的工作流和配置意味着世界各地的团队可以制作符合相同质量标准的材质。'
+  'customers.detail.ubisoft-chord.topic-4.block.1.src': {
+    en: '/images/customers/ubisoft/pipeline.webp',
+    'zh-CN': '/images/customers/ubisoft/pipeline.webp'
   },
+  'customers.detail.ubisoft-chord.topic-4.block.1.alt': {
+    en: 'The 3-stage generative base material pipeline',
+    'zh-CN': '三阶段生成式基础材质流水线'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.1.caption': {
+    en: 'The 3-stage generative base material pipeline: texture generation, CHORD estimation, and upscaling.',
+    'zh-CN': '三阶段生成式基础材质流水线：纹理生成、CHORD 估算和放大。'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.2.heading': {
+    en: 'Stage 1 — Texture Image Generation',
+    'zh-CN': '阶段一 — 纹理图像生成'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.3': {
+    en: 'The first stage generates seamless, tileable 2D textures from text prompts or reference inputs such as lineart and height maps using a custom diffusion model with full conditional control.',
+    'zh-CN':
+      '第一阶段使用具有完全条件控制的自定义扩散模型，从文本提示或参考输入（如线稿和高度图）生成无缝、可平铺的 2D 纹理。'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.4.heading': {
+    en: 'Stage 2 — CHORD Image-to-Material Estimation',
+    'zh-CN': '阶段二 — CHORD 图像到材质估算'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.5': {
+    en: 'A single texture is converted into a full set of PBR maps — including Base Color, Normal, Height, Roughness, and Metalness — using chained decomposition, unified multi-modal prediction, and efficient single-step diffusion inference for controllable and scalable results.',
+    'zh-CN':
+      '将单一纹理转换为完整的 PBR 贴图集——包括基础颜色、法线、高度、粗糙度和金属度——使用链式分解、统一多模态预测和高效的单步扩散推理，实现可控且可扩展的结果。'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.6.heading': {
+    en: 'Stage 3 — Material Upscaling',
+    'zh-CN': '阶段三 — 材质放大'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.7': {
+    en: 'Since CHORD operates optimally at 1024 resolution, the third stage applies industrial-grade PBR upscaling. All channels are upscaled by 2x or 4x to produce 2K and 4K texture assets for real-time game production.',
+    'zh-CN':
+      '由于 CHORD 在 1024 分辨率下运行最佳，第三阶段应用工业级 PBR 放大。所有通道放大 2 倍或 4 倍，以生成用于实时游戏制作的 2K 和 4K 纹理资产。'
+  },
+  'customers.detail.ubisoft-chord.topic-4.block.8': {
+    en: 'This complete pipeline enables artists to rapidly iterate on ideas and mix and match AI-generated outputs within their existing workflows, lowering the barrier to industrial-grade PBR material creation.',
+    'zh-CN':
+      '这条完整的流水线使艺术家能够快速迭代创意，在现有工作流中混合搭配 AI 生成的输出，降低了工业级 PBR 材质创建的门槛。'
+  },
+  // Topic 5: How to Try
   'customers.detail.ubisoft-chord.topic-5.label': {
-    en: 'COMMUNITY',
-    'zh-CN': '社区'
+    en: 'TRY IT',
+    'zh-CN': '试用'
   },
   'customers.detail.ubisoft-chord.topic-5.title': {
-    en: 'Community Impact',
-    'zh-CN': '社区影响'
+    en: 'How to Try CHORD in ComfyUI',
+    'zh-CN': '如何在 ComfyUI 中试用 CHORD'
   },
   'customers.detail.ubisoft-chord.topic-5.block.0': {
-    en: 'Since its release, the CHORD model has been adopted by independent developers and small studios, demonstrating the power of open-source tools in democratizing game development.',
+    en: 'Ubisoft has open-sourced the CHORD model weights, ComfyUI custom nodes, and example workflows covering the texture image generation stage and the image-to-material estimation stage of the pipeline.',
     'zh-CN':
-      '自发布以来，CHORD 模型已被独立开发者和小型工作室采用，展示了开源工具在民主化游戏开发中的力量。'
+      '育碧开源了 CHORD 模型权重、ComfyUI 自定义节点和示例工作流，涵盖流水线中的纹理图像生成阶段和图像到材质估算阶段。'
   },
-  'customers.detail.ubisoft-chord.topic-5.block.1': {
-    en: 'The ComfyUI community has built upon the CHORD nodes, creating extended workflows that combine material generation with other AI-assisted tasks.',
+  'customers.detail.ubisoft-chord.topic-5.block.1.src': {
+    en: '/images/customers/ubisoft/workflow.webp',
+    'zh-CN': '/images/customers/ubisoft/workflow.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-5.block.1.alt': {
+    en: 'CHORD example workflow in ComfyUI',
+    'zh-CN': 'ComfyUI 中的 CHORD 示例工作流'
+  },
+  'customers.detail.ubisoft-chord.topic-5.block.1.caption': {
+    en: 'The CHORD example workflow in ComfyUI for end-to-end PBR material generation.',
+    'zh-CN': 'ComfyUI 中端到端 PBR 材质生成的 CHORD 示例工作流。'
+  },
+  'customers.detail.ubisoft-chord.topic-5.block.2.ol': {
+    en: 'Install or update ComfyUI to the latest version\nInstall the CHORD ComfyUI custom node from Ubisoft\nDownload the CHORD model and place it in ./ComfyUI/models/checkpoints\nLoad the CHORD example workflow in ComfyUI',
     'zh-CN':
-      'ComfyUI 社区在 CHORD 节点的基础上进行了扩展，创建了将材质生成与其他 AI 辅助任务相结合的扩展工作流。'
+      '安装或更新 ComfyUI 至最新版本\n从育碧安装 CHORD ComfyUI 自定义节点\n下载 CHORD 模型并放置在 ./ComfyUI/models/checkpoints 目录\n在 ComfyUI 中加载 CHORD 示例工作流'
   },
+  'customers.detail.ubisoft-chord.topic-5.block.3': {
+    en: 'You can switch the texture image generation model to any other image model, and use the workflow modules for each stage separately.',
+    'zh-CN':
+      '您可以将纹理图像生成模型替换为任何其他图像模型，也可以单独使用每个阶段的工作流模块。'
+  },
+  // Topic 6: Example Outputs
   'customers.detail.ubisoft-chord.topic-6.label': {
-    en: 'THE FUTURE',
-    'zh-CN': '未来'
+    en: 'RESULTS',
+    'zh-CN': '成果'
   },
   'customers.detail.ubisoft-chord.topic-6.title': {
-    en: 'Future Development',
-    'zh-CN': '未来发展'
+    en: 'Example Outputs',
+    'zh-CN': '输出示例'
   },
-  'customers.detail.ubisoft-chord.topic-6.block.0': {
-    en: "Ubisoft continues to develop and improve the CHORD model, with plans for additional material types and enhanced integration with ComfyUI's evolving ecosystem.",
+  'customers.detail.ubisoft-chord.topic-6.block.0.src': {
+    en: '/images/customers/ubisoft/example1.webp',
+    'zh-CN': '/images/customers/ubisoft/example1.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.0.alt': {
+    en: 'CHORD PBR material example output 1',
+    'zh-CN': 'CHORD PBR 材质输出示例 1'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.0.caption': {
+    en: 'Generated PBR material set showing Base Color, Normal, Height, Roughness, and Metalness maps.',
+    'zh-CN': '生成的 PBR 材质集，展示基础颜色、法线、高度、粗糙度和金属度贴图。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.1.src': {
+    en: '/images/customers/ubisoft/example2.webp',
+    'zh-CN': '/images/customers/ubisoft/example2.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.1.alt': {
+    en: 'CHORD PBR material example output 2',
+    'zh-CN': 'CHORD PBR 材质输出示例 2'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.1.caption': {
+    en: 'Another generated PBR material set demonstrating the variety of textures achievable with CHORD.',
+    'zh-CN': '另一组生成的 PBR 材质集，展示 CHORD 可实现的多样纹理效果。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.2.src': {
+    en: '/images/customers/ubisoft/example3.webp',
+    'zh-CN': '/images/customers/ubisoft/example3.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.2.alt': {
+    en: 'CHORD PBR material example output 3',
+    'zh-CN': 'CHORD PBR 材质输出示例 3'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.2.caption': {
+    en: 'Material generation output with full PBR channel decomposition.',
+    'zh-CN': '具有完整 PBR 通道分解的材质生成输出。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.3.src': {
+    en: '/images/customers/ubisoft/example4.webp',
+    'zh-CN': '/images/customers/ubisoft/example4.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.3.alt': {
+    en: 'CHORD PBR material example output 4',
+    'zh-CN': 'CHORD PBR 材质输出示例 4'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.3.caption': {
+    en: 'High-quality PBR texture set generated from a single input texture.',
+    'zh-CN': '从单一输入纹理生成的高质量 PBR 纹理集。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.4.src': {
+    en: '/images/customers/ubisoft/example5.webp',
+    'zh-CN': '/images/customers/ubisoft/example5.webp'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.4.alt': {
+    en: 'CHORD PBR material example output 5',
+    'zh-CN': 'CHORD PBR 材质输出示例 5'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.4.caption': {
+    en: 'Final rendered PBR material demonstrating production-ready quality.',
+    'zh-CN': '最终渲染的 PBR 材质，展示可用于生产的质量。'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.5': {
+    en: 'The release of CHORD demonstrates how ComfyUI has grown from a community-driven tool into a platform for real production. Studio users can build end-to-end pipelines from prompt or reference input through texture generation, material estimation, PBR upscaling, and finally export to DCC tools or game engines. Each stage can also operate independently and be embedded into an existing production system.',
     'zh-CN':
-      '育碧继续开发和改进 CHORD 模型，计划增加更多材质类型并加强与 ComfyUI 不断发展的生态系统的集成。'
+      'CHORD 的发布表明，ComfyUI 已从一个社区驱动的工具成长为一个真正的生产平台。工作室用户可以构建端到端流水线，从提示或参考输入到纹理生成、材质估算、PBR 放大，最终导出到 DCC 工具或游戏引擎。每个阶段也可以独立运行并嵌入现有的生产系统中。'
   },
-  'customers.detail.ubisoft-chord.topic-6.block.1.text': {
-    en: 'The CHORD model represents a breakthrough in AI-assisted material creation, enabling artists to generate production-quality PBR textures with unprecedented speed and control.',
-    'zh-CN':
-      'CHORD 模型代表了 AI 辅助材质创建的突破，使艺术家能够以前所未有的速度和控制力生成制作质量的 PBR 纹理。'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.1.name': {
-    en: 'Ubisoft La Forge Team',
-    'zh-CN': '育碧 La Forge 团队'
-  },
-  'customers.detail.ubisoft-chord.topic-6.block.2.label': {
+  'customers.detail.ubisoft-chord.topic-6.block.6.label': {
     en: 'AUTHOR',
     'zh-CN': '作者'
   },
-  'customers.detail.ubisoft-chord.topic-6.block.2.name': {
-    en: 'Ubisoft La Forge Team',
-    'zh-CN': '育碧 La Forge 团队'
+  'customers.detail.ubisoft-chord.topic-6.block.6.name': {
+    en: 'Jo Zhang',
+    'zh-CN': 'Jo Zhang'
   },
-  'customers.detail.ubisoft-chord.topic-6.block.2.role': {
-    en: 'Ubisoft Research & Development',
-    'zh-CN': '育碧研发'
+  'customers.detail.ubisoft-chord.topic-6.block.6.role': {
+    en: 'ComfyUI Blog',
+    'zh-CN': 'ComfyUI 博客'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.6.name2': {
+    en: 'Daxiong (Lin)',
+    'zh-CN': 'Daxiong (Lin)'
+  },
+  'customers.detail.ubisoft-chord.topic-6.block.6.role2': {
+    en: 'ComfyUI Blog',
+    'zh-CN': 'ComfyUI 博客'
   },
 
   // Contact – FormSection

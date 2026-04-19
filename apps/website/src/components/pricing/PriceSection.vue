@@ -10,6 +10,10 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+function subscribeUrl(tier: string): string {
+  return `${externalLinks.cloud}/cloud/subscribe?tier=${tier}&cycle=monthly`
+}
+
 interface PlanFeature {
   text: TranslationKey
   isComingSoon?: boolean
@@ -57,7 +61,7 @@ const plans: PricingPlan[] = [
     creditsKey: 'pricing.plan.standard.credits',
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
-    ctaHref: externalLinks.cloud,
+    ctaHref: subscribeUrl('standard'),
     featureIntroKey: 'pricing.plan.standard.featureIntro',
     features: [
       { text: 'pricing.plan.standard.feature1' },
@@ -73,7 +77,7 @@ const plans: PricingPlan[] = [
     creditsKey: 'pricing.plan.creator.credits',
     estimateKey: 'pricing.plan.creator.estimate',
     ctaKey: 'pricing.plan.creator.cta',
-    ctaHref: externalLinks.cloud,
+    ctaHref: subscribeUrl('creator'),
     featureIntroKey: 'pricing.plan.creator.featureIntro',
     features: [
       { text: 'pricing.plan.creator.feature1' },
@@ -91,7 +95,7 @@ const plans: PricingPlan[] = [
     creditsKey: 'pricing.plan.pro.credits',
     estimateKey: 'pricing.plan.pro.estimate',
     ctaKey: 'pricing.plan.pro.cta',
-    ctaHref: externalLinks.cloud,
+    ctaHref: subscribeUrl('pro'),
     featureIntroKey: 'pricing.plan.pro.featureIntro',
     features: [
       { text: 'pricing.plan.pro.feature1' },
@@ -105,7 +109,7 @@ const plans: PricingPlan[] = [
     labelKey: 'pricing.enterprise.label',
     summaryKey: 'pricing.enterprise.description',
     ctaKey: 'pricing.enterprise.cta',
-    ctaHref: getRoutes(locale).cloudEnterprise,
+    ctaHref: getRoutes(locale).contact,
     featureIntroKey: 'pricing.enterprise.featureIntro',
     features: [
       { text: 'pricing.enterprise.feature1' },

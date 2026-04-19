@@ -13,7 +13,6 @@ const baseRoutes = {
   customers: '/customers',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
-  videos: '/videos',
   contact: '/contact'
 } as const
 
