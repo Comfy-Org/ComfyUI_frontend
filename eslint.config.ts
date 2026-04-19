@@ -471,7 +471,7 @@ export default defineConfig([
               message: 'Use the @e2e/ path alias instead of relative imports.'
             },
             {
-              group: ['@e2e/helpers/*'],
+              group: ['@e2e/helpers', '@e2e/helpers/*'],
               message:
                 'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
@@ -494,7 +494,7 @@ export default defineConfig([
               message: 'Use the @e2e/ path alias instead of relative imports.'
             },
             {
-              group: ['@e2e/helpers/*'],
+              group: ['@e2e/helpers', '@e2e/helpers/*'],
               message:
                 'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
