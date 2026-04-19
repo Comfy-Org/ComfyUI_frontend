@@ -25,7 +25,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       class="rounded-5xl bg-transparency-white-t4 mx-auto mt-12 max-w-3xl p-2 md:mt-16"
     >
       <img
-        src="/images/careers/hero.webp"
+        src="https://media.comfy.org/website/careers/hero.webp"
         alt="Comfy team"
         class="w-full rounded-4xl object-cover"
       />

@@ -12,13 +12,13 @@ const cards = [
     labelKey: 'cloud.audience.creators.label' as const,
     titleKey: 'cloud.audience.creators.title' as const,
     descriptionKey: 'cloud.audience.creators.description' as const,
-    image: '/images/cloud/audience-creator.webp'
+    image: 'https://media.comfy.org/website/cloud/audience-creator.webp'
   },
   {
     labelKey: 'cloud.audience.teams.label' as const,
     titleKey: 'cloud.audience.teams.title' as const,
     descriptionKey: 'cloud.audience.teams.description' as const,
-    image: '/images/cloud/audience-team.webp'
+    image: 'https://media.comfy.org/website/cloud/audience-team.webp'
   }
 ]
 </script>

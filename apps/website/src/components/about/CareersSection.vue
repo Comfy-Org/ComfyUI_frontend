@@ -15,7 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <!-- Team photo -->
       <div class="aspect-video w-full overflow-hidden rounded-4xl lg:w-1/2">
         <img
-          src="/images/about/team.webp"
+          src="https://media.comfy.org/website/about/team.webp"
           alt="Comfy team"
           class="size-full object-cover"
           loading="lazy"

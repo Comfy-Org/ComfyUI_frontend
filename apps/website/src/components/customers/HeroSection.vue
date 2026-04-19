@@ -34,7 +34,7 @@ useHeroAnimation({
         class="order-2 mt-8 w-full lg:order-1 lg:mt-0 lg:w-5/12"
       >
         <img
-          src="/images/customers/c-projection.webp"
+          src="https://media.comfy.org/website/customers/c-projection.webp"
           alt="Comfy 3D logo"
           class="mx-auto w-full max-w-md lg:max-w-none"
         />
@@ -68,11 +68,11 @@ useHeroAnimation({
     <!-- Video overlapping the hero graphic -->
     <div ref="videoRef" class="-mt-16 px-20 pb-40 lg:-mt-72">
       <VideoPlayer
-        src="/videos/customers/blackmath.webm"
-        poster="/videos/customers/blackmath-poster.webp"
+        src="https://media.comfy.org/website/customers/blackmath/video.webm"
+        poster="https://media.comfy.org/website/customers/blackmath/poster.webp"
         :tracks="[
           {
-            src: '/videos/customers/blackmath.vtt',
+            src: 'https://media.comfy.org/website/customers/blackmath/video.vtt',
             kind: 'subtitles',
             srclang: 'en',
             label: 'English'

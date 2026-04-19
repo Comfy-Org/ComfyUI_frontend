@@ -60,7 +60,7 @@ onMounted(() => {
 
   for (let i = 0; i < FRAME_COUNT; i++) {
     const img = new Image()
-    img.src = `/videos/hero-logo-seq/Logo${String(i).padStart(2, '0')}.webp`
+    img.src = `https://media.comfy.org/website/homepage/hero-logo-seq/Logo${String(i).padStart(2, '0')}.webp`
     img.onload = () => onSettled(true)
     img.onerror = () => onSettled(false)
     images.push(img)

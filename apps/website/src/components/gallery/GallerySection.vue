@@ -26,7 +26,7 @@ export interface GalleryItem {
 }
 
 const items: GalleryItem[] = Array.from({ length: 12 }, () => ({
-  image: '/images/gallery/gallery.webp',
+  image: 'https://media.comfy.org/website/gallery/gallery.webp',
   title: 'Image Title',
   userAlias: 'User Alias',
   teamAlias: 'Team Alias',
